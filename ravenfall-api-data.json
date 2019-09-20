@@ -1,0 +1,775 @@
+{
+    "Settings": {
+        "Name": "RavenNest API Documentation",
+        "Version": "v1.0"
+    },
+    "Pages": [],
+    "Apis": [{
+        "Name": "Authentication API",
+        "Description": "Used for authenticating with the RavenNest API.",
+        "Path": "api/auth",
+        "Methods": [{
+            "Name": "Check current authentication state",
+            "Method": "GET",
+            "Path": "/",
+            "Description": "Doing a GET to this api will return whether or not you are logged in and can use the RavenNest API.",
+            "Parameters": [],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": false,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "System.String",
+                "Example": "\"\""
+            }
+        }, {
+            "Name": "Authenticate",
+            "Method": "POST",
+            "Path": "/",
+            "Description": "Authenticate to RavenNest API and retrieve an auth token. The auth token is required for many of the available APIs. This method be called every hour or so to keep your auth token valid.",
+            "Parameters": [],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": false,
+                "RequiresAdmin": false
+            },
+            "RequestBody": {
+                "ContentType": "application/json",
+                "Example": "{\"Username\":null,\"Password\":null}"
+            },
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "AuthToken",
+                "Example": "{\"UserId\":\"00000000-0000-0000-0000-000000000000\",\"IssuedUtc\":\"0001-01-01T00:00:00\",\"ExpiresUtc\":\"0001-01-01T00:00:00\",\"Token\":null,\"Expired\":true}"
+            }
+        }]
+    }, {
+        "Name": "Game API",
+        "Description": "Used for handling game sessions and polling game events.",
+        "Path": "api/game",
+        "Methods": [{
+            "Name": "Get info about current game session",
+            "Method": "GET",
+            "Path": "/",
+            "Description": "This will return information about the ongoing game session such as uptime, peak player count and more.",
+            "Parameters": [],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "GameInfo",
+                "Example": "{\"UserId\":null,\"Uptime\":\"00:00:00\",\"PeakPlayerCount\":0,\"PlayerCount\":0,\"EventRevision\":0}"
+            }
+        }, {
+            "Name": "Start a game session",
+            "Method": "POST",
+            "Path": "/",
+            "Description": "Start a new or continue on an existing non-stopped game session. This will also return a refreshed session token, required for updating any player, marketplace or game info.",
+            "Parameters": [],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": {
+                "ContentType": "application/json",
+                "Example": "{\"Value\": false}"
+            },
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "SessionToken",
+                "Example": "{\"SessionId\":\"00000000-0000-0000-0000-000000000000\",\"StartedUtc\":\"0001-01-01T00:00:00\",\"ExpiresUtc\":\"0001-01-01T00:00:00\",\"AuthToken\":null,\"Expired\":true}"
+            }
+        }, {
+            "Name": "Raid another streamer",
+            "Method": "DELETE",
+            "Path": "/raid/:username",
+            "Description": "When you're done with your stream, don't forget to raid someone! This will end your current game session and bring all your current playing players into the target Twitch user's stream playing Ravenfall.",
+            "Parameters": [{
+                "Type": "String",
+                "Name": "username",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": {
+                "ContentType": "application/json",
+                "Example": "{\"Value\": false}"
+            },
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "Boolean",
+                "Example": "false"
+            }
+        }, {
+            "Name": "End the session",
+            "Method": "DELETE",
+            "Path": "/",
+            "Description": "This will end your current game session. This should be called whenever the game stops.",
+            "Parameters": [],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": {
+                "ContentType": "application/json",
+                "Example": "{}"
+            },
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "Void",
+                "Example": "{}"
+            }
+        }, {
+            "Name": "Poll game events",
+            "Method": "GET",
+            "Path": "/events/:revision",
+            "Description": "Poll the latest game events after a specific revision. This will hold your request up to 20 seconds or until a new game event has been added.",
+            "Parameters": [{
+                "Type": "Int32",
+                "Name": "revision",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "EventCollection",
+                "Example": "[{\"GameSessionId\":\"00000000-0000-0000-0000-000000000000\",\"Type\":0,\"Revision\":0,\"Data\":null}]"
+            }
+        }]
+    }, {
+        "Name": "Items API",
+        "Description": "Used for managing the items database.",
+        "Path": "api/items",
+        "Methods": [{
+            "Name": "Get all available items",
+            "Method": "GET",
+            "Path": "/",
+            "Description": "This will return the list of all available items in Ravenfall. This is required as no other endpoints will give out any item data other than item id. This list of items is then necessary to do an item lookup.",
+            "Parameters": [],
+            "Authentication": {
+                "RequiresAuth": true,
+                "RequiresSession": false,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "RavenNest.Models.ItemCollection",
+                "Example": "[{\"Id\":\"00000000-0000-0000-0000-000000000000\",\"Name\":null,\"Level\":0,\"WeaponAim\":0,\"WeaponPower\":0,\"ArmorPower\":0,\"RequiredAttackLevel\":0,\"RequiredDefenseLevel\":0,\"Category\":0,\"Type\":0,\"Material\":0,\"MaleModelId\":null,\"FemaleModelId\":null,\"GenericPrefab\":null,\"MalePrefab\":null,\"FemalePrefab\":null,\"IsGenericModel\":null,\"Craftable\":null,\"RequiredCraftingLevel\":0,\"WoodCost\":0,\"OreCost\":0}]"
+            }
+        }, {
+            "Name": "Add a new item to the database",
+            "Method": "POST",
+            "Path": "/",
+            "Description": "This will add a new item to the game. This requires the authenticated user to be a Ravenfall administrator.",
+            "Parameters": [],
+            "Authentication": {
+                "RequiresAuth": true,
+                "RequiresSession": false,
+                "RequiresAdmin": true
+            },
+            "RequestBody": {
+                "ContentType": "application/json",
+                "Example": "{\"Id\":\"00000000-0000-0000-0000-000000000000\",\"Name\":null,\"Level\":0,\"WeaponAim\":0,\"WeaponPower\":0,\"ArmorPower\":0,\"RequiredAttackLevel\":0,\"RequiredDefenseLevel\":0,\"Category\":0,\"Type\":0,\"Material\":0,\"MaleModelId\":null,\"FemaleModelId\":null,\"GenericPrefab\":null,\"MalePrefab\":null,\"FemalePrefab\":null,\"IsGenericModel\":null,\"Craftable\":null,\"RequiredCraftingLevel\":0,\"WoodCost\":0,\"OreCost\":0}"
+            },
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "Boolean",
+                "Example": "false"
+            }
+        }, {
+            "Name": "Delete an item from the database",
+            "Method": "DELETE",
+            "Path": "/:itemId",
+            "Description": "This will delete an item from the game. This requires the authenticated user to be a Ravenfall administrator.",
+            "Parameters": [{
+                "Type": "Guid",
+                "Name": "itemId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }],
+            "Authentication": {
+                "RequiresAuth": true,
+                "RequiresSession": false,
+                "RequiresAdmin": true
+            },
+            "RequestBody": {
+                "ContentType": "application/json",
+                "Example": "{}"
+            },
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "System.Boolean",
+                "Example": "false"
+            }
+        }, {
+            "Name": "Update an item in the database",
+            "Method": "PUT",
+            "Path": "/",
+            "Description": "This update the target item. This requires the authenticated user to be a Ravenfall administrator.",
+            "Parameters": [],
+            "Authentication": {
+                "RequiresAuth": true,
+                "RequiresSession": false,
+                "RequiresAdmin": true
+            },
+            "RequestBody": {
+                "ContentType": "application/json",
+                "Example": "{\"Id\":\"00000000-0000-0000-0000-000000000000\",\"Name\":null,\"Level\":0,\"WeaponAim\":0,\"WeaponPower\":0,\"ArmorPower\":0,\"RequiredAttackLevel\":0,\"RequiredDefenseLevel\":0,\"Category\":0,\"Type\":0,\"Material\":0,\"MaleModelId\":null,\"FemaleModelId\":null,\"GenericPrefab\":null,\"MalePrefab\":null,\"FemalePrefab\":null,\"IsGenericModel\":null,\"Craftable\":null,\"RequiredCraftingLevel\":0,\"WoodCost\":0,\"OreCost\":0}"
+            },
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "System.Boolean",
+                "Example": "false"
+            }
+        }]
+    }, {
+        "Name": "Marketplace API",
+        "Description": "Used for buying and selling items in a global marketplace.",
+        "Path": "api/marketplace",
+        "Methods": [{
+            "Name": "Get Marketplace Listing",
+            "Method": "GET",
+            "Path": "/:offset/:size",
+            "Description": "Gets a range of items available on the marketplace based on a set offset and size.",
+            "Parameters": [{
+                "Type": "Int32",
+                "Name": "offset",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }, {
+                "Type": "Int32",
+                "Name": "size",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }],
+            "Authentication": {
+                "RequiresAuth": true,
+                "RequiresSession": false,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "MarketItemCollection",
+                "Example": "[{\"SellerUserId\":null,\"ItemId\":\"00000000-0000-0000-0000-000000000000\",\"Amount\":0,\"PricePerItem\":0.0}]"
+            }
+        }, {
+            "Name": "Sell items on the marketplace",
+            "Method": "GET",
+            "Path": "/:userId/sell/:itemId/:amount/:pricePerItem",
+            "Description": "Adds one or more item(s) on the marketplace listing for sale. This will remove the item(s) from the players inventory.",
+            "Parameters": [{
+                "Type": "String",
+                "Name": "userId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }, {
+                "Type": "Guid",
+                "Name": "itemId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }, {
+                "Type": "Int64",
+                "Name": "amount",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }, {
+                "Type": "Decimal",
+                "Name": "pricePerItem",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "ItemSellResult",
+                "Example": "{\"State\":0}"
+            }
+        }, {
+            "Name": "Buy items on the marketplace",
+            "Method": "GET",
+            "Path": "/:userId/buy/:itemId/:amount/:maxPricePerItem",
+            "Description": "Buy the target item(s) with the cheapest price per item, this price cannot exceed the requested max price per item. The bought item(s) will be equipped automatically if they are better than the currently equipped item of same type.",
+            "Parameters": [{
+                "Type": "String",
+                "Name": "userId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }, {
+                "Type": "Guid",
+                "Name": "itemId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }, {
+                "Type": "Int64",
+                "Name": "amount",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }, {
+                "Type": "Decimal",
+                "Name": "maxPricePerItem",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "ItemBuyResult",
+                "Example": "{\"State\":0,\"AmountBought\":null,\"CostPerItem\":null,\"TotalAmount\":0,\"TotalCost\":0.0}"
+            }
+        }]
+    }, {
+        "Name": "Players API",
+        "Description": "Used for managing player data.",
+        "Path": "api/players",
+        "Methods": [{
+            "Name": "Get Current Player",
+            "Method": "GET",
+            "Path": "/",
+            "Description": "Gets the player data for the authenticated Twitch user, authenticated RavenNest user or current Game Session user.",
+            "Parameters": [],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": false,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "Player",
+                "Example": "{\"UserId\":null,\"UserName\":null,\"Name\":null,\"Statistics\":null,\"Appearance\":null,\"Resources\":null,\"Skills\":null,\"InventoryItems\":null,\"Local\":false,\"OriginUserId\":\"00000000-0000-0000-0000-000000000000\",\"Revision\":0}"
+            }
+        }, {
+            "Name": "(Alias) Get Current Player",
+            "Method": "GET",
+            "Path": "/user",
+            "Description": "Gets the player data for the authenticated Twitch user, authenticated RavenNest user or current Game Session user.",
+            "Parameters": [],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": false,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "Player",
+                "Example": "{\"UserId\":null,\"UserName\":null,\"Name\":null,\"Statistics\":null,\"Appearance\":null,\"Resources\":null,\"Skills\":null,\"InventoryItems\":null,\"Local\":false,\"OriginUserId\":\"00000000-0000-0000-0000-000000000000\",\"Revision\":0}"
+            }
+        }, {
+            "Name": "Add Player to Game Session",
+            "Method": "POST",
+            "Path": "/:userId",
+            "Description": "Adds the target player to the ongoing session. This will lock the target player to the session and then return the player data.",
+            "Parameters": [{
+                "Type": "String",
+                "Name": "userId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": {
+                "ContentType": "application/json",
+                "Example": "{\"Value\": \"\"}"
+            },
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "Player",
+                "Example": "{\"UserId\":null,\"UserName\":null,\"Name\":null,\"Statistics\":null,\"Appearance\":null,\"Resources\":null,\"Skills\":null,\"InventoryItems\":null,\"Local\":false,\"OriginUserId\":\"00000000-0000-0000-0000-000000000000\",\"Revision\":0}"
+            }
+        }, {
+            "Name": "Get Player by Twitch UserId",
+            "Method": "GET",
+            "Path": "/:userId",
+            "Description": "Get the target player using a Twitch UserId. This requires a session token for grabbing a local player but only an auth token for a global player.",
+            "Parameters": [{
+                "Type": "String",
+                "Name": "userId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }],
+            "Authentication": {
+                "RequiresAuth": true,
+                "RequiresSession": false,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "Player",
+                "Example": "{\"UserId\":null,\"UserName\":null,\"Name\":null,\"Statistics\":null,\"Appearance\":null,\"Resources\":null,\"Skills\":null,\"InventoryItems\":null,\"Local\":false,\"OriginUserId\":\"00000000-0000-0000-0000-000000000000\",\"Revision\":0}"
+            }
+        }, {
+            "Name": "Add item to player",
+            "Method": "GET",
+            "Path": "/:userId/item/:item",
+            "Description": "Adds an item to the target player, the item will automatically be equipped if it is better than any other existing equipped gear.",
+            "Parameters": [{
+                "Type": "String",
+                "Name": "userId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }, {
+                "Type": "Guid",
+                "Name": "item",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "AddItemResult",
+                "Example": "0"
+            }
+        }, {
+            "Name": "UnEquip item",
+            "Method": "GET",
+            "Path": "/:userId/unequip/:item",
+            "Description": "UnEquips an item from the target player.",
+            "Parameters": [{
+                "Type": "String",
+                "Name": "userId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }, {
+                "Type": "Guid",
+                "Name": "item",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "Boolean",
+                "Example": "false"
+            }
+        }, {
+            "Name": "Equip item",
+            "Method": "GET",
+            "Path": "/:userId/equip/:item",
+            "Description": "Equips an item from the target player.",
+            "Parameters": [{
+                "Type": "String",
+                "Name": "userId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }, {
+                "Type": "Guid",
+                "Name": "item",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "Boolean",
+                "Example": "false"
+            }
+        }, {
+            "Name": "Update player appearance as Twitch User",
+            "Method": "POST",
+            "Path": "/appearance",
+            "Description": "Update the target player with a new appearance. This requires you to be authenticated with Twitch to update.",
+            "Parameters": [],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": false,
+                "RequiresAdmin": false
+            },
+            "RequestBody": {
+                "ContentType": "application/json",
+                "Example": "{\"Values\": [0]}"
+            },
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "Boolean",
+                "Example": "false"
+            }
+        }, {
+            "Name": "Update player appearance",
+            "Method": "POST",
+            "Path": "/:userId/appearance",
+            "Description": "Update the target player with a new appearance. This requires a session token to update a target player.",
+            "Parameters": [{
+                "Type": "String",
+                "Name": "userId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": {
+                "ContentType": "application/json",
+                "Example": "{\"Values\": [0]}"
+            },
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "Boolean",
+                "Example": "false"
+            }
+        }, {
+            "Name": "Update player experience",
+            "Method": "POST",
+            "Path": "/:userId/experience",
+            "Description": "Update the target player with their current experience state.",
+            "Parameters": [{
+                "Type": "String",
+                "Name": "userId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": {
+                "ContentType": "application/json",
+                "Example": "{\"Values\": [0]}"
+            },
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "Boolean",
+                "Example": "false"
+            }
+        }, {
+            "Name": "Update player statistics",
+            "Method": "POST",
+            "Path": "/:userId/statistics",
+            "Description": "Update the target player with their current statistics state, such as how many enemies killed, how many times they have died, etc.",
+            "Parameters": [{
+                "Type": "String",
+                "Name": "userId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": {
+                "ContentType": "application/json",
+                "Example": "{\"Values\": [0]}"
+            },
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "Boolean",
+                "Example": "false"
+            }
+        }, {
+            "Name": "Update player resources",
+            "Method": "POST",
+            "Path": "/:userId/resources",
+            "Description": "Update the target player with their current resource state, such as coins, wood, ores, fish, wheat, etc.",
+            "Parameters": [{
+                "Type": "String",
+                "Name": "userId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": {
+                "ContentType": "application/json",
+                "Example": "{\"Values\": [0]}"
+            },
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "Boolean",
+                "Example": "false"
+            }
+        }, {
+            "Name": "Gift an item to another player",
+            "Method": "GET",
+            "Path": "/:userId/gift/:receiverUserId/:itemId",
+            "Description": "Gift an item from one player to another, this will remove the item from the giver and add it to the receivers inventory. Gifted item will be equipped automatically if it is better than what is already equipped.",
+            "Parameters": [{
+                "Type": "String",
+                "Name": "userId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }, {
+                "Type": "String",
+                "Name": "receiverUserId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }, {
+                "Type": "Guid",
+                "Name": "itemId",
+                "Description": "",
+                "Default": "",
+                "Optional": false
+            }],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "Boolean",
+                "Example": "false"
+            }
+        }, {
+            "Name": "Bulk player update",
+            "Method": "POST",
+            "Path": "/update",
+            "Description": "Update many players at the same time. This is used to save all currently playing players in one request.",
+            "Parameters": [],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": true,
+                "RequiresAdmin": false
+            },
+            "RequestBody": {
+                "ContentType": "application/json",
+                "Example": "{\"Values\": [{\"UserId\":null,\"CurrentTask\":null,\"Experience\":null,\"Resources\":null,\"Statistics\":null,\"Revision\":0}]}"
+            },
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "Boolean[]",
+                "Example": null
+            }
+        }]
+    }, {
+        "Name": "Twitch API",
+        "Description": "Used by the website to allow authentication with Twitch. This is not meant to be used elsewhere.",
+        "Path": "api/twitch",
+        "Methods": [{
+            "Name": "Set Twitch Access Token",
+            "Method": "GET",
+            "Path": "/session",
+            "Description": "Updates current session with the set Twitch access token, used as an user identifier throughout the website.",
+            "Parameters": [],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": false,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "String",
+                "Example": "\"\""
+            }
+        }, {
+            "Name": "Get Access Token Request URL",
+            "Method": "GET",
+            "Path": "/access",
+            "Description": "Gets a Twitch access token request url with the scope user:read:email.",
+            "Parameters": [],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": false,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "System.String",
+                "Example": "\"\""
+            }
+        }, {
+            "Name": "Get Twitch User",
+            "Method": "GET",
+            "Path": "/user",
+            "Description": "After authenticating with Twitch, this can be used to get information about the logged in user.",
+            "Parameters": [],
+            "Authentication": {
+                "RequiresAuth": false,
+                "RequiresSession": false,
+                "RequiresAdmin": false
+            },
+            "RequestBody": null,
+            "Response": {
+                "ContentType": "application/json",
+                "ReturnType": "String",
+                "Example": "\"\""
+            }
+        }]
+    }]
+}

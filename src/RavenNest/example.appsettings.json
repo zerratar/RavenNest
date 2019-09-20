@@ -1,0 +1,13 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "AppSettings": {
+    "DbConnectionString": "<database connection string here>",
+    "TwitchClientId": "<twitch client id>",
+    "TwitchClientSecret": "<twitch client secret>"
+  }
+}
