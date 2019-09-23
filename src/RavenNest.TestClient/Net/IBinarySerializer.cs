@@ -24,20 +24,12 @@ namespace RavenNest.TestClient
                 var res = Deserialize(br, type);
                 if (res != null) return res;
                 return DeserializeComplex(br, type);
-                //var obj = FormatterServices.GetUninitializedObject(type);
-                //var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-                //foreach (var prop in props)
-                //{
-                //    prop.SetValue(obj, Deserialize(br, prop));
-                //}
-                //return obj;
             }
         }
 
         public byte[] Serialize(object data)
         {
             if (data == null) return new byte[0];
-
             using (var ms = new MemoryStream())
             using (var bw = new BinaryWriter(ms))
             {
@@ -68,17 +60,27 @@ namespace RavenNest.TestClient
             return false;
         }
 
-
         private void Serialize(BinaryWriter bw, object data, PropertyInfo property)
         {
             var type = property.PropertyType;
             var value = property.GetValue(data);
+            Serialize(bw, value, type);
+        }
 
+        private void Serialize(BinaryWriter bw, object data, FieldInfo field)
+        {
+            var type = field.FieldType;
+            var value = field.GetValue(data);
+            Serialize(bw, value, type);
+        }
+
+        private void Serialize(BinaryWriter bw, object value, Type type)
+        {
             if (SerializeSpecial(bw, value, type)) return;
 
             var targetMethod = bw.GetType()
                 .GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                .FirstOrDefault(x => MatchWriteMethod(x, property.PropertyType));
+                .FirstOrDefault(x => MatchWriteMethod(x, type));
 
             if (targetMethod != null)
             {
@@ -89,9 +91,20 @@ namespace RavenNest.TestClient
             SerializeComplex(bw, value, type);
         }
 
+        private object Deserialize(BinaryReader br, PropertyInfo property)
+        {
+            var type = property.PropertyType;
+            return Deserialize(br, type);
+        }
+
+        private object Deserialize(BinaryReader br, FieldInfo field)
+        {
+            var type = field.FieldType;
+            return Deserialize(br, type);
+        }
+
         private object Deserialize(BinaryReader br, Type type)
         {
-
             if (TryDeserializeSpecial(br, type, out var res))
             {
                 return res;
@@ -109,26 +122,6 @@ namespace RavenNest.TestClient
             return DeserializeComplex(br, type);
         }
 
-
-        private object Deserialize(BinaryReader br, PropertyInfo property)
-        {
-            if (TryDeserializeSpecial(br, property.PropertyType, out var res))
-            {
-                return res;
-            }
-
-            var type = property.PropertyType;
-            var targetMethod = br.GetType()
-                .GetMethods(BindingFlags.Public | BindingFlags.Instance)
-                .FirstOrDefault(x => MatchReadName(x.Name, property.PropertyType.Name));
-
-            if (targetMethod != null)
-            {
-                return targetMethod.Invoke(br, null);
-            }
-
-            return DeserializeComplex(br, type);
-        }
         private void SerializeComplex(BinaryWriter bw, object data, Type type)
         {
             var hasData = data != null ? 1 : 0;
@@ -137,6 +130,15 @@ namespace RavenNest.TestClient
             foreach (var prop in props)
             {
                 Serialize(bw, data, prop);
+            }
+
+            var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var field in fields)
+            {
+                if (!field.IsInitOnly)
+                {
+                    Serialize(bw, data, field);
+                }
             }
         }
 
@@ -152,7 +154,23 @@ namespace RavenNest.TestClient
             var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
             foreach (var prop in props)
             {
-                prop.SetValue(obj, Deserialize(br, prop));
+                // still need to deserialize so we read from the stream
+                var value = Deserialize(br, prop);
+                if (prop.CanWrite)
+                {
+                    prop.SetValue(obj, value);
+                }
+            }
+
+            var fields = type.GetFields(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var field in fields)
+            {
+                // still need to deserialize so we read from the stream
+                var value = Deserialize(br, field);
+                if (!field.IsInitOnly)
+                {
+                    field.SetValue(obj, value);
+                }
             }
 
             return obj;

@@ -10,7 +10,9 @@ namespace RavenNest.TestClient
         public string HelloWorld { get; set; }
         public DateTime OhNo { get; set; }
         public int[] IntArray { get; set; }
+        public Vector3 v3 { get; set; }
 
+        public Vector3 v32 { get; set; }
         public TestType2 Test2 { get; set; }
     }
 
@@ -39,6 +41,12 @@ namespace RavenNest.TestClient
                 OhNo = DateTime.UtcNow,
                 Id = Guid.NewGuid(),
                 IntArray = new int[5],
+                v32 = new Vector3()
+                {
+                    x = 123,
+                    y = 456,
+                    z = 789
+                },
                 Test2 = new TestType2
                 {
                     Test = "test"
@@ -47,6 +55,15 @@ namespace RavenNest.TestClient
 
             var complex_a0 = serializer.Serialize(t);
             var complex_a1 = serializer.Deserialize(complex_a0, typeof(TestType));
+
+            var v32 = new Vector3()
+            {
+                x = 123,
+                y = 456,
+                z = 789
+            };
+            var complex_b0 = serializer.Serialize(v32);
+            var complex_b1 = serializer.Deserialize(complex_b0, typeof(Vector3));
 
 
             while (true)
