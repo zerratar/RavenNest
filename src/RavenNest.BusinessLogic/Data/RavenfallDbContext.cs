@@ -20,6 +20,8 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<Appearance> Appearance { get; set; }
         public virtual DbSet<SyntyAppearance> SyntyAppearance { get; set; }
         public virtual DbSet<Character> Character { get; set; }
+        public virtual DbSet<CharacterState> CharacterState { get; set; }
+
         //public virtual DbSet<CharacterSession> CharacterSession { get; set; }
         public virtual DbSet<GameSession> GameSession { get; set; }
         public virtual DbSet<GameEvent> GameEvent { get; set; }

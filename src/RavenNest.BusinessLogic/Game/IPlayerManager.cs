@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using RavenNest.BusinessLogic.Net;
 using RavenNest.Models;
 
 namespace RavenNest.BusinessLogic.Game
@@ -15,7 +16,7 @@ namespace RavenNest.BusinessLogic.Game
 
         Task<Player> GetGlobalPlayerAsync(string userId);
         Task<Player> GetGlobalPlayerAsync(Guid userId);
-
+        Task<bool> UpdatePlayerStateAsync(SessionToken sessionToken, CharacterStateUpdate update);
         Task<bool> KickPlayerAsync(SessionToken token, string userId);
 
         Task<bool> UpdateStatisticsAsync(SessionToken token, string userId, decimal[] statistics);

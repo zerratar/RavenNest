@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
+using RavenNest.BusinessLogic.Net;
 using RavenNest.DataModels;
 using RavenNest.Models;
 
@@ -150,6 +151,7 @@ namespace RavenNest.BusinessLogic.Game
 
                 var character = await db.Character
                     .Include(x => x.InventoryItem) //.ThenInclude(x => x.Item)
+                    .Include(x => x.State)
                     .Include(x => x.Appearance)
                     .Include(x => x.SyntyAppearance)
                     .Include(x => x.Resources)
@@ -162,6 +164,65 @@ namespace RavenNest.BusinessLogic.Game
 
                 return character.Map(user);
             }
+        }
+
+        public async Task<bool> UpdatePlayerStateAsync(
+            SessionToken sessionToken,
+            CharacterStateUpdate update)
+        {
+            try
+            {
+                using (var db = dbProvider.Get())
+                {
+                    var player = await GetCharacterAsync(db, sessionToken, update.UserId);
+                    if (player == null)
+                    {
+                        return false;
+                    }
+                    if (player.StateId == null)
+                    {
+                        var state = CreateCharacterState(update);
+                        await db.CharacterState.AddAsync(state);
+                        player.State = state;
+                        player.StateId = state.Id;
+                    }
+                    else
+                    {
+                        player.State.DuelOpponent = update.DuelOpponent;
+                        player.State.Health = update.Health;
+                        player.State.InArena = update.InArena;
+                        player.State.InRaid = update.InRaid;
+                        player.State.Island = update.Island;
+                        player.State.Task = update.Task;
+                        player.State.TaskArgument = update.TaskArgument;
+                        player.State.X = (decimal)update.Position.x;
+                        player.State.Y = (decimal)update.Position.y;
+                        player.State.Z = (decimal)update.Position.z;
+                        db.Update(player.State);
+                    }
+
+                    await db.SaveChangesAsync();
+                    return true;
+                }
+            }
+            catch { return false; }
+        }
+
+        private CharacterState CreateCharacterState(CharacterStateUpdate update)
+        {
+            var state = new CharacterState();
+            state.Id = Guid.NewGuid();
+            state.DuelOpponent = update.DuelOpponent;
+            state.Health = update.Health;
+            state.InArena = update.InArena;
+            state.InRaid = update.InRaid;
+            state.Island = update.Island;
+            state.Task = update.Task;
+            state.TaskArgument = update.TaskArgument;
+            state.X = (decimal)update.Position.x;
+            state.Y = (decimal)update.Position.y;
+            state.Z = (decimal)update.Position.z;
+            return state;
         }
 
         public async Task<Player> GetPlayerAsync(SessionToken sessionToken, string userId)
@@ -1100,7 +1161,7 @@ namespace RavenNest.BusinessLogic.Game
                 .Include(x => x.InventoryItem).ThenInclude(x => x.Item)
                 .Include(x => x.Appearance)
                 .Include(x => x.SyntyAppearance)
-                .Include(x => x.SyntyAppearance)
+                .Include(x => x.State)
                 .Include(x => x.Resources)
                 .Include(x => x.Skills)
                 .Include(x => x.Statistics)

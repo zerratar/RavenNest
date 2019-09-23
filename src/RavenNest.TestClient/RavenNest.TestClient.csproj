@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -6,8 +6,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RavenNest.BusinessLogic\RavenNest.BusinessLogic.csproj" />
     <ProjectReference Include="..\RavenNest.Models\RavenNest.Models.csproj" />
-    <ProjectReference Include="..\RavenNest.SDK\RavenNest.SDK.csproj" />
   </ItemGroup>
 
 </Project>

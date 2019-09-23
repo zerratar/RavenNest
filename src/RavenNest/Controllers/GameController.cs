@@ -43,7 +43,7 @@ namespace RavenNest.Controllers
         public Task<GameInfo> GetAsync()
         {
             var session = GetSessionToken();
-            AssertSessionTokenValidity(session);f
+            AssertSessionTokenValidity(session);
             return gameManager.GetGameInfoAsync(session);
         }
 

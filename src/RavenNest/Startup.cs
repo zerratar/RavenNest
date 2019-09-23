@@ -134,9 +134,10 @@ namespace RavenNest
                 KeepAliveInterval = TimeSpan.FromSeconds(120),
                 ReceiveBufferSize = 4 * 1024
             });
-            app.UseMvc();
 
-            app.MapWhen(x => !x.Request.Path.Value.StartsWith("/api"), builder =>
+            app.UseMvc();
+            
+            app.MapWhen(x => !x.WebSockets.IsWebSocketRequest && !x.Request.Path.Value.StartsWith("/api"), builder =>
             {
                 builder.UseMvc(routes =>
                 {
@@ -144,36 +145,6 @@ namespace RavenNest
                         name: "spa-fallback",
                         defaults: new { controller = "Home", action = "Index" });
                 });
-            });
-            
-            app.Use(async (context, next) =>
-            {
-                if (context.Request.Path == "/ws")
-                {
-                    var socketSessionProvider = context.RequestServices.GetService<ISocketSessionProvider>();
-
-                    if (context.WebSockets.IsWebSocketRequest)
-                    {
-                        var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-                        var socketSession = await socketSessionProvider.GetAsync(webSocket);
-                        if (socketSession == null)
-                        {
-                            await webSocket.CloseAsync(
-                                WebSocketCloseStatus.InternalServerError,
-                                "Nope",
-                                CancellationToken.None);
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        context.Response.StatusCode = 400;
-                    }
-                }
-                else
-                {
-                    await next();
-                }
             });
 
             TryGenerateDocumentation(env);
@@ -230,7 +201,9 @@ namespace RavenNest
             services.AddSingleton<ISecureHasher, SecureHasher>();
             services.AddSingleton<ISessionInfoProvider, SessionInfoProvider>();
             services.AddSingleton<ILogger, RavenfallDbLogger>();
-            services.AddSingleton<ISocketSessionProvider, SocketSessionProvider>();
+            services.AddSingleton<IWebSocketConnectionProvider, WebSocketConnectionProvider>();
+            services.AddSingleton<IGamePacketManager, GamePacketManager>();
+            services.AddSingleton<IGamePacketSerializer, GamePacketSerializer>();
         }
     }
 }
