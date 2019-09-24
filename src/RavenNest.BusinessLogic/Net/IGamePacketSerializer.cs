@@ -7,5 +7,4 @@
         GamePacket Deserialize(byte[] data, int length);
 
     }
-
 }

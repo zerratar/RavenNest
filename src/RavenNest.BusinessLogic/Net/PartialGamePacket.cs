@@ -2,7 +2,7 @@
 
 namespace RavenNest.BusinessLogic.Net
 {
-    internal class PartialGamePacket
+    public class PartialGamePacket
     {
         private readonly IGamePacketSerializer packetSerializer;
         private byte[] array;
@@ -15,7 +15,7 @@ namespace RavenNest.BusinessLogic.Net
             this.count = count;
         }
 
-        internal void Append(byte[] array, int count)
+        public void Append(byte[] array, int count)
         {
             var tmpArray = new byte[this.count + count];
             Array.Copy(this.array, 0, tmpArray, 0, this.count);
@@ -23,7 +23,7 @@ namespace RavenNest.BusinessLogic.Net
             this.array = tmpArray;
         }
 
-        internal GamePacket Build()
+        public GamePacket Build()
         {
             return packetSerializer.Deserialize(this.array);
         }

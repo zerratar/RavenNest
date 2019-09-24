@@ -24,6 +24,7 @@ using RavenNest.BusinessLogic.Docs;
 using RavenNest.BusinessLogic.Docs.Html;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Net;
+using RavenNest.BusinessLogic.Serializers;
 using RavenNest.Sessions;
 
 namespace RavenNest
@@ -101,12 +102,15 @@ namespace RavenNest
             app.UseStaticFiles();
             app.UseHttpsRedirection();
 
-            app.UseStaticFiles(new StaticFileOptions
+            if (System.IO.Directory.Exists(System.IO.Path.Combine(env.WebRootPath, "/assets/build")))
             {
-                FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "assets", "build")),
-                RequestPath = "/assets/build",
-                ContentTypeProvider = UnityContentTypeProvider()
-            });
+                app.UseStaticFiles(new StaticFileOptions
+                {
+                    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "assets", "build")),
+                    RequestPath = "/assets/build",
+                    ContentTypeProvider = UnityContentTypeProvider()
+                });
+            }
 
             app.Map("/session-state.js", builder =>
             {
@@ -136,7 +140,7 @@ namespace RavenNest
             });
 
             app.UseMvc();
-            
+
             app.MapWhen(x => !x.WebSockets.IsWebSocketRequest && !x.Request.Path.Value.StartsWith("/api"), builder =>
             {
                 builder.UseMvc(routes =>
@@ -203,6 +207,7 @@ namespace RavenNest
             services.AddSingleton<ILogger, RavenfallDbLogger>();
             services.AddSingleton<IWebSocketConnectionProvider, WebSocketConnectionProvider>();
             services.AddSingleton<IGamePacketManager, GamePacketManager>();
+            services.AddSingleton<IBinarySerializer, BinarySerializer>();
             services.AddSingleton<IGamePacketSerializer, GamePacketSerializer>();
         }
     }

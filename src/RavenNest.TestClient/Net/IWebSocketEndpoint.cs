@@ -3,178 +3,14 @@ using System.Threading;
 using System.Collections.Concurrent;
 using System;
 using System.Net.WebSockets;
-using RavenNest.BusinessLogic;
-using RavenNest.Models;
-using System.IO;
-using System.IO.Compression;
 using Newtonsoft.Json;
-using System.Reflection;
 using System.Text;
-using System.Linq;
+using System.Runtime.Serialization;
+using MessagePack;
+using RavenNest.BusinessLogic.Net;
 
 namespace RavenNest.TestClient
 {
-    internal class PartialGamePacket
-    {
-        private readonly IGamePacketSerializer packetSerializer;
-        private byte[] array;
-        private int count;
-
-        public PartialGamePacket(IGamePacketSerializer packetSerializer, byte[] array, int count)
-        {
-            this.packetSerializer = packetSerializer;
-            this.array = array;
-            this.count = count;
-        }
-
-        internal void Append(byte[] array, int count)
-        {
-            var tmpArray = new byte[this.count + count];
-            Array.Copy(this.array, 0, tmpArray, 0, this.count);
-            Array.Copy(array, 0, tmpArray, this.count - 1, count);
-            this.array = tmpArray;
-        }
-
-        internal GamePacket Build()
-        {
-            return packetSerializer.Deserialize(this.array);
-        }
-    }
-
-    public interface IGamePacketSerializer
-    {
-        byte[] Serialize(GamePacket packet);
-        GamePacket Deserialize(byte[] data);
-        GamePacket Deserialize(byte[] data, int length);
-    }
-
-    public class GamePacketSerializer : IGamePacketSerializer
-    {
-        private readonly IBinarySerializer binarySerializer;
-
-        public GamePacketSerializer(IBinarySerializer binarySerializer)
-        {
-            this.binarySerializer = binarySerializer;
-        }
-
-        public GamePacket Deserialize(byte[] data)
-        {
-            return Deserialize(data, data.Length);
-        }
-
-        public GamePacket Deserialize(byte[] data, int length)
-        {
-            var packet = new GamePacket();
-            using (var ms = new MemoryStream(data, 0, length))
-            using (var br = new BinaryReader(ms))
-            {
-                packet.Id = br.ReadString();
-                packet.Type = br.ReadString();
-                packet.CorrelationId = new Guid(br.ReadBytes(br.ReadInt32()));
-
-                var dataSize = br.ReadInt32();
-                var payload = br.ReadBytes(dataSize);
-
-                var targetType = Assembly
-                    .GetExecutingAssembly()
-                    .GetTypes()
-                    .FirstOrDefault(x => x.Name.Equals(packet.Type));
-
-                packet.Data = binarySerializer.Deserialize(payload, targetType);
-
-                //var json = Decompress(payload);
-                //if (targetType == null)
-                //{
-                //    packet.Data = JsonConvert.DeserializeObject(json);
-                //    return packet;
-                //}
-
-                //packet.Data = JsonConvert.DeserializeObject(json, targetType);
-            }
-            return packet;
-        }
-
-        public byte[] Serialize(GamePacket packet)
-        {
-            using (var ms = new MemoryStream())
-            using (var bw = new BinaryWriter(ms))
-            {
-                bw.Write(packet.Id);
-                bw.Write(packet.Type);
-
-                var correlationBytes = packet.CorrelationId.ToByteArray();
-                bw.Write(correlationBytes.Length);
-                bw.Write(correlationBytes);
-
-                //var json = JsonConvert.SerializeObject(packet.Data);
-                //var body = Compress(json);
-
-                var body = binarySerializer.Serialize(packet.Data);
-                bw.Write(body.Length);
-                bw.Write(body);
-                
-                return ms.ToArray();
-            }
-        }
-
-        public static byte[] Compress(string text)
-        {
-            var bytes = Encoding.Unicode.GetBytes(text);
-            using (var mso = new MemoryStream())
-            {
-                using (var gs = new GZipStream(mso, CompressionMode.Compress))
-                {
-                    gs.Write(bytes, 0, bytes.Length);
-                }
-                return mso.ToArray();
-            }
-        }
-
-        public static string Decompress(byte[] data)
-        {
-            // Read the last 4 bytes to get the length
-            byte[] lengthBuffer = new byte[4];
-            Array.Copy(data, data.Length - 4, lengthBuffer, 0, 4);
-            int uncompressedSize = BitConverter.ToInt32(lengthBuffer, 0);
-
-            var buffer = new byte[uncompressedSize];
-            using (var ms = new MemoryStream(data))
-            {
-                using (var gzip = new GZipStream(ms, CompressionMode.Decompress))
-                {
-                    gzip.Read(buffer, 0, uncompressedSize);
-                }
-            }
-            return Encoding.Unicode.GetString(buffer);
-        }
-    }
-
-    public class GamePacket
-    {
-        public string Id { get; set; }
-        public string Type { get; set; }
-        public object Data { get; set; }
-        public Guid CorrelationId { get; set; }
-
-        internal bool TryGetValue<T>(out T result)
-        {
-            if (Data is T res)
-            {
-                result = res;
-                return true;
-            }
-
-            result = default;
-            return false;
-        }
-    }
-
-    public class LocalRavenNestStreamSettings : IAppSettings
-    {
-        public string ApiEndpoint => "https://localhost:5001/api/";
-        public string WebSocketEndpoint => "wss://localhost:5001/api/stream";
-    }
-
     public interface IPlayerController { }
     public interface IGameManager { }
 
@@ -182,48 +18,6 @@ namespace RavenNest.TestClient
     {
         Task Update();
         Task<bool> SavePlayerAsync(IPlayerController player);
-    }
-
-    public interface ILogger
-    {
-        void Write(string message);
-        void WriteLine(string message);
-        void Debug(string message);
-        void Error(string errorMessage);
-    }
-
-    public interface IAppSettings
-    {
-        string ApiEndpoint { get; }
-        string WebSocketEndpoint { get; }
-    }
-
-    public interface ITokenProvider
-    {
-        void SetAuthToken(AuthToken token);
-        void SetSessionToken(SessionToken token);
-        RavenNest.Models.AuthToken GetAuthToken();
-        RavenNest.Models.SessionToken GetSessionToken();
-    }
-
-    public class TokenProvider : ITokenProvider
-    {
-        private AuthToken authToken;
-        private SessionToken sessionToken;
-
-        public AuthToken GetAuthToken() => authToken;
-
-        public SessionToken GetSessionToken() => sessionToken;
-
-        public void SetAuthToken(AuthToken token)
-        {
-            this.authToken = token;
-        }
-
-        public void SetSessionToken(SessionToken token)
-        {
-            this.sessionToken = token;
-        }
     }
 
     internal interface IGameServerConnection
@@ -240,6 +34,21 @@ namespace RavenNest.TestClient
         Task Create();
         Task ReceiveDataAsync();
     }
+
+    public interface ILogger
+    {
+        void Write(string message);
+        void WriteLine(string message);
+        void Debug(string message);
+        void Error(string errorMessage);
+    }
+
+    public interface IAppSettings
+    {
+        string ApiEndpoint { get; }
+        string WebSocketEndpoint { get; }
+    }
+
 
     public class WSGameServerConnection : IGameServerConnection, IDisposable
     {
@@ -509,9 +318,6 @@ namespace RavenNest.TestClient
             this.packetHandlers[packetId] = packetHandler;
         }
 
-
-
-
         public async Task<GamePacket> SendAsync(GamePacket packet)
         {
             var completionSource = new TaskCompletionSource<GamePacket>();
@@ -627,12 +433,18 @@ namespace RavenNest.TestClient
         }
     }
 
+
+    [MessagePackObject] // only required for messagepack WutFace
     public struct Vector3
     {
+        [Key(0)]
         public float x;
+        [Key(1)]
         public float y;
+        [Key(2)]
         public float z;
 
+        [IgnoreDataMember]
         public float magnitude => x * x + y * y + z * z;
     }
 
@@ -680,7 +492,6 @@ namespace RavenNest.TestClient
         }
         public abstract Task HandleAsync(GamePacket packet);
     }
-
 
     public class GameEventPacketHandler : GamePacketHandler
     {
