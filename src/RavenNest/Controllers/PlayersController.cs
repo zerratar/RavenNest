@@ -139,7 +139,7 @@ namespace RavenNest.Controllers
         //}
 
         [HttpPost("{userId}")]
-        [MethodDescriptor(Name = "Add Player to Game Session", Description = "Adds the target player to the ongoing session. This will lock the target player to the session and then return the player data.", RequiresSession = true)]
+        //[MethodDescriptor(Name = "Add Player to Game Session", Description = "Adds the target player to the ongoing session. This will lock the target player to the session and then return the player data.", RequiresSession = true)]
         public Task<Player> PlayerJoinAsync(string userId, Single<string> username)
         {
             return playerManager.AddPlayerAsync(AssertGetSessionToken(), userId, username.Value);
@@ -163,71 +163,71 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("{userId}/item/{item}")]
-        [MethodDescriptor(
-            Name = "Add item to player",
-            Description = "Adds an item to the target player, the item will automatically be equipped if it is better than any other existing equipped gear.",
-            RequiresSession = true)
-        ]
+        //[MethodDescriptor(
+        //    Name = "Add item to player",
+        //    Description = "Adds an item to the target player, the item will automatically be equipped if it is better than any other existing equipped gear.",
+        //    RequiresSession = true)
+        //]
         public Task<AddItemResult> AddItemAsync(string userId, Guid item)
         {
             return playerManager.AddItemAsync(AssertGetSessionToken(), userId, item);
         }
 
         [HttpGet("{userId}/unequip/{item}")]
-        [MethodDescriptor(
-            Name = "UnEquip item",
-            Description = "UnEquips an item from the target player.",
-            RequiresSession = true)
-        ]
+        //[MethodDescriptor(
+        //    Name = "UnEquip item",
+        //    Description = "UnEquips an item from the target player.",
+        //    RequiresSession = true)
+        //]
         public Task<bool> UnEquipItemAsync(string userId, Guid item)
         {
             return playerManager.UnEquipItemAsync(AssertGetSessionToken(), userId, item);
         }
 
         [HttpGet("{userId}/equip/{item}")]
-        [MethodDescriptor(
-            Name = "Equip item",
-            Description = "Equips an item from the target player.",
-            RequiresSession = true)
-        ]
+        //[MethodDescriptor(
+        //    Name = "Equip item",
+        //    Description = "Equips an item from the target player.",
+        //    RequiresSession = true)
+        //]
         public Task<bool> EquipItemAsync(string userId, Guid item)
         {
             return playerManager.EquipItemAsync(AssertGetSessionToken(), userId, item);
         }
 
-        [HttpPost("appearance")]
-        [MethodDescriptor(
-            Name = "Update player appearance as Twitch User",
-            Description = "Update the target player with a new appearance. This requires you to be authenticated with Twitch to update.")
-        ]
-        public async Task<bool> UpdateAppearanceForTwitchUserAsync(Many<int> appearance)
-        {
-            var twitchUserSession = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
-            if (twitchUserSession == null)
-            {
-                return false;
-            }
+        //[HttpPost("appearance")]
+        //[MethodDescriptor(
+        //    Name = "Update player appearance as Twitch User",
+        //    Description = "Update the target player with a new appearance. This requires you to be authenticated with Twitch to update.")
+        //]
+        //public async Task<bool> UpdateAppearanceForTwitchUserAsync(Many<int> appearance)
+        //{
+        //    var twitchUserSession = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
+        //    if (twitchUserSession == null)
+        //    {
+        //        return false;
+        //    }
 
-            return await playerManager.UpdateAppearanceAsync(twitchUserSession.Id, appearance.Values);
-        }
+        //    return await playerManager.UpdateAppearanceAsync(twitchUserSession.Id, appearance.Values);
+        //}
+
+        //[HttpPost("{userId}/appearance")]
+        //[MethodDescriptor(
+        //    Name = "Update player appearance",
+        //    Description = "Update the target player with a new appearance. This requires a session token to update a target player.",
+        //    RequiresSession = true)
+        //]
+        //public Task<bool> UpdateAppearanceAsync(string userId, Many<int> appearance)
+        //{
+        //    var assertGetSessionToken = AssertGetSessionToken();
+        //    return playerManager.UpdateAppearanceAsync(assertGetSessionToken, userId, appearance.Values);
+        //}
 
         [HttpPost("{userId}/appearance")]
-        [MethodDescriptor(
-            Name = "Update player appearance",
-            Description = "Update the target player with a new appearance. This requires a session token to update a target player.",
-            RequiresSession = true)
-        ]
-        public Task<bool> UpdateAppearanceAsync(string userId, Many<int> appearance)
-        {
-            var assertGetSessionToken = AssertGetSessionToken();
-            return playerManager.UpdateAppearanceAsync(assertGetSessionToken, userId, appearance.Values);
-        }
-
-        [HttpPost("{userId}/synty-appearance")]
-        [MethodDescriptor(
-            Name = "(NEW) Update player appearance",
-            Description = "Update the target player with a new appearance. This requires a session token to update a target player.",
-            RequiresSession = true)]
+        //[MethodDescriptor(
+        //    Name = "Update player appearance",
+        //    Description = "Update the target player with a new appearance. This requires a session token to update a target player.",
+        //    RequiresSession = true)]
         public Task<bool> UpdateSyntyAppearanceAsync(string userId, SyntyAppearance appearance)
         {
             return playerManager.UpdateSyntyAppearanceAsync(AssertGetSessionToken(), userId, appearance);
@@ -236,55 +236,55 @@ namespace RavenNest.Controllers
 
 
         [HttpPost("{userId}/experience")]
-        [MethodDescriptor(
-            Name = "Update player experience",
-            Description = "Update the target player with their current experience state.",
-            RequiresSession = true)
-        ]
+        //[MethodDescriptor(
+        //    Name = "Update player experience",
+        //    Description = "Update the target player with their current experience state.",
+        //    RequiresSession = true)
+        //]
         public Task<bool> UpdateExperienceAsync(string userId, Many<decimal> experience)
         {
             return playerManager.UpdateExperienceAsync(AssertGetSessionToken(), userId, experience.Values);
         }
 
         [HttpPost("{userId}/statistics")]
-        [MethodDescriptor(
-            Name = "Update player statistics",
-            Description = "Update the target player with their current statistics state, such as how many enemies killed, how many times they have died, etc.",
-            RequiresSession = true)
-        ]
+        //[MethodDescriptor(
+        //    Name = "Update player statistics",
+        //    Description = "Update the target player with their current statistics state, such as how many enemies killed, how many times they have died, etc.",
+        //    RequiresSession = true)
+        //]
         public Task<bool> UpdateStatisticsAsync(string userId, Many<decimal> statistics)
         {
             return playerManager.UpdateStatisticsAsync(AssertGetSessionToken(), userId, statistics.Values);
         }
 
         [HttpPost("{userId}/resources")]
-        [MethodDescriptor(
-            Name = "Update player resources",
-            Description = "Update the target player with their current resource state, such as coins, wood, ores, fish, wheat, etc.",
-            RequiresSession = true)
-        ]
+        //[MethodDescriptor(
+        //    Name = "Update player resources",
+        //    Description = "Update the target player with their current resource state, such as coins, wood, ores, fish, wheat, etc.",
+        //    RequiresSession = true)
+        //]
         public Task<bool> UpdateResourcesAsync(string userId, Many<decimal> resources)
         {
             return playerManager.UpdateResourcesAsync(AssertGetSessionToken(), userId, resources.Values);
         }
 
         [HttpGet("{userId}/gift/{receiverUserId}/{itemId}")]
-        [MethodDescriptor(
-            Name = "Gift an item to another player",
-            Description = "Gift an item from one player to another, this will remove the item from the giver and add it to the receivers inventory. Gifted item will be equipped automatically if it is better than what is already equipped.",
-            RequiresSession = true)
-        ]
+        //[MethodDescriptor(
+        //    Name = "Gift an item to another player",
+        //    Description = "Gift an item from one player to another, this will remove the item from the giver and add it to the receivers inventory. Gifted item will be equipped automatically if it is better than what is already equipped.",
+        //    RequiresSession = true)
+        //]
         public Task<bool> GiftItem(string userId, string receiverUserId, Guid itemId)
         {
             return playerManager.GiftItemAsync(AssertGetSessionToken(), userId, receiverUserId, itemId);
         }
 
         [HttpPost("update")]
-        [MethodDescriptor(
-            Name = "Bulk player update",
-            Description = "Update many players at the same time. This is used to save all currently playing players in one request.",
-            RequiresSession = true)
-        ]
+        //[MethodDescriptor(
+        //    Name = "Bulk player update",
+        //    Description = "Update many players at the same time. This is used to save all currently playing players in one request.",
+        //    RequiresSession = true)
+        //]
         public Task<bool[]> UpdateMany(Many<PlayerState> states)
         {
             return playerManager.UpdateManyAsync(AssertGetSessionToken(), states.Values);

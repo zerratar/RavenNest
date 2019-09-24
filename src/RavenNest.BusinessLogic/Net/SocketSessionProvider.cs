@@ -14,6 +14,7 @@ namespace RavenNest.BusinessLogic.Net
     public class WebSocketConnectionProvider : IWebSocketConnectionProvider
     {
         private readonly ILogger logger;
+        private readonly IGameManager gameManager;
         private readonly IGamePacketManager packetManager;
         private readonly IGamePacketSerializer packetSerializer;
         private readonly ISessionManager sessionManager;
@@ -22,11 +23,13 @@ namespace RavenNest.BusinessLogic.Net
 
         public WebSocketConnectionProvider(
             ILogger logger,
+            IGameManager gameManager,
             IGamePacketManager packetManager,
             IGamePacketSerializer packetSerializer,
             ISessionManager sessionManager)
         {
             this.logger = logger;
+            this.gameManager = gameManager;
             this.packetManager = packetManager;
             this.packetSerializer = packetSerializer;
             this.sessionManager = sessionManager;
@@ -45,7 +48,14 @@ namespace RavenNest.BusinessLogic.Net
                 return null;
             }
 
-            var session = new WebSocketConnection(logger, packetManager, packetSerializer, this, ws, sessionToken);
+            var session = new WebSocketConnection(
+                logger,
+                gameManager,
+                packetManager,
+                packetSerializer,
+                this,
+                ws,
+                sessionToken);
             socketSessions[sessionToken.SessionId] = session.Start();
             return socketSessions[sessionToken.SessionId];
         }
@@ -82,6 +92,7 @@ namespace RavenNest.BusinessLogic.Net
         private class WebSocketConnection : IWebSocketConnection
         {
             private readonly ILogger logger;
+            private readonly IGameManager gameManager;
             private readonly IGamePacketManager packetManager;
             private readonly IGamePacketSerializer packetSerializer;
             private readonly WebSocketConnectionProvider sessionProvider;
@@ -90,23 +101,30 @@ namespace RavenNest.BusinessLogic.Net
             private readonly TaskCompletionSource<object> killTask;
             private readonly SessionToken sessionToken;
 
-            private readonly Thread updateThread;
+            private readonly Thread receiveLoop;
+            private readonly Thread gameLoop;
+
             private PartialGamePacket unfinishedPacket;
             private bool disposed;
 
             private readonly ConcurrentDictionary<Guid, TaskCompletionSource<object>> messageLookup
                 = new ConcurrentDictionary<Guid, TaskCompletionSource<object>>();
 
+            private int gameRevision = 0;
+
             public WebSocketConnection(
                 ILogger logger,
+                IGameManager gameManager,
                 IGamePacketManager packetManager,
                 IGamePacketSerializer packetSerializer,
                 WebSocketConnectionProvider sessionProvider,
                 WebSocket ws,
                 SessionToken sessionToken)
             {
-                this.updateThread = new Thread(UpdateLoop);
+                this.receiveLoop = new Thread(ReceiveLoop);
+                this.gameLoop = new Thread(GameUpdateLoop);
                 this.logger = logger;
+                this.gameManager = gameManager;
                 this.packetManager = packetManager;
                 this.packetSerializer = packetSerializer;
                 this.sessionProvider = sessionProvider;
@@ -121,7 +139,8 @@ namespace RavenNest.BusinessLogic.Net
 
             internal IWebSocketConnection Start()
             {
-                this.updateThread.Start();
+                this.receiveLoop.Start();
+                this.gameLoop.Start();
                 return this;
             }
 
@@ -143,6 +162,23 @@ namespace RavenNest.BusinessLogic.Net
                     this.logger.WriteError(exc.ToString());
                 }
                 return default;
+            }
+            public async Task<bool> PushAsync(string id, object request, CancellationToken cancellationToken)
+            {
+                var packet = CreatePacket(id, request);
+                try
+                {
+                    var bytes = packetSerializer.Serialize(packet);
+                    var data = new ArraySegment<byte>(bytes);
+                    await ws.SendAsync(data, WebSocketMessageType.Binary, true, cancellationToken);
+                    return true;
+                }
+                catch (Exception exc)
+                {
+                    this.logger.WriteError(exc.ToString());
+                }
+
+                return false;
             }
 
             public Task ReplyAsync(Guid correlationId, string id, object request, CancellationToken cancellationToken)
@@ -171,11 +207,39 @@ namespace RavenNest.BusinessLogic.Net
                 this.killTask.TrySetResult(null);
                 this.sessionProvider.Disconnected(this);
                 this.disposed = true;
-                this.updateThread.Join();
+                this.receiveLoop.Join();
+                this.gameLoop.Join();
                 this.ws.Dispose();
             }
 
-            private async void UpdateLoop()
+            private async void GameUpdateLoop()
+            {
+                using (var cts = new CancellationTokenSource())
+                {
+                    while (!this.disposed)
+                    {
+                        if (this.disposed)
+                        {
+                            cts.Cancel();
+                            return;
+                        }
+
+                        var events = await gameManager.GetGameEventsAsync(sessionToken);
+                        if (events.Count > 0)
+                        {
+                            var eventList = new EventList();
+                            eventList.Revision = events.Revision;
+                            eventList.Events = events.ToList();
+
+                            if (await this.PushAsync("game_event", eventList, cts.Token))
+                            {
+                                this.gameRevision = events.Revision;
+                            }
+                        }
+                    }
+                }
+            }
+            private async void ReceiveLoop()
             {
                 using (var cts = new CancellationTokenSource())
                 {

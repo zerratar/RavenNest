@@ -22,7 +22,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         public async Task<EventCollection> GetGameEventsAsync(
-            SessionToken session, int revision)
+            SessionToken session)
         {
             using (var db = dbProvider.Get())
             {
@@ -34,7 +34,7 @@ namespace RavenNest.BusinessLogic.Game
 
                 var events = await db.GameEvent.Where(x =>
                     x.GameSessionId == session.SessionId &&
-                    x.Revision > revision).ToListAsync();
+                    x.Revision > gameSession.Revision).ToListAsync();
 
                 var eventCollection = new EventCollection();
 
@@ -44,6 +44,14 @@ namespace RavenNest.BusinessLogic.Game
                     if (eventCollection.Revision < gameEvent.Revision)
                         eventCollection.Revision = gameEvent.Revision;
                     eventCollection.Add(gameEvent);
+                }
+
+                var oldRev = gameSession.Revision;
+                if (eventCollection.Revision > gameSession.Revision)
+                {
+                    gameSession.Revision = eventCollection.Revision;
+                    db.Update(gameSession);
+                    await db.SaveChangesAsync();
                 }
 
                 return eventCollection;

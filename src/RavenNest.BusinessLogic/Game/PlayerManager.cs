@@ -12,7 +12,6 @@ using RavenNest.Models;
 
 using Appearance = RavenNest.DataModels.Appearance;
 using Gender = RavenNest.DataModels.Gender;
-using HairColor = RavenNest.Models.HairColor;
 using InventoryItem = RavenNest.DataModels.InventoryItem;
 using Item = RavenNest.DataModels.Item;
 using ItemCategory = RavenNest.DataModels.ItemCategory;
@@ -293,11 +292,11 @@ namespace RavenNest.BusinessLogic.Game
             return UpdateExperienceAsync(token, userId, experience, dbProvider.Get(), true);
         }
 
-        public Task<bool> UpdateAppearanceAsync(
-            SessionToken token, string userId, int[] appearance)
-        {
-            return UpdateAppearanceAsync(token, userId, appearance, dbProvider.Get(), true);
-        }
+        //public Task<bool> UpdateAppearanceAsync(
+        //    SessionToken token, string userId, int[] appearance)
+        //{
+        //    return UpdateAppearanceAsync(token, userId, appearance, dbProvider.Get(), true);
+        //}
 
         public async Task<bool> UpdateSyntyAppearanceAsync(
             SessionToken token, string userId, Models.SyntyAppearance appearance)
@@ -767,62 +766,62 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        public async Task<bool> UpdateAppearanceAsync(string userId, int[] appearance)
-        {
-            try
-            {
-                using (var db = dbProvider.Get())
-                {
-                    var user = await db.User.FirstOrDefaultAsync(x => x.UserId == userId);
-                    if (user == null) return false;
+        //public async Task<bool> UpdateAppearanceAsync(string userId, int[] appearance)
+        //{
+        //    try
+        //    {
+        //        using (var db = dbProvider.Get())
+        //        {
+        //            var user = await db.User.FirstOrDefaultAsync(x => x.UserId == userId);
+        //            if (user == null) return false;
 
-                    var character = await db.Character
-                        .Include(x => x.Appearance)
-                        .Include(x => x.SyntyAppearance)
-                        .FirstOrDefaultAsync(x => !x.Local && x.UserId == user.Id);
+        //            var character = await db.Character
+        //                .Include(x => x.Appearance)
+        //                .Include(x => x.SyntyAppearance)
+        //                .FirstOrDefaultAsync(x => !x.Local && x.UserId == user.Id);
 
-                    if (character == null) return false;
+        //            if (character == null) return false;
 
-                    UpdateCharacterAppearance(appearance, db, character);
+        //            UpdateCharacterAppearance(appearance, db, character);
 
-                    var sessionOwnerUserId = character.UserIdLock;
-                    var gameSession = await db.GameSession
-                        .Where(x => x.UserId == sessionOwnerUserId && x.Status == (int)SessionStatus.Active)
-                        .OrderByDescending(x => x.Started)
-                        .FirstOrDefaultAsync();
+        //            var sessionOwnerUserId = character.UserIdLock;
+        //            var gameSession = await db.GameSession
+        //                .Where(x => x.UserId == sessionOwnerUserId && x.Status == (int)SessionStatus.Active)
+        //                .OrderByDescending(x => x.Started)
+        //                .FirstOrDefaultAsync();
 
-                    if (gameSession != null)
-                    {
-                        var lastEvent = await db.GameEvent
-                            .Where(x => x.GameSessionId == gameSession.Id)
-                            .OrderByDescending(x => x.Revision)
-                            .FirstOrDefaultAsync();
+        //            if (gameSession != null)
+        //            {
+        //                var lastEvent = await db.GameEvent
+        //                    .Where(x => x.GameSessionId == gameSession.Id)
+        //                    .OrderByDescending(x => x.Revision)
+        //                    .FirstOrDefaultAsync();
 
-                        var gameEvent = new DataModels.GameEvent
-                        {
-                            Id = Guid.NewGuid(),
-                            GameSessionId = gameSession.Id,
-                            Revision = (lastEvent?.Revision).GetValueOrDefault() + 1,
-                            Type = (int)GameEventType.PlayerAppearance,
-                            Data = JSON.Stringify(new AppearanceUpdate
-                            {
-                                UserId = userId,
-                                Values = ToAppearanceData(character.Appearance)
-                            })
-                        };
+        //                var gameEvent = new DataModels.GameEvent
+        //                {
+        //                    Id = Guid.NewGuid(),
+        //                    GameSessionId = gameSession.Id,
+        //                    Revision = (lastEvent?.Revision).GetValueOrDefault() + 1,
+        //                    Type = (int)GameEventType.PlayerAppearance,
+        //                    Data = JSON.Stringify(new AppearanceUpdate
+        //                    {
+        //                        UserId = userId,
+        //                        Values = ToAppearanceData(character.Appearance)
+        //                    })
+        //                };
 
-                        await db.GameEvent.AddAsync(gameEvent);
-                    }
+        //                await db.GameEvent.AddAsync(gameEvent);
+        //            }
 
-                    await db.SaveChangesAsync();
-                    return true;
-                }
-            }
-            catch
-            {
-                return false;
-            }
-        }
+        //            await db.SaveChangesAsync();
+        //            return true;
+        //        }
+        //    }
+        //    catch
+        //    {
+        //        return false;
+        //    }
+        //}
 
         public int[] ToAppearanceData(Appearance appearance)
         {
@@ -855,58 +854,58 @@ namespace RavenNest.BusinessLogic.Game
             return character.Map(user);
         }
 
-        private async Task<bool> UpdateAppearanceAsync(
-            SessionToken token, string userId, int[] appearance, RavenfallDbContext db, bool save)
-        {
-            try
-            {
-                var character = await GetCharacterAsync(db, token, userId);
-                if (character == null) return false;
+        //private async Task<bool> UpdateAppearanceAsync(
+        //    SessionToken token, string userId, int[] appearance, RavenfallDbContext db, bool save)
+        //{
+        //    try
+        //    {
+        //        var character = await GetCharacterAsync(db, token, userId);
+        //        if (character == null) return false;
 
-                UpdateCharacterAppearance(appearance, db, character);
-                if (save) await db.SaveChangesAsync();
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
+        //        UpdateCharacterAppearance(appearance, db, character);
+        //        if (save) await db.SaveChangesAsync();
+        //        return true;
+        //    }
+        //    catch
+        //    {
+        //        return false;
+        //    }
+        //}
 
         private static void UpdateCharacterAppearance(
             Models.SyntyAppearance appearance, RavenfallDbContext db, Character character)
         {
-            DataMapper.RefMap(appearance, character.Appearance, nameof(appearance.Id));
-            db.Update(character.Appearance);
+            DataMapper.RefMap(appearance, character.SyntyAppearance, nameof(appearance.Id));
+            db.Update(character.SyntyAppearance);
         }
 
-        private static void UpdateCharacterAppearance(
-            int[] appearance, RavenfallDbContext db, Character character)
-        {
-            var appearanceIndex = 0;
-            int Next(int max) => Math.Max(0, Math.Min(max, appearance[appearanceIndex++]));
-            int TryNext(int max, int def = 0) => appearanceIndex + 1 < appearance.Length ? Math.Max(0, Math.Min(max, appearance[appearanceIndex++])) : def;
+        //private static void UpdateCharacterAppearance(
+        //    int[] appearance, RavenfallDbContext db, Character character)
+        //{
+        //    var appearanceIndex = 0;
+        //    int Next(int max) => Math.Max(0, Math.Min(max, appearance[appearanceIndex++]));
+        //    int TryNext(int max, int def = 0) => appearanceIndex + 1 < appearance.Length ? Math.Max(0, Math.Min(max, appearance[appearanceIndex++])) : def;
 
-            var hairColors = Enum.GetValues(typeof(HairColor)).Length - 1;
+        //    var hairColors = Enum.GetValues(typeof(HairColor)).Length - 1;
 
-            character.Appearance.Gender = (Gender)Next(1);
-            if (character.Appearance.Gender == Gender.Male)
-                character.Appearance.MaleHairModelNumber = Next(11);
-            else
-                character.Appearance.FemaleHairModelNumber = Next(20);
+        //    character.Appearance.Gender = (Gender)Next(1);
+        //    if (character.Appearance.Gender == Gender.Male)
+        //        character.Appearance.MaleHairModelNumber = Next(11);
+        //    else
+        //        character.Appearance.FemaleHairModelNumber = Next(20);
 
-            character.Appearance.HairColor = (DataModels.HairColor)Next(hairColors);
-            character.Appearance.EyesModelNumber = Next(7);
-            character.Appearance.SkinColor = (DataModels.SkinColor)Next(2);
-            character.Appearance.BeardModelNumber = Next(10);
-            character.Appearance.BeardColor = (DataModels.HairColor)Next(hairColors);
-            character.Appearance.BrowsModelNumber = Next(15);
-            character.Appearance.BrowColor = (DataModels.HairColor)Next(hairColors);
-            character.Appearance.MouthModelNumber = Next(11);
-            character.Appearance.HelmetVisible = TryNext(1, 1) == 1;
+        //    character.Appearance.HairColor = (DataModels.HairColor)Next(hairColors);
+        //    character.Appearance.EyesModelNumber = Next(7);
+        //    character.Appearance.SkinColor = (DataModels.SkinColor)Next(2);
+        //    character.Appearance.BeardModelNumber = Next(10);
+        //    character.Appearance.BeardColor = (DataModels.HairColor)Next(hairColors);
+        //    character.Appearance.BrowsModelNumber = Next(15);
+        //    character.Appearance.BrowColor = (DataModels.HairColor)Next(hairColors);
+        //    character.Appearance.MouthModelNumber = Next(11);
+        //    character.Appearance.HelmetVisible = TryNext(1, 1) == 1;
 
-            db.Update(character.Appearance);
-        }
+        //    db.Update(character.Appearance);
+        //}
 
         private async Task<bool> UpdateExperienceAsync(
             SessionToken token,

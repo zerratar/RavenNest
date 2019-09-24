@@ -4,6 +4,12 @@ using System.Linq;
 
 namespace RavenNest.Models
 {
+    public class EventList
+    {
+        public List<GameEvent> Events { get; set; }
+        public int Revision { get; set; }
+    }
+
     public class EventCollection : IList<GameEvent>
     {
         private readonly List<GameEvent> events;

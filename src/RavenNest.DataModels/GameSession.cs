@@ -17,6 +17,7 @@ namespace RavenNest.DataModels
         public int Status { get; set; }
         public bool Local { get; set; }
         public User User { get; set; }
+        public long? Revision { get; set; }
         //public ICollection<CharacterSession> CharacterSession { get; set; }
         public ICollection<GameEvent> GameEvents { get; set; }
     }

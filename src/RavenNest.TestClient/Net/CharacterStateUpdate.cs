@@ -1,4 +1,4 @@
-﻿namespace RavenNest.BusinessLogic.Net
+﻿namespace RavenNest.TestClient
 {
     public class CharacterStateUpdate
     {
@@ -23,15 +23,14 @@
             TaskArgument = taskArgument;
             Position = position;
         }
-
-        public string UserId { get; set; }
-        public int Health { get; set; }
-        public string Island { get; set; }
-        public string DuelOpponent { get; set; }
-        public bool InRaid { get; set; }
-        public bool InArena { get; set; }
-        public string Task { get; set; }
-        public string TaskArgument { get; set; }
-        public Vector3 Position { get; set; }
+        public string UserId { get; }
+        public int Health { get; }
+        public string Island { get; }
+        public string DuelOpponent { get; }
+        public bool InRaid { get; }
+        public bool InArena { get; }
+        public string Task { get; }
+        public string TaskArgument { get; }
+        public Vector3 Position { get; }
     }
 }

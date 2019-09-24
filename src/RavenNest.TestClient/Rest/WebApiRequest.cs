@@ -1,137 +1,15 @@
 ﻿using Newtonsoft.Json;
 using RavenNest.Models;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using RavenNest.BusinessLogic.Net;
 
 namespace RavenNest.TestClient.Rest
 {
-
-    public interface IApiRequest
-    {
-        Task<TResult> SendAsync<TResult, TModel>(ApiRequestTarget target, ApiRequestType type, TModel model);
-        Task<TResult> SendAsync<TResult>(ApiRequestTarget target, ApiRequestType type);
-        Task SendAsync(ApiRequestTarget target, ApiRequestType type);
-    }
-
-    public enum ApiRequestType
-    {
-        Get,
-        Post,
-        Update,
-        Remove,
-    }
-
-    public enum ApiRequestTarget
-    {
-        Game,
-        Items,
-        Players,
-        Auth,
-        Marketplace
-    }
-    public interface IAuthEndpoint
-    {
-        Task<AuthToken> AuthenticateAsync(string username, string password);
-    }
-
-
-    public interface IApiRequestBuilder
-    {
-        IApiRequestBuilder Identifier(string value);
-        IApiRequestBuilder AddParameter(string value);
-        IApiRequestBuilder AddParameter(string key, object value);
-        IApiRequestBuilder Method(string item);
-        IApiRequest Build();
-    }
-    public interface IApiRequestBuilderProvider
-    {
-        IApiRequestBuilder Create();
-    }
-
-    public class WebApiRequestBuilderProvider : IApiRequestBuilderProvider
-    {
-        private readonly IAppSettings settings;
-        private readonly ITokenProvider tokenProvider;
-
-        public WebApiRequestBuilderProvider(
-            IAppSettings settings,
-            ITokenProvider tokenProvider)
-        {
-            this.settings = settings;
-            this.tokenProvider = tokenProvider;
-        }
-
-        public IApiRequestBuilder Create()
-        {
-            return new WebApiRequestBuilder(settings,
-                tokenProvider.GetAuthToken(),
-                tokenProvider.GetSessionToken());
-        }
-    }
-
-    public class WebApiRequestBuilder : IApiRequestBuilder
-    {
-        private readonly CookieContainer sharedCookieContainer = new CookieContainer();
-        private readonly List<IRequestParameter> parameters = new List<IRequestParameter>();
-        private readonly IAppSettings appSettings;
-
-        private readonly SessionToken sessionToken;
-        private readonly AuthToken authToken;
-
-        private string identifier;
-        private string method;
-
-        public WebApiRequestBuilder(IAppSettings appSettings, AuthToken authToken, SessionToken sessionToken)
-        {
-            this.appSettings = appSettings;
-            this.authToken = authToken;
-            this.sessionToken = sessionToken;
-        }
-
-        public IApiRequestBuilder Identifier(string value)
-        {
-            this.identifier = value;
-            return this;
-        }
-
-        public IApiRequestBuilder AddParameter(string value)
-        {
-            parameters.Add(new WebApiRequestParameter(null, value));
-            return this;
-        }
-
-        public IApiRequestBuilder AddParameter(string key, object value)
-        {
-            parameters.Add(new WebApiRequestParameter(key, JsonConvert.SerializeObject(value)));
-            return this;
-        }
-
-        public IApiRequestBuilder Method(string item)
-        {
-            this.method = item;
-            return this;
-        }
-
-        public IApiRequest Build()
-        {
-            return new WebApiRequest(
-                sharedCookieContainer,
-                authToken,
-                sessionToken,
-                appSettings,
-                identifier,
-                method,
-                parameters.ToArray());
-        }
-    }
-
     internal class WebApiRequest : IApiRequest
     {
         private readonly IAppSettings settings;
@@ -277,44 +155,5 @@ namespace RavenNest.TestClient.Rest
             return url;
         }
 
-    }
-
-    public class WebApiRequestParameter : IRequestParameter
-    {
-        public string Key { get; }
-        public string Value { get; }
-
-        public WebApiRequestParameter(string key, string value)
-        {
-            Value = value;
-            Key = key;
-        }
-    }
-
-    public interface IRequestParameter
-    {
-        string Key { get; }
-        string Value { get; }
-    }
-
-    internal class WebBasedAuthEndpoint : IAuthEndpoint
-    {
-        private readonly ILogger logger;
-        private readonly IApiRequestBuilderProvider request;
-
-        public WebBasedAuthEndpoint(ILogger logger, IApiRequestBuilderProvider request)
-        {
-            this.logger = logger;
-            this.request = request;
-        }
-
-        public Task<AuthToken> AuthenticateAsync(string username, string password)
-        {
-            return request.Create()
-                .AddParameter("Username", username)
-                .AddParameter("Password", password)
-                .Build()
-                .SendAsync<AuthToken>(ApiRequestTarget.Auth, ApiRequestType.Post);
-        }
     }
 }

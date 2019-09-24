@@ -20,8 +20,8 @@ namespace RavenNest.BusinessLogic.Game
         Task<bool> KickPlayerAsync(SessionToken token, string userId);
 
         Task<bool> UpdateStatisticsAsync(SessionToken token, string userId, decimal[] statistics);
-        Task<bool> UpdateAppearanceAsync(SessionToken token, string userId, int[] appearance);
-        Task<bool> UpdateAppearanceAsync(string userId, int[] appearance);
+        //Task<bool> UpdateAppearanceAsync(SessionToken token, string userId, int[] appearance);
+        //Task<bool> UpdateAppearanceAsync(string userId, int[] appearance);
 
         Task<bool> UpdateSyntyAppearanceAsync(SessionToken token, string userId, Models.SyntyAppearance appearance);
 

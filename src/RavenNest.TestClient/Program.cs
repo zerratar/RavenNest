@@ -61,11 +61,11 @@ namespace RavenNest.TestClient
     {
         static void Main(string[] args)
         {
-            TestSerializer(new MsgPackSerializer());
+            //TestSerializer(new MsgPackSerializer());
             TestSerializer(new BinarySerializer());
             TestSerializer(new JsonSerializer());
             TestSerializer(new CompressedJsonSerializer());
-            
+
             while (true)
             {
                 var consoleKeyInfo = System.Console.ReadKey().Key;
@@ -182,8 +182,8 @@ namespace RavenNest.TestClient
 
     public class LocalRavenNestStreamSettings : IAppSettings
     {
-        public string ApiEndpoint => "http://localhost:51124/api/";
-        public string WebSocketEndpoint => "ws://localhost:51124/api/stream";
+        public string ApiEndpoint => "https://localhost:5001/api/";
+        public string WebSocketEndpoint => "wss://localhost:5001/api/stream";
     }
 
     public class ActualProgram
@@ -236,15 +236,16 @@ namespace RavenNest.TestClient
 
             while (true)
             {
-                logger.WriteLine("RunTestLoop");
-
-                await this.stream.Update();
-
-                await this.stream.SavePlayerAsync(new PlayerController
+                if (await this.stream.UpdateAsync())
                 {
-                });
-
-
+                    Console.WriteLine("Saving player state.");
+                    var result = await this.stream.SavePlayerAsync(new PlayerController());
+                    Console.WriteLine("Server Responded with: " + result);
+                }
+                else
+                {
+                    Console.WriteLine("Trying to reconnect to the server...");
+                }
             }
         }
     }

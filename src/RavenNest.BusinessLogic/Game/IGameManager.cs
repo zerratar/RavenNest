@@ -6,6 +6,6 @@ namespace RavenNest.BusinessLogic.Game
     public interface IGameManager
     {
         Task<GameInfo> GetGameInfoAsync(SessionToken session);
-        Task<EventCollection> GetGameEventsAsync(SessionToken session, int revision);
+        Task<EventCollection> GetGameEventsAsync(SessionToken session);
     }
 }

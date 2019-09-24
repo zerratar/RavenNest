@@ -175,8 +175,15 @@ namespace RavenNest.BusinessLogic.Serializers
                 bw.Write(dictionary.Count);
                 foreach (var key in dictionary.Keys)
                 {
-                    Serialize(bw, key);
-                    Serialize(bw, dictionary[key]);
+                    if (!Serialize(bw, key))
+                    {
+                        SerializeComplex(bw, key, key.GetType());
+                    }
+                    var val = dictionary[key];
+                    if (!Serialize(bw, val))
+                    {
+                        SerializeComplex(bw, val, val.GetType());
+                    }
                 }
                 return true;
             }
@@ -187,7 +194,10 @@ namespace RavenNest.BusinessLogic.Serializers
                 bw.Write(items.Count);
                 foreach (var item in items)
                 {
-                    Serialize(bw, item);
+                    if (!Serialize(bw, item))
+                    {
+                        SerializeComplex(bw, item, item.GetType());
+                    }
                 }
 
                 return true;

@@ -12,7 +12,7 @@ namespace RavenNest.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [ApiDescriptor(Name = "Game API", Description = "Used for handling game sessions and polling game events.")]
+    //[ApiDescriptor(Name = "Game API", Description = "Used for handling game sessions and polling game events.")]
     public class GameController : ControllerBase
     {
         private readonly IAuthManager authManager;
@@ -33,13 +33,13 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet]
-        [MethodDescriptor(
-            Name = "Get info about current game session",
-            Description = "This will return information about the ongoing game session such as uptime, peak player count and more.",
-            RequiresSession = true,
-            RequiresAuth = false,
-            RequiresAdmin = false)
-        ]
+        //[MethodDescriptor(
+        //    Name = "Get info about current game session",
+        //    Description = "This will return information about the ongoing game session such as uptime, peak player count and more.",
+        //    RequiresSession = true,
+        //    RequiresAuth = false,
+        //    RequiresAdmin = false)
+        //]
         public Task<GameInfo> GetAsync()
         {
             var session = GetSessionToken();
@@ -48,13 +48,13 @@ namespace RavenNest.Controllers
         }
 
         [HttpPost("{clientVersion}/{accessKey}")]
-        [MethodDescriptor(
-            Name = "Start a game session",
-            Description = "Start a new or continue on an existing non-stopped game session. This will also return a refreshed session token, required for updating any player, marketplace or game info.",
-            RequiresSession = true,
-            RequiresAuth = false,
-            RequiresAdmin = false)
-        ]
+        //[MethodDescriptor(
+        //    Name = "Start a game session",
+        //    Description = "Start a new or continue on an existing non-stopped game session. This will also return a refreshed session token, required for updating any player, marketplace or game info.",
+        //    RequiresSession = true,
+        //    RequiresAuth = false,
+        //    RequiresAdmin = false)
+        //]
         public Task<SessionToken> BeginSessionAsync(string clientVersion, string accessKey, Single<bool> local)
         {
             var authToken = GetAuthToken();
@@ -63,13 +63,13 @@ namespace RavenNest.Controllers
         }
 
         [HttpDelete("raid/{username}")]
-        [MethodDescriptor(
-            Name = "Raid another streamer",
-            Description = "When you're done with your stream, don't forget to raid someone! This will end your current game session and bring all your current playing players into the target Twitch user's stream playing Ravenfall.",
-            RequiresSession = true,
-            RequiresAuth = false,
-            RequiresAdmin = false)
-        ]
+        //[MethodDescriptor(
+        //    Name = "Raid another streamer",
+        //    Description = "When you're done with your stream, don't forget to raid someone! This will end your current game session and bring all your current playing players into the target Twitch user's stream playing Ravenfall.",
+        //    RequiresSession = true,
+        //    RequiresAuth = false,
+        //    RequiresAdmin = false)
+        //]
         public Task<bool> EndSessionAndRaidAsync(string username, Single<bool> war)
         {
             var session = GetSessionToken();
@@ -78,13 +78,13 @@ namespace RavenNest.Controllers
         }
 
         [HttpDelete]
-        [MethodDescriptor(
-            Name = "End the session",
-            Description = "This will end your current game session. This should be called whenever the game stops.",
-            RequiresSession = true,
-            RequiresAuth = false,
-            RequiresAdmin = false)
-        ]
+        //[MethodDescriptor(
+        //    Name = "End the session",
+        //    Description = "This will end your current game session. This should be called whenever the game stops.",
+        //    RequiresSession = true,
+        //    RequiresAuth = false,
+        //    RequiresAdmin = false)
+        //]
         public Task EndSessionAsync()
         {
             var session = GetSessionToken();
@@ -92,39 +92,39 @@ namespace RavenNest.Controllers
             return this.sessionManager.EndSessionAsync(session);
         }
 
-        [HttpGet("events/{revision}")]
-        [MethodDescriptor(
-            Name = "Poll game events",
-            Description = "Poll the latest game events after a specific revision. This will hold your request up to 20 seconds or until a new game event has been added.",
-            RequiresSession = true,
-            RequiresAuth = false,
-            RequiresAdmin = false)
-        ]
-        public async Task<EventCollection> PollEventsAsync(int revision)
-        {
-            var totalWait = 0;
-            var sessionToken = GetSessionToken();
-            AssertSessionTokenValidity(sessionToken);
-            while (totalWait < 20_000)
-            {
-                try
-                {
-                    var events = await gameManager.GetGameEventsAsync(sessionToken, revision);
-                    if (events.Count > 0)
-                    {
-                        return events;
-                    }
+        //[HttpGet("events/{revision}")]
+        ////[MethodDescriptor(
+        ////    Name = "Poll game events",
+        ////    Description = "Poll the latest game events after a specific revision. This will hold your request up to 20 seconds or until a new game event has been added.",
+        ////    RequiresSession = true,
+        ////    RequiresAuth = false,
+        ////    RequiresAdmin = false)
+        ////]
+        //public async Task<EventCollection> PollEventsAsync(int revision)
+        //{
+        //    var totalWait = 0;
+        //    var sessionToken = GetSessionToken();
+        //    AssertSessionTokenValidity(sessionToken);
+        //    while (totalWait < 20_000)
+        //    {
+        //        try
+        //        {
+        //            var events = await gameManager.GetGameEventsAsync(sessionToken);
+        //            if (events.Count > 0)
+        //            {
+        //                return events;
+        //            }
 
-                    await Task.Delay(250);
-                    totalWait += 250;
-                }
-                catch
-                {
-                    return new EventCollection();
-                }
-            }
-            return new EventCollection();
-        }
+        //            await Task.Delay(250);
+        //            totalWait += 250;
+        //        }
+        //        catch
+        //        {
+        //            return new EventCollection();
+        //        }
+        //    }
+        //    return new EventCollection();
+        //}
 
         private SessionToken GetSessionToken()
         {
