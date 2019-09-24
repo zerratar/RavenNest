@@ -54,11 +54,11 @@ namespace RavenNest.TestClient
                 false,
                 null,
                 null,
-                new Vector3
+                new Position
                 {
-                    x = 0,
-                    y = 0,
-                    z = 0
+                    X = 0f,
+                    Y = 0f,
+                    Z = 0f
                 });
 
             if (lastSavedState.TryGetValue("test", out var lastUpdate))

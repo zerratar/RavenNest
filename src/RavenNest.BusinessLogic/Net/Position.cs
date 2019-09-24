@@ -1,4 +1,4 @@
-﻿namespace RavenNest.TestClient
+﻿namespace RavenNest.BusinessLogic.Net
 {
     public class Position
     {

@@ -11,7 +11,7 @@
             bool inArena,
             string task,
             string taskArgument,
-            Vector3 position)
+            Position position)
         {
             UserId = userId;
             Health = health;
@@ -31,6 +31,6 @@
         public bool InArena { get; }
         public string Task { get; }
         public string TaskArgument { get; }
-        public Vector3 Position { get; }
+        public Position Position { get; }
     }
 }

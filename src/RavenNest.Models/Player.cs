@@ -19,6 +19,8 @@ namespace RavenNest.Models
 
         public Skills Skills { get; set; }
 
+        public CharacterState State { get; set; }
+
         public IReadOnlyList<InventoryItem> InventoryItems { get; set; }
 
         public bool Local { get; set; }

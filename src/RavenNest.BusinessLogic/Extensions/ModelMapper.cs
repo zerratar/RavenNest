@@ -21,6 +21,12 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Models.CharacterState Map(DataModels.CharacterState data)
+        {
+            return DataMapper.Map<Models.CharacterState, DataModels.CharacterState>(data);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.Statistics Map(DataModels.Statistics data)
         {
             return DataMapper.Map<Models.Statistics, DataModels.Statistics>(data);
@@ -85,20 +91,7 @@ namespace RavenNest.BusinessLogic.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Player Map(this Character character, User user)
         {
-            return new Player
-            {
-                UserName = user.UserName,
-                UserId = user.UserId,
-                Name = character.Name,
-                Appearance = Map(character.SyntyAppearance),
-                Resources = Map(character.Resources),
-                Skills = Map(character.Skills),
-                InventoryItems = Map(character.InventoryItem),
-                Statistics = Map(character.Statistics),
-                Local = character.Local,
-                OriginUserId = character.OriginUserId,
-                Revision = character.Revision.GetValueOrDefault()
-            };
+            return user.Map(character);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -112,7 +105,9 @@ namespace RavenNest.BusinessLogic.Extensions
                 Appearance = Map(character.SyntyAppearance),
                 Resources = Map(character.Resources),
                 Skills = Map(character.Skills),
+                State = Map(character.State),
                 InventoryItems = Map(character.InventoryItem),
+                Statistics = Map(character.Statistics),
                 Local = character.Local,
                 OriginUserId = character.OriginUserId,
                 Revision = character.Revision.GetValueOrDefault()

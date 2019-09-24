@@ -2,6 +2,7 @@
 
 namespace RavenNest.Models
 {
+
     public class Skills
     {
         public Guid Id { get; set; }

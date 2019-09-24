@@ -418,6 +418,7 @@ namespace RavenNest.BusinessLogic.Serializers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool MatchReadName(string methodName, string typeName)
         {
+            if (typeName.Equals("float", StringComparison.OrdinalIgnoreCase) && methodName.Equals("ReadSingle")) return true;
             if (!methodName.StartsWith("Read", StringComparison.OrdinalIgnoreCase)) return false;
             return methodName.StartsWith("Read" + typeName, StringComparison.OrdinalIgnoreCase);
         }

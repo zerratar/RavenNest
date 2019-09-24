@@ -194,9 +194,9 @@ namespace RavenNest.BusinessLogic.Game
                         player.State.Island = update.Island;
                         player.State.Task = update.Task;
                         player.State.TaskArgument = update.TaskArgument;
-                        player.State.X = (decimal)update.Position.x;
-                        player.State.Y = (decimal)update.Position.y;
-                        player.State.Z = (decimal)update.Position.z;
+                        player.State.X = (decimal)update.Position.X;
+                        player.State.Y = (decimal)update.Position.Y;
+                        player.State.Z = (decimal)update.Position.Z;
                         db.Update(player.State);
                     }
 
@@ -207,9 +207,9 @@ namespace RavenNest.BusinessLogic.Game
             catch { return false; }
         }
 
-        private CharacterState CreateCharacterState(CharacterStateUpdate update)
+        private DataModels.CharacterState CreateCharacterState(CharacterStateUpdate update)
         {
-            var state = new CharacterState();
+            var state = new DataModels.CharacterState();
             state.Id = Guid.NewGuid();
             state.DuelOpponent = update.DuelOpponent;
             state.Health = update.Health;
@@ -218,9 +218,9 @@ namespace RavenNest.BusinessLogic.Game
             state.Island = update.Island;
             state.Task = update.Task;
             state.TaskArgument = update.TaskArgument;
-            state.X = (decimal)update.Position.x;
-            state.Y = (decimal)update.Position.y;
-            state.Z = (decimal)update.Position.z;
+            state.X = (decimal)update.Position.X;
+            state.Y = (decimal)update.Position.Y;
+            state.Z = (decimal)update.Position.Z;
             return state;
         }
 

@@ -23,9 +23,9 @@ namespace RavenNest.TestClient
         [Key(3)]
         public int[] IntArray { get; set; }
         [Key(4)]
-        public Vector3 v3 { get; set; }
+        public Position v3 { get; set; }
         [Key(5)]
-        public Vector3 v32 { get; set; }
+        public Position v32 { get; set; }
         [Key(6)]
         public TestType2 Test2 { get; set; }
         [Key(7)]
@@ -41,8 +41,6 @@ namespace RavenNest.TestClient
                        && other.HelloWorld == HelloWorld
                        && IntArray.Length == other.IntArray.Length
                        && Enumerable.SequenceEqual(IntArray, other.IntArray)
-                       && v3.magnitude == other.v3.magnitude
-                       && v32.magnitude == other.v32.magnitude
                        && Test2?.Test == other.Test2?.Test;
             }
 
@@ -105,11 +103,11 @@ namespace RavenNest.TestClient
                 OhNo = DateTime.UtcNow,
                 Id = Guid.NewGuid(),
                 IntArray = new int[5],
-                v32 = new Vector3()
+                v32 = new Position()
                 {
-                    x = 123,
-                    y = 456,
-                    z = 789
+                    X = 123,
+                    Y = 456,
+                    Z = 789
                 },
                 Test2 = new TestType2
                 {
@@ -117,11 +115,11 @@ namespace RavenNest.TestClient
                 }
             }));
 
-            Add(ref total, TestSerializer(serializer, new Vector3
+            Add(ref total, TestSerializer(serializer, new Position
             {
-                x = 123,
-                y = 456,
-                z = 789
+                X = 123,
+                Y = 456,
+                Z = 789
             }));
 
             Console.Write("------------ TOTAL: ");
