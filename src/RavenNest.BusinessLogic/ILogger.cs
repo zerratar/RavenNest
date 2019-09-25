@@ -3,7 +3,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace RavenNest.BusinessLogic
-{
+{   
     public interface ILogger
     {
         Task WriteDebugAsync(string msg);
