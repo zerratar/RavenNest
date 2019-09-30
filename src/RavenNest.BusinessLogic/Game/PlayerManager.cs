@@ -98,6 +98,7 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 character.UserIdLock = session.UserId;
+                character.LastUsed = DateTime.UtcNow;
                 await db.SaveChangesAsync();
                 return character.Map(user);
             }
@@ -1117,7 +1118,7 @@ namespace RavenNest.BusinessLogic.Game
             character.Skills = skills;
             character.SkillsId = skills.Id;
             character.UserIdLock = session?.UserId;
-
+            character.LastUsed = DateTime.UtcNow;
             await db.Character.AddAsync(character);
             await db.SaveChangesAsync();
             return character.Map(user);

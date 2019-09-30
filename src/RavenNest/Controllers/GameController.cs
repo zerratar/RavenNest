@@ -59,7 +59,15 @@ namespace RavenNest.Controllers
         {
             var authToken = GetAuthToken();
             AssertAuthTokenValidity(authToken);
-            return this.sessionManager.BeginSessionAsync(authToken, clientVersion, accessKey, local.Value);
+
+            var session = this.sessionManager.BeginSessionAsync(authToken, clientVersion, accessKey, local.Value);
+            if (session == null)
+            {
+                HttpContext.Response.StatusCode = 403;
+                return null;
+            }
+
+            return session;
         }
 
         [HttpDelete("raid/{username}")]

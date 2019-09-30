@@ -76,11 +76,12 @@ namespace RavenNest.BusinessLogic.Game
             return JSON.Parse<SessionToken>(json);
         }
 
-        public async Task<bool> EndSessionAndRaidAsync(SessionToken token, string userIdOrUsername, bool isWarRaid)
+        public async Task<bool> EndSessionAndRaidAsync(
+            SessionToken token, string userIdOrUsername, bool isWarRaid)
         {
             var db = dbProvider.Get();
 
-            var currentSession = await db.GameSession.FirstOrDefaultAsync(x => x.Id == token.SessionId);
+            var currentSession = await db.GameSession.Include(x => x.User).FirstOrDefaultAsync(x => x.Id == token.SessionId);
             if (currentSession == null)
             {
                 return false;
@@ -91,7 +92,7 @@ namespace RavenNest.BusinessLogic.Game
 
             if (user == null)
             {
-                await EndSessionAsync(token);
+                //await EndSessionAsync(token);
                 return false;
             }
 
@@ -100,13 +101,19 @@ namespace RavenNest.BusinessLogic.Game
 
             if (targetSession == null)
             {
-                await EndSessionAsync(token);
+                //await EndSessionAsync(token);
                 return false;
             }
 
             var revision = 1;
             var lastEvent = await db.GameEvent.LastOrDefaultAsync(x => x.GameSessionId == targetSession.Id);
             if (lastEvent != null) revision = lastEvent.Revision + 1;
+
+            var characters = await db.Character
+                .Include(x => x.User)
+                .Where(x => x.UserIdLock == currentSession.UserId && x.LastUsed != null && x.LastUsed >= currentSession.Started)
+                .OrderByDescending(x => x.LastUsed)
+                .ToListAsync();
 
             var ge = new DataModels.GameEvent
             {
@@ -116,7 +123,12 @@ namespace RavenNest.BusinessLogic.Game
                 Type = isWarRaid
                     ? (int)GameEventType.WarRaid
                     : (int)GameEventType.Raid,
-                //Data = JsonConvert.SerializeObject(currentSession.CharacterSession.Select(x => x.CharacterId).ToArray())
+                Data = JsonConvert.SerializeObject(new
+                {
+                    RaiderUserName = currentSession.User.UserName,
+                    RaiderUserId = currentSession.User.UserId,
+                    Players = characters.Select(x => x.User.UserId).ToArray()
+                })
             };
 
             await db.GameEvent.AddAsync(ge);
@@ -145,6 +157,17 @@ namespace RavenNest.BusinessLogic.Game
             //    charSession.Ended = DateTime.UtcNow;
             //    db.Update(charSession);
             //}
+
+            var characters = await db.Character
+                .Where(x => x.UserIdLock == session.UserId && x.LastUsed != null && x.LastUsed >= session.Started)
+                .OrderByDescending(x => x.LastUsed)
+                .ToListAsync();
+
+            foreach (var character in characters)
+            {
+                character.UserIdLock = null;
+                db.Update(character);
+            }
 
             session.Status = (int)SessionStatus.Inactive;
             session.Stopped = DateTime.UtcNow;

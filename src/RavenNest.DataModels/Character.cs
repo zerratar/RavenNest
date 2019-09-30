@@ -25,7 +25,7 @@ namespace RavenNest.DataModels
         public string Name { get; set; }
         public int? Revision { get; set; }
         public Guid? UserIdLock { get; set; }
-
+        public DateTime? LastUsed { get; set; }
         public Statistics Statistics { get; set; }
         public Appearance Appearance { get; set; }
 
