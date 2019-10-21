@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
+using RavenNest.Sessions;
 
 namespace RavenNest.Controllers
 {
@@ -16,16 +17,19 @@ namespace RavenNest.Controllers
     {
         private readonly IAuthManager authManager;
         private readonly ISessionManager sessionManager;
+        private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly IMarketplaceManager marketplace;
 
         public MarketplaceController(
             IAuthManager authManager,
             ISessionManager sessionManager,
+            ISessionInfoProvider sessionInfoProvider,
             IMarketplaceManager marketplace)
         {
             this.authManager = authManager;
             this.marketplace = marketplace;
             this.sessionManager = sessionManager;
+            this.sessionInfoProvider = sessionInfoProvider;
         }
 
         [HttpGet("{offset}/{size}")]
@@ -106,6 +110,11 @@ namespace RavenNest.Controllers
             if (HttpContext.Request.Headers.TryGetValue("auth-token", out var value))
             {
                 return authManager.Get(value);
+            }
+
+            if (sessionInfoProvider.TryGetAuthToken(HttpContext.Session, out var authToken))
+            {
+                return authToken;
             }
 
             return null;

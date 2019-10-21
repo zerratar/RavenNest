@@ -3,10 +3,10 @@
     public class ItemBuyResult
     {
         public ItemBuyResult(
-            ItemTradeState state, 
-            long[] amountBought, 
-            decimal[] costPerItem, 
-            long totalAmount, 
+            ItemTradeState state,
+            long[] amountBought,
+            decimal[] costPerItem,
+            long totalAmount,
             decimal totalCost)
         {
             State = state;

@@ -7,5 +7,6 @@ namespace RavenNest.DataModels
         public Guid Id { get; set; }
         public string ClientVersion { get; set; }
         public string AccessKey { get; set; }
+        public string DownloadLink { get; set; }
     }
 }

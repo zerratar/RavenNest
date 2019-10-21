@@ -56,7 +56,9 @@ namespace RavenNest.BusinessLogic.Game
         {
             using (var db = dbProvider.Get())
             {
-                var session = await db.GameSession.FirstOrDefaultAsync(
+                var session = await db.GameSession
+                    .Include(x => x.User)
+                    .FirstOrDefaultAsync(
                     x => x.Id == token.SessionId &&
                          x.Status == (int)SessionStatus.Active);
 
@@ -72,6 +74,7 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 var character = await db.Character
+                    .Include(x => x.User)
                     .Include(x => x.InventoryItem) //.ThenInclude(x => x.Item)
                     .Include(x => x.Appearance)
                     .Include(x => x.SyntyAppearance)
@@ -80,7 +83,7 @@ namespace RavenNest.BusinessLogic.Game
                     .Include(x => x.Statistics)
                     .FirstOrDefaultAsync(x =>
                         x.UserId == user.Id &&
-                        (session.Local && x.Local && x.OriginUserId == session.UserId ||
+                        ((session.Local && x.Local && x.OriginUserId == session.UserId) ||
                          !session.Local && !x.Local));
 
                 if (character == null)
@@ -92,9 +95,15 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     var syntyApp = GenerateSyntyAppearance(character.Appearance);
                     await db.SyntyAppearance.AddAsync(syntyApp);
-
                     character.SyntyAppearanceId = syntyApp.Id;
                     character.SyntyAppearance = syntyApp;
+                }
+
+                // check if we need to remove the player from
+                // their active session.
+                if (character.UserIdLock != null)
+                {
+                    await TryRemovePlayerFromPreviousSessionAsync(db, character, session);
                 }
 
                 character.UserIdLock = session.UserId;
@@ -102,6 +111,46 @@ namespace RavenNest.BusinessLogic.Game
                 await db.SaveChangesAsync();
                 return character.Map(user);
             }
+        }
+
+        private static async Task TryRemovePlayerFromPreviousSessionAsync(RavenfallDbContext db, Character character, GameSession joiningSession)
+        {
+            var userToRemove = await db.User.FirstOrDefaultAsync(x => x.Id == character.UserId);
+            if (userToRemove == null)
+            {
+                return;
+            }
+
+            var currentSession = await db.GameSession
+                .Include(x => x.GameEvents)
+                .Where(x => x.UserId == character.UserIdLock && x.Stopped == null)
+                .OrderByDescending(x => x.Started)
+                .FirstOrDefaultAsync();
+
+            if (currentSession == null || currentSession.Id == joiningSession.Id || currentSession.UserId == joiningSession.UserId)
+            {
+                return;
+            }
+
+            var revision = currentSession.GameEvents.Count > 0
+                ? currentSession.GameEvents.Max(x => x.Revision) + 1 : 1;
+            await db.GameEvent.AddAsync(new DataModels.GameEvent()
+            {
+                Id = Guid.NewGuid(),
+                GameSessionId = currentSession.Id,
+                GameSession = currentSession,
+                Data = JSON.Stringify(new PlayerRemove()
+                {
+                    Reason =
+                        joiningSession != null
+                        ? $"{character.Name} joined {joiningSession?.User?.UserName}'s stream"
+                        : $"{character.Name} joined another session.",
+
+                    UserId = character.User.UserId
+                }),
+                Type = (int)GameEventType.PlayerRemove,
+                Revision = revision
+            });
         }
 
         public async Task<Player> GetGlobalPlayerAsync(Guid userId)
@@ -650,6 +699,7 @@ namespace RavenNest.BusinessLogic.Game
                     .Include(x => x.SyntyAppearance)
                     .Include(x => x.Resources)
                     .Include(x => x.Skills)
+                    .Include(x => x.State)
                     .Include(x => x.Statistics)
                     .Where(x => !x.Local)
                     .ToListAsync();
@@ -849,6 +899,7 @@ namespace RavenNest.BusinessLogic.Game
                 .Include(x => x.SyntyAppearance)
                 .Include(x => x.Resources)
                 .Include(x => x.Skills)
+                .Include(x => x.State)
                 .Include(x => x.Statistics)
                 .FirstOrDefaultAsync(x => x.UserId == user.Id && !x.Local);
 

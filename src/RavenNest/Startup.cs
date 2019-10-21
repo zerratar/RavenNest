@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.AspNetCore.StaticFiles.Infrastructure;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -193,6 +194,9 @@ namespace RavenNest
 
         private static void RegisterServices(IServiceCollection services)
         {
+            services.AddSingleton<IMemoryCache, MemoryCache>();
+
+            // Register Managers
             services.AddSingleton<IPlayerManager, PlayerManager>();
             services.AddSingleton<IGameManager, GameManager>();
             services.AddSingleton<IMarketplaceManager, MarketplaceManager>();
@@ -201,12 +205,16 @@ namespace RavenNest
             services.AddSingleton<IAuthManager, AuthManager>();
             services.AddSingleton<IItemManager, ItemManager>();
             services.AddSingleton<IHighScoreManager, HighScoreManager>();
-            services.AddSingleton<IRavenfallDbContextProvider, RavenfallDbContextProvider>();
-            services.AddSingleton<ISecureHasher, SecureHasher>();
-            services.AddSingleton<ISessionInfoProvider, SessionInfoProvider>();
-            services.AddSingleton<ILogger, RavenfallDbLogger>();
-            services.AddSingleton<IWebSocketConnectionProvider, WebSocketConnectionProvider>();
+            services.AddSingleton<IServerManager, ServerManager>();
             services.AddSingleton<IGamePacketManager, GamePacketManager>();
+
+            // Register providers
+            services.AddSingleton<IRavenfallDbContextProvider, RavenfallDbContextProvider>();
+            services.AddSingleton<IWebSocketConnectionProvider, WebSocketConnectionProvider>();
+            services.AddSingleton<ISessionInfoProvider, SessionInfoProvider>();
+
+            services.AddSingleton<ISecureHasher, SecureHasher>();
+            services.AddSingleton<ILogger, RavenfallDbLogger>();
             services.AddSingleton<IBinarySerializer, BinarySerializer>();
             services.AddSingleton<IGamePacketSerializer, GamePacketSerializer>();
         }

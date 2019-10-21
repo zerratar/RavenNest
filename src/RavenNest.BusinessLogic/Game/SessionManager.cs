@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Net;
 using RavenNest.DataModels;
 using RavenNest.Models;
 
@@ -23,7 +24,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             var db = dbProvider.Get();
             var game = await db.GameClient.FirstOrDefaultAsync(x => x.ClientVersion == clientVersion);
-
+            var user = await db.User.FirstOrDefaultAsync(x => x.Id == token.UserId);
             if (game == null)
             {
                 return null;
@@ -41,7 +42,7 @@ namespace RavenNest.BusinessLogic.Game
 
             if (activeSession != null)
             {
-                return GenerateSessionToken(token, activeSession);
+                await EndSessionAsync(db, activeSession);
             }
 
             var newGameSession = new GameSession
@@ -54,6 +55,25 @@ namespace RavenNest.BusinessLogic.Game
             };
 
             await db.GameSession.AddAsync(newGameSession);
+
+            if (user.IsAdmin.GetValueOrDefault() || user.IsModerator.GetValueOrDefault())
+            {
+                var permissionEvent = new DataModels.GameEvent
+                {
+                    Id = Guid.NewGuid(),
+                    GameSession = newGameSession,
+                    GameSessionId = newGameSession.Id,
+                    Type = (int)GameEventType.PermissionChange,
+                    Revision = 1,
+                    Data = JSON.Stringify(new Permissions
+                    {
+                        IsAdministrator = user.IsAdmin ?? false,
+                        IsModerator = user.IsModerator ?? false
+                    })
+                };
+                await db.GameEvent.AddAsync(permissionEvent);
+            }
+
             await db.SaveChangesAsync();
 
             return GenerateSessionToken(token, newGameSession);
@@ -119,6 +139,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 Id = Guid.NewGuid(),
                 GameSessionId = targetSession.Id,
+                GameSession = targetSession,
                 Revision = revision,
                 Type = isWarRaid
                     ? (int)GameEventType.WarRaid
@@ -133,6 +154,7 @@ namespace RavenNest.BusinessLogic.Game
 
             await db.GameEvent.AddAsync(ge);
             await EndSessionAsync(token);
+            await db.SaveChangesAsync();
             return true;
         }
 
@@ -149,15 +171,11 @@ namespace RavenNest.BusinessLogic.Game
                 return;
             }
 
-            //foreach (var charSession in db.CharacterSession.Where(x =>
-            //    x.SessionId == token.SessionId &&
-            //    x.Status == (int)SessionStatus.Active))
-            //{
-            //    charSession.Status = (int)SessionStatus.Inactive;
-            //    charSession.Ended = DateTime.UtcNow;
-            //    db.Update(charSession);
-            //}
+            await EndSessionAsync(db, session);
+        }
 
+        private static async Task EndSessionAsync(RavenfallDbContext db, GameSession session)
+        {
             var characters = await db.Character
                 .Where(x => x.UserIdLock == session.UserId && x.LastUsed != null && x.LastUsed >= session.Started)
                 .OrderByDescending(x => x.LastUsed)

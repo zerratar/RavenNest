@@ -1,5 +1,8 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Net;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Docs.Attributes;
@@ -16,16 +19,44 @@ namespace RavenNest.Controllers
     {
         private readonly IPlayerManager playerManager;
         private readonly ISessionInfoProvider sessionInfoProvider;
+        private readonly IMemoryCache memoryCache;
         private readonly AppSettings settings;
 
         public TwitchController(
             IOptions<AppSettings> settings,
             IPlayerManager playerManager,
-            ISessionInfoProvider sessionInfoProvider)
+            ISessionInfoProvider sessionInfoProvider,
+            IMemoryCache memoryCache)
         {
             this.playerManager = playerManager;
             this.sessionInfoProvider = sessionInfoProvider;
+            this.memoryCache = memoryCache;
             this.settings = settings.Value;
+        }
+
+        [HttpGet("logo/{userId}")]
+        public async Task<ActionResult> GetChannelPictureAsync(string userId)
+        {
+            try
+            {
+                if (memoryCache != null && memoryCache.TryGetValue("logo_" + userId, out var logoData) && logoData is byte[] data)
+                {
+                    return File(data, "image/png");
+                }
+
+                var twitch = new TwitchRequests(clientId: settings.TwitchClientId, clientSecret: settings.TwitchClientSecret);
+                var profile = await twitch.GetUserAsync(userId);
+                if (profile != null)
+                {
+                    using (var wc = new WebClient())
+                    {
+                        var binaryData = await wc.DownloadDataTaskAsync(new Uri(profile.logo));
+                        return File(memoryCache.Set("logo_" + userId, binaryData), "image/png");
+                    }
+                }
+                return NotFound();
+            }
+            catch { return NotFound(); }
         }
 
         [HttpGet("session")]

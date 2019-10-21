@@ -41,9 +41,7 @@
   import router from 'vue-router';
   import Skill from '../skill';
   import Requests from '../requests';
-  import {
-    SessionState
-  } from '@/App.vue';
+  import { SessionState } from '@/App.vue';
 
   @Component({})
   export default class HighScore extends Vue {
@@ -74,7 +72,7 @@
 
     private async loadHighScore(skill: string) {
       this.dataLoading = true;
-      const url = `//www.ravenfall.stream/api/highscore/${skill}`;
+      const url = `api/highscore/${skill}`; // https://www.ravenfall.stream/
       const result = await Requests.sendAsync(url);
       if (result.ok) {
         this.players = (await result.json()).players;
@@ -122,6 +120,7 @@
 </script>
 
 <style scoped>
+
   .skill-selector a {
     padding: 5px 15px;
     margin-bottom: 15px;
@@ -148,6 +147,10 @@
     color: white;
     font-size: 0pt;
     top: 0px;
+  }
+
+  .skill-selector {
+      margin-top: 25px;
   }
 
   a.active::after,
@@ -200,49 +203,9 @@
     Loading CSS
 */
 
-  .loader {
-    position: fixed;
-    top: 50vh;
-    left: 50%;
-    transform: translate(-50%, 0);
-    z-index: 999;
+  .highscore {
+      margin-top: 140px;
+      flex-grow:1;
   }
 
-  .lds-ripple {
-    display: inline-block;
-    position: relative;
-    width: 64px;
-    height: 64px;
-  }
-
-  .lds-ripple div {
-    position: absolute;
-    border: 4px solid #3498db;
-    opacity: 1;
-    border-radius: 50%;
-    animation: lds-ripple 1s cubic-bezier(0, 0.2, 0.8, 1) infinite;
-  }
-
-  .lds-ripple div:nth-child(2) {
-    animation-delay: -0.5s;
-  }
-
-
-  @keyframes lds-ripple {
-    0% {
-      top: 28px;
-      left: 28px;
-      width: 0;
-      height: 0;
-      opacity: 1;
-    }
-
-    100% {
-      top: -1px;
-      left: -1px;
-      width: 58px;
-      height: 58px;
-      opacity: 0;
-    }
-  }
 </style>

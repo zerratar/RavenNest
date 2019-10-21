@@ -49,6 +49,7 @@ namespace RavenNest.BusinessLogic
 
                 try
                 {
+                    if (data == null) continue;
                     var value = prop.GetValue(data);
                     if (prop.PropertyType.IsEnum)
                     {

@@ -12,6 +12,10 @@ export default new Router({
     name: 'home',
     component: Home,
   }, {
+    path: '/how-to-play',
+    name: 'how-to-play',
+    component: () => import('./views/HowToPlay.vue'),
+  }, {
     path: '/customization',
     name: 'customization',
     component: () => import('./views/Customization.vue'),
@@ -23,6 +27,10 @@ export default new Router({
     path: '/highscore',
     name: 'highscore',
     component: () => import('./views/HighScore.vue'),
+  }, {
+    path: '/character',
+    name: 'character',
+    component: () => import('./views/Character.vue'),
   }, {
     path: '/login',
     name: 'login',

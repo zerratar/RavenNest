@@ -28,15 +28,15 @@ namespace RavenNest.Controllers
         {
             using (var db = dbProvider.Get())
             {
-                var clientInfo = await db.GameClient.FirstOrDefaultAsync();
+                var clientInfo = await db.GameClient.FirstAsync();
                 var fileName = "downloads/" + clientInfo.ClientVersion + "/update.zip";
-                if (clientInfo == null) return null;
                 var path = env.WebRootPath + "\\" + fileName.Replace("/", "\\");
-                if (!System.IO.File.Exists(path)) return null;
+                var downloadLink = clientInfo.DownloadLink ?? (System.IO.File.Exists(path) ? string.Format("https://{0}/{1}", HttpContext.Request.Host, fileName) : null);
+
                 return new UpdateData
                 {
                     Version = clientInfo.ClientVersion,
-                    DownloadUrl = string.Format("https://{0}/{1}", HttpContext.Request.Host, fileName),
+                    DownloadUrl = downloadLink,
                     Released = DateTime.UtcNow
                 };
             }

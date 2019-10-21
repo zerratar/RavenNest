@@ -4,11 +4,10 @@
       <h2>Logging in with Twitch...</h2>
     </div>
     <div v-if="!twitchAuthenticating()">
-      <h1>User login</h1>
-      <p>Login to access character customization, marketplace and more!<br />If you don't have an account you can login
-        with Twitch and then assign a username and password.</p>
+      <h1 class="login-title">User login</h1>
+      <p class="login-subtitle">Login to access character customization, marketplace and more!<br />If you don't have an account you can login
+        with Twitch and then assign a password.</p>
       <div class="login-container">
-        <div class="login">
           <div class="input-row">
             <div>
               <div class="input-icon user"><i class="fas fa-user"></i></div>
@@ -33,7 +32,6 @@
               <i class="fab fa-twitch"></i> Login with Twitch
             </div>
           </div>
-        </div>
       </div>
     </div>
 
@@ -57,9 +55,9 @@
 
   @Component({})
   export default class Login extends Vue {
-    private username: string = "";
-    private password: string = "";
-    private badLoginResult: string = "";
+    private username: string = '';
+    private password: string = '';
+    private badLoginResult: string = '';
 
     private mounted() {
       this.updateLoginStateAsync();
@@ -91,7 +89,7 @@
           })
         });
 
-        let errorMessage = "";
+        let errorMessage = '';
         if (response.ok) {
           const result = await response.json();
           try {
@@ -111,11 +109,11 @@
             if (err != null && err) {
               errorMessage = err.toString();
             } else {
-              errorMessage = "Invalid username or password.";
+              errorMessage = 'Invalid username or password.';
             }
           }
         } else {
-          errorMessage = "Unable to login, unknown error.";
+          errorMessage = 'Unable to login, unknown error.';
         }
 
         this.badLoginResult = errorMessage;
@@ -202,6 +200,25 @@
 
   input#inputUsername {
     margin-top: 20px;
+  }
+
+  .content>.login {
+      margin-top: 162px;
+      flex-grow: 1;
+      padding-bottom: 40px;
+  }
+
+  .login-title {
+      
+  }
+
+  .login-subtitle {
+      font-size: 18pt;
+      font-weight: 500;
+      max-width: 100%;
+      width: 720px;
+      margin-left: auto;
+      margin-right: auto;
   }
 
   button.login-button {

@@ -282,7 +282,18 @@ namespace RavenNest.BusinessLogic.Docs
 
             try
             {
-                var obj = Activator.CreateInstance(returnType);
+                object obj = null;
+                var ctor = returnType.GetConstructors().OrderBy(x => x.GetParameters().Length).FirstOrDefault();
+                if (ctor != null && ctor.GetParameters().Length == 0)
+                {
+                    obj = ctor.Invoke(new object[0]);
+                }
+                else
+                {
+                    obj = FormatterServices.GetUninitializedObject(returnType);
+                }
+
+                //var obj = Activator.CreateInstance(returnType);
                 var interfaces = returnType.GetInterfaces();
                 if (interfaces.Length > 0)
                 {

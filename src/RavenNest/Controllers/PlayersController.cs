@@ -51,7 +51,9 @@ namespace RavenNest.Controllers
 
 
         [HttpGet]
-        [MethodDescriptor(Name = "Get Current Player", Description = "Gets the player data for the authenticated Twitch user, authenticated RavenNest user or current Game Session user.")]
+        [MethodDescriptor(
+            Name = "Get Current Player",
+            Description = "Gets the player data for the authenticated Twitch user, authenticated RavenNest user or current Game Session user.")]
         public Task<Player> Get()
         {
             return GetPlayerAsync();
@@ -64,79 +66,6 @@ namespace RavenNest.Controllers
         {
             return GetPlayerAsync();
         }
-
-        //[HttpGet("fixsales")]
-        //public async Task FixUserEquipmentsAsync()
-        //{
-        //    using (var db = dbProvider.Get())
-        //    {
-        //        //var userIdLock = Guid.Parse("CE4BB4EA-B435-4BE2-8CC1-F65CA44653A5");
-        //        var characters = await db.Character
-        //            .Where(x => x.UserIdLock == userIdLock)
-        //            .Include(x => x.User)
-        //            .Include(x => x.InventoryItem).ThenInclude(x => x.Item)
-        //            .Include(x => x.Resources)
-        //            .ToListAsync();
-
-        //        //var sessionId = Guid.Parse("5703C6E3-E3DA-4E1E-BFED-2C36D4D1DD82");
-        //        var gameEvents = await db.GameEvent.Where(x => x.GameSessionId == sessionId).ToListAsync();
-
-        //        foreach (var gameEvent in gameEvents)
-        //        {
-
-        //            switch ((GameEventType)gameEvent.Type)
-        //            {
-        //                case GameEventType.ItemBuy:
-        //                    {
-        //                        var trade = JSON.Parse<ItemTradeUpdate>(gameEvent.Data);
-        //                        var character = characters.FirstOrDefault(x => x.User.UserId == trade.BuyerId);
-        //                        if (character != null)
-        //                        {                                    
-        //                            character.Resources.Coins -= trade.Cost;
-        //                            db.Update(character.Resources);
-        //                        }
-        //                    }
-        //                    break;
-
-        //                case GameEventType.ItemSell:
-        //                    {
-        //                        var trade = JSON.Parse<ItemTradeUpdate>(gameEvent.Data);
-        //                        var character = characters.FirstOrDefault(x => x.User.UserId == trade.SellerId);
-        //                        if (character != null)
-        //                        {
-        //                            character.Resources.Coins += trade.Cost;
-        //                            db.Update(character.Resources);
-        //                        }
-        //                    }
-        //                    break;
-        //            }
-
-        //        }
-
-        //        await db.SaveChangesAsync();
-        //    }
-        //}
-
-        //[HttpGet("fixeq")]
-        //public async Task FixUserEquipmentsAsync()
-        //{
-        //    using (var db = dbProvider.Get())
-        //    {
-        //        var characters = await db.Character
-        //            .Include(x => x.InventoryItem).ThenInclude(x => x.Item)
-        //            .Include(x => x.Appearance)
-        //            .Include(x => x.Resources)
-        //            .Include(x => x.Skills)
-        //            .Include(x => x.Statistics)
-        //            .ToListAsync();
-
-        //        foreach (var character in characters)
-        //        {
-        //            PlayerManager.EquipBestItems(db, character);
-        //        }
-        //        await db.SaveChangesAsync();
-        //    }
-        //}
 
         [HttpPost("{userId}")]
         //[MethodDescriptor(Name = "Add Player to Game Session", Description = "Adds the target player to the ongoing session. This will lock the target player to the session and then return the player data.", RequiresSession = true)]
@@ -296,6 +225,12 @@ namespace RavenNest.Controllers
             {
                 return authManager.Get(value);
             }
+
+            if (sessionInfoProvider.TryGetAuthToken(HttpContext.Session, out var authToken))
+            {
+                return authToken;
+            }
+
             return null;
         }
 

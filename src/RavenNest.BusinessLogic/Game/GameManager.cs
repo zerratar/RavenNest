@@ -32,9 +32,10 @@ namespace RavenNest.BusinessLogic.Game
                     return new EventCollection();
                 }
 
+                var sessionRevision = gameSession.Revision ?? 0;
                 var events = await db.GameEvent.Where(x =>
                     x.GameSessionId == session.SessionId &&
-                    x.Revision > gameSession.Revision).ToListAsync();
+                    x.Revision > sessionRevision).ToListAsync();
 
                 var eventCollection = new EventCollection();
 
@@ -46,8 +47,7 @@ namespace RavenNest.BusinessLogic.Game
                     eventCollection.Add(gameEvent);
                 }
 
-                var oldRev = gameSession.Revision;
-                if (eventCollection.Revision > gameSession.Revision)
+                if (eventCollection.Revision > sessionRevision)
                 {
                     gameSession.Revision = eventCollection.Revision;
                     db.Update(gameSession);
