@@ -1,16 +1,18 @@
 <template>
     <div class="character">
-      <h1>My character</h1>
       
+      <h1 class="stats-name">{{playerName}}</h1>
 
       <div class="stats-row">
-        <div class="stats-label">{{playerName}}</div>
-        <div class="stats-value">{{combatLevel}}</div>
+        <div class="stats-combat-level">LV : {{getCombatLevel()}}</div>
       </div>
 
       <div class="stats-row" v-for="skill in getSkills()" :key="skill.name">
         <div class="stats-label">{{skill.name}}</div>
-        <div class="stats-progress">{{Math.round(skill.percent*100,2)}}%</div>
+        <div class="stats-progress">
+          <div class="stats-progress-value" :style="styleWidth(skill.percent*120)"></div>
+          <div class="stats-progress-percent">{{Math.round(skill.percent*100,2)}}%</div>
+          </div>
         <div class="stats-value">{{skill.level}}</div>
       </div>
 
@@ -68,12 +70,17 @@
       return this.playerData.name;
     }
 
-    get skillsLoaded(): boolean {
-      return 'attack' in this.skills;
+    // get isSkillsLoaded(): boolean {
+    //   return 'attack' in this.skills;
+    // }
+
+    styleWidth(value:any):string {
+      return "width: " + value + "px";
     }
 
-    get combatLevel(): number {
-      if (!this.skillsLoaded) return 3;
+    getCombatLevel(): number {            
+
+      if(!('attack' in this.skills)) return 3;
       const attack = this.getSkill("attack").level;
       const defense = this.getSkill("defense").level;
       const strength = this.getSkill("strength").level;
@@ -81,8 +88,8 @@
       const magic = this.getSkill("magic").level;
       const ranged = this.getSkill("ranged").level;
 
-      return ((attack + defense + strength + health) / 4) 
-        + (magic / 8) + (ranged / 8);
+      return Math.floor(((attack + defense + strength + health) / 4) 
+        + (magic / 8) + (ranged / 8));
     }
 
     getSkill(name: string): CharacterSkill { // CharacterSkill
@@ -122,8 +129,10 @@
         }
 
         // this.skills.push(new CharacterSkill(propName, data.skills[propName]));
-        this.skills[propName] = new CharacterSkill(propName, data.skills[propName]);
+        this.skills[propName.toLowerCase()] = new CharacterSkill(propName, data.skills[propName]);
       }
+
+      this.$forceUpdate();
     }
 
     private itemsLoaded(): void {
@@ -136,20 +145,69 @@
 <style scoped>
 .character {
     margin-top: 92px;
+    font-family: Heebo,sans-serif;
 }
 
 .stats-row {
-    display: flex;
-    justify-content: space-evenly;
-    padding: 10px 25px;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  padding: 10px 25px;
+  -webkit-box-pack: space-evenly;
+  -ms-flex-pack: space-evenly;
+  justify-content: space-evenly;
+  max-width: 100%;
+  width: 800px;
+  BOX-SIZING: border-box;
+  margin-left: auto;
+  margin-right: auto;
+  border-bottom: 1px solid #f3f3f3;
 }
 
+.stats-name { 
+
+}
+
+.stats-combat-level { 
+    font-size: 14pt;
+    margin-bottom: 10px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #e6e6e6;
+    display: block;
+    width: 100%;
+}
+.stats-row:nth-of-type(2n+2) {
+    background-color: #fafafa;
+}
 .stats-label {
-
+    width: 190px;
+    text-align: left;
+    text-transform: uppercase;
 }
-
+.stats-progress {
+  text-align: right;
+  min-width: 120px;
+  text-align: center;
+  background-color: #f4f4f4;
+}
 .stats-value {
-
+    width: 190px;
+    text-align: right;
 }
 
+.stats-progress-value {
+    height: 23px;
+    position: absolute;
+    background-color: #81a1f829;
+}
+
+/* .stats-progress::before {
+    content: "";
+    position: absolute;
+    width: attr(data-width);
+    height: 23px;
+    background-color: #00000030;
+    z-index: 1;
+    display: block;
+} */
 </style>

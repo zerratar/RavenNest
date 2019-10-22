@@ -24,7 +24,7 @@ export default class ItemRepository {
         ItemRepository.isLoading = false;
     }
     static parseItemData(itemData) {
-        console.log(JSON.stringify(itemData));
+        // console.log(JSON.stringify(itemData));
     }
 }
 ItemRepository.isLoaded = false;

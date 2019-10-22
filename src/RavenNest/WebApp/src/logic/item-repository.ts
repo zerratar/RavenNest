@@ -36,6 +36,6 @@ export default class ItemRepository {
       }
 
     private static parseItemData(itemData: any) {
-        console.log(JSON.stringify(itemData));
+        // console.log(JSON.stringify(itemData));
     }
 }
