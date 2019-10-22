@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
+using RavenNest.Sessions;
 
 namespace RavenNest.Controllers
 {
@@ -14,11 +15,16 @@ namespace RavenNest.Controllers
     [ApiDescriptor(Name = "Items API", Description = "Used for managing the items database.")]
     public class ItemsController : ControllerBase
     {
+        private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly IItemManager itemManager;
         private readonly IAuthManager authManager;
 
-        public ItemsController(IItemManager itemManager, IAuthManager authManager)
+        public ItemsController(
+            ISessionInfoProvider sessionInfoProvider,
+            IItemManager itemManager, 
+            IAuthManager authManager)
         {
+            this.sessionInfoProvider = sessionInfoProvider;
             this.itemManager = itemManager;
             this.authManager = authManager;
         }
@@ -109,6 +115,11 @@ namespace RavenNest.Controllers
             if (HttpContext.Request.Headers.TryGetValue("auth-token", out var value))
             {
                 return authManager.Get(value);
+            }
+
+            if (sessionInfoProvider.TryGetAuthToken(HttpContext.Session, out var authToken))
+            {
+                return authToken;
             }
 
             return null;

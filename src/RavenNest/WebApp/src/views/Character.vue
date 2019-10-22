@@ -8,9 +8,11 @@
         <div class="stats-value">{{combatLevel}}</div>
       </div>
 
-
-      <h2></h2>
-      
+      <div class="stats-row" v-for="skill in getSkills()" :key="skill.name">
+        <div class="stats-label">{{skill.name}}</div>
+        <div class="stats-progress">{{Math.round(skill.percent*100,2)}}%</div>
+        <div class="stats-value">{{skill.level}}</div>
+      </div>
 
 
       <h3>{{errorMessage}}</h3>
@@ -31,57 +33,12 @@
   } from 'vue-property-decorator';
   
   import { SessionState } from '@/App.vue';
+  import GameMath from '../logic/game-math';
+  import { CharacterSkill } from '../logic/models';
+  import ItemRepository from '../logic/item-repository';
   import Requests from '../requests';
   import router from 'vue-router';
 
-  export class GameMath {
-    private static expTable: number[] = [];
-    public static maxLevel: number = 170;
-
-    public static levelToExp(level: number): number {
-      return level - 2 < 0 ? 0 : GameMath.expTable[level - 2];
-    }
-
-    public static expTolevel(exp: number): number {
-        for (let level = 0; level < GameMath.maxLevel - 1; level++) {
-          if (exp >= GameMath.expTable[level])
-              continue;
-          return (level + 1);
-        }
-        return GameMath.maxLevel;
-    }
-
-    private static calculateExpTable(): void {
-      if (GameMath.expTable.length > 0) {
-        return;
-      }
-      let totalExp = 0;
-      for (let levelIndex = 0; levelIndex < GameMath.maxLevel; levelIndex++) {
-          let level = levelIndex + 1;
-          let levelExp = (level + (300 * Math.pow(2, (level / 7))));
-          totalExp += levelExp;
-          GameMath.expTable[levelIndex] = ((totalExp & 0xffffffffc) / 4);
-      }
-    }
-  }
-
-  export class CharacterSkill {
-    public level: number;
-    public expForNextLevel: number;
-    public nextLevel: number;
-    public expPercent: number;    
-    
-    constructor(
-      public readonly name: string,
-      public readonly experience:number) {      
-        this.level = GameMath.expTolevel(experience);
-        const min = GameMath.levelToExp(this.level);
-        this.expForNextLevel = GameMath.levelToExp(this.level + 1);
-        const currentExp = experience - min;
-        this.nextLevel = this.expForNextLevel - min;
-        this.expPercent = currentExp / this.nextLevel;
-      }
-  }
 
   @Component({})
   export default class Character extends Vue {
@@ -100,7 +57,9 @@
         this.$router.push("/login");
         return;
       }
-
+      ItemRepository.loadItemsAsync().then(() => {
+        this.itemsLoaded();
+      });      
       this.getPlayerDataAsync();
     }
 
@@ -108,7 +67,13 @@
       if (!this.playerData) return '';
       return this.playerData.name;
     }
+
+    get skillsLoaded(): boolean {
+      return 'attack' in this.skills;
+    }
+
     get combatLevel(): number {
+      if (!this.skillsLoaded) return 3;
       const attack = this.getSkill("attack").level;
       const defense = this.getSkill("defense").level;
       const strength = this.getSkill("strength").level;
@@ -120,12 +85,19 @@
         + (magic / 8) + (ranged / 8);
     }
 
-    getSkill(name: string): any { // CharacterSkill
+    getSkill(name: string): CharacterSkill { // CharacterSkill
         // return this.skills.find(x => x.name.toLowerCase() === name.toLowerCase());
-        return this.skills[name];
+        return <CharacterSkill>this.skills[name];
     }
 
-    async getPlayerDataAsync() {
+    getSkills(): CharacterSkill[] {
+      return [...Object.getOwnPropertyNames(this.skills)
+        .map(x => <CharacterSkill>this.skills[x])
+        .filter(x => typeof x !== "undefined" && x.name != null && x.name.length > 0)
+      ];
+    }
+
+    private async getPlayerDataAsync() {
       this.isLoading = true; 
       this.errorMessage = '';
 
@@ -153,6 +125,11 @@
         this.skills[propName] = new CharacterSkill(propName, data.skills[propName]);
       }
     }
+
+    private itemsLoaded(): void {
+      // do something?
+      console.log("items loaded.");
+    }
   }
 </script>
 
@@ -160,4 +137,19 @@
 .character {
     margin-top: 92px;
 }
+
+.stats-row {
+    display: flex;
+    justify-content: space-evenly;
+    padding: 10px 25px;
+}
+
+.stats-label {
+
+}
+
+.stats-value {
+
+}
+
 </style>

@@ -3,7 +3,9 @@ var DEBUG = window.location.href.indexOf("localhost") >= 0 || (port != null && p
 export default class Requests {
     public static async sendAsync(url: string, data: any | null = null) {
         if (DEBUG) {
-            url = "https://localhost:5001/" + (url.startsWith("/") ? url.substring(1) : url);
+
+            // localhost:5001
+            url = "//localhost:" + port + "/" + (url.startsWith("/") ? url.substring(1) : url);
         }
         return await fetch(url, data);
     }
