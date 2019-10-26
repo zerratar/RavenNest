@@ -39,6 +39,6 @@ namespace RavenNest.BusinessLogic.Game
 
         Task<ItemCollection> GetEquippedItemsAsync(SessionToken token, string userId);
         Task<ItemCollection> GetAllItemsAsync(SessionToken token, string userId);
-        Task<IReadOnlyList<Player>> GetPlayersAsync();
+        Task<IReadOnlyList<Player>> GetPlayersAsync(bool forceFresh = true);
     }
 }

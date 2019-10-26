@@ -6,6 +6,8 @@ using System.Net.WebSockets;
 using System.Reflection;
 using System.Threading;
 using System.Web;
+using Microsoft.ApplicationInsights.Channel;
+using Microsoft.ApplicationInsights.WindowsServer.TelemetryChannel;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -42,6 +44,15 @@ namespace RavenNest
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            // The following will configure the channel to use the given folder to temporarily
+            // store telemetry items during network or Application Insights server issues.
+            // User should ensure that the given folder already exists
+            // and that the application has read/write permissions.
+
+            //services.AddSingleton(typeof(ITelemetryChannel),
+            //            new ServerTelemetryChannel() { StorageFolder = "/tmp/myfolder" });
+
+            services.AddApplicationInsightsTelemetry();
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowAllOrigins", builder => builder.AllowAnyOrigin());

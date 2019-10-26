@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Net;
@@ -24,10 +25,17 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class PlayerManager : IPlayerManager
     {
+        private const double PlayerStateUpdateIntervalSeconds = 5.0;
+        private const double PlayerCacheDurationSeconds = 30.0;
+
+        private readonly IMemoryCache memoryCache;
         private readonly IRavenfallDbContextProvider dbProvider;
 
-        public PlayerManager(IRavenfallDbContextProvider dbProvider)
+        public PlayerManager(
+            IMemoryCache memoryCache,
+            IRavenfallDbContextProvider dbProvider)
         {
+            this.memoryCache = memoryCache;
             this.dbProvider = dbProvider;
         }
 
@@ -221,6 +229,20 @@ namespace RavenNest.BusinessLogic.Game
         {
             try
             {
+                // add a temporary throttle to avoid spamming server with player state updates.
+                // THIS NEEDS TO BE BULKUPDATED!!!!!
+
+                var key = "PlayerStateUpdate_" + update.UserId;
+                if (memoryCache.TryGetValue<DateTime>(key, out var lastUpdate))
+                {
+                    if (DateTime.UtcNow - lastUpdate < TimeSpan.FromSeconds(PlayerStateUpdateIntervalSeconds))
+                    {
+                        return true;
+                    }
+                }
+
+                memoryCache.Set(key, DateTime.UtcNow, DateTime.UtcNow.AddSeconds(PlayerStateUpdateIntervalSeconds));
+
                 using (var db = dbProvider.Get())
                 {
                     var player = await GetCharacterAsync(db, sessionToken, update.UserId);
@@ -377,11 +399,15 @@ namespace RavenNest.BusinessLogic.Game
                     return Enumerable.Range(0, states.Length).Select(x => false).ToArray();
                 }
 
+
+                var sessionPlayers = await db.Character.Include(x => x.User).Where(x => x.UserIdLock == gameSession.UserId).ToListAsync();
+
+
                 foreach (var state in states)
                 {
                     var character = gameSession.Local
-                        ? await db.Character.Include(x => x.User).FirstOrDefaultAsync(x => x.User.UserId == state.UserId && x.OriginUserId == gameSession.UserId && x.Local)
-                        : await db.Character.Include(x => x.User).FirstOrDefaultAsync(x => x.User.UserId == state.UserId && !x.Local);
+                        ? sessionPlayers.FirstOrDefault(x => x.User.UserId == state.UserId && x.OriginUserId == gameSession.UserId && x.Local)
+                        : sessionPlayers.FirstOrDefault(x => x.User.UserId == state.UserId && !x.Local);
 
                     if (character == null)
                     {
@@ -389,11 +415,11 @@ namespace RavenNest.BusinessLogic.Game
                         continue;
                     }
 
-                    if (!await AcquiredUserLockAsync(token, db, character))
-                    {
-                        results.Add(false);
-                        continue;
-                    }
+                    //if (!await AcquiredUserLockAsync(token, db, character))
+                    //{
+                    //    results.Add(false);
+                    //    continue;
+                    //}
 
                     try
                     {
@@ -688,8 +714,13 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
         }
-        public async Task<IReadOnlyList<Player>> GetPlayersAsync()
+        public async Task<IReadOnlyList<Player>> GetPlayersAsync(bool forceFresh = true)
         {
+            if (!forceFresh && memoryCache.TryGetValue<List<Player>>("GetPlayersAsync", out var players))
+            {
+                return players;
+            }
+
             using (var db = dbProvider.Get())
             {
                 var characters = await db.Character
@@ -704,7 +735,9 @@ namespace RavenNest.BusinessLogic.Game
                     .Where(x => !x.Local)
                     .ToListAsync();
 
-                return characters.Select(x => x.Map(x.User)).ToList();
+                players = characters.Select(x => x.Map(x.User)).ToList();
+
+                return memoryCache.Set("GetPlayersAsync", players, DateTime.UtcNow.AddSeconds(PlayerCacheDurationSeconds));
             }
         }
         private async Task<bool> UpdateStatisticsAsync(
@@ -1318,6 +1351,13 @@ namespace RavenNest.BusinessLogic.Game
                 FemaleHairModelNumber = Utility.Random(0, 20),
                 BeardModelNumber = Utility.Random(0, 10)
             };
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool AcquiredUserLock(GameSession session, Character character)
+        {
+            return character.UserIdLock == session.UserId;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

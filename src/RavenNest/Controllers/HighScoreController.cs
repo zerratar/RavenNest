@@ -1,5 +1,8 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
+using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
@@ -11,10 +14,17 @@ namespace RavenNest.Controllers
     [ApiDescriptor(Name = "HighScore API", Description = "Used for retrieving player HighScore list.")]
     public class HighScoreController : ControllerBase
     {
+        private readonly TelemetryClient telemetryClient;
+        private readonly IMemoryCache highscoreCache;
         private readonly IHighScoreManager highScoreManager;
 
-        public HighScoreController(IHighScoreManager highScoreManager)
+        public HighScoreController(
+            TelemetryClient telemetryClient,
+            IMemoryCache highscoreCache,
+            IHighScoreManager highScoreManager)
         {
+            this.telemetryClient = telemetryClient;
+            this.highscoreCache = highscoreCache;
             this.highScoreManager = highScoreManager;
         }
 
@@ -26,9 +36,20 @@ namespace RavenNest.Controllers
             RequiresAuth = false,
             RequiresAdmin = false)
         ]
-        public Task<HighScoreCollection> GetSkillHighScore(string skill, int offset, int skip)
+        public async Task<HighScoreCollection> GetSkillHighScore(string skill, int offset, int skip)
         {
-            return highScoreManager.GetSkillHighScore(skill, offset, skip);
+            var key = $"highscore_{skill}_{offset}_{skip}";
+            if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
+            {
+                return highscoreData;
+            }
+
+            telemetryClient.TrackEvent("GetSkillHighScore_SOS");
+            highscoreData = await highScoreManager.GetSkillHighScore(skill, offset, skip);
+            return highscoreCache.Set(key, highscoreData, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
+            });
         }
 
         [HttpGet("paged/{offset}/{skip}")]
@@ -39,9 +60,20 @@ namespace RavenNest.Controllers
             RequiresAuth = false,
             RequiresAdmin = false)
         ]
-        public Task<HighScoreCollection> GetPagedHighScore(int offset, int skip)
+        public async Task<HighScoreCollection> GetPagedHighScore(int offset, int skip)
         {
-            return highScoreManager.GetHighScore(offset, skip);
+            var key = $"highscore_{offset}_{skip}";
+            if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
+            {
+                return highscoreData;
+            }
+
+            telemetryClient.TrackEvent("GetSkillHighScore_OS");
+            highscoreData = await highScoreManager.GetHighScore(offset, skip);
+            return highscoreCache.Set(key, highscoreData, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
+            });
         }
 
         [HttpGet("{skill}")]
@@ -52,9 +84,20 @@ namespace RavenNest.Controllers
             RequiresAuth = false,
             RequiresAdmin = false)
         ]
-        public Task<HighScoreCollection> GetSkillHighScore(string skill)
+        public async Task<HighScoreCollection> GetSkillHighScore(string skill)
         {
-            return highScoreManager.GetSkillHighScore(skill);
+            var key = $"highscore_{skill}";
+            if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
+            {
+                return highscoreData;
+            }
+
+            telemetryClient.TrackEvent("GetSkillHighScore_S");
+            highscoreData = await highScoreManager.GetSkillHighScore(skill);
+            return highscoreCache.Set(key, highscoreData, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
+            });
         }
 
         [HttpGet]
@@ -65,9 +108,20 @@ namespace RavenNest.Controllers
             RequiresAuth = false,
             RequiresAdmin = false)
         ]
-        public Task<HighScoreCollection> GetHighScore()
+        public async Task<HighScoreCollection> GetHighScore()
         {
-            return highScoreManager.GetHighScore();
+            var key = $"highscore";
+            if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
+            {
+                return highscoreData;
+            }
+
+            telemetryClient.TrackEvent("GetSkillHighScore");
+            highscoreData = await highScoreManager.GetHighScore();
+            return highscoreCache.Set(key, highscoreData, new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
+            });
         }
 
     }

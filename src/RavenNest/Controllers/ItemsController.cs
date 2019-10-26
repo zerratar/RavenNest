@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Game;
@@ -21,7 +22,7 @@ namespace RavenNest.Controllers
 
         public ItemsController(
             ISessionInfoProvider sessionInfoProvider,
-            IItemManager itemManager, 
+            IItemManager itemManager,
             IAuthManager authManager)
         {
             this.sessionInfoProvider = sessionInfoProvider;
@@ -125,6 +126,4 @@ namespace RavenNest.Controllers
             return null;
         }
     }
-
-
 }

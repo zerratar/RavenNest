@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.Models;
@@ -18,15 +19,25 @@ namespace RavenNest.BusinessLogic.Game
 
     public class ItemManager : IItemManager
     {
+        private const double ItemCacheDurationSeconds = 10 * 60;
+        private readonly IMemoryCache memoryCache;
         private readonly IRavenfallDbContextProvider dbProvider;
 
-        public ItemManager(IRavenfallDbContextProvider dbProvider)
+        public ItemManager(
+            IMemoryCache memoryCache,
+            IRavenfallDbContextProvider dbProvider)
         {
+            this.memoryCache = memoryCache;
             this.dbProvider = dbProvider;
         }
 
         public ItemCollection GetAllItems(AuthToken token)
         {
+            if (memoryCache.TryGetValue<ItemCollection>("GetAllItems", out var itemCollection))
+            {
+                return itemCollection;
+            }
+
             using (var db = this.dbProvider.Get())
             {
                 var items = db.Item.ToList();
@@ -37,7 +48,7 @@ namespace RavenNest.BusinessLogic.Game
                     collection.Add(ModelMapper.Map(item));
                 }
 
-                return collection;
+                return memoryCache.Set("GetAllItems", collection, DateTime.UtcNow.AddSeconds(ItemCacheDurationSeconds));
             }
         }
 
