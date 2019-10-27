@@ -3,7 +3,7 @@
     <div class="nav-bar" :class="{open: isMenuOpen, dark: isDark, scrolled: isScrolled}">
       <div class="nav-bar-content">
         <router-link to="/" class="logo">
-          <img src="assets/imgs/RavenfallGray.png" width="200" alt="" />
+          <img src="/assets/imgs/RavenfallGray.png" width="200" alt="" />
         </router-link>
         <div class="links">
           <router-link to="/" class="item">Home</router-link>

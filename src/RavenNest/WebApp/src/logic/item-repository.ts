@@ -8,7 +8,7 @@ export default class ItemRepository {
     private static itemData: any;
     private static loadedItems: Item[] = [];    
 
-    get items(): Item[] {
+    public static get items(): Item[] {
         if (ItemRepository.isLoaded) {
             return ItemRepository.loadedItems;
         }
@@ -36,6 +36,24 @@ export default class ItemRepository {
       }
 
     private static parseItemData(itemData: any) {
+        for(let raw of itemData) {
+            ItemRepository.loadedItems.push(new Item(
+                raw.id, 
+                raw.name, 
+                raw.level,
+                raw.weaponAim,
+                raw.weaponPower,
+                raw.armorPower,
+                raw.requiredAttackLevel,
+                raw.requiredDefenseLevel,
+                raw.category,
+                raw.type,
+                raw.material,
+                raw.craftable, 
+                raw.requiredCraftingLevel, 
+                raw.woodCost, 
+                raw.oreCost));
+        }
         // console.log(JSON.stringify(itemData));
     }
 }

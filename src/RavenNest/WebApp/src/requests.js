@@ -5,6 +5,7 @@ export default class Requests {
         if (DEBUG) {
             // localhost:5001
             url = "//localhost:" + port + "/" + (url.startsWith("/") ? url.substring(1) : url);
+            // url = "https://localhost:5001/" + (url.startsWith("/") ? url.substring(1) : url);
         }
         return await fetch(url, data);
     }

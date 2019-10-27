@@ -110,7 +110,7 @@
         }
       };
 
-      window.onhashchange = (e) => {
+      window.onhashchange = (e:any) => {
         loadByHash();
       };
 
@@ -153,6 +153,10 @@
       margin-top: 25px;
   }
 
+  .skill-selector a.active {
+      background-color: #0e0e0f;
+      color: white;
+  }
   a.active::after,
   .skill-selector a:hover::after {
     content: "";
