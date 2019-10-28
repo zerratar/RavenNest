@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,7 @@ namespace RavenNest.BusinessLogic.Game
     public interface IItemManager
     {
         ItemCollection GetAllItems(AuthToken token);
-        Task<bool> AddItemAsync(AuthToken token, Item item);
+        bool AddItem(AuthToken token, Item item);
         bool UpdateItem(AuthToken token, Item item);
         bool RemoveItem(AuthToken token, Guid itemId);
     }
@@ -21,14 +22,15 @@ namespace RavenNest.BusinessLogic.Game
     {
         private const double ItemCacheDurationSeconds = 10 * 60;
         private readonly IMemoryCache memoryCache;
-        private readonly IRavenfallDbContextProvider dbProvider;
+
+        private readonly IGameData gameData;
 
         public ItemManager(
             IMemoryCache memoryCache,
-            IRavenfallDbContextProvider dbProvider)
+            IGameData gameData)
         {
             this.memoryCache = memoryCache;
-            this.dbProvider = dbProvider;
+            this.gameData = gameData;
         }
 
         public ItemCollection GetAllItems(AuthToken token)
@@ -38,34 +40,27 @@ namespace RavenNest.BusinessLogic.Game
                 return itemCollection;
             }
 
-            using (var db = this.dbProvider.Get())
+            var items = gameData.GetItems();
+            var collection = new ItemCollection();
+            foreach (var item in items)
             {
-                var items = db.Item.ToList();
-                var collection = new ItemCollection();
-
-                foreach (var item in items)
-                {
-                    collection.Add(ModelMapper.Map(item));
-                }
-
-                return memoryCache.Set("GetAllItems", collection, DateTime.UtcNow.AddSeconds(ItemCacheDurationSeconds));
+                collection.Add(ModelMapper.Map(item));
             }
+
+            return memoryCache.Set("GetAllItems", collection, DateTime.UtcNow.AddSeconds(ItemCacheDurationSeconds));
         }
 
-        public async Task<bool> AddItemAsync(AuthToken token, Item item)
+        public bool AddItem(AuthToken token, Item item)
         {
-            using (var db = dbProvider.Get())
+            var dataItem = gameData.GetItem(item.Id);
+            if (dataItem == null)
             {
                 var entity = ModelMapper.Map(item);
-                if (await db.Item.FirstOrDefaultAsync(x => x.Id == item.Id) == null)
-                {
-                    await db.Item.AddAsync(entity);
-                    await db.SaveChangesAsync();
-                    return true;
-                }
-
-                return false;
+                gameData.Add(entity);
+                return true;
             }
+
+            return false;
         }
 
         public bool UpdateItem(AuthToken token, Item item)

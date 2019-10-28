@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using RavenNest.BusinessLogic.Data;
@@ -9,53 +10,49 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class GameManager : IGameManager
     {
-        private readonly IRavenfallDbContextProvider dbProvider;
+        private readonly IGameData gameData;
 
-        public GameManager(IRavenfallDbContextProvider dbProvider)
+        public GameManager(IGameData gameData)
         {
-            this.dbProvider = dbProvider;
+            this.gameData = gameData;
         }
 
-        public Task<GameInfo> GetGameInfoAsync(SessionToken session)
+        public GameInfo GetGameInfo(SessionToken session)
         {
             return null;
         }
 
-        public async Task<EventCollection> GetGameEventsAsync(
-            SessionToken session)
+        public EventCollection GetGameEvents(SessionToken session)
         {
-            using (var db = dbProvider.Get())
+            var gameSession = gameData.GetSession(session.SessionId);
+            if (gameSession == null)
             {
-                var gameSession = await db.GameSession.FirstOrDefaultAsync(x => x.Id == session.SessionId);
-                if (gameSession == null)
-                {
-                    return new EventCollection();
-                }
-
-                var sessionRevision = gameSession.Revision ?? 0;
-                var events = await db.GameEvent.Where(x =>
-                    x.GameSessionId == session.SessionId &&
-                    x.Revision > sessionRevision).ToListAsync();
-
-                var eventCollection = new EventCollection();
-
-                foreach (var ev in events)
-                {
-                    var gameEvent = ModelMapper.Map(ev);
-                    if (eventCollection.Revision < gameEvent.Revision)
-                        eventCollection.Revision = gameEvent.Revision;
-                    eventCollection.Add(gameEvent);
-                }
-
-                if (eventCollection.Revision > sessionRevision)
-                {
-                    gameSession.Revision = eventCollection.Revision;
-                    db.Update(gameSession);
-                    await db.SaveChangesAsync();
-                }
-
-                return eventCollection;
+                return new EventCollection();
             }
+
+            //var sessionRevision = gameSession.Revision ?? 0;
+            //var events = await db.GameEvent.Where(x =>
+            //    x.GameSessionId == session.SessionId &&
+            //    x.Revision > sessionRevision).ToListAsync();
+
+            var events = gameData.GetSessionEvents(gameSession);            
+            var eventCollection = new EventCollection();
+
+            foreach (var ev in events)
+            {
+                var gameEvent = ModelMapper.Map(ev);
+                if (eventCollection.Revision < gameEvent.Revision)
+                    eventCollection.Revision = gameEvent.Revision;
+                eventCollection.Add(gameEvent);
+            }
+
+            if (eventCollection.Revision > gameSession.Revision)
+            {
+                gameSession.Revision = eventCollection.Revision;
+                gameData.Update(gameSession);
+            }
+
+            return eventCollection;
         }
     }
 }

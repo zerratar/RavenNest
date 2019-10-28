@@ -12,34 +12,30 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class MarketplaceManager : IMarketplaceManager
     {
-        private readonly IRavenfallDbContextProvider dbProvider;
+        private readonly IGameData gameData;
 
-        public MarketplaceManager(IRavenfallDbContextProvider dbProvider)
+        public MarketplaceManager(IGameData gameData)
         {
-            this.dbProvider = dbProvider;
+            this.gameData = gameData;
         }
 
-        public async Task<MarketItemCollection> GetItemsAsync(
-            int offset, int size)
+        public async Task<MarketItemCollection> GetItemsAsync(int offset, int size)
         {
-            using (var db = dbProvider.Get())
-            {
-                var collection = new MarketItemCollection();
-                var marketItemCount = await db.MarketItem.CountAsync();
-                var items = await db.MarketItem.Include(x => x.SellerCharacter).ThenInclude(x => x.User).Skip(offset).Take(size).ToListAsync();
+            var collection = new MarketItemCollection();
+            var marketItemCount = await db.MarketItem.CountAsync();
+            var items = await db.MarketItem.Include(x => x.SellerCharacter).ThenInclude(x => x.User).Skip(offset).Take(size).ToListAsync();
 
-                collection.Offset = offset;
-                collection.Total = marketItemCount;
-                collection.AddRange(
-                    items.Select(x =>
-                    {
-                        var item = DataMapper.Map<Models.MarketItem, DataModels.MarketItem>(x);
-                        item.SellerUserId = x.SellerCharacter.User.UserId;
-                        return item;
-                    }));
+            collection.Offset = offset;
+            collection.Total = marketItemCount;
+            collection.AddRange(
+                items.Select(x =>
+                {
+                    var item = DataMapper.Map<Models.MarketItem, DataModels.MarketItem>(x);
+                    item.SellerUserId = x.SellerCharacter.User.UserId;
+                    return item;
+                }));
 
-                return collection;
-            }
+            return collection;
         }
 
         public async Task<ItemSellResult> SellItemAsync(
@@ -50,59 +46,56 @@ namespace RavenNest.BusinessLogic.Game
                 return new ItemSellResult(ItemTradeState.RequestToLow);
             }
 
-            using (var db = dbProvider.Get())
+            var character = await GetCharacterAsync(db, token, userId);
+            if (character == null) return new ItemSellResult(ItemTradeState.Failed);
+
+            if (!await PlayerManager.AcquiredUserLockAsync(token, db, character))
             {
-                var character = await GetCharacterAsync(db, token, userId);
-                if (character == null) return new ItemSellResult(ItemTradeState.Failed);
+                return new ItemSellResult(ItemTradeState.Failed);
+            }
 
-                if (!await PlayerManager.AcquiredUserLockAsync(token, db, character))
-                {
-                    return new ItemSellResult(ItemTradeState.Failed);
-                }
-
-                var itemsToSell = character.InventoryItem
-                    .Where(x => x.ItemId == itemId && !x.Equipped)
-                    .ToList();
+            var itemsToSell = character.InventoryItem
+                .Where(x => x.ItemId == itemId && !x.Equipped)
+                .ToList();
 
 
-                var totalItemCount = itemsToSell.Count > 0 ? itemsToSell.Sum(x => x.Amount.GetValueOrDefault()) : 0;
-                var newItemAmount = totalItemCount - amount;
+            var totalItemCount = itemsToSell.Count > 0 ? itemsToSell.Sum(x => x.Amount.GetValueOrDefault()) : 0;
+            var newItemAmount = totalItemCount - amount;
 
-                if (itemsToSell.Count == 0 || newItemAmount < 0)
-                {
-                    return new ItemSellResult(ItemTradeState.DoesNotOwn);
-                }
+            if (itemsToSell.Count == 0 || newItemAmount < 0)
+            {
+                return new ItemSellResult(ItemTradeState.DoesNotOwn);
+            }
 
-                db.RemoveRange(itemsToSell);
+            db.RemoveRange(itemsToSell);
 
-                if (newItemAmount > 0)
-                {
-                    var mergedInventoryItem = new InventoryItem
-                    {
-                        Id = Guid.NewGuid(),
-                        Amount = newItemAmount,
-                        CharacterId = character.Id,
-                        Equipped = false,
-                        ItemId = itemId,
-                        Character = character
-                    };
-                    await db.InventoryItem.AddAsync(mergedInventoryItem);
-                }
-
-                var marketItem = new DataModels.MarketItem
+            if (newItemAmount > 0)
+            {
+                var mergedInventoryItem = new InventoryItem
                 {
                     Id = Guid.NewGuid(),
-                    Amount = amount,
-                    Created = DateTime.UtcNow,
+                    Amount = newItemAmount,
+                    CharacterId = character.Id,
+                    Equipped = false,
                     ItemId = itemId,
-                    PricePerItem = pricePerItem,
-                    SellerCharacterId = character.Id,
-                    SellerCharacter = character
+                    Character = character
                 };
-
-                await db.MarketItem.AddAsync(marketItem);
-                await db.SaveChangesAsync();
+                await db.InventoryItem.AddAsync(mergedInventoryItem);
             }
+
+            var marketItem = new DataModels.MarketItem
+            {
+                Id = Guid.NewGuid(),
+                Amount = amount,
+                Created = DateTime.UtcNow,
+                ItemId = itemId,
+                PricePerItem = pricePerItem,
+                SellerCharacterId = character.Id,
+                SellerCharacter = character
+            };
+
+            await db.MarketItem.AddAsync(marketItem);
+            await db.SaveChangesAsync();
 
             return new ItemSellResult(ItemTradeState.Success);
         }
@@ -120,119 +113,107 @@ namespace RavenNest.BusinessLogic.Game
                 return new ItemBuyResult(ItemTradeState.RequestToLow, new long[0], new decimal[0], 0, 0);
             }
 
-            using (var db = dbProvider.Get())
-            {
-                var character = await GetCharacterAsync(db, token, userId);
-                if (character == null) return new ItemBuyResult(ItemTradeState.Failed, new long[0], new decimal[0], 0, 0);
+            var character = await GetCharacterAsync(db, token, userId);
+            if (character == null) return new ItemBuyResult(ItemTradeState.Failed, new long[0], new decimal[0], 0, 0);
 
-                if (!await PlayerManager.AcquiredUserLockAsync(token, db, character))
+            if (!await PlayerManager.AcquiredUserLockAsync(token, db, character))
+            {
+                return new ItemBuyResult(ItemTradeState.Failed, new long[0], new decimal[0], 0, 0);
+            }
+
+            var possibleMarketItems = await db.MarketItem
+                .Where(x => x.ItemId == itemId)
+                .OrderBy(x => x.PricePerItem)
+                .Include(x => x.SellerCharacter)
+                .ThenInclude(x => x.Resources)
+                .ToListAsync();
+
+            var requestAmount = amount;
+            var coins = character.Resources.Coins;
+            var updateRequired = false;
+            var insufficientCoins = false;
+            foreach (var marketItem in possibleMarketItems)
+            {
+                if (requestAmount <= 0)
                 {
-                    return new ItemBuyResult(ItemTradeState.Failed, new long[0], new decimal[0], 0, 0);
+                    break;
                 }
 
-                var possibleMarketItems = await db.MarketItem
-                    .Where(x => x.ItemId == itemId)
-                    .OrderBy(x => x.PricePerItem)
-                    .Include(x => x.SellerCharacter)
-                    .ThenInclude(x => x.Resources)
-                    .ToListAsync();
-
-                var requestAmount = amount;
-                var coins = character.Resources.Coins;
-                var updateRequired = false;
-                var insufficientCoins = false;
-                foreach (var marketItem in possibleMarketItems)
+                if (marketItem.PricePerItem > maxPricePerItem)
                 {
-                    if (requestAmount <= 0)
-                    {
-                        break;
-                    }
-
-                    if (marketItem.PricePerItem > maxPricePerItem)
-                    {
-                        boughtItemCount.Add(0);
-                        boughtPricePerItem.Add(marketItem.PricePerItem);
-                        continue;
-                    }
-
-                    var buyAmount = 0L;
-                    if (marketItem.Amount < requestAmount)
-                    {
-                        buyAmount = marketItem.Amount;
-                    }
-                    else if (marketItem.Amount >= requestAmount)
-                    {
-                        buyAmount = requestAmount;
-                    }
-
-                    if (buyAmount <= 0 || marketItem.Amount <= 0)
-                    {
-                        if (marketItem.Amount <= 0)
-                        {
-                            updateRequired = true;
-                            db.MarketItem.Remove(marketItem);
-                        }
-                        else
-                        {
-                            boughtItemCount.Add(0);
-                            boughtPricePerItem.Add(marketItem.PricePerItem);
-                        }
-                        break;
-                    }
-
-                    var cost = marketItem.PricePerItem * buyAmount;
-                    if (cost > coins)
-                    {
-                        buyAmount = (long)(coins / marketItem.PricePerItem);
-                        // round the cost to what we can afford
-                        cost = buyAmount * marketItem.PricePerItem;
-                        if (buyAmount <= 0)
-                            insufficientCoins = true;
-                    }
-
-                    if (buyAmount <= 0)
-                    {
-                        boughtItemCount.Add(0);
-                        boughtPricePerItem.Add(marketItem.PricePerItem);
-                        continue;
-                    }
-
+                    boughtItemCount.Add(0);
                     boughtPricePerItem.Add(marketItem.PricePerItem);
-                    boughtItemCount.Add(buyAmount);
-
-                    boughtTotalCost += cost;
-                    boughtTotalAmount += buyAmount;
-
-                    await BuyMarketItemAsync(token, itemId, db, character, marketItem, buyAmount, cost);
-
-                    requestAmount -= buyAmount;
+                    continue;
                 }
 
-                if (boughtTotalAmount <= 0 || boughtTotalCost <= 0)
+                var buyAmount = 0L;
+                if (marketItem.Amount < requestAmount)
                 {
-                    if (updateRequired)
-                    {
-                        await db.SaveChangesAsync();
-                    }
-
-                    return new ItemBuyResult(
-                        boughtItemCount.Count > 0
-                            ? boughtItemCount.All(x => x == 0) 
-                            ? ItemTradeState.InsufficientCoins 
-                            : ItemTradeState.RequestToLow
-                            : ItemTradeState.DoesNotExist,
-                        boughtItemCount.ToArray(),
-                        boughtPricePerItem.ToArray(), 0, 0);
+                    buyAmount = marketItem.Amount;
                 }
-                await db.SaveChangesAsync();
+                else if (marketItem.Amount >= requestAmount)
+                {
+                    buyAmount = requestAmount;
+                }
+
+                if (buyAmount <= 0 || marketItem.Amount <= 0)
+                {
+                    if (marketItem.Amount <= 0)
+                    {
+                        updateRequired = true;
+                        db.MarketItem.Remove(marketItem);
+                    }
+                    else
+                    {
+                        boughtItemCount.Add(0);
+                        boughtPricePerItem.Add(marketItem.PricePerItem);
+                    }
+                    break;
+                }
+
+                var cost = marketItem.PricePerItem * buyAmount;
+                if (cost > coins)
+                {
+                    buyAmount = (long)(coins / marketItem.PricePerItem);
+                    // round the cost to what we can afford
+                    cost = buyAmount * marketItem.PricePerItem;
+                    if (buyAmount <= 0)
+                        insufficientCoins = true;
+                }
+
+                if (buyAmount <= 0)
+                {
+                    boughtItemCount.Add(0);
+                    boughtPricePerItem.Add(marketItem.PricePerItem);
+                    continue;
+                }
+
+                boughtPricePerItem.Add(marketItem.PricePerItem);
+                boughtItemCount.Add(buyAmount);
+
+                boughtTotalCost += cost;
+                boughtTotalAmount += buyAmount;
+
+                await BuyMarketItemAsync(token, itemId, db, character, marketItem, buyAmount, cost);
+
+                requestAmount -= buyAmount;
             }
 
-            using (var db = dbProvider.Get())
+            if (boughtTotalAmount <= 0 || boughtTotalCost <= 0)
             {
-                var character = await GetCharacterAsync(db, token, userId);
-                PlayerManager.EquipBestItems(db, character);
-                await db.SaveChangesAsync();
+                return new ItemBuyResult(
+                    boughtItemCount.Count > 0
+                        ? boughtItemCount.All(x => x == 0)
+                        ? ItemTradeState.InsufficientCoins
+                        : ItemTradeState.RequestToLow
+                        : ItemTradeState.DoesNotExist,
+                    boughtItemCount.ToArray(),
+                    boughtPricePerItem.ToArray(), 0, 0);
             }
+
+            var character = await GetCharacterAsync(token, userId);
+            PlayerManager.EquipBestItems(character);
+            await db.SaveChangesAsync();
 
             return new ItemBuyResult(
                 ItemTradeState.Success,
@@ -318,7 +299,7 @@ namespace RavenNest.BusinessLogic.Game
             await AddGameEventAsync(db, token.SessionId, GameEventType.ItemBuy, model);
         }
 
-        private async Task<Character> GetCharacterAsync(RavenfallDbContext db, SessionToken token, string userId)
+        private async Task<Character> GetCharacterAsync(SessionToken token, string userId)
         {
             var session = await db.GameSession.FirstOrDefaultAsync(x => x.Id == token.SessionId);
             if (session == null) return null;

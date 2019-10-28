@@ -224,7 +224,7 @@ namespace RavenNest.BusinessLogic.Net
                             return;
                         }
 
-                        var events = await gameManager.GetGameEventsAsync(sessionToken);
+                        var events = await gameManager.GetGameEvents(sessionToken);
                         if (events.Count > 0)
                         {
                             var eventList = new EventList();

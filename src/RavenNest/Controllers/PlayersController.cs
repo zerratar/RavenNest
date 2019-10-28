@@ -84,7 +84,7 @@ namespace RavenNest.Controllers
                 return playerManager.GetGlobalPlayerAsync(userId);
             }
 
-            return playerManager.GetPlayerAsync(AssertGetSessionToken(), userId);
+            return playerManager.GetPlayer(AssertGetSessionToken(), userId);
         }
 
         [HttpGet("{userId}/item/{item}")]
@@ -95,7 +95,7 @@ namespace RavenNest.Controllers
         //]
         public Task<AddItemResult> AddItemAsync(string userId, Guid item)
         {
-            return playerManager.AddItemAsync(AssertGetSessionToken(), userId, item);
+            return playerManager.AddItem(AssertGetSessionToken(), userId, item);
         }
 
         [HttpGet("{userId}/unequip/{item}")]
@@ -155,7 +155,7 @@ namespace RavenNest.Controllers
         //    RequiresSession = true)]
         public Task<bool> UpdateSyntyAppearanceAsync(string userId, SyntyAppearance appearance)
         {
-            return playerManager.UpdateSyntyAppearanceAsync(AssertGetSessionToken(), userId, appearance);
+            return playerManager.UpdateSyntyAppearance(AssertGetSessionToken(), userId, appearance);
         }
         //UpdateSyntyAppearanceAsync
 
@@ -168,7 +168,7 @@ namespace RavenNest.Controllers
         //]
         public Task<bool> UpdateExperienceAsync(string userId, Many<decimal> experience)
         {
-            return playerManager.UpdateExperienceAsync(AssertGetSessionToken(), userId, experience.Values);
+            return playerManager.UpdateExperience(AssertGetSessionToken(), userId, experience.Values);
         }
 
         [HttpPost("{userId}/statistics")]
@@ -179,7 +179,7 @@ namespace RavenNest.Controllers
         //]
         public Task<bool> UpdateStatisticsAsync(string userId, Many<decimal> statistics)
         {
-            return playerManager.UpdateStatisticsAsync(AssertGetSessionToken(), userId, statistics.Values);
+            return playerManager.UpdateStatistics(AssertGetSessionToken(), userId, statistics.Values);
         }
 
         [HttpPost("{userId}/resources")]
@@ -190,7 +190,7 @@ namespace RavenNest.Controllers
         //]
         public Task<bool> UpdateResourcesAsync(string userId, Many<decimal> resources)
         {
-            return playerManager.UpdateResourcesAsync(AssertGetSessionToken(), userId, resources.Values);
+            return playerManager.UpdateResources(AssertGetSessionToken(), userId, resources.Values);
         }
 
         [HttpGet("{userId}/gift/{receiverUserId}/{itemId}")]
@@ -212,7 +212,7 @@ namespace RavenNest.Controllers
         //]
         public Task<bool[]> UpdateMany(Many<PlayerState> states)
         {
-            return playerManager.UpdateManyAsync(AssertGetSessionToken(), states.Values);
+            return playerManager.UpdateMany(AssertGetSessionToken(), states.Values);
         }
 
         private AuthToken GetAuthToken()

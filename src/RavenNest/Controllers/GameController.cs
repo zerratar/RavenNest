@@ -87,21 +87,21 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet]
-        public Task<GameInfo> GetAsync()
+        public GameInfo Get()
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
-            return gameManager.GetGameInfoAsync(session);
+            return gameManager.GetGameInfo(session);
         }
 
         [HttpPost("{clientVersion}/{accessKey}")]
 
-        public Task<SessionToken> BeginSessionAsync(string clientVersion, string accessKey, Single<bool> local)
+        public SessionToken BeginSession(string clientVersion, string accessKey, Single<bool> local)
         {
             var authToken = GetAuthToken();
             AssertAuthTokenValidity(authToken);
 
-            var session = this.sessionManager.BeginSessionAsync(authToken, clientVersion, accessKey, local.Value);
+            var session = this.sessionManager.BeginSession(authToken, clientVersion, accessKey, local.Value);
             if (session == null)
             {
                 HttpContext.Response.StatusCode = 403;
@@ -112,19 +112,19 @@ namespace RavenNest.Controllers
         }
 
         [HttpDelete("raid/{username}")]
-        public Task<bool> EndSessionAndRaidAsync(string username, Single<bool> war)
+        public bool EndSessionAndRaid(string username, Single<bool> war)
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
-            return this.sessionManager.EndSessionAndRaidAsync(session, username, war.Value);
+            return this.sessionManager.EndSessionAndRaid(session, username, war.Value);
         }
 
         [HttpDelete]
-        public Task EndSessionAsync()
+        public void EndSession()
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
-            return this.sessionManager.EndSessionAsync(session);
+            this.sessionManager.EndSession(session);
         }
 
         private SessionToken GetSessionToken()

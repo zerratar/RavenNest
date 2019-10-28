@@ -5,9 +5,9 @@ namespace RavenNest.BusinessLogic.Game
 {
     public interface ISessionManager
     {
-        Task<SessionToken> BeginSessionAsync(AuthToken token, string clientVersion, string accessKey, bool isLocal);
+        SessionToken BeginSession(AuthToken token, string clientVersion, string accessKey, bool isLocal);
         SessionToken Get(string sessionToken);
-        Task EndSessionAsync(SessionToken token);
-        Task<bool> EndSessionAndRaidAsync(SessionToken token, string userIdOrUsername, bool isWarRaid);
+        void EndSession(SessionToken token);
+        bool EndSessionAndRaid(SessionToken token, string userIdOrUsername, bool isWarRaid);
     }
 }
