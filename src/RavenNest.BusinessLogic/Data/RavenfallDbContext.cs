@@ -72,55 +72,55 @@ namespace RavenNest.BusinessLogic.Data
 
                 entity.Property(e => e.Name).IsRequired();
 
-                entity.HasOne(d => d.State)
-                    .WithMany(p => p.Character)
-                    .HasForeignKey(d => d.StateId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_Character_CharacterState");
+                //entity.HasOne(d => d.State)
+                //    .WithMany(p => p.Character)
+                //    .HasForeignKey(d => d.StateId)
+                //    .OnDelete(DeleteBehavior.ClientSetNull)
+                //    .HasConstraintName("FK_Character_CharacterState");
 
-                entity.HasOne(d => d.Appearance)
-                    .WithMany(p => p.Character)
-                    .HasForeignKey(d => d.AppearanceId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_Character_Appearance");
+                //entity.HasOne(d => d.Appearance)
+                //    .WithMany(p => p.Character)
+                //    .HasForeignKey(d => d.AppearanceId)
+                //    .OnDelete(DeleteBehavior.ClientSetNull)
+                //    .HasConstraintName("FK_Character_Appearance");
 
-                entity.HasOne(d => d.SyntyAppearance)
-                    .WithMany(p => p.Character)
-                    .HasForeignKey(d => d.SyntyAppearanceId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_Character_SyntyAppearance");
-
-
-                entity.HasOne(d => d.Statistics)
-                    .WithMany(p => p.Character)
-                    .HasForeignKey(d => d.StatisticsId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_Character_Statistics");
+                //entity.HasOne(d => d.SyntyAppearance)
+                //    .WithMany(p => p.Character)
+                //    .HasForeignKey(d => d.SyntyAppearanceId)
+                //    .OnDelete(DeleteBehavior.ClientSetNull)
+                //    .HasConstraintName("FK_Character_SyntyAppearance");
 
 
-                entity.HasOne(d => d.OriginUser)
-                    .WithMany(p => p.CharacterOriginUser)
-                    .HasForeignKey(d => d.OriginUserId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_Character_User1");
+                //entity.HasOne(d => d.Statistics)
+                //    .WithMany(p => p.Character)
+                //    .HasForeignKey(d => d.StatisticsId)
+                //    .OnDelete(DeleteBehavior.ClientSetNull)
+                //    .HasConstraintName("FK_Character_Statistics");
 
-                entity.HasOne(d => d.Resources)
-                    .WithMany(p => p.Character)
-                    .HasForeignKey(d => d.ResourcesId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_Character_Resources");
 
-                entity.HasOne(d => d.Skills)
-                    .WithMany(p => p.Character)
-                    .HasForeignKey(d => d.SkillsId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_Character_Skills");
+                //entity.HasOne(d => d.OriginUser)
+                //    .WithMany(p => p.CharacterOriginUser)
+                //    .HasForeignKey(d => d.OriginUserId)
+                //    .OnDelete(DeleteBehavior.ClientSetNull)
+                //    .HasConstraintName("FK_Character_User1");
 
-                entity.HasOne(d => d.User)
-                    .WithMany(p => p.CharacterUser)
-                    .HasForeignKey(d => d.UserId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_Character_User");
+                //entity.HasOne(d => d.Resources)
+                //    .WithMany(p => p.Character)
+                //    .HasForeignKey(d => d.ResourcesId)
+                //    .OnDelete(DeleteBehavior.ClientSetNull)
+                //    .HasConstraintName("FK_Character_Resources");
+
+                //entity.HasOne(d => d.Skills)
+                //    .WithMany(p => p.Character)
+                //    .HasForeignKey(d => d.SkillsId)
+                //    .OnDelete(DeleteBehavior.ClientSetNull)
+                //    .HasConstraintName("FK_Character_Skills");
+
+                //entity.HasOne(d => d.User)
+                //    .WithMany(p => p.CharacterUser)
+                //    .HasForeignKey(d => d.UserId)
+                //    .OnDelete(DeleteBehavior.ClientSetNull)
+                //    .HasConstraintName("FK_Character_User");
             });
 
             //modelBuilder.Entity<CharacterSession>(entity =>
@@ -148,11 +148,11 @@ namespace RavenNest.BusinessLogic.Data
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();
 
-                entity.HasOne(d => d.GameSession)
-                    .WithMany(p => p.GameEvents)
-                    .HasForeignKey(d => d.GameSessionId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_GameEvent_GameSession");
+                //entity.HasOne(d => d.GameSession)
+                //    .WithMany(p => p.GameEvents)
+                //    .HasForeignKey(d => d.GameSessionId)
+                //    .OnDelete(DeleteBehavior.ClientSetNull)
+                //    .HasConstraintName("FK_GameEvent_GameSession");
             });
 
             modelBuilder.Entity<GameClient>(entity =>
@@ -168,28 +168,28 @@ namespace RavenNest.BusinessLogic.Data
 
                 entity.Property(e => e.Stopped).HasColumnType("datetime").IsRequired(false);
 
-                entity.HasOne(d => d.User)
-                    .WithMany(p => p.GameSession)
-                    .HasForeignKey(d => d.UserId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_GameSession_User");
+                //entity.HasOne(d => d.User)
+                //    .WithMany(p => p.GameSession)
+                //    .HasForeignKey(d => d.UserId)
+                //    .OnDelete(DeleteBehavior.ClientSetNull)
+                //    .HasConstraintName("FK_GameSession_User");
             });
 
             modelBuilder.Entity<MarketItem>(entity =>
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();
 
-                entity.HasOne(d => d.SellerCharacter)
-                    .WithMany(p => p.MarketItem)
-                    .HasForeignKey(d => d.SellerCharacterId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_MarketItem_Character");
+                //entity.HasOne(d => d.SellerCharacter)
+                //    .WithMany(p => p.MarketItem)
+                //    .HasForeignKey(d => d.SellerCharacterId)
+                //    .OnDelete(DeleteBehavior.ClientSetNull)
+                //    .HasConstraintName("FK_MarketItem_Character");
 
-                entity.HasOne(d => d.Item)
-                    .WithMany(p => p.MarketItem)
-                    .HasForeignKey(d => d.ItemId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_MarketItem_Item");
+                //entity.HasOne(d => d.Item)
+                //    .WithMany(p => p.MarketItem)
+                //    .HasForeignKey(d => d.ItemId)
+                //    .OnDelete(DeleteBehavior.ClientSetNull)
+                //    .HasConstraintName("FK_MarketItem_Item");
             });
 
 
@@ -197,17 +197,17 @@ namespace RavenNest.BusinessLogic.Data
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();
 
-                entity.HasOne(d => d.Character)
-                    .WithMany(p => p.InventoryItem)
-                    .HasForeignKey(d => d.CharacterId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_InventoryItem_Character");
+                //entity.HasOne(d => d.Character)
+                //    .WithMany(p => p.InventoryItem)
+                //    .HasForeignKey(d => d.CharacterId)
+                //    .OnDelete(DeleteBehavior.ClientSetNull)
+                //    .HasConstraintName("FK_InventoryItem_Character");
 
-                entity.HasOne(d => d.Item)
-                    .WithMany(p => p.InventoryItem)
-                    .HasForeignKey(d => d.ItemId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_InventoryItem_Item");
+                //entity.HasOne(d => d.Item)
+                //    .WithMany(p => p.InventoryItem)
+                //    .HasForeignKey(d => d.ItemId)
+                //    .OnDelete(DeleteBehavior.ClientSetNull)
+                //    .HasConstraintName("FK_InventoryItem_Item");
             });
 
 

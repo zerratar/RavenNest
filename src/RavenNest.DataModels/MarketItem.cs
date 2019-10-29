@@ -10,7 +10,7 @@ namespace RavenNest.DataModels
         public long Amount { get; set; }
         public decimal PricePerItem { get; set; }
         public DateTime Created { get; set; }
-        public Character SellerCharacter { get; set; }
-        public Item Item { get; set; }
+        //public Character SellerCharacter { get; set; }
+        //public Item Item { get; set; }
     }
 }

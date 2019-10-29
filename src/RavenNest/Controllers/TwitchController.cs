@@ -68,7 +68,7 @@ namespace RavenNest.Controllers
             var user = await sessionInfoProvider.GetTwitchUserAsync(session, token);
             if (user != null)
             {
-                await playerManager.CreatePlayerIfNotExistsAsync(user.Id, user.Login);
+                playerManager.CreatePlayerIfNotExists(user.Id, user.Login);
             }
             return result;
         }

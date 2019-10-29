@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace RavenNest.DataModels
 {
@@ -7,9 +6,9 @@ namespace RavenNest.DataModels
     {
         public User()
         {
-            CharacterOriginUser = new HashSet<Character>();
-            CharacterUser = new HashSet<Character>();
-            GameSession = new HashSet<GameSession>();
+            //CharacterOriginUser = new HashSet<Character>();
+            //CharacterUser = new HashSet<Character>();
+            //GameSession = new HashSet<GameSession>();
         }
 
         public Guid Id { get; set; }
@@ -22,9 +21,8 @@ namespace RavenNest.DataModels
         public bool? IsModerator { get; set; }
         public DateTime Created { get; set; }
 
-        public ICollection<Character> CharacterOriginUser { get; set; }
-        public ICollection<Character> CharacterUser { get; set; }
-        public ICollection<GameSession> GameSession { get; set; }
-
+        //public ICollection<Character> CharacterOriginUser { get; set; }
+        //public ICollection<Character> CharacterUser { get; set; }
+        //public ICollection<GameSession> GameSession { get; set; }
     }
 }

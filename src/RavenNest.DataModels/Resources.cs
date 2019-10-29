@@ -7,7 +7,7 @@ namespace RavenNest.DataModels
     {
         public Resources()
         {
-            Character = new HashSet<Character>();
+            //Character = new HashSet<Character>();
         }
 
         public Guid Id { get; set; }
@@ -19,6 +19,6 @@ namespace RavenNest.DataModels
         public decimal Arrows { get; set; }
         public decimal Coins { get; set; }
 
-        public ICollection<Character> Character { get; set; }
+        //public ICollection<Character> Character { get; set; }
     }
 }

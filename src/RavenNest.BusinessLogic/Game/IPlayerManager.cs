@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.Models;
 
@@ -8,36 +7,34 @@ namespace RavenNest.BusinessLogic.Game
 {
     public interface IPlayerManager
     {
-        Task<Player> CreatePlayerIfNotExistsAsync(string userId, string userName);
-        Task<Player> CreatePlayerAsync(string userId, string userName);
-        Task<Player> AddPlayerAsync(SessionToken token, string userId, string userName);
-        Task<Player> GetPlayer(SessionToken sessionToken, string userId);
-        Task<Player> GetPlayerAsync(SessionToken sessionToken);
+        Player CreatePlayerIfNotExists(string userId, string userName);
+        Player CreatePlayer(string userId, string userName);
+        Player AddPlayer(SessionToken token, string userId, string userName);
+        Player GetPlayer(SessionToken sessionToken, string userId);
+        Player GetPlayer(SessionToken sessionToken);
+        Player GetGlobalPlayer(string userId);
+        Player GetGlobalPlayer(Guid userId);
+        bool UpdatePlayerState(SessionToken sessionToken, CharacterStateUpdate update);
 
-        Task<Player> GetGlobalPlayerAsync(string userId);
-        Task<Player> GetGlobalPlayerAsync(Guid userId);
-        Task<bool> UpdatePlayerStateAsync(SessionToken sessionToken, CharacterStateUpdate update);
+        bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics);
 
-        Task<bool> UpdateStatistics(SessionToken token, string userId, decimal[] statistics);
-        //Task<bool> UpdateAppearanceAsync(SessionToken token, string userId, int[] appearance);
-        //Task<bool> UpdateAppearanceAsync(string userId, int[] appearance);
+        bool UpdateSyntyAppearance(SessionToken token, string userId, Models.SyntyAppearance appearance);
 
-        Task<bool> UpdateSyntyAppearance(SessionToken token, string userId, Models.SyntyAppearance appearance);
+        bool UpdateExperience(SessionToken token, string userId, decimal[] experience);
+        bool UpdateResources(SessionToken token, string userId, decimal[] resources);
 
-        Task<bool> UpdateExperience(SessionToken token, string userId, decimal[] experience);
-        Task<bool> UpdateResources(SessionToken token, string userId, decimal[] resources);
+        bool[] UpdateMany(SessionToken token, PlayerState[] states);
 
-        Task<bool[]> UpdateMany(SessionToken token, PlayerState[] states);
+        AddItemResult AddItem(SessionToken token, string userId, Guid itemId);
+        bool GiftItem(SessionToken token, string gifterUserId, string receiverUserId, Guid itemId);
+        bool GiftResources(SessionToken token, string giftUserId, string receiverUserId, string resource, long amount);
 
-        Task<AddItemResult> AddItem(SessionToken token, string userId, Guid itemId);
-        Task<bool> GiftItemAsync(SessionToken token, string gifterUserId, string receiverUserId, Guid itemId);
-        Task<bool> GiftResourcesAsync(SessionToken token, string giftUserId, string receiverUserId, string resource, long amount);
-
-        Task<bool> EquipItemAsync(SessionToken token, string userId, Guid itemId);
-        Task<bool> UnEquipItemAsync(SessionToken token, string userId, Guid itemId);
-
-        Task<ItemCollection> GetEquippedItemsAsync(SessionToken token, string userId);
-        Task<ItemCollection> GetAllItemsAsync(SessionToken token, string userId);
-        Task<IReadOnlyList<Player>> GetPlayersAsync(bool forceFresh = true);
+        bool EquipItem(SessionToken token, string userId, Guid itemId);
+        bool UnEquipItem(SessionToken token, string userId, Guid itemId);
+        ItemCollection GetEquippedItems(SessionToken token, string userId);
+        ItemCollection GetAllItems(SessionToken token, string userId);
+        IReadOnlyList<Player> GetPlayers();
+        void EquipBestItems(DataModels.Character character);
+        bool AcquiredUserLock(SessionToken token, DataModels.Character character);
     }
 }

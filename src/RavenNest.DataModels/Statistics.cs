@@ -7,7 +7,7 @@ namespace RavenNest.DataModels
     {
         public Statistics()
         {
-            Character = new HashSet<Character>();
+            //Character = new HashSet<Character>();
         }
 
         public Guid Id { get; set; }
@@ -47,6 +47,6 @@ namespace RavenNest.DataModels
 
         public long TotalTreesCutDown { get; set; }
 
-        public ICollection<Character> Character { get; set; }
+        //public ICollection<Character> Character { get; set; }
     }
 }

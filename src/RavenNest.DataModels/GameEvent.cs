@@ -10,6 +10,6 @@ namespace RavenNest.DataModels
         public int Revision { get; set; }
         public string Data { get; set; }
 
-        public GameSession GameSession { get; set; }
+        //public GameSession GameSession { get; set; }
     }
 }

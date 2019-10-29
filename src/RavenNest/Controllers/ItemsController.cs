@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Game;
@@ -60,11 +58,11 @@ namespace RavenNest.Controllers
             RequiresAuth = true,
             RequiresAdmin = true)
         ]
-        public Task<bool> AddItemAsync(Item item)
+        public bool AddItemAsync(Item item)
         {
             var authToken = GetAuthToken();
             AssertAdminAuthToken(authToken);
-            return this.itemManager.AddItemAsync(authToken, item);
+            return this.itemManager.AddItem(authToken, item);
         }
 
         [HttpDelete("{itemId}")]

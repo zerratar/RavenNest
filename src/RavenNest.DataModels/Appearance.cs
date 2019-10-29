@@ -8,7 +8,7 @@ namespace RavenNest.DataModels
     {
         public Appearance()
         {
-            Character = new HashSet<Character>();
+            //Character = new HashSet<Character>();
         }
 
         public Guid Id { get; set; }
@@ -37,6 +37,6 @@ namespace RavenNest.DataModels
         public int FeetMaterial { get; set; }
         public int HandMaterial { get; set; }
         public bool HelmetVisible { get; set; }
-        public ICollection<Character> Character { get; set; }
+        //public ICollection<Character> Character { get; set; }
     }
 }

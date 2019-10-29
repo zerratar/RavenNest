@@ -7,7 +7,7 @@ namespace RavenNest.DataModels
     {
         public SyntyAppearance()
         {
-            Character = new HashSet<Character>();
+            //Character = new HashSet<Character>();
         }
         public Guid Id { get; set; }
         public Gender Gender { get; set; }
@@ -20,6 +20,6 @@ namespace RavenNest.DataModels
         public string BeardColor { get; set; }
         public string EyeColor { get; set; }
         public bool HelmetVisible { get; set; }
-        public ICollection<Character> Character { get; set; }
+        //public ICollection<Character> Character { get; set; }
     }
 }

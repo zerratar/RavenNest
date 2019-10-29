@@ -7,8 +7,8 @@ namespace RavenNest.DataModels
     {
         public Item()
         {
-            InventoryItem = new HashSet<InventoryItem>();
-            MarketItem = new HashSet<MarketItem>();
+            //InventoryItem = new HashSet<InventoryItem>();
+            //MarketItem = new HashSet<MarketItem>();
         }
 
         public Guid Id { get; set; }
@@ -33,7 +33,7 @@ namespace RavenNest.DataModels
         public long WoodCost { get; set; }
         public long OreCost { get; set; }
 
-        public ICollection<MarketItem> MarketItem { get; set; }
-        public ICollection<InventoryItem> InventoryItem { get; set; }
+        //public ICollection<MarketItem> MarketItem { get; set; }
+        //public ICollection<InventoryItem> InventoryItem { get; set; }
     }
 }

@@ -10,7 +10,7 @@ namespace RavenNest.DataModels
         public long? Amount { get; set; }
         public bool Equipped { get; set; }
 
-        public Character Character { get; set; }
-        public Item Item { get; set; }
+        //public Character Character { get; set; }
+        //public Item Item { get; set; }
     }
 }

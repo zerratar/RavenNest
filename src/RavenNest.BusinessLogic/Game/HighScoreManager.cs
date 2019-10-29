@@ -16,9 +16,9 @@ namespace RavenNest.BusinessLogic.Game
             this.playerManager = playerManager;
         }
 
-        public async Task<HighScoreCollection> GetSkillHighScore(string skill, int skip = 0, int take = 100)
+        public HighScoreCollection GetSkillHighScore(string skill, int skip = 0, int take = 100)
         {
-            var players = await playerManager.GetPlayersAsync(false);
+            var players = playerManager.GetPlayers();
             var items = players
                 .OrderByDescending(x => TryGetSkillExperience(skill, x.Skills, out var exp, out var level) ? level : 0)
                 .ThenByDescending(x => TryGetSkillExperience(null, x.Skills, out var exp, out var level) ? exp : 0)
@@ -36,9 +36,9 @@ namespace RavenNest.BusinessLogic.Game
             };
         }
 
-        public async Task<HighScoreCollection> GetHighScore(int skip = 0, int take = 100)
+        public HighScoreCollection GetHighScore(int skip = 0, int take = 100)
         {
-            var players = await playerManager.GetPlayersAsync(false);
+            var players = playerManager.GetPlayers();
             var items = players
                 .OrderByDescending(x => TryGetSkillExperience(null, x.Skills, out var exp, out var level) ? level : 0)
                 .ThenByDescending(x => TryGetSkillExperience(null, x.Skills, out var exp, out var level) ? exp : 0)

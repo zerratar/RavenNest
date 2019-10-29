@@ -20,7 +20,7 @@ namespace RavenNest.BusinessLogic.Net
 
             if (packet.Data is CharacterStateUpdate update)
             {
-                result = await this.playerManager.UpdatePlayerStateAsync(connection.SessionToken, update);
+                result = await this.playerManager.UpdatePlayerState(connection.SessionToken, update);
             }
 
             await connection.ReplyAsync(packet.CorrelationId, packet.Type, result, CancellationToken.None);

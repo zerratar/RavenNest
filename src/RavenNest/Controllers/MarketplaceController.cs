@@ -39,11 +39,11 @@ namespace RavenNest.Controllers
             RequiresSession = false,
             RequiresAuth = true)
         ]
-        public Task<MarketItemCollection> GetAsync(int offset, int size)
+        public MarketItemCollection Get(int offset, int size)
         {
             var auth = GetAuthToken();
             AssertAuthTokenValidity(auth);
-            return this.marketplace.GetItemsAsync(offset, size);
+            return this.marketplace.GetItems(offset, size);
         }
 
         [HttpGet("{userId}/sell/{itemId}/{amount}/{pricePerItem}")]
@@ -53,7 +53,7 @@ namespace RavenNest.Controllers
             RequiresSession = true,
             RequiresAuth = false)
         ]
-        public Task<ItemSellResult> SellItemAsync(
+        public ItemSellResult SellItem(
             string userId,
             Guid itemId,
             long amount,
@@ -61,7 +61,7 @@ namespace RavenNest.Controllers
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
-            return this.marketplace.SellItemAsync(session, userId, itemId, amount, pricePerItem);
+            return this.marketplace.SellItem(session, userId, itemId, amount, pricePerItem);
         }
 
         [HttpGet("{userId}/buy/{itemId}/{amount}/{maxPricePerItem}")]
@@ -71,7 +71,7 @@ namespace RavenNest.Controllers
             RequiresSession = true,
             RequiresAuth = false)
         ]
-        public Task<ItemBuyResult> BuyItemAsync(
+        public ItemBuyResult BuyItem(
             string userId,
             Guid itemId,
             long amount,
@@ -79,7 +79,7 @@ namespace RavenNest.Controllers
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
-            return this.marketplace.BuyItemAsync(session, userId, itemId, amount, maxPricePerItem);
+            return this.marketplace.BuyItem(session, userId, itemId, amount, maxPricePerItem);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -65,9 +65,9 @@ namespace RavenNest.Controllers
 
         [HttpPost("{userId}")]
         //[MethodDescriptor(Name = "Add Player to Game Session", Description = "Adds the target player to the ongoing session. This will lock the target player to the session and then return the player data.", RequiresSession = true)]
-        public Task<Player> PlayerJoinAsync(string userId, Single<string> username)
+        public Player PlayerJoin(string userId, Single<string> username)
         {
-            return playerManager.AddPlayerAsync(AssertGetSessionToken(), userId, username.Value);
+            return playerManager.AddPlayer(AssertGetSessionToken(), userId, username.Value);
         }
 
         [HttpGet("{userId}")]
@@ -76,12 +76,12 @@ namespace RavenNest.Controllers
             Description = "Get the target player using a Twitch UserId. This requires a session token for grabbing a local player but only an auth token for a global player.",
             RequiresAuth = true)
         ]
-        public Task<Player> GetPlayerAsync(string userId)
+        public Player GetPlayer(string userId)
         {
             if (GetSessionToken() == null)
             {
                 AssertAuthTokenValidity(GetAuthToken());
-                return playerManager.GetGlobalPlayerAsync(userId);
+                return playerManager.GetGlobalPlayer(userId);
             }
 
             return playerManager.GetPlayer(AssertGetSessionToken(), userId);
@@ -93,7 +93,7 @@ namespace RavenNest.Controllers
         //    Description = "Adds an item to the target player, the item will automatically be equipped if it is better than any other existing equipped gear.",
         //    RequiresSession = true)
         //]
-        public Task<AddItemResult> AddItemAsync(string userId, Guid item)
+        public AddItemResult AddItem(string userId, Guid item)
         {
             return playerManager.AddItem(AssertGetSessionToken(), userId, item);
         }
@@ -104,9 +104,9 @@ namespace RavenNest.Controllers
         //    Description = "UnEquips an item from the target player.",
         //    RequiresSession = true)
         //]
-        public Task<bool> UnEquipItemAsync(string userId, Guid item)
+        public bool UnEquipItem(string userId, Guid item)
         {
-            return playerManager.UnEquipItemAsync(AssertGetSessionToken(), userId, item);
+            return playerManager.UnEquipItem(AssertGetSessionToken(), userId, item);
         }
 
         [HttpGet("{userId}/equip/{item}")]
@@ -115,9 +115,9 @@ namespace RavenNest.Controllers
         //    Description = "Equips an item from the target player.",
         //    RequiresSession = true)
         //]
-        public Task<bool> EquipItemAsync(string userId, Guid item)
+        public bool EquipItem(string userId, Guid item)
         {
-            return playerManager.EquipItemAsync(AssertGetSessionToken(), userId, item);
+            return playerManager.EquipItem(AssertGetSessionToken(), userId, item);
         }
 
         //[HttpPost("appearance")]
@@ -153,7 +153,7 @@ namespace RavenNest.Controllers
         //    Name = "Update player appearance",
         //    Description = "Update the target player with a new appearance. This requires a session token to update a target player.",
         //    RequiresSession = true)]
-        public Task<bool> UpdateSyntyAppearanceAsync(string userId, SyntyAppearance appearance)
+        public bool UpdateSyntyAppearance(string userId, SyntyAppearance appearance)
         {
             return playerManager.UpdateSyntyAppearance(AssertGetSessionToken(), userId, appearance);
         }
@@ -166,7 +166,7 @@ namespace RavenNest.Controllers
         //    Description = "Update the target player with their current experience state.",
         //    RequiresSession = true)
         //]
-        public Task<bool> UpdateExperienceAsync(string userId, Many<decimal> experience)
+        public bool UpdateExperienceAsync(string userId, Many<decimal> experience)
         {
             return playerManager.UpdateExperience(AssertGetSessionToken(), userId, experience.Values);
         }
@@ -177,7 +177,7 @@ namespace RavenNest.Controllers
         //    Description = "Update the target player with their current statistics state, such as how many enemies killed, how many times they have died, etc.",
         //    RequiresSession = true)
         //]
-        public Task<bool> UpdateStatisticsAsync(string userId, Many<decimal> statistics)
+        public bool UpdateStatistics(string userId, Many<decimal> statistics)
         {
             return playerManager.UpdateStatistics(AssertGetSessionToken(), userId, statistics.Values);
         }
@@ -188,7 +188,7 @@ namespace RavenNest.Controllers
         //    Description = "Update the target player with their current resource state, such as coins, wood, ores, fish, wheat, etc.",
         //    RequiresSession = true)
         //]
-        public Task<bool> UpdateResourcesAsync(string userId, Many<decimal> resources)
+        public bool UpdateResources(string userId, Many<decimal> resources)
         {
             return playerManager.UpdateResources(AssertGetSessionToken(), userId, resources.Values);
         }
@@ -199,9 +199,9 @@ namespace RavenNest.Controllers
         //    Description = "Gift an item from one player to another, this will remove the item from the giver and add it to the receivers inventory. Gifted item will be equipped automatically if it is better than what is already equipped.",
         //    RequiresSession = true)
         //]
-        public Task<bool> GiftItem(string userId, string receiverUserId, Guid itemId)
+        public bool GiftItem(string userId, string receiverUserId, Guid itemId)
         {
-            return playerManager.GiftItemAsync(AssertGetSessionToken(), userId, receiverUserId, itemId);
+            return playerManager.GiftItem(AssertGetSessionToken(), userId, receiverUserId, itemId);
         }
 
         [HttpPost("update")]
@@ -210,7 +210,7 @@ namespace RavenNest.Controllers
         //    Description = "Update many players at the same time. This is used to save all currently playing players in one request.",
         //    RequiresSession = true)
         //]
-        public Task<bool[]> UpdateMany(Many<PlayerState> states)
+        public bool[] UpdateMany(Many<PlayerState> states)
         {
             return playerManager.UpdateMany(AssertGetSessionToken(), states.Values);
         }
@@ -258,10 +258,10 @@ namespace RavenNest.Controllers
 
         private async Task<Player> GetPlayerAsync()
         {
-            var twitchUser = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
+            var twitchUser = sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
             if (twitchUser != null)
             {
-                return await playerManager.GetGlobalPlayerAsync(twitchUser.Id);
+                return playerManager.GetGlobalPlayer(twitchUser.Id.ToString());
             }
 
             var sessionToken = GetSessionToken();
@@ -270,13 +270,13 @@ namespace RavenNest.Controllers
                 var auth = GetAuthToken();
                 if (auth != null && !auth.Expired)
                 {
-                    return await playerManager.GetGlobalPlayerAsync(auth.UserId);
+                    return playerManager.GetGlobalPlayer(auth.UserId);
                 }
 
                 return null;
             }
 
-            return await playerManager.GetPlayerAsync(sessionToken);
+            return playerManager.GetPlayer(sessionToken);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
