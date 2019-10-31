@@ -2,14 +2,12 @@
 
 namespace RavenNest.DataModels
 {
-    public partial class GameEvent
+    public partial class GameEvent : Entity<GameEvent>
     {
-        public Guid Id { get; set; }
-        public Guid GameSessionId { get; set; }
-        public int Type { get; set; }
-        public int Revision { get; set; }
-        public string Data { get; set; }
-
-        //public GameSession GameSession { get; set; }
+        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
+        private Guid gameSessionId; public Guid GameSessionId { get => gameSessionId; set => Set(ref gameSessionId, value); }
+        private int type; public int Type { get => type; set => Set(ref type, value); }
+        private int revision; public int Revision { get => revision; set => Set(ref revision, value); }
+        private string data; public string Data { get => data; set => Set(ref data, value); }
     }
 }

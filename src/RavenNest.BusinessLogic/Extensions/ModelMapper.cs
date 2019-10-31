@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using Appearance = RavenNest.DataModels.Appearance;
@@ -83,31 +84,31 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IReadOnlyList<Models.InventoryItem> Map(ICollection<InventoryItem> items)
+        public static IReadOnlyList<Models.InventoryItem> Map(IEnumerable<InventoryItem> items)
         {
             return items.Select(Map).ToList();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Player Map(this Character character, User user)
+        public static Player Map(this Character character, IGameData gameData, User user)
         {
-            return user.Map(character);
+            return user.Map(gameData, character);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Player Map(this User user, Character character)
+        public static Player Map(this User user, IGameData gameData, Character character)
         {
             return new Player
             {
                 UserName = user.UserName,
                 UserId = user.UserId,
                 Name = character.Name,
-                Appearance = Map(character.SyntyAppearance),
-                Resources = Map(character.Resources),
-                Skills = Map(character.Skills),
-                State = Map(character.State),
-                InventoryItems = Map(character.InventoryItem),
-                Statistics = Map(character.Statistics),
+                Appearance = Map(gameData.GetAppearance(character.SyntyAppearanceId)),
+                Resources = Map(gameData.GetResources(character.ResourcesId)),
+                Skills = Map(gameData.GetSkills(character.SkillsId)),
+                State = Map(gameData.GetState(character.StateId)),
+                InventoryItems = Map(gameData.GetAllPlayerItems(character.Id)),
+                Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
                 Local = character.Local,
                 OriginUserId = character.OriginUserId,
                 Revision = character.Revision.GetValueOrDefault()

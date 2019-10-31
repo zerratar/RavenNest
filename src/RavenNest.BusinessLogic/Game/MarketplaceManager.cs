@@ -236,7 +236,6 @@ namespace RavenNest.BusinessLogic.Game
             else
             {
                 marketItem.Amount = buyAmount;
-                gameData.Update(marketItem);
             }
 
             var sellerResources = gameData.GetResourcesByCharacterId(marketItem.SellerCharacterId);
@@ -245,9 +244,6 @@ namespace RavenNest.BusinessLogic.Game
             sellerResources.Coins += cost;
             buyerResources.Coins -= cost;
 
-            gameData.Update(sellerResources);
-            gameData.Update(buyerResources);
-            
             var sellerCharacter = gameData.GetCharacter(marketItem.SellerCharacterId);
             var seller = gameData.GetUser(sellerCharacter.UserId);
             var buyer = gameData.GetUser(character.UserId);

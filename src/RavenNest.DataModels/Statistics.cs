@@ -3,49 +3,45 @@ using System.Collections.Generic;
 
 namespace RavenNest.DataModels
 {
-    public partial class Statistics
+    public partial class Statistics : Entity<Statistics>
     {
-        public Statistics()
-        {
-            //Character = new HashSet<Character>();
-        }
 
-        public Guid Id { get; set; }
+        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
 
-        public int RaidsWon { get; set; }
-        public int RaidsLost { get; set; }
-        public int RaidsJoined { get; set; }
+        private int raidsWon; public int RaidsWon { get => raidsWon; set => Set(ref raidsWon, value); }
+        private int raidsLost; public int RaidsLost { get => raidsLost; set => Set(ref raidsLost, value); }
+        private int raidsJoined; public int RaidsJoined { get => raidsJoined; set => Set(ref raidsJoined, value); }
 
-        public int DuelsWon { get; set; }
-        public int DuelsLost { get; set; }
+        private int duelsWon; public int DuelsWon { get => duelsWon; set => Set(ref duelsWon, value); }
+        private int duelsLost; public int DuelsLost { get => duelsLost; set => Set(ref duelsLost, value); }
 
-        public int PlayersKilled { get; set; }
-        public int EnemiesKilled { get; set; }
+        private int playersKilled; public int PlayersKilled { get => playersKilled; set => Set(ref playersKilled, value); }
+        private int enemiesKilled; public int EnemiesKilled { get => enemiesKilled; set => Set(ref enemiesKilled, value); }
 
-        public int ArenaFightsJoined { get; set; }
-        public int ArenaFightsWon { get; set; }
+        private int arenaFightsJoined; public int ArenaFightsJoined { get => arenaFightsJoined; set => Set(ref arenaFightsJoined, value); }
+        private int arenaFightsWon; public int ArenaFightsWon { get => arenaFightsWon; set => Set(ref arenaFightsWon, value); }
 
-        public long TotalDamageDone { get; set; }
-        public long TotalDamageTaken { get; set; }
-        public int DeathCount { get; set; }
+        private long totalDamageDone; public long TotalDamageDone { get => totalDamageDone; set => Set(ref totalDamageDone, value); }
+        private long totalDamageTaken; public long TotalDamageTaken { get => totalDamageTaken; set => Set(ref totalDamageTaken, value); }
+        private int deathCount; public int DeathCount { get => deathCount; set => Set(ref deathCount, value); }
 
-        public decimal TotalWoodCollected { get; set; }
-        public decimal TotalOreCollected { get; set; }
-        public decimal TotalFishCollected { get; set; }
-        public decimal TotalWheatCollected { get; set; }
+        private decimal totalWoodCollected; public decimal TotalWoodCollected { get => totalWoodCollected; set => Set(ref totalWoodCollected, value); }
+        private decimal totalOreCollected; public decimal TotalOreCollected { get => totalOreCollected; set => Set(ref totalOreCollected, value); }
+        private decimal totalFishCollected; public decimal TotalFishCollected { get => totalFishCollected; set => Set(ref totalFishCollected, value); }
+        private decimal totalWheatCollected; public decimal TotalWheatCollected { get => totalWheatCollected; set => Set(ref totalWheatCollected, value); }
 
-        public int CraftedWeapons { get; set; }
-        public int CraftedArmors { get; set; }
-        public int CraftedPotions { get; set; }
-        public int CraftedRings { get; set; }
-        public int CraftedAmulets { get; set; }
+        private int craftedWeapons; public int CraftedWeapons { get => craftedWeapons; set => Set(ref craftedWeapons, value); }
+        private int craftedArmors; public int CraftedArmors { get => craftedArmors; set => Set(ref craftedArmors, value); }
+        private int craftedPotions; public int CraftedPotions { get => craftedPotions; set => Set(ref craftedPotions, value); }
+        private int craftedRings; public int CraftedRings { get => craftedRings; set => Set(ref craftedRings, value); }
+        private int craftedAmulets; public int CraftedAmulets { get => craftedAmulets; set => Set(ref craftedAmulets, value); }
 
-        public int CookedFood { get; set; }
+        private int cookedFood; public int CookedFood { get => cookedFood; set => Set(ref cookedFood, value); }
 
-        public int ConsumedPotions { get; set; }
-        public int ConsumedFood { get; set; }
+        private int consumedPotions; public int ConsumedPotions { get => consumedPotions; set => Set(ref consumedPotions, value); }
+        private int consumedFood; public int ConsumedFood { get => consumedFood; set => Set(ref consumedFood, value); }
 
-        public long TotalTreesCutDown { get; set; }
+        private long totalTreesCutDown; public long TotalTreesCutDown { get => totalTreesCutDown; set => Set(ref totalTreesCutDown, value); }
 
         //public ICollection<Character> Character { get; set; }
     }

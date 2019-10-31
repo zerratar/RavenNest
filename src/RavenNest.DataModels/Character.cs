@@ -2,40 +2,22 @@
 
 namespace RavenNest.DataModels
 {
-    public partial class Character
+    public partial class Character : Entity<Character>
     {
-        public Character()
-        {
-            //CharacterSession = new HashSet<CharacterSession>();
-            //InventoryItem = new HashSet<InventoryItem>();
-        }
-
-        public Guid Id { get; set; }
-        public Guid UserId { get; set; }
-        public Guid AppearanceId { get; set; }
-        public Guid? SyntyAppearanceId { get; set; }
-        public Guid SkillsId { get; set; }
-        public Guid StatisticsId { get; set; }
-        public Guid ResourcesId { get; set; }
-        public Guid? StateId { get; set; }
-        public bool Local { get; set; }
-        public Guid OriginUserId { get; set; }
-        public DateTime Created { get; set; }
-        public string Name { get; set; }
-        public int? Revision { get; set; }
-        public Guid? UserIdLock { get; set; }
-        public DateTime? LastUsed { get; set; }
-
-        //public Statistics Statistics { get; set; }
-        //public Appearance Appearance { get; set; }
-        //public SyntyAppearance SyntyAppearance { get; set; }
-        //public CharacterState State { get; set; }
-        //public User OriginUser { get; set; }
-        //public Resources Resources { get; set; }
-        //public Skills Skills { get; set; }
-        //public User User { get; set; }
-        //public ICollection<CharacterSession> CharacterSession { get; set; }
-        //public ICollection<InventoryItem> InventoryItem { get; set; }
-        //public ICollection<MarketItem> MarketItem { get; set; }
+        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
+        private Guid userId; public Guid UserId { get => userId; set => Set(ref userId, value); }
+        private Guid appearanceId; public Guid AppearanceId { get => appearanceId; set => Set(ref appearanceId, value); }
+        private Guid? syntyAppearanceId; public Guid? SyntyAppearanceId { get => syntyAppearanceId; set => Set(ref syntyAppearanceId, value); }
+        private Guid skillsId; public Guid SkillsId { get => skillsId; set => Set(ref skillsId, value); }
+        private Guid statisticsId; public Guid StatisticsId { get => statisticsId; set => Set(ref statisticsId, value); }
+        private Guid resourcesId; public Guid ResourcesId { get => resourcesId; set => Set(ref resourcesId, value); }
+        private Guid? stateId; public Guid? StateId { get => stateId; set => Set(ref stateId, value); }
+        private bool local; public bool Local { get => local; set => Set(ref local, value); }
+        private Guid originUserId; public Guid OriginUserId { get => originUserId; set => Set(ref originUserId, value); }
+        private DateTime created; public DateTime Created { get => created; set => Set(ref created, value); }
+        private string name; public string Name { get => name; set => Set(ref name, value); }
+        private int? revision; public int? Revision { get => revision; set => Set(ref revision, value); }
+        private Guid? userIdLock; public Guid? UserIdLock { get => userIdLock; set => Set(ref userIdLock, value); }
+        private DateTime? lastUsed; public DateTime? LastUsed { get => lastUsed; set => Set(ref lastUsed, value); }
     }
 }

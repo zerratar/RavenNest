@@ -45,7 +45,7 @@ namespace RavenNest.Controllers
             }
 
             telemetryClient.TrackEvent("GetSkillHighScore_SOS");
-            highscoreData = await highScoreManager.GetSkillHighScore(skill, offset, skip);
+            highscoreData = highScoreManager.GetSkillHighScore(skill, offset, skip);
             return highscoreCache.Set(key, highscoreData, new MemoryCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
@@ -69,7 +69,7 @@ namespace RavenNest.Controllers
             }
 
             telemetryClient.TrackEvent("GetSkillHighScore_OS");
-            highscoreData = await highScoreManager.GetHighScore(offset, skip);
+            highscoreData = highScoreManager.GetHighScore(offset, skip);
             return highscoreCache.Set(key, highscoreData, new MemoryCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
@@ -93,7 +93,7 @@ namespace RavenNest.Controllers
             }
 
             telemetryClient.TrackEvent("GetSkillHighScore_S");
-            highscoreData = await highScoreManager.GetSkillHighScore(skill);
+            highscoreData = highScoreManager.GetSkillHighScore(skill);
             return highscoreCache.Set(key, highscoreData, new MemoryCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
@@ -117,7 +117,7 @@ namespace RavenNest.Controllers
             }
 
             telemetryClient.TrackEvent("GetSkillHighScore");
-            highscoreData = await highScoreManager.GetHighScore();
+            highscoreData = highScoreManager.GetHighScore();
             return highscoreCache.Set(key, highscoreData, new MemoryCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)

@@ -97,7 +97,7 @@ namespace RavenNest.BusinessLogic.Game
 
             character.UserIdLock = session.UserId;
             character.LastUsed = DateTime.UtcNow;
-            return character.Map(user);
+            return character.Map(gameData, user);
         }
 
         private void TryRemovePlayerFromPreviousSession(Character character, GameSession joiningSession)
@@ -114,12 +114,15 @@ namespace RavenNest.BusinessLogic.Game
                 return;
             }
 
+            var targetSessionUser = gameData.GetUser(joiningSession.UserId);
+
             var characterUser = gameData.GetUser(character.UserId);
             var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRemove, currentSession, new PlayerRemove()
             {
+
                 Reason =
-                        joiningSession != null
-                        ? $"{character.Name} joined {joiningSession?.User?.UserName}'s stream"
+                    targetSessionUser != null
+                        ? $"{character.Name} joined {targetSessionUser.UserName}'s stream"
                         : $"{character.Name} joined another session.",
 
                 UserId = characterUser.UserId
@@ -166,7 +169,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var character = gameData.GetCharacterByUserId(user.Id);
 
-            return character.Map(user);
+            return character.Map(gameData, user);
         }
 
         public bool UpdatePlayerState(
@@ -200,7 +203,6 @@ namespace RavenNest.BusinessLogic.Game
                     state.Island = update.Island;
                     state.Task = update.Task;
                     state.TaskArgument = update.TaskArgument;
-                    gameData.Update(state);
                 }
                 return true;
             }
@@ -224,7 +226,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var character = gameData.GetCharacterByUserId(user.Id);
 
-            return character.Map(user);
+            return character.Map(gameData, user);
         }
 
         public bool UpdateSyntyAppearance(
@@ -281,7 +283,6 @@ namespace RavenNest.BusinessLogic.Game
                     EquipBestItems(character);
 
                     character.Revision = character.Revision.GetValueOrDefault() + 1;
-                    gameData.Update(character);
 
                     results.Add(true);
                 }
@@ -343,8 +344,6 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     equippedItems[i].Equipped = false;
                 }
-
-                gameData.UpdateRange(equippedItems);
             }
 
             var addNew = true;
@@ -356,7 +355,6 @@ namespace RavenNest.BusinessLogic.Game
                 if (inv != null)
                 {
                     inv.Amount += 1;
-                    gameData.Update(inv);
                     addNew = false;
                 }
             }
@@ -420,8 +418,6 @@ namespace RavenNest.BusinessLogic.Game
             if (invItem.Amount > 1)
             {
                 invItem.Amount = invItem.Amount - 1;
-                gameData.Update(invItem);
-
                 invItem = new InventoryItem
                 {
                     Id = Guid.NewGuid(),
@@ -435,7 +431,6 @@ namespace RavenNest.BusinessLogic.Game
             else
             {
                 invItem.Equipped = true;
-                gameData.Update(invItem);
             }
 
             InventoryItem invItemEq = gameData.FindPlayerItem(character.Id, x =>
@@ -465,12 +460,10 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     ++stack.Amount;
                     gameData.Remove(invItemEq);
-                    gameData.Update(stack);
                 }
                 else
                 {
                     invItemEq.Equipped = false;
-                    gameData.Update(invItemEq);
                 }
             }
 
@@ -503,12 +496,10 @@ namespace RavenNest.BusinessLogic.Game
             {
                 ++stack.Amount;
                 gameData.Remove(invItem);
-                gameData.Update(stack);
             }
             else
             {
                 invItem.Equipped = false;
-                gameData.Update(invItem);
             }
             return true;
         }
@@ -550,7 +541,7 @@ namespace RavenNest.BusinessLogic.Game
         public IReadOnlyList<Player> GetPlayers()
         {
             var characters = gameData.GetCharacters(x => !x.Local);
-            return characters.Select(x => x.Map(gameData.GetUser(x.UserId))).ToList();
+            return characters.Select(x => x.Map(gameData, gameData.GetUser(x.UserId))).ToList();
         }
 
         public bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics)
@@ -597,8 +588,6 @@ namespace RavenNest.BusinessLogic.Game
             characterStatistics.ConsumedFood += (int)statistics[index++];
 
             characterStatistics.TotalTreesCutDown += (long)statistics[index];
-
-            gameData.Update(characterStatistics);
             return false;
         }
 
@@ -656,14 +645,13 @@ namespace RavenNest.BusinessLogic.Game
         private Player GetGlobalPlayer(User user)
         {
             var character = gameData.FindCharacter(x => x.UserId == user.Id && !x.Local);
-            return character.Map(user);
+            return character.Map(gameData, user);
         }
 
         private void UpdateCharacterAppearance(Models.SyntyAppearance appearance, Character character)
         {
             var characterAppearance = gameData.GetAppearance(character.SyntyAppearanceId);
             DataMapper.RefMap(appearance, characterAppearance, nameof(appearance.Id));
-            gameData.Update(characterAppearance);
         }
 
         public bool UpdateExperience(
@@ -697,8 +685,6 @@ namespace RavenNest.BusinessLogic.Game
                 if (experience.Length > 11) skills.Magic = Math.Max(skills.Magic, experience[skillIndex++]);
                 if (experience.Length > 12) skills.Ranged = Math.Max(skills.Ranged, experience[skillIndex++]);
                 if (experience.Length > 13) skills.Sailing = Math.Max(skills.Sailing, experience[skillIndex++]);
-
-                gameData.Update(skills);
                 return true;
             }
             catch
@@ -730,7 +716,6 @@ namespace RavenNest.BusinessLogic.Game
                     weapon.InventoryItem.Equipped = false;
                 }
 
-                gameData.UpdateRange(weapons.Select(x => x.InventoryItem).ToList());
             }
 
             var items = gameData.FindPlayerItems(character.Id, x =>
@@ -785,24 +770,16 @@ namespace RavenNest.BusinessLogic.Game
                         else
                         {
                             inventoryItem.InventoryItem.Amount += diff;
-                            gameData.Update(inventoryItem.InventoryItem);
                         }
 
                         itemToEquip.InventoryItem.Amount = 1;
                     }
 
-                    gameData.Update(itemToEquip.InventoryItem);
                 }
 
                 foreach (var item in itemGroup.Where(x => x != itemToEquip))
                 {
                     item.InventoryItem.Equipped = false;
-                    gameData.Update(item.InventoryItem);
-                }
-
-                if (itemToEquip != null)
-                {
-                    gameData.Update(itemToEquip.InventoryItem);
                 }
             }
         }
@@ -828,8 +805,6 @@ namespace RavenNest.BusinessLogic.Game
                 characterResources.Coins += resources[index++];
                 characterResources.Magic += resources[index++];
                 characterResources.Arrows += resources[index];
-
-                gameData.Update(characterResources);
                 return true;
             }
             catch
@@ -886,7 +861,7 @@ namespace RavenNest.BusinessLogic.Game
             character.UserIdLock = session?.UserId;
             character.LastUsed = DateTime.UtcNow;
             gameData.Add(character);
-            return character.Map(user);
+            return character.Map(gameData, user);
         }
 
         private Statistics GenerateStatistics()

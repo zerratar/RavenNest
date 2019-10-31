@@ -42,7 +42,7 @@ namespace RavenNest.BusinessLogic.Game
                 EndSession(activeSession);
             }
 
-            GameSession newGameSession = gameData.CreateSession(userId, isLocal);
+            var newGameSession = gameData.CreateSession(userId);
 
             gameData.Add(newGameSession);
 
@@ -73,10 +73,8 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
-            User user = gameData.FindUser(userIdOrUsername);
-
-            // x => x.UserId == userIdOrUsername || x.UserName.ToLower().Equals(userIdOrUsername));
-
+            var sessionUser = gameData.GetUser(currentSession.UserId);
+            var user = gameData.FindUser(userIdOrUsername);
             if (user == null)
             {
                 //await EndSessionAsync(token);
@@ -104,13 +102,14 @@ namespace RavenNest.BusinessLogic.Game
             var characters = gameData.GetSessionCharacters(currentSession);
 
             //  var revision = gameData.GetNextGameEventRevision(targetSession.Id);
+
             var ge = gameData.CreateSessionEvent(
                 isWarRaid ? GameEventType.WarRaid : GameEventType.Raid,
                 targetSession, new
                 {
-                    RaiderUserName = currentSession.User.UserName,
-                    RaiderUserId = currentSession.User.UserId,
-                    Players = characters.Select(x => x.User.UserId).ToArray()
+                    RaiderUserName = sessionUser.UserName,
+                    RaiderUserId = sessionUser.UserId,
+                    Players = characters.Select(x => gameData.GetUser(x.UserId).UserId).ToArray()
                 });
 
             //var ge = new DataModels.GameEvent
@@ -153,12 +152,10 @@ namespace RavenNest.BusinessLogic.Game
             foreach (var character in characters)
             {
                 character.UserIdLock = null;
-                gameData.Update(character);
             }
 
             session.Status = (int)SessionStatus.Inactive;
             session.Stopped = DateTime.UtcNow;
-            gameData.Update(session);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

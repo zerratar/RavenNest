@@ -223,8 +223,10 @@ namespace RavenNest.BusinessLogic.Net
                             cts.Cancel();
                             return;
                         }
+                        // could probably use IGameData here instead. listen for game events and wait for events with a semaphoreslim 
+                        // and don't continue the loop until we got new events
 
-                        var events = await gameManager.GetGameEvents(sessionToken);
+                        var events = gameManager.GetGameEvents(sessionToken);
                         if (events.Count > 0)
                         {
                             var eventList = new EventList();

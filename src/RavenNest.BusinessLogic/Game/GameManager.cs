@@ -45,7 +45,6 @@ namespace RavenNest.BusinessLogic.Game
             if (eventCollection.Revision > gameSession.Revision)
             {
                 gameSession.Revision = eventCollection.Revision;
-                gameData.Update(gameSession);
             }
 
             return eventCollection;

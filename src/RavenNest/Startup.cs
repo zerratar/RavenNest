@@ -212,12 +212,14 @@ namespace RavenNest
             services.AddSingleton<IGameManager, GameManager>();
             services.AddSingleton<IMarketplaceManager, MarketplaceManager>();
             services.AddSingleton<ISessionManager, SessionManager>();
-            services.AddSingleton<IPlayerSessionManager, PlayerSessionManager>();
+            services.AddSingleton<IKernel, Kernel>();
             services.AddSingleton<IAuthManager, AuthManager>();
             services.AddSingleton<IItemManager, ItemManager>();
             services.AddSingleton<IHighScoreManager, HighScoreManager>();
             services.AddSingleton<IServerManager, ServerManager>();
             services.AddSingleton<IGamePacketManager, GamePacketManager>();
+            services.AddSingleton<IQueryBuilder, QueryBuilder>();
+            services.AddSingleton<IGameData, GameData>();
 
             // Register providers
             services.AddSingleton<IRavenfallDbContextProvider, RavenfallDbContextProvider>();
