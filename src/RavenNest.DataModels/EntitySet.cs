@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
-using Microsoft.EntityFrameworkCore;
 
 namespace RavenNest.DataModels
 {
@@ -65,7 +64,10 @@ namespace RavenNest.DataModels
             {
                 if (this.groupLookup.TryGetValue(group, out var groupEntities))
                 {
-                    return groupEntities[groupKey].Values.ToList();
+                    var grouped = groupEntities[groupKey];
+                    if (grouped != null)
+                        return grouped.Values.ToList();
+                    return new List<TModel>();
                 }
 
                 throw new KeyNotFoundException("No entities could be found with the provided ID.");
@@ -188,9 +190,26 @@ namespace RavenNest.DataModels
 
         public void RegisterLookupGroup(string name, Func<TModel, TKey> lookupKey)
         {
-            var dict = new ConcurrentDictionary<TKey, ConcurrentDictionary<TKey, TModel>>(entities.Values.GroupBy(lookupKey)
-                .ToDictionary(x => x.Key, x => new ConcurrentDictionary<TKey, TModel>(x.ToDictionary(y => keySelector(y), y => y))));
-            this.groupLookup[name] = new EntityLookupGroup<TModel, TKey>(dict, lookupKey, keySelector);
+            var grouped = entities.Values.GroupBy(lookupKey).ToList();
+            var values = grouped.ToDictionary(x => x.Key, x =>
+            {
+                var dictionary = x.ToDictionary(y => keySelector(y), y => y);
+                return new ConcurrentDictionary<TKey, TModel>(dictionary);
+            });
+
+            this.groupLookup[name] = new EntityLookupGroup<TModel, TKey>(
+                new ConcurrentDictionary<TKey, ConcurrentDictionary<TKey, TModel>>(values),
+                lookupKey,
+                keySelector);
         }
+    }
+
+
+    public enum EntityState
+    {
+        Unchanged,
+        Added,
+        Modified,
+        Deleted
     }
 }

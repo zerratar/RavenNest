@@ -1,15 +1,14 @@
 ﻿using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
 using RavenNest.DataModels;
 
 public class EntityStoreItems
 {
-    public EntityStoreItems(EntityState state, IEnumerable<IEntity> entities)
+    public EntityStoreItems(RavenNest.DataModels.EntityState state, IEnumerable<IEntity> entities)
     {
         State = state;
         Entities = entities;
     }
 
-    public EntityState State { get; }
+    public RavenNest.DataModels.EntityState State { get; }
     public IEnumerable<IEntity> Entities { get; }
 }

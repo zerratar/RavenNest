@@ -17,7 +17,14 @@ namespace RavenNest.DataModels
             this.itemKey = itemKey;
         }
 
-        public ConcurrentDictionary<TKey, TModel> this[TKey key] => entities[key];
+        public ConcurrentDictionary<TKey, TModel> this[TKey key]
+        {
+            get
+            {
+                if (entities.TryGetValue(key, out var dict)) return dict;                
+                return null;
+            }
+        }
 
         public TModel this[TKey group, TKey item] => entities[group][item];
 

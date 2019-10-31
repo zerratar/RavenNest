@@ -68,7 +68,7 @@
       MyPlayer.getPlayerDataAsync().then(()=>{
         --this.loadCounter;
         this.$forceUpdate();
-        this.$router.push('/character/skills');
+        // this.$router.push('/character');
       });
     }
 

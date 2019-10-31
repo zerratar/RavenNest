@@ -30,7 +30,7 @@ export default new Router({
             name: 'character',
             component: () => import('./views/Character.vue'),
             children: [
-                { path: '/character/skills', name: 'skills', component: () => import('./views/character/Skills.vue') },
+                { path: '', name: 'skills', component: () => import('./views/character/Skills.vue') },
                 { path: '/character/inventory', name: 'inventory', component: () => import('./views/character/Inventory.vue') }
             ]
         }, {

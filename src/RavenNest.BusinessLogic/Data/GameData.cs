@@ -344,7 +344,7 @@ namespace RavenNest.BusinessLogic.Data
                 resources.Added, statistics.Added, skills.Added, users.Added, gameClients.Added);
 
             // All adds must be added sequential in the same batch, since an added item may refer to an entity that comes in the next batch.
-            foreach (var batch in CreateBatches(EntityState.Added, addedItems, int.MaxValue))
+            foreach (var batch in CreateBatches(RavenNest.DataModels.EntityState.Added, addedItems, int.MaxValue))
             {
                 queue.Enqueue(batch);
             }
@@ -353,7 +353,7 @@ namespace RavenNest.BusinessLogic.Data
                 gameSessions.Updated, gameEvents.Updated, inventoryItems.Updated, marketItems.Updated, items.Updated,
                 resources.Updated, statistics.Updated, skills.Updated, users.Updated, gameClients.Updated);
 
-            foreach (var batch in CreateBatches(EntityState.Modified, updateItems, SaveMaxBatchSize))
+            foreach (var batch in CreateBatches(RavenNest.DataModels.EntityState.Modified, updateItems, SaveMaxBatchSize))
             {
                 queue.Enqueue(batch);
             }
@@ -362,7 +362,7 @@ namespace RavenNest.BusinessLogic.Data
                 gameSessions.Removed, gameEvents.Removed, inventoryItems.Removed, marketItems.Removed, items.Removed,
                 resources.Removed, statistics.Removed, skills.Removed, users.Removed, gameClients.Removed);
 
-            foreach (var batch in CreateBatches(EntityState.Deleted, deletedItems, SaveMaxBatchSize))
+            foreach (var batch in CreateBatches(RavenNest.DataModels.EntityState.Deleted, deletedItems, SaveMaxBatchSize))
             {
                 queue.Enqueue(batch);
             }
@@ -370,7 +370,7 @@ namespace RavenNest.BusinessLogic.Data
             return queue;
         }
 
-        private ICollection<EntityStoreItems> CreateBatches(EntityState state, ICollection<EntityChangeSet> items, int batchSize)
+        private ICollection<EntityStoreItems> CreateBatches(RavenNest.DataModels.EntityState state, ICollection<EntityChangeSet> items, int batchSize)
         {
             if (items == null || items.Count == 0) return new List<EntityStoreItems>();
             var batches = (int)Math.Floor(items.Count / (float)batchSize) + 1;

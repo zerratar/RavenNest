@@ -258,7 +258,7 @@ namespace RavenNest.Controllers
 
         private async Task<Player> GetPlayerAsync()
         {
-            var twitchUser = sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
+            var twitchUser = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
             if (twitchUser != null)
             {
                 return playerManager.GetGlobalPlayer(twitchUser.Id.ToString());
