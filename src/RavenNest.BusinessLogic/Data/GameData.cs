@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.EntityFrameworkCore;
@@ -42,6 +43,8 @@ namespace RavenNest.BusinessLogic.Data
             this.kernel = kernel;
             this.queryBuilder = queryBuilder;
 
+            var stopWatch = new Stopwatch();
+            stopWatch.Start();
             using (var ctx = this.db.Get())
             {
                 appearances = new EntitySet<Appearance, Guid>(ctx.Appearance.ToList(), i => i.Id);
@@ -74,6 +77,8 @@ namespace RavenNest.BusinessLogic.Data
 
                 Client = gameClients.Entities.First();
             }
+            stopWatch.Stop();
+            logger.WriteDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
         }
 
         public GameClient Client { get; private set; }
@@ -295,6 +300,12 @@ namespace RavenNest.BusinessLogic.Data
             ScheduleNextSave();
         }
 
+
+        public void Flush()
+        {
+            SaveChanges();
+        }
+
         private void SaveChanges()
         {
             kernel.ClearTimeout(scheduleHandler);
@@ -310,7 +321,7 @@ namespace RavenNest.BusinessLogic.Data
                     {
                         var query = queryBuilder.Build(saveData);
                         if (query == null) return;
-                        var result = ctx.Database.ExecuteSqlCommand(query.Command, query.Parameters);
+                        var result = ctx.Database.ExecuteSqlCommand(query.Command);
                         if (result == 0)
                         {
                             logger.WriteError("Unable to save data! Abort Query failed: ");
@@ -377,7 +388,7 @@ namespace RavenNest.BusinessLogic.Data
             var batchList = new List<EntityStoreItems>(batches);
             for (var i = 0; i < batchList.Count; ++i)
             {
-                batchList[i] = new EntityStoreItems(state, items.Skip(i * batchSize).Take(batchSize).Select(x => x.Entity));
+                batchList[i] = new EntityStoreItems(state, items.Skip(i * batchSize).Take(batchSize).Select(x => x.Entity).ToList());
             }
             return batchList;
         }
@@ -387,5 +398,6 @@ namespace RavenNest.BusinessLogic.Data
         {
             return changesets.SelectMany(x => x).OrderBy(x => x.LastModified).ToList();
         }
+
     }
 }

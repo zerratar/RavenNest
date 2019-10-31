@@ -88,8 +88,13 @@ namespace RavenNest
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IApplicationLifetime applicationLifetime, IHostingEnvironment env)
         {
+
+            applicationLifetime.ApplicationStopping.Register(() =>
+            {
+                app.ApplicationServices.GetService<IGameData>().Flush();
+            });
 
             if (env.IsDevelopment())
             {
@@ -227,7 +232,11 @@ namespace RavenNest
             services.AddSingleton<ISessionInfoProvider, SessionInfoProvider>();
 
             services.AddSingleton<ISecureHasher, SecureHasher>();
+#if DEBUG
+            services.AddSingleton<ILogger, ConsoleLogger>();
+#else
             services.AddSingleton<ILogger, RavenfallDbLogger>();
+#endif
             services.AddSingleton<IBinarySerializer, BinarySerializer>();
             services.AddSingleton<IGamePacketSerializer, GamePacketSerializer>();
         }

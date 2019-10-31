@@ -82,6 +82,11 @@ namespace RavenNest.BusinessLogic.Data
         void Add(DataModels.MarketItem entity);
         void Add(DataModels.GameEvent entity);
 
+        /// <summary>
+        ///     Force save the current state to the database.
+        /// </summary>
+        void Flush();
+
         #endregion
 
         //#region Update
