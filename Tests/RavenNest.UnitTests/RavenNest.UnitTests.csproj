@@ -13,7 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\RavenNest.SDK\RavenNest.SDK.csproj" />
+    <ProjectReference Include="..\..\src\RavenNest.BusinessLogic\RavenNest.BusinessLogic.csproj" />
+    <ProjectReference Include="..\..\src\RavenNest.DataModels\RavenNest.DataModels.csproj" />
   </ItemGroup>
 
 </Project>

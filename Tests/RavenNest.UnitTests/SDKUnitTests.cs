@@ -1,10 +1,9 @@
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using RavenNest.SDK;
-using RavenNest.SDK.Endpoints;
 
 namespace RavenNest.UnitTests
 {
+
     [TestClass]
     public class SDKUnitTests
     {

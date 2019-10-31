@@ -42,10 +42,10 @@ namespace RavenNest.BusinessLogic.Data
                 var idProperty = GetProperty(type, "Id");
                 var propertySets = GetSqlReadyPropertySet(entity, properties.Where(x => x.Name != "Id").ToArray());
                 sb.Append($"UPDATE {type.Name} ");
-                sb.Append($"SET {string.Join(",", propertySets)}");
+                sb.Append($"SET {string.Join(",", propertySets)} ");
                 sb.AppendLine($"WHERE `Id` = {GetSqlReadyPropertyValue(idProperty.PropertyType, idProperty.GetValue(entity))};");
             }
-            
+
             sb.AppendLine("COMMIT;");
             return new SqlSaveQuery(sb.ToString());
         }
@@ -57,21 +57,13 @@ namespace RavenNest.BusinessLogic.Data
             foreach (var group in saveData.Entities.GroupBy(x => x.GetType()))
             {
                 var type = group.Key;
+                var idProperty = GetProperty(type, "Id");
                 var properties = GetProperties(type);
 
                 sb.AppendLine($"DELETE FROM {group.Key.Name} WHERE ");
 
-                var wheres = new List<string>();
-                foreach (var entity in group)
-                {
-                    var map = GetKeyValueMap(entity, properties);
-                    if (map.TryGetValue("Id", out var value))
-                    {
-                        wheres.Add("(`Id` = " + value + ")");
-                    }
-                }
-
-                sb.AppendLine(string.Join(",\r\n", wheres));
+                var wheres = group.Select(entity => "(`Id` = " + GetSqlReadyPropertyValue(idProperty.PropertyType, idProperty.GetValue(entity)) + ")").ToList();
+                sb.Append(string.Join(" OR \r\n", wheres));
 
                 sb.AppendLine(";");
             }
@@ -90,10 +82,9 @@ namespace RavenNest.BusinessLogic.Data
                 var propertyNames = string.Join(", ", properties.Select(x => x.Name));
                 sb.AppendLine($"INSERT INTO {group.Key.Name} ({propertyNames}) VALUES ");
 
-                sb.AppendLine(
-                    string.Join(",\r\n",
-                        group.Select(x => "(" + string.Join(",", GetSqlReadyPropertyValues(x, properties) + ")"))));
-
+                var rows = group.Select(x => "(" + string.Join(",", GetSqlReadyPropertyValues(x, properties)) + ")");
+                var line = string.Join(",\r\n", rows);
+                sb.Append(line);
                 sb.AppendLine(";");
             }
             sb.AppendLine("COMMIT;");
@@ -137,6 +128,12 @@ namespace RavenNest.BusinessLogic.Data
             if (typeof(bool) == type)
             {
                 return (bool)value == true ? "1" : "0";
+            }
+
+            if (typeof(bool?) == type)
+            {
+                var b = (value as bool?);
+                return b.GetValueOrDefault() ? "1" : "0";
             }
 
             return "NULL";
