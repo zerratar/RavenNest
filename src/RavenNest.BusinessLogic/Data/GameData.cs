@@ -332,6 +332,9 @@ namespace RavenNest.BusinessLogic.Data
                     }
                 }
 
+                // let this give a build error
+                SetUnchangedState();
+
                 // do actual save logic                
             }
             catch (Exception exc)
@@ -345,6 +348,13 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
+        private void SetUnchangedState() {
+         foreach(var set in new []{appearances, syntyAppearances, characters, characterStates,
+                gameSessions, gameEvents, inventoryItems, marketItems, items,
+                resources, statistics, skills, users, gameClients}) {
+             set.MakeUnchanged();
+         }
+        }
 
         private Queue<EntityStoreItems> BuildSaveQueue()
         {
@@ -354,8 +364,7 @@ namespace RavenNest.BusinessLogic.Data
                 gameSessions.Added, gameEvents.Added, inventoryItems.Added, marketItems.Added, items.Added,
                 resources.Added, statistics.Added, skills.Added, users.Added, gameClients.Added);
 
-            // All adds must be added sequential in the same batch, since an added item may refer to an entity that comes in the next batch.
-            foreach (var batch in CreateBatches(RavenNest.DataModels.EntityState.Added, addedItems, int.MaxValue))
+            foreach (var batch in CreateBatches(RavenNest.DataModels.EntityState.Added, addedItems, SaveMaxBatchSize))
             {
                 queue.Enqueue(batch);
             }
