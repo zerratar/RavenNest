@@ -40,6 +40,13 @@ namespace RavenNest.DataModels
             }
         }
 
+        public void ClearChanges()
+        {
+            addedEntities.Clear();
+            updatedEntities.Clear();
+            removedEntities.Clear();
+        }
+
         public bool TryGet(TKey key, out TModel entity)
         {
             return entities.TryGetValue(key, out entity);
@@ -102,7 +109,7 @@ namespace RavenNest.DataModels
             }
 
             entities[key] = model;
-            updatedEntities[key] = new EntityChangeSet
+            addedEntities[key] = new EntityChangeSet
             {
                 LastModified = DateTime.UtcNow,
                 State = EntityState.Added,

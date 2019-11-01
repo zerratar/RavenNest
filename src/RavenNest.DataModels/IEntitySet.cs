@@ -3,15 +3,18 @@ using System.Collections.Generic;
 
 namespace RavenNest.DataModels
 {
-    public interface IEntitySet<TModel, TKey>
+    public interface IEntitySet
     {
-        ICollection<TModel> Entities { get; }
-
         ICollection<EntityChangeSet> Added { get; }
         ICollection<EntityChangeSet> Updated { get; }
         ICollection<EntityChangeSet> Removed { get; }
-
         DateTime LastModified { get; }
+        void ClearChanges();
+    }
+
+    public interface IEntitySet<TModel, TKey> : IEntitySet
+    {
+        ICollection<TModel> Entities { get; }
 
         void Add(TModel model);
         void Remove(TModel model);

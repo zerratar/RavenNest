@@ -41,9 +41,9 @@ namespace RavenNest.BusinessLogic.Data
                 var properties = GetProperties(type);
                 var idProperty = GetProperty(type, "Id");
                 var propertySets = GetSqlReadyPropertySet(entity, properties.Where(x => x.Name != "Id").ToArray());
-                sb.Append($"UPDATE {type.Name} ");
+                sb.Append($"UPDATE [{type.Name}] ");
                 sb.Append($"SET {string.Join(",", propertySets)} ");
-                sb.AppendLine($"WHERE `Id` = {GetSqlReadyPropertyValue(idProperty.PropertyType, idProperty.GetValue(entity))};");
+                sb.AppendLine($"WHERE Id = {GetSqlReadyPropertyValue(idProperty.PropertyType, idProperty.GetValue(entity))};");
             }
 
             sb.AppendLine("COMMIT;");
@@ -58,11 +58,10 @@ namespace RavenNest.BusinessLogic.Data
             {
                 var type = group.Key;
                 var idProperty = GetProperty(type, "Id");
-                var properties = GetProperties(type);
+                //var properties = GetProperties(type);            
+                sb.AppendLine($"DELETE FROM [{group.Key.Name}] WHERE ");
 
-                sb.AppendLine($"DELETE FROM {group.Key.Name} WHERE ");
-
-                var wheres = group.Select(entity => "(`Id` = " + GetSqlReadyPropertyValue(idProperty.PropertyType, idProperty.GetValue(entity)) + ")").ToList();
+                var wheres = group.Select(entity => "(Id = " + GetSqlReadyPropertyValue(idProperty.PropertyType, idProperty.GetValue(entity)) + ")").ToList();
                 sb.Append(string.Join(" OR \r\n", wheres));
 
                 sb.AppendLine(";");
@@ -80,7 +79,7 @@ namespace RavenNest.BusinessLogic.Data
                 var type = group.Key;
                 var properties = GetProperties(type);
                 var propertyNames = string.Join(", ", properties.Select(x => x.Name));
-                sb.AppendLine($"INSERT INTO {group.Key.Name} ({propertyNames}) VALUES ");
+                sb.AppendLine($"INSERT INTO [{group.Key.Name}] ({propertyNames}) VALUES ");
 
                 var rows = group.Select(x => "(" + string.Join(",", GetSqlReadyPropertyValues(x, properties)) + ")");
                 var line = string.Join(",\r\n", rows);

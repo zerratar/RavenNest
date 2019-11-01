@@ -34,7 +34,10 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<Skills, Guid> skills;
         private readonly EntitySet<User, Guid> users;
         private readonly EntitySet<GameClient, Guid> gameClients;
+        private readonly IEntitySet[] entitySets;
+
         private ITimeoutHandle scheduleHandler;
+
 
         public GameData(IRavenfallDbContextProvider db, ILogger logger, IKernel kernel, IQueryBuilder queryBuilder)
         {
@@ -76,6 +79,13 @@ namespace RavenNest.BusinessLogic.Data
                 gameClients = new EntitySet<GameClient, Guid>(ctx.GameClient.ToList(), i => i.Id);
 
                 Client = gameClients.Entities.First();
+
+                entitySets = new IEntitySet[]
+                {
+                    appearances, syntyAppearances, characters, characterStates,
+                    gameSessions, gameEvents, inventoryItems, marketItems, items,
+                    resources, statistics, skills, users, gameClients
+                };
             }
             stopWatch.Stop();
             logger.WriteDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
@@ -300,7 +310,6 @@ namespace RavenNest.BusinessLogic.Data
             ScheduleNextSave();
         }
 
-
         public void Flush()
         {
             SaveChanges();
@@ -324,7 +333,7 @@ namespace RavenNest.BusinessLogic.Data
                         var result = ctx.Database.ExecuteSqlCommand(query.Command);
                         if (result == 0)
                         {
-                            logger.WriteError("Unable to save data! Abort Query failed: ");
+                            logger.WriteError("Unable to save data! Abort Query failed");
                             return;
                         }
 
@@ -332,10 +341,7 @@ namespace RavenNest.BusinessLogic.Data
                     }
                 }
 
-                // let this give a build error
-                SetUnchangedState();
-
-                // do actual save logic                
+                ClearChangeSetState();
             }
             catch (Exception exc)
             {
@@ -348,40 +354,30 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
-        private void SetUnchangedState() {
-         foreach(var set in new []{appearances, syntyAppearances, characters, characterStates,
-                gameSessions, gameEvents, inventoryItems, marketItems, items,
-                resources, statistics, skills, users, gameClients}) {
-             set.MakeUnchanged();
-         }
+        private void ClearChangeSetState()
+        {
+            foreach (var set in entitySets)
+            {
+                set.ClearChanges();
+            }
         }
 
         private Queue<EntityStoreItems> BuildSaveQueue()
         {
-            Queue<EntityStoreItems> queue = new Queue<EntityStoreItems>();
-
-            var addedItems = JoinChangeSets(appearances.Added, syntyAppearances.Added, characters.Added, characterStates.Added,
-                gameSessions.Added, gameEvents.Added, inventoryItems.Added, marketItems.Added, items.Added,
-                resources.Added, statistics.Added, skills.Added, users.Added, gameClients.Added);
-
+            var queue = new Queue<EntityStoreItems>();
+            var addedItems = JoinChangeSets(entitySets.Select(x => x.Added).ToArray());
             foreach (var batch in CreateBatches(RavenNest.DataModels.EntityState.Added, addedItems, SaveMaxBatchSize))
             {
                 queue.Enqueue(batch);
             }
 
-            var updateItems = JoinChangeSets(appearances.Updated, syntyAppearances.Updated, characters.Updated, characterStates.Updated,
-                gameSessions.Updated, gameEvents.Updated, inventoryItems.Updated, marketItems.Updated, items.Updated,
-                resources.Updated, statistics.Updated, skills.Updated, users.Updated, gameClients.Updated);
-
+            var updateItems = JoinChangeSets(entitySets.Select(x => x.Updated).ToArray());
             foreach (var batch in CreateBatches(RavenNest.DataModels.EntityState.Modified, updateItems, SaveMaxBatchSize))
             {
                 queue.Enqueue(batch);
             }
 
-            var deletedItems = JoinChangeSets(appearances.Removed, syntyAppearances.Removed, characters.Removed, characterStates.Removed,
-                gameSessions.Removed, gameEvents.Removed, inventoryItems.Removed, marketItems.Removed, items.Removed,
-                resources.Removed, statistics.Removed, skills.Removed, users.Removed, gameClients.Removed);
-
+            var deletedItems = JoinChangeSets(entitySets.Select(x => x.Removed).ToArray());
             foreach (var batch in CreateBatches(RavenNest.DataModels.EntityState.Deleted, deletedItems, SaveMaxBatchSize))
             {
                 queue.Enqueue(batch);
@@ -395,9 +391,9 @@ namespace RavenNest.BusinessLogic.Data
             if (items == null || items.Count == 0) return new List<EntityStoreItems>();
             var batches = (int)Math.Floor(items.Count / (float)batchSize) + 1;
             var batchList = new List<EntityStoreItems>(batches);
-            for (var i = 0; i < batchList.Count; ++i)
+            for (var i = 0; i < batches; ++i)
             {
-                batchList[i] = new EntityStoreItems(state, items.Skip(i * batchSize).Take(batchSize).Select(x => x.Entity).ToList());
+                batchList.Add(new EntityStoreItems(state, items.Skip(i * batchSize).Take(batchSize).Select(x => x.Entity).ToList()));
             }
             return batchList;
         }
