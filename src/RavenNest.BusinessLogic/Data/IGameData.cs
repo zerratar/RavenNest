@@ -18,7 +18,7 @@ namespace RavenNest.BusinessLogic.Data
         /// <summary>
         /// Find player items by predicate
         /// </summary>
-        /// <param name="id"></param>
+        /// <param name="characterId"></param>
         /// <param name="predicate"></param>
         /// <returns></returns>
         IReadOnlyList<DataModels.InventoryItem> FindPlayerItems(Guid characterId, Func<DataModels.InventoryItem, bool> predicate);
