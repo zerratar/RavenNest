@@ -99,7 +99,7 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private IEnumerable<string> GetSqlReadyPropertySet(IEntity entity, PropertyInfo[] properties)
         {
-            return properties.Select(x => "`" + x.Name + "` = " + GetSqlReadyPropertyValue(x.PropertyType, x.GetValue(entity)));
+            return properties.Select(x => x.Name + " = " + GetSqlReadyPropertyValue(x.PropertyType, x.GetValue(entity)));
         }
 
         private string GetSqlReadyPropertyValue(Type type, object value)
@@ -142,7 +142,7 @@ namespace RavenNest.BusinessLogic.Data
         {
             // TODO: Implement
             //       We should be using sqlparameters but how do we bulk that properly?
-            return value;
+            return value?.Replace("'", "''");
         }
 
         private Dictionary<string, object> GetKeyValueMap(IEntity entity, PropertyInfo[] properties)

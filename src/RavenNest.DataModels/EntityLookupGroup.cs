@@ -21,7 +21,7 @@ namespace RavenNest.DataModels
         {
             get
             {
-                if (entities.TryGetValue(key, out var dict)) return dict;                
+                if (entities.TryGetValue(key, out var dict)) return dict;
                 return null;
             }
         }
@@ -32,7 +32,16 @@ namespace RavenNest.DataModels
         {
             var groupKey = lookupKey(entity);
             var key = itemKey(entity);
-            entities[groupKey][key] = entity;
+
+            if (!entities.ContainsKey(groupKey))
+            {
+                entities[groupKey] = new ConcurrentDictionary<TKey, TModel>();
+            }
+
+            if (entities.TryGetValue(groupKey, out var dict))
+            {
+                dict[key] = entity;
+            }
         }
 
         public void Remove(TModel entity)

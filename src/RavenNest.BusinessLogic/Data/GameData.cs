@@ -12,7 +12,7 @@ namespace RavenNest.BusinessLogic.Data
 {
     public class GameData : IGameData
     {
-        private const int SaveInterval = 60000 * 5; // every 5 minutes
+        private const int SaveInterval = 10000;//60000 * 5; // every 5 minutes
         private const int SaveMaxBatchSize = 100;
 
         private readonly IRavenfallDbContextProvider db;
@@ -324,21 +324,29 @@ namespace RavenNest.BusinessLogic.Data
                 logger.WriteDebug("Saving all pending changes to the database.");
 
                 var queue = BuildSaveQueue();
-                using (var ctx = db.Get())
+                using (var con = db.GetConnection())
                 {
+                    con.Open();
                     while (queue.TryPeek(out var saveData))
                     {
                         var query = queryBuilder.Build(saveData);
                         if (query == null) return;
-                        var result = ctx.Database.ExecuteSqlCommand(query.Command);
+
+                        var command = con.CreateCommand();
+                        command.CommandText = query.Command;
+
+                        var result = command.ExecuteNonQuery();
                         if (result == 0)
                         {
                             logger.WriteError("Unable to save data! Abort Query failed");
                             return;
                         }
 
+                        ClearChangeSetState(saveData);
+
                         queue.Dequeue();
                     }
+                    con.Close();
                 }
 
                 ClearChangeSetState();
@@ -354,11 +362,14 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
-        private void ClearChangeSetState()
+        private void ClearChangeSetState(EntityStoreItems items = null)
         {
             foreach (var set in entitySets)
             {
-                set.ClearChanges();
+                if (items == null)
+                    set.ClearChanges();
+                else
+                    set.Clear(items.Entities);
             }
         }
 

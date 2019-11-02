@@ -10,6 +10,7 @@ namespace RavenNest.DataModels
         ICollection<EntityChangeSet> Removed { get; }
         DateTime LastModified { get; }
         void ClearChanges();
+        void Clear(IReadOnlyList<IEntity> entities);
     }
 
     public interface IEntitySet<TModel, TKey> : IEntitySet
