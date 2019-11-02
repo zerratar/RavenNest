@@ -61,7 +61,8 @@ namespace RavenNest.DataModels
                     return model;
                 }
 
-                throw new KeyNotFoundException("No entities with the ID " + key + " could be found.");
+                return null;
+                //throw new KeyNotFoundException("No entities with the ID " + key + " could be found.");
             }
         }
 
@@ -77,7 +78,8 @@ namespace RavenNest.DataModels
                     return new List<TModel>();
                 }
 
-                throw new KeyNotFoundException("No entities could be found with the provided ID.");
+                return new List<TModel>();
+                //throw new KeyNotFoundException("No entities could be found with the provided ID.");
             }
         }
 
@@ -90,15 +92,21 @@ namespace RavenNest.DataModels
                     return groupEntities[groupKey, itemKey];
                 }
 
-                throw new KeyNotFoundException("No entities could be found with the provided ID.");
+
+                return null;
+                //throw new KeyNotFoundException("No entities could be found with the provided ID.");
             }
         }
 
         public void Add(TModel model)
         {
             var key = keySelector(model);
+            if (entities.ContainsKey(key))
+                return;
+
             if (addedEntities.ContainsKey(key) || updatedEntities.ContainsKey(key) || removedEntities.ContainsKey(key))
                 return;
+
             LastModified = DateTime.UtcNow;
             model.PropertyChanged -= OnEntityPropertyChanged;
             model.PropertyChanged += OnEntityPropertyChanged;
@@ -208,6 +216,18 @@ namespace RavenNest.DataModels
                 new ConcurrentDictionary<TKey, ConcurrentDictionary<TKey, TModel>>(values),
                 lookupKey,
                 keySelector);
+        }
+
+        public void Clear(IReadOnlyList<IEntity> entities)
+        {
+            foreach (var entity in entities)
+            {
+                if (!(entity is TModel model)) continue;
+                var key = keySelector(model);
+                this.addedEntities.TryRemove(key, out _);
+                this.updatedEntities.TryRemove(key, out _);
+                this.removedEntities.TryRemove(key, out _);
+            }
         }
     }
 

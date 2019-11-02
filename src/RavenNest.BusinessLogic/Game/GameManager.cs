@@ -39,7 +39,8 @@ namespace RavenNest.BusinessLogic.Game
                 var gameEvent = ModelMapper.Map(ev);
                 if (eventCollection.Revision < gameEvent.Revision)
                     eventCollection.Revision = gameEvent.Revision;
-                eventCollection.Add(gameEvent);
+                if (gameEvent.Revision > gameSession.Revision)
+                    eventCollection.Add(gameEvent);
             }
 
             if (eventCollection.Revision > gameSession.Revision)
