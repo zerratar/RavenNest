@@ -10,36 +10,33 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class AuthManager : IAuthManager
     {
+        private readonly IGameData gameData;
         private readonly ILogger logger;
-        private readonly IRavenfallDbContextProvider ctxProvider;
         private readonly ISecureHasher secureHash;
 
         public AuthManager(
+            IGameData gameData,
             ILogger logger,
-            IRavenfallDbContextProvider ctxProvider,
             ISecureHasher secureHash)
         {
+            this.gameData = gameData;
             this.logger = logger;
-            this.ctxProvider = ctxProvider;
             this.secureHash = secureHash;
         }
 
-        public async Task<bool> CheckIfIsAdminAsync(AuthToken authToken)
+        public bool IsAdmin(AuthToken authToken)
         {
-            using (var db = ctxProvider.Get())
+            var user = gameData.GetUser(authToken.UserId);
+            if (user == null) return false;
+            if (user.IsAdmin.HasValue)
             {
-                var user = await db.User.FirstOrDefaultAsync(x => x.Id == authToken.UserId);
-                if (user == null) return false;
-                if (user.IsAdmin.HasValue)
-                {
-                    return user.IsAdmin.Value;
-                }
+                return user.IsAdmin.Value;
             }
 
             return false;
         }
 
-        public async Task SignUpAsync(
+        public void SignUp(
             string userId,
             string userLogin,
             string userDisplayName,
@@ -48,63 +45,51 @@ namespace RavenNest.BusinessLogic.Game
         {
             try
             {
-                using (var db = ctxProvider.Get())
+
+                var user = gameData.GetUser(userId);
+                if (user == null)
                 {
-                    var user = await db.User
-                        .FirstOrDefaultAsync(x => x.UserId.Equals(userId, StringComparison.OrdinalIgnoreCase));
-
-                    if (user == null)
-                    {
-                        return;
-                    }
-
-                    if (!string.IsNullOrEmpty(user.PasswordHash))
-                    {
-                        return;
-                    }
-
-                    user.DisplayName = userDisplayName;
-                    user.UserName = userLogin;
-                    user.Email = userEmail;
-                    user.PasswordHash = secureHash.Get(password);
-                    db.Update(user);
-                    await db.SaveChangesAsync();
+                    return;
                 }
+
+                if (!string.IsNullOrEmpty(user.PasswordHash))
+                {
+                    return;
+                }
+
+                user.DisplayName = userDisplayName;
+                user.UserName = userLogin;
+                user.Email = userEmail;
+                user.PasswordHash = secureHash.Get(password);
             }
             catch (Exception exc)
             {
-                await logger.WriteErrorAsync(
+                logger.WriteError(
                     $"Error saving user data for '{userDisplayName} ({userId})'! (EXCEPTION): " + exc);
             }
         }
 
-        public async Task<AuthToken> AuthenticateAsync(string username, string password)
+        public AuthToken Authenticate(string username, string password)
         {
-            using (var db = ctxProvider.Get())
+            var user = gameData.GetUser(username);
+            if (user == null)
             {
-                var user = await db.User
-                    .FirstOrDefaultAsync(
-                        x => x.UserName.Equals(username, StringComparison.OrdinalIgnoreCase));
-
-                if (user == null)
-                {
-                    return null;
-                }
-
-                if (string.IsNullOrEmpty(user.PasswordHash))
-                {
-                    //return GenerateAuthToken(user);
-                    return null; // you must now have a password.
-                }
-
-                var hashedPassword = secureHash.Get(password);
-                if (user.PasswordHash.Equals(hashedPassword))
-                {
-                    return GenerateAuthToken(user);
-                }
-
                 return null;
             }
+
+            if (string.IsNullOrEmpty(user.PasswordHash))
+            {
+                //return GenerateAuthToken(user);
+                return null; // you must now have a password.
+            }
+
+            var hashedPassword = secureHash.Get(password);
+            if (user.PasswordHash.Equals(hashedPassword))
+            {
+                return GenerateAuthToken(user);
+            }
+
+            return null;
         }
 
         private AuthToken GenerateAuthToken(User user)

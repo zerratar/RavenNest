@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
@@ -28,13 +28,6 @@ namespace RavenNest.Controllers
             this.authManager = authManager;
         }
 
-        //[HttpGet("willitwonka")]
-        //public Task<string> ImportJsonDatabase()
-        //{
-        //    return new ItemImporter(itemManager)
-        //        .ImportJsonDatabaseAsync();
-        //}
-
         [HttpGet]
         [MethodDescriptor(
             Name = "Get all available items",
@@ -42,11 +35,16 @@ namespace RavenNest.Controllers
             RequiresSession = false,
             RequiresAuth = true)
         ]
-        public ItemCollection Get()
+        public async Task<ItemCollection> Get()
         {
-            var authToken = GetAuthToken();
-            AssertAuthTokenValidity(authToken);
-            var itemCollection = itemManager.GetAllItems(authToken);
+            var twitchUser = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
+            if (twitchUser == null)
+            {
+                var authToken = GetAuthToken();
+                AssertAuthTokenValidity(authToken);
+            }
+            
+            var itemCollection = itemManager.GetAllItems();
             return itemCollection;
         }
 
@@ -62,7 +60,7 @@ namespace RavenNest.Controllers
         {
             var authToken = GetAuthToken();
             AssertAdminAuthToken(authToken);
-            return this.itemManager.AddItem(authToken, item);
+            return this.itemManager.AddItem(item);
         }
 
         [HttpDelete("{itemId}")]
@@ -77,7 +75,7 @@ namespace RavenNest.Controllers
         {
             var authToken = GetAuthToken();
             AssertAdminAuthToken(authToken);
-            return this.itemManager.RemoveItem(authToken, itemId);
+            return this.itemManager.RemoveItem(itemId);
         }
 
         [HttpPut]
@@ -92,7 +90,7 @@ namespace RavenNest.Controllers
         {
             var authToken = GetAuthToken();
             AssertAdminAuthToken(authToken);
-            return this.itemManager.UpdateItem(authToken, item);
+            return this.itemManager.UpdateItem(item);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -100,7 +98,7 @@ namespace RavenNest.Controllers
         {
             if (authToken == null) throw new NullReferenceException(nameof(authToken));
             if (authToken.UserId == Guid.Empty) throw new NullReferenceException(nameof(authToken.UserId));
-            if (authToken.Expired) throw new SecurityTokenExpiredException("Session has expired.");
+            if (authToken.Expired) throw new Exception("Session has expired.");
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -51,9 +51,9 @@ namespace RavenNest.Controllers
             RequiresAuth = false,
             RequiresAdmin = false)
         ]
-        public Task<AuthToken> AuthenticateAsync(AuthModel model)
+        public AuthToken AuthenticateAsync(AuthModel model)
         {
-            return this.authManager.AuthenticateAsync(model.Username, model.Password);
+            return this.authManager.Authenticate(model.Username, model.Password);
         }
 
         [HttpPost("login")]
@@ -64,10 +64,10 @@ namespace RavenNest.Controllers
             RequiresAuth = false,
             RequiresAdmin = false)
         ]
-        public async Task<SessionInfo> LoginAsync(AuthModel model)
+        public Task<SessionInfo> LoginAsync(AuthModel model)
         {
-            var authenticateAsync = await this.authManager.AuthenticateAsync(model.Username, model.Password);
-            return await sessionInfoProvider.SetAuthTokenAsync(HttpContext.Session, authenticateAsync);
+            var authenticateAsync = this.authManager.Authenticate(model.Username, model.Password);
+            return sessionInfoProvider.SetAuthTokenAsync(HttpContext.Session, authenticateAsync);
         }
 
         [HttpGet("logout")]
@@ -96,7 +96,7 @@ namespace RavenNest.Controllers
         public async Task<SessionInfo> SignUpAsync(PasswordModel password)
         {
             var user = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
-            await authManager.SignUpAsync(user.Id, user.Login, user.DisplayName, user.Email, password.Password);
+            authManager.SignUp(user.Id, user.Login, user.DisplayName, user.Email, password.Password);
             return await sessionInfoProvider.StoreAsync(HttpContext.Session);
         }
 

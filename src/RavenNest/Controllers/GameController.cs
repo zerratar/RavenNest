@@ -2,7 +2,6 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Game;
@@ -34,7 +33,7 @@ namespace RavenNest.Controllers
             var authToken = GetAuthToken();
             AssertAuthTokenValidity(authToken);
 
-            if (!await authManager.CheckIfIsAdminAsync(authToken))
+            if (!authManager.IsAdmin(authToken))
             {
                 return;
             }
@@ -55,11 +54,11 @@ namespace RavenNest.Controllers
         {
             if (authToken == null) throw new NullReferenceException(nameof(authToken));
             if (authToken.UserId == Guid.Empty) throw new NullReferenceException(nameof(authToken.UserId));
-            if (authToken.Expired) throw new SecurityTokenExpiredException("Session has expired.");
-            if (string.IsNullOrEmpty(authToken.Token)) throw new SecurityTokenExpiredException("Session has expired.");
+            if (authToken.Expired) throw new Exception("Session has expired.");
+            if (string.IsNullOrEmpty(authToken.Token)) throw new Exception("Session has expired.");
             if (authToken.Token != secureHasher.Get(authToken))
             {
-                throw new SecurityTokenExpiredException("Session has expired.");
+                throw new Exception("Session has expired.");
             }
         }
     }
@@ -150,11 +149,11 @@ namespace RavenNest.Controllers
         {
             if (authToken == null) throw new NullReferenceException(nameof(authToken));
             if (authToken.UserId == Guid.Empty) throw new NullReferenceException(nameof(authToken.UserId));
-            if (authToken.Expired) throw new SecurityTokenExpiredException("Session has expired.");
-            if (string.IsNullOrEmpty(authToken.Token)) throw new SecurityTokenExpiredException("Session has expired.");
+            if (authToken.Expired) throw new Exception("Session has expired.");
+            if (string.IsNullOrEmpty(authToken.Token)) throw new Exception("Session has expired.");
             if (authToken.Token != secureHasher.Get(authToken))
             {
-                throw new SecurityTokenExpiredException("Session has expired.");
+                throw new Exception("Session has expired.");
             }
         }
 
@@ -163,7 +162,7 @@ namespace RavenNest.Controllers
         {
             if (sessionToken == null) throw new NullReferenceException(nameof(sessionToken));
             if (sessionToken.SessionId == Guid.Empty) throw new NullReferenceException(nameof(sessionToken.SessionId));
-            if (sessionToken.Expired) throw new SecurityTokenExpiredException("Session has expired.");
+            if (sessionToken.Expired) throw new Exception("Session has expired.");
         }
     }
 

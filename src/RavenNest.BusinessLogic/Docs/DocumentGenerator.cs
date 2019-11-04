@@ -4,11 +4,8 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
-using Newtonsoft.Json;
 using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Docs.Models;
-using RavenNest.Models;
-using Remotion.Linq.Parsing.Structure.IntermediateModel;
 
 namespace RavenNest.BusinessLogic.Docs
 {

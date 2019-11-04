@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
 using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
@@ -87,7 +85,7 @@ namespace RavenNest.Controllers
         {
             if (authToken == null) throw new NullReferenceException(nameof(authToken));
             if (authToken.UserId == Guid.Empty) throw new NullReferenceException(nameof(authToken.UserId));
-            if (authToken.Expired) throw new SecurityTokenExpiredException("Session has expired.");
+            if (authToken.Expired) throw new Exception("Session has expired.");
         }
 
         private SessionToken GetSessionToken()
@@ -102,7 +100,7 @@ namespace RavenNest.Controllers
         {
             if (sessionToken == null) throw new NullReferenceException(nameof(sessionToken));
             if (string.IsNullOrEmpty(sessionToken.AuthToken)) throw new NullReferenceException(nameof(sessionToken.AuthToken));
-            if (sessionToken.Expired) throw new SecurityTokenExpiredException("Session has expired.");
+            if (sessionToken.Expired) throw new Exception("Session has expired.");
         }
 
         private AuthToken GetAuthToken()
