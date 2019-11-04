@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading.Tasks;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.DataModels;
@@ -11,14 +12,16 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class SessionManager : ISessionManager
     {
+        private readonly ITwitchClient twitchClient;
         private readonly IGameData gameData;
 
-        public SessionManager(IGameData gameData) // IRavenfallDbContextProvider dbProvider
+        public SessionManager(ITwitchClient twitchClient, IGameData gameData)
         {
+            this.twitchClient = twitchClient;
             this.gameData = gameData;
         }
 
-        public SessionToken BeginSession(AuthToken token, string clientVersion, string accessKey, bool isLocal)
+        public async Task<SessionToken> BeginSessionAsync(AuthToken token, string clientVersion, string accessKey, bool isLocal)
         {
             var game = gameData.Client;
             var user = gameData.GetUser(token.UserId);
@@ -46,7 +49,27 @@ namespace RavenNest.BusinessLogic.Game
 
             gameData.Add(newGameSession);
 
-            if (user.IsAdmin.GetValueOrDefault() || user.IsModerator.GetValueOrDefault())
+            var isAdmin = user.IsAdmin.GetValueOrDefault();
+            var isModerator = user.IsModerator.GetValueOrDefault();
+            var subInfo = await twitchClient.GetSubscriberAsync(user.UserId);
+            var subscriptionTier = 0;
+            var expMultiplierLimit = 0;
+            if (subInfo != null && int.TryParse(subInfo.Tier, out subscriptionTier))
+            {
+                subscriptionTier /= 1000;
+                expMultiplierLimit = subscriptionTier == 1 ? 10 : (subscriptionTier - 1) * 25;
+            }
+            if (isModerator)
+            {
+                subscriptionTier = 3;
+                expMultiplierLimit = 50;
+            }
+            if (isAdmin)
+            {
+                subscriptionTier = 3;
+                expMultiplierLimit = 5000;
+            }
+            if (isAdmin || isModerator || subInfo != null)
             {
                 DataModels.GameEvent permissionEvent = gameData.CreateSessionEvent(
                     GameEventType.PermissionChange,
@@ -54,12 +77,13 @@ namespace RavenNest.BusinessLogic.Game
                     new Permissions
                     {
                         IsAdministrator = user.IsAdmin ?? false,
-                        IsModerator = user.IsModerator ?? false
+                        IsModerator = user.IsModerator ?? false,
+                        SubscriberTier = subscriptionTier,
+                        ExpMultiplierLimit = expMultiplierLimit,
                     });
 
                 gameData.Add(permissionEvent);
             }
-
 
             return GenerateSessionToken(token, newGameSession);
         }

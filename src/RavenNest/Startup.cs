@@ -248,6 +248,8 @@ namespace RavenNest
             services.AddSingleton<IQueryBuilder, QueryBuilder>();
             services.AddSingleton<IGameData, GameData>();
 
+            services.AddSingleton<ITwitchClient, TwitchClient>();
+
             // Register providers
             services.AddSingleton<IRavenfallDbContextProvider, RavenfallDbContextProvider>();
             services.AddSingleton<IWebSocketConnectionProvider, WebSocketConnectionProvider>();
