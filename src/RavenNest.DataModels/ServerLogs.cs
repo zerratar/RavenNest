@@ -11,6 +11,7 @@ namespace RavenNest.DataModels
         Warning,
         Error
     }
+
     public class ServerLogs
     {
         public long Id { get; set; }

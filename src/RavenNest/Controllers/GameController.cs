@@ -6,6 +6,7 @@ using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
+using TwitchLib.Api.Helix.Models.Subscriptions;
 
 namespace RavenNest.Controllers
 {
@@ -68,17 +69,20 @@ namespace RavenNest.Controllers
     //[ApiDescriptor(Name = "Game API", Description = "Used for handling game sessions and polling game events.")]
     public class GameController : ControllerBase
     {
+        private readonly ITwitchClient twitchClient;
         private readonly IAuthManager authManager;
         private readonly ISessionManager sessionManager;
         private readonly IGameManager gameManager;
         private readonly ISecureHasher secureHasher;
 
         public GameController(
+            ITwitchClient twitchClient,
             IAuthManager authManager,
             ISessionManager sessionManager,
             IGameManager gameManager,
             ISecureHasher secureHasher)
         {
+            this.twitchClient = twitchClient;
             this.authManager = authManager;
             this.sessionManager = sessionManager;
             this.gameManager = gameManager;
@@ -95,12 +99,12 @@ namespace RavenNest.Controllers
 
         [HttpPost("{clientVersion}/{accessKey}")]
 
-        public SessionToken BeginSession(string clientVersion, string accessKey, Single<bool> local)
+        public async Task<SessionToken> BeginSessionAsync(string clientVersion, string accessKey, Single<bool> local)
         {
             var authToken = GetAuthToken();
             AssertAuthTokenValidity(authToken);
 
-            var session = this.sessionManager.BeginSession(authToken, clientVersion, accessKey, local.Value);
+            var session = await this.sessionManager.BeginSessionAsync(authToken, clientVersion, accessKey, local.Value);
             if (session == null)
             {
                 HttpContext.Response.StatusCode = 403;
