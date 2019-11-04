@@ -84,8 +84,6 @@ namespace RavenNest.BusinessLogic
                         return;
                     }
                 }
-
-                var timeout = 100;
                 try
                 {
                     lock (timeoutMutex)
@@ -99,8 +97,6 @@ namespace RavenNest.BusinessLogic
                                 item.Action?.Invoke();
                                 continue;
                             }
-
-                            timeout = Math.Max(10, Math.Min(timeout, (int)(item.Timeout - DateTime.Now).TotalMilliseconds));
                         }
                     }
                 }
@@ -108,7 +104,7 @@ namespace RavenNest.BusinessLogic
                 {
                     // ignored, we can't have the kernel die due to an exception
                 }
-                System.Threading.Thread.Sleep(timeout);
+                System.Threading.Thread.Sleep(250);
             } while (true);
         }
 

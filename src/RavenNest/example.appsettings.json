@@ -5,6 +5,14 @@
     }
   },
   "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "BlobStorage": ""
+  },
+  "AzureAppSettings": {
+    "ClientId": "<azure client id>",
+    "ClientSecret": "<azure client secret>",
+    "KeyIdentifier": "<key store identifier>"
+  },
   "AppSettings": {
     "DbConnectionString": "<database connection string here>",
     "TwitchClientId": "<twitch client id>",

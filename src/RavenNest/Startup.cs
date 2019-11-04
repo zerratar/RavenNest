@@ -2,11 +2,13 @@
 using System.IO;
 using System.Reflection;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.StaticFiles;
+using Microsoft.Azure.Storage.Blob;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -42,6 +44,21 @@ namespace RavenNest
             //services.AddSingleton(typeof(ITelemetryChannel),
             //            new ServerTelemetryChannel() { StorageFolder = "/tmp/myfolder" });
 
+            services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
+
+            var azureAppSettings = Configuration.GetSection("AzureAppSettings").Get<AzureAppSettings>();
+            var storageConnectionKey = Configuration.GetConnectionString("BlobStorage");
+            var storageAccount = Microsoft.Azure.Storage.CloudStorageAccount.Parse(storageConnectionKey);
+            var client = storageAccount.CreateCloudBlobClient();
+            var container = client.GetContainerReference("key-container");
+            container.CreateIfNotExistsAsync().GetAwaiter().GetResult();
+
+            //Microsoft.AspNetCore.DataProtection.AzureDataProtectionBuilderExtensions
+
+            services.AddDataProtection()
+                .PersistKeysToAzureBlobStorage(container, "keys.xml")
+                .ProtectKeysWithAzureKeyVault(azureAppSettings.KeyIdentifier, azureAppSettings.ClientId, azureAppSettings.ClientSecret);
+
             services.AddApplicationInsightsTelemetry();
             services.AddCors(options =>
             {
@@ -52,15 +69,15 @@ namespace RavenNest
 
             services.AddSession(options =>
             {
-                options.IdleTimeout = TimeSpan.FromHours(2);
+                options.IdleTimeout = TimeSpan.FromHours(1);
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                options.Cookie.SameSite = SameSiteMode.Strict;
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
             });
 
-            services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
-
             RegisterServices(services);
-            
+
             services.AddMvc().AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
@@ -242,7 +259,7 @@ namespace RavenNest
 #else
             services.AddSingleton<ILogger, RavenfallDbLogger>();
 #endif
-            services.AddSingleton<IBinarySerializer, BinarySerializer>();
+            services.AddSingleton<IBinarySerializer, RavenNest.BusinessLogic.Serializers.BinarySerializer>();
             services.AddSingleton<IGamePacketSerializer, GamePacketSerializer>();
         }
     }
