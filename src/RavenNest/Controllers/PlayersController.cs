@@ -4,7 +4,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Docs.Attributes;
@@ -235,11 +234,11 @@ namespace RavenNest.Controllers
         {
             if (authToken == null) throw new NullReferenceException(nameof(authToken));
             if (authToken.UserId == Guid.Empty) throw new NullReferenceException(nameof(authToken.UserId));
-            if (authToken.Expired) throw new SecurityTokenExpiredException("Session has expired.");
-            if (string.IsNullOrEmpty(authToken.Token)) throw new SecurityTokenExpiredException("Session has expired.");
+            if (authToken.Expired) throw new Exception("Session has expired.");
+            if (string.IsNullOrEmpty(authToken.Token)) throw new Exception("Session has expired.");
             if (authToken.Token != secureHasher.Get(authToken))
             {
-                throw new SecurityTokenExpiredException("Session has expired.");
+                throw new Exception("Session has expired.");
             }
         }
         private SessionToken AssertGetSessionToken()
@@ -284,7 +283,7 @@ namespace RavenNest.Controllers
         {
             if (sessionToken == null) throw new NullReferenceException(nameof(sessionToken));
             if (string.IsNullOrEmpty(sessionToken.AuthToken)) throw new NullReferenceException(nameof(sessionToken.AuthToken));
-            if (sessionToken.Expired) throw new SecurityTokenExpiredException("Session has expired.");
+            if (sessionToken.Expired) throw new Exception("Session has expired.");
         }
 
     }

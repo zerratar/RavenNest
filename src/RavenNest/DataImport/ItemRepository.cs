@@ -16,10 +16,10 @@ namespace RavenNest
             return GetKeyImp(item);
         }
 
-        public IReadOnlyList<CraftableItemDefinition> All()
-        {
-            return this.items.Values.ToList();
-        }
+        //public IReadOnlyList<CraftableItemDefinition> All()
+        //{
+        //    return this.items.Values.ToList();
+        //}
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static string GetKeyImp(CraftableItemDefinition item)

@@ -12,11 +12,11 @@ namespace RavenNest.Controllers
     [ApiController]
     public class VersionController : ControllerBase
     {
-        private readonly IHostingEnvironment env;
+        private readonly IWebHostEnvironment env;
         private readonly IRavenfallDbContextProvider dbProvider;
 
         public VersionController(
-            IHostingEnvironment env,
+            IWebHostEnvironment env,
             IRavenfallDbContextProvider dbProvider)
         {
             this.env = env;

@@ -7,6 +7,9 @@ export default class Requests {
             url = "//localhost:" + port + "/" + (url.startsWith("/") ? url.substring(1) : url);
             // url = "https://localhost:5001/" + (url.startsWith("/") ? url.substring(1) : url);
         }
+        else {
+            url = url.startsWith("/") ? url : `/${url}`;
+        }
         return await fetch(url, data);
     }
 }

@@ -8,7 +8,7 @@
       </div>
 
       <nav class="character-navigation">
-        <router-link to="/character" class="item">Skills</router-link>
+        <router-link to="/character/skills" class="item">Skills</router-link>
         <router-link to="/character/inventory" class="item">Inventory</router-link>
       </nav>
 
@@ -68,7 +68,7 @@
       MyPlayer.getPlayerDataAsync().then(()=>{
         --this.loadCounter;
         this.$forceUpdate();
-        // this.$router.push('/character');
+        this.$router.push('/character/skills');
       });
     }
 

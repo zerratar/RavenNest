@@ -11,8 +11,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Docs;
@@ -62,13 +60,12 @@ namespace RavenNest
             services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
 
             RegisterServices(services);
-
+            
             services.AddMvc().AddJsonOptions(options =>
             {
-                options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
-                options.SerializerSettings.DefaultValueHandling = DefaultValueHandling.Include;
-                options.SerializerSettings.NullValueHandling = NullValueHandling.Ignore;
-            }).SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+                options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+                options.JsonSerializerOptions.IgnoreNullValues = true;
+            }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 
             services.Configure<GzipCompressionProviderOptions>(options =>
                 options.Level = System.IO.Compression.CompressionLevel.Optimal);
@@ -80,7 +77,7 @@ namespace RavenNest
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IApplicationLifetime applicationLifetime, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IApplicationLifetime applicationLifetime, IWebHostEnvironment env)
         {
 
             applicationLifetime.ApplicationStopping.Register(() =>
@@ -88,16 +85,18 @@ namespace RavenNest
                 app.ApplicationServices.GetService<IGameData>().Flush();
             });
 
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-            else
-            {
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-                app.UseHsts();
+            //if (env.IsDevelopment())
+            //{
+            //    app.UseDeveloperExceptionPage();
+            //}
+            //else
+            //{
+            //    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+            //    app.UseHsts();
 
-            }
+            //}
+
+            app.UseHsts();
 
             app.UseCors(builder =>
                 builder
@@ -148,22 +147,36 @@ namespace RavenNest
                 ReceiveBufferSize = 4 * 1024
             });
 
-            app.UseMvc();
+            //app.UseMvc();
+
+            app.UseRouting();
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+                //endpoints.MapControllerRoute(
+                //    name: "default",
+                //    pattern: "{controller=Home}/{action=Index}/{id?}");
+
+                endpoints.MapFallbackToController("Index", "Home");
+            });
 
             app.MapWhen(x => !x.WebSockets.IsWebSocketRequest && !x.Request.Path.Value.StartsWith("/api"), builder =>
             {
-                builder.UseMvc(routes =>
+                builder.UseRouting();
+                builder.UseEndpoints(endpoints =>
                 {
-                    routes.MapSpaFallbackRoute(
-                        name: "spa-fallback",
-                        defaults: new { controller = "Home", action = "Index" });
+                    endpoints.MapControllerRoute(
+                        name: "default",
+                        pattern: "{controller=Home}/{action=Index}/{id?}");
+
+                    endpoints.MapFallbackToController("Index", "Home");
                 });
             });
 
             TryGenerateDocumentation(env);
         }
 
-        private static void TryGenerateDocumentation(IHostingEnvironment env)
+        private static void TryGenerateDocumentation(IWebHostEnvironment env)
         {
             try
             {

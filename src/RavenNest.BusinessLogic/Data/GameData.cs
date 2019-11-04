@@ -256,7 +256,10 @@ namespace RavenNest.BusinessLogic.Data
         public User GetUser(Guid userId) => users[userId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public User GetUser(string twitchUserId) => users.Entities.FirstOrDefault(x => x.UserId == twitchUserId);
+        public User GetUser(string twitchUserId) => users.Entities
+            .FirstOrDefault(x => 
+                x.UserName.Equals(twitchUserId, StringComparison.OrdinalIgnoreCase) || 
+                x.UserId.Equals(twitchUserId, StringComparison.OrdinalIgnoreCase));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public GameSession GetUserSession(Guid userId) => gameSessions[nameof(User), userId]

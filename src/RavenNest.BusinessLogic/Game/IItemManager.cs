@@ -8,10 +8,10 @@ namespace RavenNest.BusinessLogic.Game
 {
     public interface IItemManager
     {
-        ItemCollection GetAllItems(AuthToken token);
-        bool AddItem(AuthToken token, Item item);
-        bool UpdateItem(AuthToken token, Item item);
-        bool RemoveItem(AuthToken token, Guid itemId);
+        ItemCollection GetAllItems();
+        bool AddItem(Item item);
+        bool UpdateItem(Item item);
+        bool RemoveItem(Guid itemId);
     }
 
     public class ItemManager : IItemManager
@@ -29,7 +29,7 @@ namespace RavenNest.BusinessLogic.Game
             this.gameData = gameData;
         }
 
-        public ItemCollection GetAllItems(AuthToken token)
+        public ItemCollection GetAllItems()
         {
             if (memoryCache.TryGetValue<ItemCollection>("GetAllItems", out var itemCollection))
             {
@@ -46,7 +46,7 @@ namespace RavenNest.BusinessLogic.Game
             return memoryCache.Set("GetAllItems", collection, DateTime.UtcNow.AddSeconds(ItemCacheDurationSeconds));
         }
 
-        public bool AddItem(AuthToken token, Item item)
+        public bool AddItem(Item item)
         {
             var dataItem = gameData.GetItem(item.Id);
             if (dataItem == null)
@@ -59,12 +59,12 @@ namespace RavenNest.BusinessLogic.Game
             return false;
         }
 
-        public bool UpdateItem(AuthToken token, Item item)
+        public bool UpdateItem(Item item)
         {
             return false;
         }
 
-        public bool RemoveItem(AuthToken token, Guid itemId)
+        public bool RemoveItem(Guid itemId)
         {
             return false;
         }

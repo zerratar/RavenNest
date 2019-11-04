@@ -100,7 +100,7 @@ namespace RavenNest.BusinessLogic
                                 continue;
                             }
 
-                            timeout = Math.Min(timeout, (int)(item.Timeout - DateTime.Now).TotalMilliseconds);
+                            timeout = Math.Max(10, Math.Min(timeout, (int)(item.Timeout - DateTime.Now).TotalMilliseconds));
                         }
                     }
                 }

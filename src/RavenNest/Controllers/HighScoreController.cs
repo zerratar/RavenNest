@@ -36,7 +36,7 @@ namespace RavenNest.Controllers
             RequiresAuth = false,
             RequiresAdmin = false)
         ]
-        public async Task<HighScoreCollection> GetSkillHighScore(string skill, int offset, int skip)
+        public HighScoreCollection GetSkillHighScore(string skill, int offset, int skip)
         {
             var key = $"highscore_{skill}_{offset}_{skip}";
             if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
@@ -60,7 +60,7 @@ namespace RavenNest.Controllers
             RequiresAuth = false,
             RequiresAdmin = false)
         ]
-        public async Task<HighScoreCollection> GetPagedHighScore(int offset, int skip)
+        public HighScoreCollection GetPagedHighScore(int offset, int skip)
         {
             var key = $"highscore_{offset}_{skip}";
             if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
@@ -84,7 +84,7 @@ namespace RavenNest.Controllers
             RequiresAuth = false,
             RequiresAdmin = false)
         ]
-        public async Task<HighScoreCollection> GetSkillHighScore(string skill)
+        public HighScoreCollection GetSkillHighScore(string skill)
         {
             var key = $"highscore_{skill}";
             if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
@@ -108,7 +108,7 @@ namespace RavenNest.Controllers
             RequiresAuth = false,
             RequiresAdmin = false)
         ]
-        public async Task<HighScoreCollection> GetHighScore()
+        public HighScoreCollection GetHighScore()
         {
             var key = $"highscore";
             if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
