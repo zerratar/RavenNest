@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace RavenNest.Models
 {
@@ -25,5 +26,6 @@ namespace RavenNest.Models
         public int RequiredCraftingLevel { get; set; }
         public long WoodCost { get; set; }
         public long OreCost { get; set; }
+        public List<ItemCraftingRequirement> CraftingRequirements { get; set; }
     }
 }

@@ -52,9 +52,15 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Models.Item Map(Item itemsItem)
+        public static Models.Item Map(IGameData gameData, Item item)
         {
-            return DataMapper.Map<Models.Item, Item>(itemsItem);
+            var mapped = DataMapper.Map<Models.Item, Item>(item);
+
+            mapped.CraftingRequirements = gameData.GetCraftingRequirements(item.Id)
+                .Select(x => DataMapper.Map<Models.ItemCraftingRequirement, DataModels.ItemCraftingRequirement>(x))
+                .ToList();
+
+            return mapped;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

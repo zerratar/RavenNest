@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Text;
-using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using RavenNest.Models;
@@ -61,6 +59,7 @@ namespace RavenNest.BusinessLogic.Game
                 user.UserName = userLogin;
                 user.Email = userEmail;
                 user.PasswordHash = secureHash.Get(password);
+                gameData.Flush();
             }
             catch (Exception exc)
             {

@@ -88,6 +88,8 @@ namespace RavenNest.BusinessLogic.Game
                     level += GameMath.ExperienceToLevel(experience);
                     exp += experience;
                 }
+
+                exp = Math.Floor(exp);
                 return true;
             }
 
@@ -99,7 +101,7 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
-            exp = (decimal)targetProperty.GetValue(skills);
+            exp = Math.Floor((decimal)targetProperty.GetValue(skills));
             level = GameMath.ExperienceToLevel(exp);
             return true;
         }

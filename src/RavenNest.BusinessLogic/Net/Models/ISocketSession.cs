@@ -10,15 +10,18 @@ namespace RavenNest.BusinessLogic.Net
         SessionToken SessionToken { get; }
 
         Task<TResult> SendAsync<TResult>(
-            string id, 
-            object request, 
+            string id,
+            object request,
             CancellationToken cancellationToken);
 
         Task ReplyAsync(
-            Guid correlationId, 
-            string id, 
-            object request, 
+            Guid correlationId,
+            string id,
+            object request,
             CancellationToken cancellationToken);
+
+        Task<bool> PushAsync(string id, object request, CancellationToken cancellationToken);
+
         Task KeepAlive();
     }
 }

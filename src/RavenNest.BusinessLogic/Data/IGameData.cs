@@ -27,6 +27,7 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Get
         User GetUser(Guid userId);
+        IReadOnlyList<DataModels.User> GetUsers();
         IReadOnlyList<DataModels.Character> GetCharacters(Func<Character, bool> predicate);
         IReadOnlyList<DataModels.Character> GetSessionCharacters(GameSession currentSession);
         User GetUser(string twitchUserId);
@@ -115,5 +116,7 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         IReadOnlyList<GameSession> GetActiveSessions();
+        IReadOnlyList<ItemCraftingRequirement> GetCraftingRequirements(Guid itemId);
+        CharacterSessionState GetCharacterSessionState(Guid sessionId, Guid characterId);
     }
 }

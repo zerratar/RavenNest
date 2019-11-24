@@ -38,18 +38,19 @@ namespace RavenNest.Controllers
         ]
         public HighScoreCollection GetSkillHighScore(string skill, int offset, int skip)
         {
-            var key = $"highscore_{skill}_{offset}_{skip}";
-            if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
-            {
-                return highscoreData;
-            }
+            return highScoreManager.GetSkillHighScore(skill, offset, skip); 
+            //var key = $"highscore_{skill}_{offset}_{skip}";
+            //if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
+            //{
+            //    return highscoreData;
+            //}
 
-            telemetryClient.TrackEvent("GetSkillHighScore_SOS");
-            highscoreData = highScoreManager.GetSkillHighScore(skill, offset, skip);
-            return highscoreCache.Set(key, highscoreData, new MemoryCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
-            });
+            //telemetryClient.TrackEvent("GetSkillHighScore_SOS");
+            //highscoreData = highScoreManager.GetSkillHighScore(skill, offset, skip);
+            //return highscoreCache.Set(key, highscoreData, new MemoryCacheEntryOptions
+            //{
+            //    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
+            //});
         }
 
         [HttpGet("paged/{offset}/{skip}")]
@@ -62,18 +63,19 @@ namespace RavenNest.Controllers
         ]
         public HighScoreCollection GetPagedHighScore(int offset, int skip)
         {
-            var key = $"highscore_{offset}_{skip}";
-            if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
-            {
-                return highscoreData;
-            }
+            return highScoreManager.GetHighScore(offset, skip);
+            //var key = $"highscore_{offset}_{skip}";
+            //if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
+            //{
+            //    return highscoreData;
+            //}
 
-            telemetryClient.TrackEvent("GetSkillHighScore_OS");
-            highscoreData = highScoreManager.GetHighScore(offset, skip);
-            return highscoreCache.Set(key, highscoreData, new MemoryCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
-            });
+            //telemetryClient.TrackEvent("GetSkillHighScore_OS");
+            //highscoreData = highScoreManager.GetHighScore(offset, skip);
+            //return highscoreCache.Set(key, highscoreData, new MemoryCacheEntryOptions
+            //{
+            //    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
+            //});
         }
 
         [HttpGet("{skill}")]
@@ -86,18 +88,19 @@ namespace RavenNest.Controllers
         ]
         public HighScoreCollection GetSkillHighScore(string skill)
         {
-            var key = $"highscore_{skill}";
-            if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
-            {
-                return highscoreData;
-            }
+            return highScoreManager.GetSkillHighScore(skill);
+            //var key = $"highscore_{skill}";
+            //if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
+            //{
+            //    return highscoreData;
+            //}
 
-            telemetryClient.TrackEvent("GetSkillHighScore_S");
-            highscoreData = highScoreManager.GetSkillHighScore(skill);
-            return highscoreCache.Set(key, highscoreData, new MemoryCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
-            });
+            //telemetryClient.TrackEvent("GetSkillHighScore_S");
+            //highscoreData = highScoreManager.GetSkillHighScore(skill);
+            //return highscoreCache.Set(key, highscoreData, new MemoryCacheEntryOptions
+            //{
+            //    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
+            //});
         }
 
         [HttpGet]
@@ -110,18 +113,18 @@ namespace RavenNest.Controllers
         ]
         public HighScoreCollection GetHighScore()
         {
-            var key = $"highscore";
-            if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
-            {
-                return highscoreData;
-            }
-
-            telemetryClient.TrackEvent("GetSkillHighScore");
-            highscoreData = highScoreManager.GetHighScore();
-            return highscoreCache.Set(key, highscoreData, new MemoryCacheEntryOptions
-            {
-                AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
-            });
+            //var key = $"highscore";
+            //if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
+            //{
+            //    return highscoreData;
+            //}
+            return highScoreManager.GetHighScore();
+            //telemetryClient.TrackEvent("GetSkillHighScore");
+            //highscoreData = highScoreManager.GetHighScore();
+            //return highscoreCache.Set(key, highscoreData, new MemoryCacheEntryOptions
+            //{
+            //    AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30)
+            //});
         }
 
     }

@@ -22,10 +22,12 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class PlayerManager : IPlayerManager
     {
+        private readonly ILogger logger;
         private readonly IGameData gameData;
 
-        public PlayerManager(IGameData gameData)
+        public PlayerManager(ILogger logger, IGameData gameData)
         {
+            this.logger = logger;
             this.gameData = gameData;
         }
 
@@ -44,12 +46,6 @@ namespace RavenNest.BusinessLogic.Game
         public Player AddPlayer(SessionToken token, string userId, string userName)
         {
             var session = gameData.GetSession(token.SessionId);
-            //var session = await db.GameSession
-            //    .Include(x => x.User)
-            //    .FirstOrDefaultAsync(
-            //    x => x.Id == token.SessionId &&
-            //         x.Status == (int)SessionStatus.Active);
-
             if (session == null || session.Status != (int)SessionStatus.Active)
             {
                 return null;
@@ -62,31 +58,10 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var character = gameData.GetCharacterByUserId(user.Id);
-            //var character = await db.Character
-            //    .Include(x => x.User)
-            //    .Include(x => x.InventoryItem) //.ThenInclude(x => x.Item)
-            //    .Include(x => x.Appearance)
-            //    .Include(x => x.SyntyAppearance)
-            //    .Include(x => x.Resources)
-            //    .Include(x => x.Skills)
-            //    .Include(x => x.Statistics)
-            //    .FirstOrDefaultAsync(x =>
-            //        x.UserId == user.Id &&
-            //        ((session.Local && x.Local && x.OriginUserId == session.UserId) ||
-            //         !session.Local && !x.Local));
-
             if (character == null)
             {
                 return CreatePlayer(session, user);
             }
-
-            //if (character.SyntyAppearance == null && character.Appearance != null)
-            //{
-            //    var syntyApp = GenerateSyntyAppearance(character.Appearance);
-            //    gameData.Add(syntyApp);
-            //    character.SyntyAppearanceId = syntyApp.Id;
-            //    character.SyntyAppearance = syntyApp;
-            //}
 
             // check if we need to remove the player from
             // their active session.
@@ -115,11 +90,9 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var targetSessionUser = gameData.GetUser(joiningSession.UserId);
-
             var characterUser = gameData.GetUser(character.UserId);
             var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRemove, currentSession, new PlayerRemove()
             {
-
                 Reason =
                     targetSessionUser != null
                         ? $"{character.Name} joined {targetSessionUser.UserName}'s stream"
@@ -178,9 +151,6 @@ namespace RavenNest.BusinessLogic.Game
         {
             try
             {
-                // add a temporary throttle to avoid spamming server with player state updates.
-                // THIS NEEDS TO BE BULKUPDATED!!!!!
-
                 var player = GetCharacter(sessionToken, update.UserId);
                 if (player == null)
                 {
@@ -211,7 +181,6 @@ namespace RavenNest.BusinessLogic.Game
 
         public Player GetPlayer(SessionToken sessionToken, string twitchUserId)
         {
-
             var user = gameData.GetUser(twitchUserId);
             if (user == null)
             {
@@ -242,7 +211,6 @@ namespace RavenNest.BusinessLogic.Game
             return UpdateSyntyAppearance(userId, appearance);
         }
 
-
         public bool[] UpdateMany(SessionToken token, PlayerState[] states)
         {
             var results = new List<bool>();
@@ -256,6 +224,12 @@ namespace RavenNest.BusinessLogic.Game
             foreach (var state in states)
             {
                 var user = gameData.GetUser(state.UserId);
+                if (user == null)
+                {
+                    logger.WriteError($"Trying to save player with userId {state.UserId}, but no user was found matching the id.");
+                    results.Add(false);
+                    continue;
+                }
                 var character = gameData.GetCharacterByUserId(user.Id);
                 if (character == null)
                 {
@@ -275,11 +249,6 @@ namespace RavenNest.BusinessLogic.Game
                         UpdateStatistics(token, state.UserId, state.Statistics);
                     }
 
-                    if (state.Resources != null && state.Resources.Length > 0)
-                    {
-                        UpdateResources(token, state.UserId, state.Resources);
-                    }
-
                     EquipBestItems(character);
 
                     character.Revision = character.Revision.GetValueOrDefault() + 1;
@@ -295,6 +264,46 @@ namespace RavenNest.BusinessLogic.Game
             return results.ToArray();
         }
 
+        public AddItemResult CraftItem(SessionToken token, string userId, Guid itemId)
+        {
+            var item = gameData.GetItem(itemId);
+            if (item == null) return AddItemResult.Failed;
+
+            var character = GetCharacter(token, userId);
+            if (character == null) return AddItemResult.Failed;
+
+            var resources = gameData.GetResources(character.ResourcesId);
+            if (resources == null) return AddItemResult.Failed;
+
+            if (item.WoodCost > resources.Wood || item.OreCost > resources.Ore)
+                return AddItemResult.Failed;
+
+            var craftingRequirements = gameData.GetCraftingRequirements(itemId);
+            foreach (var req in craftingRequirements)
+            {
+                var invItem = gameData.GetInventoryItem(character.Id, req.ResourceItemId);
+                if (invItem == null || invItem.Amount < req.Amount)
+                {
+                    return AddItemResult.Failed;
+                }
+            }
+
+            foreach (var req in craftingRequirements)
+            {
+                var invItem = gameData.GetInventoryItem(character.Id, req.ResourceItemId);
+                invItem.Amount -= req.Amount;
+                if (invItem.Amount == 0)
+                {
+                    gameData.Remove(invItem);
+                }
+            }
+
+            resources.Wood -= item.WoodCost;
+            resources.Ore -= item.OreCost;
+
+            return AddItem(token, userId, itemId);
+        }
+
         public AddItemResult AddItem(SessionToken token, string userId, Guid itemId)
         {
             var item = gameData.GetItem(itemId);
@@ -303,22 +312,15 @@ namespace RavenNest.BusinessLogic.Game
             var character = GetCharacter(token, userId);
             if (character == null) return AddItemResult.Failed;
 
-            //var characterSession = await GetActiveCharacterSessionAsync(token, userId);
-            //if (characterSession == null) return AddItemResult.Failed;
-            //var character = characterSession.Character;
+
+
+
             var skills = gameData.GetSkills(character.SkillsId);
             var equippedItems = gameData.FindPlayerItems(character.Id, x =>
                 {
                     var xItem = gameData.GetItem(x.ItemId);
                     return x.Equipped && xItem.Type == item.Type && xItem.Category == item.Category;
                 });
-
-            //var equippedItems = await db.InventoryItem
-            //        .Include(x => x.Item)
-            //        .Where(x =>
-            //            x.CharacterId == character.Id &&
-            //            )
-            //        .ToListAsync();
 
             var equipped = false;
             if (equippedItems.Count > 0)
@@ -350,11 +352,9 @@ namespace RavenNest.BusinessLogic.Game
             if (!equipped)
             {
                 var inv = gameData.GetInventoryItem(character.Id, itemId);
-                //var inv = await db.InventoryItem
-                //    .FirstOrDefaultAsync(x => x.ItemId == itemId && !x.Equipped && x.CharacterId == character.Id);
                 if (inv != null)
                 {
-                    inv.Amount += 1;
+                    inv.Amount++;
                     addNew = false;
                 }
             }
@@ -404,12 +404,6 @@ namespace RavenNest.BusinessLogic.Game
             if (item == null) return false;
 
             var invItem = gameData.GetInventoryItem(character.Id, itemId);
-            //var invItem = await db.InventoryItem
-            //    .Include(x => x.Item)
-            //    .FirstOrDefaultAsync(x =>
-            //        x.CharacterId == character.Id &&
-            //        x.ItemId == itemId &&
-            //        !x.Equipped);
 
             var skills = gameData.GetSkills(character.SkillsId);
             if (invItem == null || !CanEquipItem(gameData.GetItem(invItem.ItemId), skills))
@@ -418,6 +412,7 @@ namespace RavenNest.BusinessLogic.Game
             if (invItem.Amount > 1)
             {
                 invItem.Amount = invItem.Amount - 1;
+
                 invItem = new InventoryItem
                 {
                     Id = Guid.NewGuid(),
@@ -439,22 +434,9 @@ namespace RavenNest.BusinessLogic.Game
                 return xItem.Type == item.Type && xItem.Category == item.Category && x.Equipped;
             });
 
-            //var invItemEq = await db.InventoryItem
-            //    .Include(x => x.Item)
-            //    .FirstOrDefaultAsync(x =>
-            //        x.CharacterId == character.Id &&
-            //        x.Item.Type == item.Type &&
-            //        x.Item.Category == item.Category && x.Equipped);
-
             if (invItemEq != null)
             {
                 var stack = gameData.GetInventoryItem(character.Id, invItemEq.ItemId);
-                //var stack = await db.InventoryItem
-                //.Include(x => x.Item)
-                //.FirstOrDefaultAsync(x =>
-                //    x.CharacterId == character.Id &&
-                //    x.ItemId == invItemEq.ItemId &&
-                //    !x.Equipped);
 
                 if (stack != null)
                 {
@@ -476,22 +458,9 @@ namespace RavenNest.BusinessLogic.Game
             if (character == null) return false;
 
             var invItem = gameData.GetEquippedItem(character.Id, itemId);
-            //var invItem = await db.InventoryItem
-            //    .Include(x => x.Item)
-            //    .FirstOrDefaultAsync(x =>
-            //        x.CharacterId == character.Id &&
-            //        x.ItemId == itemId &&
-            //        x.Equipped);
-
             if (invItem == null) return false;
-            var stack = gameData.GetInventoryItem(character.Id, itemId);
-            //var stack = await db.InventoryItem
-            //    .Include(x => x.Item)
-            //    .FirstOrDefaultAsync(x =>
-            //        x.CharacterId == character.Id &&
-            //        x.ItemId == itemId &&
-            //        !x.Equipped);
 
+            var stack = gameData.GetInventoryItem(character.Id, itemId);
             if (stack != null)
             {
                 ++stack.Amount;
@@ -509,15 +478,11 @@ namespace RavenNest.BusinessLogic.Game
             var itemCollection = new ItemCollection();
             var character = GetCharacter(token, userId);
             if (character == null) return itemCollection;
-            /*
-                .Include(x => x.Item)
-                .Where(x => x.CharacterId == character.Id && x.Equipped)            
-             */
 
             var items = gameData.GetEquippedItems(character.Id);
             foreach (var inv in items)
             {
-                itemCollection.Add(ModelMapper.Map(gameData.GetItem(inv.ItemId)));
+                itemCollection.Add(ModelMapper.Map(gameData, gameData.GetItem(inv.ItemId)));
             }
 
             return itemCollection;
@@ -530,18 +495,25 @@ namespace RavenNest.BusinessLogic.Game
             if (character == null) return itemCollection;
 
             var items = gameData.GetAllPlayerItems(character.Id);
+            if (items == null || items.Count == 0)
+                return itemCollection;
+
             foreach (var inv in items)
             {
-                itemCollection.Add(ModelMapper.Map(gameData.GetItem(inv.ItemId)));
+                var item = gameData.GetItem(inv.ItemId);
+                if (item != null)
+                {
+                    itemCollection.Add(ModelMapper.Map(gameData, item));
+                }
             }
 
-            return null;
+            return itemCollection;
         }
 
         public IReadOnlyList<Player> GetPlayers()
         {
-            var characters = gameData.GetCharacters(x => !x.Local);
-            return characters.Select(x => x.Map(gameData, gameData.GetUser(x.UserId))).ToList();
+            var users = gameData.GetUsers();
+            return users.Select(x => x.Map(gameData, gameData.GetCharacterByUserId(x.Id))).ToList();
         }
 
         public bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics)
@@ -796,7 +768,6 @@ namespace RavenNest.BusinessLogic.Game
                 if (character == null) return false;
                 if (!AcquiredUserLock(token, character)) return false;
 
-                // UpdateDeltaClamped(resource, 0, resourceAmount)
                 var characterResources = gameData.GetResources(character.ResourcesId);
                 characterResources.Wood += resources[index++];
                 characterResources.Fish += resources[index++];
