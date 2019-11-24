@@ -40,7 +40,7 @@ namespace RavenNest.BusinessLogic.Game
             var collection = new ItemCollection();
             foreach (var item in items)
             {
-                collection.Add(ModelMapper.Map(item));
+                collection.Add(ModelMapper.Map(gameData, item));
             }
 
             return memoryCache.Set("GetAllItems", collection, DateTime.UtcNow.AddSeconds(ItemCacheDurationSeconds));

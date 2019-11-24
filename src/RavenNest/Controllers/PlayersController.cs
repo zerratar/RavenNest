@@ -86,6 +86,12 @@ namespace RavenNest.Controllers
             return playerManager.GetPlayer(AssertGetSessionToken(), userId);
         }
 
+        [HttpGet("{userId}/craft/{item}")]
+        public AddItemResult CraftItem(string userId, Guid item)
+        {
+            return playerManager.CraftItem(AssertGetSessionToken(), userId, item);
+        }
+
         [HttpGet("{userId}/item/{item}")]
         //[MethodDescriptor(
         //    Name = "Add item to player",

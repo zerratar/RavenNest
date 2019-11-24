@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -20,6 +21,9 @@ namespace RavenNest.BusinessLogic.Data
         private readonly IKernel kernel;
         private readonly IQueryBuilder queryBuilder;
 
+        private readonly ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, CharacterSessionState>> characterSessionStates
+            = new ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, CharacterSessionState>>();
+
         private readonly EntitySet<Appearance, Guid> appearances;
         private readonly EntitySet<SyntyAppearance, Guid> syntyAppearances;
         private readonly EntitySet<Character, Guid> characters;
@@ -29,6 +33,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<InventoryItem, Guid> inventoryItems;
         private readonly EntitySet<MarketItem, Guid> marketItems;
         private readonly EntitySet<Item, Guid> items;
+        private readonly EntitySet<ItemCraftingRequirement, Guid> itemCraftingRequirements;
         private readonly EntitySet<Resources, Guid> resources;
         private readonly EntitySet<Statistics, Guid> statistics;
         private readonly EntitySet<Skills, Guid> skills;
@@ -71,6 +76,11 @@ namespace RavenNest.BusinessLogic.Data
                 marketItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
                 items = new EntitySet<Item, Guid>(ctx.Item.ToList(), i => i.Id);
+
+                itemCraftingRequirements = new EntitySet<ItemCraftingRequirement, Guid>(ctx.ItemCraftingRequirement.ToList(), i => i.Id);
+                itemCraftingRequirements.RegisterLookupGroup(nameof(Item), x => x.ItemId);
+                //itemCraftingRequirements.RegisterLookupGroup(nameof(ItemCraftingRequirement.ResourceItemId), x => x.ItemId);
+
                 resources = new EntitySet<Resources, Guid>(ctx.Resources.ToList(), i => i.Id);
                 statistics = new EntitySet<Statistics, Guid>(ctx.Statistics.ToList(), i => i.Id);
                 skills = new EntitySet<Skills, Guid>(ctx.Skills.ToList(), i => i.Id);
@@ -195,8 +205,14 @@ namespace RavenNest.BusinessLogic.Data
         public Character GetCharacterByUserId(Guid userId) => characters[nameof(User), userId].FirstOrDefault();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<ItemCraftingRequirement> GetCraftingRequirements(Guid itemId) => itemCraftingRequirements[nameof(Item), itemId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<Character> GetCharacters(Func<Character, bool> predicate) =>
             characters.Entities.Where(predicate).ToList();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<User> GetUsers() => users.Entities.ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public InventoryItem GetEquippedItem(Guid characterId, Guid itemId) =>
@@ -212,7 +228,7 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<InventoryItem> GetInventoryItems(Guid characterId, Guid itemId) =>
-            inventoryItems[nameof(Character), characterId].Where(x => !x.Equipped).ToList();
+            inventoryItems[nameof(Character), characterId].Where(x => !x.Equipped && x.ItemId == itemId).ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Item GetItem(Guid id) => items[id];
@@ -257,8 +273,8 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public User GetUser(string twitchUserId) => users.Entities
-            .FirstOrDefault(x => 
-                x.UserName.Equals(twitchUserId, StringComparison.OrdinalIgnoreCase) || 
+            .FirstOrDefault(x =>
+                x.UserName.Equals(twitchUserId, StringComparison.OrdinalIgnoreCase) ||
                 x.UserId.Equals(twitchUserId, StringComparison.OrdinalIgnoreCase));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -295,8 +311,28 @@ namespace RavenNest.BusinessLogic.Data
         public CharacterState GetState(Guid? stateId) => stateId == null ? null : characterStates[stateId.Value];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<GameSession> GetActiveSessions() => gameSessions.Entities.OrderByDescending(x => x.Started)
-            .Where(x => x.Stopped == null).ToList();
+        public IReadOnlyList<GameSession> GetActiveSessions() =>
+            gameSessions.Entities.OrderByDescending(x => x.Started).Where(x => x.Stopped == null).ToList();
+
+        public CharacterSessionState GetCharacterSessionState(Guid sessionId, Guid characterId)
+        {
+            ConcurrentDictionary<Guid, CharacterSessionState> states;
+
+            if (!characterSessionStates.TryGetValue(sessionId, out states))
+            {
+                states = new ConcurrentDictionary<Guid, CharacterSessionState>();
+            }
+
+            CharacterSessionState state;
+            if (!states.TryGetValue(characterId, out state))
+            {
+                state = new CharacterSessionState();
+                states[characterId] = state;
+                characterSessionStates[sessionId] = states;
+            }
+
+            return state;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ScheduleNextSave()
@@ -417,6 +453,5 @@ namespace RavenNest.BusinessLogic.Data
         {
             return changesets.SelectMany(x => x).OrderBy(x => x.LastModified).ToList();
         }
-
     }
 }

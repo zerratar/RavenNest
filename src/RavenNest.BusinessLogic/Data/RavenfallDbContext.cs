@@ -27,6 +27,8 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<GameEvent> GameEvent { get; set; }
         public virtual DbSet<InventoryItem> InventoryItem { get; set; }
         public virtual DbSet<MarketItem> MarketItem { get; set; }
+
+        public virtual DbSet<ItemCraftingRequirement> ItemCraftingRequirement { get; set; }
         public virtual DbSet<Item> Item { get; set; }
         public virtual DbSet<Resources> Resources { get; set; }
         public virtual DbSet<Statistics> Statistics { get; set; }
@@ -60,7 +62,8 @@ namespace RavenNest.BusinessLogic.Data
                     entity.Property<ServerLogSeverity>(x => x.Severity).HasConversion<int>();
                 });
 
-            modelBuilder.Entity<CharacterState>(entity => {
+            modelBuilder.Entity<CharacterState>(entity =>
+            {
                 entity.Property(e => e.Id).ValueGeneratedNever();
             });
 
@@ -210,6 +213,11 @@ namespace RavenNest.BusinessLogic.Data
                 //    .HasConstraintName("FK_InventoryItem_Item");
             });
 
+
+            modelBuilder.Entity<ItemCraftingRequirement>(entity =>
+            {
+                entity.Property(e => e.Id).ValueGeneratedNever();
+            });
 
             modelBuilder.Entity<Item>(entity =>
             {

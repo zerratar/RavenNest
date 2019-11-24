@@ -1,9 +1,10 @@
-﻿using RavenNest.BusinessLogic.Game;
+﻿using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Game;
+using RavenNest.BusinessLogic.Game.Processors;
 using RavenNest.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net.WebSockets;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -14,6 +15,7 @@ namespace RavenNest.BusinessLogic.Net
     public class WebSocketConnectionProvider : IWebSocketConnectionProvider
     {
         private readonly ILogger logger;
+        private readonly IGameData gameData;
         private readonly IGameManager gameManager;
         private readonly IGamePacketManager packetManager;
         private readonly IGamePacketSerializer packetSerializer;
@@ -23,12 +25,14 @@ namespace RavenNest.BusinessLogic.Net
 
         public WebSocketConnectionProvider(
             ILogger logger,
+            IGameData gameData,
             IGameManager gameManager,
             IGamePacketManager packetManager,
             IGamePacketSerializer packetSerializer,
             ISessionManager sessionManager)
         {
             this.logger = logger;
+            this.gameData = gameData;
             this.gameManager = gameManager;
             this.packetManager = packetManager;
             this.packetSerializer = packetSerializer;
@@ -50,6 +54,7 @@ namespace RavenNest.BusinessLogic.Net
 
             var session = new WebSocketConnection(
                 logger,
+                gameData,
                 gameManager,
                 packetManager,
                 packetSerializer,
@@ -92,28 +97,27 @@ namespace RavenNest.BusinessLogic.Net
         private class WebSocketConnection : IWebSocketConnection
         {
             private readonly ILogger logger;
-            private readonly IGameManager gameManager;
+            private readonly IGameProcessor gameProcessor;
             private readonly IGamePacketManager packetManager;
             private readonly IGamePacketSerializer packetSerializer;
             private readonly WebSocketConnectionProvider sessionProvider;
 
             private readonly WebSocket ws;
             private readonly TaskCompletionSource<object> killTask;
-            private readonly SessionToken sessionToken;
 
             private readonly Thread receiveLoop;
             private readonly Thread gameLoop;
 
+            private readonly SessionToken sessionToken;
             private PartialGamePacket unfinishedPacket;
             private bool disposed;
 
             private readonly ConcurrentDictionary<Guid, TaskCompletionSource<object>> messageLookup
                 = new ConcurrentDictionary<Guid, TaskCompletionSource<object>>();
 
-            private int gameRevision = 0;
-
             public WebSocketConnection(
                 ILogger logger,
+                IGameData gameData,
                 IGameManager gameManager,
                 IGamePacketManager packetManager,
                 IGamePacketSerializer packetSerializer,
@@ -124,17 +128,17 @@ namespace RavenNest.BusinessLogic.Net
                 this.receiveLoop = new Thread(ReceiveLoop);
                 this.gameLoop = new Thread(GameUpdateLoop);
                 this.logger = logger;
-                this.gameManager = gameManager;
+                this.sessionToken = sessionToken;
                 this.packetManager = packetManager;
                 this.packetSerializer = packetSerializer;
                 this.sessionProvider = sessionProvider;
-                this.sessionToken = sessionToken;
                 this.ws = ws;
+
                 this.killTask = new TaskCompletionSource<object>();
+                this.gameProcessor = new GameProcessor(this, gameData, gameManager, sessionToken);
             }
 
             internal Guid SessionId => this.sessionToken.SessionId;
-
             public SessionToken SessionToken => sessionToken;
 
             internal IWebSocketConnection Start()
@@ -223,24 +227,19 @@ namespace RavenNest.BusinessLogic.Net
                             cts.Cancel();
                             return;
                         }
-                        // could probably use IGameData here instead. listen for game events and wait for events with a semaphoreslim 
-                        // and don't continue the loop until we got new events
 
-                        var events = gameManager.GetGameEvents(sessionToken);
-                        if (events.Count > 0)
+                        try
                         {
-                            var eventList = new EventList();
-                            eventList.Revision = events.Revision;
-                            eventList.Events = events.ToList();
+                            await gameProcessor.ProcessAsync(cts);
+                        }
+                        catch
+                        {
 
-                            if (await this.PushAsync("game_event", eventList, cts.Token))
-                            {
-                                this.gameRevision = events.Revision;
-                            }
                         }
                     }
                 }
             }
+
             private async void ReceiveLoop()
             {
                 using (var cts = new CancellationTokenSource())

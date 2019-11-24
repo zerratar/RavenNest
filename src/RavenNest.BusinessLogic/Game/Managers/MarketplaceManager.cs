@@ -299,7 +299,7 @@ namespace RavenNest.BusinessLogic.Game
             var user = gameData.GetUser(userId);
             if (user == null) return null;
 
-            return gameData.GetCharacter(user.Id);
+            return gameData.GetCharacterByUserId(user.Id);
         }
 
         private void AddGameEvent(Guid sessionId, GameEventType type, object model)

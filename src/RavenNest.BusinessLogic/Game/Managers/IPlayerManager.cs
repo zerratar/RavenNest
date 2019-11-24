@@ -26,6 +26,8 @@ namespace RavenNest.BusinessLogic.Game
         bool[] UpdateMany(SessionToken token, PlayerState[] states);
 
         AddItemResult AddItem(SessionToken token, string userId, Guid itemId);
+        AddItemResult CraftItem(SessionToken token, string userId, Guid itemId);
+
         bool GiftItem(SessionToken token, string gifterUserId, string receiverUserId, Guid itemId);
         bool GiftResources(SessionToken token, string giftUserId, string receiverUserId, string resource, long amount);
 
