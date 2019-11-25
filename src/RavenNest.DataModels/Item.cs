@@ -26,5 +26,7 @@ namespace RavenNest.DataModels
         private int requiredCraftingLevel; public int RequiredCraftingLevel { get => requiredCraftingLevel; set => Set(ref requiredCraftingLevel, value); }
         private long woodCost; public long WoodCost { get => woodCost; set => Set(ref woodCost, value); }
         private long oreCost; public long OreCost { get => oreCost; set => Set(ref oreCost, value); }
+        private long shopBuyPrice; public long ShopBuyPrice { get => shopBuyPrice; set => Set(ref shopBuyPrice, value); }
+        private long shopSellPrice; public long ShopSellPrice { get => shopSellPrice; set => Set(ref shopSellPrice, value); }
     }
 }

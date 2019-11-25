@@ -93,36 +93,33 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("{userId}/item/{item}")]
-        //[MethodDescriptor(
-        //    Name = "Add item to player",
-        //    Description = "Adds an item to the target player, the item will automatically be equipped if it is better than any other existing equipped gear.",
-        //    RequiresSession = true)
-        //]
         public AddItemResult AddItem(string userId, Guid item)
         {
             return playerManager.AddItem(AssertGetSessionToken(), userId, item);
         }
 
         [HttpGet("{userId}/unequip/{item}")]
-        //[MethodDescriptor(
-        //    Name = "UnEquip item",
-        //    Description = "UnEquips an item from the target player.",
-        //    RequiresSession = true)
-        //]
         public bool UnEquipItem(string userId, Guid item)
         {
             return playerManager.UnEquipItem(AssertGetSessionToken(), userId, item);
         }
 
         [HttpGet("{userId}/equip/{item}")]
-        //[MethodDescriptor(
-        //    Name = "Equip item",
-        //    Description = "Equips an item from the target player.",
-        //    RequiresSession = true)
-        //]
         public bool EquipItem(string userId, Guid item)
         {
             return playerManager.EquipItem(AssertGetSessionToken(), userId, item);
+        }
+
+        [HttpGet("{userId}/gift/{receiverUserId}/{itemId}/{amount}")]
+        public int GiftItem(string userId, string receiverUserId, Guid itemId, int amount)
+        {
+            return playerManager.GiftItem(AssertGetSessionToken(), userId, receiverUserId, itemId, amount);
+        }
+
+        [HttpGet("{userId}/vendor/{item}/{amount}")]
+        public int VendorItem(string userId, Guid item, int amount)
+        {
+            return playerManager.VendorItem(AssertGetSessionToken(), userId, item, amount);
         }
 
         //[HttpPost("appearance")]
@@ -154,10 +151,6 @@ namespace RavenNest.Controllers
         //}
 
         [HttpPost("{userId}/appearance")]
-        //[MethodDescriptor(
-        //    Name = "Update player appearance",
-        //    Description = "Update the target player with a new appearance. This requires a session token to update a target player.",
-        //    RequiresSession = true)]
         public bool UpdateSyntyAppearance(string userId, SyntyAppearance appearance)
         {
             return playerManager.UpdateSyntyAppearance(AssertGetSessionToken(), userId, appearance);
@@ -166,55 +159,24 @@ namespace RavenNest.Controllers
 
 
         [HttpPost("{userId}/experience")]
-        //[MethodDescriptor(
-        //    Name = "Update player experience",
-        //    Description = "Update the target player with their current experience state.",
-        //    RequiresSession = true)
-        //]
         public bool UpdateExperienceAsync(string userId, Many<decimal> experience)
         {
             return playerManager.UpdateExperience(AssertGetSessionToken(), userId, experience.Values);
         }
 
         [HttpPost("{userId}/statistics")]
-        //[MethodDescriptor(
-        //    Name = "Update player statistics",
-        //    Description = "Update the target player with their current statistics state, such as how many enemies killed, how many times they have died, etc.",
-        //    RequiresSession = true)
-        //]
         public bool UpdateStatistics(string userId, Many<decimal> statistics)
         {
             return playerManager.UpdateStatistics(AssertGetSessionToken(), userId, statistics.Values);
         }
 
         [HttpPost("{userId}/resources")]
-        //[MethodDescriptor(
-        //    Name = "Update player resources",
-        //    Description = "Update the target player with their current resource state, such as coins, wood, ores, fish, wheat, etc.",
-        //    RequiresSession = true)
-        //]
         public bool UpdateResources(string userId, Many<decimal> resources)
         {
             return playerManager.UpdateResources(AssertGetSessionToken(), userId, resources.Values);
         }
 
-        [HttpGet("{userId}/gift/{receiverUserId}/{itemId}")]
-        //[MethodDescriptor(
-        //    Name = "Gift an item to another player",
-        //    Description = "Gift an item from one player to another, this will remove the item from the giver and add it to the receivers inventory. Gifted item will be equipped automatically if it is better than what is already equipped.",
-        //    RequiresSession = true)
-        //]
-        public bool GiftItem(string userId, string receiverUserId, Guid itemId)
-        {
-            return playerManager.GiftItem(AssertGetSessionToken(), userId, receiverUserId, itemId);
-        }
-
         [HttpPost("update")]
-        //[MethodDescriptor(
-        //    Name = "Bulk player update",
-        //    Description = "Update many players at the same time. This is used to save all currently playing players in one request.",
-        //    RequiresSession = true)
-        //]
         public bool[] UpdateMany(Many<PlayerState> states)
         {
             return playerManager.UpdateMany(AssertGetSessionToken(), states.Values);
