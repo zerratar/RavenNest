@@ -13,41 +13,19 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 var skills = gameData.GetSkills(character.SkillsId);
                 var miningLevel = GameMath.ExperienceToLevel(skills.Mining);
                 var chance = Random.NextDouble();
-                var gotNugget = false;
 
-                var runeNuggetDropChance = RuneNuggetDropChance + ((miningLevel - 70) * DropChanceIncrement);
-                var addyNugetDropChance = AdamantiteNuggetDropChance + ((miningLevel - 50) * DropChanceIncrement);
-                var mithrilNuggetDropChance = MithrilNuggetDropChance + ((miningLevel - 30) * DropChanceIncrement);
-                var steelNuggetDropChance = SteelNuggetDropChance + ((miningLevel - 10) * DropChanceIncrement);
-                var ironNuggetDropChancef = IronNuggetDropChance + miningLevel * DropChanceIncrement;
-
-                if (miningLevel >= 70 && chance <= runeNuggetDropChance)
+                // clamp to always be 50% chance on each resource gain.
+                // so we dont get drops too often.
+                if (chance <= 0.5)
                 {
-                    IncrementItemStack(gameData, session, character, RuneNuggetId);
-                    gotNugget = true;
-                    // chance for rune 2F
-                }
-                if (miningLevel >= 50 && !gotNugget && chance <= addyNugetDropChance)
-                {
-                    IncrementItemStack(gameData, session, character, AdamantiteNuggetId);
-                    gotNugget = true;
-                    // chance for adamantite nugget
-                }
-                if (miningLevel >= 30 && !gotNugget && chance <= mithrilNuggetDropChance)
-                {
-                    IncrementItemStack(gameData, session, character, MithrilNuggetId);
-                    gotNugget = true;
-                    // chance for mithril  nugget
-                }
-                if (miningLevel >= 10 && !gotNugget && chance <= steelNuggetDropChance)
-                {
-                    IncrementItemStack(gameData, session, character, SteelNuggetId);
-                    gotNugget = true;
-                    // chance for steel
-                }
-                if (!gotNugget && chance <= ironNuggetDropChancef)
-                {
-                    IncrementItemStack(gameData, session, character, IronNuggetId);
+                    foreach (var res in DroppableResources)
+                    {
+                        if (miningLevel >= res.SkillLevel && chance <= res.GetDropChance(miningLevel))
+                        {
+                            IncrementItemStack(gameData, session, character, res.Id);
+                            break;
+                        }
+                    }
                 }
 
                 ++resources.Ore;

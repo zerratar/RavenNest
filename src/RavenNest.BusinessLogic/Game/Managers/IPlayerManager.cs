@@ -28,11 +28,12 @@ namespace RavenNest.BusinessLogic.Game
         AddItemResult AddItem(SessionToken token, string userId, Guid itemId);
         AddItemResult CraftItem(SessionToken token, string userId, Guid itemId);
 
-        bool GiftItem(SessionToken token, string gifterUserId, string receiverUserId, Guid itemId);
-        bool GiftResources(SessionToken token, string giftUserId, string receiverUserId, string resource, long amount);
+        int GiftItem(SessionToken token, string gifterUserId, string receiverUserId, Guid itemId, int amount);
+        int VendorItem(SessionToken token, string userId, Guid itemId, int amount);
 
         bool EquipItem(SessionToken token, string userId, Guid itemId);
         bool UnEquipItem(SessionToken token, string userId, Guid itemId);
+
         ItemCollection GetEquippedItems(SessionToken token, string userId);
         ItemCollection GetAllItems(SessionToken token, string userId);
         IReadOnlyList<Player> GetPlayers();

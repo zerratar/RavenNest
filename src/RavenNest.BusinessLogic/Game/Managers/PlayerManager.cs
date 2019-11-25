@@ -312,9 +312,6 @@ namespace RavenNest.BusinessLogic.Game
             var character = GetCharacter(token, userId);
             if (character == null) return AddItemResult.Failed;
 
-
-
-
             var skills = gameData.GetSkills(character.SkillsId);
             var equippedItems = gameData.FindPlayerItems(character.Id, x =>
                 {
@@ -376,23 +373,95 @@ namespace RavenNest.BusinessLogic.Game
                 : AddItemResult.Added;
         }
 
-        public bool GiftItem(
+        public int VendorItem(
+            SessionToken token,
+            string userId,
+            Guid itemId,
+            int amount)
+        {
+            var player = GetCharacter(token, userId);
+            if (player == null) return 0;
+
+            var item = gameData.GetItem(itemId);
+            if (item == null) return 0;
+
+            var itemToVendor = gameData.GetInventoryItem(player.Id, itemId);
+            if (itemToVendor == null) return 0;
+
+            var resources = gameData.GetResources(player.ResourcesId);
+            if (resources == null) return 0;
+
+            var session = gameData.GetSession(token.SessionId);
+
+            if (amount <= itemToVendor.Amount)
+            {
+                itemToVendor.Amount -= amount;
+                if (itemToVendor.Amount <= 0) gameData.Remove(itemToVendor);
+                resources.Coins += item.ShopSellPrice * amount;
+                UpdateResources(gameData, session, player, resources);
+                return amount;
+            }
+         
+            gameData.Remove(itemToVendor);
+            resources.Coins += itemToVendor.Amount.Value * item.ShopSellPrice;
+            UpdateResources(gameData, session, player, resources);
+            return (int)itemToVendor.Amount;
+        }
+
+
+        public int GiftItem(
             SessionToken token,
             string gifterUserId,
             string receiverUserId,
-            Guid itemId)
+            Guid itemId,
+            int amount)
         {
-            return false;
-        }
+            var gifter = GetCharacter(token, gifterUserId);
+            if (gifter == null) return 0;
 
-        public bool GiftResources(
-            SessionToken token,
-            string giftUserId,
-            string receiverUserId,
-            string resource,
-            long amount)
-        {
-            return false;
+            var receiver = GetCharacter(token, receiverUserId);
+            if (receiver == null) return 0;
+
+            var gift = gameData.GetInventoryItem(gifter.Id, itemId);
+            if (gift == null) return 0;
+
+            var giftedItemCount = 0;
+            if (gift.Amount >= amount)
+            {
+                gift.Amount -= amount;
+                giftedItemCount = amount;
+            }
+            else
+            {
+                giftedItemCount = amount - (int)gift.Amount.Value;
+                gameData.Remove(gift);
+            }
+
+            var recv = gameData.GetInventoryItem(receiver.Id, itemId);
+            if (recv != null)
+            {
+                recv.Amount += giftedItemCount;
+            }
+            else
+            {
+                gameData.Add(new InventoryItem
+                {
+                    Id = Guid.NewGuid(),
+                    CharacterId = receiver.Id,
+                    Amount = giftedItemCount,
+                    Equipped = false,
+                    ItemId = itemId
+                });
+            }
+
+            gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, gameData.GetSession(token.SessionId), new ItemAdd
+            {
+                UserId = receiverUserId,
+                Amount = giftedItemCount,
+                ItemId = itemId
+            }));
+
+            return giftedItemCount;
         }
 
         public bool EquipItem(SessionToken token, string userId, Guid itemId)
@@ -886,6 +955,23 @@ namespace RavenNest.BusinessLogic.Game
             state.Y = (decimal)update.Position.Y;
             state.Z = (decimal)update.Position.Z;
             return state;
+        }
+
+        private void UpdateResources(IGameData gameData, GameSession session, Character character, DataModels.Resources resources)
+        {
+            var user = gameData.GetUser(character.UserId);
+            var gameEvent = gameData.CreateSessionEvent(GameEventType.ResourceUpdate, session,
+                new ResourceUpdate
+                {
+                    UserId = user.UserId,
+                    FishAmount = resources.Fish,
+                    OreAmount = resources.Ore,
+                    WheatAmount = resources.Wheat,
+                    WoodAmount = resources.Wood,
+                    CoinsAmount = resources.Coins
+                });
+
+            gameData.Add(gameEvent);
         }
 
         private static DataModels.SyntyAppearance GenerateRandomSyntyAppearance()

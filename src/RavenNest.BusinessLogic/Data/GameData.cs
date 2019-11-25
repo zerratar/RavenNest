@@ -205,6 +205,13 @@ namespace RavenNest.BusinessLogic.Data
         public Character GetCharacterByUserId(Guid userId) => characters[nameof(User), userId].FirstOrDefault();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Character GetCharacterByUserId(string twitchUserId)
+        {
+            var user = GetUser(twitchUserId);
+            return user == null ? null : characters[nameof(User), user.Id].FirstOrDefault();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<ItemCraftingRequirement> GetCraftingRequirements(Guid itemId) => itemCraftingRequirements[nameof(Item), itemId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

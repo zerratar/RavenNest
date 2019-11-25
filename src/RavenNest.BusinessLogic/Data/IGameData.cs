@@ -44,6 +44,8 @@ namespace RavenNest.BusinessLogic.Data
         DataModels.InventoryItem GetEquippedItem(Guid characterId, Guid itemId);
         Character GetCharacter(Guid characterId);
         Character GetCharacterByUserId(Guid userId);
+        Character GetCharacterByUserId(string twitchUserId);
+
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(Guid itemId);
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(int skip, int take);
         IReadOnlyList<DataModels.GameEvent> GetSessionEvents(Guid sessionId);
