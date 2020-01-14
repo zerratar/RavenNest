@@ -24,9 +24,9 @@ namespace RavenNest.BusinessLogic.Data
         {
             switch (saveData.State)
             {
-                case RavenNest.DataModels.EntityState.Added: return BuildInsertQuery(saveData);
-                case RavenNest.DataModels.EntityState.Deleted: return BuildDeleteQuery(saveData);
-                case RavenNest.DataModels.EntityState.Modified: return BuildUpdateQuery(saveData);
+                case EntityState.Added: return BuildInsertQuery(saveData);
+                case EntityState.Deleted: return BuildDeleteQuery(saveData);
+                case EntityState.Modified: return BuildUpdateQuery(saveData);
                 default: return null;
             }
         }

@@ -28,7 +28,7 @@
             <div class="inventory-items inventory">
                 <div class="inventory-item" v-for="item in getInventoryItems()" :key="item.id">
                     <div class="item-image"  :data-item="item.id" @mouseover="mouseOverItem(item)" @mouseleave="mouseExitItem(item)"><img :src="getItemImage(item.itemId)" /></div>
-                    <div class="item-amount">{{item.amount}}</div>
+                    <div class="item-amount">{{getItemAmount(item)}}</div>
                     <div class="item-tooltip" :class="{visible: getTooltipVisible(item)}" :data-item="item.id">
                         <div class="item-name" :data-tier="getItemTier(item)">{{getItemName(item)}}</div>
                         <div class="item-type">{{getItemType(item)}}</div>
@@ -101,6 +101,19 @@ import MyPlayer from '@/logic/my-player';
         if (item.item.requiredAttackLevel === 100 || item.item.requiredDefenseLevel === 100) return '8';
         if (item.item.requiredAttackLevel === 120 || item.item.requiredDefenseLevel === 120) return '9';
         return item.item.material.toString();
+    }
+
+    public getItemAmount(item: InventoryItem): string {
+        const value = item.amount;
+        if (value >= 1000_000) {
+			var mils = value / 1000000.0;
+			return Math.round(mils) + "M";
+		}
+		else if (value > 1000) {
+			var ks = value / 1000;
+			return Math.round(ks) + "K";
+		}		
+        return item.amount.toString();
     }
 
     public getItemType(item: InventoryItem): string {

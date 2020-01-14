@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using RavenNest.BusinessLogic.Data;
@@ -109,6 +108,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 UserName = user.UserName,
                 UserId = user.UserId,
                 Name = character.Name,
+                IsAdmin = user.IsAdmin.GetValueOrDefault(),
+                IsModerator = user.IsModerator.GetValueOrDefault(),
                 Appearance = Map(gameData.GetAppearance(character.SyntyAppearanceId)),
                 Resources = Map(gameData.GetResources(character.ResourcesId)),
                 Skills = Map(gameData.GetSkills(character.SkillsId)),

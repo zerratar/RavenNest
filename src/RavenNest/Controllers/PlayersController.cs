@@ -98,6 +98,12 @@ namespace RavenNest.Controllers
             return playerManager.AddItem(AssertGetSessionToken(), userId, item);
         }
 
+        [HttpGet("{userId}/toggle-helmet")]
+        public bool UnEquipItem(string userId)
+        {
+            return playerManager.ToggleHelmet(AssertGetSessionToken(), userId);
+        }
+
         [HttpGet("{userId}/unequip/{item}")]
         public bool UnEquipItem(string userId, Guid item)
         {
@@ -151,12 +157,16 @@ namespace RavenNest.Controllers
         //}
 
         [HttpPost("{userId}/appearance")]
-        public bool UpdateSyntyAppearance(string userId, SyntyAppearance appearance)
+        public async Task<bool> UpdateSyntyAppearanceAsync(string userId, SyntyAppearance appearance)
         {
+            var twitchUserSession = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
+            if (twitchUserSession != null)
+            {
+                return playerManager.UpdateSyntyAppearance(userId, appearance);
+            }
+
             return playerManager.UpdateSyntyAppearance(AssertGetSessionToken(), userId, appearance);
         }
-        //UpdateSyntyAppearanceAsync
-
 
         [HttpPost("{userId}/experience")]
         public bool UpdateExperienceAsync(string userId, Many<decimal> experience)

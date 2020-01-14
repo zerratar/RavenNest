@@ -19,6 +19,7 @@ namespace RavenNest.BusinessLogic.Game
         bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics);
 
         bool UpdateSyntyAppearance(SessionToken token, string userId, Models.SyntyAppearance appearance);
+        bool UpdateSyntyAppearance(string userId, Models.SyntyAppearance appearance);
 
         bool UpdateExperience(SessionToken token, string userId, decimal[] experience);
         bool UpdateResources(SessionToken token, string userId, decimal[] resources);
@@ -33,6 +34,8 @@ namespace RavenNest.BusinessLogic.Game
 
         bool EquipItem(SessionToken token, string userId, Guid itemId);
         bool UnEquipItem(SessionToken token, string userId, Guid itemId);
+
+        bool ToggleHelmet(SessionToken token, string userId);
 
         ItemCollection GetEquippedItems(SessionToken token, string userId);
         ItemCollection GetAllItems(SessionToken token, string userId);

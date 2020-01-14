@@ -40,6 +40,8 @@ namespace RavenNest.BusinessLogic.Data
         DataModels.Item GetItem(Guid id);
         IReadOnlyList<DataModels.InventoryItem> GetInventoryItems(Guid characterId, Guid itemId);
 
+        IReadOnlyList<DataModels.InventoryItem> GetInventoryItems(Guid characterId);
+
         DataModels.InventoryItem GetInventoryItem(Guid characterId, Guid itemId);
         DataModels.InventoryItem GetEquippedItem(Guid characterId, Guid itemId);
         Character GetCharacter(Guid characterId);
@@ -120,5 +122,8 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<GameSession> GetActiveSessions();
         IReadOnlyList<ItemCraftingRequirement> GetCraftingRequirements(Guid itemId);
         CharacterSessionState GetCharacterSessionState(Guid sessionId, Guid characterId);
+        InventoryItem GetEquippedItem(Guid id, ItemCategory category);
+
+        object SyncLock { get; }
     }
 }

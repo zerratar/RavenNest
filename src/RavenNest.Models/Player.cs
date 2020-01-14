@@ -24,7 +24,8 @@ namespace RavenNest.Models
         public IReadOnlyList<InventoryItem> InventoryItems { get; set; }
 
         public bool Local { get; set; }
-
+        public bool IsAdmin { get; set; }
+        public bool IsModerator { get; set; }
         public Guid OriginUserId { get; set; }
 
         public int Revision { get; set; }
