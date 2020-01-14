@@ -10,12 +10,13 @@
           <!-- <router-link to="/customization" class="item">Customization</router-link> -->
           <router-link to="/how-to-play" class="item">How to play</router-link>
           <router-link to="/highscore" class="item">HighScore</router-link>
-          <router-link to="/docs" class="item">Developer</router-link>
+          <router-link to="/docs" class="item">Developer</router-link>        
           <router-link to="/character" class="item" v-if="authenticated()">My character</router-link>
+          <a href="/assets" target="_blank" class="item" v-if="authenticated()">Customize</a>
           <div class="right">
             <router-link to="/login" class="item" v-if="!authenticated()">Login</router-link>
             <!-- <router-link to="/register" class="item" v-if="!authenticated()">Register</router-link> -->
-            <router-link to="/logout" class="item" v-if="authenticated()">Logout</router-link>
+            <router-link to="/logout" class="item" v-if="authenticated()">Logout</router-link>            
           </div>
         </div>
         <div class="social">

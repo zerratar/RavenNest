@@ -15,5 +15,7 @@ namespace RavenNest.Models
         public string BeardColor { get; set; }
         public string EyeColor { get; set; }
         public bool HelmetVisible { get; set; }
+        public string StubbleColor { get; set; }
+        public string WarPaintColor { get; set; }
     }
 }

@@ -26,6 +26,8 @@ namespace RavenNest.Models
         public int RequiredCraftingLevel { get; set; }
         public long WoodCost { get; set; }
         public long OreCost { get; set; }
+        public long ShopBuyPrice { get; set; }
+        public long ShopSellPrice { get; set; }
         public List<ItemCraftingRequirement> CraftingRequirements { get; set; }
     }
 }

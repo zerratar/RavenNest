@@ -148,7 +148,7 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     buyAmount = marketItem.Amount;
                 }
-                else if (marketItem.Amount >= requestAmount)
+                else
                 {
                     buyAmount = requestAmount;
                 }
@@ -192,16 +192,14 @@ namespace RavenNest.BusinessLogic.Game
                 boughtTotalCost += cost;
                 boughtTotalAmount += buyAmount;
 
-                BuyMarketItemAsync(token, itemId, character, marketItem, buyAmount, cost);
-
-                requestAmount -= buyAmount;
+                requestAmount -= BuyMarketItemAsync(token, itemId, character, marketItem, buyAmount, cost);
             }
 
             if (boughtTotalAmount <= 0 || boughtTotalCost <= 0)
             {
                 return new ItemBuyResult(
                     boughtItemCount.Count > 0
-                        ? boughtItemCount.All(x => x == 0)
+                        ? boughtItemCount.All(x => x == 0) || insufficientCoins
                         ? ItemTradeState.InsufficientCoins
                         : ItemTradeState.RequestToLow
                         : ItemTradeState.DoesNotExist,
@@ -221,7 +219,7 @@ namespace RavenNest.BusinessLogic.Game
                 boughtTotalCost);
         }
 
-        private void BuyMarketItemAsync(
+        private int BuyMarketItemAsync(
             SessionToken token,
             Guid itemId,
             Character character,
@@ -229,18 +227,14 @@ namespace RavenNest.BusinessLogic.Game
             long amount,
             decimal cost)
         {
-
             var buyAmount = marketItem.Amount >= amount ? amount : marketItem.Amount;
-            if (marketItem.Amount - buyAmount <= 0)
+            if (marketItem.Amount == buyAmount)
                 gameData.Remove(marketItem);
             else
-            {
-                marketItem.Amount = buyAmount;
-            }
+                marketItem.Amount -= buyAmount;
 
             var sellerResources = gameData.GetResourcesByCharacterId(marketItem.SellerCharacterId);
             var buyerResources = gameData.GetResourcesByCharacterId(character.Id);
-            //marketItem.SellerCharacter.Resources.Coins += cost;
             sellerResources.Coins += cost;
             buyerResources.Coins -= cost;
 
@@ -279,19 +273,14 @@ namespace RavenNest.BusinessLogic.Game
             var sellerSession = gameData.GetUserSession(
                 sellerCharacter.UserIdLock.GetValueOrDefault());
 
-            //await db.GameSession
-            //    .OrderByDescending(x => x.Started)
-            //    .FirstOrDefaultAsync(
-            //    x =>
-            //        x.UserId == marketItem.SellerCharacter.UserIdLock &&
-            //        x.Status == (int)SessionStatus.Active);
-
             if (sellerSession != null)
             {
                 AddGameEvent(sellerSession.Id, GameEventType.ItemSell, model);
             }
 
             AddGameEvent(token.SessionId, GameEventType.ItemBuy, model);
+
+            return (int)buyAmount;
         }
 
         private Character GetCharacterAsync(SessionToken token, string userId)

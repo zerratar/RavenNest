@@ -11,7 +11,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         protected static readonly Guid IngotId = Guid.Parse("69A4372F-482F-4AC1-898A-CAFCE809BF4C");
         protected static readonly Guid PlankId = Guid.Parse("EB112F4A-3B17-4DCB-94FE-E9E2C0D9BFAC");
 
-        protected const int ResourceGatherInterval = 6;
+        protected const int ResourceGatherInterval = 10;
         protected const double DropChanceIncrement = 0.02;
 
         protected const int OrePerIngot = 10;
@@ -23,16 +23,16 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         {
             DroppableResources = new List<ResourceDrop>()
             {
-                new ResourceDrop(Guid.Parse("40781EB8-1EBF-4C0C-9A11-6E8033C9953C"), "Rune Nugget", 0.01, 70),
-                new ResourceDrop(Guid.Parse("E32A6F17-653C-4AF3-A3A1-D0C6674FE4D5"), "Adamantite Nugget", 0.05, 50),
-                new ResourceDrop(Guid.Parse("B3411B33-59F6-4443-A70C-6576B6EC74EC"), "Mithril Nugget", 0.125, 30),
-                new ResourceDrop(Guid.Parse("EF674846-817E-41B7-B378-85E64D2CCF5D"), "Steel Nugget", 0.2, 10),
-                new ResourceDrop(Guid.Parse("CC61E4A3-B00E-4FD4-9160-16A6466787E6"), "Iron Nugget", 0.25, 1),
+                new ResourceDrop(Guid.Parse("FEE5E07E-4397-44A9-9E3A-ED0465CE29FC"), "Gold Nugget", 0.2, 30),
+                new ResourceDrop(Guid.Parse("F5A6063F-CC99-48BF-BC79-F764CD87373A"), "Ruby", 0.2, 25),
+                new ResourceDrop(Guid.Parse("48C94F6C-6119-48A2-88EA-F7649F816DA4"), "Emerald", 0.2, 20),
+                new ResourceDrop(Guid.Parse("723A48A0-E3CB-4EBD-9966-EE8323B11DC0"), "Sapphire", 0.2, 10),
 
-                new ResourceDrop(Guid.Parse("FEE5E07E-4397-44A9-9E3A-ED0465CE29FC"), "Gold Nugget", 0.125, 30),
-                new ResourceDrop(Guid.Parse("F5A6063F-CC99-48BF-BC79-F764CD87373A"), "Ruby", 0.125, 25),
-                new ResourceDrop(Guid.Parse("48C94F6C-6119-48A2-88EA-F7649F816DA4"), "Emerald", 0.225, 20),
-                new ResourceDrop(Guid.Parse("723A48A0-E3CB-4EBD-9966-EE8323B11DC0"), "Sapphire", 0.325, 10),
+                new ResourceDrop(Guid.Parse("40781EB8-1EBF-4C0C-9A11-6E8033C9953C"), "Rune Nugget", 0.2, 70),
+                new ResourceDrop(Guid.Parse("E32A6F17-653C-4AF3-A3A1-D0C6674FE4D5"), "Adamantite Nugget", 0.2, 50),
+                new ResourceDrop(Guid.Parse("B3411B33-59F6-4443-A70C-6576B6EC74EC"), "Mithril Nugget", 0.2, 30),
+                new ResourceDrop(Guid.Parse("EF674846-817E-41B7-B378-85E64D2CCF5D"), "Steel Nugget", 0.2, 10),
+                new ResourceDrop(Guid.Parse("CC61E4A3-B00E-4FD4-9160-16A6466787E6"), "Iron Nugget", 0.2, 1),
             };
         }
 

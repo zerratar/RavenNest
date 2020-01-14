@@ -16,6 +16,10 @@ namespace RavenNest.DataModels
         private string beardColor; public string BeardColor { get => beardColor; set => Set(ref beardColor, value); }
         private string eyeColor; public string EyeColor { get => eyeColor; set => Set(ref eyeColor, value); }
         private bool helmetVisible; public bool HelmetVisible { get => helmetVisible; set => Set(ref helmetVisible, value); }
+
+        private string stubbleColor; public string StubbleColor { get => stubbleColor; set => Set(ref stubbleColor, value); }
+        private string warPaintColor; public string WarPaintColor { get => warPaintColor; set => Set(ref warPaintColor, value); }
+
         //public ICollection<Character> Character { get; set; }
     }
 }

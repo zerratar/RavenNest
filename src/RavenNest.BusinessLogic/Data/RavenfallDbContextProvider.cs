@@ -14,7 +14,9 @@ namespace RavenNest.BusinessLogic.Data
 
         public RavenfallDbContext Get()
         {
-            return new RavenfallDbContext(settings.DbConnectionString);
+            var ctx = new RavenfallDbContext(settings.DbConnectionString);
+            ctx.ChangeTracker.AutoDetectChangesEnabled = false;
+            return ctx;
         }
 
         public SqlConnection GetConnection()

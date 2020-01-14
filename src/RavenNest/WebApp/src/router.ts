@@ -16,10 +16,6 @@ export default new Router({
     name: 'how-to-play',
     component: () => import('./views/HowToPlay.vue'),
   }, {
-    path: '/customization',
-    name: 'customization',
-    component: () => import('./views/Customization.vue'),
-  }, {
     path: '/docs',
     name: 'docs',
     component: () => import('./views/Documentation.vue'),

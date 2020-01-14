@@ -127,15 +127,30 @@ namespace RavenNest
             app.UseStaticFiles();
             app.UseHttpsRedirection();
 
-            if (System.IO.Directory.Exists(System.IO.Path.Combine(env.WebRootPath, "/assets/build")))
-            {
-                app.UseStaticFiles(new StaticFileOptions
-                {
-                    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "assets", "build")),
-                    RequestPath = "/assets/build",
-                    ContentTypeProvider = UnityContentTypeProvider()
-                });
-            }
+            //var unityBuildPath = System.IO.Path.Combine(env.WebRootPath, "/assets/build");
+            //if (System.IO.Directory.Exists(unityBuildPath))
+            //{
+
+                //StaticFileOptions option = new StaticFileOptions();
+                //FileExtensionContentTypeProvider contentTypeProvider = (FileExtensionContentTypeProvider)option.ContentTypeProvider ??
+                //new FileExtensionContentTypeProvider();
+
+                //contentTypeProvider.Mappings.Add(".mem", "application/octet-stream");
+                //contentTypeProvider.Mappings.Add(".data", "application/octet-stream");
+                //contentTypeProvider.Mappings.Add(".memgz", "application/octet-stream");
+                //contentTypeProvider.Mappings.Add(".datagz", "application/octet-stream");
+                //contentTypeProvider.Mappings.Add(".unity3dgz", "application/octet-stream");
+                //contentTypeProvider.Mappings.Add(".jsgz", "application/x-javascript; charset=UTF-8");
+                //option.ContentTypeProvider = contentTypeProvider;
+                //app.UseStaticFiles(option);
+
+                //app.UseStaticFiles(new StaticFileOptions
+                //{
+                //    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "assets", "build")),
+                //    RequestPath = "/assets/build",
+                //    ContentTypeProvider = UnityContentTypeProvider()
+                //});
+            //}
 
             app.Map("/session-state.js", builder =>
             {

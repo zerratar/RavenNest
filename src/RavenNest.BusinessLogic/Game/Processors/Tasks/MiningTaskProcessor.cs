@@ -1,11 +1,14 @@
 ﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using System;
+using System.Linq;
 
 namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
     public class MiningTaskProcessor : ResourceTaskProcessor
     {
+        private readonly Random random = new Random();
+
         public override void Handle(IGameData gameData, GameSession session, Character character, DataModels.CharacterState state)
         {
             UpdateResourceGain(gameData, session, character, resources =>
@@ -14,11 +17,11 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 var miningLevel = GameMath.ExperienceToLevel(skills.Mining);
                 var chance = Random.NextDouble();
 
-                // clamp to always be 50% chance on each resource gain.
+                // clamp to always be 10% chance on each resource gain.
                 // so we dont get drops too often.
-                if (chance <= 0.5)
+                if (chance <= 0.1)
                 {
-                    foreach (var res in DroppableResources)
+                    foreach (var res in DroppableResources.OrderBy(x => random.NextDouble()))
                     {
                         if (miningLevel >= res.SkillLevel && chance <= res.GetDropChance(miningLevel))
                         {
