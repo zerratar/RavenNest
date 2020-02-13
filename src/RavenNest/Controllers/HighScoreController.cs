@@ -1,7 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using Microsoft.ApplicationInsights;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Game;
@@ -14,16 +11,16 @@ namespace RavenNest.Controllers
     [ApiDescriptor(Name = "HighScore API", Description = "Used for retrieving player HighScore list.")]
     public class HighScoreController : ControllerBase
     {
-        private readonly TelemetryClient telemetryClient;
+        //private readonly TelemetryClient telemetryClient;
         private readonly IMemoryCache highscoreCache;
         private readonly IHighScoreManager highScoreManager;
 
         public HighScoreController(
-            TelemetryClient telemetryClient,
+            //TelemetryClient telemetryClient,
             IMemoryCache highscoreCache,
             IHighScoreManager highScoreManager)
         {
-            this.telemetryClient = telemetryClient;
+            //this.telemetryClient = telemetryClient;
             this.highscoreCache = highscoreCache;
             this.highScoreManager = highScoreManager;
         }

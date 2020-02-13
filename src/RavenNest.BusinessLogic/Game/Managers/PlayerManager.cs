@@ -213,178 +213,168 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool[] UpdateMany(SessionToken token, PlayerState[] states)
         {
-            lock (gameData.SyncLock)
+            var results = new List<bool>();
+            var gameSession = gameData.GetSession(token.SessionId);
+            if (gameSession == null)
             {
-                var results = new List<bool>();
-                var gameSession = gameData.GetSession(token.SessionId);
-                if (gameSession == null)
-                {
-                    return Enumerable.Range(0, states.Length).Select(x => false).ToArray();
-                }
-
-                var sessionPlayers = gameData.GetSessionCharacters(gameSession);
-                foreach (var state in states)
-                {
-                    var user = gameData.GetUser(state.UserId);
-                    if (user == null)
-                    {
-                        logger.WriteError($"Trying to save player with userId {state.UserId}, but no user was found matching the id.");
-                        results.Add(false);
-                        continue;
-                    }
-                    var character = gameData.GetCharacterByUserId(user.Id);
-                    if (character == null)
-                    {
-                        results.Add(false);
-                        continue;
-                    }
-
-                    try
-                    {
-                        if (state.Experience != null && state.Experience.Length > 0)
-                        {
-                            UpdateExperience(token, state.UserId, state.Experience);
-                        }
-
-                        if (state.Statistics != null && state.Statistics.Length > 0)
-                        {
-                            UpdateStatistics(token, state.UserId, state.Statistics);
-                        }
-
-                        EquipBestItems(character);
-
-                        character.Revision = character.Revision.GetValueOrDefault() + 1;
-
-                        results.Add(true);
-                    }
-                    catch
-                    {
-                        results.Add(false);
-                    }
-                }
-
-                return results.ToArray();
+                return Enumerable.Range(0, states.Length).Select(x => false).ToArray();
             }
+
+            var sessionPlayers = gameData.GetSessionCharacters(gameSession);
+            foreach (var state in states)
+            {
+                var user = gameData.GetUser(state.UserId);
+                if (user == null)
+                {
+                    logger.WriteError($"Trying to save player with userId {state.UserId}, but no user was found matching the id.");
+                    results.Add(false);
+                    continue;
+                }
+                var character = gameData.GetCharacterByUserId(user.Id);
+                if (character == null)
+                {
+                    results.Add(false);
+                    continue;
+                }
+
+                try
+                {
+                    if (state.Experience != null && state.Experience.Length > 0)
+                    {
+                        UpdateExperience(token, state.UserId, state.Experience);
+                    }
+
+                    if (state.Statistics != null && state.Statistics.Length > 0)
+                    {
+                        UpdateStatistics(token, state.UserId, state.Statistics);
+                    }
+
+                    EquipBestItems(character);
+
+                    character.Revision = character.Revision.GetValueOrDefault() + 1;
+
+                    results.Add(true);
+                }
+                catch
+                {
+                    results.Add(false);
+                }
+            }
+
+            return results.ToArray();
         }
 
         public AddItemResult CraftItem(SessionToken token, string userId, Guid itemId)
         {
-            lock (gameData.SyncLock)
+            var item = gameData.GetItem(itemId);
+            if (item == null) return AddItemResult.Failed;
+
+            var character = GetCharacter(token, userId);
+            if (character == null) return AddItemResult.Failed;
+
+            var resources = gameData.GetResources(character.ResourcesId);
+            if (resources == null) return AddItemResult.Failed;
+
+            var skills = gameData.GetSkills(character.SkillsId);
+            if (skills == null) return AddItemResult.Failed;
+
+            var craftingLevel = GameMath.ExperienceToLevel(skills.Crafting);
+            if (item.WoodCost > resources.Wood || item.OreCost > resources.Ore || item.RequiredCraftingLevel > craftingLevel)
+                return AddItemResult.Failed;
+
+            var craftingRequirements = gameData.GetCraftingRequirements(itemId);
+            foreach (var req in craftingRequirements)
             {
-                var item = gameData.GetItem(itemId);
-                if (item == null) return AddItemResult.Failed;
-
-                var character = GetCharacter(token, userId);
-                if (character == null) return AddItemResult.Failed;
-
-                var resources = gameData.GetResources(character.ResourcesId);
-                if (resources == null) return AddItemResult.Failed;
-
-                var skills = gameData.GetSkills(character.SkillsId);
-                if (skills == null) return AddItemResult.Failed;
-
-                var craftingLevel = GameMath.ExperienceToLevel(skills.Crafting);
-                if (item.WoodCost > resources.Wood || item.OreCost > resources.Ore || item.RequiredCraftingLevel > craftingLevel)
+                var invItem = gameData.GetInventoryItem(character.Id, req.ResourceItemId);
+                if (invItem == null || invItem.Amount < req.Amount)
+                {
                     return AddItemResult.Failed;
-
-                var craftingRequirements = gameData.GetCraftingRequirements(itemId);
-                foreach (var req in craftingRequirements)
-                {
-                    var invItem = gameData.GetInventoryItem(character.Id, req.ResourceItemId);
-                    if (invItem == null || invItem.Amount < req.Amount)
-                    {
-                        return AddItemResult.Failed;
-                    }
                 }
-
-                foreach (var req in craftingRequirements)
-                {
-                    var invItem = gameData.GetInventoryItem(character.Id, req.ResourceItemId);
-                    invItem.Amount -= req.Amount;
-                    if (invItem.Amount == 0)
-                    {
-                        gameData.Remove(invItem);
-                    }
-                }
-
-                resources.Wood -= item.WoodCost;
-                resources.Ore -= item.OreCost;
-
-                return AddItem(token, userId, itemId);
             }
+
+            foreach (var req in craftingRequirements)
+            {
+                var invItem = gameData.GetInventoryItem(character.Id, req.ResourceItemId);
+                invItem.Amount -= req.Amount;
+                if (invItem.Amount == 0)
+                {
+                    gameData.Remove(invItem);
+                }
+            }
+
+            resources.Wood -= item.WoodCost;
+            resources.Ore -= item.OreCost;
+
+            return AddItem(token, userId, itemId);
         }
 
         public AddItemResult AddItem(SessionToken token, string userId, Guid itemId)
         {
+            var item = gameData.GetItem(itemId);
+            if (item == null) return AddItemResult.Failed;
 
-            lock (gameData.SyncLock)
-            {
-                var item = gameData.GetItem(itemId);
-                if (item == null) return AddItemResult.Failed;
+            var character = GetCharacter(token, userId);
+            if (character == null) return AddItemResult.Failed;
 
-                var character = GetCharacter(token, userId);
-                if (character == null) return AddItemResult.Failed;
-
-                var skills = gameData.GetSkills(character.SkillsId);
-                var equippedItems = gameData.FindPlayerItems(character.Id, x =>
-                    {
-                        var xItem = gameData.GetItem(x.ItemId);
-                        return x.Equipped && xItem.Type == item.Type && xItem.Category == item.Category;
-                    });
-
-                var equipped = false;
-                if (equippedItems.Count > 0)
+            var skills = gameData.GetSkills(character.SkillsId);
+            var equippedItems = gameData.FindPlayerItems(character.Id, x =>
                 {
-                    var bestFirst = equippedItems.Select(x => new
-                    {
-                        Equipped = x,
-                        Item = gameData.GetItem(x.ItemId)
-                    }).OrderByDescending(x => GetItemValue(x.Item));
+                    var xItem = gameData.GetItem(x.ItemId);
+                    return x.Equipped && xItem.Type == item.Type && xItem.Category == item.Category;
+                });
 
-                    var bestEquipped = bestFirst.First();
-                    if (CanEquipItem(item, skills) && IsItemBetter(item, bestEquipped.Item))
-                    {
-                        equipped = true;
-                    }
+            var equipped = false;
+            if (equippedItems.Count > 0)
+            {
+                var bestFirst = equippedItems.Select(x => new
+                {
+                    Equipped = x,
+                    Item = gameData.GetItem(x.ItemId)
+                }).OrderByDescending(x => GetItemValue(x.Item));
 
-                    if (!equipped)
-                    {
-                        bestEquipped.Equipped.Equipped = true;
-                    }
-
-                    for (var i = 1; i < equippedItems.Count; ++i)
-                    {
-                        equippedItems[i].Equipped = false;
-                    }
+                var bestEquipped = bestFirst.First();
+                if (CanEquipItem(item, skills) && IsItemBetter(item, bestEquipped.Item))
+                {
+                    equipped = true;
                 }
 
-                var addNew = true;
                 if (!equipped)
                 {
-                    var inv = gameData.GetInventoryItem(character.Id, itemId);
-                    if (inv != null)
-                    {
-                        inv.Amount++;
-                        addNew = false;
-                    }
+                    bestEquipped.Equipped.Equipped = true;
                 }
 
-                if (addNew)
+                for (var i = 1; i < equippedItems.Count; ++i)
                 {
-                    gameData.Add(new InventoryItem
-                    {
-                        Id = Guid.NewGuid(),
-                        ItemId = item.Id,
-                        Amount = 1,
-                        CharacterId = character.Id,
-                        Equipped = equipped
-                    });
+                    equippedItems[i].Equipped = false;
                 }
-
-                return equipped
-                    ? AddItemResult.AddedAndEquipped
-                    : AddItemResult.Added;
             }
+
+            var addNew = true;
+            if (!equipped)
+            {
+                var inv = gameData.GetInventoryItem(character.Id, itemId);
+                if (inv != null)
+                {
+                    inv.Amount++;
+                    addNew = false;
+                }
+            }
+
+            if (addNew)
+            {
+                gameData.Add(new InventoryItem
+                {
+                    Id = Guid.NewGuid(),
+                    ItemId = item.Id,
+                    Amount = 1,
+                    CharacterId = character.Id,
+                    Equipped = equipped
+                });
+            }
+
+            return equipped
+                ? AddItemResult.AddedAndEquipped
+                : AddItemResult.Added;
         }
 
         public int VendorItem(
@@ -393,36 +383,33 @@ namespace RavenNest.BusinessLogic.Game
             Guid itemId,
             int amount)
         {
-            lock (gameData.SyncLock)
+            var player = GetCharacter(token, userId);
+            if (player == null) return 0;
+
+            var item = gameData.GetItem(itemId);
+            if (item == null) return 0;
+
+            var itemToVendor = gameData.GetInventoryItem(player.Id, itemId);
+            if (itemToVendor == null) return 0;
+
+            var resources = gameData.GetResources(player.ResourcesId);
+            if (resources == null) return 0;
+
+            var session = gameData.GetSession(token.SessionId);
+
+            if (amount <= itemToVendor.Amount)
             {
-                var player = GetCharacter(token, userId);
-                if (player == null) return 0;
-
-                var item = gameData.GetItem(itemId);
-                if (item == null) return 0;
-
-                var itemToVendor = gameData.GetInventoryItem(player.Id, itemId);
-                if (itemToVendor == null) return 0;
-
-                var resources = gameData.GetResources(player.ResourcesId);
-                if (resources == null) return 0;
-
-                var session = gameData.GetSession(token.SessionId);
-
-                if (amount <= itemToVendor.Amount)
-                {
-                    itemToVendor.Amount -= amount;
-                    if (itemToVendor.Amount <= 0) gameData.Remove(itemToVendor);
-                    resources.Coins += item.ShopSellPrice * amount;
-                    UpdateResources(gameData, session, player, resources);
-                    return amount;
-                }
-
-                gameData.Remove(itemToVendor);
-                resources.Coins += itemToVendor.Amount.Value * item.ShopSellPrice;
+                itemToVendor.Amount -= amount;
+                if (itemToVendor.Amount <= 0) gameData.Remove(itemToVendor);
+                resources.Coins += item.ShopSellPrice * amount;
                 UpdateResources(gameData, session, player, resources);
-                return (int)itemToVendor.Amount;
+                return amount;
             }
+
+            gameData.Remove(itemToVendor);
+            resources.Coins += itemToVendor.Amount.Value * item.ShopSellPrice;
+            UpdateResources(gameData, session, player, resources);
+            return (int)itemToVendor.Amount;
         }
 
 
@@ -433,62 +420,59 @@ namespace RavenNest.BusinessLogic.Game
             Guid itemId,
             int amount)
         {
-            lock (gameData.SyncLock)
+            var gifter = GetCharacter(token, gifterUserId);
+            if (gifter == null) return 0;
+
+            var receiver = GetCharacter(token, receiverUserId);
+            if (receiver == null) return 0;
+
+            var gift = gameData.GetInventoryItem(gifter.Id, itemId);
+            if (gift == null) return 0;
+
+            var giftedItemCount = amount;
+            if (gift.Amount >= amount)
             {
-                var gifter = GetCharacter(token, gifterUserId);
-                if (gifter == null) return 0;
-
-                var receiver = GetCharacter(token, receiverUserId);
-                if (receiver == null) return 0;
-
-                var gift = gameData.GetInventoryItem(gifter.Id, itemId);
-                if (gift == null) return 0;
-
-                var giftedItemCount = amount;
-                if (gift.Amount >= amount)
+                gift.Amount -= amount;
+                if (gift.Amount == 0)
                 {
-                    gift.Amount -= amount;
-                    if (gift.Amount == 0)
-                    {
-                        gameData.Remove(gift);
-                    }
-                }
-                else
-                {
-                    giftedItemCount = (int)gift.Amount.Value;
-                    gift.Amount = 0;
                     gameData.Remove(gift);
                 }
-
-                var recv = gameData.GetInventoryItem(receiver.Id, itemId);
-                if (recv != null)
-                {
-                    recv.Amount += giftedItemCount;
-                }
-                else
-                {
-                    gameData.Add(new InventoryItem
-                    {
-                        Id = Guid.NewGuid(),
-                        CharacterId = receiver.Id,
-                        Amount = giftedItemCount,
-                        Equipped = false,
-                        ItemId = itemId
-                    });
-                }
-
-                gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, gameData.GetSession(token.SessionId), new ItemAdd
-                {
-                    UserId = receiverUserId,
-                    Amount = giftedItemCount,
-                    ItemId = itemId
-                }));
-
-
-                EquipBestItems(receiver);
-
-                return giftedItemCount;
             }
+            else
+            {
+                giftedItemCount = (int)gift.Amount.Value;
+                gift.Amount = 0;
+                gameData.Remove(gift);
+            }
+
+            var recv = gameData.GetInventoryItem(receiver.Id, itemId);
+            if (recv != null)
+            {
+                recv.Amount += giftedItemCount;
+            }
+            else
+            {
+                gameData.Add(new InventoryItem
+                {
+                    Id = Guid.NewGuid(),
+                    CharacterId = receiver.Id,
+                    Amount = giftedItemCount,
+                    Equipped = false,
+                    ItemId = itemId
+                });
+            }
+
+            gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, gameData.GetSession(token.SessionId), new ItemAdd
+            {
+                UserId = receiverUserId,
+                Amount = giftedItemCount,
+                ItemId = itemId
+            }));
+
+
+            EquipBestItems(receiver);
+
+            return giftedItemCount;
         }
 
         public void EquipItem(Character character, InventoryItem item)
@@ -515,86 +499,80 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool EquipItem(SessionToken token, string userId, Guid itemId)
         {
-            lock (gameData.SyncLock)
+            var character = GetCharacter(token, userId);
+            if (character == null) return false;
+
+            var item = gameData.GetItem(itemId);
+            if (item == null) return false;
+
+            var invItem = gameData.GetInventoryItem(character.Id, itemId);
+
+            var skills = gameData.GetSkills(character.SkillsId);
+            if (invItem == null || !CanEquipItem(gameData.GetItem(invItem.ItemId), skills))
+                return false;
+
+            if (invItem.Amount > 1)
             {
-                var character = GetCharacter(token, userId);
-                if (character == null) return false;
+                --invItem.Amount;
 
-                var item = gameData.GetItem(itemId);
-                if (item == null) return false;
-
-                var invItem = gameData.GetInventoryItem(character.Id, itemId);
-
-                var skills = gameData.GetSkills(character.SkillsId);
-                if (invItem == null || !CanEquipItem(gameData.GetItem(invItem.ItemId), skills))
-                    return false;
-
-                if (invItem.Amount > 1)
+                invItem = new InventoryItem
                 {
-                    --invItem.Amount;
+                    Id = Guid.NewGuid(),
+                    CharacterId = character.Id,
+                    Amount = 1,
+                    Equipped = true,
+                    ItemId = invItem.ItemId,
+                };
+                gameData.Add(invItem);
+            }
+            else
+            {
+                invItem.Equipped = true;
+            }
 
-                    invItem = new InventoryItem
-                    {
-                        Id = Guid.NewGuid(),
-                        CharacterId = character.Id,
-                        Amount = 1,
-                        Equipped = true,
-                        ItemId = invItem.ItemId,
-                    };
-                    gameData.Add(invItem);
+            InventoryItem invItemEq = gameData.FindPlayerItem(character.Id, x =>
+            {
+                var xItem = gameData.GetItem(x.ItemId);
+                return xItem.Type == item.Type && xItem.Category == item.Category && x.Equipped;
+            });
+
+            if (invItemEq != null)
+            {
+                var stack = gameData.GetInventoryItem(character.Id, invItemEq.ItemId);
+
+                if (stack != null)
+                {
+                    ++stack.Amount;
+                    gameData.Remove(invItemEq);
                 }
                 else
                 {
-                    invItem.Equipped = true;
+                    invItemEq.Equipped = false;
                 }
-
-                InventoryItem invItemEq = gameData.FindPlayerItem(character.Id, x =>
-                {
-                    var xItem = gameData.GetItem(x.ItemId);
-                    return xItem.Type == item.Type && xItem.Category == item.Category && x.Equipped;
-                });
-
-                if (invItemEq != null)
-                {
-                    var stack = gameData.GetInventoryItem(character.Id, invItemEq.ItemId);
-
-                    if (stack != null)
-                    {
-                        ++stack.Amount;
-                        gameData.Remove(invItemEq);
-                    }
-                    else
-                    {
-                        invItemEq.Equipped = false;
-                    }
-                }
-
-                return true;
             }
+
+            return true;
         }
 
         public bool UnEquipItem(SessionToken token, string userId, Guid itemId)
         {
-            lock (gameData.SyncLock)
+            var character = GetCharacter(token, userId);
+            if (character == null) return false;
+
+            var invItem = gameData.GetEquippedItem(character.Id, itemId);
+            if (invItem == null) return false;
+
+            var stack = gameData.GetInventoryItem(character.Id, itemId);
+            if (stack != null)
             {
-                var character = GetCharacter(token, userId);
-                if (character == null) return false;
-
-                var invItem = gameData.GetEquippedItem(character.Id, itemId);
-                if (invItem == null) return false;
-
-                var stack = gameData.GetInventoryItem(character.Id, itemId);
-                if (stack != null)
-                {
-                    ++stack.Amount;
-                    gameData.Remove(invItem);
-                }
-                else
-                {
-                    invItem.Equipped = false;
-                }
-                return true;
+                ++stack.Amount;
+                gameData.Remove(invItem);
             }
+            else
+            {
+                invItem.Equipped = false;
+            }
+            return true;
         }
 
         public bool ToggleHelmet(SessionToken token, string userId)
@@ -820,69 +798,63 @@ namespace RavenNest.BusinessLogic.Game
 
         public void EquipBestItems(Character character)
         {
-            lock (gameData.SyncLock)
+            var equippedPetInventoryItem = gameData.GetEquippedItem(character.Id, ItemCategory.Pet);
+
+            UnequipAllItems(character);
+
+            var skills = gameData.GetSkills(character.SkillsId);
+            var inventoryItems = gameData
+                .GetInventoryItems(character.Id)
+                .Select(x => new { InventoryItem = x, Item = gameData.GetItem(x.ItemId) })
+                .Where(x => CanEquipItem(x.Item, skills))
+                .OrderByDescending(x => GetItemValue(x.Item))
+                .ToList();
+
+            var weaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon);
+            if (weaponToEquip != null)
             {
-                var equippedPetInventoryItem = gameData.GetEquippedItem(character.Id, ItemCategory.Pet);
+                EquipItem(character, weaponToEquip.InventoryItem);
+            }
 
-                UnequipAllItems(character);
+            InventoryItem equippedPet = null;
+            if (equippedPetInventoryItem != null)
+            {
+                equippedPet = gameData.GetInventoryItem(character.Id, equippedPetInventoryItem.ItemId);
+                if (equippedPet != null)
+                {
+                    EquipItem(character, equippedPet);
+                }
+            }
 
-                var skills = gameData.GetSkills(character.SkillsId);
-                var inventoryItems = gameData
-                    .GetInventoryItems(character.Id)
-                    .Select(x => new { InventoryItem = x, Item = gameData.GetItem(x.ItemId) })
-                    .Where(x => CanEquipItem(x.Item, skills))
+            foreach (var itemGroup in inventoryItems
+                .Where(x => x.Item.Category != (int)ItemCategory.Weapon && x.Item.Category != (int)ItemCategory.Pet)
+                .GroupBy(x => x.Item.Type))
+            {
+                var itemToEquip = itemGroup
                     .OrderByDescending(x => GetItemValue(x.Item))
-                    .ToList();
+                    .FirstOrDefault();
 
-                var weaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon);
-                if (weaponToEquip != null)
+                if (itemToEquip != null)
                 {
-                    EquipItem(character, weaponToEquip.InventoryItem);
-                }
-
-                InventoryItem equippedPet = null;
-                if (equippedPetInventoryItem != null)
-                {
-                    equippedPet = gameData.GetInventoryItem(character.Id, equippedPetInventoryItem.ItemId);
-                    if (equippedPet != null)
-                    {
-                        EquipItem(character, equippedPet);
-                    }
-                }
-
-                foreach (var itemGroup in inventoryItems
-                    .Where(x => x.Item.Category != (int)ItemCategory.Weapon && x.Item.Category != (int)ItemCategory.Pet)
-                    .GroupBy(x => x.Item.Type))
-                {
-                    var itemToEquip = itemGroup
-                        .OrderByDescending(x => GetItemValue(x.Item))
-                        .FirstOrDefault();
-
-                    if (itemToEquip != null)
-                    {
-                        EquipItem(character, itemToEquip.InventoryItem);
-                    }
+                    EquipItem(character, itemToEquip.InventoryItem);
                 }
             }
         }
 
         private void UnequipAllItems(Character character)
         {
-            lock (gameData.SyncLock)
+            var allEquippedItems = gameData.GetEquippedItems(character.Id);
+            foreach (var equipped in allEquippedItems)
             {
-                var allEquippedItems = gameData.GetEquippedItems(character.Id);
-                foreach (var equipped in allEquippedItems)
+                var stack = gameData.GetInventoryItem(character.Id, equipped.ItemId);
+                if (stack != null)
                 {
-                    var stack = gameData.GetInventoryItem(character.Id, equipped.ItemId);
-                    if (stack != null)
-                    {
-                        stack.Amount += equipped.Amount;
-                        gameData.Remove(equipped);
-                    }
-                    else
-                    {
-                        equipped.Equipped = false;
-                    }
+                    stack.Amount += equipped.Amount;
+                    gameData.Remove(equipped);
+                }
+                else
+                {
+                    equipped.Equipped = false;
                 }
             }
         }

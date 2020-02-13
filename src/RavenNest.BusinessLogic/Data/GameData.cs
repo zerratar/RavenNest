@@ -41,7 +41,6 @@ namespace RavenNest.BusinessLogic.Data
         private readonly IEntitySet[] entitySets;
 
         private ITimeoutHandle scheduleHandler;
-
         public object SyncLock { get; } = new object();
 
         public GameData(IRavenfallDbContextProvider db, ILogger logger, IKernel kernel, IQueryBuilder queryBuilder)
@@ -168,327 +167,213 @@ namespace RavenNest.BusinessLogic.Data
 
         // This is not code, it is a shrimp. Cant you see?
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Character FindCharacter(Func<Character, bool> predicate)
-        {
-            lock (SyncLock) return characters.Entities.FirstOrDefault(predicate);
-        }
+        public Character FindCharacter(Func<Character, bool> predicate) => 
+            characters.Entities.FirstOrDefault(predicate);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public InventoryItem FindPlayerItem(Guid id, Func<InventoryItem, bool> predicate)
-        {
-            lock (SyncLock)
-                return characters.TryGet(id, out var player)
-                    ? inventoryItems[nameof(Character), player.Id].FirstOrDefault(predicate)
-                    : null;
-        }
+        public InventoryItem FindPlayerItem(Guid id, Func<InventoryItem, bool> predicate) => 
+            characters.TryGet(id, out var player)
+                ? inventoryItems[nameof(Character), player.Id].FirstOrDefault(predicate)
+                : null;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<InventoryItem> FindPlayerItems(Guid id, Func<InventoryItem, bool> predicate)
-        {
-            lock (SyncLock)
-                return characters.TryGet(id, out var player)
-                    ? inventoryItems[nameof(Character), player.Id].Where(predicate).ToList()
-                    : null;
-        }
+        public IReadOnlyList<InventoryItem> FindPlayerItems(Guid id, Func<InventoryItem, bool> predicate) =>
+            characters.TryGet(id, out var player)
+                ? inventoryItems[nameof(Character), player.Id].Where(predicate).ToList()
+                : null;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GameSession FindSession(Func<GameSession, bool> predicate)
-        {
-            lock (SyncLock) return gameSessions.Entities.FirstOrDefault(predicate);
-        }
+        public GameSession FindSession(Func<GameSession, bool> predicate) =>
+            gameSessions.Entities.FirstOrDefault(predicate);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public User FindUser(Func<User, bool> predicate)
-        {
-            lock (SyncLock) return users.Entities.FirstOrDefault(predicate);
-        }
+        public User FindUser(Func<User, bool> predicate) =>
+            users.Entities.FirstOrDefault(predicate);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public User FindUser(string userIdOrUsername)
-        {
-            lock (SyncLock)
-                return users.Entities.FirstOrDefault(x =>
+        public User FindUser(string userIdOrUsername) =>
+            users.Entities.FirstOrDefault(x =>
                     x.UserId == userIdOrUsername ||
                     x.UserName.Equals(userIdOrUsername, StringComparison.OrdinalIgnoreCase));
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<InventoryItem> GetAllPlayerItems(Guid characterId)
-        {
-            lock (SyncLock) return inventoryItems[nameof(Character), characterId];
-        }
+        public IReadOnlyList<InventoryItem> GetAllPlayerItems(Guid characterId) => 
+            inventoryItems[nameof(Character), characterId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<InventoryItem> GetInventoryItems(Guid characterId)
-        {
-            lock (SyncLock) return inventoryItems[nameof(Character), characterId].Where(x => !x.Equipped).ToList();
-        }
+        public IReadOnlyList<InventoryItem> GetInventoryItems(Guid characterId) =>
+            inventoryItems[nameof(Character), characterId].Where(x => !x.Equipped).ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Character GetCharacter(Guid characterId)
-        {
-            lock (SyncLock) return characters[characterId];
-        }
+        public Character GetCharacter(Guid characterId) =>
+            characters[characterId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Character GetCharacterByUserId(Guid userId)
-        {
-            lock (SyncLock) return characters[nameof(User), userId].FirstOrDefault();
-        }
+        public Character GetCharacterByUserId(Guid userId) =>
+            characters[nameof(User), userId].FirstOrDefault();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Character GetCharacterByUserId(string twitchUserId)
         {
-            lock (SyncLock)
-            {
-                var user = GetUser(twitchUserId);
-                return user == null ? null : characters[nameof(User), user.Id].FirstOrDefault();
-            }
+            var user = GetUser(twitchUserId);
+            return user == null ? null : characters[nameof(User), user.Id].FirstOrDefault();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<ItemCraftingRequirement> GetCraftingRequirements(Guid itemId)
-        {
-            lock (SyncLock) return itemCraftingRequirements[nameof(Item), itemId];
-        }
+        public IReadOnlyList<ItemCraftingRequirement> GetCraftingRequirements(Guid itemId) => itemCraftingRequirements[nameof(Item), itemId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<Character> GetCharacters(Func<Character, bool> predicate)
-        {
-            lock (SyncLock) return characters.Entities.Where(predicate).ToList();
-        }
+        public IReadOnlyList<Character> GetCharacters(Func<Character, bool> predicate) =>
+            characters.Entities.Where(predicate).ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<User> GetUsers()
-        {
-            lock (SyncLock) return users.Entities.ToList();
-        }
+        public IReadOnlyList<User> GetUsers() =>
+            users.Entities.ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public InventoryItem GetEquippedItem(Guid characterId, Guid itemId)
-        {
-            lock (SyncLock)
-                return inventoryItems[nameof(Character), characterId]
-                    .FirstOrDefault(x => x.Equipped && x.ItemId == itemId);
-        }
+        public InventoryItem GetEquippedItem(Guid characterId, Guid itemId) =>
+            inventoryItems[nameof(Character), characterId]
+                .FirstOrDefault(x => x.Equipped && x.ItemId == itemId);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public InventoryItem GetInventoryItem(Guid characterId, Guid itemId)
-        {
-            lock (SyncLock) return inventoryItems[nameof(Character), characterId]
-                .FirstOrDefault(x => !x.Equipped && x.ItemId == itemId);
-        }
+        public InventoryItem GetInventoryItem(Guid characterId, Guid itemId) =>
+            inventoryItems[nameof(Character), characterId]
+               .FirstOrDefault(x => !x.Equipped && x.ItemId == itemId);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<InventoryItem> GetEquippedItems(Guid characterId)
-        {
-            lock (SyncLock) return inventoryItems[nameof(Character), characterId]
+        public IReadOnlyList<InventoryItem> GetEquippedItems(Guid characterId) =>
+            inventoryItems[nameof(Character), characterId]
                     .Where(x => x.Equipped)
                     .ToList();
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<InventoryItem> GetInventoryItems(Guid characterId, Guid itemId)
-        {
-            lock (SyncLock) return inventoryItems[nameof(Character), characterId]
+        public IReadOnlyList<InventoryItem> GetInventoryItems(Guid characterId, Guid itemId) =>
+            inventoryItems[nameof(Character), characterId]
                     .Where(x => !x.Equipped && x.ItemId == itemId)
                     .ToList();
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Item GetItem(Guid id)
-        {
-            lock (SyncLock) return items[id];
-        }
+        public Item GetItem(Guid id) => items[id];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<Item> GetItems()
-        {
-            lock (SyncLock) return items.Entities.ToList();
-        }
+        public IReadOnlyList<Item> GetItems() =>
+            items.Entities.ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int GetMarketItemCount()
-        {
-            lock (SyncLock) return marketItems.Entities.Count;
-        }
+        public int GetMarketItemCount() => marketItems.Entities.Count;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<MarketItem> GetMarketItems(Guid itemId)
-        {
-            lock (SyncLock) return marketItems[nameof(Item), itemId];
-        }
+        public IReadOnlyList<MarketItem> GetMarketItems(Guid itemId) =>
+            marketItems[nameof(Item), itemId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<MarketItem> GetMarketItems(int skip, int take)
-        {
-            lock (SyncLock) return marketItems.Entities.Skip(skip).Take(take).ToList();
-        }
+        public IReadOnlyList<MarketItem> GetMarketItems(int skip, int take) =>
+            marketItems.Entities.Skip(skip).Take(take).ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetNextGameEventRevision(Guid sessionId)
         {
-            lock (SyncLock)
-            {
-                var events = GetSessionEvents(sessionId);
-                if (events.Count == 0) return 1;
-                return events.Max(x => x.Revision) + 1;
-            }
+            var events = GetSessionEvents(sessionId);
+            if (events.Count == 0) return 1;
+            return events.Max(x => x.Revision) + 1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GameSession GetSession(Guid sessionId) => gameSessions[sessionId];
+        public GameSession GetSession(Guid sessionId) =>
+            gameSessions[sessionId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<Character> GetSessionCharacters(GameSession currentSession)
-        {
-            lock (SyncLock)
-                return characters[nameof(GameSession), currentSession.UserId]
+        public IReadOnlyList<Character> GetSessionCharacters(GameSession currentSession) =>
+            characters[nameof(GameSession), currentSession.UserId]
                     .Where(x => x.LastUsed > currentSession.Started)
                     .ToList();
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<GameEvent> GetSessionEvents(GameSession gameSession)
-        {
-            lock (SyncLock) return GetSessionEvents(gameSession.Id);
-        }
+        public IReadOnlyList<GameEvent> GetSessionEvents(GameSession gameSession) =>
+            GetSessionEvents(gameSession.Id);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<GameEvent> GetSessionEvents(Guid sessionId)
-        {
-            lock (SyncLock) return gameEvents[nameof(GameSession), sessionId];
-        }
+        public IReadOnlyList<GameEvent> GetSessionEvents(Guid sessionId) =>
+            gameEvents[nameof(GameSession), sessionId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public User GetUser(Guid userId)
-        {
-            lock (SyncLock) return users[userId];
-        }
+        public User GetUser(Guid userId) => users[userId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public User GetUser(string twitchUserId)
-        {
-            lock (SyncLock)
-                return users.Entities
+        public User GetUser(string twitchUserId) => users.Entities
                 .FirstOrDefault(x =>
                     x.UserName.Equals(twitchUserId, StringComparison.OrdinalIgnoreCase) ||
                     x.UserId.Equals(twitchUserId, StringComparison.OrdinalIgnoreCase));
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GameSession GetUserSession(Guid userId)
-        {
-            lock (SyncLock)
-                return gameSessions[nameof(User), userId]
+        public GameSession GetUserSession(Guid userId) => gameSessions[nameof(User), userId]
                         .OrderByDescending(x => x.Started)
                         .FirstOrDefault(x => x.Stopped == null);
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(MarketItem marketItem)
-        {
-            lock (SyncLock) marketItems.Remove(marketItem);
-        }
+        public void Remove(MarketItem marketItem) => marketItems.Remove(marketItem);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(InventoryItem invItem)
-        {
-            lock (SyncLock) inventoryItems.Remove(invItem);
-        }
+        public void Remove(InventoryItem invItem) => inventoryItems.Remove(invItem);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RemoveRange(IReadOnlyList<InventoryItem> items)
-        {
-            lock (SyncLock) items.ForEach(Remove);
-        }
+        public void RemoveRange(IReadOnlyList<InventoryItem> items) => items.ForEach(Remove);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Resources GetResources(Guid resourcesId)
-        {
-            lock (SyncLock)
-                return resources[resourcesId];
-        }
+        public Resources GetResources(Guid resourcesId) => resources[resourcesId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Resources GetResourcesByCharacterId(Guid sellerCharacterId)
-        {
-            lock (SyncLock)
-                return GetResources(GetCharacter(sellerCharacterId).ResourcesId);
-        }
+        public Resources GetResourcesByCharacterId(Guid sellerCharacterId) =>
+            GetResources(GetCharacter(sellerCharacterId).ResourcesId);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Statistics GetStatistics(Guid statisticsId)
-        {
-            lock (SyncLock)
-                return statistics[statisticsId];
-        }
+        public Statistics GetStatistics(Guid statisticsId) =>
+            statistics[statisticsId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public SyntyAppearance GetAppearance(Guid? syntyAppearanceId)
-        {
-            lock (SyncLock)
-                return syntyAppearanceId == null ? null : syntyAppearances[syntyAppearanceId.Value];
-        }
+        public SyntyAppearance GetAppearance(Guid? syntyAppearanceId) =>
+            syntyAppearanceId == null ? null : syntyAppearances[syntyAppearanceId.Value];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Skills GetSkills(Guid skillsId)
-        {
-            lock (SyncLock)
-                return skills[skillsId];
-        }
+        public Skills GetSkills(Guid skillsId) => skills[skillsId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public CharacterState GetState(Guid? stateId)
-        {
-            lock (SyncLock)
-                return stateId == null ? null : characterStates[stateId.Value];
-        }
+        public CharacterState GetState(Guid? stateId) => stateId == null ? null : characterStates[stateId.Value];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<GameSession> GetActiveSessions()
-        {
-            lock (SyncLock)
-                return gameSessions.Entities
+        public IReadOnlyList<GameSession> GetActiveSessions() => gameSessions.Entities
                     .OrderByDescending(x => x.Started)
                     .Where(x => x.Stopped == null).ToList();
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public InventoryItem GetEquippedItem(Guid characterId, ItemCategory category)
         {
-            lock (SyncLock)
+            foreach (var invItem in inventoryItems[nameof(Character), characterId].Where(x => x.Equipped))
             {
-                foreach (var invItem in inventoryItems[nameof(Character), characterId].Where(x => x.Equipped))
-                {
-                    var item = GetItem(invItem.ItemId);
-                    if (item.Category == (int)category) return invItem;
-                }
-                return null;
+                var item = GetItem(invItem.ItemId);
+                if (item.Category == (int)category) return invItem;
             }
+            return null;
         }
 
         public CharacterSessionState GetCharacterSessionState(Guid sessionId, Guid characterId)
         {
-            lock (SyncLock)
+            ConcurrentDictionary<Guid, CharacterSessionState> states;
+
+            if (!characterSessionStates.TryGetValue(sessionId, out states))
             {
-                ConcurrentDictionary<Guid, CharacterSessionState> states;
-
-                if (!characterSessionStates.TryGetValue(sessionId, out states))
-                {
-                    states = new ConcurrentDictionary<Guid, CharacterSessionState>();
-                }
-
-                CharacterSessionState state;
-                if (!states.TryGetValue(characterId, out state))
-                {
-                    state = new CharacterSessionState();
-                    states[characterId] = state;
-                    characterSessionStates[sessionId] = states;
-                }
-
-                return state;
+                states = new ConcurrentDictionary<Guid, CharacterSessionState>();
             }
+
+            CharacterSessionState state;
+            if (!states.TryGetValue(characterId, out state))
+            {
+                state = new CharacterSessionState();
+                states[characterId] = state;
+                characterSessionStates[sessionId] = states;
+            }
+
+            return state;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -501,12 +386,9 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Update(Action update)
         {
-            lock (SyncLock)
-            {
-                if (update == null) return;
-                update.Invoke();
-                ScheduleNextSave();
-            }
+            if (update == null) return;
+            update.Invoke();
+            ScheduleNextSave();
         }
 
         public void Flush()
@@ -550,7 +432,7 @@ namespace RavenNest.BusinessLogic.Data
                         con.Close();
                     }
 
-                    ClearChangeSetState();
+                    //ClearChangeSetState();
                 }
             }
             catch (System.Data.SqlClient.SqlException exc)
@@ -621,29 +503,26 @@ namespace RavenNest.BusinessLogic.Data
 
         private Queue<EntityStoreItems> BuildSaveQueue()
         {
-            lock (SyncLock)
+            var queue = new Queue<EntityStoreItems>();
+            var addedItems = JoinChangeSets(entitySets.Select(x => x.Added).ToArray());
+            foreach (var batch in CreateBatches(EntityState.Added, addedItems, SaveMaxBatchSize))
             {
-                var queue = new Queue<EntityStoreItems>();
-                var addedItems = JoinChangeSets(entitySets.Select(x => x.Added).ToArray());
-                foreach (var batch in CreateBatches(EntityState.Added, addedItems, SaveMaxBatchSize))
-                {
-                    queue.Enqueue(batch);
-                }
-
-                var updateItems = JoinChangeSets(entitySets.Select(x => x.Updated).ToArray());
-                foreach (var batch in CreateBatches(EntityState.Modified, updateItems, SaveMaxBatchSize))
-                {
-                    queue.Enqueue(batch);
-                }
-
-                var deletedItems = JoinChangeSets(entitySets.Select(x => x.Removed).ToArray());
-                foreach (var batch in CreateBatches(EntityState.Deleted, deletedItems, SaveMaxBatchSize))
-                {
-                    queue.Enqueue(batch);
-                }
-
-                return queue;
+                queue.Enqueue(batch);
             }
+
+            var updateItems = JoinChangeSets(entitySets.Select(x => x.Updated).ToArray());
+            foreach (var batch in CreateBatches(EntityState.Modified, updateItems, SaveMaxBatchSize))
+            {
+                queue.Enqueue(batch);
+            }
+
+            var deletedItems = JoinChangeSets(entitySets.Select(x => x.Removed).ToArray());
+            foreach (var batch in CreateBatches(EntityState.Deleted, deletedItems, SaveMaxBatchSize))
+            {
+                queue.Enqueue(batch);
+            }
+
+            return queue;
         }
 
         private ICollection<EntityStoreItems> CreateBatches(RavenNest.DataModels.EntityState state, ICollection<EntityChangeSet> items, int batchSize)
@@ -659,10 +538,8 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ICollection<EntityChangeSet> JoinChangeSets(params ICollection<EntityChangeSet>[] changesets)
-        {
-            return changesets.SelectMany(x => x).OrderBy(x => x.LastModified).ToList();
-        }
+        private ICollection<EntityChangeSet> JoinChangeSets(params ICollection<EntityChangeSet>[] changesets) =>
+            changesets.SelectMany(x => x).OrderBy(x => x.LastModified).ToList();
     }
 
     public class DataSaveError
