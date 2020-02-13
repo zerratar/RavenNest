@@ -36,30 +36,21 @@ namespace RavenNest
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            // The following will configure the channel to use the given folder to temporarily
-            // store telemetry items during network or Application Insights server issues.
-            // User should ensure that the given folder already exists
-            // and that the application has read/write permissions.
-
-            //services.AddSingleton(typeof(ITelemetryChannel),
-            //            new ServerTelemetryChannel() { StorageFolder = "/tmp/myfolder" });
-
             services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
 
-            var azureAppSettings = Configuration.GetSection("AzureAppSettings").Get<AzureAppSettings>();
-            var storageConnectionKey = Configuration.GetConnectionString("BlobStorage");
-            var storageAccount = Microsoft.Azure.Storage.CloudStorageAccount.Parse(storageConnectionKey);
-            var client = storageAccount.CreateCloudBlobClient();
-            var container = client.GetContainerReference("key-container");
-            container.CreateIfNotExistsAsync().GetAwaiter().GetResult();
+            //var azureAppSettings = Configuration.GetSection("AzureAppSettings").Get<AzureAppSettings>();
+            //var storageConnectionKey = Configuration.GetConnectionString("BlobStorage");
+            //var storageAccount = Microsoft.Azure.Storage.CloudStorageAccount.Parse(storageConnectionKey);
+            //var client = storageAccount.CreateCloudBlobClient();
+            //var container = client.GetContainerReference("key-container");
+            //container.CreateIfNotExistsAsync().GetAwaiter().GetResult();
 
-            //Microsoft.AspNetCore.DataProtection.AzureDataProtectionBuilderExtensions
+            //services.AddDataProtection()
+            //    .PersistKeysToAzureBlobStorage(container, "keys.xml")
+            //    .ProtectKeysWithAzureKeyVault(azureAppSettings.KeyIdentifier, azureAppSettings.ClientId, azureAppSettings.ClientSecret);
 
-            services.AddDataProtection()
-                .PersistKeysToAzureBlobStorage(container, "keys.xml")
-                .ProtectKeysWithAzureKeyVault(azureAppSettings.KeyIdentifier, azureAppSettings.ClientId, azureAppSettings.ClientSecret);
+            //services.AddApplicationInsightsTelemetry();
 
-            services.AddApplicationInsightsTelemetry();
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowAllOrigins", builder => builder.AllowAnyOrigin());
