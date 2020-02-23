@@ -8,6 +8,8 @@ namespace RavenNest.Sessions
         public string UserId { get; set; }
         public string UserName { get; set; }
         public bool Authenticated { get; set; }
+        public bool Moderator { get; set; }
+        public bool Administrator { get; set; }
         public bool RequiresPasswordChange { get; set; }
     }
 }

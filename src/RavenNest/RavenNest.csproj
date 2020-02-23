@@ -19,7 +19,9 @@
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.AzureKeyVault" Version="3.1.0-preview2.19528.8" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.AzureStorage" Version="3.1.0-preview2.19528.8" />
     <PackageReference Include="Microsoft.AspNetCore.DataProtection.Extensions" Version="3.1.0-preview2.19528.8" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.0-preview2.19525.5" />    
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.0-preview2.19525.5" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="3.0.0" />
+    <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="3.0.0" />    
     <PackageReference Include="System.Data.SqlClient" Version="4.8.0-preview2.19523.17" />    
     <PackageReference Include="TwitchLib.Api" Version="3.1.2" />
   </ItemGroup>

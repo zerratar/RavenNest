@@ -11,6 +11,8 @@ namespace RavenNest.BusinessLogic.Game.Processors
 {
     public class GameProcessor : IGameProcessor
     {
+        private const string VillageProcessorName = "Village";
+
         private readonly ConcurrentDictionary<string, ITaskProcessor> taskProcessors = new ConcurrentDictionary<string, ITaskProcessor>();
 
         private readonly IGameData gameData;
@@ -31,6 +33,8 @@ namespace RavenNest.BusinessLogic.Game.Processors
             this.ws = ws;
             this.sessionToken = sessionToken;
 
+            RegisterPlayerTask<VillageProcessor>(VillageProcessorName);
+
             RegisterPlayerTask<FightingTaskProcessor>("Fighting");
             RegisterPlayerTask<MiningTaskProcessor>("Mining");
             RegisterPlayerTask<FishingTaskProcessor>("Fishing");
@@ -42,7 +46,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
         public async Task ProcessAsync(CancellationTokenSource cts)
         {
-            UpdatePlayerTasks();
+            UpdateSessionTasks();
 
             await PushGameEventsAsync(cts);
         }
@@ -63,15 +67,21 @@ namespace RavenNest.BusinessLogic.Game.Processors
             }
         }
 
-        private void UpdatePlayerTasks()
+        private void UpdateSessionTasks()
         {
             var session = gameData.GetSession(sessionToken.SessionId);
             var characters = gameData.GetSessionCharacters(session);
+            var villageProcessor = GetTaskProcessor(VillageProcessorName);
+
+            villageProcessor.Handle(gameData, session, null, null);
 
             foreach (var character in characters)
             {
                 var state = gameData.GetState(character.StateId);
-                if (state == null || state.InArena || state.InRaid || state.Island == "War" || !string.IsNullOrEmpty(state.DuelOpponent))
+                if (state == null) continue;
+                
+                
+                if (state.InArena || state.InRaid || state.Island == "War" || !string.IsNullOrEmpty(state.DuelOpponent))
                 {
                     continue;
                 }
