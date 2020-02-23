@@ -32,6 +32,14 @@ export default new Router({
       { path: '/character/inventory', name: 'inventory', component:() => import('./views/character/Inventory.vue') }
     ]
   }, {
+    path: '/admin',
+    name: 'admin',
+    component: () => import('./views/Admin.vue'),
+    children: [
+      { path: '/admin/players', name: 'players', component:() => import('./views/admin/Players.vue') },
+      { path: '/admin/items', name: 'items', component:() => import('./views/admin/Items.vue') },
+    ]
+  }, {
     path: '/login',
     name: 'login',
     component: () => import('./views/Login.vue'),

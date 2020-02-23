@@ -71,7 +71,7 @@ namespace RavenNest.BusinessLogic.Game
             }
             if (isAdmin || isModerator || subInfo != null)
             {
-                DataModels.GameEvent permissionEvent = gameData.CreateSessionEvent(
+                var permissionEvent = gameData.CreateSessionEvent(
                     GameEventType.PermissionChange,
                     newGameSession,
                     new Permissions
@@ -84,6 +84,31 @@ namespace RavenNest.BusinessLogic.Game
 
                 gameData.Add(permissionEvent);
             }
+
+            var village = gameData.GetOrCreateVillageBySession(newGameSession);
+            var villageHouses = gameData.GetOrCreateVillageHouses(village);
+            var villageInfoEvent = gameData.CreateSessionEvent(
+                GameEventType.VillageInfo,
+                newGameSession,
+                new VillageInfo
+                {
+                    Name = village.Name,
+                    Level = village.Level,
+                    Experience = village.Experience,
+                    Houses = villageHouses.Select(x =>
+                       new VillageHouseInfo
+                       {
+                           Owner = x.UserId != null
+                               ? gameData.GetUser(x.UserId.Value).UserId
+                               : null,
+                           Slot = x.Slot,
+                           Type = x.Type
+                       }
+                    ).ToList()
+                }
+            );
+
+            gameData.Add(villageInfoEvent);
 
             return GenerateSessionToken(token, newGameSession);
         }
@@ -202,7 +227,7 @@ namespace RavenNest.BusinessLogic.Game
             return new SessionToken
             {
                 AuthToken = token.Token,
-                ExpiresUtc = DateTime.UtcNow + TimeSpan.FromHours(12),
+                ExpiresUtc = DateTime.UtcNow + TimeSpan.FromDays(180),
                 SessionId = session.Id,
                 StartedUtc = session.Started
             };

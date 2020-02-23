@@ -22,6 +22,10 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<Character> Character { get; set; }
         public virtual DbSet<CharacterState> CharacterState { get; set; }
 
+        public virtual DbSet<Village> Village { get; set; }
+        public virtual DbSet<VillageHouse> VillageHouse { get; set; }
+        public virtual DbSet<Clan> Clan { get; set; }
+
         //public virtual DbSet<CharacterSession> CharacterSession { get; set; }
         public virtual DbSet<GameSession> GameSession { get; set; }
         public virtual DbSet<GameEvent> GameEvent { get; set; }
@@ -48,24 +52,16 @@ namespace RavenNest.BusinessLogic.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<Appearance>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-            });
+                entity.Property(e => e.Id).ValueGeneratedNever());
 
             modelBuilder.Entity<SyntyAppearance>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-            });
+                entity.Property(e => e.Id).ValueGeneratedNever());
 
             modelBuilder.Entity<ServerLogs>(entity =>
-                {
-                    entity.Property<ServerLogSeverity>(x => x.Severity).HasConversion<int>();
-                });
+                    entity.Property<ServerLogSeverity>(x => x.Severity).HasConversion<int>());
 
             modelBuilder.Entity<CharacterState>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-            });
+                entity.Property(e => e.Id).ValueGeneratedNever());
 
             modelBuilder.Entity<Character>(entity =>
             {
@@ -159,6 +155,21 @@ namespace RavenNest.BusinessLogic.Data
             });
 
             modelBuilder.Entity<GameClient>(entity =>
+            {
+                entity.Property(e => e.Id).ValueGeneratedNever();
+            });
+
+            modelBuilder.Entity<Village>(entity =>
+            {
+                entity.Property(e => e.Id).ValueGeneratedNever();
+            });
+
+            modelBuilder.Entity<VillageHouse>(entity =>
+            {
+                entity.Property(e => e.Id).ValueGeneratedNever();
+            });
+
+            modelBuilder.Entity<Clan>(entity =>
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();
             });

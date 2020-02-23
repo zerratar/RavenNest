@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
@@ -14,15 +15,18 @@ namespace RavenNest.Controllers
     [ApiDescriptor(Name = "Items API", Description = "Used for managing the items database.")]
     public class ItemsController : ControllerBase
     {
+        private readonly IGameData gameData;
         private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly IItemManager itemManager;
         private readonly IAuthManager authManager;
 
         public ItemsController(
+            IGameData gameData,
             ISessionInfoProvider sessionInfoProvider,
             IItemManager itemManager,
             IAuthManager authManager)
         {
+            this.gameData = gameData;
             this.sessionInfoProvider = sessionInfoProvider;
             this.itemManager = itemManager;
             this.authManager = authManager;
@@ -41,9 +45,21 @@ namespace RavenNest.Controllers
             if (twitchUser == null)
             {
                 var authToken = GetAuthToken();
-                AssertAuthTokenValidity(authToken);
+                try
+                {
+                    AssertAuthTokenValidity(authToken);
+                }
+                catch (NullReferenceException exc)
+                {
+                    return new ItemCollection();
+                }
             }
-            
+
+            if (itemManager == null)
+            {
+                return new ItemCollection();
+            }
+
             var itemCollection = itemManager.GetAllItems();
             return itemCollection;
         }
@@ -94,17 +110,19 @@ namespace RavenNest.Controllers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void AssertAdminAuthToken(AuthToken authToken)
+        {
+            var user = gameData.GetUser(authToken.UserId);
+            if (!user.IsAdmin.GetValueOrDefault())
+                throw new Exception("You do not have permissions to call this API");
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void AssertAuthTokenValidity(AuthToken authToken)
         {
             if (authToken == null) throw new NullReferenceException(nameof(authToken));
             if (authToken.UserId == Guid.Empty) throw new NullReferenceException(nameof(authToken.UserId));
             if (authToken.Expired) throw new Exception("Session has expired.");
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void AssertAdminAuthToken(AuthToken authToken)
-        {
-            throw new Exception("We don't have any administrators. LUL! NO ONE CAN MANAGE ITEMS!!!");
         }
 
         private AuthToken GetAuthToken()

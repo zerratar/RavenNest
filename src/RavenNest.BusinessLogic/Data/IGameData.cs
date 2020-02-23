@@ -14,6 +14,9 @@ namespace RavenNest.BusinessLogic.Data
         Character FindCharacter(Func<Character, bool> predicate);
         GameSession FindSession(Func<GameSession, bool> predicate);
         User FindUser(string userIdOrUsername);
+        Village GetVillageBySession(GameSession session);
+        Village GetOrCreateVillageBySession(GameSession session);
+        IReadOnlyList<VillageHouse> GetOrCreateVillageHouses(Village village);
 
         /// <summary>
         /// Find player items by predicate
@@ -23,6 +26,7 @@ namespace RavenNest.BusinessLogic.Data
         /// <returns></returns>
         IReadOnlyList<DataModels.InventoryItem> FindPlayerItems(Guid characterId, Func<DataModels.InventoryItem, bool> predicate);
         DataModels.InventoryItem FindPlayerItem(Guid characterId, Func<DataModels.InventoryItem, bool> predicate);
+
         #endregion
 
         #region Get
@@ -86,6 +90,7 @@ namespace RavenNest.BusinessLogic.Data
         void Add(GameSession entity);
         void Add(DataModels.MarketItem entity);
         void Add(DataModels.GameEvent entity);
+        void Add(DataModels.Village village);
 
         /// <summary>
         ///     Force save the current state to the database.
@@ -114,6 +119,8 @@ namespace RavenNest.BusinessLogic.Data
         Resources GetResources(Guid resourcesId);
         Resources GetResourcesByCharacterId(Guid sellerCharacterId);
         DataModels.Statistics GetStatistics(Guid statisticsId);
+        DataModels.Clan GetClan(Guid clanId);
+
         SyntyAppearance GetAppearance(Guid? syntyAppearanceId);
         Skills GetSkills(Guid skillsId);
         DataModels.CharacterState GetState(Guid? stateId);

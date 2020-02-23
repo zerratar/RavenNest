@@ -13,6 +13,7 @@
           <router-link to="/docs" class="item">Developer</router-link>        
           <router-link to="/character" class="item" v-if="authenticated()">My character</router-link>
           <a href="/assets" target="_blank" class="item" v-if="authenticated()">Customize</a>
+          <router-link to="/admin" class="item" v-if="administrator()">My character</router-link>
           <div class="right">
             <router-link to="/login" class="item" v-if="!authenticated()">Login</router-link>
             <!-- <router-link to="/register" class="item" v-if="!authenticated()">Register</router-link> -->
@@ -36,7 +37,7 @@
     <div class="content">
       <router-view />      
       <div class="footer">
-        Copyright &copy; ravenfall.stream 2019, all rights reserved.
+        Copyright &copy; ravenfall.stream 2020, all rights reserved.
       </div>
     </div>
   </div>
@@ -57,6 +58,8 @@ import {
     constructor(
       public id: string,
       public authenticated: boolean,
+      public moderator: boolean,
+      public administrator: boolean,
       public userId: string,
       public userName: string,
       public requiresPasswordChange: boolean,
@@ -79,7 +82,14 @@ import {
     }    
 
     private static mapSessionState(state: any): SessionState {
-      return new SessionState(state.id, state.authenticated, state.userId, state.userName, state.requiresPasswordChange);
+      return new SessionState(
+        state.id,        
+        state.authenticated, 
+        state.moderator,
+        state.administrator,
+        state.userId, 
+        state.userName, 
+        state.requiresPasswordChange);
     }
   }
 
@@ -120,6 +130,21 @@ import {
       return false;
     }
 
+    public moderator(): boolean {
+      const sessionState = SessionState.get();
+      if (sessionState != null) {
+        return sessionState.moderator;
+      }
+      return false;
+    }
+
+    public administrator(): boolean {
+      const sessionState = SessionState.get();
+      if (sessionState != null) {
+        return sessionState.administrator;      
+      }
+      return false;
+    }
   }
 </script>
 

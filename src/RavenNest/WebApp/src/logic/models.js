@@ -1,4 +1,6 @@
 import GameMath from './game-math';
+export class Player {
+}
 export class CharacterSkill {
     constructor(name, experience) {
         this.name = name;

@@ -32,6 +32,21 @@ namespace RavenNest.BusinessLogic.Extensions
             return DataMapper.Map<Models.Statistics, DataModels.Statistics>(data);
         }
 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Models.Clan Map(IGameData gameData, DataModels.Clan data)
+        {
+            if (data == null) return null;
+            var user = gameData.GetUser(data.UserId);
+            return new Models.Clan()
+            {
+                Id = data.Id,
+                Logo = data.Logo,
+                Name = data.Name,
+                Owner = user.UserId
+            };
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.Skills Map(Skills data)
         {
@@ -67,7 +82,6 @@ namespace RavenNest.BusinessLogic.Extensions
         {
             return DataMapper.Map<Item, Models.Item>(itemsItem);
         }
-
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.SyntyAppearance Map(DataModels.SyntyAppearance appearance)
@@ -116,6 +130,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 State = Map(gameData.GetState(character.StateId)),
                 InventoryItems = Map(gameData.GetAllPlayerItems(character.Id)),
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
+                Clan = Map(gameData, gameData.GetClan(character.ClanId.GetValueOrDefault())),
                 Local = character.Local,
                 OriginUserId = character.OriginUserId,
                 Revision = character.Revision.GetValueOrDefault()

@@ -38,6 +38,9 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<Skills, Guid> skills;
         private readonly EntitySet<User, Guid> users;
         private readonly EntitySet<GameClient, Guid> gameClients;
+        private readonly EntitySet<Clan, Guid> clans;
+        private readonly EntitySet<Village, Guid> villages;
+        private readonly EntitySet<VillageHouse, Guid> villageHouses;
         private readonly IEntitySet[] entitySets;
 
         private ITimeoutHandle scheduleHandler;
@@ -80,6 +83,13 @@ namespace RavenNest.BusinessLogic.Data
                 itemCraftingRequirements.RegisterLookupGroup(nameof(Item), x => x.ItemId);
                 //itemCraftingRequirements.RegisterLookupGroup(nameof(ItemCraftingRequirement.ResourceItemId), x => x.ItemId);
 
+                clans = new EntitySet<Clan, Guid>(ctx.Clan.ToList(), i => i.Id);
+                villages = new EntitySet<Village, Guid>(ctx.Village.ToList(), i => i.Id);
+                villages.RegisterLookupGroup(nameof(User), x => x.UserId);
+
+                villageHouses = new EntitySet<VillageHouse, Guid>(ctx.VillageHouse.ToList(), i => i.Id);
+                villageHouses.RegisterLookupGroup(nameof(Village), x => x.VillageId);
+
                 resources = new EntitySet<Resources, Guid>(ctx.Resources.ToList(), i => i.Id);
                 statistics = new EntitySet<Statistics, Guid>(ctx.Statistics.ToList(), i => i.Id);
                 skills = new EntitySet<Skills, Guid>(ctx.Skills.ToList(), i => i.Id);
@@ -93,7 +103,7 @@ namespace RavenNest.BusinessLogic.Data
                 {
                     appearances, syntyAppearances, characters, characterStates,
                     gameSessions, gameEvents, inventoryItems, marketItems, items,
-                    resources, statistics, skills, users, gameClients
+                    resources, statistics, skills, users, gameClients, villages, villageHouses, clans
                 };
             }
             stopWatch.Stop();
@@ -101,6 +111,12 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         public GameClient Client { get; private set; }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void Add(VillageHouse house) => Update(() => villageHouses.Add(house));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(Village entity) => Update(() => villages.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(Item entity) => Update(() => items.Add(entity));
@@ -167,11 +183,11 @@ namespace RavenNest.BusinessLogic.Data
 
         // This is not code, it is a shrimp. Cant you see?
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Character FindCharacter(Func<Character, bool> predicate) => 
+        public Character FindCharacter(Func<Character, bool> predicate) =>
             characters.Entities.FirstOrDefault(predicate);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public InventoryItem FindPlayerItem(Guid id, Func<InventoryItem, bool> predicate) => 
+        public InventoryItem FindPlayerItem(Guid id, Func<InventoryItem, bool> predicate) =>
             characters.TryGet(id, out var player)
                 ? inventoryItems[nameof(Character), player.Id].FirstOrDefault(predicate)
                 : null;
@@ -197,7 +213,7 @@ namespace RavenNest.BusinessLogic.Data
                     x.UserName.Equals(userIdOrUsername, StringComparison.OrdinalIgnoreCase));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<InventoryItem> GetAllPlayerItems(Guid characterId) => 
+        public IReadOnlyList<InventoryItem> GetAllPlayerItems(Guid characterId) =>
             inventoryItems[nameof(Character), characterId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -256,8 +272,7 @@ namespace RavenNest.BusinessLogic.Data
         public Item GetItem(Guid id) => items[id];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<Item> GetItems() =>
-            items.Entities.ToList();
+        public IReadOnlyList<Item> GetItems() => items.Entities.ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetMarketItemCount() => marketItems.Entities.Count;
@@ -327,8 +342,7 @@ namespace RavenNest.BusinessLogic.Data
             GetResources(GetCharacter(sellerCharacterId).ResourcesId);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Statistics GetStatistics(Guid statisticsId) =>
-            statistics[statisticsId];
+        public Statistics GetStatistics(Guid statisticsId) => statistics[statisticsId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public SyntyAppearance GetAppearance(Guid? syntyAppearanceId) =>
@@ -336,6 +350,10 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Skills GetSkills(Guid skillsId) => skills[skillsId];
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Clan GetClan(Guid clanId) => clans[clanId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CharacterState GetState(Guid? stateId) => stateId == null ? null : characterStates[stateId.Value];
@@ -355,6 +373,101 @@ namespace RavenNest.BusinessLogic.Data
             }
             return null;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Village GetVillageBySession(GameSession session)
+            => villages[nameof(User), session.UserId].FirstOrDefault();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Village GetOrCreateVillageBySession(GameSession session)
+        {
+            var village = GetVillageBySession(session);
+            if (village == null)
+            {
+                var villageResources = new Resources()
+                {
+                    Id = Guid.NewGuid()
+                };
+
+                Add(villageResources);
+
+
+                var user = GetUser(session.UserId);
+                var villageExp = user.IsAdmin.GetValueOrDefault()
+                    ? GameMath.LevelToExperience(30)
+                    : 0;
+                var villageLevel = GameMath.ExperienceToLevel(villageExp);
+
+                village = new Village()
+                {
+                    Id = Guid.NewGuid(),
+                    ResourcesId = villageResources.Id,
+                    Level = villageLevel,
+                    Experience = (long)villageExp,
+                    Name = "Village",
+                    UserId = session.UserId
+                };
+
+                Add(village);
+            }
+
+            return village;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<VillageHouse> GetOrCreateVillageHouses(Village village)
+        {
+            var houses = villageHouses[nameof(Village), village.Id];
+
+            if (village.Level <= 1)
+            {
+                return new VillageHouse[0];
+            }
+
+            var houseCount = village.Level / 10;
+
+            if ((houses == null || houses.Count == 0) && houseCount > 0)
+            {
+                houses = Enumerable.Range(0, houseCount).Select(x => new VillageHouse
+                {
+                    Id = Guid.NewGuid(),
+                    Created = DateTime.UtcNow,
+                    Slot = x,
+                    Type = -1,
+                    VillageId = village.Id
+                }).ToList();
+
+                foreach (var house in houses)
+                {
+                    Add(house);
+                }
+            }
+
+            if (houses.Count < houseCount)
+            {
+                var housesTemp = houses.ToList();
+
+                for (var i = houses.Count; i < houseCount; ++i)
+                {
+                    var house = new VillageHouse
+                    {
+                        Id = Guid.NewGuid(),
+                        Created = DateTime.UtcNow,
+                        Slot = i,
+                        Type = -1,
+                        VillageId = village.Id
+                    };
+
+                    Add(house);
+
+                    housesTemp.Add(house);
+                }
+
+                houses = housesTemp;
+            }
+            return houses;
+        }
+
 
         public CharacterSessionState GetCharacterSessionState(Guid sessionId, Guid characterId)
         {

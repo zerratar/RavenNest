@@ -75,6 +75,8 @@ namespace RavenNest.Sessions
                 {
                     si.Id = user.Id;
                     si.Authenticated = true;
+                    si.Administrator = user.IsAdmin.GetValueOrDefault();
+                    si.Moderator = user.IsModerator.GetValueOrDefault();
                     si.UserId = user.UserId;
                     si.UserName = user.UserName;
                     si.RequiresPasswordChange = string.IsNullOrEmpty(user.PasswordHash);

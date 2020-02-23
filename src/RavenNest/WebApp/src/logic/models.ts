@@ -1,5 +1,9 @@
 import GameMath from './game-math';
 
+export class Player {
+  
+}
+
 export class CharacterSkill {
   public level: number;
   public percent: number;

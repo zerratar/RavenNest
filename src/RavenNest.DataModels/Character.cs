@@ -19,5 +19,6 @@ namespace RavenNest.DataModels
         private int? revision; public int? Revision { get => revision; set => Set(ref revision, value); }
         private Guid? userIdLock; public Guid? UserIdLock { get => userIdLock; set => Set(ref userIdLock, value); }
         private DateTime? lastUsed; public DateTime? LastUsed { get => lastUsed; set => Set(ref lastUsed, value); }
+        private Guid? clanId; public Guid? ClanId { get => clanId; set => Set(ref clanId, value); }
     }
 }
