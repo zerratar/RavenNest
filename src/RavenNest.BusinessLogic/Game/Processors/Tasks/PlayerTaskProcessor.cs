@@ -37,6 +37,11 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             return new DataModels.InventoryItem { Id = Guid.NewGuid(), Amount = 1, CharacterId = character.Id, Equipped = false, ItemId = itemId };
         }
 
-        public abstract void Handle(IGameData gameData, GameSession session, Character character, DataModels.CharacterState state);
+        public abstract void Handle(
+            IIntegrityChecker integrityChecker,
+            IGameData gameData, 
+            GameSession session, 
+            Character character, 
+            DataModels.CharacterState state);
     }
 }

@@ -129,6 +129,8 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<GameSession> GetActiveSessions();
         IReadOnlyList<ItemCraftingRequirement> GetCraftingRequirements(Guid itemId);
         CharacterSessionState GetCharacterSessionState(Guid sessionId, Guid characterId);
+        SessionState GetSessionState(Guid sessionId);
+
         InventoryItem GetEquippedItem(Guid id, ItemCategory category);
 
         object SyncLock { get; }

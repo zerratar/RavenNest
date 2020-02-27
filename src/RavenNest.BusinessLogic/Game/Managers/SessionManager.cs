@@ -21,7 +21,12 @@ namespace RavenNest.BusinessLogic.Game
             this.gameData = gameData;
         }
 
-        public async Task<SessionToken> BeginSessionAsync(AuthToken token, string clientVersion, string accessKey, bool isLocal)
+        public async Task<SessionToken> BeginSessionAsync(
+            AuthToken token,
+            string clientVersion,
+            string accessKey,
+            bool isLocal,
+            float syncTime)
         {
             var game = gameData.Client;
             var user = gameData.GetUser(token.UserId);
@@ -48,6 +53,9 @@ namespace RavenNest.BusinessLogic.Game
             var newGameSession = gameData.CreateSession(userId);
 
             gameData.Add(newGameSession);
+
+            var sessionState = gameData.GetSessionState(newGameSession.Id);
+            sessionState.SyncTime = syncTime;
 
             var isAdmin = user.IsAdmin.GetValueOrDefault();
             var isModerator = user.IsModerator.GetValueOrDefault();

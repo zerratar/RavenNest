@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
-using RavenNest.DataModels;
 using RavenNest.Models;
 
 namespace RavenNest.Controllers
@@ -16,7 +15,6 @@ namespace RavenNest.Controllers
     //[ApiDescriptor(Name = "Game API", Description = "Used for handling game sessions and polling game events.")]
     public class GameController : ControllerBase
     {
-        private readonly ITwitchClient twitchClient;
         private readonly IGameData gameData;
         private readonly IAuthManager authManager;
         private readonly ISessionManager sessionManager;
@@ -24,14 +22,12 @@ namespace RavenNest.Controllers
         private readonly ISecureHasher secureHasher;
 
         public GameController(
-            ITwitchClient twitchClient,
             IGameData gameData,
             IAuthManager authManager,
             ISessionManager sessionManager,
             IGameManager gameManager,
             ISecureHasher secureHasher)
         {
-            this.twitchClient = twitchClient;
             this.gameData = gameData;
             this.authManager = authManager;
             this.sessionManager = sessionManager;
@@ -203,12 +199,18 @@ namespace RavenNest.Controllers
 
         [HttpPost("{clientVersion}/{accessKey}")]
 
-        public async Task<SessionToken> BeginSessionAsync(string clientVersion, string accessKey, Single<bool> local)
+        public async Task<SessionToken> BeginSessionAsync(string clientVersion, string accessKey, Two<bool, float> param)
         {
             var authToken = GetAuthToken();
             AssertAuthTokenValidity(authToken);
 
-            var session = await this.sessionManager.BeginSessionAsync(authToken, clientVersion, accessKey, local.Value);
+            var session = await this.sessionManager.BeginSessionAsync(
+                authToken,
+                clientVersion,
+                accessKey,
+                param.Value1,
+                param.Value2);
+
             if (session == null)
             {
                 HttpContext.Response.StatusCode = 403;

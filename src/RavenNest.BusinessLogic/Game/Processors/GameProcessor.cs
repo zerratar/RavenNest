@@ -17,12 +17,14 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
         private readonly IGameData gameData;
         private readonly IGameManager gameManager;
+        private readonly IIntegrityChecker integrityChecker;
         private readonly IWebSocketConnection ws;
         private readonly SessionToken sessionToken;
 
         private int gameRevision = 0;
 
         public GameProcessor(
+            IIntegrityChecker integrityChecker,
             IWebSocketConnection ws,
             IGameData gameData,
             IGameManager gameManager,
@@ -30,6 +32,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         {
             this.gameData = gameData;
             this.gameManager = gameManager;
+            this.integrityChecker = integrityChecker;
             this.ws = ws;
             this.sessionToken = sessionToken;
 
@@ -73,14 +76,14 @@ namespace RavenNest.BusinessLogic.Game.Processors
             var characters = gameData.GetSessionCharacters(session);
             var villageProcessor = GetTaskProcessor(VillageProcessorName);
 
-            villageProcessor.Handle(gameData, session, null, null);
+            villageProcessor.Handle(integrityChecker, gameData, session, null, null);
 
             foreach (var character in characters)
             {
                 var state = gameData.GetState(character.StateId);
                 if (state == null) continue;
-                
-                
+
+
                 if (state.InArena || state.InRaid || state.Island == "War" || !string.IsNullOrEmpty(state.DuelOpponent))
                 {
                     continue;
@@ -88,7 +91,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
                 ITaskProcessor taskProcessor = GetTaskProcessor(state.Task);
                 if (taskProcessor != null)
-                    taskProcessor.Handle(gameData, session, character, state);
+                    taskProcessor.Handle(integrityChecker, gameData, session, character, state);
             }
         }
 

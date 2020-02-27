@@ -5,7 +5,6 @@ using System;
 
 namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
-
     public class VillageProcessor : PlayerTaskProcessor
     {
         private TimeSpan updateInterval = TimeSpan.FromSeconds(20);
@@ -14,10 +13,14 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         private DateTime lastExpSend = DateTime.MinValue;
 
         public override void Handle(
-            IGameData gameData, GameSession session, Character character, CharacterState state)
+            IIntegrityChecker integrityChecker,
+            IGameData gameData,            
+            GameSession session, 
+            Character character, 
+            CharacterState state)
         {
             if (DateTime.UtcNow - lastUpdate < updateInterval)
-                return;
+                return;            
 
             var village = gameData.GetOrCreateVillageBySession(session);
             var players = gameData.GetSessionCharacters(session);

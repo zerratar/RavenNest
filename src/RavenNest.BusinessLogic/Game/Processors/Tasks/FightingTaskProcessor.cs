@@ -5,7 +5,12 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
     public class FightingTaskProcessor : ITaskProcessor
     {
-        public void Handle(IGameData gameData, GameSession session, Character character, CharacterState state)
+        public void Handle(
+            IIntegrityChecker integrityChecker,
+            IGameData gameData, 
+            GameSession session, 
+            Character character, 
+            CharacterState state)
         {
         }
     }

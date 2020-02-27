@@ -6,7 +6,12 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
     public class CraftingTaskProcessor : ResourceTaskProcessor
     {
-        public override void Handle(IGameData gameData, GameSession session, Character character, CharacterState characterState)
+        public override void Handle(
+            IIntegrityChecker integrityChecker, 
+            IGameData gameData, 
+            GameSession session, 
+            Character character, 
+            CharacterState characterState)
         {
             var now = DateTime.UtcNow;
             var resources = gameData.GetResources(character.ResourcesId);

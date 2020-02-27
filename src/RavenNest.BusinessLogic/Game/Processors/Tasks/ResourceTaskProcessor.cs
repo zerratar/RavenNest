@@ -36,8 +36,19 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             };
         }
 
-        protected void UpdateResourceGain(IGameData gameData, GameSession session, Character character, Action<DataModels.Resources> onUpdate)
+        protected void UpdateResourceGain(
+            IIntegrityChecker integrityChecker,
+            IGameData gameData,
+            GameSession session,
+            Character character,
+            Action<DataModels.Resources> onUpdate)
         {
+
+            if (!integrityChecker.VerifyPlayer(session.Id, character.Id, 0))
+            {
+                return;
+            }
+
             var now = DateTime.UtcNow;
             var state = gameData.GetCharacterSessionState(session.Id, character.Id);
             if (now - state.LastTaskUpdate >= TimeSpan.FromSeconds(ResourceGatherInterval))
