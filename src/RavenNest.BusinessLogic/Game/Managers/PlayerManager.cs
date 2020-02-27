@@ -13,7 +13,6 @@ using Gender = RavenNest.DataModels.Gender;
 using InventoryItem = RavenNest.DataModels.InventoryItem;
 using Item = RavenNest.DataModels.Item;
 using ItemCategory = RavenNest.DataModels.ItemCategory;
-using ItemType = RavenNest.DataModels.ItemType;
 using Resources = RavenNest.DataModels.Resources;
 using Skills = RavenNest.DataModels.Skills;
 using Statistics = RavenNest.DataModels.Statistics;
@@ -24,11 +23,17 @@ namespace RavenNest.BusinessLogic.Game
     {
         private readonly ILogger logger;
         private readonly IGameData gameData;
+        private readonly IIntegrityChecker integrityChecker;
 
-        public PlayerManager(ILogger logger, IGameData gameData)
+
+        public PlayerManager(
+            ILogger logger,
+            IGameData gameData,
+            IIntegrityChecker integrityChecker)
         {
             this.logger = logger;
             this.gameData = gameData;
+            this.integrityChecker = integrityChecker;
         }
 
         public Player CreatePlayerIfNotExists(string userId, string userName)
@@ -220,6 +225,7 @@ namespace RavenNest.BusinessLogic.Game
                 return Enumerable.Range(0, states.Length).Select(x => false).ToArray();
             }
 
+
             var sessionPlayers = gameData.GetSessionCharacters(gameSession);
             foreach (var state in states)
             {
@@ -230,8 +236,15 @@ namespace RavenNest.BusinessLogic.Game
                     results.Add(false);
                     continue;
                 }
+
                 var character = gameData.GetCharacterByUserId(user.Id);
                 if (character == null)
+                {
+                    results.Add(false);
+                    continue;
+                }
+
+                if (!integrityChecker.VerifyPlayer(gameSession.Id, character.Id, state.SyncTime))
                 {
                     results.Add(false);
                     continue;
@@ -271,6 +284,9 @@ namespace RavenNest.BusinessLogic.Game
 
             var character = GetCharacter(token, userId);
             if (character == null) return AddItemResult.Failed;
+
+            if (!integrityChecker.VerifyPlayer(token.SessionId, character.Id, 0))
+                return AddItemResult.Failed;
 
             var resources = gameData.GetResources(character.ResourcesId);
             if (resources == null) return AddItemResult.Failed;
@@ -315,6 +331,9 @@ namespace RavenNest.BusinessLogic.Game
 
             var character = GetCharacter(token, userId);
             if (character == null) return AddItemResult.Failed;
+
+            if (!integrityChecker.VerifyPlayer(token.SessionId, character.Id, 0))
+                return AddItemResult.Failed;
 
             var skills = gameData.GetSkills(character.SkillsId);
             var equippedItems = gameData.FindPlayerItems(character.Id, x =>
@@ -386,6 +405,9 @@ namespace RavenNest.BusinessLogic.Game
             var player = GetCharacter(token, userId);
             if (player == null) return 0;
 
+            if (!integrityChecker.VerifyPlayer(token.SessionId, player.Id, 0))
+                return 0;
+
             var item = gameData.GetItem(itemId);
             if (item == null) return 0;
 
@@ -422,6 +444,9 @@ namespace RavenNest.BusinessLogic.Game
         {
             var gifter = GetCharacter(token, gifterUserId);
             if (gifter == null) return 0;
+
+            if (!integrityChecker.VerifyPlayer(token.SessionId, gifter.Id, 0))
+                return 0;
 
             var receiver = GetCharacter(token, receiverUserId);
             if (receiver == null) return 0;

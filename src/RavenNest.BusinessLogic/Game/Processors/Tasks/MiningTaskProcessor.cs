@@ -9,9 +9,14 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     {
         private readonly Random random = new Random();
 
-        public override void Handle(IGameData gameData, GameSession session, Character character, DataModels.CharacterState state)
+        public override void Handle(
+            IIntegrityChecker integrityChecker,
+            IGameData gameData,
+            GameSession session,
+            Character character,
+            CharacterState state)
         {
-            UpdateResourceGain(gameData, session, character, resources =>
+            UpdateResourceGain(integrityChecker, gameData, session, character, resources =>
             {
                 var skills = gameData.GetSkills(character.SkillsId);
                 var miningLevel = GameMath.ExperienceToLevel(skills.Mining);

@@ -255,6 +255,8 @@ namespace RavenNest
             services.AddSingleton<IQueryBuilder, QueryBuilder>();
             services.AddSingleton<IGameData, GameData>();
 
+            services.AddSingleton<IIntegrityChecker, PlayerIntegrityChecker>();
+
             services.AddSingleton<ITwitchClient, TwitchClient>();
 
             // Register providers

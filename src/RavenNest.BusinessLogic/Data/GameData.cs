@@ -23,6 +23,9 @@ namespace RavenNest.BusinessLogic.Data
         private readonly ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, CharacterSessionState>> characterSessionStates
             = new ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, CharacterSessionState>>();
 
+        private readonly ConcurrentDictionary<Guid, SessionState> sessionStates
+            = new ConcurrentDictionary<Guid, SessionState>();
+
         private readonly EntitySet<Appearance, Guid> appearances;
         private readonly EntitySet<SyntyAppearance, Guid> syntyAppearances;
         private readonly EntitySet<Character, Guid> characters;
@@ -68,7 +71,9 @@ namespace RavenNest.BusinessLogic.Data
                 gameSessions = new EntitySet<GameSession, Guid>(ctx.GameSession.ToList(), i => i.Id);
                 gameSessions.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                gameEvents = new EntitySet<GameEvent, Guid>(ctx.GameEvent.ToList(), i => i.Id);
+                // we can still store the game events, but no need to load them on startup as the DB will quickly be filled.
+                // and take a long time to load
+                gameEvents = new EntitySet<GameEvent, Guid>(new List<GameEvent>() /*ctx.GameEvent.ToList()*/, i => i.Id);
                 gameEvents.RegisterLookupGroup(nameof(GameSession), x => x.GameSessionId);
 
                 inventoryItems = new EntitySet<InventoryItem, Guid>(ctx.InventoryItem.ToList(), i => i.Id);
@@ -468,7 +473,6 @@ namespace RavenNest.BusinessLogic.Data
             return houses;
         }
 
-
         public CharacterSessionState GetCharacterSessionState(Guid sessionId, Guid characterId)
         {
             ConcurrentDictionary<Guid, CharacterSessionState> states;
@@ -484,6 +488,18 @@ namespace RavenNest.BusinessLogic.Data
                 state = new CharacterSessionState();
                 states[characterId] = state;
                 characterSessionStates[sessionId] = states;
+            }
+
+            return state;
+        }
+
+        public SessionState GetSessionState(Guid sessionId)
+        {
+            SessionState state;
+            if (!sessionStates.TryGetValue(sessionId, out state))
+            {
+                state = new SessionState();
+                sessionStates[sessionId] = state;
             }
 
             return state;
