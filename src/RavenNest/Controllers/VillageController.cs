@@ -14,43 +14,48 @@ namespace RavenNest.Controllers
     [ApiController]
     public class VillageController : ControllerBase
     {
-        private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly ISessionManager sessionManager;
-        private readonly IPlayerManager playerManager;
+        private readonly IVillageManager villageManager;
 
-        private readonly ISecureHasher secureHasher;
-        private readonly IAuthManager authManager;
 
         public VillageController(
-            ISessionInfoProvider sessionInfoProvider,
             ISessionManager sessionManager,
-            IPlayerManager playerManager,
-            ISecureHasher secureHasher,
-            IAuthManager authManager)
+            IVillageManager villageManager)
         {
-            this.sessionInfoProvider = sessionInfoProvider;
             this.sessionManager = sessionManager;
-            this.playerManager = playerManager;
-            this.secureHasher = secureHasher;
-            this.authManager = authManager;
+            this.villageManager = villageManager;
         }
 
         [HttpGet("{slot}/assign/{userId}")]
-        public Task<bool> AssignPlayerAsync(int slot, string userId)
+        public bool AssignPlayerAsync(int slot, string userId)
         {
-            return Task.FromResult(false);
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return villageManager.AssignPlayerToHouse(sessionToken.SessionId, slot, userId);
         }
 
         [HttpGet("{slot}/build/{type}")]
-        public Task<bool> BuildHouseAsync(int slot, int type)
+        public bool BuildHouseAsync(int slot, int type)
         {
-            return Task.FromResult(false);
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return villageManager.BuildHouse(sessionToken.SessionId, slot, type);
         }
 
         [HttpGet("{slot}/remove")]
-        public Task<bool> RemoveHouseAsync(int slot)
+        public bool RemoveHouseAsync(int slot)
         {
-            return Task.FromResult(false);
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return villageManager.RemoveHouse(sessionToken.SessionId, slot);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private SessionToken GetSessionToken()
+        {
+            return HttpContext.Request.Headers.TryGetValue("session-token", out var value)
+                ? sessionManager.Get(value)
+                : null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

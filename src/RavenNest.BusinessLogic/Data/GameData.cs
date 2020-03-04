@@ -438,7 +438,7 @@ namespace RavenNest.BusinessLogic.Data
                     Id = Guid.NewGuid(),
                     Created = DateTime.UtcNow,
                     Slot = x,
-                    Type = -1,
+                    Type = 0,
                     VillageId = village.Id
                 }).ToList();
 
@@ -459,7 +459,7 @@ namespace RavenNest.BusinessLogic.Data
                         Id = Guid.NewGuid(),
                         Created = DateTime.UtcNow,
                         Slot = i,
-                        Type = -1,
+                        Type = 0,
                         VillageId = village.Id
                     };
 
