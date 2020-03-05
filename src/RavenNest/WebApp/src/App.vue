@@ -13,7 +13,7 @@
           <router-link to="/docs" class="item">Developer</router-link>        
           <router-link to="/character" class="item" v-if="authenticated()">My character</router-link>
           <a href="/assets" target="_blank" class="item" v-if="authenticated()">Customize</a>
-          <router-link to="/admin" class="item" v-if="administrator()">My character</router-link>
+          <router-link to="/admin" class="item" v-if="administrator()">Admin</router-link>
           <div class="right">
             <router-link to="/login" class="item" v-if="!authenticated()">Login</router-link>
             <!-- <router-link to="/register" class="item" v-if="!authenticated()">Register</router-link> -->
