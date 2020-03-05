@@ -1,8 +1,8 @@
-import { Player } from './models';
+import { Player, Statistics } from './models';
 import Requests from '../requests';
 
 export default class PlayerRepository {
-  
+
     public static isLoading: boolean = false;
 
     private static result: any;
@@ -12,7 +12,7 @@ export default class PlayerRepository {
 
     public static getPlayers(pageIndex: number): Player[] {
         let page: PlayerPage;
-        
+
         if (!PlayerRepository.pages || PlayerRepository.pages.length < pageIndex) {
             page = PlayerRepository.pages[pageIndex] = new PlayerPage();
         } else {
@@ -35,32 +35,32 @@ export default class PlayerRepository {
         if (PlayerRepository.isLoading || page.isLoaded) {
             return;
         }
-        
-        const size   = PlayerRepository.pageSize;
+
+        const size = PlayerRepository.pageSize;
         const offset = size * pageIndex;
 
         PlayerRepository.isLoading = true;
         const url = `api/admin/players/${offset}/${size}`;
         const result = await Requests.sendAsync(url);
         if (result.ok) {
-          this.result = (await result.json());  
-          this.totalSize = this.result.totalSize;
-          page.players = this.parseItemData(this.result.players);
-          page.isLoaded = true;
+            this.result = (await result.json());
+            this.totalSize = this.result.totalSize;
+            page.players = this.parseItemData(this.result.players);
+            page.isLoaded = true;
         }
-        PlayerRepository.isLoading = false;        
-      }
+        PlayerRepository.isLoading = false;
+    }
 
     private static parseItemData(itemData: any) {
         let players: Player[] = [];
-        for(let raw of itemData) {
-            players.push(new Player());
+        for (let raw of itemData) {            
+            players.push(<Player>raw);
         }
         return players;
     }
 }
 
 export class PlayerPage {
-    public isLoaded:  boolean = false;
+    public isLoaded: boolean = false;
     public players: Player[] = [];
 }

@@ -1,18 +1,17 @@
 <template>
     <div class="admin">
-      
-      <h1 class="stats-name">{{getPlayerName()}}</h1>
 
-      <div class="stats-row">
-        <div class="stats-combat-level">LV : {{getCombatLevel()}}</div>
-      </div>
 
-      <nav class="admin-navigation">
-        <router-link to="/admin/Players" class="item">Players</router-link>
-        <router-link to="/admin/Items" class="item">Items</router-link>
-      </nav>
+    <div v-if="!isLoading" class="player-list">
 
-      <router-view></router-view>
+      <div class="player-list-item" v-for="player in getCurrentPlayerPage()" :key="player.userId">
+        <div class="player-name">
+          {{player.name}}
+        </div>
+      </div>     
+
+    </div>
+
 
     <div v-if="isLoading" class="loader">
       <div class="lds-ripple">
@@ -51,6 +50,10 @@
       }
 
       this.loadPlayerPageAsync(this.currentPage);
+    }
+
+    private getCurrentPlayerPage(): Player[] {
+      return PlayerRepository.getPlayers(this.currentPage);
     }
 
     private async loadPlayerPageAsync(pageIndex: number) {
