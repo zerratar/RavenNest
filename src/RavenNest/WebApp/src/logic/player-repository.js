@@ -1,65 +1,34 @@
-import { Player } from './models';
 import Requests from '../requests';
-
 export default class PlayerRepository {
-
-    public static isLoading: boolean = false;
-
-    private static result: any;
-    private static totalSize: number = 0;
-    private static pageSize: number = 50;
-    private static pages: PlayerPage[] = [];
-
-    public static getPageSize(): number {
+    static getPageSize() {
         return PlayerRepository.pageSize;
     }
-
-    public static getPageCount(): number {
+    static getPageCount() {
         return Math.floor(PlayerRepository.totalSize / PlayerRepository.pageSize) + 1;
     }
-
-    public static getOffset(pageIndex: number): number {
+    static getOffset(pageIndex) {
         return pageIndex * PlayerRepository.pageSize;
     }
-
-    public static getTotalCount(): number {
+    static getTotalCount() {
         return PlayerRepository.totalSize;
     }
-
-    public static getPlayer(userId: string): Player | null {
-        for (let page of PlayerRepository.pages) {
-            const player = page.players.find(x => x.userId == userId);
-            if (player) {
-                return player;
-            }
-        }
-        return null;
-    }
-
-    public static getPlayers(pageIndex: number): Player[] {
-        let page: PlayerPage = PlayerRepository.getPlayerPage(pageIndex);
-
+    static getPlayers(pageIndex) {
+        let page = PlayerRepository.getPlayerPage(pageIndex);
         if (page.isLoaded) {
             return page.players;
         }
-
         if (!PlayerRepository.isLoading) {
             PlayerRepository.loadPlayersAsync(pageIndex);
         }
-
         return [];
     }
-
-    public static async loadPlayersAsync(pageIndex: number) {
-        let page: PlayerPage = PlayerRepository.getPlayerPage(pageIndex);
-        
+    static async loadPlayersAsync(pageIndex) {
+        let page = PlayerRepository.getPlayerPage(pageIndex);
         if (PlayerRepository.isLoading || page.isLoaded) {
             return;
         }
-
         const size = PlayerRepository.pageSize;
         const offset = size * pageIndex;
-
         PlayerRepository.isLoading = true;
         const url = `api/admin/players/${offset}/${size}`;
         const result = await Requests.sendAsync(url);
@@ -71,27 +40,30 @@ export default class PlayerRepository {
         }
         PlayerRepository.isLoading = false;
     }
-
-    private static getPlayerPage(pageIndex: number):PlayerPage {
-        let page: PlayerPage = PlayerRepository.pages[pageIndex];  
-        
-        if (!page || typeof page  === 'undefined') {
+    static getPlayerPage(pageIndex) {
+        let page = PlayerRepository.pages[pageIndex];
+        if (!page || typeof page === 'undefined') {
             page = new PlayerPage();
             PlayerRepository.pages[pageIndex] = page;
         }
         return page;
     }
-
-    private static parseItemData(itemData: any) {
-        let players: Player[] = [];
+    static parseItemData(itemData) {
+        let players = [];
         for (let player of itemData) {
-            players.push(<Player>player);
+            players.push(player);
         }
         return players;
     }
 }
-
+PlayerRepository.isLoading = false;
+PlayerRepository.totalSize = 0;
+PlayerRepository.pageSize = 50;
+PlayerRepository.pages = [];
 export class PlayerPage {
-    public isLoaded: boolean = false;
-    public players: Player[] = [];
+    constructor() {
+        this.isLoaded = false;
+        this.players = [];
+    }
 }
+//# sourceMappingURL=player-repository.js.map

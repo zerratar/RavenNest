@@ -1,11 +1,5 @@
 <template>
-    <div class="admin">
-      
-      <h1 class="stats-name">{{getPlayerName()}}</h1>
-
-      <div class="stats-row">
-        <div class="stats-combat-level">LV : {{getCombatLevel()}}</div>
-      </div>
+    <div class="admin">          
 
       <nav class="admin-navigation">
         <router-link to="/admin/Players" class="item">Players</router-link>
@@ -13,13 +7,6 @@
       </nav>
 
       <router-view></router-view>
-
-    <div v-if="isLoading" class="loader">
-      <div class="lds-ripple">
-        <div></div>
-        <div></div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -39,37 +26,20 @@
 
   @Component({})
   export default class Admin extends Vue {
-    private loadCounter: number = 0;
-    private currentPage: number = 0;
 
     mounted() {      
       const sessionState = SessionState.get();                  
-
       if (sessionState !== null && !sessionState.authenticated && !sessionState.administrator) {
         this.$router.push("/login");
         return;
       }
-
-      this.loadPlayerPageAsync(this.currentPage);
-    }
-
-    private async loadPlayerPageAsync(pageIndex: number) {
-      ++this.loadCounter;
-      PlayerRepository.loadPlayersAsync(pageIndex).then(() => {
-        --this.loadCounter;  
-        this.$forceUpdate();
-      });
-    }
-
-    public get isLoading(): boolean {
-      return this.loadCounter > 0;
     }
   }
 </script>
 
 <style scoped>
 .admin {
-    margin-top: 92px;
+    margin-top: 132px;
     font-family: Heebo,sans-serif;
 }
 h2 {

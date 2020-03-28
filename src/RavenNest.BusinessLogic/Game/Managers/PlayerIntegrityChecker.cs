@@ -27,24 +27,29 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
-            var sessionState = gameData.GetSessionState(sessionId);
-            var playerSessionState = gameData.GetCharacterSessionState(sessionId, characterId);
-            if (playerSessionState.Compromised)
-            {
-                return false;
-            }
-
-            var syncDelta = syncTime - sessionState.SyncTime;
-            var clientTime = gameSession.Started.AddSeconds(syncDelta);
-            if (clientTime - DateTime.UtcNow > TimeSpan.FromSeconds(MaxSyncTimeDeltaSeconds))
-            {
-                logger.WriteError($"Player with ID {characterId} is compromised. CT: {clientTime}, SD: {syncDelta}");
-                playerSessionState.Compromised = true;
-                return false;
-            }
-
-            playerSessionState.SyncTime = syncTime;
             return true;
+
+#warning player integrity check disabled
+
+            // TODO(Zerratar): enable again in the future
+            //var sessionState = gameData.GetSessionState(sessionId);
+            //var playerSessionState = gameData.GetCharacterSessionState(sessionId, characterId);
+            //if (playerSessionState.Compromised)
+            //{
+            //    return false;
+            //}
+
+            //var syncDelta = syncTime - sessionState.SyncTime;
+            //var clientTime = gameSession.Started.AddSeconds(syncDelta);
+            //if (clientTime - DateTime.UtcNow > TimeSpan.FromSeconds(MaxSyncTimeDeltaSeconds))
+            //{
+            //    logger.WriteError($"Player with ID {characterId} is compromised. CT: {clientTime}, SD: {syncDelta}");
+            //    playerSessionState.Compromised = true;
+            //    return false;
+            //}
+
+            //playerSessionState.SyncTime = syncTime;
+            //return true;
         }
     }
 }

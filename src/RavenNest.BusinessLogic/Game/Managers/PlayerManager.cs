@@ -1180,11 +1180,15 @@ namespace RavenNest.BusinessLogic.Game
             var delta = GetDelta(currentExp, newExp);
             expGain.AddExperience(delta);
 
-            if (expMultiplierLimit >= 500)
-                return delta;
+#warning disabled integrity check (XP)
 
-            if (expGain.ExpPerHour >= 25_000_000)
-                return 0;
+            // TODO(Zerratar): enable it again in the future.
+
+            //if (expMultiplierLimit >= 500)
+            //    return delta;
+
+            //if (expGain.ExpPerHour >= 25_000_000)
+            //    return 0;
 
             return delta;
         }
@@ -1192,8 +1196,7 @@ namespace RavenNest.BusinessLogic.Game
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static decimal GetDelta(decimal currentExp, decimal newExp)
         {
-            var exp = Math.Max(currentExp, newExp);
-            return exp - currentExp;
+            return Math.Max(currentExp, newExp) - currentExp;
         }
     }
 }
