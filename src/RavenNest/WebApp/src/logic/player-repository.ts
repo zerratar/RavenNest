@@ -1,4 +1,4 @@
-import { Player } from './models';
+import { Player, Statistics } from './models';
 import Requests from '../requests';
 
 export default class PlayerRepository {
