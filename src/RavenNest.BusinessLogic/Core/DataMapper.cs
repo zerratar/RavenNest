@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
-using RavenNest.DataModels;
-using RavenNest.Models;
 
 namespace RavenNest.BusinessLogic
 {
@@ -31,6 +29,7 @@ namespace RavenNest.BusinessLogic
                 }
                 catch
                 {
+                    // ignored
                 }
             }
         }
@@ -53,16 +52,16 @@ namespace RavenNest.BusinessLogic
                     var value = prop.GetValue(data);
                     if (prop.PropertyType.IsEnum)
                     {
-                        var intValue = Convert.ToInt32(value);
-                        p.SetValue(output, intValue);
+                        p.SetValue(output, Convert.ToInt32(value));
                     }
                     else
                     {
                         p.SetValue(output, value);
                     }
                 }
-                catch (Exception exc)
+                catch
                 {
+                    // ignored
                 }
             }
             return output;

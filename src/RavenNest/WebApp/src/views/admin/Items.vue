@@ -1,14 +1,14 @@
 <template>
-    <div class="player-skills">
+    <div class="game-items">
      
-      <div class="stats-row" v-for="skill in getSkills()" :key="skill.name">
+      <!-- <div class="stats-row" v-for="skill in getSkills()" :key="skill.name">
         <div class="stats-label">{{skill.name}}</div>
         <div class="stats-progress">
           <div class="stats-progress-value" :style="styleWidth(skill.percent*120)"></div>
           <div class="stats-progress-percent">{{Math.round(skill.percent*100,2)}}%</div>
           </div>
         <div class="stats-value">{{skill.level}}</div>
-      </div>
+      </div> -->
 
     </div>
 </template>
@@ -31,13 +31,6 @@
   @Component({})
   export default class Items extends Vue {
 
-    public getSkills(): CharacterSkill[] {
-        return MyPlayer.getSkills();
-    }
-
-    styleWidth(value:any):string {
-      return "width: " + value + "px";
-    }
   }
 </script>
 

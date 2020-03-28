@@ -59,9 +59,6 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var itemsToSell = gameData.GetInventoryItems(character.Id, itemId);
-            //var itemsToSell = character.InventoryItem
-            //    .Where(x => x.ItemId == itemId && !x.Equipped)
-            //    .ToList();
 
             var totalItemCount = itemsToSell.Count > 0 ? itemsToSell.Sum(x => x.Amount.GetValueOrDefault()) : 0;
             var newItemAmount = totalItemCount - amount;
