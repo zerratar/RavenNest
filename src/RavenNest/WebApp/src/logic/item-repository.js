@@ -10,6 +10,9 @@ export default class ItemRepository {
         }
         return [];
     }
+    static getItem(itemId) {
+        return this.items.find(x => x.id == itemId);
+    }
     static async loadItemsAsync() {
         if (ItemRepository.isLoading || ItemRepository.isLoaded) {
             return;

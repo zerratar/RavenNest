@@ -20,6 +20,10 @@ export default class ItemRepository {
         return [];
     }
 
+    public static getItem(itemId: string): Item | undefined {
+        return this.items.find(x=> x.id == itemId);
+    }
+
     public static async loadItemsAsync() {
         if (ItemRepository.isLoading || ItemRepository.isLoaded) {
             return;

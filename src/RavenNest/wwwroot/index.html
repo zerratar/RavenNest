@@ -5,10 +5,15 @@
       window.location.href = 'https://www.ravenfall.stream' + window.location.pathname;
     } else {
       if (SessionState.authenticated === false) {
+
+        var DEBUG = window.location.href.indexOf("localhost") >= 0 
+         || window.location.href.indexOf("192.168.") >= 0
+         || (port != null && port && parseInt(port) >= 500);
+
         // ugly as f. the session-state is being cached on cloudflare, maybe just use an api call to get the state instead
         // but then it needs to be awaited before the rest of the app starts.
         const script = document.createElement('script');
-        script.src = '/session-state.js?cache=' + Math.random() * 999999 + 900900;
+        script.src = (DEBUG ? 'https://localhost:5001' : '') + '/session-state.js?cache=' + Math.random() * 999999 + 900900;
         script.type = 'text/javascript';
         document.head.appendChild(script);
         const updateLoginState = () => {
@@ -22,7 +27,7 @@
         };
         updateLoginState();
       }
-    }</script><title>Ravenfall</title><link href=/css/chunk-1225ff8c.css rel=prefetch><link href=/css/chunk-17332ec6.css rel=prefetch><link href=/css/chunk-1839d45f.css rel=prefetch><link href=/css/chunk-27cbf0b4.css rel=prefetch><link href=/css/chunk-2c6c44ff.css rel=prefetch><link href=/css/chunk-3d883c33.css rel=prefetch><link href=/css/chunk-42ec3893.css rel=prefetch><link href=/css/chunk-4ba226a9.css rel=prefetch><link href=/css/chunk-555914b8.css rel=prefetch><link href=/css/chunk-9e5c2da8.css rel=prefetch><link href=/css/chunk-ee9fb472.css rel=prefetch><link href=/js/chunk-1225ff8c.js rel=prefetch><link href=/js/chunk-17332ec6.js rel=prefetch><link href=/js/chunk-1839d45f.js rel=prefetch><link href=/js/chunk-27cbf0b4.js rel=prefetch><link href=/js/chunk-2c6c44ff.js rel=prefetch><link href=/js/chunk-2d0a4658.js rel=prefetch><link href=/js/chunk-2d215fa4.js rel=prefetch><link href=/js/chunk-3d883c33.js rel=prefetch><link href=/js/chunk-3f7bc161.js rel=prefetch><link href=/js/chunk-42ec3893.js rel=prefetch><link href=/js/chunk-4ba226a9.js rel=prefetch><link href=/js/chunk-555914b8.js rel=prefetch><link href=/js/chunk-9e5c2da8.js rel=prefetch><link href=/js/chunk-ee5ae97a.js rel=prefetch><link href=/js/chunk-ee9fb472.js rel=prefetch><link href=/css/app.css rel=preload as=style><link href=/js/app.js rel=preload as=script><link href=/js/chunk-vendors.js rel=preload as=script><link href=/css/app.css rel=stylesheet></head><body><noscript><strong>Y u no javascript?</strong></noscript><div id=app></div><script async src="https://www.googletagmanager.com/gtag/js?id=UA-149866854-1"></script><script>window.dataLayer = window.dataLayer || [];
+    }</script><title>Ravenfall</title><link href=/css/chunk-00a4db9a.css rel=prefetch><link href=/css/chunk-1225ff8c.css rel=prefetch><link href=/css/chunk-17332ec6.css rel=prefetch><link href=/css/chunk-2406ba04.css rel=prefetch><link href=/css/chunk-27cbf0b4.css rel=prefetch><link href=/css/chunk-2c6c44ff.css rel=prefetch><link href=/css/chunk-3297961c.css rel=prefetch><link href=/css/chunk-42a0e4a8.css rel=prefetch><link href=/css/chunk-4491fd76.css rel=prefetch><link href=/css/chunk-555914b8.css rel=prefetch><link href=/css/chunk-652c3ebc.css rel=prefetch><link href=/css/chunk-7faa2fea.css rel=prefetch><link href=/css/chunk-ee9fb472.css rel=prefetch><link href=/js/chunk-00a4db9a.js rel=prefetch><link href=/js/chunk-1225ff8c.js rel=prefetch><link href=/js/chunk-17332ec6.js rel=prefetch><link href=/js/chunk-2406ba04.js rel=prefetch><link href=/js/chunk-27cbf0b4.js rel=prefetch><link href=/js/chunk-2c6c44ff.js rel=prefetch><link href=/js/chunk-2d0a4658.js rel=prefetch><link href=/js/chunk-2d215fa4.js rel=prefetch><link href=/js/chunk-3297961c.js rel=prefetch><link href=/js/chunk-3f7bc161.js rel=prefetch><link href=/js/chunk-42a0e4a8.js rel=prefetch><link href=/js/chunk-4491fd76.js rel=prefetch><link href=/js/chunk-555914b8.js rel=prefetch><link href=/js/chunk-61337eda.js rel=prefetch><link href=/js/chunk-652c3ebc.js rel=prefetch><link href=/js/chunk-7faa2fea.js rel=prefetch><link href=/js/chunk-ee9fb472.js rel=prefetch><link href=/css/app.css rel=preload as=style><link href=/js/app.js rel=preload as=script><link href=/js/chunk-vendors.js rel=preload as=script><link href=/css/app.css rel=stylesheet></head><body><noscript><strong>Y u no javascript?</strong></noscript><div id=app></div><script async src="https://www.googletagmanager.com/gtag/js?id=UA-149866854-1"></script><script>window.dataLayer = window.dataLayer || [];
 
     function gtag() {
       dataLayer.push(arguments);

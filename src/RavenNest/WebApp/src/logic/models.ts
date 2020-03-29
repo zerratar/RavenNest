@@ -19,12 +19,26 @@ export class CharacterSkill {
   }
 }
 
+export class GameSession {
+  constructor(
+    public readonly id: string,
+
+    public readonly UserId:string,
+    public readonly twitchUserId:string,
+    public readonly userName:string,
+    public readonly adminPrivileges:boolean,
+    public readonly modPrivileges:boolean,
+    public readonly started:string,
+    public readonly updated:string,
+    public readonly status:number
+  ) { }
+}
 
 export class Player {
   constructor(
     public readonly userId: string,
     public readonly userName: string,
-    public readonly name: string,
+    public name: string,
     public readonly statistics: Statistics,
     public readonly appearance: Appearance,
     public readonly resources: Resources,
@@ -32,8 +46,8 @@ export class Player {
     public readonly state: PlayerState,
     public readonly inventoryItems: InventoryItem[],
     public readonly local: boolean,
-    public readonly isAdmin: boolean,
-    public readonly isModerator: boolean,
+    public isAdmin: boolean,
+    public isModerator: boolean,
     public readonly originUserId: string,
     public readonly revision: number,
   ) { }

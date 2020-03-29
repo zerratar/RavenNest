@@ -202,7 +202,7 @@ namespace RavenNest.BusinessLogic.Game
             EndSession(session);
         }
 
-        public void EndSession(GameSession session)
+        public void EndSession(DataModels.GameSession session)
         {
             var characters = gameData.GetSessionCharacters(session);
 
@@ -230,7 +230,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static SessionToken GenerateSessionToken(AuthToken token, GameSession session)
+        private static SessionToken GenerateSessionToken(AuthToken token, DataModels.GameSession session)
         {
             return new SessionToken
             {

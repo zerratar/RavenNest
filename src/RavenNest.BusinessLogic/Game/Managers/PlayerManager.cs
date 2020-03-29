@@ -38,7 +38,7 @@ namespace RavenNest.BusinessLogic.Game
 
         public Player CreatePlayerIfNotExists(string userId, string userName)
         {
-            var player = GetGlobalPlayer(userId);
+            var player = GetPlayer(userId);
             if (player != null) return player;
             return CreatePlayer(null, userId, userName);
         }
@@ -80,7 +80,7 @@ namespace RavenNest.BusinessLogic.Game
             return character.Map(gameData, user);
         }
 
-        private void TryRemovePlayerFromPreviousSession(Character character, GameSession joiningSession)
+        private void TryRemovePlayerFromPreviousSession(Character character, DataModels.GameSession joiningSession)
         {
             var userToRemove = gameData.GetUser(character.UserId);
             if (userToRemove == null)
@@ -120,7 +120,7 @@ namespace RavenNest.BusinessLogic.Game
             return GetGlobalPlayer(user);
         }
 
-        public Player GetGlobalPlayer(string userId)
+        public Player GetPlayer(string userId)
         {
             var user = gameData.GetUser(userId);
             if (user == null)
@@ -914,7 +914,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         private Player CreatePlayer(
-            GameSession session, string userId, string userName)
+            DataModels.GameSession session, string userId, string userName)
         {
             var user = new User
             {
@@ -928,7 +928,7 @@ namespace RavenNest.BusinessLogic.Game
             return CreatePlayer(session, user);
         }
 
-        private Player CreatePlayer(GameSession session, User user)
+        private Player CreatePlayer(DataModels.GameSession session, User user)
         {
             var character = new Character
             {
@@ -1017,7 +1017,7 @@ namespace RavenNest.BusinessLogic.Game
             return state;
         }
 
-        private void UpdateResources(IGameData gameData, GameSession session, Character character, DataModels.Resources resources)
+        private void UpdateResources(IGameData gameData, DataModels.GameSession session, Character character, DataModels.Resources resources)
         {
             var user = gameData.GetUser(character.UserId);
             var gameEvent = gameData.CreateSessionEvent(GameEventType.ResourceUpdate, session,
@@ -1147,7 +1147,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool AcquiredUserLock(GameSession session, Character character)
+        public static bool AcquiredUserLock(DataModels.GameSession session, Character character)
         {
             return character.UserIdLock == session.UserId;
         }

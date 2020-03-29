@@ -80,7 +80,7 @@ namespace RavenNest.Controllers
             if (GetSessionToken() == null)
             {
                 AssertAuthTokenValidity(GetAuthToken());
-                return playerManager.GetGlobalPlayer(userId);
+                return playerManager.GetPlayer(userId);
             }
 
             return playerManager.GetPlayer(AssertGetSessionToken(), userId);
@@ -238,7 +238,7 @@ namespace RavenNest.Controllers
             var twitchUser = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
             if (twitchUser != null)
             {
-                return playerManager.GetGlobalPlayer(twitchUser.Id.ToString());
+                return playerManager.GetPlayer(twitchUser.Id.ToString());
             }
 
             var sessionToken = GetSessionToken();

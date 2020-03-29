@@ -34,6 +34,9 @@ export default new Router({
             name: 'admin',
             component: () => import('./views/Admin.vue'),
             children: [
+                { path: '/admin/server', name: 'server', component: () => import('./views/admin/Server.vue') },
+                { path: '/admin/sessions', name: 'sessions', component: () => import('./views/admin/Sessions.vue') },
+                { path: '/admin/players', name: 'players', component: () => import('./views/admin/Players.vue') },
                 { path: '/admin/items', name: 'items', component: () => import('./views/admin/Items.vue') },
             ]
         }, {
