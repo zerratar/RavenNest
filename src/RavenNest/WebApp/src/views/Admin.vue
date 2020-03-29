@@ -2,8 +2,10 @@
     <div class="admin">          
 
       <nav class="admin-navigation">
-        <router-link to="/admin/Players" class="item">Players</router-link>
-        <router-link to="/admin/Items" class="item">Items</router-link>
+        <router-link to="/admin/server" class="item">Server Management</router-link>
+        <router-link to="/admin/sessions" class="item">Sessions</router-link>
+        <router-link to="/admin/players" class="item">Players</router-link>
+        <router-link to="/admin/items" class="item">Items</router-link>
       </nav>
 
       <router-view></router-view>

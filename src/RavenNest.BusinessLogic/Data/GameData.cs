@@ -176,6 +176,7 @@ namespace RavenNest.BusinessLogic.Data
 
         public GameEvent CreateSessionEvent<T>(GameEventType type, GameSession session, T data)
         {
+            session.Updated = DateTime.UtcNow;
             return new GameEvent
             {
                 Id = Guid.NewGuid(),
@@ -206,6 +207,21 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public GameSession FindSession(Func<GameSession, bool> predicate) =>
             gameSessions.Entities.FirstOrDefault(predicate);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public GameSession GetSessionByUserId(string userId)
+        {
+            var user = users.Entities.FirstOrDefault(x => x.UserId == userId);
+            if (user == null) return null;
+
+            var character = characters.Entities.FirstOrDefault(x => x.UserId == user.Id);
+            if (character == null) return null;
+
+            return gameSessions.Entities
+                .FirstOrDefault(x =>
+                    x.UserId == character.UserIdLock &&
+                    (SessionStatus)x.Status == SessionStatus.Active);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public User FindUser(Func<User, bool> predicate) =>
@@ -299,8 +315,12 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GameSession GetSession(Guid sessionId) =>
-            gameSessions[sessionId];
+        public GameSession GetSession(Guid sessionId, bool updateSession = true)
+        {
+            var session = gameSessions[sessionId];
+            if (updateSession) session.Updated = DateTime.UtcNow;
+            return session;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<Character> GetSessionCharacters(GameSession currentSession) =>
@@ -326,9 +346,14 @@ namespace RavenNest.BusinessLogic.Data
                     x.UserId.Equals(twitchUserId, StringComparison.OrdinalIgnoreCase));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GameSession GetUserSession(Guid userId) => gameSessions[nameof(User), userId]
-                        .OrderByDescending(x => x.Started)
-                        .FirstOrDefault(x => x.Stopped == null);
+        public GameSession GetUserSession(Guid userId, bool updateSession = true)
+        {
+            var session = gameSessions[nameof(User), userId]
+                    .OrderByDescending(x => x.Started)
+                    .FirstOrDefault(x => x.Stopped == null);
+            if (updateSession) session.Updated = DateTime.UtcNow;
+            return session;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(MarketItem marketItem) => marketItems.Remove(marketItem);
@@ -669,6 +694,7 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ICollection<EntityChangeSet> JoinChangeSets(params ICollection<EntityChangeSet>[] changesets) =>
             changesets.SelectMany(x => x).OrderBy(x => x.LastModified).ToList();
+
     }
 
     public class DataSaveError

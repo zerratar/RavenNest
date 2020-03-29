@@ -39,7 +39,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         protected void UpdateResourceGain(
             IIntegrityChecker integrityChecker,
             IGameData gameData,
-            GameSession session,
+            DataModels.GameSession session,
             Character character,
             Action<DataModels.Resources> onUpdate)
         {
@@ -53,6 +53,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             var state = gameData.GetCharacterSessionState(session.Id, character.Id);
             if (now - state.LastTaskUpdate >= TimeSpan.FromSeconds(ResourceGatherInterval))
             {
+                session.Updated = DateTime.UtcNow;
                 var resources = gameData.GetResources(character.ResourcesId);
                 var oldWood = resources.Wood;
                 var oldWheat = resources.Wheat;
@@ -72,7 +73,11 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             }
         }
 
-        protected void UpdateResources(IGameData gameData, GameSession session, Character character, DataModels.Resources resources)
+        protected void UpdateResources(
+            IGameData gameData, 
+            DataModels.GameSession session, 
+            Character character, 
+            DataModels.Resources resources)
         {
             var user = gameData.GetUser(character.UserId);
             var gameEvent = gameData.CreateSessionEvent(GameEventType.ResourceUpdate, session,

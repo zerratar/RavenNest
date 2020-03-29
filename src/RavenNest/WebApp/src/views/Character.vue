@@ -36,8 +36,7 @@
   import MyPlayer from '../logic/my-player';
   import Requests from '../requests';
   import router from 'vue-router';
-
-
+  
   @Component({})
   export default class Character extends Vue {
     private loadCounter: number = 0;

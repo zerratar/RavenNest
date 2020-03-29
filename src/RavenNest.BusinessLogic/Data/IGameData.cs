@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.DataModels;
+using RavenNest.Models;
 
 namespace RavenNest.BusinessLogic.Data
 {
@@ -12,11 +13,11 @@ namespace RavenNest.BusinessLogic.Data
         #region Find
         User FindUser(Func<User, bool> predicate);
         Character FindCharacter(Func<Character, bool> predicate);
-        GameSession FindSession(Func<GameSession, bool> predicate);
+        DataModels.GameSession FindSession(Func<DataModels.GameSession, bool> predicate);
         User FindUser(string userIdOrUsername);
-        Village GetVillageBySession(GameSession session);
-        Village GetOrCreateVillageBySession(GameSession session);
-        IReadOnlyList<VillageHouse> GetOrCreateVillageHouses(Village village);
+        DataModels.Village GetVillageBySession(DataModels.GameSession session);
+        DataModels.Village GetOrCreateVillageBySession(DataModels.GameSession session);
+        IReadOnlyList<DataModels.VillageHouse> GetOrCreateVillageHouses(DataModels.Village village);
 
         /// <summary>
         /// Find player items by predicate
@@ -26,6 +27,7 @@ namespace RavenNest.BusinessLogic.Data
         /// <returns></returns>
         IReadOnlyList<DataModels.InventoryItem> FindPlayerItems(Guid characterId, Func<DataModels.InventoryItem, bool> predicate);
         DataModels.InventoryItem FindPlayerItem(Guid characterId, Func<DataModels.InventoryItem, bool> predicate);
+        DataModels.GameSession GetSessionByUserId(string userId);
 
         #endregion
 
@@ -33,13 +35,13 @@ namespace RavenNest.BusinessLogic.Data
         User GetUser(Guid userId);
         IReadOnlyList<DataModels.User> GetUsers();
         IReadOnlyList<DataModels.Character> GetCharacters(Func<Character, bool> predicate);
-        IReadOnlyList<DataModels.Character> GetSessionCharacters(GameSession currentSession);
+        IReadOnlyList<DataModels.Character> GetSessionCharacters(DataModels.GameSession currentSession);
         User GetUser(string twitchUserId);
         int GetMarketItemCount();
         int GetNextGameEventRevision(Guid sessionId);
-        GameSession GetSession(Guid sessionId);
-        GameSession GetUserSession(Guid userId);
-        IReadOnlyList<DataModels.GameEvent> GetSessionEvents(GameSession gameSession);
+        DataModels.GameSession GetSession(Guid sessionId, bool updateSession = true);
+        DataModels.GameSession GetUserSession(Guid userId, bool updateSession = true);
+        IReadOnlyList<DataModels.GameEvent> GetSessionEvents(DataModels.GameSession gameSession);
         IReadOnlyList<DataModels.Item> GetItems();
         DataModels.Item GetItem(Guid id);
         IReadOnlyList<DataModels.InventoryItem> GetInventoryItems(Guid characterId, Guid itemId);
@@ -72,8 +74,8 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Create
-        GameSession CreateSession(Guid userId);
-        DataModels.GameEvent CreateSessionEvent<T>(GameEventType type, GameSession session, T data);
+        DataModels.GameSession CreateSession(Guid userId);
+        DataModels.GameEvent CreateSessionEvent<T>(GameEventType type, DataModels.GameSession session, T data);
         #endregion
 
         #region Add
@@ -87,7 +89,7 @@ namespace RavenNest.BusinessLogic.Data
         void Add(Character entity);
         void Add(User entity);
         void Add(DataModels.InventoryItem entity);
-        void Add(GameSession entity);
+        void Add(DataModels.GameSession entity);
         void Add(DataModels.MarketItem entity);
         void Add(DataModels.GameEvent entity);
         void Add(DataModels.Village village);
@@ -116,22 +118,22 @@ namespace RavenNest.BusinessLogic.Data
         void Remove(DataModels.MarketItem marketItem);
         void Remove(DataModels.InventoryItem invItem);
         void RemoveRange(IReadOnlyList<DataModels.InventoryItem> items);
-        Resources GetResources(Guid resourcesId);
-        Resources GetResourcesByCharacterId(Guid sellerCharacterId);
+        DataModels.Resources GetResources(Guid resourcesId);
+        DataModels.Resources GetResourcesByCharacterId(Guid sellerCharacterId);
         DataModels.Statistics GetStatistics(Guid statisticsId);
         DataModels.Clan GetClan(Guid clanId);
 
-        SyntyAppearance GetAppearance(Guid? syntyAppearanceId);
-        Skills GetSkills(Guid skillsId);
+        DataModels.SyntyAppearance GetAppearance(Guid? syntyAppearanceId);
+        DataModels.Skills GetSkills(Guid skillsId);
         DataModels.CharacterState GetState(Guid? stateId);
         #endregion
 
-        IReadOnlyList<GameSession> GetActiveSessions();
-        IReadOnlyList<ItemCraftingRequirement> GetCraftingRequirements(Guid itemId);
+        IReadOnlyList<DataModels.GameSession> GetActiveSessions();
+        IReadOnlyList<DataModels.ItemCraftingRequirement> GetCraftingRequirements(Guid itemId);
         CharacterSessionState GetCharacterSessionState(Guid sessionId, Guid characterId);
         SessionState GetSessionState(Guid sessionId);
 
-        InventoryItem GetEquippedItem(Guid id, ItemCategory category);
+        DataModels.InventoryItem GetEquippedItem(Guid id, DataModels.ItemCategory category);
 
         object SyncLock { get; }
     }

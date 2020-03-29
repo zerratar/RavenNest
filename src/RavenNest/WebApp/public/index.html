@@ -53,10 +53,15 @@
       window.location.href = 'https://www.ravenfall.stream' + window.location.pathname;
     } else {
       if (SessionState.authenticated === false) {
+
+        var DEBUG = window.location.href.indexOf("localhost") >= 0 
+         || window.location.href.indexOf("192.168.") >= 0
+         || (port != null && port && parseInt(port) >= 500);
+
         // ugly as f. the session-state is being cached on cloudflare, maybe just use an api call to get the state instead
         // but then it needs to be awaited before the rest of the app starts.
         const script = document.createElement('script');
-        script.src = '/session-state.js?cache=' + Math.random() * 999999 + 900900;
+        script.src = (DEBUG ? 'https://localhost:5001' : '') + '/session-state.js?cache=' + Math.random() * 999999 + 900900;
         script.type = 'text/javascript';
         document.head.appendChild(script);
         const updateLoginState = () => {

@@ -1,34 +1,35 @@
-import { Player, Statistics } from './models';
-import Requests from '../requests';
+import { Player } from './models';
+import { EntityRepository, Page } from './entity-repository';
 
 export default class PlayerRepository {
 
-    public static isLoading: boolean = false;
+    private static defaultSortOrder: string = "+UserName";
+    private static defaultQuery: string = "-";    
+    private static repo: EntityRepository<Player> = new EntityRepository<Player>("players");
 
-    private static result: any;
-    private static totalSize: number = 0;
-    private static pageSize: number = 50;
-    private static pages: PlayerPage[] = [];
+    public static get isLoading(): boolean {
+        return PlayerRepository.repo.isLoading;
+    }
 
-    public static getPageSize(): number {
-        return PlayerRepository.pageSize;
+    public static getPageSize(): number {        
+        return PlayerRepository.repo.getPageSize();
     }
 
     public static getPageCount(): number {
-        return Math.floor(PlayerRepository.totalSize / PlayerRepository.pageSize) + 1;
+        return PlayerRepository.repo.getPageCount();
     }
 
     public static getOffset(pageIndex: number): number {
-        return pageIndex * PlayerRepository.pageSize;
+        return PlayerRepository.repo.getOffset(pageIndex);
     }
 
     public static getTotalCount(): number {
-        return PlayerRepository.totalSize;
+        return PlayerRepository.repo.getTotalCount();
     }
 
     public static getPlayer(userId: string): Player | null {
-        for (let page of PlayerRepository.pages) {
-            const player = page.players.find(x => x.userId == userId);
+        for (let page of PlayerRepository.repo.getPages()) {
+            const player = page.items.find(x => x.userId == userId);
             if (player) {
                 return player;
             }
@@ -36,62 +37,33 @@ export default class PlayerRepository {
         return null;
     }
 
-    public static getPlayers(pageIndex: number): Player[] {
-        let page: PlayerPage = PlayerRepository.getPlayerPage(pageIndex);
+    public static getPlayers(pageIndex: number, sortOrder: string, query: string): Player[] {
+        [sortOrder,query] = PlayerRepository.ensureFilters(sortOrder, query);
+
+        let page: Page<Player> = PlayerRepository.repo.getPage(pageIndex, sortOrder, query);
 
         if (page.isLoaded) {
-            return page.players;
+            return page.items;
         }
 
-        if (!PlayerRepository.isLoading) {
-            PlayerRepository.loadPlayersAsync(pageIndex);
-        }
+        PlayerRepository.repo.loadPageAsync(pageIndex, sortOrder, query);
 
         return [];
     }
 
-    public static async loadPlayersAsync(pageIndex: number) {
-        let page: PlayerPage = PlayerRepository.getPlayerPage(pageIndex);
+    public static loadPlayersAsync(pageIndex: number, sortOrder: string, query: string) {
+        return PlayerRepository.repo.loadPageAsync(pageIndex, sortOrder, query);
+    }
+
+    private static ensureFilters(sortOrder: string, query: string) {
         
-        if (PlayerRepository.isLoading || page.isLoaded) {
-            return;
+        if (!sortOrder || sortOrder == null || sortOrder.length == 0) {
+            sortOrder = PlayerRepository.defaultSortOrder;
         }
 
-        const size = PlayerRepository.pageSize;
-        const offset = size * pageIndex;
-
-        PlayerRepository.isLoading = true;
-        const url = `api/admin/players/${offset}/${size}`;
-        const result = await Requests.sendAsync(url);
-        if (result.ok) {
-            PlayerRepository.result = (await result.json());
-            PlayerRepository.totalSize = PlayerRepository.result.totalSize;
-            page.players = PlayerRepository.parseItemData(PlayerRepository.result.players);
-            page.isLoaded = true;
+        if (!query || query == null || query.length == 0) {
+            query = PlayerRepository.defaultQuery;
         }
-        PlayerRepository.isLoading = false;
+        return [sortOrder, query];
     }
-
-    private static getPlayerPage(pageIndex: number):PlayerPage {
-        let page: PlayerPage = PlayerRepository.pages[pageIndex];  
-        
-        if (!page || typeof page  === 'undefined') {
-            page = new PlayerPage();
-            PlayerRepository.pages[pageIndex] = page;
-        }
-        return page;
-    }
-
-    private static parseItemData(itemData: any) {
-        let players: Player[] = [];
-        for (let player of itemData) {
-            players.push(<Player>player);
-        }
-        return players;
-    }
-}
-
-export class PlayerPage {
-    public isLoaded: boolean = false;
-    public players: Player[] = [];
 }

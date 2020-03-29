@@ -21,6 +21,36 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Models.GameSession Map(IGameData gameData, DataModels.GameSession data)
+        {
+            var session = DataMapper.Map<Models.GameSession, DataModels.GameSession>(data);
+            var user = gameData.GetUser(session.UserId);
+
+            session.TwitchUserId = user.UserId;
+            session.UserName = user.UserName;
+            session.AdminPrivileges = user.IsAdmin.GetValueOrDefault();
+            session.ModPrivileges = user.IsModerator.GetValueOrDefault();
+            session.Players = gameData.GetSessionCharacters(data)
+                .Select(x => Map(gameData, x))
+                .ToList();
+
+            return session;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Models.GameSessionPlayer Map(IGameData gameData, DataModels.Character character)
+        {
+            var user = gameData.GetUser(character.UserId);
+            return new GameSessionPlayer
+            {
+                TwitchUserId = user.UserId,
+                UserName = user.UserName,
+                IsAdmin = user.IsAdmin.GetValueOrDefault(),
+                IsModerator = user.IsModerator.GetValueOrDefault(),
+            };
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.CharacterState Map(DataModels.CharacterState data)
         {
             return DataMapper.Map<Models.CharacterState, DataModels.CharacterState>(data);

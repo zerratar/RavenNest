@@ -53,30 +53,45 @@
   import {
     Component,
     Vue,
+    Prop,
   } from 'vue-property-decorator';
   
-  import { SessionState } from '@/App.vue';
-  import GameMath from '../../logic/game-math';
-  import { CharacterSkill, InventoryItem, ItemStat } from '../../logic/models';
-  import ItemRepository from '../../logic/item-repository';
-  import Requests from '../../requests';
-  import router from 'vue-router';
+import { SessionState } from '@/App.vue';
+import GameMath from '../../logic/game-math';
+import { CharacterSkill, InventoryItem, ItemStat, Player } from '../../logic/models';
+import ItemRepository from '../../logic/item-repository';
+import Requests from '../../requests';
+import router from 'vue-router';
 import MyPlayer from '@/logic/my-player';
+import { PlayerInfo } from '@/logic/player-info';
+import PlayerRepository from '@/logic/player-repository';
 
+@Component({})
+export default class Inventory extends Vue {
 
-  @Component({})
-  export default class Inventory extends Vue {
+    @Prop() playerId: string|null = null;
 
+    private player: Player|null = null;
+    private playerInfo: PlayerInfo|null=null;
     private readonly tooltipVisibility: Map<string,boolean> = new Map<string, boolean>();
 
+    mounted() {
+        
+        console.log("INVENTORY::" + this.playerId);
+        if (this.playerId && this.playerId.length > 0) {
+            this.player = PlayerRepository.getPlayer(this.playerId);
+            if (this.player != null) {
+                this.playerInfo = new PlayerInfo(this.player);
+            }
+        }
+    }
+
     public mouseOverItem(invItem: InventoryItem): void {
-        // console.log("mouseOverItem: " + invItem.id);
         this.tooltipVisibility.set(invItem.id, true);
         this.$forceUpdate();
     }
 
     public mouseExitItem(invItem: InventoryItem): void {
-        // console.log("mouseExitItem: " + invItem.id);
         this.tooltipVisibility.set(invItem.id, false);
         this.$forceUpdate();        
     }
@@ -165,10 +180,12 @@ import MyPlayer from '@/logic/my-player';
     }
 
     public getEquippedItems(): InventoryItem[] {
+        if (this.playerInfo) return this.playerInfo.getEquippedItems();
         return MyPlayer.getEquippedItems();
     }
 
     public getInventoryItems(): InventoryItem[] {
+        if (this.playerInfo) return this.playerInfo.getInventoryItems();
         return MyPlayer.getInventoryItems();
     }
 

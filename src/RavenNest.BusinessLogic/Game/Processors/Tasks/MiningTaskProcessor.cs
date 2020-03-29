@@ -13,12 +13,13 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public override void Handle(
             IIntegrityChecker integrityChecker,
             IGameData gameData,
-            GameSession session,
+            DataModels.GameSession session,
             Character character,
             CharacterState state)
         {
             UpdateResourceGain(integrityChecker, gameData, session, character, resources =>
             {
+                session.Updated = DateTime.UtcNow;
                 var skills = gameData.GetSkills(character.SkillsId);
                 var miningLevel = GameMath.ExperienceToLevel(skills.Mining);
                 var chance = Random.NextDouble();

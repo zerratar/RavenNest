@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using RavenNest.Models;
 
 namespace RavenNest.BusinessLogic.Game
@@ -20,8 +19,8 @@ namespace RavenNest.BusinessLogic.Game
         {
             var players = playerManager.GetPlayers();
             var items = players
-                .OrderByDescending(x => TryGetSkillExperience(skill, x.Skills, out var exp, out var level) ? level : 0)
-                .ThenByDescending(x => TryGetSkillExperience(null, x.Skills, out var exp, out var level) ? exp : 0)
+                .OrderByDescending(x => TryGetSkillExperience(skill, x.Skills, out var exp, out var level) ? exp : 0)
+                .ThenByDescending(x => TryGetSkillExperience(skill, x.Skills, out var exp, out var level) ? level : 0)                
                 .Skip(skip)
                 .Take(take)
                 .Select((x, y) => Map(y + 1, skill, x))

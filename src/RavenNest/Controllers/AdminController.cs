@@ -1,11 +1,10 @@
-﻿using System;
-using System.Runtime.CompilerServices;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
 using RavenNest.Sessions;
+using System;
+using System.Runtime.CompilerServices;
 
 namespace RavenNest.Controllers
 {
@@ -30,13 +29,38 @@ namespace RavenNest.Controllers
             this.authManager = authManager;
         }
 
-        [HttpGet("players/{offset}/{size}")]
-        public PagedPlayerCollection GetPlayers(int offset, int size)
+        [HttpGet("players/{offset}/{size}/{order}/{query}")]
+        public PagedPlayerCollection GetPlayers(int offset, int size, string order, string query)
         {
             var authToken = GetAuthToken();
             AssertAdminAuthToken(authToken);
-            return adminManager.GetPlayersPaged(offset, size);
+            return adminManager.GetPlayersPaged(offset, size, order, query);
         }
+
+        [HttpGet("sessions/{offset}/{size}/{order}/{query}")]
+        public PagedSessionCollection GetSessions(int offset, int size, string order, string query)
+        {
+            var authToken = GetAuthToken();
+            AssertAdminAuthToken(authToken);
+            return adminManager.GetSessionsPaged(offset, size, order, query);
+        }
+
+        [HttpGet("updateplayername/{userid}/{name}")]
+        public bool UpdatePlayerName(string userid, string name)
+        {
+            var authToken = GetAuthToken();
+            AssertAdminAuthToken(authToken);
+            return adminManager.UpdatePlayerName(userid, name);
+        }
+
+        [HttpGet("updateplayerskill/{userid}/{skill}/{experience}")]
+        public bool UpdatePlayerSkill(string userid, string skill, decimal experience)
+        {
+            var authToken = GetAuthToken();
+            AssertAdminAuthToken(authToken);
+            return adminManager.UpdatePlayerSkill(userid, skill, experience);
+        }
+
 
         private AuthToken GetAuthToken()
         {

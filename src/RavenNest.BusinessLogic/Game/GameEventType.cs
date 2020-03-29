@@ -7,6 +7,8 @@
         PlayerAdd = 2,
         PlayerRemove = 3,
         PlayerAppearance = 4,
+        PlayerNameUpdate = 16,
+        PlayerExpUpdate = 17,
         PlayerTask = 5,
         ItemBuy = 6,
         ItemSell = 7,

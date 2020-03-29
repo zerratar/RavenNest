@@ -8,8 +8,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     {
         public override void Handle(
             IIntegrityChecker integrityChecker, 
-            IGameData gameData, 
-            GameSession session, 
+            IGameData gameData,
+            DataModels.GameSession session, 
             Character character, 
             CharacterState characterState)
         {
@@ -18,6 +18,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             var state = gameData.GetCharacterSessionState(session.Id, character.Id);
             if (now - state.LastTaskUpdate >= TimeSpan.FromSeconds(ResourceGatherInterval))
             {
+                session.Updated = DateTime.UtcNow;
                 state.LastTaskUpdate = DateTime.UtcNow;
 
                 if (resources.Ore >= OrePerIngot)

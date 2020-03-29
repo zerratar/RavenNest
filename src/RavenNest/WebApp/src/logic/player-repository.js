@@ -1,69 +1,52 @@
-import Requests from '../requests';
+import { EntityRepository } from './entity-repository';
 export default class PlayerRepository {
+    static get isLoading() {
+        return PlayerRepository.repo.isLoading;
+    }
     static getPageSize() {
-        return PlayerRepository.pageSize;
+        return PlayerRepository.repo.getPageSize();
     }
     static getPageCount() {
-        return Math.floor(PlayerRepository.totalSize / PlayerRepository.pageSize) + 1;
+        return PlayerRepository.repo.getPageCount();
     }
     static getOffset(pageIndex) {
-        return pageIndex * PlayerRepository.pageSize;
+        return PlayerRepository.repo.getOffset(pageIndex);
     }
     static getTotalCount() {
-        return PlayerRepository.totalSize;
+        return PlayerRepository.repo.getTotalCount();
     }
-    static getPlayers(pageIndex) {
-        let page = PlayerRepository.getPlayerPage(pageIndex);
+    static getPlayer(userId) {
+        for (let page of PlayerRepository.repo.getPages()) {
+            const player = page.items.find(x => x.userId == userId);
+            if (player) {
+                return player;
+            }
+        }
+        return null;
+    }
+    static getPlayers(pageIndex, sortOrder, query) {
+        [sortOrder, query] = PlayerRepository.ensureFilters(sortOrder, query);
+        let page = PlayerRepository.repo.getPage(pageIndex, sortOrder, query);
         if (page.isLoaded) {
-            return page.players;
+            return page.items;
         }
-        if (!PlayerRepository.isLoading) {
-            PlayerRepository.loadPlayersAsync(pageIndex);
-        }
+        PlayerRepository.repo.loadPageAsync(pageIndex, sortOrder, query);
         return [];
     }
-    static async loadPlayersAsync(pageIndex) {
-        let page = PlayerRepository.getPlayerPage(pageIndex);
-        if (PlayerRepository.isLoading || page.isLoaded) {
-            return;
-        }
-        const size = PlayerRepository.pageSize;
-        const offset = size * pageIndex;
-        PlayerRepository.isLoading = true;
-        const url = `api/admin/players/${offset}/${size}`;
-        const result = await Requests.sendAsync(url);
-        if (result.ok) {
-            PlayerRepository.result = (await result.json());
-            PlayerRepository.totalSize = PlayerRepository.result.totalSize;
-            page.players = PlayerRepository.parseItemData(PlayerRepository.result.players);
-            page.isLoaded = true;
-        }
-        PlayerRepository.isLoading = false;
+    static loadPlayersAsync(pageIndex, sortOrder, query) {
+        return PlayerRepository.repo.loadPageAsync(pageIndex, sortOrder, query);
     }
-    static getPlayerPage(pageIndex) {
-        let page = PlayerRepository.pages[pageIndex];
-        if (!page || typeof page === 'undefined') {
-            page = new PlayerPage();
-            PlayerRepository.pages[pageIndex] = page;
+    static ensureFilters(sortOrder, query) {
+        if (!sortOrder || sortOrder == null || sortOrder.length == 0) {
+            sortOrder = PlayerRepository.defaultSortOrder;
         }
-        return page;
-    }
-    static parseItemData(itemData) {
-        let players = [];
-        for (let player of itemData) {
-            players.push(player);
+        if (!query || query == null || query.length == 0) {
+            query = PlayerRepository.defaultQuery;
         }
-        return players;
+        return [sortOrder, query];
     }
 }
-PlayerRepository.isLoading = false;
-PlayerRepository.totalSize = 0;
-PlayerRepository.pageSize = 50;
-PlayerRepository.pages = [];
-export class PlayerPage {
-    constructor() {
-        this.isLoaded = false;
-        this.players = [];
-    }
-}
+PlayerRepository.defaultSortOrder = "+UserName";
+PlayerRepository.defaultQuery = "-";
+PlayerRepository.repo = new EntityRepository("players");
 //# sourceMappingURL=player-repository.js.map

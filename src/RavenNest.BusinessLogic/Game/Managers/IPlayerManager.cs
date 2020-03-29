@@ -10,9 +10,9 @@ namespace RavenNest.BusinessLogic.Game
         Player CreatePlayerIfNotExists(string userId, string userName);
         Player CreatePlayer(string userId, string userName);
         Player AddPlayer(SessionToken token, string userId, string userName);
-        Player GetPlayer(SessionToken sessionToken, string userId);
+        Player GetPlayer(SessionToken sessionToken, string userId);        
         Player GetPlayer(SessionToken sessionToken);
-        Player GetGlobalPlayer(string userId);
+        Player GetPlayer(string userId);
         Player GetGlobalPlayer(Guid userId);
         bool UpdatePlayerState(SessionToken sessionToken, CharacterStateUpdate update);
 
