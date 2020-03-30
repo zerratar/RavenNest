@@ -34,6 +34,9 @@ namespace RavenNest.BusinessLogic.Data
 
         public virtual DbSet<ItemCraftingRequirement> ItemCraftingRequirement { get; set; }
         public virtual DbSet<Item> Item { get; set; }
+        public virtual DbSet<NPC> NPC { get; set; }
+        public virtual DbSet<NPCItemDrop> NPCItemDrop { get; set; }
+        public virtual DbSet<NPCSpawn> NPCSpawn { get; set; }
         public virtual DbSet<Resources> Resources { get; set; }
         public virtual DbSet<Statistics> Statistics { get; set; }
         public virtual DbSet<Skills> Skills { get; set; }
@@ -158,7 +161,19 @@ namespace RavenNest.BusinessLogic.Data
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();
             });
-
+            
+            modelBuilder.Entity<NPC>(entity =>
+            {
+                entity.Property(e => e.Id).ValueGeneratedNever();
+            });
+            modelBuilder.Entity<NPCItemDrop>(entity =>
+            {
+                entity.Property(e => e.Id).ValueGeneratedNever();
+            });
+            modelBuilder.Entity<NPCSpawn>(entity =>
+            {
+                entity.Property(e => e.Id).ValueGeneratedNever();
+            });
             modelBuilder.Entity<Village>(entity =>
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();
