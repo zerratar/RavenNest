@@ -100,57 +100,106 @@ namespace RavenNest.Controllers
         [HttpGet("{userId}/join/{targetUserId}")]
         public bool Join(string userId, string targetUserId)
         {
-            var authToken = GetAuthToken();
-            AssertAdminAuthToken(authToken);
+            AssertAdminAuthToken(GetAuthToken());
             return gameManager.Join(userId, targetUserId);
         }
 
         [HttpGet("{userId}/leave")]
         public bool Leave(string userId)
         {
-            var authToken = GetAuthToken();
-            AssertAdminAuthToken(authToken);
+            AssertAdminAuthToken(GetAuthToken());
             return gameManager.Leave(userId);
+        }
+
+        [HttpGet("{userId}/walkto/{x}/{y}/{z}")]
+        public bool WalkTo(string userId, int x, int y, int z)
+        {
+            AssertAdminAuthToken(GetAuthToken());
+            return gameManager.WalkTo(userId, x, y, z);
+        }
+
+        [HttpGet("{userId}/attack/{targetId}/{type}")]
+        public bool Attack(string userId, string targetId, int type)
+        {
+            AssertAdminAuthToken(GetAuthToken());
+            return gameManager.Attack(userId, targetId, (AttackType)type);
+        }
+
+        [HttpGet("{userId}/object-action/{targetId}/{type}")]
+        public bool ObjectAction(string userId, string targetId, int type)
+        {
+            AssertAdminAuthToken(GetAuthToken());
+            return gameManager.ObjectAction(userId, targetId, (ObjectActionType)type);
         }
 
         [HttpGet("{userId}/task/{task}/{taskArgument}")]
         public bool SetTask(string userId, string task, string taskArgument)
         {
-            var authToken = GetAuthToken();
-            AssertAdminAuthToken(authToken);
+            AssertAdminAuthToken(GetAuthToken());
             return gameManager.SetTask(userId, task, taskArgument);
         }
 
         [HttpGet("{userId}/task/{task}")]
         public bool SetTask(string userId, string task)
         {
-            var authToken = GetAuthToken();
-            AssertAdminAuthToken(authToken);
+            AssertAdminAuthToken(GetAuthToken());
             return gameManager.SetTask(userId, task, task);
         }
 
         [HttpGet("{userId}/raid")]
         public bool JoinRaid(string userId)
         {
-            var authToken = GetAuthToken();
-            AssertAdminAuthToken(authToken);
+            AssertAdminAuthToken(GetAuthToken());
             return gameManager.JoinRaid(userId);
         }
 
         [HttpGet("{userId}/dungeon")]
         public bool JoinDungeon(string userId)
         {
-            var authToken = GetAuthToken();
-            AssertAdminAuthToken(authToken);
+            AssertAdminAuthToken(GetAuthToken());
             return gameManager.JoinDungeon(userId);
         }
 
         [HttpGet("{userId}/arena")]
         public bool JoinArena(string userId)
         {
-            var authToken = GetAuthToken();
-            AssertAdminAuthToken(authToken);
+            AssertAdminAuthToken(GetAuthToken());
             return gameManager.JoinArena(userId);
+        }
+
+        [HttpGet("{userId}/duel/accept")]
+        public bool DuelAccept(string userId)
+        {
+            AssertAdminAuthToken(GetAuthToken());
+            return gameManager.DuelAccept(userId);
+        }
+
+        [HttpGet("{userId}/duel/decline")]
+        public bool DuelDecline(string userId)
+        {
+            AssertAdminAuthToken(GetAuthToken());
+            return gameManager.DuelDecline(userId);
+        }
+
+        [HttpGet("{userId}/duel/{targetUserId}")]
+        public bool DuelDecline(string userId, string targetUserId)
+        {
+            AssertAdminAuthToken(GetAuthToken());
+            return gameManager.DuelRequest(userId, targetUserId);
+        }
+
+        [HttpGet("{userId}/travel")]
+        public bool Travel(string userId, string island)
+        {
+            AssertAdminAuthToken(GetAuthToken());
+            return gameManager.Travel(userId, island);
+        }
+
+        [HttpGet("{userId}/travel/{island}")]
+        public bool Travel(string userId)
+        {
+            AssertAdminAuthToken(GetAuthToken());
+            return gameManager.Travel(userId, null);
         }
 
         [HttpPost("{clientVersion}/{accessKey}")]
