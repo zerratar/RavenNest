@@ -39,56 +39,6 @@ namespace RavenNest.Controllers
             this.secureHasher = secureHasher;
         }
 
-
-        //[HttpGet("youcrazyone")]
-        //public bool DoCrazyStuff()
-        //{
-        //    var characters = gameData.GetCharacters(x => true);
-        //    foreach (var c in characters)
-        //    {
-        //        //var items = gameData.GetInventoryItems(c.Id);
-        //        //foreach (var eq in items)
-        //        //{
-        //        //    if (eq.Amount == 0)
-        //        //    {
-        //        //        gameData.Remove(eq);
-        //        //    }
-        //        //    //var item = gameData.GetItem(eq.ItemId);
-        //        //    //if (item.Category == (int)DataModels.ItemCategory.Resource)
-        //        //    //{
-        //        //    //    var stack = gameData.GetInventoryItem(c.Id, eq.ItemId);
-        //        //    //    if (stack != null)
-        //        //    //    {
-        //        //    //        stack.Amount += eq.Amount;
-        //        //    //        gameData.Remove(eq);
-        //        //    //    }
-        //        //    //    else
-        //        //    //    {
-        //        //    //        eq.Equipped = false;
-        //        //    //    }
-        //        //    //}
-        //        //}
-        //        var items = gameData.GetInventoryItems(c.Id);
-        //        foreach (var stack in items.GroupBy(x => x.ItemId))
-        //        {
-        //            gameData.RemoveRange(stack.ToList());
-        //            var newAmount = stack.Sum(x => x.Amount);
-        //            gameData.Add(new DataModels.InventoryItem
-        //            {
-        //                Amount = newAmount,
-        //                CharacterId = c.Id,
-        //                Id = Guid.NewGuid(),
-        //                ItemId = stack.Key,
-        //                Equipped = false
-        //            });
-        //        }
-        //    }
-        //    //}
-        //    gameData.Flush();
-
-        //    return true;
-        //}
-
         [HttpGet]
         public GameInfo Get()
         {
@@ -96,6 +46,45 @@ namespace RavenNest.Controllers
             AssertSessionTokenValidity(session);
             return gameManager.GetGameInfo(session);
         }
+
+        [HttpPost("{clientVersion}/{accessKey}")]
+        public async Task<SessionToken> BeginSessionAsync(string clientVersion, string accessKey, Two<bool, float> param)
+        {
+            var authToken = GetAuthToken();
+            AssertAuthTokenValidity(authToken);
+
+            var session = await this.sessionManager.BeginSessionAsync(
+                authToken,
+                clientVersion,
+                accessKey,
+                param.Value1,
+                param.Value2);
+
+            if (session == null)
+            {
+                HttpContext.Response.StatusCode = 403;
+                return null;
+            }
+
+            return session;
+        }
+
+        [HttpDelete("raid/{username}")]
+        public bool EndSessionAndRaid(string username, Single<bool> war)
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            return this.sessionManager.EndSessionAndRaid(session, username, war.Value);
+        }
+
+        [HttpDelete]
+        public void EndSession()
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            this.sessionManager.EndSession(session);
+        }
+
 
         #region Admin Player Control
 
@@ -298,45 +287,6 @@ namespace RavenNest.Controllers
             return gameManager.Travel(GetCurrentUser().UserId, island);
         }
         #endregion
-
-
-        [HttpPost("{clientVersion}/{accessKey}")]
-        public async Task<SessionToken> BeginSessionAsync(string clientVersion, string accessKey, Two<bool, float> param)
-        {
-            var authToken = GetAuthToken();
-            AssertAuthTokenValidity(authToken);
-
-            var session = await this.sessionManager.BeginSessionAsync(
-                authToken,
-                clientVersion,
-                accessKey,
-                param.Value1,
-                param.Value2);
-
-            if (session == null)
-            {
-                HttpContext.Response.StatusCode = 403;
-                return null;
-            }
-
-            return session;
-        }
-
-        [HttpDelete("raid/{username}")]
-        public bool EndSessionAndRaid(string username, Single<bool> war)
-        {
-            var session = GetSessionToken();
-            AssertSessionTokenValidity(session);
-            return this.sessionManager.EndSessionAndRaid(session, username, war.Value);
-        }
-
-        [HttpDelete]
-        public void EndSession()
-        {
-            var session = GetSessionToken();
-            AssertSessionTokenValidity(session);
-            this.sessionManager.EndSession(session);
-        }
 
         private SessionToken GetSessionToken()
         {

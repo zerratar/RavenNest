@@ -31,16 +31,20 @@ namespace RavenNest.BusinessLogic.Game
             if (userToRemove == null)
                 return false;
 
-            var currentSession = gameData.GetUserSession(character.UserIdLock.GetValueOrDefault());
+            var currentSession = gameData.GetSessionByUserId(userId);
+            //var currentSession = gameData.GetUserSession(character.UserIdLock.GetValueOrDefault());
             if (currentSession == null)
                 return false;
 
             var characterUser = gameData.GetUser(character.UserId);
-            var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRemove, currentSession, new PlayerRemove()
-            {
-                Reason = $"{character.Name} was kicked remotely.",
-                UserId = characterUser.UserId
-            });
+            var gameEvent = gameData.CreateSessionEvent(
+                GameEventType.PlayerRemove,
+                currentSession,
+                new PlayerRemove()
+                {
+                    Reason = $"{character.Name} was kicked remotely.",
+                    UserId = characterUser.UserId
+                });
 
             gameData.Add(gameEvent);
             return true;
@@ -64,8 +68,8 @@ namespace RavenNest.BusinessLogic.Game
                 .OrderByDescending(x => x.Revision)
                 .ToList();
 
-            var main = characters.FirstOrDefault();
-            if (main == null || user.Id != main.UserId)
+            var main = characters.FirstOrDefault(x => x.UserId == user.Id);
+            if (main == null)
                 return false;
 
             var mainSkills = gameData.GetSkills(main.SkillsId);
@@ -73,11 +77,10 @@ namespace RavenNest.BusinessLogic.Game
             var mainInventory = gameData.GetInventoryItems(main.Id);
             var mainStatistics = gameData.GetStatistics(main.StatisticsId);
 
-            foreach (var alt in characters.Skip(1))
+            foreach (var alt in characters)
             {
-                // alt user needs to be null, otherwise we risk merging users just with identical names.
-                var altUser = gameData.GetUser(alt.UserId);
-                if (altUser != null) continue;
+                if (alt.Id == main.Id) 
+                    continue;
 
                 var altSkills = gameData.GetSkills(alt.SkillsId);
                 if (altSkills != null)
@@ -124,6 +127,12 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 gameData.Remove(alt);
+
+                var altUser = gameData.GetUser(alt.UserId);
+                if (altUser != null)
+                {
+                    gameData.Remove(altUser);
+                }
             }
 
             return true;

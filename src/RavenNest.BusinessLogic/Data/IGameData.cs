@@ -115,6 +115,7 @@ namespace RavenNest.BusinessLogic.Data
         //#endregion
 
         #region Remove
+        void Remove(DataModels.User user);
         void Remove(DataModels.Skills skills);
         void Remove(DataModels.Statistics statistics);
         void Remove(DataModels.Character character);

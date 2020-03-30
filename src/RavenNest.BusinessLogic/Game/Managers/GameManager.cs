@@ -233,22 +233,70 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool DuelAccept(string userId)
         {
-            return false;
+            var targetSession = gameData.GetSessionByUserId(userId);
+            if (targetSession == null) return false;
+
+            var character = gameData.GetCharacterByUserId(userId);
+            if (character == null) return false;
+
+            gameData.Add(gameData.CreateSessionEvent(
+                GameEventType.PlayerDuelAccept,
+                targetSession,
+                new PlayerId { UserId = userId }
+            ));
+
+            return true;
         }
 
         public bool DuelDecline(string userId)
         {
-            return false;
+            var targetSession = gameData.GetSessionByUserId(userId);
+            if (targetSession == null) return false;
+
+            var character = gameData.GetCharacterByUserId(userId);
+            if (character == null) return false;
+
+            gameData.Add(gameData.CreateSessionEvent(
+                GameEventType.PlayerDuelDecline,
+                targetSession,
+                new PlayerId { UserId = userId }
+            ));
+
+            return true;
         }
 
         public bool DuelRequest(string userId, string targetUserId)
         {
-            return false;
+            var targetSession = gameData.GetSessionByUserId(userId);
+            if (targetSession == null) return false;
+
+            var character = gameData.GetCharacterByUserId(userId);
+            if (character == null) return false;
+
+            gameData.Add(gameData.CreateSessionEvent(
+                GameEventType.PlayerDuelRequest,
+                targetSession,
+                new DuelRequest { UserId = userId, TargetUserId = targetUserId }
+            ));
+
+            return true;
         }
 
         public bool Travel(string userId, string island)
         {
-            return false;
+            var targetSession = gameData.GetSessionByUserId(userId);
+            if (targetSession == null) return false;
+
+            var character = gameData.GetCharacterByUserId(userId);
+            if (character == null) return false;
+
+            gameData.Add(gameData.CreateSessionEvent(
+                GameEventType.PlayerTravel,
+                targetSession,
+                new PlayerTravel { UserId = userId, Island = island }
+            ));
+
+            return true;
         }
     }
 }
