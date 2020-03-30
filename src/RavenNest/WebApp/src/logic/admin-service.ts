@@ -27,4 +27,12 @@ export default class AdminService {
         --AdminService.requestCounter;
         return result.ok && await result.json();
     }
+
+    public static async kickPlayer(userId: string): Promise<boolean> {
+        ++AdminService.requestCounter;
+        const url = `api/admin/kick/${userId}`;
+        const result = await Requests.sendAsync(url);
+        --AdminService.requestCounter;
+        return result.ok && await result.json();
+    }
 }

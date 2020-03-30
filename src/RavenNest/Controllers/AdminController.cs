@@ -52,7 +52,7 @@ namespace RavenNest.Controllers
             AssertAdminAuthToken(authToken);
             return adminManager.MergePlayerAccounts(userid);
         }
-        
+
         [HttpGet("updateplayername/{userid}/{name}")]
         public bool UpdatePlayerName(string userid, string name)
         {
@@ -69,6 +69,21 @@ namespace RavenNest.Controllers
             return adminManager.UpdatePlayerSkill(userid, skill, experience);
         }
 
+        [HttpGet("kick/{userid}")]
+        public bool KickPlayer(string userid)
+        {
+            var authToken = GetAuthToken();
+            AssertAdminAuthToken(authToken);
+            return adminManager.KickPlayer(userid);
+        }
+
+        [HttpGet("suspend/{userid}")]
+        public bool SuspendPlayer(string userid)
+        {
+            var authToken = GetAuthToken();
+            AssertAdminAuthToken(authToken);
+            return adminManager.SuspendPlayer(userid);
+        }
 
         private AuthToken GetAuthToken()
         {

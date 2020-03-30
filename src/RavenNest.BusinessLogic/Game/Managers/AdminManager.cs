@@ -1,5 +1,6 @@
 ﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
+using RavenNest.BusinessLogic.Net;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using System;
@@ -21,6 +22,35 @@ namespace RavenNest.BusinessLogic.Game
         {
             this.playerManager = playerManager;
             this.gameData = gameData;
+        }
+
+        public bool KickPlayer(string userId)
+        {
+            var character = gameData.GetCharacterByUserId(userId);
+            var userToRemove = gameData.GetUser(character.UserId);
+            if (userToRemove == null)
+                return false;
+
+            var currentSession = gameData.GetUserSession(character.UserIdLock.GetValueOrDefault());
+            if (currentSession == null)
+                return false;
+
+            var characterUser = gameData.GetUser(character.UserId);
+            var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRemove, currentSession, new PlayerRemove()
+            {
+                Reason = $"{character.Name} was kicked remotely.",
+                UserId = characterUser.UserId
+            });
+
+            gameData.Add(gameEvent);
+            return true;
+        }
+
+        public bool SuspendPlayer(string userId)
+        {
+            // 1. kick player
+            // 2. block player from joining any games.
+            return false;
         }
 
         public bool MergePlayerAccounts(string userId)
