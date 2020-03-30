@@ -92,15 +92,18 @@ namespace RavenNest.BusinessLogic.Game
 
             var targetSessionUser = gameData.GetUser(joiningSession.UserId);
             var characterUser = gameData.GetUser(character.UserId);
-            var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRemove, currentSession, new PlayerRemove()
-            {
-                Reason =
+            var gameEvent = gameData.CreateSessionEvent(
+                GameEventType.PlayerRemove,
+                currentSession,
+                new PlayerRemove()
+                {
+                    Reason =
                     targetSessionUser != null
                         ? $"{character.Name} joined {targetSessionUser.UserName}'s stream"
                         : $"{character.Name} joined another session.",
 
-                UserId = characterUser.UserId
-            });
+                    UserId = characterUser.UserId
+                });
 
             gameData.Add(gameEvent);
         }

@@ -330,7 +330,7 @@ namespace RavenNest.BusinessLogic.Data
         public GameSession GetSession(Guid sessionId, bool updateSession = true)
         {
             var session = gameSessions[sessionId];
-            if (updateSession) session.Updated = DateTime.UtcNow;
+            if (updateSession && session != null) session.Updated = DateTime.UtcNow;
             return session;
         }
 
@@ -363,9 +363,12 @@ namespace RavenNest.BusinessLogic.Data
             var session = gameSessions[nameof(User), userId]
                     .OrderByDescending(x => x.Started)
                     .FirstOrDefault(x => x.Stopped == null);
-            if (updateSession) session.Updated = DateTime.UtcNow;
+            if (updateSession && session != null) session.Updated = DateTime.UtcNow;
             return session;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(User user) => users.Remove(user);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(Skills skill) => skills.Remove(skill);

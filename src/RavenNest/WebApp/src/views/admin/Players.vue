@@ -294,7 +294,7 @@
         if (res) {
           ++this.revision;
           this.query = userId;
-          filter();
+          this.filter();
         }
       });
     }
