@@ -119,7 +119,8 @@ namespace RavenNest.BusinessLogic.Data
                 {
                     appearances, syntyAppearances, characters, characterStates,
                     gameSessions, gameEvents, inventoryItems, marketItems, items,
-                    resources, statistics, skills, users, gameClients, villages, villageHouses, clans
+                    resources, statistics, skills, users, gameClients, villages, villageHouses, clans,
+                    npcs, npcSpawns, npcItemDrops
                 };
             }
             stopWatch.Stop();
