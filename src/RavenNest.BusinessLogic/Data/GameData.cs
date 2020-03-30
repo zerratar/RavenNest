@@ -35,6 +35,9 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<InventoryItem, Guid> inventoryItems;
         private readonly EntitySet<MarketItem, Guid> marketItems;
         private readonly EntitySet<Item, Guid> items;
+        private readonly EntitySet<NPC, Guid> npcs;
+        private readonly EntitySet<NPCItemDrop, Guid> npcItemDrops;
+        private readonly EntitySet<NPCSpawn, Guid> npcSpawns;
         private readonly EntitySet<ItemCraftingRequirement, Guid> itemCraftingRequirements;
         private readonly EntitySet<Resources, Guid> resources;
         private readonly EntitySet<Statistics, Guid> statistics;
@@ -44,6 +47,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<Clan, Guid> clans;
         private readonly EntitySet<Village, Guid> villages;
         private readonly EntitySet<VillageHouse, Guid> villageHouses;
+
         private readonly IEntitySet[] entitySets;
 
         private ITimeoutHandle scheduleHandler;
@@ -83,6 +87,13 @@ namespace RavenNest.BusinessLogic.Data
                 marketItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
                 items = new EntitySet<Item, Guid>(ctx.Item.ToList(), i => i.Id);
+
+                npcs = new EntitySet<NPC, Guid>(ctx.NPC.ToList(), i => i.Id);
+                npcSpawns = new EntitySet<NPCSpawn, Guid>(ctx.NPCSpawn.ToList(), i => i.Id);
+                npcSpawns.RegisterLookupGroup(nameof(NPC), x => x.NpcId);
+
+                npcItemDrops = new EntitySet<NPCItemDrop, Guid>(ctx.NPCItemDrop.ToList(), i => i.Id);
+                npcItemDrops.RegisterLookupGroup(nameof(NPC), x => x.NpcId);
 
                 itemCraftingRequirements = new EntitySet<ItemCraftingRequirement, Guid>(ctx.ItemCraftingRequirement.ToList(), i => i.Id);
                 itemCraftingRequirements.RegisterLookupGroup(nameof(Item), x => x.ItemId);

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 
 namespace RavenNest.DataModels
 {
@@ -9,12 +10,27 @@ namespace RavenNest.DataModels
         public DateTime LastTaskUpdate { get; set; }
         public float SyncTime { get; set; }
         public ExpSkillGainCollection ExpGain { get; set; } = new ExpSkillGainCollection();
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Z { get; set; }
+        public int Health { get; set; }
         public bool Compromised { get; set; }
     }
 
     public class SessionState
     {
         public float SyncTime { get; set; }
+        public ConcurrentDictionary<Guid, NPCState> NPCStates { get; set; } = new ConcurrentDictionary<Guid, NPCState>();
+    }
+
+    public class NPCState
+    {
+        public Guid NpcId { get; set; }
+        public Guid InstanceId { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Z { get; set; }
+        public int Health { get; set; }
     }
 
     public class ExpSkillGainCollection
