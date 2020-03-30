@@ -126,39 +126,18 @@ namespace RavenNest.BusinessLogic.Game
         {
             var currentSession = gameData.GetSession(token.SessionId);
             if (currentSession == null)
-            {
                 return false;
-            }
 
             var sessionUser = gameData.GetUser(currentSession.UserId);
             var user = gameData.FindUser(userIdOrUsername);
             if (user == null)
-            {
-                //await EndSessionAsync(token);
                 return false;
-            }
 
             var targetSession = gameData.GetUserSession(user.Id);
             if (targetSession == null)
-            {
-                //await EndSessionAsync(token);
                 return false;
-            }
-
-
-            //var lastEvent = gameData.GetNextEventRevision(x => x.GameSessionId == targetSession.Id);
-            //if (lastEvent != null) revision = lastEvent.Revision + 1;
-
-
-            //var characters = await db.Character
-            //    .Include(x => x.User)
-            //    .Where(x => x.UserIdLock == currentSession.UserId && x.LastUsed != null && x.LastUsed >= currentSession.Started)
-            //    .OrderByDescending(x => x.LastUsed)
-            //    .ToListAsync();
 
             var characters = gameData.GetSessionCharacters(currentSession);
-
-            //  var revision = gameData.GetNextGameEventRevision(targetSession.Id);
 
             var ge = gameData.CreateSessionEvent(
                 isWarRaid ? GameEventType.WarRaid : GameEventType.Raid,
@@ -168,23 +147,6 @@ namespace RavenNest.BusinessLogic.Game
                     RaiderUserId = sessionUser.UserId,
                     Players = characters.Select(x => gameData.GetUser(x.UserId).UserId).ToArray()
                 });
-
-            //var ge = new DataModels.GameEvent
-            //{
-            //    Id = Guid.NewGuid(),
-            //    GameSessionId = targetSession.Id,
-            //    GameSession = targetSession,
-            //    Revision = revision,
-            //    Type = isWarRaid
-            //        ? (int)GameEventType.WarRaid
-            //        : (int)GameEventType.Raid,
-            //    Data = JsonConvert.SerializeObject(new
-            //    {
-            //        RaiderUserName = currentSession.User.UserName,
-            //        RaiderUserId = currentSession.User.UserId,
-            //        Players = characters.Select(x => x.User.UserId).ToArray()
-            //    })
-            //};
 
             gameData.Add(ge);
             EndSession(token);

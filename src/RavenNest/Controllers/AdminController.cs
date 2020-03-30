@@ -88,15 +88,9 @@ namespace RavenNest.Controllers
         private AuthToken GetAuthToken()
         {
             if (HttpContext.Request.Headers.TryGetValue("auth-token", out var value))
-            {
                 return authManager.Get(value);
-            }
-
             if (sessionInfoProvider.TryGetAuthToken(HttpContext.Session, out var authToken))
-            {
                 return authToken;
-            }
-
             return null;
         }
 
