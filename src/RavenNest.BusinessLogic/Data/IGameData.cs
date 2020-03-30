@@ -115,6 +115,10 @@ namespace RavenNest.BusinessLogic.Data
         //#endregion
 
         #region Remove
+        void Remove(DataModels.Skills skills);
+        void Remove(DataModels.Statistics statistics);
+        void Remove(DataModels.Character character);
+        void Remove(DataModels.Resources resources);
         void Remove(DataModels.MarketItem marketItem);
         void Remove(DataModels.InventoryItem invItem);
         void RemoveRange(IReadOnlyList<DataModels.InventoryItem> items);

@@ -23,6 +23,82 @@ namespace RavenNest.BusinessLogic.Game
             this.gameData = gameData;
         }
 
+        public bool MergePlayerAccounts(string userId)
+        {
+            var user = gameData.GetUser(userId);
+            if (user == null)
+                return false;
+
+            var characters = gameData
+                .GetCharacters(x => x.Name.Equals(user.UserName, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(x => x.Revision)
+                .ToList();
+
+            var main = characters.FirstOrDefault();
+            if (main == null || user.Id != main.UserId)
+                return false;
+
+            var mainSkills = gameData.GetSkills(main.SkillsId);
+            var mainResources = gameData.GetResources(main.ResourcesId);
+            var mainInventory = gameData.GetInventoryItems(main.Id);
+            var mainStatistics = gameData.GetStatistics(main.StatisticsId);
+
+            foreach (var alt in characters.Skip(1))
+            {
+                // alt user needs to be null, otherwise we risk merging users just with identical names.
+                var altUser = gameData.GetUser(alt.UserId);
+                if (altUser != null) continue;
+
+                var altSkills = gameData.GetSkills(alt.SkillsId);
+                if (altSkills != null)
+                {
+                    MergeSkills(mainSkills, altSkills);
+                    gameData.Remove(altSkills);
+                }
+
+                var altResources = gameData.GetResources(alt.ResourcesId);
+                if (altResources != null)
+                {
+                    MergeResources(mainResources, altResources);
+                    gameData.Remove(altResources);
+                }
+
+                var altItems = gameData.GetAllPlayerItems(alt.Id);
+                foreach (var altItem in altItems)
+                {
+
+                    var mainItem = mainInventory.FirstOrDefault(x => x.ItemId == altItem.ItemId);
+                    if (mainItem != null)
+                    {
+                        mainItem.Amount += altItem.Amount;
+                    }
+                    else
+                    {
+                        gameData.Add(new DataModels.InventoryItem
+                        {
+                            Id = Guid.NewGuid(),
+                            Amount = altItem.Amount,
+                            CharacterId = main.Id,
+                            Equipped = false,
+                            ItemId = altItem.ItemId
+                        });
+                    }
+                    gameData.Remove(altItem);
+                }
+
+                var altStatistics = gameData.GetStatistics(alt.StatisticsId);
+                if (altStatistics != null)
+                {
+                    MergeStatistics(mainStatistics, altStatistics);
+                    gameData.Remove(altStatistics);
+                }
+
+                gameData.Remove(alt);
+            }
+
+            return true;
+        }
+
         public PagedPlayerCollection GetPlayersPaged(int offset, int size, string sortOrder, string query)
         {
             var allPlayers = playerManager.GetPlayers();
@@ -147,6 +223,43 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             return allPlayers.ToList();
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void MergeStatistics(DataModels.Statistics main, DataModels.Statistics alt)
+        {
+            // not important right now
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void MergeResources(DataModels.Resources main, DataModels.Resources alt)
+        {
+            main.Arrows += alt.Arrows;
+            main.Coins += alt.Coins;
+            main.Fish += alt.Fish;
+            main.Magic += alt.Magic;
+            main.Ore += alt.Ore;
+            main.Wheat += alt.Wheat;
+            main.Wood += alt.Wood;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void MergeSkills(DataModels.Skills mainSkills, DataModels.Skills altSkills)
+        {
+            mainSkills.Attack += altSkills.Attack;
+            mainSkills.Cooking += altSkills.Cooking;
+            mainSkills.Crafting += altSkills.Crafting;
+            mainSkills.Defense += altSkills.Defense;
+            mainSkills.Farming += altSkills.Farming;
+            mainSkills.Fishing += altSkills.Fishing;
+            mainSkills.Health += altSkills.Health;
+            mainSkills.Magic += altSkills.Magic;
+            mainSkills.Mining += altSkills.Mining;
+            mainSkills.Ranged += altSkills.Ranged;
+            mainSkills.Sailing += altSkills.Sailing;
+            mainSkills.Slayer += altSkills.Slayer;
+            mainSkills.Strength += altSkills.Strength;
+            mainSkills.Woodcutting += altSkills.Woodcutting;
         }
     }
 }
