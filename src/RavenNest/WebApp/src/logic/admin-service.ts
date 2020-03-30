@@ -20,4 +20,11 @@ export default class AdminService {
         return result.ok && await result.json();
     }
 
+    public static async mergePlayer(userId: string): Promise<boolean> {
+        ++AdminService.requestCounter;
+        const url = `api/admin/mergeplayer/${userId}`;
+        const result = await Requests.sendAsync(url);
+        --AdminService.requestCounter;
+        return result.ok && await result.json();
+    }
 }

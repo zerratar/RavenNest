@@ -54,6 +54,7 @@
               <button class="link-button" @click="showSkills(player.userId)">skills</button>
               <button class="link-button" @click="showState(player.userId)">state</button>
               <button class="link-button" @click="showInventory(player.userId)">inventory</button>
+              <button class="link-button" @click="mergePlayer(player.userId)">merge</button>              
               <button class="link-button" @click="kick(player.userId)">kick</button>
               <button class="link-button" @click="suspend(player.userId)">suspend</button>
             </td>
@@ -275,6 +276,16 @@
         const player = this.getFocusedPlayer();
         if (!player) return;
         console.log("Showing inventory for player: " + player.name);
+      });
+    }
+
+    mergePlayer(userId: string) {
+      AdminService.mergePlayer(userId).then(res => {
+        if (res) {
+          ++this.revision;
+          this.query = userId;
+          filter();
+        }
       });
     }
 

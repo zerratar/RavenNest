@@ -45,6 +45,14 @@ namespace RavenNest.Controllers
             return adminManager.GetSessionsPaged(offset, size, order, query);
         }
 
+        [HttpGet("mergeplayer/{userid}")]
+        public bool MergePlayerAccounts(string userid)
+        {
+            var authToken = GetAuthToken();
+            AssertAdminAuthToken(authToken);
+            return adminManager.MergePlayerAccounts(userid);
+        }
+        
         [HttpGet("updateplayername/{userid}/{name}")]
         public bool UpdatePlayerName(string userid, string name)
         {

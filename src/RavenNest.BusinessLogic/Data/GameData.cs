@@ -356,6 +356,17 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(Skills skill) => skills.Remove(skill);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(Statistics stat) => statistics.Remove(stat);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(Character character) => characters.Remove(character);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(Resources res) => resources.Remove(res);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(MarketItem marketItem) => marketItems.Remove(marketItem);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -694,7 +705,6 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ICollection<EntityChangeSet> JoinChangeSets(params ICollection<EntityChangeSet>[] changesets) =>
             changesets.SelectMany(x => x).OrderBy(x => x.LastModified).ToList();
-
     }
 
     public class DataSaveError
