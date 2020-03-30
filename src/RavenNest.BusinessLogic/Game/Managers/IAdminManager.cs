@@ -1,5 +1,4 @@
 ﻿using RavenNest.Models;
-using System.Threading.Tasks;
 
 namespace RavenNest.BusinessLogic.Game
 {
@@ -10,5 +9,7 @@ namespace RavenNest.BusinessLogic.Game
         bool MergePlayerAccounts(string userId);
         bool UpdatePlayerName(string userId, string name);
         bool UpdatePlayerSkill(string userId, string skill, decimal experience);
+        bool KickPlayer(string userId);
+        bool SuspendPlayer(string userId);
     }
 }

@@ -84,15 +84,11 @@ namespace RavenNest.BusinessLogic.Game
         {
             var userToRemove = gameData.GetUser(character.UserId);
             if (userToRemove == null)
-            {
                 return;
-            }
 
             var currentSession = gameData.GetUserSession(character.UserIdLock.GetValueOrDefault());
             if (currentSession == null || currentSession.Id == joiningSession.Id || currentSession.UserId == joiningSession.UserId)
-            {
                 return;
-            }
 
             var targetSessionUser = gameData.GetUser(joiningSession.UserId);
             var characterUser = gameData.GetUser(character.UserId);

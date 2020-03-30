@@ -55,7 +55,7 @@
               <button class="link-button" @click="showState(player.userId)">state</button>
               <button class="link-button" @click="showInventory(player.userId)">inventory</button>
               <button class="link-button" @click="mergePlayer(player.userId)">merge</button>              
-              <button class="link-button" @click="kick(player.userId)">kick</button>
+              <button class="link-button" @click="kickPlayer(player.userId)">kick</button>
               <button class="link-button" @click="suspend(player.userId)">suspend</button>
             </td>
           </tr>
@@ -279,6 +279,14 @@
       });
     }
 
+    kickPlayer(userId: string) {
+      AdminService.kickPlayer(userId).then(res => {
+        if (res) {
+          ++this.revision;
+        }
+      });
+    }
+
     mergePlayer(userId: string) {
       AdminService.mergePlayer(userId).then(res => {
         if (res) {
@@ -287,10 +295,6 @@
           filter();
         }
       });
-    }
-
-    kick(userId: string) {
-      console.log(`kick user: ${userId}`);
     }
 
     suspend(userId: string) {
