@@ -54,6 +54,8 @@ namespace RavenNest.BusinessLogic.Game
             var character = gameData.GetCharacterByUserId(userId);
             if (character == null) return false;
 
+            var state = gameData.GetState(character.StateId);
+
             // just push the event to the client
             // and make the client to try and add the player
             gameData.Add(gameData.CreateSessionEvent(
@@ -62,7 +64,10 @@ namespace RavenNest.BusinessLogic.Game
                 new PlayerAdd()
                 {
                     UserId = userId,
-                    UserName = character.Name
+                    UserName = character.Name,
+                    Island = state?.Island,
+                    Task = state?.Task,
+                    TaskArgument = state?.TaskArgument
                 }
             ));
 
