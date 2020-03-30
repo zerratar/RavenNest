@@ -46,6 +46,73 @@ namespace RavenNest.BusinessLogic.Game
             return eventCollection;
         }
 
+        public bool WalkTo(string userId, int x, int y, int z)
+        {
+            var targetSession = gameData.GetSessionByUserId(userId);
+            if (targetSession == null) return false;
+
+            var character = gameData.GetCharacterByUserId(userId);
+            if (character == null) return false;
+
+            gameData.Add(gameData.CreateSessionEvent(
+                GameEventType.PlayerMove,
+                targetSession,
+                new PlayerMove()
+                {
+                    UserId = userId,
+                    X = x,
+                    Y = y,
+                    Z = z
+                }
+            ));
+
+            return true;
+        }
+
+        public bool Attack(string userId, string targetId, AttackType attackType)
+        {
+            var targetSession = gameData.GetSessionByUserId(userId);
+            if (targetSession == null) return false;
+
+            var character = gameData.GetCharacterByUserId(userId);
+            if (character == null) return false;
+
+            gameData.Add(gameData.CreateSessionEvent(
+                GameEventType.PlayerAttack,
+                targetSession,
+                new PlayerAttack()
+                {
+                    UserId = userId,
+                    TargetId = targetId,
+                    AttackType = (int)attackType,
+                }
+            ));
+
+            return true;
+        }
+
+        public bool ObjectAction(string userId, string targetId, ObjectActionType actionType)
+        {
+            var targetSession = gameData.GetSessionByUserId(userId);
+            if (targetSession == null) return false;
+
+            var character = gameData.GetCharacterByUserId(userId);
+            if (character == null) return false;
+
+            gameData.Add(gameData.CreateSessionEvent(
+                GameEventType.PlayerAction,
+                targetSession,
+                new PlayerAction()
+                {
+                    UserId = userId,
+                    TargetId = targetId,
+                    ActionType = (int)actionType,
+                }
+            ));
+
+            return true;
+        }
+
         public bool Join(string userId, string targetUserId)
         {
             var targetSession = gameData.GetSessionByUserId(targetUserId);
@@ -162,6 +229,26 @@ namespace RavenNest.BusinessLogic.Game
             ));
 
             return true;
+        }
+
+        public bool DuelAccept(string userId)
+        {
+            return false;
+        }
+
+        public bool DuelDecline(string userId)
+        {
+            return false;
+        }
+
+        public bool DuelRequest(string userId, string targetUserId)
+        {
+            return false;
+        }
+
+        public bool Travel(string userId, string island)
+        {
+            return false;
         }
     }
 }
