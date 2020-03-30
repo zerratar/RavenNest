@@ -97,6 +97,8 @@ namespace RavenNest.Controllers
             return gameManager.GetGameInfo(session);
         }
 
+        #region Admin Player Control
+
         [HttpGet("{userId}/join/{targetUserId}")]
         public bool Join(string userId, string targetUserId)
         {
@@ -182,25 +184,121 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("{userId}/duel/{targetUserId}")]
-        public bool DuelDecline(string userId, string targetUserId)
+        public bool DuelRequest(string userId, string targetUserId)
         {
             AssertAdminAuthToken(GetAuthToken());
             return gameManager.DuelRequest(userId, targetUserId);
         }
 
-        [HttpGet("{userId}/travel")]
-        public bool Travel(string userId, string island)
+        [HttpGet("{userId}/travel/{island}")]
+        public bool IslandTravel(string userId, string island)
         {
             AssertAdminAuthToken(GetAuthToken());
             return gameManager.Travel(userId, island);
         }
 
-        [HttpGet("{userId}/travel/{island}")]
+        [HttpGet("{userId}/travel")]
         public bool Travel(string userId)
         {
             AssertAdminAuthToken(GetAuthToken());
             return gameManager.Travel(userId, null);
         }
+
+        #endregion
+
+        #region Player Control
+
+        [HttpGet("join/{targetUserId}")]
+        public bool UserJoin(string targetUserId)
+        {
+            return gameManager.Join(GetCurrentUser().UserId, targetUserId);
+        }
+
+        [HttpGet("leave")]
+        public bool UserLeave()
+        {
+            return gameManager.Leave(GetCurrentUser().UserId);
+        }
+
+        [HttpGet("walkto/{x}/{y}/{z}")]
+        public bool UserWalkTo(int x, int y, int z)
+        {
+            return gameManager.WalkTo(GetCurrentUser().UserId, x, y, z);
+        }
+
+        [HttpGet("attack/{targetId}/{type}")]
+        public bool UserAttack(string targetId, int type)
+        {
+            return gameManager.Attack(GetCurrentUser().UserId, targetId, (AttackType)type);
+        }
+
+        [HttpGet("object-action/{targetId}/{type}")]
+        public bool UserObjectAction(string targetId, int type)
+        {
+            return gameManager.ObjectAction(GetCurrentUser().UserId, targetId, (ObjectActionType)type);
+        }
+
+        [HttpGet("task/{task}/{taskArgument}")]
+        public bool UserSetTask(string task, string taskArgument)
+        {
+            return gameManager.SetTask(GetCurrentUser().UserId, task, taskArgument);
+        }
+
+        [HttpGet("task/{task}")]
+        public bool UserSetTask(string task)
+        {
+            return gameManager.SetTask(GetCurrentUser().UserId, task, task);
+        }
+
+        [HttpGet("raid")]
+        public bool UserJoinRaid()
+        {
+            return gameManager.JoinRaid(GetCurrentUser().UserId);
+        }
+
+        [HttpGet("dungeon")]
+        public bool UserJoinDungeon()
+        {
+            return gameManager.JoinDungeon(GetCurrentUser().UserId);
+        }
+
+        [HttpGet("arena")]
+        public bool UserJoinArena()
+        {
+            return gameManager.JoinArena(GetCurrentUser().UserId);
+        }
+
+        [HttpGet("duel/accept")]
+        public bool UserDuelAccept()
+        {
+            return gameManager.DuelAccept(GetCurrentUser().UserId);
+        }
+
+        [HttpGet("duel/decline")]
+        public bool UserDuelDecline()
+        {
+            return gameManager.DuelDecline(GetCurrentUser().UserId);
+        }
+
+        [HttpGet("duel/{targetUserId}")]
+        public bool UserDuelRequest(string targetUserId)
+        {
+            return gameManager.DuelRequest(GetCurrentUser().UserId, targetUserId);
+        }
+
+        [HttpGet("travel")]
+        public bool UserTravel()
+        {
+            return gameManager.Travel(GetCurrentUser().UserId, null);
+        }
+
+        [HttpGet("travel/{island}")]
+        public bool UserIslandTravel(string island)
+        {
+            return gameManager.Travel(GetCurrentUser().UserId, island);
+        }
+        #endregion
+
 
         [HttpPost("{clientVersion}/{accessKey}")]
         public async Task<SessionToken> BeginSessionAsync(string clientVersion, string accessKey, Two<bool, float> param)
@@ -256,6 +354,14 @@ namespace RavenNest.Controllers
             if (sessionInfoProvider.TryGetAuthToken(HttpContext.Session, out var authToken))
                 return authToken;
             return null;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private DataModels.User GetCurrentUser()
+        {
+            var authToken = GetAuthToken();
+            AssertAuthTokenValidity(authToken);
+            return gameData.GetUser(authToken.UserId);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
