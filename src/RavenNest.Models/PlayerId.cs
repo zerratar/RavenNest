@@ -1,8 +1,7 @@
 ﻿namespace RavenNest.Models
 {
-    public class PlayerNameUpdate
+    public class PlayerId
     {
         public string UserId { get; set; }
-        public string Name { get; set; }
     }
 }

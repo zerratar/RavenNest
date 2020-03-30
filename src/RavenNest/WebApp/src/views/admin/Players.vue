@@ -280,6 +280,7 @@
     }
 
     kickPlayer(userId: string) {
+      if (!confirm("Are you sure you want to kick this player?")) return;
       AdminService.kickPlayer(userId).then(res => {
         if (res) {
           ++this.revision;
@@ -288,6 +289,7 @@
     }
 
     mergePlayer(userId: string) {
+      if (!confirm("Are you sure you want to merge this player?")) return;
       AdminService.mergePlayer(userId).then(res => {
         if (res) {
           ++this.revision;
@@ -298,6 +300,7 @@
     }
 
     suspend(userId: string) {
+      if (!confirm("Are you sure you want to suspend this player?")) return;
       console.log(`suspend user: ${userId}`);
     }
 

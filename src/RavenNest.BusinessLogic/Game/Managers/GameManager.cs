@@ -26,12 +26,7 @@ namespace RavenNest.BusinessLogic.Game
                 return new EventCollection();
             }
 
-            //var sessionRevision = gameSession.Revision ?? 0;
-            //var events = await db.GameEvent.Where(x =>
-            //    x.GameSessionId == session.SessionId &&
-            //    x.Revision > sessionRevision).ToListAsync();
-
-            var events = gameData.GetSessionEvents(gameSession);            
+            var events = gameData.GetSessionEvents(gameSession);
             var eventCollection = new EventCollection();
 
             foreach (var ev in events)
@@ -49,6 +44,119 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             return eventCollection;
+        }
+
+        public bool Join(string userId, string targetUserId)
+        {
+            var targetSession = gameData.GetSessionByUserId(targetUserId);
+            if (targetSession == null) return false;
+
+            var character = gameData.GetCharacterByUserId(userId);
+            if (character == null) return false;
+
+            // just push the event to the client
+            // and make the client to try and add the player
+            gameData.Add(gameData.CreateSessionEvent(
+                GameEventType.PlayerAdd,
+                targetSession,
+                new PlayerAdd()
+                {
+                    UserId = userId,
+                    UserName = character.Name
+                }
+            ));
+
+            return true;
+        }
+
+        public bool Leave(string userId)
+        {
+            var targetSession = gameData.GetSessionByUserId(userId);
+            if (targetSession == null) return false;
+
+            var character = gameData.GetCharacterByUserId(userId);
+            if (character == null) return false;
+
+            gameData.Add(gameData.CreateSessionEvent(
+                GameEventType.PlayerRemove,
+                targetSession,
+                new PlayerId { UserId = userId }
+            ));
+
+            return true;
+        }
+
+        public bool SetTask(string userId, string task, string taskArgument)
+        {
+            var targetSession = gameData.GetSessionByUserId(userId);
+            if (targetSession == null) return false;
+
+            var character = gameData.GetCharacterByUserId(userId);
+            if (character == null) return false;
+
+            gameData.Add(gameData.CreateSessionEvent(
+                GameEventType.PlayerTask,
+                targetSession,
+                new PlayerTask()
+                {
+                    UserId = userId,
+                    Task = task,
+                    TaskArgument = taskArgument
+                }
+            ));
+
+            return true;
+        }
+
+        public bool JoinRaid(string userId)
+        {
+            var targetSession = gameData.GetSessionByUserId(userId);
+            if (targetSession == null) return false;
+
+            var character = gameData.GetCharacterByUserId(userId);
+            if (character == null) return false;
+
+            gameData.Add(gameData.CreateSessionEvent(
+                GameEventType.PlayerJoinRaid,
+                targetSession,
+                new PlayerId { UserId = userId }
+            ));
+
+            return true;
+        }
+
+        public bool JoinDungeon(string userId)
+        {
+            var targetSession = gameData.GetSessionByUserId(userId);
+            if (targetSession == null) return false;
+
+            var character = gameData.GetCharacterByUserId(userId);
+            if (character == null) return false;
+
+            gameData.Add(gameData.CreateSessionEvent(
+                GameEventType.PlayerJoinDungeon,
+                targetSession,
+                new PlayerId { UserId = userId }
+            ));
+
+            return true;
+        }
+
+        public bool JoinArena(string userId)
+        {
+            var targetSession = gameData.GetSessionByUserId(userId);
+            if (targetSession == null) return false;
+
+            var character = gameData.GetCharacterByUserId(userId);
+            if (character == null) return false;
+
+            gameData.Add(gameData.CreateSessionEvent(
+                GameEventType.PlayerJoinArena,
+                targetSession,
+                new PlayerId { UserId = userId }
+            ));
+
+            return true;
         }
     }
 }
