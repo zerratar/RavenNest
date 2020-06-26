@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
@@ -20,6 +21,7 @@ using RavenNest.BusinessLogic.Docs.Html;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Serializers;
+using RavenNest.Health;
 using RavenNest.Sessions;
 
 namespace RavenNest
@@ -82,6 +84,8 @@ namespace RavenNest
             {
                 options.Providers.Add<GzipCompressionProvider>();
             });
+
+            services.AddRavenNestHealthChecks(Configuration.GetSection("AppSettings"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -175,6 +179,7 @@ namespace RavenNest
             app.UseRouting();
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapRavenNestHealthChecks();
                 endpoints.MapControllers();
                 //endpoints.MapControllerRoute(
                 //    name: "default",
