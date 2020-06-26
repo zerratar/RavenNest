@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -18,7 +19,7 @@ namespace RavenNest.Health
         {
             var settings = configuration.Get<AppSettings>();
             services.AddHealthChecks()
-                    .AddSqlServer(settings.DbConnectionString)
+                    .AddSqlServer(settings.DbConnectionString, name: "SqlServer")
                     .AddCheck<GameServerHealthCheck>(nameof(GameServerHealthCheck));
             
             return services;
@@ -40,13 +41,13 @@ namespace RavenNest.Health
             var responseObj = new HealthResponse
             {
                 Status = result.Status.ToString(),
-                Results = result.Entries.Select(e => new HealthResult
-                                                {
-                                                    Status = e.Value.Status.ToString(),
-                                                    Description = e.Value.Description,
-                                                    Data = e.Value.Data
-                                                })
-                                        .ToList()
+                Results = result.Entries.ToDictionary(e => e.Key, e => 
+                    new HealthResult
+                    {
+                        Status = e.Value.Status.ToString(),
+                        Description = e.Value.Description,
+                        Data = e.Value.Data
+                    })
             };
 
             var response = JsonConvert.SerializeObject(responseObj, Formatting.Indented);

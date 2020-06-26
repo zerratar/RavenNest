@@ -5,7 +5,6 @@ namespace RavenNest.Health
     public class HealthResponse
     {
         public string Status { get; set; }
-
-        public IList<HealthResult> Results { get; set; }
+        public IDictionary<string, HealthResult> Results { get; set; }
     }
 }
