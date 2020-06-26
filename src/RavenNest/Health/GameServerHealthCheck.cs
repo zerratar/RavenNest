@@ -9,12 +9,10 @@ namespace RavenNest.Health
     public class GameServerHealthCheck : IHealthCheck
     {
         private readonly IKernel kernel;
-        private readonly IGameData gameData;
 
-        public GameServerHealthCheck(IKernel kernel, IGameData gameData)
+        public GameServerHealthCheck(IKernel kernel)
         {
             this.kernel = kernel;
-            this.gameData = gameData;
         }
 
         public Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = new CancellationToken())
