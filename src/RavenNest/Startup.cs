@@ -19,6 +19,7 @@ using RavenNest.BusinessLogic.Docs;
 using RavenNest.BusinessLogic.Docs.Html;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Net;
+using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Serializers;
 using RavenNest.Sessions;
 
@@ -274,6 +275,8 @@ namespace RavenNest
 #endif
             services.AddSingleton<IBinarySerializer, RavenNest.BusinessLogic.Serializers.BinarySerializer>();
             services.AddSingleton<IGamePacketSerializer, GamePacketSerializer>();
+
+            services.AddSingleton<IPropertyProvider, MemoryCachedPropertyProvider>();
         }
     }
 }
