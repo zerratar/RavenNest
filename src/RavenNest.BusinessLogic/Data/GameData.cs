@@ -55,76 +55,84 @@ namespace RavenNest.BusinessLogic.Data
 
         public GameData(IRavenfallDbContextProvider db, ILogger logger, IKernel kernel, IQueryBuilder queryBuilder)
         {
-            this.db = db;
-            this.logger = logger;
-            this.kernel = kernel;
-            this.queryBuilder = queryBuilder;
-
-            var stopWatch = new Stopwatch();
-            stopWatch.Start();
-            using (var ctx = this.db.Get())
+            try
             {
-                appearances = new EntitySet<Appearance, Guid>(ctx.Appearance.ToList(), i => i.Id);
-                syntyAppearances = new EntitySet<SyntyAppearance, Guid>(ctx.SyntyAppearance.ToList(), i => i.Id);
+                this.db = db;
+                this.logger = logger;
+                this.kernel = kernel;
+                this.queryBuilder = queryBuilder;
 
-                characters = new EntitySet<Character, Guid>(ctx.Character.ToList(), i => i.Id);
-                characters.RegisterLookupGroup(nameof(User), x => x.UserId);
-                characters.RegisterLookupGroup(nameof(GameSession), x => x.UserIdLock.GetValueOrDefault());
-
-                characterStates = new EntitySet<CharacterState, Guid>(ctx.CharacterState.ToList(), i => i.Id);
-                gameSessions = new EntitySet<GameSession, Guid>(ctx.GameSession.ToList(), i => i.Id);
-                gameSessions.RegisterLookupGroup(nameof(User), x => x.UserId);
-
-                // we can still store the game events, but no need to load them on startup as the DB will quickly be filled.
-                // and take a long time to load
-                gameEvents = new EntitySet<GameEvent, Guid>(new List<GameEvent>() /*ctx.GameEvent.ToList()*/, i => i.Id);
-                gameEvents.RegisterLookupGroup(nameof(GameSession), x => x.GameSessionId);
-
-                inventoryItems = new EntitySet<InventoryItem, Guid>(ctx.InventoryItem.ToList(), i => i.Id);
-                inventoryItems.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
-
-                marketItems = new EntitySet<MarketItem, Guid>(ctx.MarketItem.ToList(), i => i.Id);
-                marketItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
-
-                items = new EntitySet<Item, Guid>(ctx.Item.ToList(), i => i.Id);
-
-                npcs = new EntitySet<NPC, Guid>(ctx.NPC.ToList(), i => i.Id);
-                npcSpawns = new EntitySet<NPCSpawn, Guid>(ctx.NPCSpawn.ToList(), i => i.Id);
-                npcSpawns.RegisterLookupGroup(nameof(NPC), x => x.NpcId);
-
-                npcItemDrops = new EntitySet<NPCItemDrop, Guid>(ctx.NPCItemDrop.ToList(), i => i.Id);
-                npcItemDrops.RegisterLookupGroup(nameof(NPC), x => x.NpcId);
-
-                itemCraftingRequirements = new EntitySet<ItemCraftingRequirement, Guid>(ctx.ItemCraftingRequirement.ToList(), i => i.Id);
-                itemCraftingRequirements.RegisterLookupGroup(nameof(Item), x => x.ItemId);
-                //itemCraftingRequirements.RegisterLookupGroup(nameof(ItemCraftingRequirement.ResourceItemId), x => x.ItemId);
-
-                clans = new EntitySet<Clan, Guid>(ctx.Clan.ToList(), i => i.Id);
-                villages = new EntitySet<Village, Guid>(ctx.Village.ToList(), i => i.Id);
-                villages.RegisterLookupGroup(nameof(User), x => x.UserId);
-
-                villageHouses = new EntitySet<VillageHouse, Guid>(ctx.VillageHouse.ToList(), i => i.Id);
-                villageHouses.RegisterLookupGroup(nameof(Village), x => x.VillageId);
-
-                resources = new EntitySet<Resources, Guid>(ctx.Resources.ToList(), i => i.Id);
-                statistics = new EntitySet<Statistics, Guid>(ctx.Statistics.ToList(), i => i.Id);
-                skills = new EntitySet<Skills, Guid>(ctx.Skills.ToList(), i => i.Id);
-                users = new EntitySet<User, Guid>(ctx.User.ToList(), i => i.Id);
-
-                gameClients = new EntitySet<GameClient, Guid>(ctx.GameClient.ToList(), i => i.Id);
-
-                Client = gameClients.Entities.First();
-
-                entitySets = new IEntitySet[]
+                var stopWatch = new Stopwatch();
+                stopWatch.Start();
+                using (var ctx = this.db.Get())
                 {
+                    appearances = new EntitySet<Appearance, Guid>(ctx.Appearance.ToList(), i => i.Id);
+                    syntyAppearances = new EntitySet<SyntyAppearance, Guid>(ctx.SyntyAppearance.ToList(), i => i.Id);
+
+                    characters = new EntitySet<Character, Guid>(ctx.Character.ToList(), i => i.Id);
+                    characters.RegisterLookupGroup(nameof(User), x => x.UserId);
+                    characters.RegisterLookupGroup(nameof(GameSession), x => x.UserIdLock.GetValueOrDefault());
+
+                    characterStates = new EntitySet<CharacterState, Guid>(ctx.CharacterState.ToList(), i => i.Id);
+                    gameSessions = new EntitySet<GameSession, Guid>(new List<GameSession>() /*ctx.GameSession.ToList()*/, i => i.Id);
+
+                    gameSessions.RegisterLookupGroup(nameof(User), x => x.UserId);
+
+                    // we can still store the game events, but no need to load them on startup as the DB will quickly be filled.
+                    // and take a long time to load
+                    gameEvents = new EntitySet<GameEvent, Guid>(new List<GameEvent>() /*ctx.GameEvent.ToList()*/, i => i.Id);
+                    gameEvents.RegisterLookupGroup(nameof(GameSession), x => x.GameSessionId);
+
+                    inventoryItems = new EntitySet<InventoryItem, Guid>(ctx.InventoryItem.ToList(), i => i.Id);
+                    inventoryItems.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
+
+                    marketItems = new EntitySet<MarketItem, Guid>(ctx.MarketItem.ToList(), i => i.Id);
+                    marketItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
+
+                    items = new EntitySet<Item, Guid>(ctx.Item.ToList(), i => i.Id);
+
+                    npcs = new EntitySet<NPC, Guid>(ctx.NPC.ToList(), i => i.Id);
+                    npcSpawns = new EntitySet<NPCSpawn, Guid>(ctx.NPCSpawn.ToList(), i => i.Id);
+                    npcSpawns.RegisterLookupGroup(nameof(NPC), x => x.NpcId);
+
+                    npcItemDrops = new EntitySet<NPCItemDrop, Guid>(ctx.NPCItemDrop.ToList(), i => i.Id);
+                    npcItemDrops.RegisterLookupGroup(nameof(NPC), x => x.NpcId);
+
+                    itemCraftingRequirements = new EntitySet<ItemCraftingRequirement, Guid>(ctx.ItemCraftingRequirement.ToList(), i => i.Id);
+                    itemCraftingRequirements.RegisterLookupGroup(nameof(Item), x => x.ItemId);
+                    //itemCraftingRequirements.RegisterLookupGroup(nameof(ItemCraftingRequirement.ResourceItemId), x => x.ItemId);
+
+                    clans = new EntitySet<Clan, Guid>(ctx.Clan.ToList(), i => i.Id);
+                    villages = new EntitySet<Village, Guid>(ctx.Village.ToList(), i => i.Id);
+                    villages.RegisterLookupGroup(nameof(User), x => x.UserId);
+
+                    villageHouses = new EntitySet<VillageHouse, Guid>(ctx.VillageHouse.ToList(), i => i.Id);
+                    villageHouses.RegisterLookupGroup(nameof(Village), x => x.VillageId);
+
+                    resources = new EntitySet<Resources, Guid>(ctx.Resources.ToList(), i => i.Id);
+                    statistics = new EntitySet<Statistics, Guid>(ctx.Statistics.ToList(), i => i.Id);
+                    skills = new EntitySet<Skills, Guid>(ctx.Skills.ToList(), i => i.Id);
+                    users = new EntitySet<User, Guid>(ctx.User.ToList(), i => i.Id);
+
+                    gameClients = new EntitySet<GameClient, Guid>(ctx.GameClient.ToList(), i => i.Id);
+
+                    Client = gameClients.Entities.First();
+
+                    entitySets = new IEntitySet[]
+                    {
                     appearances, syntyAppearances, characters, characterStates,
                     gameSessions, gameEvents, inventoryItems, marketItems, items,
                     resources, statistics, skills, users, gameClients, villages, villageHouses, clans,
                     npcs, npcSpawns, npcItemDrops
-                };
+                    };
+                }
+                stopWatch.Stop();
+                logger.WriteDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
             }
-            stopWatch.Stop();
-            logger.WriteDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
+            catch (Exception exc)
+            {
+                System.IO.File.WriteAllText("ravenfall-error.log", exc.ToString());
+            }
         }
 
         public GameClient Client { get; private set; }

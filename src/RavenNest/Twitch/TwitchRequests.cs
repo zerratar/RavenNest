@@ -28,7 +28,12 @@ namespace RavenNest.Twitch
 
         public async Task<string> GetUsersAsync()
         {
-            return await TwitchRequestAsync("https://api.twitch.tv/helix/users");
+            if (this.auth == null || this.auth.Expires <= DateTime.UtcNow)
+            {
+                this.auth = await AuthenticateAsync();
+            }
+
+            return await TwitchRequestAsync("https://api.twitch.tv/helix/users", auth.access_token);
         }
 
         public async Task<TwitchChannel> GetUserAsync(string userId)
@@ -66,6 +71,7 @@ namespace RavenNest.Twitch
 
         private async Task<string> RequestAsync(string method, string url, string access_token, Dictionary<string, string> parameters = null)
         {
+
             if (parameters != null)
             {
                 url += "?" + string.Join("&", parameters.Select(x => x.Key + "=" + x.Value));
@@ -85,11 +91,28 @@ namespace RavenNest.Twitch
                 req.Headers["Client-ID"] = clientId;
             }
 
-            using (var res = await req.GetResponseAsync())
-            using (var stream = res.GetResponseStream())
-            using (var reader = new StreamReader(stream))
+            try
             {
-                return await reader.ReadToEndAsync();
+                using (var res = await req.GetResponseAsync())
+                using (var stream = res.GetResponseStream())
+                using (var reader = new StreamReader(stream))
+                {
+                    return await reader.ReadToEndAsync();
+                }
+            }
+            catch (WebException we)
+            {
+                var resp = we.Response as HttpWebResponse;
+                if (resp != null)
+                {
+                    using (var stream = resp.GetResponseStream())
+                    using (var reader = new StreamReader(stream))
+                    {
+                        var errorText = await reader.ReadToEndAsync();
+                        System.IO.File.AppendAllText("request-error.log", errorText);
+                    }
+                }
+                throw;
             }
         }
 

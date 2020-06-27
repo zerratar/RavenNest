@@ -1,7 +1,8 @@
 const port = window.location.port;
-var DEBUG = window.location.href.indexOf("localhost") >= 0
-    || window.location.href.indexOf("192.168.") >= 0
-    || (port != null && port && parseInt(port) >= 500);
+// var DEBUG = window.location.href.indexOf("localhost") >= 0 
+//          || window.location.href.indexOf("192.168.") >= 0
+//          || (port != null && port && parseInt(port) >= 500);
+var DEBUG = false;
 export default class Requests {
     static async sendAsync(url, data = null) {
         if (DEBUG) {

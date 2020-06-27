@@ -1,17 +1,21 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using RavenNest.BusinessLogic.Providers;
 using RavenNest.Models;
 
 namespace RavenNest.BusinessLogic.Game
 {
     public class HighScoreManager : IHighScoreManager
     {
+        private readonly IPropertyProvider propertyProvider;
         private readonly IPlayerManager playerManager;
 
-        public HighScoreManager(IPlayerManager playerManager)
+        public HighScoreManager(IPropertyProvider propertyProvider, IPlayerManager playerManager)
         {
+            this.propertyProvider = propertyProvider;
             this.playerManager = playerManager;
         }
 
@@ -20,7 +24,7 @@ namespace RavenNest.BusinessLogic.Game
             var players = playerManager.GetPlayers();
             var items = players
                 .OrderByDescending(x => TryGetSkillExperience(skill, x.Skills, out var exp, out var level) ? exp : 0)
-                .ThenByDescending(x => TryGetSkillExperience(skill, x.Skills, out var exp, out var level) ? level : 0)                
+                .ThenByDescending(x => TryGetSkillExperience(skill, x.Skills, out var exp, out var level) ? level : 0)
                 .Skip(skip)
                 .Take(take)
                 .Select((x, y) => Map(y + 1, skill, x))
@@ -56,7 +60,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static HighScoreItem Map(int rank, string skill, Player player)
+        private HighScoreItem Map(int rank, string skill, Player player)
         {
             TryGetSkillExperience(skill, player.Skills, out var exp, out var level);
             return new HighScoreItem
@@ -70,11 +74,9 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool TryGetSkillExperience(string skill, Skills skills, out decimal exp, out int level)
+        private bool TryGetSkillExperience(string skill, Skills skills, out decimal exp, out int level)
         {
-            var props = skills.GetType()
-            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(x => x.PropertyType == typeof(decimal));
+            var props = propertyProvider.GetProperties<Skills, decimal>();
 
             exp = 0;
             level = 0;
