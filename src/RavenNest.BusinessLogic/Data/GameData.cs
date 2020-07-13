@@ -74,7 +74,7 @@ namespace RavenNest.BusinessLogic.Data
                     characters.RegisterLookupGroup(nameof(GameSession), x => x.UserIdLock.GetValueOrDefault());
 
                     characterStates = new EntitySet<CharacterState, Guid>(ctx.CharacterState.ToList(), i => i.Id);
-                    gameSessions = new EntitySet<GameSession, Guid>(new List<GameSession>() /*ctx.GameSession.ToList()*/, i => i.Id);
+                    gameSessions = new EntitySet<GameSession, Guid>(ctx.GameSession.ToList(), i => i.Id);
 
                     gameSessions.RegisterLookupGroup(nameof(User), x => x.UserId);
 

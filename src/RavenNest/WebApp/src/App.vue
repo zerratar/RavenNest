@@ -7,7 +7,8 @@
         </router-link>
         <div class="links">
           <router-link to="/" class="item">Home</router-link>
-          <router-link to="/how-to-play" class="item">How to play</router-link>
+          <router-link to="/download" class="item">Download</router-link>
+          <a href="http://ravenfall.wikidot.com/how-to-play" class="item" target="_blank">How to play</a>
           <router-link to="/highscore" class="item">HighScore</router-link>
           <router-link to="/docs" class="item">Developer</router-link>        
           <router-link to="/character" class="item" v-if="authenticated()">My character</router-link>

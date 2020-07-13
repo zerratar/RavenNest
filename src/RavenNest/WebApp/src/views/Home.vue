@@ -10,7 +10,7 @@
 
       <div class="text">An idle game for streamers, made by streamers!<br />Allow your viewers to train, craft,
         fight together against huge raid bosses or challenge each other in the arena!</div>
-      <a class="button" href="https://github.com/zerratar/Ravenfall/releases" target="_blank"><i class="fab fa-windows"></i> Download</a>
+      <a class="button" href="/download"><i class="fab fa-windows"></i> Download</a>
       <!-- <div class="button">Download <i class="fab fa-apple"></i></div>
       <div class="button">Download <i class="fab fa-linux"></i></div> -->
     </div>
@@ -182,6 +182,7 @@
   }
 
   .section .text {
+    text-shadow: 2px 2px 2px #000000;
     font-size: 18pt;
     font-weight: 500;
     line-height: 26pt;

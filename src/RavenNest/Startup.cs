@@ -39,20 +39,15 @@ namespace RavenNest
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
-
-            //var azureAppSettings = Configuration.GetSection("AzureAppSettings").Get<AzureAppSettings>();
-            //var storageConnectionKey = Configuration.GetConnectionString("BlobStorage");
-            //var storageAccount = Microsoft.Azure.Storage.CloudStorageAccount.Parse(storageConnectionKey);
-            //var client = storageAccount.CreateCloudBlobClient();
-            //var container = client.GetContainerReference("key-container");
-            //container.CreateIfNotExistsAsync().GetAwaiter().GetResult();
-
-            //services.AddDataProtection()
-            //    .PersistKeysToAzureBlobStorage(container, "keys.xml")
-            //    .ProtectKeysWithAzureKeyVault(azureAppSettings.KeyIdentifier, azureAppSettings.ClientId, azureAppSettings.ClientSecret);
-
-            //services.AddApplicationInsightsTelemetry();
+            var appSettingsSection = Configuration.GetSection("AppSettings");
+            var appSettings = appSettingsSection.Get<AppSettings>();
+            services.Configure<AppSettings>(appSettingsSection);
+            //services.AddAuthentication(options => { })
+            //    .AddTwitch(conf =>
+            //    {
+            //        conf.ClientId = appSettings.TwitchClientId;
+            //        conf.ClientSecret = appSettings.TwitchClientSecret;
+            //    });
 
             services.AddCors(options =>
             {
@@ -110,6 +105,8 @@ namespace RavenNest
             //}
 
             app.UseHsts();
+            //app.UseAuthentication();
+            //app.UseAuthorization();
 
             app.UseCors(builder =>
                 builder

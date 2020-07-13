@@ -2,9 +2,20 @@
 using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Game;
 
 namespace RavenNest.UnitTests
 {
+    [TestClass]
+    public class HashTest
+    {
+        [TestMethod]
+        public void GenerateHash1()
+        {
+            var hasher = new SecureHasher(); 
+        }
+    }
+
     [TestClass]
     public class QueryBuilderTests
     {

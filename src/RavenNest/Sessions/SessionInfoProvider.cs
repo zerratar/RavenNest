@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
@@ -19,11 +20,16 @@ namespace RavenNest.Sessions
         private const string AuthToken = "auth_token";
 
         private readonly ILogger logger;
+        private readonly AppSettings settings;
         private readonly IRavenfallDbContextProvider dbProvider;
 
-        public SessionInfoProvider(ILogger logger, IRavenfallDbContextProvider dbProvider)
+        public SessionInfoProvider(
+            ILogger logger,
+            IOptions<AppSettings> settings,
+            IRavenfallDbContextProvider dbProvider)
         {
             this.logger = logger;
+            this.settings = settings.Value;
             this.dbProvider = dbProvider;
         }
 
@@ -146,8 +152,8 @@ namespace RavenNest.Sessions
             var str = session.GetString(TwitchUser);
             if (string.IsNullOrEmpty(str) && !string.IsNullOrEmpty(token))
             {
-                var twitch = new TwitchRequests(token);
-                var user = await twitch.GetUsersAsync();
+                var twitch = new TwitchRequests(token, settings.TwitchClientId, settings.TwitchClientSecret);
+                var user = await twitch.GetUserAsync();
                 if (user != null)
                 {
                     await SetTwitchUserAsync(session, user);

@@ -11,5 +11,6 @@ namespace RavenNest.BusinessLogic.Game
         bool UpdatePlayerSkill(string userId, string skill, decimal experience);
         bool KickPlayer(string userId);
         bool SuspendPlayer(string userId);
+        bool SetUserPassword(string userid, string password);
     }
 }

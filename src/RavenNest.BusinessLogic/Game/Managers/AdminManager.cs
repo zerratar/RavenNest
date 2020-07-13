@@ -15,13 +15,16 @@ namespace RavenNest.BusinessLogic.Game
     {
         private readonly IPlayerManager playerManager;
         private readonly IGameData gameData;
+        private readonly ISecureHasher secureHasher;
 
         public AdminManager(
             IPlayerManager playerManager,
-            IGameData gameData)
+            IGameData gameData,
+            ISecureHasher secureHasher)
         {
             this.playerManager = playerManager;
             this.gameData = gameData;
+            this.secureHasher = secureHasher;
         }
 
         public bool KickPlayer(string userId)
@@ -57,6 +60,16 @@ namespace RavenNest.BusinessLogic.Game
             return false;
         }
 
+        public bool SetUserPassword(string userId, string password)
+        {
+            var user = gameData.GetUser(userId);
+            if (user == null || string.IsNullOrEmpty(password))
+                return false;
+
+            user.PasswordHash = secureHasher.Get(password);
+            return true;
+        }
+
         public bool MergePlayerAccounts(string userId)
         {
             var user = gameData.GetUser(userId);
@@ -79,7 +92,7 @@ namespace RavenNest.BusinessLogic.Game
 
             foreach (var alt in characters)
             {
-                if (alt.Id == main.Id) 
+                if (alt.Id == main.Id)
                     continue;
 
                 var altSkills = gameData.GetSkills(alt.SkillsId);
