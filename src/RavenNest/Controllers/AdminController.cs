@@ -53,6 +53,14 @@ namespace RavenNest.Controllers
             return adminManager.MergePlayerAccounts(userid);
         }
 
+        [HttpGet("setpassword/{userid}/{password}")]
+        public bool SetUserPassword(string userid, string password)
+        {
+            var authToken = GetAuthToken();
+            AssertAdminAuthToken(authToken);
+            return adminManager.SetUserPassword(userid, password);
+        }
+
         [HttpGet("updateplayername/{userid}/{name}")]
         public bool UpdatePlayerName(string userid, string name)
         {

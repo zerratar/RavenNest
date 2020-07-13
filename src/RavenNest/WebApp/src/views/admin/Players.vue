@@ -54,7 +54,8 @@
               <button class="link-button" @click="showSkills(player.userId)">skills</button>
               <button class="link-button" @click="showState(player.userId)">state</button>
               <button class="link-button" @click="showInventory(player.userId)">inventory</button>
-              <button class="link-button" @click="mergePlayer(player.userId)">merge</button>              
+              <button class="link-button" @click="mergePlayer(player.userId)">merge</button>
+              <button class="link-button" @click="updatePassword(player.userId)">change pass</button>
               <button class="link-button" @click="kickPlayer(player.userId)">kick</button>
               <button class="link-button" @click="suspend(player.userId)">suspend</button>
             </td>
@@ -79,6 +80,12 @@
       <player-skills :key="revision" v-on:closed="hideModals" :visible="getSkillsVisible()" :player="getFocusedPlayer()"></player-skills>
       <player-state :key="revision" v-on:closed="hideModals" :visible="getStateVisible()" :player="getFocusedPlayer()"></player-state>
       <player-inventory :key="revision" v-on:closed="hideModals" :visible="getInventoryVisible()" :player="getFocusedPlayer()"></player-inventory>
+
+      <div v-if="ChangePasswordActive" class="change-password-dialog">
+        <input type="password" placeholder="New password" v-model="newPassword" />        
+        <button class="link-button" @click="setPassword(changePasswordUserId)">change pass</button>
+        <button class="link-button" @click="cancelSetPassword()">cancel</button>
+      </div>
 
       <div v-if="isLoading" class="loader">
         <div class="lds-ripple">
@@ -134,9 +141,14 @@
     private isSkillsVisible: boolean  = false;
     private isInventoryVisible: boolean  = false;
     private isStateVisible: boolean  = false;
+    private isChangePasswordVisible: boolean = false;
 
     private playerInFocus: Player | null = null;
 
+    private changePasswordUserId: string = "";
+    private newPassword: string = "";
+
+    getChangePasswordVisible(): boolean { return this.isChangePasswordVisible; }
     getStatisticsVisible(): boolean { return this.isStatisticsVisible; }
     getResourcesVisible(): boolean { return this.isResourcesVisible; }
     getSkillsVisible(): boolean { return this.isSkillsVisible; }
@@ -296,6 +308,28 @@
           this.query = userId;
           this.filter();
         }
+      });
+    }
+
+    updatePassword(userId: string) {
+      this.changePasswordUserId = userId;
+      this.isChangePasswordVisible = true;
+      ++this.revision;
+    }
+
+    cancelSetPassword() {
+      this.isChangePasswordVisible = false;
+      ++this.revision;
+    }
+
+    setPassword(userId: string) {
+      const password: string = this.newPassword;
+      if (!confirm("Are you sure you want to change the password?")) return;
+        AdminService.setPassword(userId, password).then(res => {
+        if (res) {
+          this.isChangePasswordVisible = false;
+          ++this.revision;
+        }        
       });
     }
 

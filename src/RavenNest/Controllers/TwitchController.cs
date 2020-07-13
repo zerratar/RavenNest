@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using RavenNest.BusinessLogic;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.Models;
 using RavenNest.Sessions;
 using RavenNest.Twitch;
 
@@ -18,19 +20,25 @@ namespace RavenNest.Controllers
     public class TwitchController : ControllerBase
     {
         private readonly IPlayerManager playerManager;
+        private readonly IGameData gameData;
         private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly IMemoryCache memoryCache;
+        private readonly IAuthManager authManager;
         private readonly AppSettings settings;
 
         public TwitchController(
             IOptions<AppSettings> settings,
             IPlayerManager playerManager,
+            IGameData gameData,
             ISessionInfoProvider sessionInfoProvider,
-            IMemoryCache memoryCache)
+            IMemoryCache memoryCache,
+            IAuthManager authManager)
         {
             this.playerManager = playerManager;
+            this.gameData = gameData;
             this.sessionInfoProvider = sessionInfoProvider;
             this.memoryCache = memoryCache;
+            this.authManager = authManager;
             this.settings = settings.Value;
         }
 
@@ -77,30 +85,45 @@ namespace RavenNest.Controllers
         [MethodDescriptor(Name = "Get Access Token Request URL", Description = "Gets a Twitch access token request url with the scope user:read:email.")]
         public string GetAccessTokenRequestUrl()
         {
-//#if DEBUG
-//            return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
-//            + "https://localhost:5001/login"
-//            + "&response_type=token&scope=user:read:email";
-//#else
+#if DEBUG
+            return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
+            + "https://localhost:5001/login"
+            + "&response_type=token&scope=user:read:email";
+#else
             return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
             + "https://www.ravenfall.stream/login"
             + "&response_type=token&scope=user:read:email";
-//#endif
+#endif
         }
 
         [HttpGet("user")]
         [MethodDescriptor(Name = "Get Twitch User", Description = "After authenticating with Twitch, this can be used to get information about the logged in user.")]
         public async Task<string> GetTwitchUser()
         {
+            if (sessionInfoProvider.TryGet(HttpContext.Session, out var session))
+            {
+                return $"{{ \"login\": \"{session.UserName}\", \"id\": \"{session.UserId}\"}}";
+            }
+
             if (!this.sessionInfoProvider.TryGetTwitchToken(HttpContext.Session, out var key))
             {
                 return "nope";
             }
 
-            var twitch = new TwitchRequests(key);
-            var twitchUser = await twitch.GetUsersAsync();
+            var twitch = new TwitchRequests(key, settings.TwitchClientId, settings.TwitchClientSecret);
+            var twitchUser = await twitch.GetUserAsync();
             await this.sessionInfoProvider.SetTwitchUserAsync(HttpContext.Session, twitchUser);
             return twitchUser;
+        }
+
+
+        private AuthToken GetAuthToken()
+        {
+            if (HttpContext.Request.Headers.TryGetValue("auth-token", out var value))
+            {
+                return authManager.Get(value);
+            }
+            return null;
         }
     }
 }

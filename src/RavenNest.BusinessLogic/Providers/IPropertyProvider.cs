@@ -23,7 +23,7 @@ namespace RavenNest.BusinessLogic.Providers
             var type = typeof(TType);
             if (!typeProperties.TryGetValue(type, out var storedProps))
             {
-                typeProperties[type] = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
+                storedProps = typeProperties[type] = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
             }
 
             return storedProps.Where(x => x.PropertyType == typeof(TPropertyType)).ToList();
