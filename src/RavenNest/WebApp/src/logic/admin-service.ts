@@ -20,9 +20,9 @@ export default class AdminService {
         return result.ok && await result.json();
     }
     
-    public static async setPassword(userId: string, password: string): Promise<boolean> {
+    public static async resetPassword(userId: string): Promise<boolean> {
         ++AdminService.requestCounter;
-        const url = `api/admin/setpassword/${userId}/${password}`;
+        const url = `api/admin/resetpassword/${userId}`;
         const result = await Requests.sendAsync(url);
         --AdminService.requestCounter;
         return result.ok && await result.json();
