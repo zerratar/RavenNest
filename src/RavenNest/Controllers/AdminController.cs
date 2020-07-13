@@ -5,6 +5,7 @@ using RavenNest.Models;
 using RavenNest.Sessions;
 using System;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace RavenNest.Controllers
 {
@@ -12,6 +13,7 @@ namespace RavenNest.Controllers
     [ApiController]
     public class AdminController : ControllerBase
     {
+        private const string InsufficientPermissions = "You do not have permissions to call this API";
         private readonly IGameData gameData;
         private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly IAdminManager adminManager;
@@ -30,67 +32,72 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("players/{offset}/{size}/{order}/{query}")]
-        public PagedPlayerCollection GetPlayers(int offset, int size, string order, string query)
+        public async Task<PagedPlayerCollection> GetPlayers(int offset, int size, string order, string query)
         {
-            var authToken = GetAuthToken();
-            AssertAdminAuthToken(authToken);
+            await AssertAdminAccessAsync();
             return adminManager.GetPlayersPaged(offset, size, order, query);
         }
 
+
         [HttpGet("sessions/{offset}/{size}/{order}/{query}")]
-        public PagedSessionCollection GetSessions(int offset, int size, string order, string query)
+        public async Task<PagedSessionCollection> GetSessions(int offset, int size, string order, string query)
         {
-            var authToken = GetAuthToken();
-            AssertAdminAuthToken(authToken);
+            await AssertAdminAccessAsync();
             return adminManager.GetSessionsPaged(offset, size, order, query);
         }
 
         [HttpGet("mergeplayer/{userid}")]
-        public bool MergePlayerAccounts(string userid)
+        public async Task<bool> MergePlayerAccounts(string userid)
         {
-            var authToken = GetAuthToken();
-            AssertAdminAuthToken(authToken);
+            await AssertAdminAccessAsync();
             return adminManager.MergePlayerAccounts(userid);
         }
 
-        [HttpGet("setpassword/{userid}/{password}")]
-        public bool SetUserPassword(string userid, string password)
+        [HttpGet("resetpassword/{userid}")]
+        public async Task<bool> ResetUserPassword(string userid)
         {
-            var authToken = GetAuthToken();
-            AssertAdminAuthToken(authToken);
-            return adminManager.SetUserPassword(userid, password);
+            await AssertAdminAccessAsync();
+            return adminManager.ResetUserPassword(userid);
         }
 
         [HttpGet("updateplayername/{userid}/{name}")]
-        public bool UpdatePlayerName(string userid, string name)
+        public async Task<bool> UpdatePlayerName(string userid, string name)
         {
-            var authToken = GetAuthToken();
-            AssertAdminAuthToken(authToken);
+            await AssertAdminAccessAsync();
             return adminManager.UpdatePlayerName(userid, name);
         }
 
         [HttpGet("updateplayerskill/{userid}/{skill}/{experience}")]
-        public bool UpdatePlayerSkill(string userid, string skill, decimal experience)
+        public async Task<bool> UpdatePlayerSkill(string userid, string skill, decimal experience)
         {
-            var authToken = GetAuthToken();
-            AssertAdminAuthToken(authToken);
+            await AssertAdminAccessAsync();
             return adminManager.UpdatePlayerSkill(userid, skill, experience);
         }
 
         [HttpGet("kick/{userid}")]
-        public bool KickPlayer(string userid)
+        public async Task<bool> KickPlayer(string userid)
         {
-            var authToken = GetAuthToken();
-            AssertAdminAuthToken(authToken);
+            await AssertAdminAccessAsync();
             return adminManager.KickPlayer(userid);
         }
 
         [HttpGet("suspend/{userid}")]
-        public bool SuspendPlayer(string userid)
+        public async Task<bool> SuspendPlayer(string userid)
+        {
+            await AssertAdminAccessAsync();
+            return adminManager.SuspendPlayer(userid);
+        }
+        private async Task AssertAdminAccessAsync()
         {
             var authToken = GetAuthToken();
-            AssertAdminAuthToken(authToken);
-            return adminManager.SuspendPlayer(userid);
+            if (authToken != null)
+            {
+                AssertAdminAuthToken(authToken);
+                return;
+            }
+
+            var twitchUser = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
+            AssertAdminTwitchUser(twitchUser);
         }
 
         private AuthToken GetAuthToken()
@@ -105,9 +112,17 @@ namespace RavenNest.Controllers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AssertAdminAuthToken(AuthToken authToken)
         {
+            if (authToken == null) throw new Exception(InsufficientPermissions);
             var user = gameData.GetUser(authToken.UserId);
-            if (!user.IsAdmin.GetValueOrDefault())
-                throw new Exception("You do not have permissions to call this API");
+            if (!user.IsAdmin.GetValueOrDefault()) throw new Exception(InsufficientPermissions);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void AssertAdminTwitchUser(Twitch.TwitchRequests.TwitchUser twitchUser)
+        {
+            if (twitchUser == null) throw new Exception(InsufficientPermissions);
+            var user = gameData.GetUser(twitchUser.Id);
+            if (!user.IsAdmin.GetValueOrDefault()) throw new Exception(InsufficientPermissions);
         }
     }
 }

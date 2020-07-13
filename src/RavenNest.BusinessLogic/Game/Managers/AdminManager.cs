@@ -60,13 +60,13 @@ namespace RavenNest.BusinessLogic.Game
             return false;
         }
 
-        public bool SetUserPassword(string userId, string password)
+        public bool ResetUserPassword(string userId)
         {
             var user = gameData.GetUser(userId);
-            if (user == null || string.IsNullOrEmpty(password))
+            if (user == null)
                 return false;
 
-            user.PasswordHash = secureHasher.Get(password);
+            user.PasswordHash = null;
             return true;
         }
 
