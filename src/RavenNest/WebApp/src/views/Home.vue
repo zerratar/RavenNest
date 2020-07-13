@@ -23,6 +23,16 @@
         Viewers can craft their own equipment, fight against challenging raid bosses or even duel their rival players.
       </h3>
 
+      <div class="section-group">
+        <h1>Watch the trailer</h1>
+        <div class="embed-container-outer">
+          <div class='embed-container'>
+            <iframe src='https://www.youtube.com/embed/lTMs19hsvNc' frameborder='0' allowfullscreen></iframe>
+          </div>
+        </div>
+      </div>
+      <div class="section-group">
+        <h1>Game features</h1>
       <div class="feature-list">
         <div class="feature">
             <img class="feature-image" src="assets/imgs/raids.jpg" />
@@ -99,8 +109,9 @@
               Players can buy and sell items in a global marketplace, that any streamer can access.
             </p>
         </div>   
+        </div>
+        </div>
       </div>
-    </div>
 
   </div>
 </template>
@@ -125,29 +136,50 @@
 
 <style scoped lang="scss">
 
+.embed-container-outer {
+  margin-top: 50px;
+  position: relative;
+  max-width: 100%;
+  width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.embed-container { 
+    position: relative; 
+    padding-bottom: 56.25%; 
+    height: 0; 
+    overflow: hidden; 
+    max-width: 100%;       
+  } 
+  
+  .embed-container iframe, .embed-container object, .embed-container embed { 
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;    
+  }
+
   img.hero-logo {
       max-width: 100%;
   }
 
   .feature {
       max-width: 100%;
-      width: 400px;
+      width: 300px;
       padding-bottom: 45px;
   }
 
   .feature-image {
     max-width: 100%;
-    width: 250px;
+    width: 150px;
   }
 
   .feature-list {
-    margin-top: 110px;
+    margin-top: 50px;
     display:flex;
     flex-flow:row;
     justify-content: space-around;
     padding-bottom: 50px;
     flex-wrap: wrap;
-    width: 880px;
+    width: 1280px;
     max-width: 100%;
     margin-left: auto;
     margin-right: auto;
@@ -166,6 +198,12 @@
     height: 100vh;
     max-height: 100vh;
     }
+  }
+
+  .section-group:nth-of-type(odd) {
+    background-color: rgb(241, 241, 241);
+    padding-bottom: 50px;
+    margin-top: 20px;
   }
 
   .section.hero {
