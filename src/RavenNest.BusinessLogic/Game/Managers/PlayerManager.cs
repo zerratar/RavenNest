@@ -202,7 +202,7 @@ namespace RavenNest.BusinessLogic.Game
             return character.Map(gameData, user);
         }
 
-        public bool UpdateSyntyAppearance(
+        public bool UpdateAppearance(
             SessionToken token, string userId, Models.SyntyAppearance appearance)
         {
             var session = gameData.GetSession(token.SessionId);
@@ -212,7 +212,20 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
-            return UpdateSyntyAppearance(userId, appearance);
+            return UpdateAppearance(userId, appearance);
+        }
+
+        public bool UpdateAppearance(
+            AuthToken token, string userId, Models.SyntyAppearance appearance)
+        {
+            var character = gameData.GetCharacterByUserId(token.UserId);
+            var control = gameData.GetCharacterByUserId(userId);
+            if (character == null || control.Id != character.Id)
+            {
+                return false;
+            }
+
+            return UpdateAppearance(userId, appearance);
         }
 
         public bool[] UpdateMany(SessionToken token, PlayerState[] states)
@@ -701,7 +714,7 @@ namespace RavenNest.BusinessLogic.Game
             return false;
         }
 
-        public bool UpdateSyntyAppearance(string userId, Models.SyntyAppearance appearance)
+        public bool UpdateAppearance(string userId, Models.SyntyAppearance appearance)
         {
             try
             {
@@ -729,8 +742,9 @@ namespace RavenNest.BusinessLogic.Game
 
                 return true;
             }
-            catch
+            catch (Exception exc)
             {
+                logger.WriteError("Exception updating appearance: " + exc.ToString());
                 return false;
             }
         }

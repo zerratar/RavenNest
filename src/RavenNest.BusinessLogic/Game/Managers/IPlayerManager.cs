@@ -10,7 +10,7 @@ namespace RavenNest.BusinessLogic.Game
         Player CreatePlayerIfNotExists(string userId, string userName);
         Player CreatePlayer(string userId, string userName);
         Player AddPlayer(SessionToken token, string userId, string userName);
-        Player GetPlayer(SessionToken sessionToken, string userId);        
+        Player GetPlayer(SessionToken sessionToken, string userId);
         Player GetPlayer(SessionToken sessionToken);
         Player GetPlayer(string userId);
         Player GetGlobalPlayer(Guid userId);
@@ -18,8 +18,9 @@ namespace RavenNest.BusinessLogic.Game
 
         bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics);
 
-        bool UpdateSyntyAppearance(SessionToken token, string userId, Models.SyntyAppearance appearance);
-        bool UpdateSyntyAppearance(string userId, Models.SyntyAppearance appearance);
+        bool UpdateAppearance(SessionToken token, string userId, Models.SyntyAppearance appearance);
+        bool UpdateAppearance(string userId, Models.SyntyAppearance appearance);
+        bool UpdateAppearance(AuthToken token, string userId, Models.SyntyAppearance appearance);
 
         bool UpdateExperience(SessionToken token, string userId, decimal[] experience);
         bool UpdateResources(SessionToken token, string userId, decimal[] resources);
