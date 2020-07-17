@@ -42,6 +42,14 @@ namespace RavenNest.Controllers
             this.settings = settings.Value;
         }
 
+        [HttpGet("authorize")]
+        public ActionResult OAuthAuthorize()
+        {
+            var reqCode = HttpContext.Request.Query["code"];
+            var reqState = HttpContext.Request.Query["state"];
+            return Redirect("http://localhost:8182/?code=" + reqCode + "&state=" + reqState);
+        }
+
         [HttpGet("logo/{userId}")]
         public async Task<ActionResult> GetChannelPictureAsync(string userId)
         {
