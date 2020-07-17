@@ -208,7 +208,7 @@ namespace RavenNest.BusinessLogic.Game
             var session = gameData.GetSession(token.SessionId);
             var character = GetCharacter(token, userId);
             if (character == null || character.UserIdLock != session.UserId)
-            {
+            {                
                 return false;
             }
 

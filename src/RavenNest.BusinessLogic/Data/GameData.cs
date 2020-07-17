@@ -117,7 +117,7 @@ namespace RavenNest.BusinessLogic.Data
                     gameClients = new EntitySet<GameClient, Guid>(ctx.GameClient.ToList(), i => i.Id);
 
                     Client = gameClients.Entities.First();
-                    
+
                     entitySets = new IEntitySet[]
                     {
                         appearances, syntyAppearances, characters, characterStates,
@@ -127,7 +127,9 @@ namespace RavenNest.BusinessLogic.Data
                     };
                 }
                 stopWatch.Stop();
+#if DEBUG
                 logger.WriteDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
+#endif
             }
             catch (Exception exc)
             {
@@ -592,7 +594,9 @@ namespace RavenNest.BusinessLogic.Data
             {
                 lock (SyncLock)
                 {
+#if DEBUG
                     logger.WriteDebug("Saving all pending changes to the database.");
+#endif
 
                     var queue = BuildSaveQueue();
                     using (var con = db.GetConnection())
