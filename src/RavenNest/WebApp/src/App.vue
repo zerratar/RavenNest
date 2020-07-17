@@ -8,7 +8,7 @@
         <div class="links">
           <router-link to="/" class="item">Home</router-link>
           <router-link to="/download" class="item">GET NOW</router-link>
-          <a href="https://ravenfall.sewardmunday.ca/index.php?title=How_to_Play" class="item" target="_blank">How to play</a>
+          <a href="https://wiki.ravenfall.stream/index.php/How_To_Play" class="item" target="_blank">How to play</a>
           <router-link to="/highscore" class="item">Hiscore</router-link>
           <router-link to="/docs" class="item">API</router-link>        
           <router-link to="/character" class="item" v-if="authenticated()">Stats</router-link>
