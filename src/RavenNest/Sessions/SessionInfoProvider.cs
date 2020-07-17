@@ -20,17 +20,17 @@ namespace RavenNest.Sessions
         private const string AuthToken = "auth_token";
 
         private readonly ILogger logger;
+        private readonly IGameData gameData;
         private readonly AppSettings settings;
-        private readonly IRavenfallDbContextProvider dbProvider;
 
         public SessionInfoProvider(
             ILogger logger,
             IOptions<AppSettings> settings,
-            IRavenfallDbContextProvider dbProvider)
+            IGameData gameData)
         {
             this.logger = logger;
+            this.gameData = gameData;
             this.settings = settings.Value;
-            this.dbProvider = dbProvider;
         }
 
         public bool TryGetAuthToken(ISession session, out AuthToken authToken)
@@ -60,33 +60,31 @@ namespace RavenNest.Sessions
         public async Task<SessionInfo> StoreAsync(ISession session)
         {
             var si = new SessionInfo();
-            using (var db = dbProvider.Get())
+            User user = null;
+
+            if (TryGetTwitchToken(session, out var token))
             {
-                User user = null;
-                if (TryGetTwitchToken(session, out var token))
-                {
-                    var twitchUser = await GetTwitchUserAsync(session, token);
-                    if (twitchUser != null)
-                    {
-                        user = await db.User.FirstOrDefaultAsync(x => x.UserId == twitchUser.Id);
-                    }
+                var twitchUser = await GetTwitchUserAsync(session, token);
+                if (twitchUser != null)
+                {                    
+                    user = gameData.GetUser(twitchUser.Id);
                 }
+            }
 
-                if (user == null && TryGetAuthToken(session, out var auth))
-                {
-                    user = await db.User.FirstOrDefaultAsync(x => x.Id == auth.UserId);
-                }
+            if (user == null && TryGetAuthToken(session, out var auth))
+            {
+                user = gameData.GetUser(auth.UserId);
+            }
 
-                if (user != null)
-                {
-                    si.Id = user.Id;
-                    si.Authenticated = true;
-                    si.Administrator = user.IsAdmin.GetValueOrDefault();
-                    si.Moderator = user.IsModerator.GetValueOrDefault();
-                    si.UserId = user.UserId;
-                    si.UserName = user.UserName;
-                    si.RequiresPasswordChange = string.IsNullOrEmpty(user.PasswordHash);
-                }
+            if (user != null)
+            {
+                si.Id = user.Id;
+                si.Authenticated = true;
+                si.Administrator = user.IsAdmin.GetValueOrDefault();
+                si.Moderator = user.IsModerator.GetValueOrDefault();
+                si.UserId = user.UserId;
+                si.UserName = user.UserName;
+                si.RequiresPasswordChange = string.IsNullOrEmpty(user.PasswordHash);
             }
 
             var sessionState = JSON.Stringify(si);
