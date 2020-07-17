@@ -745,7 +745,7 @@ namespace RavenNest.BusinessLogic.Game
             }
             catch (Exception exc)
             {
-                logger.WriteError("Exception updating appearance: " + exc.ToString());
+                logger.LogError("Exception updating appearance: " + exc.ToString());
                 return false;
             }
         }
