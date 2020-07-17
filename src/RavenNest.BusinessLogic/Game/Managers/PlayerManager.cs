@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Net;
@@ -27,7 +28,7 @@ namespace RavenNest.BusinessLogic.Game
 
 
         public PlayerManager(
-            ILogger logger,
+            ILogger<PlayerManager> logger,
             IGameData gameData,
             IIntegrityChecker integrityChecker)
         {
@@ -244,7 +245,7 @@ namespace RavenNest.BusinessLogic.Game
                 var user = gameData.GetUser(state.UserId);
                 if (user == null)
                 {
-                    logger.WriteError($"Trying to save player with userId {state.UserId}, but no user was found matching the id.");
+                    logger.LogError($"Trying to save player with userId {state.UserId}, but no user was found matching the id.");
                     results.Add(false);
                     continue;
                 }
