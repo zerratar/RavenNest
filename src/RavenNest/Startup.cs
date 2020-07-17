@@ -42,7 +42,6 @@ namespace RavenNest
             services.Configure<AppSettings>(appSettingsSection);
             services.AddLogging(loggingBuilder =>
             {
-                loggingBuilder.SetMinimumLevel(LogLevel.Debug);
                 var loggingDbContext = new RavenfallDbContextProvider(Options.Create(appSettings));
                 loggingBuilder.AddProvider(new RavenfallDbLoggerProvider(loggingDbContext));
             });

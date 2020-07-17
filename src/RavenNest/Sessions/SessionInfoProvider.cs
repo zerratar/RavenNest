@@ -25,7 +25,7 @@ namespace RavenNest.Sessions
         private readonly AppSettings settings;
 
         public SessionInfoProvider(
-            ILogger<SessionInfoProvider> logger, IRavenfallDbContextProvider dbProvider),
+            ILogger<SessionInfoProvider> logger, IRavenfallDbContextProvider dbProvider,
             IOptions<AppSettings> settings,
             IGameData gameData)
         {
