@@ -5,6 +5,7 @@ using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.DataModels;
 
@@ -53,7 +54,7 @@ namespace RavenNest.BusinessLogic.Data
         private ITimeoutHandle scheduleHandler;
         public object SyncLock { get; } = new object();
 
-        public GameData(IRavenfallDbContextProvider db, ILogger logger, IKernel kernel, IQueryBuilder queryBuilder)
+        public GameData(IRavenfallDbContextProvider db, ILogger<GameData> logger, IKernel kernel, IQueryBuilder queryBuilder)
         {
             try
             {
@@ -127,9 +128,7 @@ namespace RavenNest.BusinessLogic.Data
                     };
                 }
                 stopWatch.Stop();
-#if DEBUG
-                logger.WriteDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
-#endif
+                logger.LogDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
             }
             catch (Exception exc)
             {
@@ -594,9 +593,7 @@ namespace RavenNest.BusinessLogic.Data
             {
                 lock (SyncLock)
                 {
-#if DEBUG
-                    logger.WriteDebug("Saving all pending changes to the database.");
-#endif
+                    logger.LogDebug("Saving all pending changes to the database.");
 
                     var queue = BuildSaveQueue();
                     using (var con = db.GetConnection())
@@ -613,7 +610,7 @@ namespace RavenNest.BusinessLogic.Data
                             var result = command.ExecuteNonQuery();
                             if (result == 0)
                             {
-                                logger.WriteError("Unable to save data! Abort Query failed");
+                                logger.LogError("Unable to save data! Abort Query failed");
                                 return;
                             }
 
@@ -636,11 +633,11 @@ namespace RavenNest.BusinessLogic.Data
                     HandleSqlError(saveError);
                 }
 
-                logger.WriteError("ERROR SAVING DATA!! " + exc);
+                logger.LogError("ERROR SAVING DATA!! " + exc);
             }
             catch (Exception exc)
             {
-                logger.WriteError("ERROR SAVING DATA!! " + exc);
+                logger.LogError("ERROR SAVING DATA!! " + exc);
                 // log this
             }
             finally

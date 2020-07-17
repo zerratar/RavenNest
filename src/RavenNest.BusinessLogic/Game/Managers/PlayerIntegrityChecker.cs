@@ -1,5 +1,6 @@
 ﻿using RavenNest.BusinessLogic.Data;
 using System;
+using Microsoft.Extensions.Logging;
 
 namespace RavenNest.BusinessLogic.Game
 {
@@ -10,7 +11,7 @@ namespace RavenNest.BusinessLogic.Game
         private const float MaxSyncTimeDeltaSeconds = 15f;
 
         public PlayerIntegrityChecker(
-            ILogger logger,
+            ILogger<PlayerIntegrityChecker> logger,
             IGameData gameData)
         {
             this.logger = logger;
@@ -23,7 +24,7 @@ namespace RavenNest.BusinessLogic.Game
             if (gameSession == null)
             {
 
-                logger.WriteError($"Player with ID {characterId} not part of session {sessionId}");
+                logger.LogError($"Player with ID {characterId} not part of session {sessionId}");
                 return false;
             }
 

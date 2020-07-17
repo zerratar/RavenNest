@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using TwitchLib.Api;
 using TwitchLib.Api.Helix.Models.Subscriptions;
 
@@ -13,7 +14,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly ILogger logger;
 
         public TwitchClient(
-            ILogger logger,
+            ILogger<TwitchClient> logger,
             Microsoft.Extensions.Options.IOptions<AppSettings> appSettings)
         {
             this.appSettings = appSettings.Value;
@@ -34,7 +35,7 @@ namespace RavenNest.BusinessLogic.Game
             }
             catch (Exception exc)
             {
-                await logger.WriteErrorAsync(exc.ToString());
+                logger.LogError(exc.ToString());
                 return null;
             }
         }

@@ -9,6 +9,7 @@ using System.Net.WebSockets;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace RavenNest.BusinessLogic.Net
 {
@@ -25,7 +26,7 @@ namespace RavenNest.BusinessLogic.Net
             = new ConcurrentDictionary<Guid, IWebSocketConnection>();
 
         public WebSocketConnectionProvider(
-            ILogger logger,
+            ILogger<WebSocketConnectionProvider> logger,
             IIntegrityChecker integrityChecker,
             IGameData gameData,
             IGameManager gameManager,
@@ -168,7 +169,7 @@ namespace RavenNest.BusinessLogic.Net
                 }
                 catch (Exception exc)
                 {
-                    this.logger.WriteError(exc.ToString());
+                    this.logger.LogError(exc.ToString());
                 }
                 return default;
             }
@@ -184,7 +185,7 @@ namespace RavenNest.BusinessLogic.Net
                 }
                 catch (Exception exc)
                 {
-                    this.logger.WriteError(exc.ToString());
+                    this.logger.LogError(exc.ToString());
                 }
 
                 return false;
@@ -202,7 +203,7 @@ namespace RavenNest.BusinessLogic.Net
                 }
                 catch (Exception exc)
                 {
-                    this.logger.WriteError(exc.ToString());
+                    this.logger.LogError(exc.ToString());
                 }
 
                 return Task.CompletedTask;
@@ -286,7 +287,7 @@ namespace RavenNest.BusinessLogic.Net
                 }
                 catch (Exception exc)
                 {
-                    await this.logger.WriteErrorAsync(exc.ToString());
+                    this.logger.LogError(exc.ToString());
                     this.Dispose();
                 }
             }

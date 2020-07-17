@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
@@ -24,7 +25,7 @@ namespace RavenNest.Sessions
         private readonly AppSettings settings;
 
         public SessionInfoProvider(
-            ILogger logger,
+            ILogger<SessionInfoProvider> logger, IRavenfallDbContextProvider dbProvider),
             IOptions<AppSettings> settings,
             IGameData gameData)
         {
@@ -114,7 +115,7 @@ namespace RavenNest.Sessions
             }
             catch (Exception exc)
             {
-                logger.WriteError("GET SESSION STATE (" + session.Id + "): " + json + " --- PARSE ERROR (EXCEPTION): " + exc);
+                logger.LogError("GET SESSION STATE (" + session.Id + "): " + json + " --- PARSE ERROR (EXCEPTION): " + exc);
             }
             return true;
         }
@@ -170,7 +171,7 @@ namespace RavenNest.Sessions
             }
             catch (Exception exc)
             {
-                await logger.WriteErrorAsync("GET TWITCH USER (" + session.Id + "): " + str + " --- PARSE ERROR (EXCEPTION): " + exc);
+                logger.LogError("GET TWITCH USER (" + session.Id + "): " + str + " --- PARSE ERROR (EXCEPTION): " + exc);
                 return JSON.Parse<TwitchRequests.TwitchUser>(str);
             }
         }
