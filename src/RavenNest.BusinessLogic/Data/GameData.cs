@@ -117,13 +117,13 @@ namespace RavenNest.BusinessLogic.Data
                     gameClients = new EntitySet<GameClient, Guid>(ctx.GameClient.ToList(), i => i.Id);
 
                     Client = gameClients.Entities.First();
-
+                    
                     entitySets = new IEntitySet[]
                     {
-                    appearances, syntyAppearances, characters, characterStates,
-                    gameSessions, gameEvents, inventoryItems, marketItems, items,
-                    resources, statistics, skills, users, gameClients, villages, villageHouses, clans,
-                    npcs, npcSpawns, npcItemDrops
+                        appearances, syntyAppearances, characters, characterStates,
+                        gameSessions, /*gameEvents, */ inventoryItems, marketItems, items,
+                        resources, statistics, skills, users, gameClients, villages, villageHouses, clans,
+                        npcs, npcSpawns, npcItemDrops
                     };
                 }
                 stopWatch.Stop();
