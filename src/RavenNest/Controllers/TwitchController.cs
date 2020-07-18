@@ -1,9 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Docs.Attributes;
@@ -48,13 +52,20 @@ namespace RavenNest.Controllers
         {
             var reqCode = HttpContext.Request.Query["code"];
             var reqState = HttpContext.Request.Query["state"];
-            var requestUrl = "https://www.ravenfall.stream/login?code=" + reqCode + "&state=" + reqState;
+            var requestUrl = "https://www.ravenfall.stream/login";
             try
             {
-                var sessionInfo = await GetTwitchUserAsync(reqCode);
+                var sessionInfo = await TwitchAuthenticateAsync(reqCode);
                 if (sessionInfo != null)
                 {
-                    requestUrl += "&id=" + sessionInfo.UserID + "&user=" + sessionInfo.Login;
+                    requestUrl += "?token=" + sessionInfo.access_token + "&state=" + reqState;
+
+                    var req = new TwitchRequests(sessionInfo.access_token, settings.TwitchClientId, settings.TwitchClientSecret);
+                    var info = await req.ValidateOAuthTokenAsync();
+                    if (info != null)
+                    {
+                        requestUrl += "&id=" + info.ClientID + "&user=" + info.Login;
+                    }
                 }
             }
             catch
@@ -139,12 +150,57 @@ namespace RavenNest.Controllers
             return twitchUser;
         }
 
-        private async Task<TwitchValidateResponse> GetTwitchUserAsync(string key)
+        private async Task<TwitchAuth> TwitchAuthenticateAsync(string code)
         {
-            var twitch = new TwitchRequests(key, settings.TwitchClientId, settings.TwitchClientSecret);
-            return await twitch.ValidateOAuthTokenAsync();
-        }
+            /*
+            POST https://id.twitch.tv/oauth2/token
+                ?client_id=<your client ID>
+                &client_secret=<your client secret>
+                &code=<authorization code received above>
+                &grant_type=authorization_code
+                &redirect_uri=<your registered redirect URI>
+             */
 
+            var parameters = new Dictionary<string, string> {
+                { "client_id", settings.TwitchClientId },
+                { "client_secret", settings.TwitchClientSecret },
+                { "code", code },
+                { "grant_type","authorization_code" },
+                { "redirect_uri", "https://www.ravenfall.stream/api/twitch/authorize"}
+            };
+
+            var reqUrl = "https://id.twitch.tv/oauth2/token"
+                + string.Join("&", parameters.Select(x => x.Key + "=" + x.Value));
+
+            var req = (HttpWebRequest)HttpWebRequest.Create(reqUrl);
+            req.Method = "POST";
+            req.Accept = "application/vnd.twitchtv.v5+json";
+
+            try
+            {
+                using (var res = await req.GetResponseAsync())
+                using (var stream = res.GetResponseStream())
+                using (var reader = new StreamReader(stream))
+                {
+                    return JsonConvert.DeserializeObject<TwitchAuth>(await reader.ReadToEndAsync());
+                }
+            }
+            catch (WebException we)
+            {
+                var resp = we.Response as HttpWebResponse;
+                if (resp != null)
+                {
+                    using (var stream = resp.GetResponseStream())
+                    using (var reader = new StreamReader(stream))
+                    {
+                        var errorText = await reader.ReadToEndAsync();
+                        System.IO.File.AppendAllText("request-error.log", errorText);
+                    }
+                }
+
+                throw;
+            }
+        }
 
         private AuthToken GetAuthToken()
         {
