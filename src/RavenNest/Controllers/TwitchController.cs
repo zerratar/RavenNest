@@ -11,6 +11,7 @@ using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
 using RavenNest.Sessions;
 using RavenNest.Twitch;
+using static RavenNest.Twitch.TwitchRequests;
 
 namespace RavenNest.Controllers
 {
@@ -53,7 +54,7 @@ namespace RavenNest.Controllers
                 var sessionInfo = await GetTwitchUserAsync(reqCode);
                 if (sessionInfo != null)
                 {
-                    requestUrl += "&id=" + sessionInfo.UserId + "&user=" + sessionInfo.UserName;
+                    requestUrl += "&id=" + sessionInfo.UserID + "&user=" + sessionInfo.Login;
                 }
             }
             catch
@@ -138,11 +139,10 @@ namespace RavenNest.Controllers
             return twitchUser;
         }
 
-        private async Task<SessionInfo> GetTwitchUserAsync(string key)
+        private async Task<TwitchValidateResponse> GetTwitchUserAsync(string key)
         {
             var twitch = new TwitchRequests(key, settings.TwitchClientId, settings.TwitchClientSecret);
-            var twitchUser = await twitch.GetUserAsync();
-            return await this.sessionInfoProvider.SetTwitchUserAsync(HttpContext.Session, twitchUser);
+            return await twitch.ValidateOAuthTokenAsync();
         }
 
 
