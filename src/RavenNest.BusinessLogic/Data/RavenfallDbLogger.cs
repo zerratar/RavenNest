@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
@@ -15,17 +16,24 @@ namespace RavenNest.BusinessLogic
             this.dbProvider = dbProvider;
         }
 
-        public void Write(string msg, ServerLogSeverity severity, string categoryName)
+        public async Task WriteAsync(string msg, ServerLogSeverity severity, string categoryName)
         {
-            using (var db = dbProvider.Get())
+            try
             {
-                db.ServerLogs.Add(new ServerLogs
+                using (var db = dbProvider.Get())
                 {
-                    Created = DateTime.UtcNow,
-                    Data = msg + " [" + categoryName + "]",
-                    Severity = severity
-                });
-                db.SaveChanges();
+                    db.ServerLogs.Add(new ServerLogs
+                    {
+                        Created = DateTime.UtcNow,
+                        Data = msg + " [" + categoryName + "]",
+                        Severity = severity
+                    });
+                    await db.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                await Console.Error.WriteLineAsync(ex.Message);
             }
         }
     }
@@ -55,7 +63,7 @@ namespace RavenNest.BusinessLogic
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
             var message = formatter != null ? formatter(state, exception) : state.ToString();
-            dbLogWriter.Write(message, logLevelSeverityMapping[logLevel], categoryName);
+            dbLogWriter.WriteAsync(message, logLevelSeverityMapping[logLevel], categoryName);
         }
 
         public bool IsEnabled(LogLevel logLevel) => true;
