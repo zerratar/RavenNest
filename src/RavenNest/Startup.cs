@@ -204,7 +204,6 @@ namespace RavenNest
             });
 
             TryGenerateDocumentation(env);
-            app.ApplicationServices.GetService<IGameData>().Flush();
         }
 
         private static void TryGenerateDocumentation(IWebHostEnvironment env)
