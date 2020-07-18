@@ -1,7 +1,7 @@
 <template>
   <div class="login">
     <div class="twitch-auth-active" v-if="twitchAuthenticating()">
-      <h2>Logging in with Twitch...</h2>
+      <h2>{loginMessage}</h2>
     </div>
     <div v-if="!twitchAuthenticating()">
       <h1 class="login-title">User login</h1>
@@ -58,9 +58,13 @@
     private username: string = '';
     private password: string = '';
     private badLoginResult: string = '';
+    private loginMessage: string = 'Logging in with Twitch...';
+    private loginMessageDefault: string = 'Logging in with Twitch...';
+    private loginMessageSuccess: string = 'Login was successeful. You may now close this window';
 
     private mounted() {
-      this.updateLoginStateAsync();
+      this.updateWebsiteLoginStateAsync();
+      this.updateGameClientLoginStateAsync();
     }
 
     public twitchAuthenticating(): boolean {
@@ -130,7 +134,30 @@
       }
     }
 
-    private async updateLoginStateAsync() {
+    private getQueryParam(name: string) : string | null {
+      let regex: RegExpExecArray | null;
+      if(regex=(new RegExp('[?&]'+encodeURIComponent(name)+'=([^&]*)')).exec(location.search)) {
+          return decodeURIComponent(regex[1]);
+      }
+      return null;
+    }
+
+    private async updateGameClientLoginStateAsync() {
+      const token = this.getQueryParam('code');
+      const state = this.getQueryParam('state');
+      if (token != null && token.length > 0) {
+        const response = await Requests.sendAsync('http://localhost:8182/?code=' + token + '&state=' + state, {
+          method: 'GET'
+        });
+        if (response.ok) {
+          this.loginMessage = this.loginMessageSuccess;
+        } else {          
+          this.loginMessage = 'Login failed, unknown reason.';
+        }
+      }
+    }
+
+    private async updateWebsiteLoginStateAsync() {
       let token = "";
       const hash = document.location.hash;
       if (hash != null && hash.length > 0 && hash.includes('access_token')) {
