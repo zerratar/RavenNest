@@ -14,8 +14,5 @@
   @Component({})
   export default class Marketplace extends Vue {
 
-    mounted() {
-
-    }
   }
 </script>

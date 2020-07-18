@@ -22,13 +22,9 @@
 
   @Component({})
   export default class Register extends Vue {
-    private username: string = "";
-    private password: string = "";
-    private badLoginResult: string = "";
-
-    private mounted() {
-    }
-
+    private username: string = '';
+    private password: string = '';
+    private badLoginResult: string = '';
   }
 </script>
 
