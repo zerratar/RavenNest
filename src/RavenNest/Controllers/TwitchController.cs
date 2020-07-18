@@ -43,11 +43,25 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("authorize")]
-        public ActionResult OAuthAuthorize()
+        public async Task<ActionResult> OAuthAuthorize()
         {
             var reqCode = HttpContext.Request.Query["code"];
             var reqState = HttpContext.Request.Query["state"];
-            return Redirect("http://localhost:8182/?code=" + reqCode + "&state=" + reqState);
+            var requestUrl = "https://www.ravenfall.stream/login?code=" + reqCode + "&state=" + reqState;
+            try
+            {
+                var sessionInfo = await GetTwitchUserAsync(reqCode);
+                if (sessionInfo != null)
+                {
+                    requestUrl += "&id=" + sessionInfo.UserId + "&user=" + sessionInfo.UserName;
+                }
+            }
+            catch
+            {
+                // ignored
+            }
+
+            return Redirect(requestUrl);
         }
 
         [HttpGet("logo/{userId}")]
@@ -122,6 +136,13 @@ namespace RavenNest.Controllers
             var twitchUser = await twitch.GetUserAsync();
             await this.sessionInfoProvider.SetTwitchUserAsync(HttpContext.Session, twitchUser);
             return twitchUser;
+        }
+
+        private async Task<SessionInfo> GetTwitchUserAsync(string key)
+        {
+            var twitch = new TwitchRequests(key, settings.TwitchClientId, settings.TwitchClientSecret);
+            var twitchUser = await twitch.GetUserAsync();
+            return await this.sessionInfoProvider.SetTwitchUserAsync(HttpContext.Session, twitchUser);
         }
 
 

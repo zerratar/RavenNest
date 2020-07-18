@@ -146,16 +146,30 @@
     private async updateGameClientLoginStateAsync() {
       const token = this.getQueryParam('code');
       const state = this.getQueryParam('state');
+      const user = this.getQueryParam('user');
+      const id = this.getQueryParam('id');
       if (token != null && token.length > 0) {
-        const response = await Requests.sendAsync('http://localhost:8182/?code=' + token + '&state=' + state, {
-          method: 'GET'
-        });
-        // if (response.ok) {
+        try {
+          let requestUrl = 'http://localhost:8182/?code=' + token + '&state=' + state;
+          if (id != null && id.length > 0) {
+            requestUrl += '&id=' + id;
+          }
+          if (user != null && user.length > 0) {
+            requestUrl += '&user=' + user;
+          }
+          const response = await Requests.sendAsync(requestUrl, {
+            method: 'GET'
+          });
+        } catch(err) {
+          // ignore the error here,
+          // it will most likely just be because we are doing a cross domain call
+          // but the client will still receive the message nontheless.
+        }
+        
         this.loginMessage = this.loginMessageSuccess;
-        // } else {
-        //   this.loginMessage = 'Login failed, unknown reason.';
-        // }
       }
+      
+      (window as any)['AppClass'].$forceUpdate();
     }
 
     private async updateWebsiteLoginStateAsync() {
