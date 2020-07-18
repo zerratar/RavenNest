@@ -39,6 +39,12 @@ namespace RavenNest.Twitch
             }
         }
 
+        public async Task<TwitchValidateResponse> ValidateOAuthTokenAsync()
+        {
+            return JsonConvert.DeserializeObject<TwitchValidateResponse>(
+                await RequestAsync("GET", "https://id.twitch.tv/oauth2/validate", this.accessToken, authMethod: "OAuth"));
+        }
+
         public async Task<string> GetUserAsync()
         {
             await EnsureAuth();
@@ -156,6 +162,16 @@ namespace RavenNest.Twitch
             public string token_type { get; set; }
             public int expires_in { get; set; }
             public string[] scope { get; set; }
+        }
+
+        public class TwitchValidateResponse
+        {
+            [JsonProperty("client_id")]
+            public string ClientID { get; set; }
+            public string Login { get; set; }
+            public string[] Scopes { get; set; }
+            [JsonProperty("user_id")]
+            public string UserID { get; set; }
         }
 
         public class TwitchUserListResponse
