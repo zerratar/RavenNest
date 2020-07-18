@@ -38,6 +38,12 @@ namespace RavenNest.Health
         {
             context.Response.ContentType = "application/json; charset=utf-8";
 
+            var jsonFormatting = Formatting.Indented;
+            if (context.Request.Query.ContainsKey("minimal"))
+            {
+                jsonFormatting = Formatting.None;
+            }
+
             var responseObj = new HealthResponse
             {
                 Status = result.Status.ToString(),
@@ -50,7 +56,7 @@ namespace RavenNest.Health
                     })
             };
 
-            var response = JsonConvert.SerializeObject(responseObj, Formatting.Indented);
+            var response = JsonConvert.SerializeObject(responseObj, jsonFormatting);
             return context.Response.WriteAsync(response);
         }
     }
