@@ -1,5 +1,6 @@
 ﻿using RavenNest.BusinessLogic.Game;
 using System.Collections.Concurrent;
+using Microsoft.Extensions.Logging;
 
 namespace RavenNest.BusinessLogic.Net
 {
@@ -10,7 +11,7 @@ namespace RavenNest.BusinessLogic.Net
         private readonly ILogger logger;
         private readonly IPlayerManager playerManager;
 
-        public GamePacketManager(ILogger logger, IPlayerManager playerManager)
+        public GamePacketManager(ILogger<GamePacketManager> logger, IPlayerManager playerManager)
         {
             this.logger = logger;
             this.playerManager = playerManager;
