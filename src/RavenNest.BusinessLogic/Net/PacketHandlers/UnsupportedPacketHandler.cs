@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace RavenNest.BusinessLogic.Net
 {
@@ -15,7 +16,8 @@ namespace RavenNest.BusinessLogic.Net
             IWebSocketConnection connection, 
             GamePacket packet)
         {
-            return logger.WriteErrorAsync($"Unsupported packet received with id: {packet.Id}. payload type: {packet.Type}");
+            logger.LogError($"Unsupported packet received with id: {packet.Id}. payload type: {packet.Type}");
+            return Task.CompletedTask;
         }
     }
 }

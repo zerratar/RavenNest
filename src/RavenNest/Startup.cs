@@ -9,6 +9,9 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Docs;
@@ -37,6 +40,11 @@ namespace RavenNest
             var appSettingsSection = Configuration.GetSection("AppSettings");
             var appSettings = appSettingsSection.Get<AppSettings>();
             services.Configure<AppSettings>(appSettingsSection);
+            services.AddLogging(loggingBuilder =>
+            {
+                var loggingDbContext = new RavenfallDbContextProvider(Options.Create(appSettings));
+                loggingBuilder.AddProvider(new RavenfallDbLoggerProvider(loggingDbContext));
+            });
             //services.AddAuthentication(options => { })
             //    .AddTwitch(conf =>
             //    {
@@ -82,6 +90,7 @@ namespace RavenNest
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IApplicationLifetime applicationLifetime, IWebHostEnvironment env)
         {
+            var logger = app.ApplicationServices.GetService<ILogger<Startup>>();
 
             applicationLifetime.ApplicationStopping.Register(() =>
             {
@@ -147,7 +156,7 @@ namespace RavenNest
                     var sessionInfo = new SessionInfo();
                     context.Response.ContentType = "text/javascript";
                     var service = app.ApplicationServices.GetService<ISessionInfoProvider>();
-                    //var logger = app.ApplicationServices.GetService<ILogger>();
+
                     if (!service.TryGet(context.Session, out sessionInfo))
                     {
                         //await logger.WriteErrorAsync("Failed to get sessionInfo for session-state.js");
@@ -265,11 +274,6 @@ namespace RavenNest
             services.AddSingleton<ISessionInfoProvider, SessionInfoProvider>();
 
             services.AddSingleton<ISecureHasher, SecureHasher>();
-#if DEBUG
-            services.AddSingleton<ILogger, ConsoleLogger>();
-#else
-            services.AddSingleton<ILogger, RavenfallDbLogger>();
-#endif
             services.AddSingleton<IBinarySerializer, RavenNest.BusinessLogic.Serializers.BinarySerializer>();
             services.AddSingleton<IGamePacketSerializer, GamePacketSerializer>();
 

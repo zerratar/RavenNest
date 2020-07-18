@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using RavenNest.Models;
@@ -14,7 +15,7 @@ namespace RavenNest.BusinessLogic.Game
 
         public AuthManager(
             IGameData gameData,
-            ILogger logger,
+            ILogger<AuthManager> logger,
             ISecureHasher secureHash)
         {
             this.gameData = gameData;
@@ -63,8 +64,7 @@ namespace RavenNest.BusinessLogic.Game
             }
             catch (Exception exc)
             {
-                logger.WriteError(
-                    $"Error saving user data for '{userDisplayName} ({userId})'! (EXCEPTION): " + exc);
+                logger.LogError($"Error saving user data for '{userDisplayName} ({userId})'! (EXCEPTION): " + exc);
             }
         }
 
