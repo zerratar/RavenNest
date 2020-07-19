@@ -141,5 +141,6 @@ namespace RavenNest.BusinessLogic.Data
         DataModels.InventoryItem GetEquippedItem(Guid id, DataModels.ItemCategory category);
 
         object SyncLock { get; }
+        bool InitializedSuccessful { get; }
     }
 }
