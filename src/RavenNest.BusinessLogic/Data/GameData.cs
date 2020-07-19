@@ -53,6 +53,7 @@ namespace RavenNest.BusinessLogic.Data
 
         private ITimeoutHandle scheduleHandler;
         public object SyncLock { get; } = new object();
+        public bool InitializedSuccessful { get; } = false;
 
         public GameData(IRavenfallDbContextProvider db, ILogger<GameData> logger, IKernel kernel, IQueryBuilder queryBuilder)
         {
@@ -129,9 +130,13 @@ namespace RavenNest.BusinessLogic.Data
                 }
                 stopWatch.Stop();
                 logger.LogDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
+                logger.LogDebug("GameData initialized... Starting kernel...");
+                kernel.Start();
+                InitializedSuccessful = true;
             }
             catch (Exception exc)
             {
+                InitializedSuccessful = false;
                 System.IO.File.WriteAllText("ravenfall-error.log", exc.ToString());
             }
         }
@@ -624,7 +629,7 @@ namespace RavenNest.BusinessLogic.Data
                     //ClearChangeSetState();
                 }
             }
-            catch (System.Data.SqlClient.SqlException exc)
+            catch (SqlException exc)
             {
                 foreach (SqlErrorCollection error in exc.Errors)
                 {
