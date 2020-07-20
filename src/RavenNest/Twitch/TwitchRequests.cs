@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using RavenNest.BusinessLogic;
 
 namespace RavenNest.Twitch
 {
@@ -26,50 +25,88 @@ namespace RavenNest.Twitch
             this.clientSecret = clientSecret;
         }
 
-        public async Task<string> GetUsersAsync()
+        private async Task EnsureAuth()
         {
-            if (this.auth == null || this.auth.Expires <= DateTime.UtcNow)
+            if (this.auth == null)
             {
                 this.auth = await AuthenticateAsync();
+                return;
             }
 
-            return await TwitchRequestAsync("https://api.twitch.tv/helix/users", auth.access_token);
+            if (this.auth.Expires <= DateTime.UtcNow)
+            {
+                this.auth = await AuthenticateAsync(true);
+            }
+        }
+
+        public async Task<TwitchValidateResponse> ValidateOAuthTokenAsync()
+        {
+            return JsonConvert.DeserializeObject<TwitchValidateResponse>(
+                await RequestAsync("GET", "https://id.twitch.tv/oauth2/validate", this.accessToken, authMethod: "OAuth"));
+        }
+
+        public async Task<string> GetUserAsync()
+        {
+            await EnsureAuth();
+
+            return await TwitchRequestAsync("https://api.twitch.tv/helix/users");
+            //return await TwitchRequestAsync("https://api.twitch.tv/kraken/user", auth.access_token);
         }
 
         public async Task<TwitchChannel> GetUserAsync(string userId)
         {
-            if (this.auth == null || this.auth.Expires <= DateTime.UtcNow)
-            {
-                this.auth = await AuthenticateAsync();
-            }
+            await EnsureAuth();
 
             return JsonConvert.DeserializeObject<TwitchChannel>(
                 await TwitchRequestAsync("https://api.twitch.tv/kraken/channels/" + userId, auth.access_token));
         }
 
-        public async Task<TwitchAuth> AuthenticateAsync()
+        public Task<TwitchAuth> AuthenticateAsync()
         {
+            return AuthenticateAsync(false);
+        }
+
+        public async Task<TwitchAuth> AuthenticateAsync(bool refreshToken)
+        {
+            Dictionary<string, string> parameters = new Dictionary<string, string> {
+                    { "client_id", clientId },
+                    { "client_secret", clientSecret },
+                    { "grant_type", refreshToken ? "refresh_token" : "client_credentials" },
+                    { "scope", "channel_read" }
+                };
+
+            if (refreshToken)
+            {
+                parameters["refresh_token"] = this.auth.refresh_token;
+            }
+
             var result = await RequestAsync(
                 "POST",
                 "https://id.twitch.tv/oauth2/token",
                 null,
-                parameters: new Dictionary<string, string> {
-                    { "client_id", clientId },
-                    { "client_secret", clientSecret },
-                    { "grant_type", "client_credentials" },
-                    { "scope", "channel_read" }
-                });
+                parameters: parameters);
+
             var authData = JsonConvert.DeserializeObject<TwitchAuth>(result);
-            authData.Expires = DateTime.UtcNow.Add(TimeSpan.FromSeconds(authData.expires_in - 30));
+
+            authData.Expires = refreshToken
+                ? DateTime.UtcNow.Add(TimeSpan.FromMinutes(60))
+                : DateTime.UtcNow.Add(TimeSpan.FromSeconds(authData.expires_in - 30));
+
             return authData;
         }
 
         private async Task<string> TwitchRequestAsync(string url, string access_token = null, Dictionary<string, string> parameters = null)
         {
-            return await RequestAsync("GET", url, access_token, parameters);
+            return await RequestAsync("GET", url, access_token, parameters,
+                url.IndexOf("kraken", StringComparison.OrdinalIgnoreCase) >= 0 ? "OAuth" : "Bearer");
         }
 
-        private async Task<string> RequestAsync(string method, string url, string access_token, Dictionary<string, string> parameters = null)
+        private async Task<string> RequestAsync(
+            string method,
+            string url,
+            string access_token,
+            Dictionary<string, string> parameters = null,
+            string authMethod = "Bearer")
         {
 
             if (parameters != null)
@@ -83,7 +120,7 @@ namespace RavenNest.Twitch
 
             if (!string.IsNullOrEmpty(access_token ?? accessToken))
             {
-                req.Headers["Authorization"] = $"Bearer {access_token ?? accessToken}";
+                req.Headers["Authorization"] = $"{authMethod} {access_token ?? accessToken}";
             }
 
             if (!string.IsNullOrEmpty(clientId))
@@ -125,6 +162,16 @@ namespace RavenNest.Twitch
             public string token_type { get; set; }
             public int expires_in { get; set; }
             public string[] scope { get; set; }
+        }
+
+        public class TwitchValidateResponse
+        {
+            [JsonProperty("client_id")]
+            public string ClientID { get; set; }
+            public string Login { get; set; }
+            public string[] Scopes { get; set; }
+            [JsonProperty("user_id")]
+            public string UserID { get; set; }
         }
 
         public class TwitchUserListResponse

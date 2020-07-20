@@ -27,18 +27,18 @@
   import Requests from '../requests';
   import router from 'vue-router';
   import {
-    SessionState
+    SessionState,
   } from '@/App.vue';
 
 
 
   @Component({})
   export default class Password extends Vue {
-    private username: string = "";
-    private password: string = "";
-    private passwordError: string = "";
+    private username: string = '';
+    private password: string = '';
+    private passwordError: string = '';
 
-    mounted() {
+    public mounted() {
       const sessionState = SessionState.get();
       if (sessionState != null) {
         this.username = sessionState.userName;
@@ -46,27 +46,29 @@
     }
 
     public async signup() {
-      this.passwordError = "";
+      this.passwordError = '';
       if (this.password == null || this.password.length < 8) {
-        this.passwordError = "You must have a password with minimum 8 characters."
+        this.passwordError = 'You must have a password with minimum 8 characters.';
         return;
       }
 
       const result = await Requests.sendAsync('/api/auth/signup', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          'password': this.password
-        })
+          'password': this.password,
+        }),
       });
 
       if (result.ok) {
         const sessionState = SessionState.get();
-        if (sessionState == null) return;
+        if (sessionState == null) { 
+          return;
+        }
         sessionState.requiresPasswordChange = false;
-        this.$router.push("/");
+        this.$router.push('/');
       }
     }
 

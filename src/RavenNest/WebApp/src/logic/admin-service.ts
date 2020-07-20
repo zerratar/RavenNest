@@ -19,6 +19,14 @@ export default class AdminService {
         --AdminService.requestCounter;
         return result.ok && await result.json();
     }
+    
+    public static async resetPassword(userId: string): Promise<boolean> {
+        ++AdminService.requestCounter;
+        const url = `api/admin/resetpassword/${userId}`;
+        const result = await Requests.sendAsync(url);
+        --AdminService.requestCounter;
+        return result.ok && await result.json();
+    }
 
     public static async mergePlayer(userId: string): Promise<boolean> {
         ++AdminService.requestCounter;

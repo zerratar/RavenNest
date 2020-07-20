@@ -7,10 +7,11 @@
         </router-link>
         <div class="links">
           <router-link to="/" class="item">Home</router-link>
-          <router-link to="/how-to-play" class="item">How to play</router-link>
-          <router-link to="/highscore" class="item">HighScore</router-link>
-          <router-link to="/docs" class="item">Developer</router-link>        
-          <router-link to="/character" class="item" v-if="authenticated()">My character</router-link>
+          <router-link to="/download" class="item">GET NOW</router-link>
+          <a href="https://wiki.ravenfall.stream/index.php/How_To_Play" class="item" target="_blank">How to play</a>
+          <router-link to="/highscore" class="item">Hiscore</router-link>
+          <router-link to="/docs" class="item">API</router-link>        
+          <router-link to="/character" class="item" v-if="authenticated()">Stats</router-link>
           <a href="/assets" target="_blank" class="item" v-if="authenticated()">Customize</a>
           <router-link to="/admin" class="item" v-if="administrator()">Admin</router-link>
           <div class="right">
@@ -241,7 +242,7 @@ import {
     .social li a,
     .links a {
       text-decoration: none;
-      font-size: 13pt;
+      font-size: 11pt;
       text-transform: uppercase;
       padding: 10px 19px;
       display: inline-block;

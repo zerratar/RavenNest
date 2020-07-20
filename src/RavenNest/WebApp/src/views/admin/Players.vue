@@ -54,7 +54,8 @@
               <button class="link-button" @click="showSkills(player.userId)">skills</button>
               <button class="link-button" @click="showState(player.userId)">state</button>
               <button class="link-button" @click="showInventory(player.userId)">inventory</button>
-              <button class="link-button" @click="mergePlayer(player.userId)">merge</button>              
+              <button class="link-button" @click="mergePlayer(player.userId)">merge</button>
+              <button class="link-button" @click="resetPassword(player.userId)">reset pass</button>
               <button class="link-button" @click="kickPlayer(player.userId)">kick</button>
               <button class="link-button" @click="suspend(player.userId)">suspend</button>
             </td>
@@ -137,6 +138,9 @@
 
     private playerInFocus: Player | null = null;
 
+    private changePasswordUserId: string = "";
+    private newPassword: string = "";
+    
     getStatisticsVisible(): boolean { return this.isStatisticsVisible; }
     getResourcesVisible(): boolean { return this.isResourcesVisible; }
     getSkillsVisible(): boolean { return this.isSkillsVisible; }
@@ -296,6 +300,16 @@
           this.query = userId;
           this.filter();
         }
+      });
+    }
+
+    resetPassword(userId: string) {
+      const password: string = this.newPassword;
+      if (!confirm("Are you sure you want to reset the password?")) return;
+        AdminService.resetPassword(userId).then(res => {
+        if (res) {          
+          ++this.revision;
+        }        
       });
     }
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Net;
@@ -27,7 +28,7 @@ namespace RavenNest.BusinessLogic.Game
 
 
         public PlayerManager(
-            ILogger logger,
+            ILogger<PlayerManager> logger,
             IGameData gameData,
             IIntegrityChecker integrityChecker)
         {
@@ -202,17 +203,30 @@ namespace RavenNest.BusinessLogic.Game
             return character.Map(gameData, user);
         }
 
-        public bool UpdateSyntyAppearance(
+        public bool UpdateAppearance(
             SessionToken token, string userId, Models.SyntyAppearance appearance)
         {
             var session = gameData.GetSession(token.SessionId);
             var character = GetCharacter(token, userId);
             if (character == null || character.UserIdLock != session.UserId)
+            {                
+                return false;
+            }
+
+            return UpdateAppearance(userId, appearance);
+        }
+
+        public bool UpdateAppearance(
+            AuthToken token, string userId, Models.SyntyAppearance appearance)
+        {
+            var character = gameData.GetCharacterByUserId(token.UserId);
+            var control = gameData.GetCharacterByUserId(userId);
+            if (character == null || control.Id != character.Id)
             {
                 return false;
             }
 
-            return UpdateSyntyAppearance(userId, appearance);
+            return UpdateAppearance(userId, appearance);
         }
 
         public bool[] UpdateMany(SessionToken token, PlayerState[] states)
@@ -231,7 +245,7 @@ namespace RavenNest.BusinessLogic.Game
                 var user = gameData.GetUser(state.UserId);
                 if (user == null)
                 {
-                    logger.WriteError($"Trying to save player with userId {state.UserId}, but no user was found matching the id.");
+                    logger.LogError($"Trying to save player with userId {state.UserId}, but no user was found matching the id.");
                     results.Add(false);
                     continue;
                 }
@@ -701,7 +715,7 @@ namespace RavenNest.BusinessLogic.Game
             return false;
         }
 
-        public bool UpdateSyntyAppearance(string userId, Models.SyntyAppearance appearance)
+        public bool UpdateAppearance(string userId, Models.SyntyAppearance appearance)
         {
             try
             {
@@ -729,8 +743,9 @@ namespace RavenNest.BusinessLogic.Game
 
                 return true;
             }
-            catch
+            catch (Exception exc)
             {
+                logger.LogError("Exception updating appearance: " + exc.ToString());
                 return false;
             }
         }

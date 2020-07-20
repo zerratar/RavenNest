@@ -12,6 +12,10 @@ export default new Router({
     name: 'home',
     component: Home,
   }, {
+    path: '/download',
+    name: 'download',
+    component: () => import('./views/Download.vue'),
+  }, {
     path: '/how-to-play',
     name: 'how-to-play',
     component: () => import('./views/HowToPlay.vue'),

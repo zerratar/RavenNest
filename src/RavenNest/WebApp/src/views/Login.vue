@@ -1,7 +1,7 @@
 <template>
   <div class="login">
     <div class="twitch-auth-active" v-if="twitchAuthenticating()">
-      <h2>Logging in with Twitch...</h2>
+      <h2>{{loginMessage}}</h2>
     </div>
     <div v-if="!twitchAuthenticating()">
       <h1 class="login-title">User login</h1>
@@ -47,10 +47,7 @@
   import SiteState from '../site-state';
   import Requests from '../requests';
   import router from 'vue-router';
-  import {
-    SessionState
-  } from '@/App.vue';
-
+  import { SessionState } from '@/App.vue';
 
 
   @Component({})
@@ -58,22 +55,28 @@
     private username: string = '';
     private password: string = '';
     private badLoginResult: string = '';
+    private loginMessage: string = 'Logging in with Twitch...';
+    private loginMessageDefault: string = 'Logging in with Twitch...';
+    private loginMessageSuccess: string = 'Login was successeful. You may now close this window';
 
-    private mounted() {
-      this.updateLoginStateAsync();
+    public mounted() {
+      this.updateWebsiteLoginStateAsync();
+      this.updateGameClientLoginStateAsync();
     }
 
     public twitchAuthenticating(): boolean {
+      const token = this.getQueryParam('code');
       const hash = document.location.hash;
-      return hash != null && hash.length > 0 && hash.includes('access_token');
+      return (hash != null && hash.length > 0 && hash.includes('access_token')) || 
+             (token != null && token.length > 0);
     }
 
     private async authenticateWithUserCredentialsAsync() {
       const user = this.username;
       const pass = this.password;
-      this.badLoginResult = "";
+      this.badLoginResult = '';
 
-      if (user.length == 0 || pass.length == 0) {
+      if (user.length === 0 || pass.length === 0) {
         return;
       }
 
@@ -97,14 +100,14 @@
             SessionState.set(newSessionState);
             if (result.authenticated === true) {
               if (result.requiresPasswordChange) {
-                this.$router.push("/password");
+                this.$router.push('/password');
               } else {
-                this.$router.push("/");
+                this.$router.push('/');
               }
             } else {
               errorMessage = 'Invalid username or password.';
             }
-            ( < any > window)["AppClass"].$forceUpdate();
+            (window as any)['AppClass'].$forceUpdate();
           } catch (err) {
             if (err != null && err) {
               errorMessage = err.toString();
@@ -117,12 +120,14 @@
         }
 
         this.badLoginResult = errorMessage;
-      } catch (err) {}
+      } catch (err) {
+        console.error(err);
+      }
     }
 
     private async authenticateWithTwitchAsync() {
       const response = await Requests.sendAsync('/api/twitch/access', {
-        method: 'GET'
+        method: 'GET',
       });
       const url = await response.text();
       if (url != null && url.length > 0) {
@@ -130,8 +135,45 @@
       }
     }
 
-    private async updateLoginStateAsync() {
-      let token = "";
+    private getQueryParam(name: string): string | null {
+      let regex: RegExpExecArray | null;
+      if(regex = (new RegExp('[?&]' + encodeURIComponent(name) + '=([^&]*)')).exec(location.search)) {
+          return decodeURIComponent(regex[1]);
+      }
+      return null;
+    }
+
+    private async updateGameClientLoginStateAsync() {
+      const token = this.getQueryParam('code');
+      const state = this.getQueryParam('state');
+      const user = this.getQueryParam('user');
+      const id = this.getQueryParam('id');
+      if (token != null && token.length > 0) {
+        try {
+          let requestUrl = 'http://localhost:8182/?code=' + token + '&state=' + state;
+          if (id != null && id.length > 0) {
+            requestUrl += '&id=' + id;
+          }
+          if (user != null && user.length > 0) {
+            requestUrl += '&user=' + user;
+          }
+          const response = await Requests.sendAsync(requestUrl, {
+            method: 'GET'
+          });
+        } catch(err) {
+          // ignore the error here,
+          // it will most likely just be because we are doing a cross domain call
+          // but the client will still receive the message nontheless.
+        }
+        
+        this.loginMessage = this.loginMessageSuccess;
+      }
+      
+      (window as any)['AppClass'].$forceUpdate();
+    }
+
+    private async updateWebsiteLoginStateAsync() {
+      let token = '';
       const hash = document.location.hash;
       if (hash != null && hash.length > 0 && hash.includes('access_token')) {
         token = hash.split('access_token=')[1];
@@ -145,9 +187,9 @@
             SessionState.set(result);
             if (result.authenticated === true) {
               if (result.requiresPasswordChange) {
-                this.$router.push("/password");
+                this.$router.push('/password');
               } else {
-                this.$router.push("/");
+                this.$router.push('/');
               }
             } else {
               this.badLoginResult = 'Invalid username or password.';
