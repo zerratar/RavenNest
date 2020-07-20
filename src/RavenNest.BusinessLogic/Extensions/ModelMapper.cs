@@ -161,7 +161,6 @@ namespace RavenNest.BusinessLogic.Extensions
                 InventoryItems = Map(gameData.GetAllPlayerItems(character.Id)),
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
                 Clan = Map(gameData, gameData.GetClan(character.ClanId.GetValueOrDefault())),
-                Local = character.Local,
                 OriginUserId = character.OriginUserId,
                 Revision = character.Revision.GetValueOrDefault()
             };

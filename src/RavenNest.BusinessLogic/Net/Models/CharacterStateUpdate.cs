@@ -21,7 +21,6 @@
             InArena = inArena;
             Task = task;
             TaskArgument = taskArgument;
-            Position = position;
         }
 
         public string UserId { get; set; }
@@ -32,6 +31,5 @@
         public bool InArena { get; set; }
         public string Task { get; set; }
         public string TaskArgument { get; set; }
-        public Position Position { get; set; }
     }
 }

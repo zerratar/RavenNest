@@ -8,17 +8,18 @@ namespace RavenNest.UnitTests
     public class SDKUnitTests
     {
         [TestMethod]
-        public async Task TestLogin()
+        public Task TestLogin()
         {
             //var client = new RavenNestClient(new ConsoleLogger(), new LocalRavenNestStreamSettings());
             //if (!await client.LoginAsync("zerratar", "zerratar"))
             //{
             //    Assert.Fail("Failed to login");
             //}
+            return Task.CompletedTask;
         }
 
         [TestMethod]
-        public async Task TestLoginStartSession()
+        public Task TestLoginStartSession()
         {
             //var client = new RavenNestClient(new ConsoleLogger(), new LocalRavenNestStreamSettings());
             //if (await client.LoginAsync("zerratar", "zerratar"))
@@ -37,6 +38,8 @@ namespace RavenNest.UnitTests
             //}
 
             //Assert.Fail("Failed to login");
+
+            return Task.CompletedTask;
         }
     }
 }

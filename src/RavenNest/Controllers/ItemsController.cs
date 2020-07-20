@@ -49,7 +49,7 @@ namespace RavenNest.Controllers
                 {
                     AssertAuthTokenValidity(authToken);
                 }
-                catch (NullReferenceException exc)
+                catch (NullReferenceException)
                 {
                     return new ItemCollection();
                 }
