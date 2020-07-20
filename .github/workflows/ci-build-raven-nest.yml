@@ -1,4 +1,4 @@
-name: Build .NET Core
+name: CI Build RaveNest
 
 on:
   push:
