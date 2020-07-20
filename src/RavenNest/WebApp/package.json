@@ -22,7 +22,7 @@
     "@vue/cli-service": "^3.12.1",
     "sass": "^1.26.10",
     "sass-loader": "^7.1.0",
-    "typescript": "^3.9.5",
+    "typescript": "^3.9.7",
     "vue-template-compiler": "^2.6.11"
   }
 }
