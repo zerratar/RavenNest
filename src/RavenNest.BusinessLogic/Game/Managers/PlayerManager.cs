@@ -769,7 +769,7 @@ namespace RavenNest.BusinessLogic.Game
 
         private Player GetGlobalPlayer(User user)
         {
-            var character = gameData.FindCharacter(x => x.UserId == user.Id && !x.Local);
+            var character = gameData.FindCharacter(x => x.UserId == user.Id);
             return character.Map(gameData, user);
         }
 
@@ -950,7 +950,6 @@ namespace RavenNest.BusinessLogic.Game
                 Name = user.UserName,
                 UserId = user.Id,
                 OriginUserId = session?.UserId ?? Guid.Empty,
-                Local = session?.Local ?? false,
                 Created = DateTime.UtcNow
             };
 
@@ -1016,18 +1015,17 @@ namespace RavenNest.BusinessLogic.Game
 
         private DataModels.CharacterState CreateCharacterState(CharacterStateUpdate update)
         {
-            var state = new DataModels.CharacterState();
-            state.Id = Guid.NewGuid();
-            state.DuelOpponent = update.DuelOpponent;
-            state.Health = update.Health;
-            state.InArena = update.InArena;
-            state.InRaid = update.InRaid;
-            state.Island = update.Island;
-            state.Task = update.Task;
-            state.TaskArgument = update.TaskArgument;
-            state.X = (decimal)update.Position.X;
-            state.Y = (decimal)update.Position.Y;
-            state.Z = (decimal)update.Position.Z;
+            var state = new DataModels.CharacterState
+            {
+                Id = Guid.NewGuid(),
+                DuelOpponent = update.DuelOpponent,
+                Health = update.Health,
+                InArena = update.InArena,
+                InRaid = update.InRaid,
+                Island = update.Island,
+                Task = update.Task,
+                TaskArgument = update.TaskArgument
+            };
             return state;
         }
 

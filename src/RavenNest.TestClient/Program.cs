@@ -71,10 +71,10 @@ namespace RavenNest.TestClient
                 {
                     case ConsoleKey.Q: return;
                     case ConsoleKey.Spacebar:
-                        {
-                            new ActualProgram().RunTest();
-                        }
+                    {
+                        var testTask = new ActualProgram().RunTest();
                         break;
+                    }
                 }
             }
         }

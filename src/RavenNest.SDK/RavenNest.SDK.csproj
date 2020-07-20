@@ -6,16 +6,11 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.TagHelpers" Version="2.2.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\RavenNest.Models\RavenNest.Models.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Microsoft.AspNetCore.Mvc.TagHelpers">
-      <HintPath>C:\Users\kaaru\.nuget\packages\microsoft.aspnetcore.mvc.taghelpers\2.2.0\lib\netstandard2.0\Microsoft.AspNetCore.Mvc.TagHelpers.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
 </Project>

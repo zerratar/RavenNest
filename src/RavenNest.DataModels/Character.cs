@@ -12,7 +12,6 @@ namespace RavenNest.DataModels
         private Guid statisticsId; public Guid StatisticsId { get => statisticsId; set => Set(ref statisticsId, value); }
         private Guid resourcesId; public Guid ResourcesId { get => resourcesId; set => Set(ref resourcesId, value); }
         private Guid? stateId; public Guid? StateId { get => stateId; set => Set(ref stateId, value); }
-        private bool local; public bool Local { get => local; set => Set(ref local, value); }
         private Guid originUserId; public Guid OriginUserId { get => originUserId; set => Set(ref originUserId, value); }
         private DateTime created; public DateTime Created { get => created; set => Set(ref created, value); }
         private string name; public string Name { get => name; set => Set(ref name, value); }

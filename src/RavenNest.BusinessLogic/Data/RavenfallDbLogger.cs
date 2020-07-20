@@ -63,7 +63,11 @@ namespace RavenNest.BusinessLogic
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
             var message = formatter != null ? formatter(state, exception) : state.ToString();
+
+#pragma warning disable 4014
+            // used explicitly to not block a synchronous call 
             dbLogWriter.WriteAsync(message, logLevelSeverityMapping[logLevel], categoryName);
+#pragma warning restore 4014
         }
 
         public bool IsEnabled(LogLevel logLevel) => true;
