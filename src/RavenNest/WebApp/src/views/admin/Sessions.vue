@@ -19,7 +19,7 @@
             <td>{{session.id}}</td>
             <td>{{session.userId}}</td>
             <td>{{session.twitchUserId}}</td>
-            <td>{{session.userName}}</td>
+            <td><a :href="streamerUrl(session.userName)" target="_blank">{{session.userName}}</a></td>
             <td>{{session.adminPrivileges}}</td>
             <td>{{session.modPrivileges}}</td>
             <td>{{session.started}}</td>
@@ -63,6 +63,10 @@ import AdminService from '@/logic/admin-service';
     private sortOrder: string = "";    
     private query: string = "";
     private revision: number = 0;
+
+    public streamerUrl(name:string): string {
+      return `https://www.twitch.tv/${name}`;
+    }
 
     mounted() {
       const sessionState = SessionState.get();                  

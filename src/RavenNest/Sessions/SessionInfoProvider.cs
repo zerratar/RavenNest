@@ -3,6 +3,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
@@ -19,12 +21,17 @@ namespace RavenNest.Sessions
         private const string AuthToken = "auth_token";
 
         private readonly ILogger logger;
-        private readonly IRavenfallDbContextProvider dbProvider;
+        private readonly IGameData gameData;
+        private readonly AppSettings settings;
 
-        public SessionInfoProvider(ILogger logger, IRavenfallDbContextProvider dbProvider)
+        public SessionInfoProvider(
+            ILogger<SessionInfoProvider> logger, IRavenfallDbContextProvider dbProvider,
+            IOptions<AppSettings> settings,
+            IGameData gameData)
         {
             this.logger = logger;
-            this.dbProvider = dbProvider;
+            this.gameData = gameData;
+            this.settings = settings.Value;
         }
 
         public bool TryGetAuthToken(ISession session, out AuthToken authToken)
@@ -54,33 +61,31 @@ namespace RavenNest.Sessions
         public async Task<SessionInfo> StoreAsync(ISession session)
         {
             var si = new SessionInfo();
-            using (var db = dbProvider.Get())
+            User user = null;
+
+            if (TryGetTwitchToken(session, out var token))
             {
-                User user = null;
-                if (TryGetTwitchToken(session, out var token))
-                {
-                    var twitchUser = await GetTwitchUserAsync(session, token);
-                    if (twitchUser != null)
-                    {
-                        user = await db.User.FirstOrDefaultAsync(x => x.UserId == twitchUser.Id);
-                    }
+                var twitchUser = await GetTwitchUserAsync(session, token);
+                if (twitchUser != null)
+                {                    
+                    user = gameData.GetUser(twitchUser.Id);
                 }
+            }
 
-                if (user == null && TryGetAuthToken(session, out var auth))
-                {
-                    user = await db.User.FirstOrDefaultAsync(x => x.Id == auth.UserId);
-                }
+            if (user == null && TryGetAuthToken(session, out var auth))
+            {
+                user = gameData.GetUser(auth.UserId);
+            }
 
-                if (user != null)
-                {
-                    si.Id = user.Id;
-                    si.Authenticated = true;
-                    si.Administrator = user.IsAdmin.GetValueOrDefault();
-                    si.Moderator = user.IsModerator.GetValueOrDefault();
-                    si.UserId = user.UserId;
-                    si.UserName = user.UserName;
-                    si.RequiresPasswordChange = string.IsNullOrEmpty(user.PasswordHash);
-                }
+            if (user != null)
+            {
+                si.Id = user.Id;
+                si.Authenticated = true;
+                si.Administrator = user.IsAdmin.GetValueOrDefault();
+                si.Moderator = user.IsModerator.GetValueOrDefault();
+                si.UserId = user.UserId;
+                si.UserName = user.UserName;
+                si.RequiresPasswordChange = string.IsNullOrEmpty(user.PasswordHash);
             }
 
             var sessionState = JSON.Stringify(si);
@@ -110,7 +115,7 @@ namespace RavenNest.Sessions
             }
             catch (Exception exc)
             {
-                logger.WriteError("GET SESSION STATE (" + session.Id + "): " + json + " --- PARSE ERROR (EXCEPTION): " + exc);
+                logger.LogError("GET SESSION STATE (" + session.Id + "): " + json + " --- PARSE ERROR (EXCEPTION): " + exc);
             }
             return true;
         }
@@ -146,8 +151,8 @@ namespace RavenNest.Sessions
             var str = session.GetString(TwitchUser);
             if (string.IsNullOrEmpty(str) && !string.IsNullOrEmpty(token))
             {
-                var twitch = new TwitchRequests(token);
-                var user = await twitch.GetUsersAsync();
+                var twitch = new TwitchRequests(token, settings.TwitchClientId, settings.TwitchClientSecret);
+                var user = await twitch.GetUserAsync();
                 if (user != null)
                 {
                     await SetTwitchUserAsync(session, user);
@@ -166,7 +171,7 @@ namespace RavenNest.Sessions
             }
             catch (Exception exc)
             {
-                await logger.WriteErrorAsync("GET TWITCH USER (" + session.Id + "): " + str + " --- PARSE ERROR (EXCEPTION): " + exc);
+                logger.LogError("GET TWITCH USER (" + session.Id + "): " + str + " --- PARSE ERROR (EXCEPTION): " + exc);
                 return JSON.Parse<TwitchRequests.TwitchUser>(str);
             }
         }

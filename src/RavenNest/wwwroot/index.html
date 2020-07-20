@@ -7,29 +7,31 @@
       if (SessionState.authenticated === false) {
         
         const port = window.location.port;
-        var DEBUG = false;
-        // var DEBUG = window.location.href.indexOf("localhost") >= 0         
-        //  || window.location.href.indexOf("192.168.") >= 0
-        //  || (port != null && port && parseInt(port) >= 500);
+        // var DEBUG = false;
+        var DEBUG = window.location.href.indexOf("localhost") >= 0         
+         || window.location.href.indexOf("192.168.") >= 0
+         || (port != null && port && parseInt(port) >= 500);
 
-        // ugly as f. the session-state is being cached on cloudflare, maybe just use an api call to get the state instead
-        // but then it needs to be awaited before the rest of the app starts.
-        const script = document.createElement('script');
-        script.src = (DEBUG ? 'https://localhost:5001' : '') + '/session-state.js?cache=' + Math.random() * 999999 + 900900;
-        script.type = 'text/javascript';
-        document.head.appendChild(script);
-        const updateLoginState = () => {
-          setTimeout(() => {
-            if (typeof window["AppClass"] === 'undefined') {
-              updateLoginState();
-            } else {
-              window["AppClass"].$forceUpdate();
-            }
-          }, 100);
-        };
-        updateLoginState();
+         if (!DEBUG) {
+          // ugly as f. the session-state is being cached on cloudflare, maybe just use an api call to get the state instead
+          // but then it needs to be awaited before the rest of the app starts.
+          const script = document.createElement('script');
+          script.src = (DEBUG ? 'https://localhost:5001' : '') + '/session-state.js?cache=' + Math.random() * 999999 + 900900;
+          script.type = 'text/javascript';
+          document.head.appendChild(script);
+          const updateLoginState = () => {
+            setTimeout(() => {
+              if (typeof window["AppClass"] === 'undefined') {
+                updateLoginState();
+              } else {
+                window["AppClass"].$forceUpdate();
+              }
+            }, 100);
+          };
+          updateLoginState();
+        }
       }
-    }</script><title>Ravenfall</title><link href=/css/chunk-1225ff8c.css rel=prefetch><link href=/css/chunk-17332ec6.css rel=prefetch><link href=/css/chunk-2406ba04.css rel=prefetch><link href=/css/chunk-27cbf0b4.css rel=prefetch><link href=/css/chunk-2c6c44ff.css rel=prefetch><link href=/css/chunk-3297961c.css rel=prefetch><link href=/css/chunk-42cf17ce.css rel=prefetch><link href=/css/chunk-48705c68.css rel=prefetch><link href=/css/chunk-555914b8.css rel=prefetch><link href=/css/chunk-5f94d862.css rel=prefetch><link href=/css/chunk-652c3ebc.css rel=prefetch><link href=/css/chunk-7faa2fea.css rel=prefetch><link href=/css/chunk-ee9fb472.css rel=prefetch><link href=/js/chunk-1225ff8c.js rel=prefetch><link href=/js/chunk-17332ec6.js rel=prefetch><link href=/js/chunk-1e19441a.js rel=prefetch><link href=/js/chunk-2406ba04.js rel=prefetch><link href=/js/chunk-27cbf0b4.js rel=prefetch><link href=/js/chunk-2c6c44ff.js rel=prefetch><link href=/js/chunk-2d0a4658.js rel=prefetch><link href=/js/chunk-2d215fa4.js rel=prefetch><link href=/js/chunk-3297961c.js rel=prefetch><link href=/js/chunk-3f7bc161.js rel=prefetch><link href=/js/chunk-42cf17ce.js rel=prefetch><link href=/js/chunk-48705c68.js rel=prefetch><link href=/js/chunk-555914b8.js rel=prefetch><link href=/js/chunk-5f94d862.js rel=prefetch><link href=/js/chunk-652c3ebc.js rel=prefetch><link href=/js/chunk-7faa2fea.js rel=prefetch><link href=/js/chunk-ee9fb472.js rel=prefetch><link href=/css/app.css rel=preload as=style><link href=/js/app.js rel=preload as=script><link href=/js/chunk-vendors.js rel=preload as=script><link href=/css/app.css rel=stylesheet></head><body><noscript><strong>Y u no javascript?</strong></noscript><div id=app></div><script async src="https://www.googletagmanager.com/gtag/js?id=UA-149866854-1"></script><script>window.dataLayer = window.dataLayer || [];
+    }</script><title>Ravenfall</title><link href=/css/chunk-0c11a7fa.css rel=prefetch><link href=/css/chunk-1225ff8c.css rel=prefetch><link href=/css/chunk-18f823cf.css rel=prefetch><link href=/css/chunk-2406ba04.css rel=prefetch><link href=/css/chunk-24151308.css rel=prefetch><link href=/css/chunk-27cbf0b4.css rel=prefetch><link href=/css/chunk-3297961c.css rel=prefetch><link href=/css/chunk-459293d4.css rel=prefetch><link href=/css/chunk-45bc618d.css rel=prefetch><link href=/css/chunk-50d50a80.css rel=prefetch><link href=/css/chunk-652c3ebc.css rel=prefetch><link href=/css/chunk-83ff1cfa.css rel=prefetch><link href=/css/chunk-c01ea564.css rel=prefetch><link href=/css/chunk-ee9fb472.css rel=prefetch><link href=/js/chunk-0c11a7fa.js rel=prefetch><link href=/js/chunk-1225ff8c.js rel=prefetch><link href=/js/chunk-18f823cf.js rel=prefetch><link href=/js/chunk-2406ba04.js rel=prefetch><link href=/js/chunk-24151308.js rel=prefetch><link href=/js/chunk-27cbf0b4.js rel=prefetch><link href=/js/chunk-2d0a4658.js rel=prefetch><link href=/js/chunk-3297961c.js rel=prefetch><link href=/js/chunk-3e1dfb58.js rel=prefetch><link href=/js/chunk-459293d4.js rel=prefetch><link href=/js/chunk-45bc618d.js rel=prefetch><link href=/js/chunk-50d50a80.js rel=prefetch><link href=/js/chunk-652c3ebc.js rel=prefetch><link href=/js/chunk-69e44107.js rel=prefetch><link href=/js/chunk-83ff1cfa.js rel=prefetch><link href=/js/chunk-c01ea564.js rel=prefetch><link href=/js/chunk-d8f6b5d2.js rel=prefetch><link href=/js/chunk-ee9fb472.js rel=prefetch><link href=/css/app.css rel=preload as=style><link href=/js/app.js rel=preload as=script><link href=/js/chunk-vendors.js rel=preload as=script><link href=/css/app.css rel=stylesheet></head><body><noscript><strong>Y u no javascript?</strong></noscript><div id=app></div><script async src="https://www.googletagmanager.com/gtag/js?id=UA-149866854-1"></script><script>window.dataLayer = window.dataLayer || [];
 
     function gtag() {
       dataLayer.push(arguments);

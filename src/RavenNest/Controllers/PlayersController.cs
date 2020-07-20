@@ -159,13 +159,21 @@ namespace RavenNest.Controllers
         [HttpPost("{userId}/appearance")]
         public async Task<bool> UpdateSyntyAppearanceAsync(string userId, SyntyAppearance appearance)
         {
+            userId = CleanupUserId(userId); // we get a weird input sent from the client. This shouldnt 
+                                            // be fixed here, but as a temporary bugfix
             var twitchUserSession = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
             if (twitchUserSession != null)
             {
-                return playerManager.UpdateSyntyAppearance(userId, appearance);
+                return playerManager.UpdateAppearance(userId, appearance);
             }
 
-            return playerManager.UpdateSyntyAppearance(AssertGetSessionToken(), userId, appearance);
+            var authToken = GetAuthToken();
+            if (authToken != null)
+            {
+                return playerManager.UpdateAppearance(authToken, userId, appearance);
+            }
+
+            return playerManager.UpdateAppearance(AssertGetSessionToken(), userId, appearance);
         }
 
         [HttpPost("{userId}/experience")]
@@ -219,20 +227,6 @@ namespace RavenNest.Controllers
                 throw new Exception("Session has expired.");
             }
         }
-        private SessionToken AssertGetSessionToken()
-        {
-            var sessionToken = GetSessionToken();
-            AssertSessionTokenValidity(sessionToken);
-            return sessionToken;
-        }
-
-        private SessionToken GetSessionToken()
-        {
-            return HttpContext.Request.Headers.TryGetValue("session-token", out var value)
-                ? sessionManager.Get(value)
-                : null;
-        }
-
         private async Task<Player> GetPlayerAsync()
         {
             var twitchUser = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
@@ -256,6 +250,20 @@ namespace RavenNest.Controllers
             return playerManager.GetPlayer(sessionToken);
         }
 
+        private SessionToken AssertGetSessionToken()
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return sessionToken;
+        }
+
+        private SessionToken GetSessionToken()
+        {
+            return HttpContext.Request.Headers.TryGetValue("session-token", out var value)
+                ? sessionManager.Get(value)
+                : null;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void AssertSessionTokenValidity(SessionToken sessionToken)
         {
@@ -264,5 +272,10 @@ namespace RavenNest.Controllers
             if (sessionToken.Expired) throw new Exception("Session has expired.");
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private string CleanupUserId(string userId)
+        {
+            return userId.Replace("}", "").Trim();
+        }
     }
 }

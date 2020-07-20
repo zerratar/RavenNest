@@ -10,7 +10,7 @@
 
       <div class="text">An idle game for streamers, made by streamers!<br />Allow your viewers to train, craft,
         fight together against huge raid bosses or challenge each other in the arena!</div>
-      <a class="button" href="https://github.com/zerratar/Ravenfall/releases" target="_blank"><i class="fab fa-windows"></i> Download</a>
+      <a class="button" href="/download"><i class="fab fa-windows"></i> Download</a>
       <!-- <div class="button">Download <i class="fab fa-apple"></i></div>
       <div class="button">Download <i class="fab fa-linux"></i></div> -->
     </div>
@@ -23,6 +23,16 @@
         Viewers can craft their own equipment, fight against challenging raid bosses or even duel their rival players.
       </h3>
 
+      <div class="section-group">
+        <h1>Watch the trailer</h1>
+        <div class="embed-container-outer">
+          <div class='embed-container'>
+            <iframe src='https://www.youtube.com/embed/lTMs19hsvNc' frameborder='0' allowfullscreen></iframe>
+          </div>
+        </div>
+      </div>
+      <div class="section-group">
+        <h1>Game features</h1>
       <div class="feature-list">
         <div class="feature">
             <img class="feature-image" src="assets/imgs/raids.jpg" />
@@ -99,8 +109,9 @@
               Players can buy and sell items in a global marketplace, that any streamer can access.
             </p>
         </div>   
+        </div>
+        </div>
       </div>
-    </div>
 
   </div>
 </template>
@@ -125,29 +136,50 @@
 
 <style scoped lang="scss">
 
+.embed-container-outer {
+  margin-top: 50px;
+  position: relative;
+  max-width: 100%;
+  width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.embed-container { 
+    position: relative; 
+    padding-bottom: 56.25%; 
+    height: 0; 
+    overflow: hidden; 
+    max-width: 100%;       
+  } 
+  
+  .embed-container iframe, .embed-container object, .embed-container embed { 
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;    
+  }
+
   img.hero-logo {
       max-width: 100%;
   }
 
   .feature {
       max-width: 100%;
-      width: 400px;
+      width: 300px;
       padding-bottom: 45px;
   }
 
   .feature-image {
     max-width: 100%;
-    width: 250px;
+    width: 150px;
   }
 
   .feature-list {
-    margin-top: 110px;
+    margin-top: 50px;
     display:flex;
     flex-flow:row;
     justify-content: space-around;
     padding-bottom: 50px;
     flex-wrap: wrap;
-    width: 880px;
+    width: 1280px;
     max-width: 100%;
     margin-left: auto;
     margin-right: auto;
@@ -168,6 +200,12 @@
     }
   }
 
+  .section-group:nth-of-type(odd) {
+    background-color: rgb(241, 241, 241);
+    padding-bottom: 50px;
+    margin-top: 20px;
+  }
+
   .section.hero {
     height: 100vh;
     position: absolute;
@@ -182,6 +220,7 @@
   }
 
   .section .text {
+    text-shadow: 2px 2px 2px #000000;
     font-size: 18pt;
     font-weight: 500;
     line-height: 26pt;
