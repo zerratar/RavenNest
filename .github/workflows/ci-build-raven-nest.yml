@@ -7,7 +7,7 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  build-dotnet:
     name: Build Service
     runs-on: ubuntu-latest
 
@@ -21,3 +21,26 @@ jobs:
       run: dotnet restore RavenNest.sln
     - name: Build
       run: dotnet build --configuration Release --no-restore RavenNest.sln
+
+  build-npm:
+    name: Build WebApp
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [12.x, 14.x]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - name: Install yarn
+      run: npm install -g yarn
+    - name: Install NPM packages
+      run: npm install
+      working-directory: src/RavenNest/WebApp
+    - name: Build the WebApp
+      run: yarn build
+      working-directory: src/RavenNest/WebApp
