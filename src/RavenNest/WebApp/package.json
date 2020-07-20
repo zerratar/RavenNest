@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "autoprefixer": "^9.8.5",
-    "core-js": "^2.6.11",
+    "core-js": "^3.6.5",
     "global": "^4.4.0",
     "vue": "^2.6.11",
     "vue-class-component": "^7.2.4",
