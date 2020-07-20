@@ -12,7 +12,7 @@
     "core-js": "^2.6.11",
     "global": "^4.4.0",
     "vue": "^2.6.11",
-    "vue-class-component": "^7.2.3",
+    "vue-class-component": "^7.2.4",
     "vue-property-decorator": "^8.5.1",
     "vue-router": "^3.3.4"
   },
