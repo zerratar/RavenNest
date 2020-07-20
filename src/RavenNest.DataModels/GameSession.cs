@@ -12,8 +12,10 @@ namespace RavenNest.DataModels
         private DateTime? updated; public DateTime? Updated { get => updated; set => Set(ref updated, value); }
         private int status; public int Status { get => status; set => Set(ref status, value); }
 
+        
+        private bool local;
         [Obsolete("Will be removed in the future, do not use. As we will not support local players")]
-        private bool local; public bool Local { get => local; set => Set(ref local, value); }
+        public bool Local { get => local; set => Set(ref local, value); }
         //private User _User; public User User { get => _User; set => Set(ref _User, value); }
         private long? revision; public long? Revision { get => revision; set => Set(ref revision, value); }
     }
