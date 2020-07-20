@@ -22,7 +22,7 @@ namespace RavenNest.BusinessLogic.Game
             this.gameData = gameData;
         }
 
-        public async Task BroadcastMessageAsync(string message)
+        public Task BroadcastMessageAsync(string message)
         {
             // 1. get all active sessions
             var sessions = gameData.GetActiveSessions();
@@ -58,6 +58,8 @@ namespace RavenNest.BusinessLogic.Game
                 //    Revision = revision
                 //});
             }
+
+            return Task.CompletedTask;
         }
     }
 }
