@@ -98,18 +98,6 @@ namespace RavenNest
                 app.ApplicationServices.GetService<IGameData>().Flush();
             });
 
-            //if (env.IsDevelopment())
-            //{
-            //    app.UseDeveloperExceptionPage();
-            //}
-            //else
-            //{
-            //    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-            //    app.UseHsts();
-
-            //}
-
-            app.UseHsts();
             //app.UseAuthentication();
             //app.UseAuthorization();
 
@@ -123,7 +111,6 @@ namespace RavenNest
             app.UseSession();
             app.UseDefaultFiles();
             app.UseStaticFiles();
-            app.UseHttpsRedirection();
 
             //var unityBuildPath = System.IO.Path.Combine(env.WebRootPath, "/assets/build");
             //if (System.IO.Directory.Exists(unityBuildPath))
