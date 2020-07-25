@@ -665,7 +665,9 @@ namespace RavenNest.BusinessLogic.Game
         public IReadOnlyList<Player> GetPlayers()
         {
             var users = gameData.GetUsers();
-            return users.Select(x => x.Map(gameData, gameData.GetCharacterByUserId(x.Id))).ToList();
+            return users.Select(x => new { User = x, Character = gameData.GetCharacterByUserId(x.Id) })
+                .Where(x => x.Character != null)
+                .Select(x => x.User.Map(gameData, x.Character)).ToList();
         }
 
         public bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics)
