@@ -631,12 +631,11 @@ namespace RavenNest.BusinessLogic.Data
             }
             catch (SqlException exc)
             {
-                foreach (SqlErrorCollection error in exc.Errors)
-                {
-                    var saveError = ParseSqlError(error.ToString());
-
-                    HandleSqlError(saveError);
-                }
+                //foreach (SqlErrorCollection error in exc.Errors)
+                //{
+                //    var saveError = ParseSqlError(error.ToString());
+                //    HandleSqlError(saveError);
+                //}
 
                 logger.LogError("ERROR SAVING DATA!! " + exc);
             }

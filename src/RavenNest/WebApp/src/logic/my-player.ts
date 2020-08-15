@@ -39,7 +39,7 @@ export default class MyPlayer {
 
     public static async getPlayerDataAsync() {
       MyPlayer.isLoading = true; 
-      const url = `api/players`;
+      const url = `api/players/extended`;
       const result = await Requests.sendAsync(url);
       if (result.ok) {        
           MyPlayer.player = new PlayerInfo(<Player>(await result.json()))

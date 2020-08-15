@@ -19,8 +19,8 @@ namespace RavenNest.BusinessLogic.Game
         {
             this.appSettings = appSettings.Value;
             api = new TwitchAPI();
-            api.Settings.ClientId = this.appSettings.TwitchClientId;
-            api.Settings.Secret = this.appSettings.TwitchClientSecret;
+            api.Settings.ClientId = "gp762nuuoqcoxypju8c569th9wz7q5";//this.appSettings.TwitchClientId;
+            //api.Settings.Secret = this.appSettings.TwitchClientSecret;
             api.Settings.AccessToken = this.appSettings.TwitchAccessToken;
             this.logger = logger;
         }
