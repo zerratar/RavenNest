@@ -22,6 +22,7 @@ using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Serializers;
 using RavenNest.Health;
 using RavenNest.Sessions;
+using RavenNest.Twitch;
 
 namespace RavenNest
 {
@@ -45,6 +46,7 @@ namespace RavenNest
                 var loggingDbContext = new RavenfallDbContextProvider(Options.Create(appSettings));
                 loggingBuilder.AddProvider(new RavenfallDbLoggerProvider(loggingDbContext));
             });
+
             //services.AddAuthentication(options => { })
             //    .AddTwitch(conf =>
             //    {
@@ -93,6 +95,7 @@ namespace RavenNest
             app.AddRequestTiming();
 
             var logger = app.ApplicationServices.GetService<ILogger<Startup>>();
+            //var settings = app.ApplicationServices.GetService<IOptions<AppSettings>>();
 
             applicationLifetime.ApplicationStopping.Register(() =>
             {

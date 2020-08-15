@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.Models;
 
@@ -14,6 +15,8 @@ namespace RavenNest.BusinessLogic.Game
         Player GetPlayer(SessionToken sessionToken);
         Player GetPlayer(string userId);
         Player GetGlobalPlayer(Guid userId);
+        PlayerExtended GetPlayerExtended(string userId);
+        PlayerExtended GetGlobalPlayerExtended(Guid userId);
         bool UpdatePlayerState(SessionToken sessionToken, CharacterStateUpdate update);
 
         bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics);
@@ -41,6 +44,7 @@ namespace RavenNest.BusinessLogic.Game
         ItemCollection GetEquippedItems(SessionToken token, string userId);
         ItemCollection GetAllItems(SessionToken token, string userId);
         IReadOnlyList<Player> GetPlayers();
+        IReadOnlyList<PlayerFull> GetFullPlayers();
         void EquipBestItems(DataModels.Character character);
         bool AcquiredUserLock(SessionToken token, DataModels.Character character);
     }
