@@ -13,8 +13,9 @@ namespace RavenNest.BusinessLogic.Data
 {
     public class GameData : IGameData
     {
+        private const int BackupInterval = 30000;
         private const int SaveInterval = 10000;
-        private const int SaveMaxBatchSize = 100;
+        private const int SaveMaxBatchSize = 15;
 
         private readonly IRavenfallDbContextProvider db;
         private readonly ILogger logger;
@@ -50,12 +51,19 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<VillageHouse, Guid> villageHouses;
 
         private readonly IEntitySet[] entitySets;
-
+        private readonly IGameDataBackupProvider backupProvider;
         private ITimeoutHandle scheduleHandler;
+        private ITimeoutHandle backupHandler;
+
         public object SyncLock { get; } = new object();
         public bool InitializedSuccessful { get; } = false;
 
-        public GameData(IRavenfallDbContextProvider db, ILogger<GameData> logger, IKernel kernel, IQueryBuilder queryBuilder)
+        public GameData(
+            IGameDataBackupProvider backupProvider,
+            IRavenfallDbContextProvider db,
+            ILogger<GameData> logger,
+            IKernel kernel,
+            IQueryBuilder queryBuilder)
         {
             try
             {
@@ -63,20 +71,50 @@ namespace RavenNest.BusinessLogic.Data
                 this.logger = logger;
                 this.kernel = kernel;
                 this.queryBuilder = queryBuilder;
+                this.backupProvider = backupProvider;
 
                 var stopWatch = new Stopwatch();
                 stopWatch.Start();
                 using (var ctx = this.db.Get())
                 {
-                    appearances = new EntitySet<Appearance, Guid>(ctx.Appearance.ToList(), i => i.Id);
-                    syntyAppearances = new EntitySet<SyntyAppearance, Guid>(ctx.SyntyAppearance.ToList(), i => i.Id);
+                    IEntityRestorePoint restorePoint = backupProvider.GetRestorePoint(new[] {
+                        typeof(Appearance),
+                        typeof(SyntyAppearance),
+                        typeof(Character),
+                        typeof(CharacterState),
+                        typeof(InventoryItem),
+                        typeof(User),
+                        typeof(GameSession),
+                        typeof(Village),
+                        typeof(VillageHouse),
+                        typeof(Resources),
+                        typeof(Skills),
+                        typeof(Statistics),
+                        typeof(MarketItem)});
 
-                    characters = new EntitySet<Character, Guid>(ctx.Character.ToList(), i => i.Id);
+
+                    appearances = new EntitySet<Appearance, Guid>(
+                        restorePoint.Get<Appearance>() ??
+                        ctx.Appearance.ToList(), i => i.Id);
+
+                    syntyAppearances = new EntitySet<SyntyAppearance, Guid>(
+                        restorePoint.Get<SyntyAppearance>() ??
+                        ctx.SyntyAppearance.ToList(), i => i.Id);
+
+                    characters = new EntitySet<Character, Guid>(
+                        restorePoint.Get<Character>() ??
+                        ctx.Character.ToList(), i => i.Id);
+
                     characters.RegisterLookupGroup(nameof(User), x => x.UserId);
                     characters.RegisterLookupGroup(nameof(GameSession), x => x.UserIdLock.GetValueOrDefault());
 
-                    characterStates = new EntitySet<CharacterState, Guid>(ctx.CharacterState.ToList(), i => i.Id);
-                    gameSessions = new EntitySet<GameSession, Guid>(ctx.GameSession.ToList(), i => i.Id);
+                    characterStates = new EntitySet<CharacterState, Guid>(
+                        restorePoint.Get<CharacterState>() ??
+                        ctx.CharacterState.ToList(), i => i.Id);
+
+                    gameSessions = new EntitySet<GameSession, Guid>(
+                        restorePoint.Get<GameSession>() ??
+                        ctx.GameSession.ToList(), i => i.Id);
 
                     gameSessions.RegisterLookupGroup(nameof(User), x => x.UserId);
 
@@ -85,10 +123,16 @@ namespace RavenNest.BusinessLogic.Data
                     gameEvents = new EntitySet<GameEvent, Guid>(new List<GameEvent>() /*ctx.GameEvent.ToList()*/, i => i.Id);
                     gameEvents.RegisterLookupGroup(nameof(GameSession), x => x.GameSessionId);
 
-                    inventoryItems = new EntitySet<InventoryItem, Guid>(ctx.InventoryItem.ToList(), i => i.Id);
+                    inventoryItems = new EntitySet<InventoryItem, Guid>(
+                        restorePoint.Get<InventoryItem>() ??
+                        ctx.InventoryItem.ToList(), i => i.Id);
+
                     inventoryItems.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
-                    marketItems = new EntitySet<MarketItem, Guid>(ctx.MarketItem.ToList(), i => i.Id);
+                    marketItems = new EntitySet<MarketItem, Guid>(
+                        restorePoint.Get<MarketItem>() ??
+                        ctx.MarketItem.ToList(), i => i.Id);
+
                     marketItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
                     items = new EntitySet<Item, Guid>(ctx.Item.ToList(), i => i.Id);
@@ -105,16 +149,33 @@ namespace RavenNest.BusinessLogic.Data
                     //itemCraftingRequirements.RegisterLookupGroup(nameof(ItemCraftingRequirement.ResourceItemId), x => x.ItemId);
 
                     clans = new EntitySet<Clan, Guid>(ctx.Clan.ToList(), i => i.Id);
-                    villages = new EntitySet<Village, Guid>(ctx.Village.ToList(), i => i.Id);
+
+                    villages = new EntitySet<Village, Guid>(
+                        restorePoint.Get<Village>() ??
+                        ctx.Village.ToList(), i => i.Id);
                     villages.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                    villageHouses = new EntitySet<VillageHouse, Guid>(ctx.VillageHouse.ToList(), i => i.Id);
+                    villageHouses = new EntitySet<VillageHouse, Guid>(
+                        restorePoint.Get<VillageHouse>() ??
+                        ctx.VillageHouse.ToList(), i => i.Id);
+
                     villageHouses.RegisterLookupGroup(nameof(Village), x => x.VillageId);
 
-                    resources = new EntitySet<Resources, Guid>(ctx.Resources.ToList(), i => i.Id);
-                    statistics = new EntitySet<Statistics, Guid>(ctx.Statistics.ToList(), i => i.Id);
-                    skills = new EntitySet<Skills, Guid>(ctx.Skills.ToList(), i => i.Id);
-                    users = new EntitySet<User, Guid>(ctx.User.ToList(), i => i.Id);
+                    resources = new EntitySet<Resources, Guid>(
+                        restorePoint.Get<Resources>() ??
+                        ctx.Resources.ToList(), i => i.Id);
+
+                    statistics = new EntitySet<Statistics, Guid>(
+                        restorePoint.Get<Statistics>() ??
+                        ctx.Statistics.ToList(), i => i.Id);
+
+                    skills = new EntitySet<Skills, Guid>(
+                        restorePoint.Get<Skills>() ??
+                        ctx.Skills.ToList(), i => i.Id);
+
+                    users = new EntitySet<User, Guid>(
+                        restorePoint.Get<User>() ??
+                        ctx.User.ToList(), i => i.Id);
 
                     gameClients = new EntitySet<GameClient, Guid>(ctx.GameClient.ToList(), i => i.Id);
 
@@ -133,12 +194,14 @@ namespace RavenNest.BusinessLogic.Data
                 logger.LogDebug("GameData initialized... Starting kernel...");
                 kernel.Start();
                 InitializedSuccessful = true;
+                CreateBackup();
             }
             catch (Exception exc)
             {
                 InitializedSuccessful = false;
                 System.IO.File.WriteAllText("ravenfall-error.log", exc.ToString());
             }
+
         }
 
         public GameClient Client { get; private set; }
@@ -578,6 +641,13 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void ScheduleNextBackup()
+        {
+            if (backupHandler != null) return;
+            backupHandler = kernel.SetTimeout(CreateBackup, BackupInterval);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void Update(Action update)
         {
             if (update == null) return;
@@ -588,6 +658,18 @@ namespace RavenNest.BusinessLogic.Data
         public void Flush()
         {
             SaveChanges();
+        }
+
+        private void CreateBackup()
+        {
+            try
+            {
+                backupProvider.CreateBackup(entitySets);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Failed to create data backup: " + exc);
+            }
         }
 
         private void SaveChanges()
@@ -626,11 +708,16 @@ namespace RavenNest.BusinessLogic.Data
                         con.Close();
                     }
 
+                    backupProvider.ClearRestorePoint();
                     //ClearChangeSetState();
                 }
             }
             catch (SqlException exc)
             {
+                CreateBackup();
+
+                backupProvider.CreateRestorePoint(entitySets);
+
                 //foreach (SqlErrorCollection error in exc.Errors)
                 //{
                 //    var saveError = ParseSqlError(error.ToString());
