@@ -40,6 +40,16 @@ namespace RavenNest.DataModels
             }
         }
 
+        public IReadOnlyList<IEntity> GetEntities()
+        {
+            return Entities.Cast<IEntity>().ToList();
+        }
+
+        public Type GetEntityType()
+        {
+            return typeof(TModel);
+        }
+
         public void ClearChanges()
         {
             addedEntities.Clear();
