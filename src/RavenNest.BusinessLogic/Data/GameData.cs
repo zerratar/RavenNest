@@ -94,26 +94,26 @@ namespace RavenNest.BusinessLogic.Data
 
 
                     appearances = new EntitySet<Appearance, Guid>(
-                        restorePoint.Get<Appearance>() ??
+                        restorePoint?.Get<Appearance>() ??
                         ctx.Appearance.ToList(), i => i.Id);
 
                     syntyAppearances = new EntitySet<SyntyAppearance, Guid>(
-                        restorePoint.Get<SyntyAppearance>() ??
+                        restorePoint?.Get<SyntyAppearance>() ??
                         ctx.SyntyAppearance.ToList(), i => i.Id);
 
                     characters = new EntitySet<Character, Guid>(
-                        restorePoint.Get<Character>() ??
+                        restorePoint?.Get<Character>() ??
                         ctx.Character.ToList(), i => i.Id);
 
                     characters.RegisterLookupGroup(nameof(User), x => x.UserId);
                     characters.RegisterLookupGroup(nameof(GameSession), x => x.UserIdLock.GetValueOrDefault());
 
                     characterStates = new EntitySet<CharacterState, Guid>(
-                        restorePoint.Get<CharacterState>() ??
+                        restorePoint?.Get<CharacterState>() ??
                         ctx.CharacterState.ToList(), i => i.Id);
 
                     gameSessions = new EntitySet<GameSession, Guid>(
-                        restorePoint.Get<GameSession>() ??
+                        restorePoint?.Get<GameSession>() ??
                         ctx.GameSession.ToList(), i => i.Id);
 
                     gameSessions.RegisterLookupGroup(nameof(User), x => x.UserId);
@@ -124,13 +124,13 @@ namespace RavenNest.BusinessLogic.Data
                     gameEvents.RegisterLookupGroup(nameof(GameSession), x => x.GameSessionId);
 
                     inventoryItems = new EntitySet<InventoryItem, Guid>(
-                        restorePoint.Get<InventoryItem>() ??
+                        restorePoint?.Get<InventoryItem>() ??
                         ctx.InventoryItem.ToList(), i => i.Id);
 
                     inventoryItems.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
                     marketItems = new EntitySet<MarketItem, Guid>(
-                        restorePoint.Get<MarketItem>() ??
+                        restorePoint?.Get<MarketItem>() ??
                         ctx.MarketItem.ToList(), i => i.Id);
 
                     marketItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
@@ -151,30 +151,30 @@ namespace RavenNest.BusinessLogic.Data
                     clans = new EntitySet<Clan, Guid>(ctx.Clan.ToList(), i => i.Id);
 
                     villages = new EntitySet<Village, Guid>(
-                        restorePoint.Get<Village>() ??
+                        restorePoint?.Get<Village>() ??
                         ctx.Village.ToList(), i => i.Id);
                     villages.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     villageHouses = new EntitySet<VillageHouse, Guid>(
-                        restorePoint.Get<VillageHouse>() ??
+                        restorePoint?.Get<VillageHouse>() ??
                         ctx.VillageHouse.ToList(), i => i.Id);
 
                     villageHouses.RegisterLookupGroup(nameof(Village), x => x.VillageId);
 
                     resources = new EntitySet<Resources, Guid>(
-                        restorePoint.Get<Resources>() ??
+                        restorePoint?.Get<Resources>() ??
                         ctx.Resources.ToList(), i => i.Id);
 
                     statistics = new EntitySet<Statistics, Guid>(
-                        restorePoint.Get<Statistics>() ??
+                        restorePoint?.Get<Statistics>() ??
                         ctx.Statistics.ToList(), i => i.Id);
 
                     skills = new EntitySet<Skills, Guid>(
-                        restorePoint.Get<Skills>() ??
+                        restorePoint?.Get<Skills>() ??
                         ctx.Skills.ToList(), i => i.Id);
 
                     users = new EntitySet<User, Guid>(
-                        restorePoint.Get<User>() ??
+                        restorePoint?.Get<User>() ??
                         ctx.User.ToList(), i => i.Id);
 
                     gameClients = new EntitySet<GameClient, Guid>(ctx.GameClient.ToList(), i => i.Id);
@@ -669,6 +669,10 @@ namespace RavenNest.BusinessLogic.Data
             catch (Exception exc)
             {
                 logger.LogError("Failed to create data backup: " + exc);
+            }
+            finally
+            {
+                ScheduleNextBackup();
             }
         }
 
