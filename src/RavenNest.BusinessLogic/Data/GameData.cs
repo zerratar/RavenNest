@@ -15,7 +15,7 @@ namespace RavenNest.BusinessLogic.Data
     {
         private const int BackupInterval = 30000;
         private const int SaveInterval = 10000;
-        private const int SaveMaxBatchSize = 15;
+        private const int SaveMaxBatchSize = 50;
 
         private readonly IRavenfallDbContextProvider db;
         private readonly ILogger logger;
@@ -687,11 +687,13 @@ namespace RavenNest.BusinessLogic.Data
                     logger.LogDebug("Saving all pending changes to the database.");
 
                     var queue = BuildSaveQueue();
-                    using (var con = db.GetConnection())
+
+                    while (queue.TryPeek(out var saveData))
                     {
-                        con.Open();
-                        while (queue.TryPeek(out var saveData))
+                        using (var con = db.GetConnection())
                         {
+                            con.Open();
+
                             var query = queryBuilder.Build(saveData);
                             if (query == null) return;
 
@@ -708,8 +710,9 @@ namespace RavenNest.BusinessLogic.Data
                             ClearChangeSetState(saveData);
 
                             queue.Dequeue();
+
+                            con.Close();
                         }
-                        con.Close();
                     }
 
                     backupProvider.ClearRestorePoint();
