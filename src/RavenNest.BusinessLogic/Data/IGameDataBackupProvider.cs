@@ -44,7 +44,7 @@ namespace RavenNest.BusinessLogic.Data
             {
                 if (System.IO.Directory.Exists(RestorePointFolder))
                 {
-                    System.IO.Directory.Delete(RestorePointFolder);
+                    System.IO.Directory.Delete(RestorePointFolder, true);
                 }
             }
         }
