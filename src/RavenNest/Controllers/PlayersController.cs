@@ -7,6 +7,7 @@ using Microsoft.Extensions.Options;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Docs.Attributes;
+using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
 using RavenNest.Sessions;
@@ -200,6 +201,28 @@ namespace RavenNest.Controllers
             return playerManager.UpdateMany(AssertGetSessionToken(), states.Values);
         }
 
+        [HttpGet("extended")]
+        private async Task<PlayerExtended> GetPlayerExtendedAsync()
+        {
+            var twitchUser = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
+            if (twitchUser != null)
+            {
+                return playerManager.GetPlayerExtended(twitchUser.Id.ToString());
+            }
+
+            var sessionToken = GetSessionToken();
+            if (sessionToken == null || sessionToken.Expired || string.IsNullOrEmpty(sessionToken.AuthToken))
+            {
+                var auth = GetAuthToken();
+                if (auth != null && !auth.Expired)
+                {
+                    return playerManager.GetGlobalPlayerExtended(auth.UserId);
+                }
+
+            }
+
+            return null;
+        }
         private AuthToken GetAuthToken()
         {
             if (HttpContext.Request.Headers.TryGetValue("auth-token", out var value))
@@ -249,6 +272,7 @@ namespace RavenNest.Controllers
 
             return playerManager.GetPlayer(sessionToken);
         }
+
 
         private SessionToken AssertGetSessionToken()
         {

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.DataModels;
@@ -25,7 +26,6 @@ namespace RavenNest.BusinessLogic.Game
         private readonly ILogger logger;
         private readonly IGameData gameData;
         private readonly IIntegrityChecker integrityChecker;
-
 
         public PlayerManager(
             ILogger<PlayerManager> logger,
@@ -119,6 +119,27 @@ namespace RavenNest.BusinessLogic.Game
 
             return GetGlobalPlayer(user);
         }
+        public PlayerExtended GetGlobalPlayerExtended(Guid userId)
+        {
+            var user = gameData.GetUser(userId);
+            if (user == null)
+            {
+                return null;
+            }
+
+            return GetGlobalPlayerExtended(user);
+        }
+
+        public PlayerExtended GetPlayerExtended(string userId)
+        {
+            var user = gameData.GetUser(userId);
+            if (user == null)
+            {
+                return null;
+            }
+
+            return GetGlobalPlayerExtended(user);
+        }
 
         public Player GetPlayer(string userId)
         {
@@ -209,7 +230,7 @@ namespace RavenNest.BusinessLogic.Game
             var session = gameData.GetSession(token.SessionId);
             var character = GetCharacter(token, userId);
             if (character == null || character.UserIdLock != session.UserId)
-            {                
+            {
                 return false;
             }
 
@@ -662,6 +683,14 @@ namespace RavenNest.BusinessLogic.Game
             return itemCollection;
         }
 
+        public IReadOnlyList<PlayerFull> GetFullPlayers()
+        {
+            var users = gameData.GetUsers();
+            return users.Select(x => new { User = x, Character = gameData.GetCharacterByUserId(x.Id) })
+                .Where(x => x.Character != null)
+                .Select(x => x.User.MapFull(gameData, x.Character)).ToList();
+        }
+
         public IReadOnlyList<Player> GetPlayers()
         {
             var users = gameData.GetUsers();
@@ -773,6 +802,12 @@ namespace RavenNest.BusinessLogic.Game
         {
             var character = gameData.FindCharacter(x => x.UserId == user.Id);
             return character.Map(gameData, user);
+        }
+
+        private PlayerExtended GetGlobalPlayerExtended(User user)
+        {
+            var character = gameData.FindCharacter(x => x.UserId == user.Id);
+            return character.MapExtended(gameData, user);
         }
 
         private void UpdateCharacterAppearance(Models.SyntyAppearance appearance, Character character)

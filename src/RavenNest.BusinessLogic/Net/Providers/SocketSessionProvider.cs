@@ -242,6 +242,8 @@ namespace RavenNest.BusinessLogic.Net
                         {
 
                         }
+
+                        await Task.Delay(500);
                     }
                 }
             }
@@ -259,6 +261,8 @@ namespace RavenNest.BusinessLogic.Net
                         }
 
                         await ReceivePacketsAsync(cts.Token);
+
+                        await Task.Delay(100);
                     }
                 }
             }

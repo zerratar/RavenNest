@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Runtime.CompilerServices;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Extended;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using Appearance = RavenNest.DataModels.Appearance;
@@ -84,6 +85,12 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static SkillsExtended MapExtended(Skills data)
+        {
+            return DataMapper.Map<SkillsExtended, Skills>(data);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.GameEvent Map(DataModels.GameEvent data)
         {
             return DataMapper.Map<Models.GameEvent, DataModels.GameEvent>(data);
@@ -145,6 +152,12 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PlayerExtended MapExtended(this Character character, IGameData gameData, User user)
+        {
+            return user.MapExtended(gameData, character);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Player Map(this User user, IGameData gameData, Character character)
         {
             return new Player
@@ -157,6 +170,53 @@ namespace RavenNest.BusinessLogic.Extensions
                 Appearance = Map(gameData.GetAppearance(character.SyntyAppearanceId)),
                 Resources = Map(gameData.GetResources(character.ResourcesId)),
                 Skills = Map(gameData.GetSkills(character.SkillsId)),
+                State = Map(gameData.GetState(character.StateId)),
+                InventoryItems = Map(gameData.GetAllPlayerItems(character.Id)),
+                Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
+                Clan = Map(gameData, gameData.GetClan(character.ClanId.GetValueOrDefault())),
+                OriginUserId = character.OriginUserId,
+                Revision = character.Revision.GetValueOrDefault()
+            };
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PlayerFull MapFull(this User user, IGameData gameData, Character character)
+        {
+            return new PlayerFull
+            {
+                Created = user.Created,
+                Id = user.Id,
+                PasswordHash = user.PasswordHash,
+                UserName = user.UserName,
+                UserId = user.UserId,
+                Name = character.Name,
+                IsAdmin = user.IsAdmin.GetValueOrDefault(),
+                IsModerator = user.IsModerator.GetValueOrDefault(),
+                Appearance = Map(gameData.GetAppearance(character.SyntyAppearanceId)),
+                Resources = Map(gameData.GetResources(character.ResourcesId)),
+                Skills = Map(gameData.GetSkills(character.SkillsId)),
+                State = Map(gameData.GetState(character.StateId)),
+                InventoryItems = Map(gameData.GetAllPlayerItems(character.Id)),
+                Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
+                Clan = Map(gameData, gameData.GetClan(character.ClanId.GetValueOrDefault())),
+                OriginUserId = character.OriginUserId,
+                Revision = character.Revision.GetValueOrDefault()
+            };
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static PlayerExtended MapExtended(this User user, IGameData gameData, Character character)
+        {
+            return new PlayerExtended
+            {
+                UserName = user.UserName,
+                UserId = user.UserId,
+                Name = character.Name,
+                IsAdmin = user.IsAdmin.GetValueOrDefault(),
+                IsModerator = user.IsModerator.GetValueOrDefault(),
+                Appearance = Map(gameData.GetAppearance(character.SyntyAppearanceId)),
+                Resources = Map(gameData.GetResources(character.ResourcesId)),
+                Skills = MapExtended(gameData.GetSkills(character.SkillsId)),
                 State = Map(gameData.GetState(character.StateId)),
                 InventoryItems = Map(gameData.GetAllPlayerItems(character.Id)),
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
