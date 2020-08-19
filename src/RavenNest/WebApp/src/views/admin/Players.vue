@@ -184,12 +184,12 @@
     }
 
     getSortOrder(order: string): boolean {
-      return this.sortOrder.substring(1) == order && this.sortOrder.charAt(0) == '+';
+      return this.sortOrder.substring(1) == order && (this.sortOrder.charAt(0) == '+' || this.sortOrder.charAt(0) == '1');
     }
 
     orderBy(order: string) {
       const ascending = this.getSortOrder(order);
-      this.sortOrder = (ascending ? '-' : '+') + order;
+      this.sortOrder = (ascending ? '0' : '1') + order;
       this.applyFilter();
     }
 

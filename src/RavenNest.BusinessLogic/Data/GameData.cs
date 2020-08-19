@@ -412,10 +412,11 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<Character> GetSessionCharacters(GameSession currentSession) =>
-            characters[nameof(GameSession), currentSession.UserId]
-                    .Where(x => x.LastUsed > currentSession.Started)
-                    .ToList();
+        public IReadOnlyList<Character> GetSessionCharacters(GameSession currentSession)
+        {
+            if (currentSession == null) return null;
+            return characters[nameof(GameSession), currentSession.UserId].Where(x => x.LastUsed > currentSession.Started).ToList();
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<GameEvent> GetSessionEvents(GameSession gameSession) =>
@@ -695,7 +696,8 @@ namespace RavenNest.BusinessLogic.Data
                             con.Open();
 
                             var query = queryBuilder.Build(saveData);
-                            if (query == null) return;
+                            if (query == null || string.IsNullOrEmpty(query.Command)) 
+                                return;
 
                             var command = con.CreateCommand();
                             command.CommandText = query.Command;
