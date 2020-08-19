@@ -5,12 +5,12 @@ updates:
   schedule:
     interval: daily
     time: "04:00"
-  open-pull-requests-limit: 10
+  open-pull-requests-limit: 20
   target-branch: "Development"
 - package-ecosystem: npm
   directory: "/src/RavenNest/WebApp"
   schedule:
     interval: daily
     time: "04:00"
-  open-pull-requests-limit: 10
+  open-pull-requests-limit: 20
   target-branch: "Development"

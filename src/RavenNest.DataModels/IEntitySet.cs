@@ -11,6 +11,8 @@ namespace RavenNest.DataModels
         DateTime LastModified { get; }
         void ClearChanges();
         void Clear(IReadOnlyList<IEntity> entities);
+        IReadOnlyList<IEntity> GetEntities();
+        Type GetEntityType();
     }
 
     public interface IEntitySet<TModel, TKey> : IEntitySet
