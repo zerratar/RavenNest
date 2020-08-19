@@ -246,7 +246,7 @@ namespace RavenNest.BusinessLogic.Game
                     .GetProperties(BindingFlags.Public | BindingFlags.Instance)
                     .FirstOrDefault(x => x.Name == sortOrder.Substring(1));
 
-                var ascending = sortOrder[0] == '+';
+                var ascending = sortOrder[0] == '+' || sortOrder[0] == '1';
                 if (sortProperty != null)
                 {
                     allPlayers = (ascending
@@ -261,7 +261,7 @@ namespace RavenNest.BusinessLogic.Game
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static IReadOnlyList<T> FilterByQuery<T>(string query, IEnumerable<T> allPlayers)
         {
-            if (!string.IsNullOrEmpty(query) && query != "-")
+            if (!string.IsNullOrEmpty(query) && query != "0" && query != "-")
             {
                 var stringProps = typeof(T)
                     .GetProperties(BindingFlags.Public | BindingFlags.Instance)

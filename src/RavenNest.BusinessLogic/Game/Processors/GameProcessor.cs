@@ -2,6 +2,7 @@
 using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.Models;
+using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
@@ -76,15 +77,25 @@ namespace RavenNest.BusinessLogic.Game.Processors
             var characters = gameData.GetSessionCharacters(session);
             var villageProcessor = GetTaskProcessor(VillageProcessorName);
 
+            if (session == null)
+                return;
+
             villageProcessor.Handle(integrityChecker, gameData, session, null, null);
 
             foreach (var character in characters)
             {
                 var state = gameData.GetState(character.StateId);
-                if (state == null) continue;
+                if (state == null)
+                {
+                    state = new DataModels.CharacterState
+                    {
+                        Id = Guid.NewGuid()
+                    };
+                    gameData.Add(state);
+                    character.StateId = state.Id;
+                }
 
-
-                if (state.InArena || state.InRaid || state.Island == "War" || !string.IsNullOrEmpty(state.DuelOpponent))
+                if (string.IsNullOrEmpty(state.Task) || state.InArena || state.InRaid || state.Island == "War" || !string.IsNullOrEmpty(state.DuelOpponent))
                 {
                     continue;
                 }

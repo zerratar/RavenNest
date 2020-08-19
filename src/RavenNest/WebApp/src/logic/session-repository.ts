@@ -2,8 +2,8 @@ import { GameSession } from './models';
 import { EntityRepository, Page } from './entity-repository';
 
 export default class SessionRepository {
-    private static defaultSortOrder: string = "+Id";
-    private static defaultQuery: string = "-";  
+    private static defaultSortOrder: string = "1Id";
+    private static defaultQuery: string = "0";  
     private static repo: EntityRepository<GameSession> = new EntityRepository<GameSession>("sessions");
 
     public static get isLoading(): boolean {

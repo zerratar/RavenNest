@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using RavenNest.BusinessLogic.Serializers;
 
 namespace RavenNest.BusinessLogic.Net
@@ -39,10 +40,23 @@ namespace RavenNest.BusinessLogic.Net
 
                 var dataSize = br.ReadInt32();
                 var payload = br.ReadBytes(dataSize);
-
-                packet.Data = loadedTypes.TryGetValue(packet.Type, out var targetType)
-                    ? binarySerializer.Deserialize(payload, targetType)
-                    : payload;
+                Type targetType = null;
+                try
+                {
+                    packet.Data = loadedTypes.TryGetValue(packet.Type, out targetType)
+                        ? binarySerializer.Deserialize(payload, targetType)
+                        : payload;
+                }
+                catch (Exception exc)
+                {
+                    var hoverOverMe = GenerateDebugCode(length, data, dataSize, payload, targetType);
+                    try
+                    {
+                        System.IO.File.WriteAllText(@"C:\Ravenfall\deserialize_" + targetType + ".cs", hoverOverMe);
+                    }
+                    catch { }
+                    throw;
+                }
             }
             return packet;
         }
@@ -65,6 +79,29 @@ namespace RavenNest.BusinessLogic.Net
 
                 return ms.ToArray();
             }
+        }
+
+        private string GenerateDebugCode(int length, byte[] data, int dataSize, byte[] payload, Type targetType)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("var rawPacketSize = " + length + ";");
+            sb.AppendLine("var bodySize = " + dataSize + ";");
+
+            sb.Append("var rawData = new byte[] { ");
+            foreach (var b in data)
+                sb.Append(b.ToString() + ", ");
+            sb.AppendLine("};");
+
+            sb.Append("var payload = new byte[] { ");
+            foreach (var b in payload)
+                sb.Append(b.ToString() + ", ");
+            sb.AppendLine("};");
+            sb.AppendLine();
+            sb.AppendLine("var targetType = typeof(" + targetType.FullName + ");");
+            sb.AppendLine("var serializer = new BinarySerializer();");
+            sb.AppendLine("var data = serializer.Deserialize(payload, targetType);");
+
+            return sb.ToString();
         }
     }
 }

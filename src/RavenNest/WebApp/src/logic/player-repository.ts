@@ -3,8 +3,8 @@ import { EntityRepository, Page } from './entity-repository';
 
 export default class PlayerRepository {
 
-    private static defaultSortOrder: string = "+UserName";
-    private static defaultQuery: string = "-";    
+    private static defaultSortOrder: string = "1UserName";
+    private static defaultQuery: string = "0";    
     private static repo: EntityRepository<Player> = new EntityRepository<Player>("players");
 
     public static get isLoading(): boolean {

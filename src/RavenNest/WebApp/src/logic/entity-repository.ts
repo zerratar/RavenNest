@@ -9,8 +9,8 @@ export class Page<T> {
 
 export class EntityRepository<T> {
     public isLoading: boolean = false;
-    private defaultSortOrder: string = "+UserName";
-    private defaultQuery: string = "-";
+    private defaultSortOrder: string = "1UserName";
+    private defaultQuery: string = "0";
     private result: any;
     private totalSize: number = 0;
     private pageSize: number = 50;

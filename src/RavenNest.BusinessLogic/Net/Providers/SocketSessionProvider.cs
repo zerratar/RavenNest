@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using System.Text;
 
 namespace RavenNest.BusinessLogic.Net
 {
@@ -47,12 +48,14 @@ namespace RavenNest.BusinessLogic.Net
         {
             if (!requestHeaders.TryGetValue("session-token", out var token))
             {
+                logger.LogWarning("No Session Token when trying to create websocket connection!");
                 return null;
             }
 
             var sessionToken = sessionManager.Get(token);
             if (!CheckSessionTokenValidity(sessionToken))
             {
+                logger.LogWarning("Invalid session token for websocket connection (" + sessionToken.SessionId + ")");
                 return null;
             }
 
@@ -66,8 +69,8 @@ namespace RavenNest.BusinessLogic.Net
                 this,
                 ws,
                 sessionToken);
-            socketSessions[sessionToken.SessionId] = session.Start();
-            return socketSessions[sessionToken.SessionId];
+
+            return socketSessions[sessionToken.SessionId] = session.Start();
         }
 
         public bool TryGet(Guid sessionId, out IWebSocketConnection session)
@@ -83,14 +86,6 @@ namespace RavenNest.BusinessLogic.Net
         private void Disconnected(WebSocketConnection connection)
         {
             this.socketSessions.Remove(connection.SessionId, out _);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void AssertSessionTokenValidity(SessionToken sessionToken)
-        {
-            if (sessionToken == null) throw new NullReferenceException(nameof(sessionToken));
-            if (sessionToken.SessionId == Guid.Empty) throw new NullReferenceException(nameof(sessionToken.SessionId));
-            if (sessionToken.Expired) throw new Exception("Session has expired.");
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -173,6 +168,7 @@ namespace RavenNest.BusinessLogic.Net
                 }
                 return default;
             }
+
             public async Task<bool> PushAsync(string id, object request, CancellationToken cancellationToken)
             {
                 var packet = CreatePacket(id, request);
@@ -214,12 +210,44 @@ namespace RavenNest.BusinessLogic.Net
                 {
                     return;
                 }
+
+                TryCloseConnection();
+
                 this.killTask.TrySetResult(null);
                 this.sessionProvider.Disconnected(this);
                 this.disposed = true;
                 this.receiveLoop.Join();
                 this.gameLoop.Join();
                 this.ws.Dispose();
+
+                logger.LogWarning("Session websocket disposed (" + sessionToken.SessionId + ")");
+            }
+
+            private void TryCloseConnection()
+            {
+                try
+                {
+                    if (ws == null || this.disposed)
+                    {
+                        return;
+                    }
+
+                    if (ws.CloseStatus != null)
+                    {
+                        return;
+                    }
+
+                    if (ws.State != WebSocketState.Open)
+                    {
+                        return;
+                    }
+
+                    ws.CloseAsync(WebSocketCloseStatus.InvalidPayloadData, "", CancellationToken.None);
+                }
+                catch (Exception exc)
+                {
+                    logger.LogInformation("Unable to close socket connection: " + exc);
+                }
             }
 
             private async void GameUpdateLoop()
@@ -238,13 +266,15 @@ namespace RavenNest.BusinessLogic.Net
                         {
                             await gameProcessor.ProcessAsync(cts);
                         }
-                        catch
+                        catch (Exception exc)
                         {
-
+                            logger.LogError("Error processing game update: " + exc.ToString());
                         }
 
-                        await Task.Delay(500);
+                        await Task.Delay(250);
                     }
+
+                    logger.LogWarning("Session terminated game loop (" + sessionToken.SessionId + ")");
                 }
             }
 
@@ -265,6 +295,8 @@ namespace RavenNest.BusinessLogic.Net
                         await Task.Delay(100);
                     }
                 }
+
+                logger.LogWarning("Session terminated websocket receive loop (" + sessionToken.SessionId + ")");
             }
 
             private async Task ReceivePacketsAsync(CancellationToken cancellationToken)
@@ -277,12 +309,14 @@ namespace RavenNest.BusinessLogic.Net
 
                     if (result.CloseStatus != null)
                     {
+                        logger.LogWarning("Session terminated close status: " + result.CloseStatus + " - " + result.CloseStatusDescription + "(" + sessionToken.SessionId + ")");
                         this.Dispose();
                         return;
                     }
 
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
+                        logger.LogWarning("Session terminated close status: " + result.CloseStatusDescription + "(" + sessionToken.SessionId + ")");
                         this.Dispose();
                         return;
                     }
@@ -331,6 +365,7 @@ namespace RavenNest.BusinessLogic.Net
                     await HandleGamePacketAsync(packet);
                 }
             }
+
 
             private async Task HandleGamePacketAsync(GamePacket packet)
             {
