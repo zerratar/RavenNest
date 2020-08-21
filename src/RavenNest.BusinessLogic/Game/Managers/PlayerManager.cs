@@ -536,6 +536,11 @@ namespace RavenNest.BusinessLogic.Game
 
         public void EquipItem(Character character, InventoryItem item)
         {
+            if (item.Equipped)
+            {
+                return;
+            }
+
             if (item.Amount > 1)
             {
                 --item.Amount;
@@ -570,7 +575,7 @@ namespace RavenNest.BusinessLogic.Game
             if (invItem == null || !CanEquipItem(gameData.GetItem(invItem.ItemId), skills))
                 return false;
 
-            if (invItem.Amount > 1)
+            if (!invItem.Equipped && invItem.Amount > 1)
             {
                 --invItem.Amount;
 
