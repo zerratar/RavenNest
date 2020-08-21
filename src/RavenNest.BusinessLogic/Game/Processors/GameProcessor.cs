@@ -1,4 +1,5 @@
-﻿using RavenNest.BusinessLogic.Data;
+﻿using Microsoft.EntityFrameworkCore.Diagnostics;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.Models;
@@ -60,13 +61,19 @@ namespace RavenNest.BusinessLogic.Game.Processors
             var events = gameManager.GetGameEvents(sessionToken);
             if (events.Count > 0)
             {
-                var eventList = new EventList();
-                eventList.Revision = events.Revision;
-                eventList.Events = events.ToList();
-
-                if (await ws.PushAsync("game_event", eventList, cts.Token))
+                var allEvents = events.ToList();
+                var batchSize = 10;
+                for (var i = 0; i < allEvents.Count;)
                 {
-                    this.gameRevision = events.Revision;
+                    var eventList = new EventList();
+                    eventList.Revision = events.Revision;
+                    eventList.Events = allEvents.Skip(batchSize * i).Take(batchSize).ToList();
+                    if (await ws.PushAsync("game_event", eventList, cts.Token))
+                    {
+                        this.gameRevision = events.Revision;
+                    }
+                    i += allEvents.Count < batchSize ? allEvents.Count : batchSize;
+                    await Task.Delay(100);
                 }
             }
         }

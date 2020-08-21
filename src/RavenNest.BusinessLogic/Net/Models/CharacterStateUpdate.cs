@@ -14,4 +14,11 @@
         public float Y { get; set; }
         public float Z { get; set; }
     }
+
+    public class CharacterSkillUpdate
+    {
+        public string UserId { get; set; }
+        public decimal[] Experience { get; set; }
+    }
+
 }

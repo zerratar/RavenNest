@@ -60,6 +60,7 @@ namespace RavenNest.BusinessLogic.Data
 
         public GameData(
             IGameDataBackupProvider backupProvider,
+            IGameDataMigration dataMigration,
             IRavenfallDbContextProvider db,
             ILogger<GameData> logger,
             IKernel kernel,
@@ -75,9 +76,8 @@ namespace RavenNest.BusinessLogic.Data
 
                 var stopWatch = new Stopwatch();
                 stopWatch.Start();
-                using (var ctx = this.db.Get())
-                {
-                    IEntityRestorePoint restorePoint = backupProvider.GetRestorePoint(new[] {
+
+                IEntityRestorePoint restorePoint = backupProvider.GetRestorePoint(new[] {
                         typeof(Appearance),
                         typeof(SyntyAppearance),
                         typeof(Character),
@@ -92,7 +92,13 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(Statistics),
                         typeof(MarketItem)});
 
+                if (restorePoint != null)
+                {
+                    dataMigration.Migrate(this.db, restorePoint);
+                }
 
+                using (var ctx = this.db.Get())
+                {
                     appearances = new EntitySet<Appearance, Guid>(
                         restorePoint?.Get<Appearance>() ??
                         ctx.Appearance.ToList(), i => i.Id);
@@ -696,16 +702,18 @@ namespace RavenNest.BusinessLogic.Data
                             con.Open();
 
                             var query = queryBuilder.Build(saveData);
-                            if (query == null || string.IsNullOrEmpty(query.Command)) 
+                            if (query == null || string.IsNullOrEmpty(query.Command))
                                 return;
 
                             var command = con.CreateCommand();
                             command.CommandText = query.Command;
 
                             var result = command.ExecuteNonQuery();
-                            if (result == 0)
+                            if (result < saveData.Entities.Count)
                             {
-                                logger.LogError("Unable to save data! Abort Query failed");
+                                logger.LogError($"Unable to save all data in batch: {result} / {saveData.Entities.Count}. Creating restore point.");
+                                CreateBackup();
+                                backupProvider.CreateRestorePoint(entitySets);
                                 return;
                             }
 
@@ -718,22 +726,13 @@ namespace RavenNest.BusinessLogic.Data
                     }
 
                     backupProvider.ClearRestorePoint();
-                    //ClearChangeSetState();
                 }
             }
             catch (SqlException exc)
             {
                 CreateBackup();
-
                 backupProvider.CreateRestorePoint(entitySets);
-
-                //foreach (SqlErrorCollection error in exc.Errors)
-                //{
-                //    var saveError = ParseSqlError(error.ToString());
-                //    HandleSqlError(saveError);
-                //}
-
-                logger.LogError("ERROR SAVING DATA!! " + exc);
+                logger.LogError("ERROR SAVING DATA (CREATING RESTORE POINT!!) " + exc);
             }
             catch (Exception exc)
             {

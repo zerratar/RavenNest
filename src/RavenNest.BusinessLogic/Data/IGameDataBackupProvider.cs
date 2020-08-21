@@ -213,7 +213,7 @@ namespace RavenNest.BusinessLogic.Data
                 entityData[type] = entities;
             }
 
-            internal IReadOnlyList<Type> GetEntityTypes()
+            public IReadOnlyList<Type> GetEntityTypes()
             {
                 return entityData.Keys.ToList();
             }

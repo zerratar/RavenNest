@@ -252,8 +252,10 @@ namespace RavenNest
             services.AddSingleton<IServerManager, ServerManager>();
             services.AddSingleton<IGamePacketManager, GamePacketManager>();
             services.AddSingleton<IQueryBuilder, QueryBuilder>();
+
             services.AddSingleton<IGameData, GameData>();
             services.AddSingleton<IGameDataBackupProvider, GameDataBackupProvider>();
+            services.AddSingleton<IGameDataMigration, GameDataMigration>();
 
             services.AddSingleton<IVillageManager, VillageManager>();
 
