@@ -45,6 +45,7 @@ public class PlayerInventory
         this.characterId = characterId;
         this.items = gameData?.GetAllPlayerItems(characterId)?.ToList() ?? new List<InventoryItem>();
         MergeItems(this.items.ToList());
+        EquipBestItems();
     }
 
     public void EquipBestItems()
@@ -76,6 +77,14 @@ public class PlayerInventory
                 if (equippedPet.IsNotNull())
                 {
                     EquipItem(equippedPet.ItemId);
+                }
+            }
+            else
+            {
+                var petToEquip = GetInventoryItem(ItemCategory.Pet);
+                if (petToEquip.IsNotNull())
+                {
+                    EquipItem(petToEquip.ItemId);
                 }
             }
 
@@ -123,7 +132,7 @@ public class PlayerInventory
             }
             if (RemoveItem(itemId, 1))
             {
-                equipped = AddItem(itemId, 1, true);
+                AddItem(itemId, 1, true);
                 return true;
             }
             return false;
@@ -159,6 +168,18 @@ public class PlayerInventory
             return default;
         }
     }
+
+    public ReadOnlyInventoryItem GetInventoryItem(ItemCategory itemCategory)
+    {
+        lock (mutex)
+        {
+            var item = this.items
+                .FirstOrDefault(x => !x.Equipped && gameData.GetItem(x.ItemId).Category == (int)itemCategory);
+            if (item != null)
+                return item.AsReadOnly();
+            return default;
+        }
+    }
     public ReadOnlyInventoryItem GetEquippedItem(int itemCategory, int itemType)
     {
         lock (mutex)
@@ -188,8 +209,7 @@ public class PlayerInventory
             }
             else
             {
-                stack = Create(itemId, amount);
-                stack.Equipped = equipped;
+                stack = Create(itemId, amount, equipped);
                 items.Add(stack);
                 gameData?.Add(stack);
             }
@@ -296,7 +316,7 @@ public class PlayerInventory
             {
                 foreach (var itemStacks in items.GroupBy(x => x.ItemId))
                 {
-                    var amount = itemStacks.Sum(x => x.Amount);
+                    var amount = itemStacks.OrderByDescending(x => x.Amount).FirstOrDefault(x => !x.Equipped)?.Amount ?? 0;
                     var itemId = itemStacks.Key;
                     var characterId = itemStacks.FirstOrDefault().CharacterId;
 
@@ -304,13 +324,12 @@ public class PlayerInventory
                     if (equipped != null)
                     {
                         equipped.Amount = 1;
-                        --amount;
                     }
 
-                    var stack = itemStacks.FirstOrDefault(x => !x.Equipped);
+                    var stack = amount <= 0 ? null : itemStacks.FirstOrDefault(x => !x.Equipped);
                     if (stack != null)
                     {
-                        stack.Amount += amount;
+                        stack.Amount = amount;
                     }
 
                     foreach (var itemStack in itemStacks)
@@ -325,14 +344,15 @@ public class PlayerInventory
         }
     }
 
-    private InventoryItem Create(Guid itemId, long amount)
+    private InventoryItem Create(Guid itemId, long amount, bool equipped)
     {
         return new InventoryItem
         {
             Id = Guid.NewGuid(),
             CharacterId = characterId,
             Amount = amount,
-            ItemId = itemId
+            ItemId = itemId,
+            Equipped = equipped
         };
     }
 
@@ -363,6 +383,7 @@ public static class InventoryItemExtensions
 {
     public static ReadOnlyInventoryItem AsReadOnly(this InventoryItem item)
     {
+        if (item == null) return default;
         return ReadOnlyInventoryItem.Create(item);
     }
 

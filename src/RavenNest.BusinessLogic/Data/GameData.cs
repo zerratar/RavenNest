@@ -505,7 +505,7 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<GameSession> GetActiveSessions() => gameSessions.Entities
                     .OrderByDescending(x => x.Started)
-                    .Where(x => x.Stopped == null).ToList();
+                    .Where(x => x.Stopped == null && DateTime.UtcNow - x.Updated <= TimeSpan.FromMinutes(5)).ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public InventoryItem GetEquippedItem(Guid characterId, ItemCategory category)
@@ -723,13 +723,13 @@ namespace RavenNest.BusinessLogic.Data
                             command.CommandText = query.Command;
 
                             var result = command.ExecuteNonQuery();
-                            if (result < saveData.Entities.Count)
-                            {
-                                logger.LogError($"Unable to save all data in batch: {result} / {saveData.Entities.Count}. Creating restore point.");
-                                CreateBackup();
-                                backupProvider.CreateRestorePoint(entitySets);
-                                return;
-                            }
+                            //if (result < saveData.Entities.Count)
+                            //{
+                            //    logger.LogError($"Unable to save all data in batch: {result} / {saveData.Entities.Count}. Creating restore point.");
+                            //    CreateBackup();
+                            //    backupProvider.CreateRestorePoint(entitySets);
+                            //    return;
+                            //}
 
                             ClearChangeSetState(saveData);
                             queue.Dequeue();

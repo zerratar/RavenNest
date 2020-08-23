@@ -19,7 +19,11 @@ namespace RavenNest.BusinessLogic.Data
 
     public class GameDataBackupProvider : IGameDataBackupProvider
     {
-        private const string RestorePointFolder = "restorepoints";
+#if DEBUG
+        private const string RestorePointFolder = @"C:\git\RavenNest\src\RavenNest\bin\Debug\netcoreapp3.1\restorepoints";
+#else
+        private const string RestorePointFolder = @"restorepoints";
+#endif
         private const string BackupFolder = "backups";
         private const string FileTypeExt = ".json";
 
@@ -194,7 +198,7 @@ namespace RavenNest.BusinessLogic.Data
 
             public IReadOnlyList<T> Get<T>() where T : IEntity
             {
-                return GetEntities(typeof(T)) as IReadOnlyList<T>;
+                return GetEntities(typeof(T)).Cast<T>().ToList();
             }
 
             public IReadOnlyList<IEntity> Get(Type type)
