@@ -39,6 +39,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         protected void UpdateResourceGain(
             IIntegrityChecker integrityChecker,
             IGameData gameData,
+            IPlayerInventoryProvider inventoryProvider,
             DataModels.GameSession session,
             Character character,
             Action<DataModels.Resources> onUpdate)
@@ -74,9 +75,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         }
 
         protected void UpdateResources(
-            IGameData gameData, 
-            DataModels.GameSession session, 
-            Character character, 
+            IGameData gameData,
+            DataModels.GameSession session,
+            Character character,
             DataModels.Resources resources)
         {
             var user = gameData.GetUser(character.UserId);

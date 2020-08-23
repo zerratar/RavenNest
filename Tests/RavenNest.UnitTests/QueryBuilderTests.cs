@@ -1,18 +1,55 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.DataModels;
 
 namespace RavenNest.UnitTests
 {
+
+    [TestClass]
+    public class InventoryTests
+    {
+
+        [TestMethod]
+        public void TestInventory()
+        {
+            var provider = new PlayerInventoryProvider(null);
+            var playerId = Guid.NewGuid();
+            var inventory = provider.Get(playerId);
+            var itemId = Guid.Empty;
+            var threadA = new Thread(new ThreadStart(() => AddItems(inventory, itemId, 10, 500)));
+            var threadB = new Thread(new ThreadStart(() => AddItems(inventory, itemId, 50, 100)));
+            var threadC = new Thread(new ThreadStart(() => AddItems(inventory, itemId, 50, 1)));
+            threadA.Start();
+            threadB.Start();
+            threadC.Start();
+            threadA.Join();
+            threadB.Join();
+            threadC.Join();
+            var stack = inventory.GetItem(itemId, false);
+            Assert.AreEqual(110, stack.Amount);
+        }
+
+        private void AddItems(PlayerInventory inventory, Guid itemId, int totalItemAmount, int tickTimeMs)
+        {
+            for (var i = 0; i < totalItemAmount; ++i)
+            {
+                inventory.AddItem(itemId);
+                System.Threading.Thread.Sleep(tickTimeMs);
+            }
+        }
+    }
+
     [TestClass]
     public class HashTest
     {
         [TestMethod]
         public void GenerateHash1()
         {
-            var hasher = new SecureHasher(); 
+            var hasher = new SecureHasher();
         }
     }
 

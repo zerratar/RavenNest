@@ -18,6 +18,7 @@ namespace RavenNest.BusinessLogic.Data
         DataModels.Village GetVillageBySession(DataModels.GameSession session);
         DataModels.Village GetOrCreateVillageBySession(DataModels.GameSession session);
         IReadOnlyList<DataModels.VillageHouse> GetOrCreateVillageHouses(DataModels.Village village);
+        Character GetCharacterByName(string username);
 
         /// <summary>
         /// Find player items by predicate

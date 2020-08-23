@@ -11,7 +11,7 @@ namespace RavenNest.BusinessLogic.Game
 {
     public interface IServerManager
     {
-        Task BroadcastMessageAsync(string message);
+        void BroadcastMessageAsync(string message, int time);
     }
 
     public class ServerManager : IServerManager
@@ -22,7 +22,7 @@ namespace RavenNest.BusinessLogic.Game
             this.gameData = gameData;
         }
 
-        public Task BroadcastMessageAsync(string message)
+        public void BroadcastMessageAsync(string message, int time)
         {
             // 1. get all active sessions
             var sessions = gameData.GetActiveSessions();
@@ -41,6 +41,7 @@ namespace RavenNest.BusinessLogic.Game
                 var gameEvent = gameData.CreateSessionEvent(GameEventType.ServerMessage, session, new ServerMessage()
                 {
                     Message = message,
+                    Time = time
                 });
 
                 gameData.Add(gameEvent);
@@ -58,8 +59,6 @@ namespace RavenNest.BusinessLogic.Game
                 //    Revision = revision
                 //});
             }
-
-            return Task.CompletedTask;
         }
     }
 }

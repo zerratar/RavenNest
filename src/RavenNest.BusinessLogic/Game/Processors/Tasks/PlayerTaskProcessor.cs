@@ -12,23 +12,17 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         protected readonly Random Random = new Random();
 
         protected void IncrementItemStack(
-            IGameData gameData, 
-            DataModels.GameSession session, 
+            IGameData gameData,
+            IPlayerInventoryProvider inventoryProvider,
+            DataModels.GameSession session,
             Character character, Guid itemId)
         {
-            var items = gameData.GetInventoryItems(character.Id, itemId);
-            if (items == null || items.Count == 0)
-            {
-                gameData.Add(CreateInventoryItem(character, itemId));
-            }
-            else
-            {
-                ++items.First().Amount;
-            }
-            var user = gameData.GetUser(character.UserId);
+            var inventory = inventoryProvider.Get(character.Id);
+            inventory.AddItem(itemId);
+
             gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, session, new ItemAdd
             {
-                UserId = user.UserId,
+                UserId = gameData.GetUser(character.UserId).UserId,
                 Amount = 1,
                 ItemId = itemId
             }));
@@ -43,8 +37,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public abstract void Handle(
             IIntegrityChecker integrityChecker,
             IGameData gameData,
-            DataModels.GameSession session, 
-            Character character, 
+            IPlayerInventoryProvider inventoryProvider,
+            DataModels.GameSession session,
+            Character character,
             DataModels.CharacterState state);
     }
 }

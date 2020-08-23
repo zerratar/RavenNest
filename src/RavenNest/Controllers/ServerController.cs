@@ -2,8 +2,10 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
+using RavenNest.Sessions;
 
 namespace RavenNest.Controllers
 {
@@ -11,54 +13,74 @@ namespace RavenNest.Controllers
     [ApiController]
     public class ServerController : ControllerBase
     {
+        private const string InsufficientPermissions = "You do not have permissions to call this API";
+
         private readonly IAuthManager authManager;
+        private readonly IGameData gameData;
+        private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly IServerManager serverManager;
-        private readonly ISecureHasher secureHasher;
 
         public ServerController(
             IAuthManager authManager,
-            IServerManager serverManager,
-            ISecureHasher secureHasher)
+            IGameData gameData,
+            ISessionInfoProvider sessionInfoProvider,
+            IServerManager serverManager)
         {
             this.authManager = authManager;
+            this.gameData = gameData;
+            this.sessionInfoProvider = sessionInfoProvider;
             this.serverManager = serverManager;
-            this.secureHasher = secureHasher;
         }
 
-        [HttpPost("message")]
-        public async Task BroadcastMessageAsync([FromBody]string message)
+        [HttpPost("message/{time}")]
+        public async Task BroadcastMessageAsync([FromBody] string message, int time)
+        {
+            await AssertAdminAccessAsync();
+            serverManager.BroadcastMessageAsync(message, time);
+        }
+
+        [HttpGet("message/{message}/{time}")]
+        public async Task BroadcastMessage1Async(string message, int time)
+        {
+            await AssertAdminAccessAsync();
+            serverManager.BroadcastMessageAsync(message, time);
+        }
+
+        private async Task AssertAdminAccessAsync()
         {
             var authToken = GetAuthToken();
-            AssertAuthTokenValidity(authToken);
-
-            if (!authManager.IsAdmin(authToken))
+            if (authToken != null)
             {
+                AssertAdminAuthToken(authToken);
                 return;
             }
 
-            await serverManager.BroadcastMessageAsync(message);
+            var twitchUser = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
+            AssertAdminTwitchUser(twitchUser);
         }
         private AuthToken GetAuthToken()
         {
             if (HttpContext.Request.Headers.TryGetValue("auth-token", out var value))
-            {
                 return authManager.Get(value);
-            }
+            if (sessionInfoProvider.TryGetAuthToken(HttpContext.Session, out var authToken))
+                return authToken;
             return null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void AssertAuthTokenValidity(AuthToken authToken)
+        private void AssertAdminAuthToken(AuthToken authToken)
         {
-            if (authToken == null) throw new NullReferenceException(nameof(authToken));
-            if (authToken.UserId == Guid.Empty) throw new NullReferenceException(nameof(authToken.UserId));
-            if (authToken.Expired) throw new Exception("Session has expired.");
-            if (string.IsNullOrEmpty(authToken.Token)) throw new Exception("Session has expired.");
-            if (authToken.Token != secureHasher.Get(authToken))
-            {
-                throw new Exception("Session has expired.");
-            }
+            if (authToken == null) throw new Exception(InsufficientPermissions);
+            var user = gameData.GetUser(authToken.UserId);
+            if (!user.IsAdmin.GetValueOrDefault()) throw new Exception(InsufficientPermissions);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void AssertAdminTwitchUser(Twitch.TwitchRequests.TwitchUser twitchUser)
+        {
+            if (twitchUser == null) throw new Exception(InsufficientPermissions);
+            var user = gameData.GetUser(twitchUser.Id);
+            if (!user.IsAdmin.GetValueOrDefault()) throw new Exception(InsufficientPermissions);
         }
     }
-
 }

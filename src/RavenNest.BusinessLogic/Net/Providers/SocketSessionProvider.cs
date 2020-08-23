@@ -18,6 +18,7 @@ namespace RavenNest.BusinessLogic.Net
     {
         private readonly ILogger logger;
         private readonly IIntegrityChecker integrityChecker;
+        private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly IGameData gameData;
         private readonly IGameManager gameManager;
         private readonly IGamePacketManager packetManager;
@@ -29,6 +30,7 @@ namespace RavenNest.BusinessLogic.Net
         public WebSocketConnectionProvider(
             ILogger<WebSocketConnectionProvider> logger,
             IIntegrityChecker integrityChecker,
+            IPlayerInventoryProvider inventoryProvider,
             IGameData gameData,
             IGameManager gameManager,
             IGamePacketManager packetManager,
@@ -37,6 +39,7 @@ namespace RavenNest.BusinessLogic.Net
         {
             this.logger = logger;
             this.integrityChecker = integrityChecker;
+            this.inventoryProvider = inventoryProvider;
             this.gameData = gameData;
             this.gameManager = gameManager;
             this.packetManager = packetManager;
@@ -62,6 +65,7 @@ namespace RavenNest.BusinessLogic.Net
             var session = new WebSocketConnection(
                 logger,
                 integrityChecker,
+                inventoryProvider,
                 gameData,
                 gameManager,
                 packetManager,
@@ -71,6 +75,20 @@ namespace RavenNest.BusinessLogic.Net
                 sessionToken);
 
             return socketSessions[sessionToken.SessionId] = session.Start();
+        }
+
+        public void KillAllConnections()
+        {
+            try
+            {
+                var connections = socketSessions.Values;
+                foreach (var item in connections)
+                {
+                    item.Dispose();
+                    this.Disconnected(item as WebSocketConnection);
+                }
+            }
+            catch { }
         }
 
         public bool TryGet(Guid sessionId, out IWebSocketConnection session)
@@ -118,6 +136,7 @@ namespace RavenNest.BusinessLogic.Net
             public WebSocketConnection(
                 ILogger logger,
                 IIntegrityChecker integrityChecker,
+                IPlayerInventoryProvider inventoryProvider,
                 IGameData gameData,
                 IGameManager gameManager,
                 IGamePacketManager packetManager,
@@ -136,7 +155,7 @@ namespace RavenNest.BusinessLogic.Net
                 this.ws = ws;
 
                 this.killTask = new TaskCompletionSource<object>();
-                this.gameProcessor = new GameProcessor(integrityChecker, this, gameData, gameManager, sessionToken);
+                this.gameProcessor = new GameProcessor(integrityChecker, this, inventoryProvider, gameData, gameManager, sessionToken);
             }
 
             internal Guid SessionId => this.sessionToken.SessionId;

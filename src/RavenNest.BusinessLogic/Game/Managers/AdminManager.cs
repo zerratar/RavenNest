@@ -1,4 +1,5 @@
-﻿using RavenNest.BusinessLogic.Data;
+﻿using Microsoft.Extensions.Logging;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.DataModels;
@@ -8,23 +9,63 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
+using InventoryItem = RavenNest.DataModels.InventoryItem;
 
 namespace RavenNest.BusinessLogic.Game
 {
+
     public class AdminManager : IAdminManager
     {
+        private readonly ILogger<AdminManager> logger;
+        private readonly IPlayerInventoryProvider inventoryProvider;
+        private readonly IItemResolver itemResolver;
         private readonly IPlayerManager playerManager;
         private readonly IGameData gameData;
-        private readonly ISecureHasher secureHasher;
 
         public AdminManager(
+            ILogger<AdminManager> logger,
+            IPlayerInventoryProvider inventoryProvider,
+            IItemResolver itemResolver,
             IPlayerManager playerManager,
             IGameData gameData,
             ISecureHasher secureHasher)
         {
+            this.logger = logger;
+            this.inventoryProvider = inventoryProvider;
+            this.itemResolver = itemResolver;
             this.playerManager = playerManager;
             this.gameData = gameData;
-            this.secureHasher = secureHasher;
+        }
+
+        public bool NerfItems()
+        {
+            return true;
+        }
+
+        public bool ProcessItemRecovery(string query)
+        {
+            try
+            {
+                var items = itemResolver.Resolve(query);
+
+                foreach (var charItems in items.GroupBy(x => x.Character.Id))
+                {
+                    var inventory = inventoryProvider.Get(charItems.Key);
+                    var invItems = inventory.GetInventoryItems();
+                    foreach (var item in charItems)
+                    {
+                        inventory.AddItem(item.Item.Id, (long)item.Amount);
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Failed to recover items: " + exc);
+                return false;
+            }
         }
 
         public bool KickPlayer(string userId)
@@ -87,6 +128,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var mainSkills = gameData.GetSkills(main.SkillsId);
             var mainResources = gameData.GetResources(main.ResourcesId);
+
             var mainInventory = gameData.GetInventoryItems(main.Id);
             var mainStatistics = gameData.GetStatistics(main.StatisticsId);
 
@@ -120,14 +162,17 @@ namespace RavenNest.BusinessLogic.Game
                     }
                     else
                     {
-                        gameData.Add(new DataModels.InventoryItem
+                        if (altItem.Amount > 0)
                         {
-                            Id = Guid.NewGuid(),
-                            Amount = altItem.Amount,
-                            CharacterId = main.Id,
-                            Equipped = false,
-                            ItemId = altItem.ItemId
-                        });
+                            gameData.Add(new DataModels.InventoryItem
+                            {
+                                Id = Guid.NewGuid(),
+                                Amount = altItem.Amount,
+                                CharacterId = main.Id,
+                                Equipped = false,
+                                ItemId = altItem.ItemId
+                            });
+                        }
                     }
                     gameData.Remove(altItem);
                 }

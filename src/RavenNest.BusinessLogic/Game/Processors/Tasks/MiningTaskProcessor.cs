@@ -13,11 +13,12 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public override void Handle(
             IIntegrityChecker integrityChecker,
             IGameData gameData,
+            IPlayerInventoryProvider inventoryProvider,
             DataModels.GameSession session,
             Character character,
             CharacterState state)
         {
-            UpdateResourceGain(integrityChecker, gameData, session, character, resources =>
+            UpdateResourceGain(integrityChecker, gameData, inventoryProvider, session, character, resources =>
             {
                 session.Updated = DateTime.UtcNow;
                 var skills = gameData.GetSkills(character.SkillsId);
@@ -35,7 +36,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     {
                         if (miningLevel >= res.SkillLevel && chance <= res.GetDropChance(miningLevel))
                         {
-                            IncrementItemStack(gameData, session, character, res.Id);
+                            IncrementItemStack(gameData, inventoryProvider, session, character, res.Id);
                             if (isMultiDrop)
                             {
                                 isMultiDrop = false;

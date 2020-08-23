@@ -5,7 +5,7 @@
     <div class="sections">
       <div class="section">
           <h2>Download</h2>
-          <p>You can download the current version, Windows only. <a href="https://github.com/zerratar/Ravenfall-Legacy/releases/download/v0.3.6a-alpha/Ravenfall.v0.3.6a-alpha.7z">Ravenfall.v0.3.6a-alpha.7z</a> ca 150mb</p>
+          <p>You can download the current version, Windows only. <a href="https://github.com/zerratar/Ravenfall-Legacy/releases/download/v0.3.7a-alpha/Ravenfall.v0.3.7a-alpha.7z">Ravenfall.v0.3.7a-alpha.7z</a> ca 150mb</p>
           <p>Make sure you have either WinRAR or 7zip installed. I recommend 7zip <a href="https://www.7-zip.org/download.html" target="_blank">www.7-zip.org/download</a></p>
           <p>Finally just unpack the archive where you want the game to be.</p>
       </div>
@@ -64,7 +64,7 @@
   export default class Download extends Vue {
   
     private mounted() {
-     
+     // https://www.ravenfall.stream/api/version/check
     }
   }
 </script>

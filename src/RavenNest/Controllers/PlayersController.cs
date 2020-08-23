@@ -29,6 +29,7 @@ namespace RavenNest.Controllers
 
         public PlayersController(
             ISessionInfoProvider sessionInfoProvider,
+            IPlayerInventoryProvider inventoryProvider,
             ISessionManager sessionManager,
             IPlayerManager playerManager,
             IRavenfallDbContextProvider dbProvider,

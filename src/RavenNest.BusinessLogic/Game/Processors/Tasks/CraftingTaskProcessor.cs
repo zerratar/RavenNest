@@ -7,10 +7,11 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     public class CraftingTaskProcessor : ResourceTaskProcessor
     {
         public override void Handle(
-            IIntegrityChecker integrityChecker, 
+            IIntegrityChecker integrityChecker,
             IGameData gameData,
-            DataModels.GameSession session, 
-            Character character, 
+            IPlayerInventoryProvider inventoryProvider,
+            DataModels.GameSession session,
+            Character character,
             CharacterState characterState)
         {
             var now = DateTime.UtcNow;
@@ -24,13 +25,13 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 if (resources.Ore >= OrePerIngot)
                 {
                     resources.Ore -= OrePerIngot;
-                    IncrementItemStack(gameData, session, character, IngotId);
+                    IncrementItemStack(gameData, inventoryProvider, session, character, IngotId);
                 }
 
                 if (resources.Wood >= WoodPerPlank)
                 {
                     resources.Wood -= WoodPerPlank;
-                    IncrementItemStack(gameData, session, character, PlankId);
+                    IncrementItemStack(gameData, inventoryProvider, session, character, PlankId);
                 }
 
                 UpdateResources(gameData, session, character, resources);

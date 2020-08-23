@@ -190,8 +190,8 @@ namespace RavenNest.BusinessLogic.Data
                     entitySets = new IEntitySet[]
                     {
                         appearances, syntyAppearances, characters, characterStates,
-                        gameSessions, /*gameEvents, */ inventoryItems, marketItems, items,
-                        resources, statistics, skills, users, gameClients, villages, villageHouses, clans,
+                        gameSessions, /*gameEvents, */ inventoryItems, marketItems,
+                        resources, statistics, skills, users, villages, villageHouses, clans,
                         npcs, npcSpawns, npcItemDrops
                     };
                 }
@@ -339,6 +339,10 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Character GetCharacter(Guid characterId) =>
             characters[characterId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Character GetCharacterByName(string name) =>
+            characters.Entities.FirstOrDefault(x => x.Name.ToLower() == name.ToLower());
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Character GetCharacterByUserId(Guid userId) =>
@@ -697,13 +701,23 @@ namespace RavenNest.BusinessLogic.Data
 
                     while (queue.TryPeek(out var saveData))
                     {
+                        if (saveData.Entities.Count == 0)
+                        {
+                            queue.Dequeue();
+                            continue;
+                        }
+
                         using (var con = db.GetConnection())
                         {
                             con.Open();
 
                             var query = queryBuilder.Build(saveData);
                             if (query == null || string.IsNullOrEmpty(query.Command))
-                                return;
+                            {
+                                queue.Dequeue();
+                                continue;
+                            }
+
 
                             var command = con.CreateCommand();
                             command.CommandText = query.Command;
@@ -718,9 +732,7 @@ namespace RavenNest.BusinessLogic.Data
                             }
 
                             ClearChangeSetState(saveData);
-
                             queue.Dequeue();
-
                             con.Close();
                         }
                     }

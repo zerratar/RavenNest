@@ -253,6 +253,10 @@ namespace RavenNest
             services.AddSingleton<IGamePacketManager, GamePacketManager>();
             services.AddSingleton<IQueryBuilder, QueryBuilder>();
 
+            services.AddSingleton<IItemResolver, ItemResolver>();
+
+            services.AddSingleton<IPlayerInventoryProvider, PlayerInventoryProvider>();
+
             services.AddSingleton<IGameData, GameData>();
             services.AddSingleton<IGameDataBackupProvider, GameDataBackupProvider>();
             services.AddSingleton<IGameDataMigration, GameDataMigration>();
