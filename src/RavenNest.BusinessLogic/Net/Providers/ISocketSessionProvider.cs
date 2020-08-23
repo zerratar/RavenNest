@@ -12,5 +12,6 @@ namespace RavenNest.BusinessLogic.Net
         bool TryGet(Guid sessionId, out IWebSocketConnection session);
         bool TryGet(SessionToken token, out IWebSocketConnection session);
         IWebSocketConnection Get(WebSocket ws, IReadOnlyDictionary<string, string> requestHeaders);
+        void KillAllConnections();
     }
 }

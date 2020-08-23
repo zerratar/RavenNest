@@ -7,12 +7,13 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     {
         public override void Handle(
             IIntegrityChecker integrityChecker, 
-            IGameData gameData, 
+            IGameData gameData,
+            IPlayerInventoryProvider inventoryProvider,
             GameSession session, 
             Character character, 
             CharacterState state)
         {
-            UpdateResourceGain(integrityChecker, gameData, session, character, resources => ++resources.Wood);
+            UpdateResourceGain(integrityChecker, gameData, inventoryProvider, session, character, resources => ++resources.Wood);
         }
     }
 }

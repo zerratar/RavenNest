@@ -8,6 +8,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public override void Handle(
             IIntegrityChecker integrityChecker, 
             IGameData gameData,
+            IPlayerInventoryProvider inventoryProvider,
             DataModels.GameSession session,
             Character character, 
             CharacterState state)

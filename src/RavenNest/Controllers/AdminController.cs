@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.BusinessLogic.Net;
 using RavenNest.Models;
 using RavenNest.Sessions;
 using System;
@@ -14,22 +15,54 @@ namespace RavenNest.Controllers
     public class AdminController : ControllerBase
     {
         private const string InsufficientPermissions = "You do not have permissions to call this API";
+        private readonly IWebSocketConnectionProvider socketProvider;
         private readonly IGameData gameData;
         private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly IAdminManager adminManager;
         private readonly IAuthManager authManager;
 
         public AdminController(
+            IWebSocketConnectionProvider socketProvider,
             IGameData gameData,
             ISessionInfoProvider sessionInfoProvider,
             IAdminManager adminManager,
             IAuthManager authManager)
         {
+            this.socketProvider = socketProvider;
             this.gameData = gameData;
             this.sessionInfoProvider = sessionInfoProvider;
             this.adminManager = adminManager;
             this.authManager = authManager;
         }
+
+        [HttpPost("item-recovery")]
+        public async Task<bool> ItemRecovery([FromBody] string query)
+        {
+            await AssertAdminAccessAsync();
+            return adminManager.ProcessItemRecovery(query);
+        }
+
+        [HttpGet("item-recovery/{query}")]
+        public async Task<bool> ItemRecoveryAsync(string query)
+        {
+            await AssertAdminAccessAsync();
+            return adminManager.ProcessItemRecovery(query);
+        }
+
+        [HttpGet("kill-sockets")]
+        public async Task KillConnections()
+        {
+            await AssertAdminAccessAsync();
+            socketProvider.KillAllConnections();
+        }
+
+        [HttpGet("nerf-items")]
+        public async Task<bool> NerfItemStacks()
+        {
+            await AssertAdminAccessAsync();
+            return adminManager.NerfItems();
+        }
+
 
         [HttpGet("players/{offset}/{size}/{order}/{query}")]
         public async Task<PagedPlayerCollection> GetPlayers(int offset, int size, string order, string query)

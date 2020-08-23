@@ -11,13 +11,16 @@ namespace RavenNest.BusinessLogic.Game
     public class MarketplaceManager : IMarketplaceManager
     {
         private readonly IPlayerManager playerManager;
+        private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly IGameData gameData;
 
         public MarketplaceManager(
             IPlayerManager playerManager,
+            IPlayerInventoryProvider inventoryProvider,
             IGameData gameData)
         {
             this.playerManager = playerManager;
+            this.inventoryProvider = inventoryProvider;
             this.gameData = gameData;
         }
 
@@ -58,30 +61,24 @@ namespace RavenNest.BusinessLogic.Game
                 return new ItemSellResult(ItemTradeState.Failed);
             }
 
-            var itemsToSell = gameData.GetInventoryItems(character.Id, itemId);
+            var inventory = inventoryProvider.Get(character.Id);
 
-            var totalItemCount = itemsToSell.Count > 0 ? itemsToSell.Sum(x => x.Amount.GetValueOrDefault()) : 0;
-            var newItemAmount = totalItemCount - amount;
+            var itemToSell = inventory.GetItem(itemId);
 
-            if (itemsToSell.Count == 0 || newItemAmount < 0)
+            if (itemToSell.IsNull())
             {
                 return new ItemSellResult(ItemTradeState.DoesNotOwn);
             }
 
-            gameData.RemoveRange(itemsToSell);
+            var totalItemCount = itemToSell.Amount;//itemsToSell.Count > 0 ? itemsToSell.Sum(x => x.Amount.GetValueOrDefault()) : 0;
+            var newItemAmount = totalItemCount - amount;
 
-            if (newItemAmount > 0)
+            if (newItemAmount < 0)
             {
-                var mergedInventoryItem = new InventoryItem
-                {
-                    Id = Guid.NewGuid(),
-                    Amount = newItemAmount,
-                    CharacterId = character.Id,
-                    Equipped = false,
-                    ItemId = itemId,
-                };
-                gameData.Add(mergedInventoryItem);
+                return new ItemSellResult(ItemTradeState.DoesNotOwn);
             }
+
+            inventory.RemoveItem(itemId, amount);
 
             var marketItem = new DataModels.MarketItem
             {
@@ -204,9 +201,9 @@ namespace RavenNest.BusinessLogic.Game
                     boughtPricePerItem.ToArray(), 0, 0);
             }
 
-            character = GetCharacterAsync(token, userId);
 
-            playerManager.EquipBestItems(character);
+            var inventory = inventoryProvider.Get(character.Id);
+            inventory.EquipBestItems();
 
             return new ItemBuyResult(
                 ItemTradeState.Success,
@@ -239,24 +236,9 @@ namespace RavenNest.BusinessLogic.Game
             var seller = gameData.GetUser(sellerCharacter.UserId);
             var buyer = gameData.GetUser(character.UserId);
 
-            var inventoryItems = gameData.GetInventoryItems(character.Id, itemId);
-            var mergeAmount = buyAmount;
-            if (inventoryItems.Count > 0)
-            {
-                mergeAmount += inventoryItems.Sum(x => x.Amount.GetValueOrDefault());
-                gameData.RemoveRange(inventoryItems);
-            }
 
-            var mergedInventoryItem = new InventoryItem
-            {
-                Id = Guid.NewGuid(),
-                Amount = mergeAmount,
-                CharacterId = character.Id,
-                Equipped = false,
-                ItemId = itemId,
-            };
-
-            gameData.Add(mergedInventoryItem);
+            var inventory = inventoryProvider.Get(character.Id);
+            inventory.AddItem(itemId, buyAmount);
 
             var model = new ItemTradeUpdate
             {

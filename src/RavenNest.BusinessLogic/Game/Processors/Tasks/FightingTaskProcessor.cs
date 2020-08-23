@@ -7,7 +7,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     {
         public void Handle(
             IIntegrityChecker integrityChecker,
-            IGameData gameData, 
+            IGameData gameData,
+            IPlayerInventoryProvider inventoryProvider,
             GameSession session, 
             Character character, 
             CharacterState state)

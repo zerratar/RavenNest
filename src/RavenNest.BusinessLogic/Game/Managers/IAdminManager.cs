@@ -12,5 +12,7 @@ namespace RavenNest.BusinessLogic.Game
         bool KickPlayer(string userId);
         bool SuspendPlayer(string userId);
         bool ResetUserPassword(string userid);
+        bool ProcessItemRecovery(string query);
+        bool NerfItems();
     }
 }

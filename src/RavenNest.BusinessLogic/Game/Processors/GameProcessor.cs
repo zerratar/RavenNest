@@ -21,6 +21,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private readonly IGameManager gameManager;
         private readonly IIntegrityChecker integrityChecker;
         private readonly IWebSocketConnection ws;
+        private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly SessionToken sessionToken;
 
         private int gameRevision = 0;
@@ -28,6 +29,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         public GameProcessor(
             IIntegrityChecker integrityChecker,
             IWebSocketConnection ws,
+            IPlayerInventoryProvider inventoryProvider,
             IGameData gameData,
             IGameManager gameManager,
             SessionToken sessionToken)
@@ -36,6 +38,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             this.gameManager = gameManager;
             this.integrityChecker = integrityChecker;
             this.ws = ws;
+            this.inventoryProvider = inventoryProvider;
             this.sessionToken = sessionToken;
 
             RegisterPlayerTask<VillageProcessor>(VillageProcessorName);
@@ -87,7 +90,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             if (session == null)
                 return;
 
-            villageProcessor.Handle(integrityChecker, gameData, session, null, null);
+            villageProcessor.Handle(integrityChecker, gameData, inventoryProvider, session, null, null);
 
             foreach (var character in characters)
             {
@@ -109,7 +112,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
                 ITaskProcessor taskProcessor = GetTaskProcessor(state.Task);
                 if (taskProcessor != null)
-                    taskProcessor.Handle(integrityChecker, gameData, session, character, state);
+                    taskProcessor.Handle(integrityChecker, gameData, inventoryProvider, session, character, state);
             }
         }
 
