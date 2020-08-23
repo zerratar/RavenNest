@@ -14,7 +14,7 @@ namespace RavenNest.BusinessLogic.Data
     public class GameDataMigration : IGameDataMigration
     {
         private readonly ILogger<GameDataMigration> logger;
-
+        private readonly HashSet<Guid> importedUsers = new HashSet<Guid>();
         public GameDataMigration(ILogger<GameDataMigration> logger)
         {
             this.logger = logger;
@@ -36,13 +36,15 @@ namespace RavenNest.BusinessLogic.Data
                 var resources = restorePoint.Get<Resources>();
                 var charStates = restorePoint.Get<CharacterState>();
                 var charStats = restorePoint.Get<Statistics>();
-                var invItems = restorePoint.Get<InventoryItem>();
+                IReadOnlyList<InventoryItem> invItems = Merge(restorePoint.Get<InventoryItem>());
                 var villages = restorePoint.Get<Village>();
                 var villageHouses = restorePoint.Get<VillageHouse>();
 
                 var failedCount = 0;
                 using (var con = db.GetConnection())
                 {
+                    con.Open();
+
                     logger.LogInformation("Truncating db...");
 
                     var restoreTypes = restorePoint.GetEntityTypes();
@@ -68,37 +70,45 @@ namespace RavenNest.BusinessLogic.Data
                     var index = 0;
                     foreach (var character in characters)
                     {
-                        var cmdQuery = BuildInsertQuery(
-                            queryBuilder,
-                            character,
-                            users,
-                            marketplaceItems,
-                            skills,
-                            syntyAppearance,
-                            appearances,
-                            resources,
-                            charStates,
-                            charStats,
-                            invItems,
-                            villages,
-                            villageHouses);
-
-                        var results = 0;
-                        foreach (var q in cmdQuery)
+                        try
                         {
-                            using (var cmd = con.CreateCommand())
+                            var cmdQuery = BuildInsertQuery(
+                                queryBuilder,
+                                character,
+                                users,
+                                marketplaceItems,
+                                skills,
+                                syntyAppearance,
+                                appearances,
+                                resources,
+                                charStates,
+                                charStats,
+                                invItems,
+                                villages,
+                                villageHouses);
+
+                            var results = 0;
+                            foreach (var q in cmdQuery)
                             {
-                                cmd.CommandText = q;
-                                results += cmd.ExecuteNonQuery();
+                                using (var cmd = con.CreateCommand())
+                                {
+                                    cmd.CommandText = q;
+                                    results += cmd.ExecuteNonQuery();
+                                }
+                            }
+                            if (results < 7)
+                            {
+                                failedCount++;
+                                logger.LogError($"{character.Name} failed to migrate!!");
                             }
                         }
-                        if (results < 7)
+                        catch (Exception exc)
                         {
-                            failedCount++;
-                            logger.LogError($"{character.Name} failed to migrate!!");
+                            logger.LogError($"Failed to migrate player!!: " + exc);
                         }
                         ++index;
                     }
+                    con.Close();
                 }
 
                 sw.Stop();
@@ -108,6 +118,43 @@ namespace RavenNest.BusinessLogic.Data
             {
                 logger.LogError($"Data migration failed!! " + exc);
             }
+        }
+
+        private IReadOnlyList<InventoryItem> Merge(IReadOnlyList<InventoryItem> readOnlyLists)
+        {
+            var before = readOnlyLists.Count;
+            List<InventoryItem> items = new List<InventoryItem>();
+            if (readOnlyLists.Count > 0)
+            {
+                foreach (var playerItems in readOnlyLists.GroupBy(x => x.CharacterId))
+                {
+                    foreach (var itemStacks in playerItems.GroupBy(x => x.ItemId))
+                    {
+                        var amount = itemStacks.FirstOrDefault().Amount;
+                        var itemId = itemStacks.Key;
+                        var characterId = itemStacks.FirstOrDefault().CharacterId;
+
+                        var equipped = itemStacks.FirstOrDefault(x => x.Equipped);
+                        if (equipped != null)
+                        {
+                            equipped.Amount = 1;
+                            --amount;
+                            items.Add(equipped);
+                        }
+
+                        var stack = itemStacks.FirstOrDefault(x => !x.Equipped);
+                        if (stack != null)
+                        {
+                            stack.Amount += amount;
+                            if (stack.Amount > 10000)
+                                stack.Amount = 10;
+
+                            items.Add(stack);
+                        }
+                    }
+                }
+            }
+            return items;
         }
 
         private string[] BuildInsertQuery(
@@ -131,7 +178,11 @@ namespace RavenNest.BusinessLogic.Data
             User user = users.FirstOrDefault(x => x.Id == character.UserId);
             if (user == null) return new string[0];
 
-            query.AppendLine(qb.Insert(user));
+            if (importedUsers.Add(user.Id))
+            {
+                query.AppendLine(qb.Insert(user));
+            }
+
 
             Skills skill = skills.FirstOrDefault(x => x.Id == character.SkillsId);
             if (skill != null)
@@ -207,23 +258,26 @@ namespace RavenNest.BusinessLogic.Data
             if (village != null)
                 query.AppendLine(qb.Insert(village));
 
-            VillageHouse[] villageHouse = villageHouses.Where(x => x.VillageId == village.Id).ToArray();
-            if (villageHouse.Length > 0)
+            if (village != null)
             {
-                if (villageHouse.Length > 100)
+                VillageHouse[] villageHouse = villageHouses.Where(x => x.VillageId == village.Id).ToArray();
+                if (villageHouse.Length > 0)
                 {
-                    for (var i = 0; i < villageHouse.Length;)
+                    if (villageHouse.Length > 100)
                     {
-                        var take = villageHouse.Skip(i * 100).Take(100).ToArray();
+                        for (var i = 0; i < villageHouse.Length;)
+                        {
+                            var take = villageHouse.Skip(i * 100).Take(100).ToArray();
 
-                        queries.Add(qb.InsertMany(take));
+                            queries.Add(qb.InsertMany(take));
 
-                        i += take.Length;
+                            i += take.Length;
+                        }
                     }
-                }
-                else
-                {
-                    queries.Add(qb.InsertMany(villageHouse));
+                    else
+                    {
+                        queries.Add(qb.InsertMany(villageHouse));
+                    }
                 }
             }
 

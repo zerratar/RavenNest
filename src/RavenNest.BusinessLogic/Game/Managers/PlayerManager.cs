@@ -306,8 +306,9 @@ namespace RavenNest.BusinessLogic.Game
 
                     results.Add(true);
                 }
-                catch
+                catch (Exception exc)
                 {
+                    logger.LogError("Failed updating many: " + exc);
                     results.Add(false);
                 }
             }
