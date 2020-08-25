@@ -45,7 +45,7 @@ import AdminService from '@/logic/admin-service';
   export default class PlayerSkills extends Vue {
 
     @Prop(Player) player! : Player;
-    @Prop(Boolean) visible! : Boolean;
+    @Prop(Boolean) visible! : boolean;
 
     private revision: number = 0;
     private isVisible: boolean = false;
@@ -54,12 +54,12 @@ import AdminService from '@/logic/admin-service';
     public getAllStats(): Skill[] {
         const stats : Skill[] = [];
         let index = 1;
-        for(let stat in this.skills) {
-          if (stat == "id" || stat == "revision") continue;
+        for(const stat in this.skills) {
+          if (stat === 'id' || stat === 'revision') continue;
           const statItem = new Skill();
           statItem.index = index++;
           statItem.name = this.getDisplayName(stat);
-          statItem.experience = (<any>this.skills)[stat];
+          statItem.experience = (this.skills as any)[stat];
           statItem.level = GameMath.expTolevel(statItem.experience);
           stats.push(statItem);
         }
@@ -73,30 +73,30 @@ import AdminService from '@/logic/admin-service';
     }
 
     public cancelEditExp(stat: Skill) {
-      let edit = this.skillEdit.get(stat.name);
+      const edit = this.skillEdit.get(stat.name);
       if (!edit) return;
       edit.isEditing = false;
       ++this.revision;
     }
 
-    public applyEditExp(stat: Skill) {      
-      let edit = this.skillEdit.get(stat.name);
+    public applyEditExp(stat: Skill) {
+      const edit = this.skillEdit.get(stat.name);
       if (!edit||!this.skills) return;
 
-      AdminService.updatePlayerStat(this.player.userId, stat.name, stat.experience).then(res => {        
+      AdminService.updatePlayerStat(this.player.userId, stat.name, stat.experience).then(res => {
         if (!edit||!this.skills) return;
         if (res) {
-          edit.experience = stat.experience;      
+          edit.experience = stat.experience;
           edit.isEditing = false;
-          (<any>this.skills)[stat.name] = stat.experience;
+          (this.skills as any)[stat.name] = stat.experience;
           ++this.revision;
         }
       });
     }
 
     public editExp(stat: Skill) {
-      console.log("editExp: " + stat.name);
-      let edit = this.skillEdit.get(stat.name);      
+      console.log('editExp: ' + stat.name);
+      let edit = this.skillEdit.get(stat.name);
       if (!edit) {
         edit = new ExperienceEdit();
         edit.index = stat.index;
@@ -116,16 +116,16 @@ import AdminService from '@/logic/admin-service';
     public getStat(name:string):number {
       const stats = this.skills;
       if (!stats) return 0;
-      return (<any>stats)[name];
+      return (stats as any)[name];
     }
 
     public close() {
       this.visible = false;
       this.$emit('closed');
-    }    
+    }
 
     public get playerName(): string {
-      if (!this.player) return "";
+      if (!this.player) return '';
       return this.player.name;
     }
 
@@ -133,8 +133,8 @@ import AdminService from '@/logic/admin-service';
       let output = name.charAt(0).toUpperCase();
       for(let i = 1; i < name.length; ++i) {
         const letter = name.charAt(i);
-        if (letter.toUpperCase() == letter) {
-          output += " ";
+        if (letter.toUpperCase() === letter) {
+          output += ' ';
         }
         output += letter;
       }
@@ -143,8 +143,8 @@ import AdminService from '@/logic/admin-service';
 
   }
 
-  class ExperienceEdit {    
-    public name: string = "";
+  class ExperienceEdit {
+    public name: string = '';
     public index: number = 0;
     public experience: number = 0;
     public isEditing: boolean = false;
@@ -152,7 +152,7 @@ import AdminService from '@/logic/admin-service';
 
   class Skill {
     public index: number = 0;
-    public name: string = "";
+    public name: string = '';
     public experience: number = 0;
     public level: number = 0;
   }

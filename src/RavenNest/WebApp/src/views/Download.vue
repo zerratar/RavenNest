@@ -86,7 +86,7 @@
       this.downloadName += '.7z';
       this.downloadUri = String(downloadInfo.downloadUrl).replace('update.7z', this.downloadName);
 
-      if(this.downloadName !== '' && this.downloadUri !== '') {
+      if (this.downloadName !== '' && this.downloadUri !== '') {
         this.downloadSuccessful = true;
       }
     }

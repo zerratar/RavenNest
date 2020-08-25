@@ -40,11 +40,7 @@
 </template>
 
 <script lang="ts">
-  import {
-    Component,
-    Vue,
-  } from 'vue-property-decorator';
-  
+  import { Component, Vue } from 'vue-property-decorator';
   import { SessionState } from '@/App.vue';
   import GameMath from '@/logic/game-math';
   import { GameSession } from '@/logic/models';
@@ -52,35 +48,34 @@
   import MyPlayer from '@/logic/my-player';
   import Requests from '@/requests';
   import router from 'vue-router';
-import AdminService from '@/logic/admin-service';
- 
+  import AdminService from '@/logic/admin-service';
 
   @Component({})
   export default class Sessions extends Vue {
 
     private loadCounter: number = 0;
     private currentPage: number = 0;
-    private sortOrder: string = "";    
-    private query: string = "";
+    private sortOrder: string = '';
+    private query: string = '';
     private revision: number = 0;
 
-    public streamerUrl(name:string): string {
+    public streamerUrl(name: string): string {
       return `https://www.twitch.tv/${name}`;
     }
 
-    mounted() {
-      const sessionState = SessionState.get();                  
+    private mounted() {
+      const sessionState = SessionState.get();
 
       if (sessionState !== null && !sessionState.authenticated && !sessionState.administrator) {
-        this.$router.push("/login");
+        this.$router.push('/login');
         return;
-      }      
+      }
 
       this.loadSessionPageAsync(this.currentPage);
       setTimeout(() => ++this.revision, 500);
     }
 
-    getSessions(): GameSession[] {
+    private getSessions(): GameSession[] {
       if (!SessionRepository) return [];
       return SessionRepository.getSessions(this.currentPage, this.sortOrder, this.query);
     }
@@ -89,10 +84,10 @@ import AdminService from '@/logic/admin-service';
       ++this.loadCounter;
 
       SessionRepository.loadSessionsAsync(
-          pageIndex, 
-          this.sortOrder, 
+          pageIndex,
+          this.sortOrder,
           this.query).then(() => {
-            --this.loadCounter;  
+            --this.loadCounter;
             ++this.revision;
           });
     }

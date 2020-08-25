@@ -92,11 +92,7 @@
 </template>
 
 <script lang="ts">
-  import {
-    Component,
-    Vue,
-  } from 'vue-property-decorator';
-  
+  import { Component, Vue } from 'vue-property-decorator';
   import { SessionState } from '@/App.vue';
   import GameMath from '@/logic/game-math';
   import { CharacterSkill, Player } from '@/logic/models';
@@ -105,7 +101,7 @@
   import Requests from '@/requests';
   import router from 'vue-router';
   import PlayerRepository from '../../logic/player-repository';
-  import AdminService from '../../logic/admin-service'; 
+  import AdminService from '../../logic/admin-service';
 
   import PlayerStatistics from './PlayerStatistics.vue';
   import PlayerInventory from './PlayerInventory.vue';
@@ -115,7 +111,7 @@
 
 
   @Component({
-    components: { 
+    components: {
       PlayerStatistics, PlayerResources, PlayerSkills,
       PlayerState, PlayerInventory
       }
@@ -126,8 +122,8 @@
     private currentPage: number = 0;
     private loadCounter: number = 0;
     private playerEdit: Map<string,PlayerEdit> = new Map<string, PlayerEdit>();
-    private sortOrder: string = "";
-    private query: string = "";
+    private sortOrder: string = '';
+    private query: string = '';
     private revision: number = 0;
 
     private isStatisticsVisible: boolean = false;
@@ -138,9 +134,9 @@
 
     private playerInFocus: Player | null = null;
 
-    private changePasswordUserId: string = "";
-    private newPassword: string = "";
-    
+    private changePasswordUserId: string = '';
+    private newPassword: string = '';
+
     getStatisticsVisible(): boolean { return this.isStatisticsVisible; }
     getResourcesVisible(): boolean { return this.isResourcesVisible; }
     getSkillsVisible(): boolean { return this.isSkillsVisible; }
@@ -148,101 +144,101 @@
     getStateVisible(): boolean { return this.isStateVisible; }
     getFocusedPlayer(): Player|null { return this.playerInFocus; }
 
-    mounted() {      
-      const sessionState = SessionState.get();                  
+    private mounted() {
+      const sessionState = SessionState.get();
 
       if (sessionState !== null && !sessionState.authenticated && !sessionState.administrator) {
-        this.$router.push("/login");
+        this.$router.push('/login');
         return;
-      }      
+      }
       this.previousPage();
       setTimeout(() => ++this.revision, 500);
     }
 
-    filter() {
+    private filter() {
       this.hideModals();
       if (this.filterTimeout) clearTimeout(this.filterTimeout);
       this.filterTimeout = setTimeout(() => this.applyFilter(), 250);
     }
 
-    applyFilter() {
+    private applyFilter() {
       this.currentPage = 0;
-      this.hideModals();  
+      this.hideModals();
       this.loadPlayerPageAsync(this.currentPage);
     }
 
-    hideModals() {
-      this.isStatisticsVisible = false;      
+    private hideModals() {
+      this.isStatisticsVisible = false;
       this.isResourcesVisible = false;
       this.isSkillsVisible = false;
       this.isInventoryVisible = false;
       this.isStateVisible = false;
     }
 
-    getSortOrderClass(order: string) {      
+    private getSortOrderClass(order: string) {
       return this.getSortOrder(order) ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
     }
 
-    getSortOrder(order: string): boolean {
-      return this.sortOrder.substring(1) == order && (this.sortOrder.charAt(0) == '+' || this.sortOrder.charAt(0) == '1');
+    private getSortOrder(order: string): boolean {
+      return this.sortOrder.substring(1) === order && (this.sortOrder.charAt(0) === '+' || this.sortOrder.charAt(0) === '1');
     }
 
-    orderBy(order: string) {
+    private orderBy(order: string) {
       const ascending = this.getSortOrder(order);
       this.sortOrder = (ascending ? '0' : '1') + order;
       this.applyFilter();
     }
 
-    editingName(userId: string): boolean {
+    private editingName(userId: string): boolean {
       const edit = this.playerEdit.get(userId);
       return !!edit && edit.isEditing;
     }
 
-    applyEditName(userId: string) {
+    private applyEditName(userId: string) {
       this.hideModals();
       const edit = this.playerEdit.get(userId);
       if (!edit) return;
       const player = PlayerRepository.getPlayer(userId);
-      if (!player) { 
-        console.error(`no user found for editing name (userId: ${userId})`);
+      if (!player) {
+        console.error('no user found for editing name (userId: ${userId})');
         return;
       }
 
       AdminService.updatePlayerName(userId, player.name).then(res => {
         if (res) {
           edit.name = player.name;
-          edit.isEditing = false;   
+          edit.isEditing = false;
           ++this.revision;
         }
       });
     }
 
-    cancelEditName(userId: string) {
+    private cancelEditName(userId: string) {
       this.hideModals();
       const edit = this.playerEdit.get(userId);
       if (!edit) return;
       const player = PlayerRepository.getPlayer(userId);
-      if (!player) { 
-        console.error(`no user found for editing name (userId: ${userId})`);
+      if (!player) {
+        console.error('no user found for editing name (userId: ${userId})');
         return;
       }
       player.name = edit.name;
       edit.isEditing = false;
-      ++this.revision;    
+      ++this.revision;
     }
 
-    editName(userId: string) {
+    private editName(userId: string) {
       this.hideModals();
       let edit = this.playerEdit.get(userId);
       const player = PlayerRepository.getPlayer(userId);
       if (!player) {
-        console.error(`no user found for editing name (userId: ${userId})`);
+        console.error('no user found for editing name (userId: ${userId})');
         return;
       }
 
       if (!edit) {
         edit = new PlayerEdit();
-        edit.userId = userId; 
+        edit.userId = userId;
         edit.name = player.name;
         this.playerEdit.set(userId, edit);
       }
@@ -251,40 +247,41 @@
       ++this.revision;
     }
 
-    showModal(userId: string, action: Function) {
+    // tslint:disable-next-line:ban-types
+    private showModal(userId: string, action: Function) {
       this.hideModals();
-      this.playerInFocus = PlayerRepository.getPlayer(userId);      
+      this.playerInFocus = PlayerRepository.getPlayer(userId);
       action();
       ++this.revision;
     }
 
-    showStatistics(userId: string) {
+    private showStatistics(userId: string) {
       this.showModal(userId, () => this.isStatisticsVisible = true);
     }
 
-    showSkills(userId: string) {
+    private showSkills(userId: string) {
       this.showModal(userId, () => this.isSkillsVisible = true);
     }
 
-    showState(userId: string) {
+    private showState(userId: string) {
       this.showModal(userId, () => this.isStateVisible = true);
     }
 
-    showResources(userId: string) {
+    private showResources(userId: string) {
       this.showModal(userId, () => this.isResourcesVisible = true);
     }
 
-    showInventory(userId: string) {      
+    private showInventory(userId: string) {
       this.showModal(userId, () => {
-        this.isInventoryVisible = true;        
+        this.isInventoryVisible = true;
         const player = this.getFocusedPlayer();
         if (!player) return;
-        console.log("Showing inventory for player: " + player.name);
+        console.log('Showing inventory for player: ' + player.name);
       });
     }
 
-    kickPlayer(userId: string) {
-      if (!confirm("Are you sure you want to kick this player?")) return;
+    private kickPlayer(userId: string) {
+      if (!confirm('Are you sure you want to kick this player?')) return;
       AdminService.kickPlayer(userId).then(res => {
         if (res) {
           ++this.revision;
@@ -292,8 +289,8 @@
       });
     }
 
-    mergePlayer(userId: string) {
-      if (!confirm("Are you sure you want to merge this player?")) return;
+    private mergePlayer(userId: string) {
+      if (!confirm('Are you sure you want to merge this player?')) return;
       AdminService.mergePlayer(userId).then(res => {
         if (res) {
           ++this.revision;
@@ -303,54 +300,54 @@
       });
     }
 
-    resetPassword(userId: string) {
+    private resetPassword(userId: string) {
       const password: string = this.newPassword;
-      if (!confirm("Are you sure you want to reset the password?")) return;
+      if (!confirm('Are you sure you want to reset the password?')) return;
         AdminService.resetPassword(userId).then(res => {
-        if (res) {          
+        if (res) {
           ++this.revision;
-        }        
+        }
       });
     }
 
-    suspend(userId: string) {
-      if (!confirm("Are you sure you want to suspend this player?")) return;
+    private suspend(userId: string) {
+      if (!confirm('Are you sure you want to suspend this player?')) return;
       console.log(`suspend user: ${userId}`);
     }
 
-    previousPage() {
+    private previousPage() {
       ++this.revision;
       this.currentPage = Math.max(this.currentPage - 1, 0);
       this.loadPlayerPageAsync(this.currentPage);
     }
 
-    nextPage() {
+    private nextPage() {
       ++this.revision;
       this.currentPage = Math.min(this.currentPage + 1, PlayerRepository.getPageCount() - 1);
       this.loadPlayerPageAsync(this.currentPage);
     }
 
-    getPlayers(): Player[] {
+    private getPlayers(): Player[] {
       if (!PlayerRepository) return [];
       return PlayerRepository.getPlayers(this.currentPage, this.sortOrder, this.query);
     }
 
-    getPlayerCount(): number {
+    private getPlayerCount(): number {
       if (!PlayerRepository) return 0;
       return PlayerRepository.getTotalCount();
     }
-    
-    getPageCount(): number {
+
+    private getPageCount(): number {
       if (!PlayerRepository) return 0;
       return PlayerRepository.getPageCount();
     }
 
-    getOffset(): number {
+    private getOffset(): number {
       if (!PlayerRepository) return 0;
       return PlayerRepository.getOffset(this.currentPage);
     }
 
-    getPageNumber(): number {
+    private getPageNumber(): number {
       return this.currentPage + 1;
     }
 
@@ -358,10 +355,10 @@
       ++this.loadCounter;
 
       PlayerRepository.loadPlayersAsync(
-          pageIndex, 
-          this.sortOrder, 
+          pageIndex,
+          this.sortOrder,
           this.query).then(() => {
-            --this.loadCounter;  
+            --this.loadCounter;
             ++this.revision;
           });
     }
@@ -372,8 +369,8 @@
   }
 
 class PlayerEdit {
-  public userId: string = "";
-  public name: string = "";
+  public userId: string = '';
+  public name: string = '';
   public isEditing: boolean = false;
 }
 

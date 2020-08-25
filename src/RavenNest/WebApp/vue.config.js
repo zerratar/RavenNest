@@ -3,5 +3,9 @@ module.exports = {
   filenameHashing: false,
   configureWebpack: {
     devtool: 'source-map'
-  }  
+  },
+  chainWebpack: config => {
+    config.performance
+      .maxAssetSize(650000)
+  }
 }

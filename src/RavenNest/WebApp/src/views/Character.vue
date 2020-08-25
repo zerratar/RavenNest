@@ -41,7 +41,7 @@
   export default class Character extends Vue {
     private loadCounter: number = 0;
 
-    public getCombatLevel(): number{
+    public getCombatLevel(): number {
       return MyPlayer.getCombatLevel();
     }
 
@@ -49,22 +49,22 @@
       return MyPlayer.playerName;
     }
 
-    mounted() {      
-      const sessionState = SessionState.get();                  
+    private mounted() {
+      const sessionState = SessionState.get();
 
       if (sessionState !== null && !sessionState.authenticated) {
-        this.$router.push("/login");
+        this.$router.push('/login');
         return;
       }
 
       ++this.loadCounter;
       ItemRepository.loadItemsAsync().then(() => {
-        --this.loadCounter;  
+        --this.loadCounter;
         this.$forceUpdate();
-      });      
+      });
 
       ++this.loadCounter;
-      MyPlayer.getPlayerDataAsync().then(()=>{
+      MyPlayer.getPlayerDataAsync().then(() => {
         --this.loadCounter;
         this.$forceUpdate();
         this.$router.push('/character/skills');

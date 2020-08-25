@@ -87,10 +87,10 @@ import Inventory from '../character/Inventory.vue';
   export default class PlayerInventory extends Vue {
 
     @Prop(Player) player! : Player;
-    @Prop(Boolean) visible! : Boolean;
+    @Prop(Boolean) visible! : boolean;
 
     private revision: number = 0;
-    private isVisible: boolean = false;    
+    private isVisible: boolean = false;
     private playerInfo: PlayerInfo | null = null;
     private readonly tooltipVisibility: Map<string,boolean> = new Map<string, boolean>();
 
@@ -99,11 +99,11 @@ import Inventory from '../character/Inventory.vue';
     }
 
     public get playerName(): string {
-      if (!this.player) return "";
+      if (!this.player) return '';
       return this.player.name;
     }
     public get playerId(): string {
-      if (!this.player) return "";
+      if (!this.player) return '';
       return this.player.userId;
     }
 
@@ -128,13 +128,13 @@ import Inventory from '../character/Inventory.vue';
     public getStat(name:string):number {
       const stats = this.inventoryItems;
       if (!stats) return 0;
-      return (<any>stats)[name];
+      return (stats as any)[name];
     }
 
     public close() {
       this.visible = false;
       this.$emit('closed');
-    }    
+    }
 
 
     public mouseOverItem(invItem: InventoryItem): void {
@@ -144,7 +144,7 @@ import Inventory from '../character/Inventory.vue';
 
     public mouseExitItem(invItem: InventoryItem): void {
         this.tooltipVisibility.set(invItem.id, false);
-        this.$forceUpdate();        
+        this.$forceUpdate();
     }
 
     public getTooltipVisible(invItem: InventoryItem): boolean {
@@ -155,9 +155,9 @@ import Inventory from '../character/Inventory.vue';
         const itemStats: ItemStat[] = [];
         const item = invItem.item;
         if (!item) return itemStats;
-        if (item.weaponAim > 0) itemStats.push(new ItemStat("Aim", item.weaponAim));
-        if (item.weaponPower > 0) itemStats.push(new ItemStat("Power", item.weaponPower));
-        if (item.armorPower > 0) itemStats.push(new ItemStat("Armor", item.armorPower));
+        if (item.weaponAim > 0) itemStats.push(new ItemStat('Aim', item.weaponAim));
+        if (item.weaponPower > 0) itemStats.push(new ItemStat('Power', item.weaponPower));
+        if (item.armorPower > 0) itemStats.push(new ItemStat('Armor', item.armorPower));
         return itemStats;
     }
 
@@ -172,47 +172,47 @@ import Inventory from '../character/Inventory.vue';
     public getItemAmount(item: InventoryItem): string {
         const value = item.amount;
         if (value >= 1000_000) {
-			var mils = value / 1000000.0;
-			return Math.round(mils) + "M";
-		}
-		else if (value > 1000) {
-			var ks = value / 1000;
-			return Math.round(ks) + "K";
-		}		
+            const mils = value / 1000000.0;
+            return Math.round(mils) + 'M';
+        }
+        else if (value > 1000) {
+            const ks = value / 1000;
+            return Math.round(ks) + 'K';
+        }
         return item.amount.toString();
     }
 
     public getItemType(item: InventoryItem): string {
-        if(!item.item) return "";
+        if(!item.item) return '';
         switch(item.item.type) {
-            case 1: return "Two Handed Sword";
-            case 2: return "One Handed Sword";
-            case 3: return "Two Handed Axe";
-            case 4: return "One Handed Axe";
-            case 5: return "Two Handed Staff";
-            case 6: return "Two Handed Bow";
-            case 7: return "One Handed Mace";
-            case 8: return "Helm";
-            case 9: return "Chest";
-            case 10: return "Gloves";
-            case 11: return "Boots";
-            case 12: return "Leggings";
-            case 13: return "Shield";
-            case 14: return "Left Shoulder Piece";
-            case 15: return "Right Shoulder Piece";
-            case 16: return "Ring";
-            case 17: return "Amulet";
-            case 18: return "Food";
-            case 19: return "Potion";
-            case 20: return "Pet";
-            case 21: return "Coins";
-            case 22: return "Wood";
-            case 23: return "Ore";
-            case 24: return "Fish";
-            case 25: return "Wheat";
-            case 26: return "Arrows";
-            case 27: return "Magic";
-            default: return "";
+            case 1: return 'Two Handed Sword';
+            case 2: return 'One Handed Sword';
+            case 3: return 'Two Handed Axe';
+            case 4: return 'One Handed Axe';
+            case 5: return 'Two Handed Staff';
+            case 6: return 'Two Handed Bow';
+            case 7: return 'One Handed Mace';
+            case 8: return 'Helm';
+            case 9: return 'Chest';
+            case 10: return 'Gloves';
+            case 11: return 'Boots';
+            case 12: return 'Leggings';
+            case 13: return 'Shield';
+            case 14: return 'Left Shoulder Piece';
+            case 15: return 'Right Shoulder Piece';
+            case 16: return 'Ring';
+            case 17: return 'Amulet';
+            case 18: return 'Food';
+            case 19: return 'Potion';
+            case 20: return 'Pet';
+            case 21: return 'Coins';
+            case 22: return 'Wood';
+            case 23: return 'Ore';
+            case 24: return 'Fish';
+            case 25: return 'Wheat';
+            case 26: return 'Arrows';
+            case 27: return 'Magic';
+            default: return '';
         }
     }
 
@@ -224,10 +224,10 @@ import Inventory from '../character/Inventory.vue';
     }
 
     public getItemRequirementSkill(item: InventoryItem): string {
-        if(!item.item) return "";
+        if(!item.item) return '';
         if (item.item.requiredAttackLevel > 0)
-            return "attack";
-        return "defense";
+            return 'attack';
+        return 'defense';
     }
 
     public getEquippedItems(): InventoryItem[] {

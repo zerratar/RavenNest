@@ -30,17 +30,17 @@ import { Player, PlayerState, Statistics } from '@/logic/models';
   export default class PlayerStates extends Vue {
 
     @Prop(Player) player! : Player;
-    @Prop(Boolean) visible! : Boolean;
+    @Prop(Boolean) visible! : boolean;
 
     private isVisible: boolean = false;
 
     public getAllStats(): StatisticItem[] {
         const stats : StatisticItem[] = []
-        for(let stat in this.statistics) {          
-          if (stat == "id" || stat == "revision") continue;
+        for(const stat in this.statistics) {
+          if (stat === 'id' || stat === 'revision') continue;
           const statItem = new StatisticItem();
           statItem.name = this.getDisplayName(stat);
-          statItem.value = (<any>this.statistics)[stat];
+          statItem.value = (this.statistics as any)[stat];
           stats.push(statItem);
         }
         return stats;
@@ -54,16 +54,16 @@ import { Player, PlayerState, Statistics } from '@/logic/models';
     public getStat(name:string):number {
       const stats = this.statistics;
       if (!stats) return 0;
-      return (<any>stats)[name];
+      return (stats as any)[name];
     }
 
     public close() {
       this.visible = false;
       this.$emit('closed');
-    }    
+    }
 
     public get playerName(): string {
-      if (!this.player) return "";
+      if (!this.player) return '';
       return this.player.name;
     }
 
@@ -71,8 +71,8 @@ import { Player, PlayerState, Statistics } from '@/logic/models';
       let output = name.charAt(0).toUpperCase();
       for(let i = 1; i < name.length; ++i) {
         const letter = name.charAt(i);
-        if (letter.toUpperCase() == letter) {
-          output += " ";
+        if (letter.toUpperCase() === letter) {
+          output += ' ';
         }
         output += letter;
       }
@@ -82,7 +82,7 @@ import { Player, PlayerState, Statistics } from '@/logic/models';
   }
 
   class StatisticItem {
-    public name: string = "";
+    public name: string = '';
     public value: number = 0;
   }
 

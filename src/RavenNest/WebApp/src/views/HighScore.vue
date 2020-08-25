@@ -66,7 +66,7 @@
       new Skill('Sailing', false),
     ];
 
-    selectHighScore(skill: Skill): void {
+    public selectHighScore(skill: Skill): void {
       skill.active = true;
     }
 
@@ -77,9 +77,9 @@
       if (result.ok) {
         this.players = (await result.json()).players;
         const sessionState = SessionState.get();
-        this.players.forEach(player => {
+        this.players.forEach((player) => {
           if (sessionState != null && sessionState.authenticated) {
-            player.isMe = player.playerName == sessionState.userName;
+            player.isMe = player.playerName === sessionState.userName;
           } else {
             player.isMe = false;
           }
@@ -91,7 +91,7 @@
       }
 
       skill = skill === '' ? 'all' : skill;
-      const targetSkill = this.skills.find(x => x.name.toLowerCase() === skill.toLowerCase());
+      const targetSkill = this.skills.find((x) => x.name.toLowerCase() === skill.toLowerCase());
       if (targetSkill != null) {
         targetSkill.active = true;
         this.selectedSkill = targetSkill;
@@ -110,7 +110,7 @@
         }
       };
 
-      window.onhashchange = (e:any) => {
+      window.onhashchange = (e: any) => {
         loadByHash();
       };
 

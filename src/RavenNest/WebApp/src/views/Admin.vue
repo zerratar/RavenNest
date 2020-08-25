@@ -29,10 +29,10 @@
   @Component({})
   export default class Admin extends Vue {
 
-    mounted() {      
-      const sessionState = SessionState.get();                  
+    mounted() {
+      const sessionState = SessionState.get();
       if (sessionState !== null && !sessionState.authenticated && !sessionState.administrator) {
-        this.$router.push("/login");
+        this.$router.push('/login');
         return;
       }
     }
