@@ -1,0 +1,36 @@
+root=true
+# EditorConfig is awesome: https://EditorConfig.org
+
+# Don't use tabs for indentation.
+[*]
+indent_style=space
+
+# ReSharper properties
+resharper_html_indent_size=2
+resharper_html_tab_width=2
+resharper_js_indent_size=2
+resharper_js_tab_width=2
+resharper_protobuf_indent_size=2
+resharper_protobuf_tab_width=2
+resharper_xml_indent_size=2
+resharper_xml_tab_width=2
+# (Please don't specify an indent_size here; that has too many unintended consequences.)
+
+# C#
+[*.{cs,csx,vb,vbx}]
+indent_size=4
+insert_final_newline=true
+charset=utf-8-bom
+
+# JS
+[*.{vue,ts,js,tsx,jsx}]
+indent_size=2
+insert_final_newline=true
+charset=utf-8-bom
+
+# JSON files
+[*.json]
+indent_size=2
+
+[*.{appxmanifest,asax,ascx,aspx,axml,build,config,cshtml,csproj,dbml,discomap,dtd,htm,html,jsproj,lsproj,master,njsproj,nuspec,proj,props,proto,razor,resjson,skin,StyleCop,targets,tasks,vbproj,xaml,xamlx,xml,xoml,xsd}]
+indent_size=2
