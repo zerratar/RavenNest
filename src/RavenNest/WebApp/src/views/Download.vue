@@ -5,7 +5,8 @@
     <div class="sections">
       <div class="section">
           <h2>Download</h2>
-          <p>You can download the current version, Windows only. <a href="https://github.com/zerratar/Ravenfall-Legacy/releases/download/v0.3.7a-alpha/Ravenfall.v0.3.7a-alpha.7z">Ravenfall.v0.3.7a-alpha.7z</a> ca 150mb</p>
+          <p v-if="!downloadSuccessful">You can download the current version, Windows only. <a href="https://github.com/zerratar/Ravenfall-Legacy/releases/">Download it from github</a> ca 150mb</p>
+          <p v-if="downloadSuccessful">You can download the current version, Windows only. <a v-bind:href="downloadUri">{{downloadName}}</a> ca 150mb</p>
           <p>Make sure you have either WinRAR or 7zip installed. I recommend 7zip <a href="https://www.7-zip.org/download.html" target="_blank">www.7-zip.org/download</a></p>
           <p>Finally just unpack the archive where you want the game to be.</p>
       </div>
@@ -58,13 +59,36 @@
     Component,
     Vue,
   } from 'vue-property-decorator';
+  import Requests from '../requests';
   import { SessionState } from '@/App.vue';
 
   @Component({})
   export default class Download extends Vue {
-  
+    private downloadSuccessful: boolean = false;
+    private downloadUri: string = '';
+    private downloadName: string = '';
+
     private mounted() {
-     // https://www.ravenfall.stream/api/version/check
+      this.getDownloadUri();
+    }
+
+    private async getDownloadUri() {
+      const requestUri = '/api/version/check';
+      const downloadInfo = await (await Requests.sendAsync(requestUri)).json();
+      this.downloadName = 'Ravenfall.v' + downloadInfo.version;
+
+      if (downloadInfo.isAlpha) {
+        this.downloadName += '-alpha';
+      } else if (downloadInfo.isBeta) {
+        this.downloadName += '-beta';
+      }
+
+      this.downloadName += '.7z';
+      this.downloadUri = String(downloadInfo.downloadUrl).replace('update.7z', this.downloadName);
+
+      if(this.downloadName !== '' && this.downloadUri !== '') {
+        this.downloadSuccessful = true;
+      }
     }
   }
 </script>
