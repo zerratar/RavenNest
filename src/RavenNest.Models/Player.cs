@@ -26,15 +26,22 @@ namespace RavenNest.Models
         public Clan Clan { get; set; }
 
         public bool IsAdmin { get; set; }
+        
         public bool IsModerator { get; set; }
-        public Guid OriginUserId { get; set; }
+        
+        public bool IsRejoin { get; set; }
+
+        public Guid OriginUserId { get; set; }        
 
         public int Revision { get; set; }
     }
+    
     public class PlayerFull
     {
         public Guid Id { get; set; }
+        
         public string PasswordHash { get; set; }
+        
         public string UserId { get; set; }
 
         public string UserName { get; set; }
@@ -56,10 +63,13 @@ namespace RavenNest.Models
         public Clan Clan { get; set; }
 
         public bool IsAdmin { get; set; }
+        
         public bool IsModerator { get; set; }
+        
         public Guid OriginUserId { get; set; }
 
         public int Revision { get; set; }
+        
         public DateTime Created { get; set; }
     }
 }
