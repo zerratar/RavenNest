@@ -24,14 +24,13 @@
 
     private loadCounter: number = 0;
 
-    mounted() {
-      const sessionState = SessionState.get();                  
+    private mounted() {
+      const sessionState = SessionState.get();
 
       if (sessionState !== null && !sessionState.authenticated && !sessionState.administrator) {
-        this.$router.push("/login");
+        this.$router.push('/login');
         return;
-      }      
-      
+      }
     }
 
     public get isLoading(): boolean {

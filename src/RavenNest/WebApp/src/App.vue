@@ -46,10 +46,10 @@
 import {
     Component,
     Vue,
-    Prop, 
+    Prop,
     Watch
   } from 'vue-property-decorator';
-  import SiteState from "./site-state";
+  import SiteState from './site-state';
 
   const mobileMenuMinWith = 1300;
 
@@ -65,8 +65,8 @@ import {
     ) {}
 
     public static get(): SessionState | null {
-      const win = < any > window;
-      const sessionSettings = < any > win["SessionState"];
+      const win = window as any;
+      const sessionSettings = win['SessionState'] as any;
       if (typeof sessionSettings !== 'undefined') {
         return SessionState.mapSessionState(sessionSettings);
       }
@@ -75,19 +75,19 @@ import {
 
     public static set(state: any): SessionState {
       const ss = SessionState.mapSessionState(state);
-      const win = < any > window;
-      win["SessionState"] = ss;
+      const win = window as any;
+      win['SessionState'] = ss;
       return ss;
-    }    
+    }
 
     private static mapSessionState(state: any): SessionState {
       return new SessionState(
-        state.id,        
-        state.authenticated, 
+        state.id,
+        state.authenticated,
         state.moderator,
         state.administrator,
-        state.userId, 
-        state.userName, 
+        state.userId,
+        state.userName,
         state.requiresPasswordChange);
     }
   }
@@ -97,22 +97,22 @@ import {
     public isMenuOpen: boolean = false;
     public isScrolled: boolean = false;
     public isDark: boolean = false;
-    
+
     mounted() {
-      ( < any > window)["AppClass"] = this;
-      window.addEventListener("resize", e=>{
+      ( window as any)['AppClass'] = this;
+      window.addEventListener('resize', e=>{
         this.isMenuOpen = this.isMenuOpen && window.innerWidth < mobileMenuMinWith;
       });
-      window.addEventListener("scroll", e => {
+      window.addEventListener('scroll', e => {
         this.isScrolled = window.scrollY > 25;
       });
-    }    
+    }
 
     @Watch('$route', { immediate: true, deep: true })
     onUrlChange(newVal: any) {
-        this.isDark = newVal.path !== "/";
+        this.isDark = newVal.path !== '/';
         this.isScrolled = window.scrollY > 25;
-        this.isMenuOpen = false;//this.isMenuOpen && window.innerWidth < mobileMenuMinWith;
+        this.isMenuOpen = false;// this.isMenuOpen && window.innerWidth < mobileMenuMinWith;
     }
 
     public toggleMenu(): void {
@@ -140,7 +140,7 @@ import {
     public administrator(): boolean {
       const sessionState = SessionState.get();
       if (sessionState != null) {
-        return sessionState.administrator;      
+        return sessionState.administrator;
       }
       return false;
     }

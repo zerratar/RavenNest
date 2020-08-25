@@ -35,8 +35,8 @@
         return MyPlayer.getSkills();
     }
 
-    styleWidth(value:any):string {
-      return "width: " + value + "px";
+    private styleWidth(value: any): string {
+      return 'width: ' + value + 'px';
     }
   }
 </script>

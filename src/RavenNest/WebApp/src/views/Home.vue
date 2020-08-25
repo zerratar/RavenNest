@@ -117,10 +117,7 @@
 </template>
 
 <script lang="ts">
-  import {
-    Component,
-    Vue
-  } from 'vue-property-decorator';
+  import { Component, Vue } from 'vue-property-decorator';
   import router from 'vue-router';
   import HelloWorld from '@/components/HelloWorld.vue'; // @ is an alias to /src
 

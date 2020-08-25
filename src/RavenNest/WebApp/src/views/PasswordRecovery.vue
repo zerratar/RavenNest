@@ -14,9 +14,7 @@
   import SiteState from '../site-state';
   import Requests from '../requests';
   import router from 'vue-router';
-  import {
-    SessionState
-  } from '@/App.vue';
+  import { SessionState } from '@/App.vue';
 
 
 

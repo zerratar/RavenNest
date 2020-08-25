@@ -14,8 +14,7 @@
   @Component({})
   export default class Armory extends Vue {
 
-    mounted() {
-
+    private mounted() {
     }
   }
 </script>

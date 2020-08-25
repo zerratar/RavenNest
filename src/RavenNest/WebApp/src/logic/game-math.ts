@@ -26,8 +26,8 @@
       }
       let totalExp = 0;
       for (let levelIndex = 0; levelIndex < GameMath.maxLevel; levelIndex++) {
-          let level = levelIndex + 1;
-          let levelExp = (level + (300 * Math.pow(2, (level / 7))));
+          const level = levelIndex + 1;
+          const levelExp = (level + (300 * Math.pow(2, (level / 7))));
           totalExp += levelExp;
           GameMath.expTable[levelIndex] = ((totalExp & 0xffffffffc) / 4);
       }
