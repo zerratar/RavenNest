@@ -158,13 +158,14 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Player Map(this User user, IGameData gameData, Character character)
+        public static Player Map(this User user, IGameData gameData, Character character, bool rejoin = false)
         {
             return new Player
             {
                 UserName = user.UserName,
                 UserId = user.UserId,
-                Name = character.Name,
+                Name = character.Name,                
+                IsRejoin = rejoin,
                 IsAdmin = user.IsAdmin.GetValueOrDefault(),
                 IsModerator = user.IsModerator.GetValueOrDefault(),
                 Appearance = Map(gameData.GetAppearance(character.SyntyAppearanceId)),
