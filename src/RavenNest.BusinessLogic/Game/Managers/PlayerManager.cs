@@ -79,10 +79,11 @@ namespace RavenNest.BusinessLogic.Game
                 TryRemovePlayerFromPreviousSession(character, session);
             }
 
+            var rejoin = character.UserIdLock == session.UserId;
             character.UserIdLock = session.UserId;
             character.LastUsed = DateTime.UtcNow;
 
-            return character.Map(gameData, user);
+            return character.Map(gameData, user, rejoin);
         }
 
         private void TryRemovePlayerFromPreviousSession(Character character, DataModels.GameSession joiningSession)
