@@ -280,7 +280,10 @@ namespace RavenNest.TestClient
                 this.webSocket.Dispose();
                 this.webSocket = null;
             }
-            catch { }
+            catch
+            {
+                // ignored
+            }
 
             logger.Debug("Disconnected from server");
         }

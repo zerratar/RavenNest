@@ -206,7 +206,11 @@ namespace RavenNest.BusinessLogic.Game
                 }
                 return true;
             }
-            catch { return false; }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                return false;
+            }
         }
 
         public Player GetPlayer(SessionToken sessionToken, string twitchUserId)
@@ -263,14 +267,13 @@ namespace RavenNest.BusinessLogic.Game
                 return Enumerable.Range(0, states.Length).Select(x => false).ToArray();
             }
 
-
             var sessionPlayers = gameData.GetSessionCharacters(gameSession);
             foreach (var state in states)
             {
                 var user = gameData.GetUser(state.UserId);
                 if (user == null)
                 {
-                    logger.LogError($"Trying to save player with userId {state.UserId}, but no user was found matching the id.");
+                    logger.LogError($"Saving failed for player with userId {state.UserId}, no user was found matching the id.");
                     results.Add(false);
                     continue;
                 }
@@ -278,12 +281,14 @@ namespace RavenNest.BusinessLogic.Game
                 var character = gameData.GetCharacterByUserId(user.Id);
                 if (character == null)
                 {
+                    logger.LogError($"Saving failed for player with userId {state.UserId}, no character was found matching the id.");
                     results.Add(false);
                     continue;
                 }
 
                 if (!integrityChecker.VerifyPlayer(gameSession.Id, character.Id, state.SyncTime))
                 {
+                    logger.LogError($"Saving failed for player with userId {state.UserId}, INTEGRITY CHECK!!.");
                     results.Add(false);
                     continue;
                 }
@@ -419,7 +424,6 @@ namespace RavenNest.BusinessLogic.Game
             UpdateResources(gameData, session, player, resources);
             return (int)itemToVendor.Amount;
         }
-
 
         public int GiftItem(
             SessionToken token,
@@ -703,17 +707,32 @@ namespace RavenNest.BusinessLogic.Game
             {
                 var gameSession = gameData.GetSession(token.SessionId);
                 var character = GetCharacter(token, userId);
-                if (character == null) return false;
-                if (!AcquiredUserLock(token, character)) return false;
+                if (character == null)
+                    throw new Exception("Unable to save exp. Character for user ID " + userId + " could not be found.");
+
+                if (!AcquiredUserLock(token, character) && character.UserIdLock != null)
+                    throw new Exception($"Unable to save exp. Character with name {character.Name} is not part of session: " + gameSession.Id + ".");
 
                 var sessionOwner = gameData.GetUser(gameSession.UserId);
                 var expLimit = sessionOwner.IsAdmin.GetValueOrDefault() ? 5000 : 50;
 
+                var skills = gameData.GetSkills(character.SkillsId);
+                if (skills == null)
+                {
+                    skills = new Skills() { Id = Guid.NewGuid() };
+                    character.SkillsId = skills.Id;
+                    gameData.Add(skills);
+                    // Shouldnt happen but...
+                    // throw new Exception($"Unable to save exp. Character with name {character.Name} does not have any skills.");
+                }
+
+                var skillIndex = 0;
+
+                if (experience == null)
+                    throw new Exception($"Unable to save exp. Client didnt supply experience, or experience was null. Character with name {character.Name} game session: " + gameSession.Id + ".");
+
                 var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
                 var gains = characterSessionState.ExpGain;
-
-                var skills = gameData.GetSkills(character.SkillsId);
-                var skillIndex = 0;
 
                 skills.Attack += GetDelta(expLimit, gains.Attack, skills.Attack, experience[skillIndex++]);
                 skills.Defense += GetDelta(expLimit, gains.Defense, skills.Defense, experience[skillIndex++]);
@@ -732,8 +751,9 @@ namespace RavenNest.BusinessLogic.Game
 
                 return true;
             }
-            catch
+            catch (Exception exc)
             {
+                logger.LogError(exc.ToString());
                 return false;
             }
         }
@@ -766,8 +786,9 @@ namespace RavenNest.BusinessLogic.Game
                 characterResources.Arrows += resources[index];
                 return true;
             }
-            catch
+            catch (Exception exc)
             {
+                logger.LogError(exc.ToString());
                 return false;
             }
         }
@@ -1007,22 +1028,6 @@ namespace RavenNest.BusinessLogic.Game
         public static bool AcquiredUserLock(DataModels.GameSession session, Character character)
         {
             return character.UserIdLock == session.UserId;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool CanEquipItem(Item item, Skills skills)
-        {
-            return item.Category != (int)ItemCategory.Resource &&
-                   item.RequiredDefenseLevel <= GameMath.ExperienceToLevel(skills.Defense) &&
-                   item.RequiredAttackLevel <= GameMath.ExperienceToLevel(skills.Attack);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool IsItemBetter(Item itemA, Item itemB)
-        {
-            var valueA = GetItemValue(itemA);
-            var valueB = GetItemValue(itemB);
-            return valueA > valueB;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -18,7 +18,7 @@ namespace RavenNest.UnitTests
             var rawData = new byte[] { 22, 117, 112, 100, 97, 116, 101, 95, 99, 104, 97, 114, 97, 99, 116, 101, 114, 95, 115, 116, 97, 116, 101, 20, 67, 104, 97, 114, 97, 99, 116, 101, 114, 83, 116, 97, 116, 101, 85, 112, 100, 97, 116, 101, 16, 0, 0, 0, 74, 107, 14, 129, 159, 165, 203, 73, 141, 89, 148, 41, 38, 162, 127, 177, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0 };
             var payload = new byte[] { 1, };
             var serializer = new BinarySerializer();
-            var gs = new GamePacketSerializer(serializer);
+            var gs = new GamePacketSerializer(null, serializer);
 
             var packet = gs.Deserialize(rawData);
 

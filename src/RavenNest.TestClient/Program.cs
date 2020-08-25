@@ -200,7 +200,7 @@ namespace RavenNest.TestClient
             this.gameManager = new GameManager();
             this.logger = new DefaultLogger();
             this.settings = new LocalRavenNestStreamSettings();
-            this.packetSerializer = new GamePacketSerializer(new BinarySerializer());
+            this.packetSerializer = new GamePacketSerializer(null, new BinarySerializer());
             this.tokenProvider = new TokenProvider();
 
         }
