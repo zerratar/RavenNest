@@ -146,10 +146,11 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Player Map(this Character character, IGameData gameData, User user)
+        public static Player Map(this Character character, IGameData gameData, User user, bool rejoin = false)
         {
-            return user.Map(gameData, character);
+            return user.Map(gameData, character, rejoin);
         }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PlayerExtended MapExtended(this Character character, IGameData gameData, User user)
@@ -164,7 +165,7 @@ namespace RavenNest.BusinessLogic.Extensions
             {
                 UserName = user.UserName,
                 UserId = user.UserId,
-                Name = character.Name,                
+                Name = character.Name,
                 IsRejoin = rejoin,
                 IsAdmin = user.IsAdmin.GetValueOrDefault(),
                 IsModerator = user.IsModerator.GetValueOrDefault(),
