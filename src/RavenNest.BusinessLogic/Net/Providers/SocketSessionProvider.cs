@@ -88,7 +88,10 @@ namespace RavenNest.BusinessLogic.Net
                     this.Disconnected(item as WebSocketConnection);
                 }
             }
-            catch { }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+            }
         }
 
         public bool TryGet(Guid sessionId, out IWebSocketConnection session)

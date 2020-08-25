@@ -3,17 +3,20 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Serializers;
 
 namespace RavenNest.BusinessLogic.Net
 {
     public class GamePacketSerializer : IGamePacketSerializer
     {
+        private readonly ILogger<GamePacketSerializer> logger;
         private readonly IBinarySerializer binarySerializer;
         private readonly Dictionary<string, Type> loadedTypes;
 
-        public GamePacketSerializer(IBinarySerializer binarySerializer)
+        public GamePacketSerializer(ILogger<GamePacketSerializer> logger, IBinarySerializer binarySerializer)
         {
+            this.logger = logger;
             this.binarySerializer = binarySerializer;
             this.loadedTypes = AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(x => x.GetTypes())
@@ -49,12 +52,16 @@ namespace RavenNest.BusinessLogic.Net
                 }
                 catch (Exception exc)
                 {
+                    logger?.LogError(exc.ToString());
+
                     var hoverOverMe = GenerateDebugCode(length, data, dataSize, payload, targetType);
                     try
                     {
                         System.IO.File.WriteAllText(@"C:\Ravenfall\deserialize_" + targetType + ".cs", hoverOverMe);
                     }
-                    catch { }
+                    catch
+                    {
+                    }
                     throw;
                 }
             }
