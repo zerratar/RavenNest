@@ -230,20 +230,20 @@ namespace RavenNest.BusinessLogic.ScriptParser
                         ParseString(token);
                         continue;
                     case '!':
-                        {
-                            if (Peek() == '=')
-                                Token(TokenType.NotEquals, $"{token}{Next()}");
-                            else Token(TokenType.Not);
-                        }
-                        break;
+                    {
+                        if (Peek() == '=')
+                            Token(TokenType.NotEquals, $"{token}{Next()}");
+                        else Token(TokenType.Not);
+                    }
+                    break;
                     case '=':
-                        {
-                            if (Peek() == token)
-                                Token(TokenType.EqualsEquals, $"{token}{Next()}");
-                            else
-                                Token(TokenType.Equals);
-                        }
-                        break;
+                    {
+                        if (Peek() == token)
+                            Token(TokenType.EqualsEquals, $"{token}{Next()}");
+                        else
+                            Token(TokenType.Equals);
+                    }
+                    break;
                     case '*':
                         Token(TokenType.Asterisk);
                         break;
@@ -265,19 +265,19 @@ namespace RavenNest.BusinessLogic.ScriptParser
                         Token(TokenType.Minus);
                         break;
                     case '<':
-                        {
-                            if (Peek() == '=')
-                                Token(TokenType.LessThanOrEqualsTo, $"{token}{Next()}");
-                            else Token(TokenType.LessThan);
-                        }
-                        break;
+                    {
+                        if (Peek() == '=')
+                            Token(TokenType.LessThanOrEqualsTo, $"{token}{Next()}");
+                        else Token(TokenType.LessThan);
+                    }
+                    break;
                     case '>':
-                        {
-                            if (Peek() == '=')
-                                Token(TokenType.GreaterThanOrEqualsTo, $"{token}{Next()}");
-                            else Token(TokenType.GreaterThan);
-                        }
-                        break;
+                    {
+                        if (Peek() == '=')
+                            Token(TokenType.GreaterThanOrEqualsTo, $"{token}{Next()}");
+                        else Token(TokenType.GreaterThan);
+                    }
+                    break;
                     case '{':
                         Token(TokenType.LCurlyBracket);
                         break;
@@ -300,12 +300,12 @@ namespace RavenNest.BusinessLogic.ScriptParser
                         Token(TokenType.SemiColon);
                         break;
                     case ':':
-                        {
-                            if (Peek() == token)
-                                Token(TokenType.DoubleColon, $"{token}{Next()}");
-                            else Token(TokenType.Colon);
-                        }
-                        break;
+                    {
+                        if (Peek() == token)
+                            Token(TokenType.DoubleColon, $"{token}{Next()}");
+                        else Token(TokenType.Colon);
+                    }
+                    break;
                     case '.':
                         if (char.IsNumber(Peek()))
                         {
@@ -327,22 +327,22 @@ namespace RavenNest.BusinessLogic.ScriptParser
                         Token(TokenType.HashTag);
                         break;
                     case '/':
+                    {
+                        var next = Peek();
+                        if (next == '*')
                         {
-                            var next = Peek();
-                            if (next == '*')
-                            {
-                                ParseMultilineComment();
-                                continue;
-                            }
-                            if (next == token)
-                            {
-                                ParseSinglelineComment();
-                                continue;
-                            }
-
-                            Token(TokenType.Slash);
+                            ParseMultilineComment();
+                            continue;
                         }
-                        break;
+                        if (next == token)
+                        {
+                            ParseSinglelineComment();
+                            continue;
+                        }
+
+                        Token(TokenType.Slash);
+                    }
+                    break;
                     //case '0':
                     //case '1':
                     //case '2':
