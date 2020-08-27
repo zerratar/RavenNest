@@ -22,6 +22,7 @@
         <div class="social">
           <ul>
             <li><a href="https://www.twitch.tv/zerratar" target="_blank"><i class="fab fa-twitch"></i></a></li>
+            <li><a href="https://discord.com/invite/cveu4fM" target="_blank"><i class="fab fa-discord"></i></a></li>
             <li><a href="https://www.twitter.com/zerratar" target="_blank"><i class="fab fa-twitter"></i></a></li>
             <li><a href="https://www.github.com/zerratar" target="_blank"><i class="fab fa-github"></i></a></li>
           </ul>
