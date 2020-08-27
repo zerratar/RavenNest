@@ -72,13 +72,13 @@
   import {
     Component,
     Vue,
-    Prop
+    Prop,
   } from 'vue-property-decorator';
   import router from 'vue-router';
-import { Player, Statistics, InventoryItem, ItemStat } from '@/logic/models';
-import ItemRepository from '../../logic/item-repository';
-import { PlayerInfo } from '@/logic/player-info';
-import Inventory from '../character/Inventory.vue';
+  import { Player, Statistics, InventoryItem, ItemStat } from '@/logic/models';
+  import ItemRepository from '../../logic/item-repository';
+  import { PlayerInfo } from '@/logic/player-info';
+  import Inventory from '../character/Inventory.vue';
 
   @Component({
     name: 'PlayerInventory',
@@ -86,15 +86,15 @@ import Inventory from '../character/Inventory.vue';
   })
   export default class PlayerInventory extends Vue {
 
-    @Prop(Player) player! : Player;
-    @Prop(Boolean) visible! : boolean;
+    @Prop(Player) public player!: Player;
+    @Prop(Boolean) public visible!: boolean;
 
     private revision: number = 0;
     private isVisible: boolean = false;
     private playerInfo: PlayerInfo | null = null;
-    private readonly tooltipVisibility: Map<string,boolean> = new Map<string, boolean>();
+    private readonly tooltipVisibility: Map<string, boolean> = new Map<string, boolean>();
 
-    mounted() {
+    public mounted() {
       this.playerInfo = new PlayerInfo(this.player);
     }
 
@@ -125,7 +125,7 @@ import Inventory from '../character/Inventory.vue';
       return this.player.inventoryItems;
     }
 
-    public getStat(name:string):number {
+    public getStat(name: string): number {
       const stats = this.inventoryItems;
       if (!stats) return 0;
       return (stats as any)[name];
@@ -174,8 +174,7 @@ import Inventory from '../character/Inventory.vue';
         if (value >= 1000_000) {
             const mils = value / 1000000.0;
             return Math.round(mils) + 'M';
-        }
-        else if (value > 1000) {
+        } else if (value > 1000) {
             const ks = value / 1000;
             return Math.round(ks) + 'K';
         }
@@ -183,8 +182,8 @@ import Inventory from '../character/Inventory.vue';
     }
 
     public getItemType(item: InventoryItem): string {
-        if(!item.item) return '';
-        switch(item.item.type) {
+        if (!item.item) return '';
+        switch (item.item.type) {
             case 1: return 'Two Handed Sword';
             case 2: return 'One Handed Sword';
             case 3: return 'Two Handed Axe';
@@ -224,7 +223,7 @@ import Inventory from '../character/Inventory.vue';
     }
 
     public getItemRequirementSkill(item: InventoryItem): string {
-        if(!item.item) return '';
+        if (!item.item) return '';
         if (item.item.requiredAttackLevel > 0)
             return 'attack';
         return 'defense';
@@ -240,11 +239,11 @@ import Inventory from '../character/Inventory.vue';
         return [];
     }
 
-    public getItemImage(itemId:string): string {
+    public getItemImage(itemId: string): string {
         return `/assets/imgs/items/${itemId}.png`;
     }
 
-    public getItemName(item:InventoryItem): string {
+    public getItemName(item: InventoryItem): string {
         if (!item.item) return item.itemId;
         return item.item.name;
     }

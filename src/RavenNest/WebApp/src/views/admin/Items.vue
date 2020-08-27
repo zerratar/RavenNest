@@ -18,7 +18,7 @@
     Component,
     Vue,
   } from 'vue-property-decorator';
-  
+
   import { SessionState } from '@/App.vue';
   import GameMath from '@/logic/game-math';
   import { CharacterSkill } from '@/logic/models';
@@ -26,7 +26,7 @@
   import MyPlayer from '@/logic/my-player';
   import Requests from '@/requests';
   import router from 'vue-router';
- 
+
 
   @Component({})
   export default class Items extends Vue {
@@ -35,7 +35,6 @@
 </script>
 
 <style scoped>
-
 
 .stats-row {
   display: -webkit-box;
@@ -51,10 +50,6 @@
   margin-left: auto;
   margin-right: auto;
   border-bottom: 1px solid #f3f3f3;
-}
-
-.stats-name { 
-
 }
 
 .stats-combat-level { 

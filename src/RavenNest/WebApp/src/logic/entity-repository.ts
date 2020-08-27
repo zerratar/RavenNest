@@ -14,7 +14,7 @@ export class EntityRepository<T> {
     private result: any;
     private totalSize: number = 0;
     private pageSize: number = 50;
-    private pages: Page<T>[] = [];
+    private pages: Array<Page<T>> = [];
     constructor(private readonly typeName: string) {
     }
     public getPageSize(): number {
@@ -29,7 +29,7 @@ export class EntityRepository<T> {
     public getTotalCount(): number {
         return this.totalSize;
     }
-    public getPages(): Page<T>[] {
+    public getPages(): Array<Page<T>> {
         return this.pages;
     }
     public getItems(pageIndex: number, sortOrder: string, query: string): T[] {

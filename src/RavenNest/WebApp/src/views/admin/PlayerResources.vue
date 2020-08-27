@@ -15,13 +15,9 @@
 </template>
 
 <script lang="ts">
-  import {
-    Component,
-    Vue,
-    Prop
-  } from 'vue-property-decorator';
+  import { Component, Vue, Prop } from 'vue-property-decorator';
   import router from 'vue-router';
-import { Player, Statistics, Resources } from '@/logic/models';
+  import { Player, Statistics, Resources } from '@/logic/models';
 
   @Component({
     name: 'PlayerResources',
@@ -29,14 +25,14 @@ import { Player, Statistics, Resources } from '@/logic/models';
   })
   export default class PlayerResources extends Vue {
 
-    @Prop(Player) player! : Player;
-    @Prop(Boolean) visible! : boolean;
+    @Prop(Player) public player!: Player;
+    @Prop(Boolean) public visible!: boolean;
 
     private isVisible: boolean = false;
 
     public getAllValueItems(): Item[] {
-        const stats : Item[] = []
-        for(const stat in this.statistics) {
+        const stats: Item[] = [];
+        for (const stat in this.statistics) {
           if (stat === 'id' || stat === 'revision') continue;
           const statItem = new Item();
           statItem.name = this.getDisplayName(stat);
@@ -51,7 +47,7 @@ import { Player, Statistics, Resources } from '@/logic/models';
       return this.player.resources;
     }
 
-    public getStat(name:string):number {
+    public getStat(name: string): number {
       const stats = this.statistics;
       if (!stats) return 0;
       return (stats as any)[name];
@@ -67,9 +63,9 @@ import { Player, Statistics, Resources } from '@/logic/models';
       return this.player.name;
     }
 
-    private getDisplayName(name:string): string {
+    private getDisplayName(name: string): string {
       let output = name.charAt(0).toUpperCase();
-      for(let i = 1; i < name.length; ++i) {
+      for (let i = 1; i < name.length; ++i) {
         const letter = name.charAt(i);
         if (letter.toUpperCase() === letter) {
           output += ' ';

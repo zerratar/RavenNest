@@ -43,12 +43,7 @@
 </template>
 
 <script lang="ts">
-import {
-    Component,
-    Vue,
-    Prop,
-    Watch
-  } from 'vue-property-decorator';
+  import { Component, Vue, Prop, Watch } from 'vue-property-decorator';
   import SiteState from './site-state';
 
   const mobileMenuMinWith = 1300;
@@ -98,21 +93,21 @@ import {
     public isScrolled: boolean = false;
     public isDark: boolean = false;
 
-    mounted() {
+    public mounted() {
       ( window as any)['AppClass'] = this;
-      window.addEventListener('resize', e=>{
+      window.addEventListener('resize', (e) => {
         this.isMenuOpen = this.isMenuOpen && window.innerWidth < mobileMenuMinWith;
       });
-      window.addEventListener('scroll', e => {
+      window.addEventListener('scroll', (e) => {
         this.isScrolled = window.scrollY > 25;
       });
     }
 
     @Watch('$route', { immediate: true, deep: true })
-    onUrlChange(newVal: any) {
+    public onUrlChange(newVal: any) {
         this.isDark = newVal.path !== '/';
         this.isScrolled = window.scrollY > 25;
-        this.isMenuOpen = false;// this.isMenuOpen && window.innerWidth < mobileMenuMinWith;
+        this.isMenuOpen = false; // this.isMenuOpen && window.innerWidth < mobileMenuMinWith;
     }
 
     public toggleMenu(): void {

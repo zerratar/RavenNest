@@ -28,7 +28,7 @@ export default class SessionRepository {
 
     public static getSession(sessionId: string): GameSession | null {
         for (const page of SessionRepository.repo.getPages()) {
-            const player = page.items.find(x => x.id === sessionId);
+            const player = page.items.find((x) => x.id === sessionId);
             if (player) {
                 return player;
             }
@@ -37,7 +37,7 @@ export default class SessionRepository {
     }
 
     public static getSessions(pageIndex: number, sortOrder: string, query: string): GameSession[] {
-        [sortOrder,query] = SessionRepository.ensureFilters(sortOrder, query);
+        [sortOrder, query] = SessionRepository.ensureFilters(sortOrder, query);
         const page: Page<GameSession> = SessionRepository.repo.getPage(pageIndex, sortOrder, query);
         if (page.isLoaded) {
             return page.items;
