@@ -28,15 +28,11 @@
 </template>
 
 <script lang="ts">
-  import {
-    Component,
-    Vue,
-    Prop
-  } from 'vue-property-decorator';
+  import { Component, Vue, Prop } from 'vue-property-decorator';
   import router from 'vue-router';
-import { Player, Statistics, Skills } from '@/logic/models';
-import GameMath from '@/logic/game-math';
-import AdminService from '@/logic/admin-service';
+  import { Player, Statistics, Skills } from '@/logic/models';
+  import GameMath from '@/logic/game-math';
+  import AdminService from '@/logic/admin-service';
 
   @Component({
     name: 'PlayerSkills',
@@ -44,22 +40,22 @@ import AdminService from '@/logic/admin-service';
   })
   export default class PlayerSkills extends Vue {
 
-    @Prop(Player) player! : Player;
-    @Prop(Boolean) visible! : Boolean;
+    @Prop(Player) public player!: Player;
+    @Prop(Boolean) public visible!: boolean;
 
     private revision: number = 0;
     private isVisible: boolean = false;
     private skillEdit: Map<string, ExperienceEdit> = new Map<string, ExperienceEdit>();
 
     public getAllStats(): Skill[] {
-        const stats : Skill[] = [];
+        const stats: Skill[] = [];
         let index = 1;
-        for(let stat in this.skills) {
-          if (stat == "id" || stat == "revision") continue;
+        for (const stat in this.skills) {
+          if (stat === 'id' || stat === 'revision') continue;
           const statItem = new Skill();
           statItem.index = index++;
           statItem.name = this.getDisplayName(stat);
-          statItem.experience = (<any>this.skills)[stat];
+          statItem.experience = (this.skills as any)[stat];
           statItem.level = GameMath.expTolevel(statItem.experience);
           stats.push(statItem);
         }
@@ -73,30 +69,30 @@ import AdminService from '@/logic/admin-service';
     }
 
     public cancelEditExp(stat: Skill) {
-      let edit = this.skillEdit.get(stat.name);
+      const edit = this.skillEdit.get(stat.name);
       if (!edit) return;
       edit.isEditing = false;
       ++this.revision;
     }
 
-    public applyEditExp(stat: Skill) {      
-      let edit = this.skillEdit.get(stat.name);
-      if (!edit||!this.skills) return;
+    public applyEditExp(stat: Skill) {
+      const edit = this.skillEdit.get(stat.name);
+      if (!edit || !this.skills) return;
 
-      AdminService.updatePlayerStat(this.player.userId, stat.name, stat.experience).then(res => {        
-        if (!edit||!this.skills) return;
+      AdminService.updatePlayerStat(this.player.userId, stat.name, stat.experience).then((res) => {
+        if (!edit || !this.skills) return;
         if (res) {
-          edit.experience = stat.experience;      
+          edit.experience = stat.experience;
           edit.isEditing = false;
-          (<any>this.skills)[stat.name] = stat.experience;
+          (this.skills as any)[stat.name] = stat.experience;
           ++this.revision;
         }
       });
     }
 
     public editExp(stat: Skill) {
-      console.log("editExp: " + stat.name);
-      let edit = this.skillEdit.get(stat.name);      
+      console.log('editExp: ' + stat.name);
+      let edit = this.skillEdit.get(stat.name);
       if (!edit) {
         edit = new ExperienceEdit();
         edit.index = stat.index;
@@ -113,28 +109,28 @@ import AdminService from '@/logic/admin-service';
       return this.player.skills;
     }
 
-    public getStat(name:string):number {
+    public getStat(name: string): number {
       const stats = this.skills;
       if (!stats) return 0;
-      return (<any>stats)[name];
+      return (stats as any)[name];
     }
 
     public close() {
       this.visible = false;
       this.$emit('closed');
-    }    
+    }
 
     public get playerName(): string {
-      if (!this.player) return "";
+      if (!this.player) return '';
       return this.player.name;
     }
 
-    private getDisplayName(name:string): string {
+    private getDisplayName(name: string): string {
       let output = name.charAt(0).toUpperCase();
-      for(let i = 1; i < name.length; ++i) {
+      for (let i = 1; i < name.length; ++i) {
         const letter = name.charAt(i);
-        if (letter.toUpperCase() == letter) {
-          output += " ";
+        if (letter.toUpperCase() === letter) {
+          output += ' ';
         }
         output += letter;
       }
@@ -143,8 +139,8 @@ import AdminService from '@/logic/admin-service';
 
   }
 
-  class ExperienceEdit {    
-    public name: string = "";
+  class ExperienceEdit {
+    public name: string = '';
     public index: number = 0;
     public experience: number = 0;
     public isEditing: boolean = false;
@@ -152,7 +148,7 @@ import AdminService from '@/logic/admin-service';
 
   class Skill {
     public index: number = 0;
-    public name: string = "";
+    public name: string = '';
     public experience: number = 0;
     public level: number = 0;
   }

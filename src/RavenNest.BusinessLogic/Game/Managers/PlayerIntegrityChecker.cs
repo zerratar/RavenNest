@@ -28,9 +28,8 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
-            return true;
-
 #warning player integrity check disabled
+            return true;
 
             // TODO(Zerratar): enable again in the future
             //var sessionState = gameData.GetSessionState(sessionId);

@@ -23,14 +23,14 @@ export class GameSession {
   constructor(
     public readonly id: string,
 
-    public readonly UserId:string,
-    public readonly twitchUserId:string,
-    public readonly userName:string,
-    public readonly adminPrivileges:boolean,
-    public readonly modPrivileges:boolean,
-    public readonly started:string,
-    public readonly updated:string,
-    public readonly status:number
+    public readonly UserId: string,
+    public readonly twitchUserId: string,
+    public readonly userName: string,
+    public readonly adminPrivileges: boolean,
+    public readonly modPrivileges: boolean,
+    public readonly started: string,
+    public readonly updated: string,
+    public readonly status: number,
   ) { }
 }
 
@@ -212,6 +212,6 @@ export class Item {
     public readonly craftable: boolean | null,
     public readonly requiredCraftingLevel: number,
     public readonly woodCost: number,
-    public readonly oreCost: number
+    public readonly oreCost: number,
   ) { }
 }

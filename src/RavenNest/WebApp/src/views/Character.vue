@@ -28,7 +28,7 @@
     Component,
     Vue,
   } from 'vue-property-decorator';
-  
+
   import { SessionState } from '@/App.vue';
   import GameMath from '../logic/game-math';
   import { CharacterSkill } from '../logic/models';
@@ -36,12 +36,12 @@
   import MyPlayer from '../logic/my-player';
   import Requests from '../requests';
   import router from 'vue-router';
-  
+
   @Component({})
   export default class Character extends Vue {
     private loadCounter: number = 0;
 
-    public getCombatLevel(): number{
+    public getCombatLevel(): number {
       return MyPlayer.getCombatLevel();
     }
 
@@ -49,22 +49,22 @@
       return MyPlayer.playerName;
     }
 
-    mounted() {      
-      const sessionState = SessionState.get();                  
+    private mounted() {
+      const sessionState = SessionState.get();
 
       if (sessionState !== null && !sessionState.authenticated) {
-        this.$router.push("/login");
+        this.$router.push('/login');
         return;
       }
 
       ++this.loadCounter;
       ItemRepository.loadItemsAsync().then(() => {
-        --this.loadCounter;  
+        --this.loadCounter;
         this.$forceUpdate();
-      });      
+      });
 
       ++this.loadCounter;
-      MyPlayer.getPlayerDataAsync().then(()=>{
+      MyPlayer.getPlayerDataAsync().then(() => {
         --this.loadCounter;
         this.$forceUpdate();
         this.$router.push('/character/skills');

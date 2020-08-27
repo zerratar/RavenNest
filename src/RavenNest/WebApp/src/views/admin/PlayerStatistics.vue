@@ -15,13 +15,9 @@
 </template>
 
 <script lang="ts">
-  import {
-    Component,
-    Vue,
-    Prop
-  } from 'vue-property-decorator';
+  import { Component, Vue, Prop } from 'vue-property-decorator';
   import router from 'vue-router';
-import { Player, Statistics } from '@/logic/models';
+  import { Player, Statistics } from '@/logic/models';
 
   @Component({
     name: 'PlayerStatistics',
@@ -29,18 +25,18 @@ import { Player, Statistics } from '@/logic/models';
   })
   export default class PlayerStatistics extends Vue {
 
-    @Prop(Player) player! : Player;
-    @Prop(Boolean) visible! : Boolean;
+    @Prop(Player) public player!: Player;
+    @Prop(Boolean) public visible!: boolean;
 
     private isVisible: boolean = false;
 
     public getAllStats(): StatisticItem[] {
-        const stats : StatisticItem[] = []
-        for(let stat in this.statistics) {
-          if (stat == "id") continue;
+        const stats: StatisticItem[] = [];
+        for (const stat in this.statistics) {
+          if (stat === 'id') continue;
           const statItem = new StatisticItem();
           statItem.name = this.getDisplayName(stat);
-          statItem.value = (<any>this.statistics)[stat];
+          statItem.value = (this.statistics as any)[stat];
           stats.push(statItem);
         }
         return stats;
@@ -51,28 +47,28 @@ import { Player, Statistics } from '@/logic/models';
       return this.player.statistics;
     }
 
-    public getStat(name:string):number {
+    public getStat(name: string): number {
       const stats = this.statistics;
       if (!stats) return 0;
-      return (<any>stats)[name];
+      return (stats as any)[name];
     }
 
     public close() {
       this.visible = false;
       this.$emit('closed');
-    }    
+    }
 
     public get playerName(): string {
-      if (!this.player) return "";
+      if (!this.player) return '';
       return this.player.name;
     }
 
-    private getDisplayName(name:string): string {
+    private getDisplayName(name: string): string {
       let output = name.charAt(0).toUpperCase();
-      for(let i = 1; i < name.length; ++i) {
+      for (let i = 1; i < name.length; ++i) {
         const letter = name.charAt(i);
-        if (letter.toUpperCase() == letter) {
-          output += " ";
+        if (letter.toUpperCase() === letter) {
+          output += ' ';
         }
         output += letter;
       }
@@ -82,7 +78,7 @@ import { Player, Statistics } from '@/logic/models';
   }
 
   class StatisticItem {
-    public name: string = "";
+    public name: string = '';
     public value: number = 0;
   }
 

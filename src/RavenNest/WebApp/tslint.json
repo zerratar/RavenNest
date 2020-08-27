@@ -14,6 +14,14 @@
     "no-consecutive-blank-lines": false,
     "object-literal-sort-keys": false,
     "ordered-imports": false,
-    "quotemark": [true, "single"]
+    "quotemark": [true, "single"],
+    "no-string-literal": false,
+    "curly": false,
+    "no-console": false,
+    "member-ordering": false,
+    "no-empty": false,
+    "max-classes-per-file": false,
+    "no-bitwise": false,
+    "no-empty-interface": false
   }
 }

@@ -122,6 +122,6 @@ namespace RavenNest
             {
                 return await reader.ReadToEndAsync();
             }
-        }   
+        }
     }
 }

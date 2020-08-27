@@ -32,10 +32,7 @@
 </template>
 
 <script lang="ts">
-  import {
-    Component,
-    Vue
-  } from 'vue-property-decorator';
+  import { Component, Vue } from 'vue-property-decorator';
   import router from 'vue-router';
 
   @Component({})
@@ -46,13 +43,13 @@
     private apiDocument: any = null;
 
 
-    getExample(method: any): string {
+    public getExample(method: any): string {
       return JSON.stringify(JSON.parse(method.response.example), null, 4);
     }
 
-    getRequestContent(api: any, method: any): string {
+    public getRequestContent(api: any, method: any): string {
       let requestPath = `${api.path}${method.path}`;
-      if (requestPath.endsWith("/")) requestPath = requestPath.slice(0, -1);
+      if (requestPath.endsWith('/')) requestPath = requestPath.slice(0, -1);
       let requestContent = `${method.method} ${requestPath} HTTP/1.1\r\n`;
       if (method.requestBody != null) {
         const contentType = method.requestBody.contentType;
@@ -68,35 +65,35 @@
     }
 
     private get pages(): any[] {
-      if (this.apiDocument == null) return [];
+      if (this.apiDocument === null) return [];
       return this.apiDocument.pages;
     }
 
     private get apis(): any[] {
-      if (this.apiDocument == null) return [];
+      if (this.apiDocument === null) return [];
       return this.apiDocument.apis;
     }
 
-    apiClicked(api: any) {
+    private apiClicked(api: any) {
       if (this.activeApi != null) {
-        this.activeApi.active = false;        
+        this.activeApi.active = false;
       }
 
       api.active = true;
       this.activeApi = api;
     }
 
-    updated() {
-      document.querySelectorAll('pre code').forEach((block) => {          
-          (<any>(<any>window)["hljs"]).highlightBlock(block);
+    private updated() {
+      document.querySelectorAll('pre code').forEach((block) => {
+          ((window as any)['hljs'] as any).highlightBlock(block);
       });
     }
 
-    mounted() {
-      const winData = <any>(<any>window)["data"];
-      this.apiDocument = winData;//window["data"];
+    private mounted() {
+      const winData = (window as any)['data'] as any;
+      this.apiDocument = winData; // window["data"];
       this.activeApi = this.apis[0];
-      this.activeApi.active = true;    
+      this.activeApi.active = true;
     }
   }
 </script>
