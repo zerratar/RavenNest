@@ -281,9 +281,16 @@ namespace RavenNest.BusinessLogic.Docs
             {
                 object obj = null;
                 var ctor = returnType.GetConstructors().OrderBy(x => x.GetParameters().Length).FirstOrDefault();
-                if (ctor != null && ctor.GetParameters().Length == 0)
+                if (ctor != null && (returnType.IsArray || ctor.GetParameters().Length == 0))
                 {
-                    obj = ctor.Invoke(new object[0]);
+                    if (returnType.IsArray)
+                    {
+                        obj = ctor.Invoke(new object[] { 0 });
+                    }
+                    else if (ctor.GetParameters().Length == 0)
+                    {
+                        obj = ctor.Invoke(new object[0]);
+                    }
                 }
                 else
                 {
