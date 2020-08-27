@@ -3,18 +3,18 @@ import Requests from '../requests';
 export class Page<T> {
     public isLoaded: boolean = false;
     public items: T[] = [];
-    public sortOrder: string = "";
-    public query: string = "";
+    public sortOrder: string = '';
+    public query: string = '';
 }
 
 export class EntityRepository<T> {
     public isLoading: boolean = false;
-    private defaultSortOrder: string = "1UserName";
-    private defaultQuery: string = "0";
+    private defaultSortOrder: string = '1UserName';
+    private defaultQuery: string = '0';
     private result: any;
     private totalSize: number = 0;
     private pageSize: number = 50;
-    private pages: Page<T>[] = [];
+    private pages: Array<Page<T>> = [];
     constructor(private readonly typeName: string) {
     }
     public getPageSize(): number {
@@ -29,12 +29,12 @@ export class EntityRepository<T> {
     public getTotalCount(): number {
         return this.totalSize;
     }
-    public getPages(): Page<T>[] {
+    public getPages(): Array<Page<T>> {
         return this.pages;
     }
     public getItems(pageIndex: number, sortOrder: string, query: string): T[] {
         [sortOrder, query] = this.ensureFilters(sortOrder, query);
-        let page: Page<T> = this.getPage(pageIndex, sortOrder, query);
+        const page: Page<T> = this.getPage(pageIndex, sortOrder, query);
         if (page.isLoaded) {
             return page.items;
         }
@@ -43,7 +43,7 @@ export class EntityRepository<T> {
     }
     public async loadPageAsync(pageIndex: number, sortOrder: string, query: string) {
         [sortOrder, query] = this.ensureFilters(sortOrder, query);
-        let page: Page<T> = this.getPage(pageIndex, sortOrder, query);
+        const page: Page<T> = this.getPage(pageIndex, sortOrder, query);
         if (page.isLoaded) {
             return;
         }
@@ -62,7 +62,7 @@ export class EntityRepository<T> {
     }
     public getPage(pageIndex: number, sortOrder: string, query: string): Page<T> {
         let page: Page<T> | null = this.pages[pageIndex];
-        if (page && (page.query != query || page.sortOrder != sortOrder)) {
+        if (page && (page.query !== query || page.sortOrder !== sortOrder)) {
             this.pages = [];
             page = null;
         }
@@ -75,17 +75,17 @@ export class EntityRepository<T> {
         return page;
     }
     private parseItemData(itemData: any) {
-        let players: T[] = [];
-        for (let player of itemData) {
-            players.push(<T>player);
+        const players: T[] = [];
+        for (const player of itemData) {
+            players.push(player as T);
         }
         return players;
     }
     private ensureFilters(sortOrder: string, query: string) {
-        if (!sortOrder || sortOrder == null || sortOrder.length == 0) {
+        if (!sortOrder || sortOrder == null || sortOrder.length === 0) {
             sortOrder = this.defaultSortOrder;
         }
-        if (!query || query == null || query.length == 0) {
+        if (!query || query == null || query.length === 0) {
             query = this.defaultQuery;
         }
         return [sortOrder, query];

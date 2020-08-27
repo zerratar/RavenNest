@@ -67,7 +67,7 @@
     public twitchAuthenticating(): boolean {
       const token = this.getQueryParam('code');
       const hash = document.location.hash;
-      return (hash != null && hash.length > 0 && hash.includes('access_token')) || 
+      return (hash != null && hash.length > 0 && hash.includes('access_token')) ||
              (token != null && token.length > 0);
     }
 
@@ -84,12 +84,12 @@
         const response = await Requests.sendAsync('/api/auth/login', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            "username": user,
-            "password": pass
-          })
+            username: user,
+            password: pass,
+          }),
         });
 
         let errorMessage = '';
@@ -137,7 +137,8 @@
 
     private getQueryParam(name: string): string | null {
       let regex: RegExpExecArray | null;
-      if(regex = (new RegExp('[?&]' + encodeURIComponent(name) + '=([^&]*)')).exec(location.search)) {
+      regex = (new RegExp('[?&]' + encodeURIComponent(name) + '=([^&]*)')).exec(location.search);
+      if (regex) {
           return decodeURIComponent(regex[1]);
       }
       return null;
@@ -158,17 +159,17 @@
             requestUrl += '&user=' + user;
           }
           const response = await Requests.sendAsync(requestUrl, {
-            method: 'GET'
+            method: 'GET',
           });
-        } catch(err) {
+        } catch (err) {
           // ignore the error here,
           // it will most likely just be because we are doing a cross domain call
           // but the client will still receive the message nontheless.
         }
-        
+
         this.loginMessage = this.loginMessageSuccess;
       }
-      
+
       (window as any)['AppClass'].$forceUpdate();
     }
 
@@ -178,7 +179,7 @@
       if (hash != null && hash.length > 0 && hash.includes('access_token')) {
         token = hash.split('access_token=')[1];
         const response = await Requests.sendAsync('/api/twitch/session?token=' + token, {
-          method: 'GET'
+          method: 'GET',
         });
 
         if (response.ok) {

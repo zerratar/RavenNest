@@ -22,7 +22,6 @@ using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Serializers;
 using RavenNest.Health;
 using RavenNest.Sessions;
-using RavenNest.Twitch;
 
 namespace RavenNest
 {

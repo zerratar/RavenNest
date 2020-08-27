@@ -57,7 +57,7 @@ namespace RavenNest.SDK.Endpoints
             request.Method = GetMethod(type);
             request.CookieContainer = cookieContainer;
             request.ServerCertificateValidationCallback += (sender, certificate, chain, errors) => true;
-            
+
             if (authToken != null)
             {
                 request.Headers["auth-token"] = Base64Encode(JSON.Stringify(authToken));

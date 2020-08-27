@@ -274,10 +274,7 @@
 </template>
 
 <script lang="ts">
-  import {
-    Component,
-    Vue
-  } from 'vue-property-decorator';
+  import { Component, Vue } from 'vue-property-decorator';
   import router from 'vue-router';
 
   @Component({

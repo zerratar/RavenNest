@@ -161,7 +161,7 @@ namespace RavenNest.BusinessLogic.Data
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();
             });
-            
+
             modelBuilder.Entity<NPC>(entity =>
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();

@@ -58,13 +58,13 @@
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          'password': this.password,
+          password: this.password,
         }),
       });
 
       if (result.ok) {
         const sessionState = SessionState.get();
-        if (sessionState == null) { 
+        if (sessionState == null) {
           return;
         }
         sessionState.requiresPasswordChange = false;
