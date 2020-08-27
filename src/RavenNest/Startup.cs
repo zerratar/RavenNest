@@ -273,8 +273,9 @@ namespace RavenNest
             services.AddSingleton<ISessionInfoProvider, SessionInfoProvider>();
 
             services.AddSingleton<ISecureHasher, SecureHasher>();
-            services.AddSingleton<IBinarySerializer, RavenNest.BusinessLogic.Serializers.BinarySerializer>();
+            services.AddSingleton<IBinarySerializer, CompressedJsonSerializer>();
             services.AddSingleton<IGamePacketSerializer, GamePacketSerializer>();
+
 
             services.AddSingleton<IPropertyProvider, MemoryCachedPropertyProvider>();
         }
