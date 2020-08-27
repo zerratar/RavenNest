@@ -17,7 +17,7 @@
     Component,
     Vue,
   } from 'vue-property-decorator';
-  
+
   import { SessionState } from '@/App.vue';
   import GameMath from '../logic/game-math';
   import { Player } from '../logic/models';
@@ -29,7 +29,7 @@
   @Component({})
   export default class Admin extends Vue {
 
-    mounted() {
+    private mounted() {
       const sessionState = SessionState.get();
       if (sessionState !== null && !sessionState.authenticated && !sessionState.administrator) {
         this.$router.push('/login');

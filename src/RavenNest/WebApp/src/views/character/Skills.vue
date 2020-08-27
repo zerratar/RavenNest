@@ -18,7 +18,7 @@
     Component,
     Vue,
   } from 'vue-property-decorator';
-  
+
   import { SessionState } from '@/App.vue';
   import GameMath from '@/logic/game-math';
   import { CharacterSkill } from '@/logic/models';
@@ -26,7 +26,7 @@
   import MyPlayer from '@/logic/my-player';
   import Requests from '@/requests';
   import router from 'vue-router';
- 
+
 
   @Component({})
   export default class Skills extends Vue {
@@ -59,11 +59,6 @@
   margin-right: auto;
   border-bottom: 1px solid #f3f3f3;
 }
-
-.stats-name { 
-
-}
-
 .stats-combat-level { 
     font-size: 14pt;
     margin-bottom: 10px;

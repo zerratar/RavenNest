@@ -29,7 +29,7 @@ export default class PlayerRepository {
 
     public static getPlayer(userId: string): Player | null {
         for (const page of PlayerRepository.repo.getPages()) {
-            const player = page.items.find(x => x.userId === userId);
+            const player = page.items.find((x) => x.userId === userId);
             if (player) {
                 return player;
             }
@@ -38,7 +38,7 @@ export default class PlayerRepository {
     }
 
     public static getPlayers(pageIndex: number, sortOrder: string, query: string): Player[] {
-        [sortOrder,query] = PlayerRepository.ensureFilters(sortOrder, query);
+        [sortOrder, query] = PlayerRepository.ensureFilters(sortOrder, query);
 
         const page: Page<Player> = PlayerRepository.repo.getPage(pageIndex, sortOrder, query);
 

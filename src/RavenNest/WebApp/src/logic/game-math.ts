@@ -12,12 +12,12 @@
 
     public static expTolevel(exp: number): number {
       GameMath.calculateExpTable();
-        for (let level = 0; level < GameMath.maxLevel - 1; level++) {
+      for (let level = 0; level < GameMath.maxLevel - 1; level++) {
           if (exp >= GameMath.expTable[level])
               continue;
           return (level + 1);
         }
-        return GameMath.maxLevel;
+      return GameMath.maxLevel;
     }
 
     private static calculateExpTable(): void {

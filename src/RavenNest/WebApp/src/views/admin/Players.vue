@@ -113,15 +113,15 @@
   @Component({
     components: {
       PlayerStatistics, PlayerResources, PlayerSkills,
-      PlayerState, PlayerInventory
-      }
+      PlayerState, PlayerInventory,
+    },
   })
   export default class Players extends Vue {
 
     private filterTimeout: number = 0;
     private currentPage: number = 0;
     private loadCounter: number = 0;
-    private playerEdit: Map<string,PlayerEdit> = new Map<string, PlayerEdit>();
+    private playerEdit: Map<string, PlayerEdit> = new Map<string, PlayerEdit>();
     private sortOrder: string = '';
     private query: string = '';
     private revision: number = 0;
@@ -137,12 +137,12 @@
     private changePasswordUserId: string = '';
     private newPassword: string = '';
 
-    getStatisticsVisible(): boolean { return this.isStatisticsVisible; }
-    getResourcesVisible(): boolean { return this.isResourcesVisible; }
-    getSkillsVisible(): boolean { return this.isSkillsVisible; }
-    getInventoryVisible(): boolean { return this.isInventoryVisible; }
-    getStateVisible(): boolean { return this.isStateVisible; }
-    getFocusedPlayer(): Player|null { return this.playerInFocus; }
+    public getStatisticsVisible(): boolean { return this.isStatisticsVisible; }
+    public getResourcesVisible(): boolean { return this.isResourcesVisible; }
+    public getSkillsVisible(): boolean { return this.isSkillsVisible; }
+    public getInventoryVisible(): boolean { return this.isInventoryVisible; }
+    public getStateVisible(): boolean { return this.isStateVisible; }
+    public getFocusedPlayer(): Player|null { return this.playerInFocus; }
 
     private mounted() {
       const sessionState = SessionState.get();
@@ -204,7 +204,7 @@
         return;
       }
 
-      AdminService.updatePlayerName(userId, player.name).then(res => {
+      AdminService.updatePlayerName(userId, player.name).then((res) => {
         if (res) {
           edit.name = player.name;
           edit.isEditing = false;
@@ -276,13 +276,15 @@
         this.isInventoryVisible = true;
         const player = this.getFocusedPlayer();
         if (!player) return;
+
         console.log('Showing inventory for player: ' + player.name);
       });
     }
 
     private kickPlayer(userId: string) {
       if (!confirm('Are you sure you want to kick this player?')) return;
-      AdminService.kickPlayer(userId).then(res => {
+
+      AdminService.kickPlayer(userId).then((res) => {
         if (res) {
           ++this.revision;
         }
@@ -291,7 +293,8 @@
 
     private mergePlayer(userId: string) {
       if (!confirm('Are you sure you want to merge this player?')) return;
-      AdminService.mergePlayer(userId).then(res => {
+
+      AdminService.mergePlayer(userId).then((res) => {
         if (res) {
           ++this.revision;
           this.query = userId;
@@ -303,7 +306,8 @@
     private resetPassword(userId: string) {
       const password: string = this.newPassword;
       if (!confirm('Are you sure you want to reset the password?')) return;
-        AdminService.resetPassword(userId).then(res => {
+
+      AdminService.resetPassword(userId).then((res) => {
         if (res) {
           ++this.revision;
         }
@@ -368,11 +372,11 @@
     }
   }
 
-class PlayerEdit {
-  public userId: string = '';
-  public name: string = '';
-  public isEditing: boolean = false;
-}
+  class PlayerEdit {
+    public userId: string = '';
+    public name: string = '';
+    public isEditing: boolean = false;
+  }
 
 </script>
 

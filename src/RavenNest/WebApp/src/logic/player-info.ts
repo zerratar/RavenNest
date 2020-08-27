@@ -20,9 +20,9 @@ export class PlayerInfo {
   }
 
   public getEquippedItems(): InventoryItem[] {
-    const items = [...this.inventoryItems.filter(x => x.equipped === true)];
-    items.forEach(x => {
-      const targetItem = ItemRepository.items.find(y => y.id === x.itemId);
+    const items = [...this.inventoryItems.filter((x) => x.equipped === true)];
+    items.forEach((x) => {
+      const targetItem = ItemRepository.items.find((y) => y.id === x.itemId);
       if (targetItem) {
         x.item = targetItem;
       }
@@ -31,9 +31,9 @@ export class PlayerInfo {
   }
 
   public getInventoryItems(): InventoryItem[] {
-    const items = [...this.inventoryItems.filter(x => x.equipped === false)];
-    items.forEach(x => {
-      const targetItem = ItemRepository.items.find(y => y.id === x.itemId);
+    const items = [...this.inventoryItems.filter((x) => x.equipped === false)];
+    items.forEach((x) => {
+      const targetItem = ItemRepository.items.find((y) => y.id === x.itemId);
       if (targetItem) {
         x.item = targetItem;
       }
@@ -61,8 +61,8 @@ export class PlayerInfo {
 
   public getSkills(): CharacterSkill[] {
     return [...Object.getOwnPropertyNames(this.skills)
-      .map(x => this.skills[x] as CharacterSkill)
-      .filter(x => typeof x !== 'undefined' && x.name != null && x.name.length > 0)
+      .map((x) => this.skills[x] as CharacterSkill)
+      .filter((x) => typeof x !== 'undefined' && x.name != null && x.name.length > 0),
     ];
   }
 
@@ -86,6 +86,7 @@ export class PlayerInfo {
       const invItem = new InventoryItem(item.id, item.itemId, item.equipped, item.amount);
       this.inventoryItems.push(invItem);
     }
-    this.state = new PlayerState(data.state.id, data.state.health, data.state.inRaid, data.state.inArena, data.state.task, data.state.taskArgument, data.state.island, data.state.x, data.state.y, data.state.z);
+    this.state = new PlayerState(data.state.id, data.state.health, data.state.inRaid, data.state.inArena,
+      data.state.task, data.state.taskArgument, data.state.island, data.state.x, data.state.y, data.state.z);
   }
 }

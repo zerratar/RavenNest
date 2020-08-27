@@ -4,7 +4,7 @@ export default class AdminService {
 
     private static requestCounter: number = 0;
 
-    public static async updatePlayerName(userId: string, newName: string): Promise<boolean>{
+    public static async updatePlayerName(userId: string, newName: string): Promise<boolean> {
         ++AdminService.requestCounter;
         const url = `api/admin/updateplayername/${userId}/${newName}`;
         const result = await Requests.sendAsync(url);

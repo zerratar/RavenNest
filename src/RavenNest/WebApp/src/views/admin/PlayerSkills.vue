@@ -28,15 +28,11 @@
 </template>
 
 <script lang="ts">
-  import {
-    Component,
-    Vue,
-    Prop
-  } from 'vue-property-decorator';
+  import { Component, Vue, Prop } from 'vue-property-decorator';
   import router from 'vue-router';
-import { Player, Statistics, Skills } from '@/logic/models';
-import GameMath from '@/logic/game-math';
-import AdminService from '@/logic/admin-service';
+  import { Player, Statistics, Skills } from '@/logic/models';
+  import GameMath from '@/logic/game-math';
+  import AdminService from '@/logic/admin-service';
 
   @Component({
     name: 'PlayerSkills',
@@ -44,17 +40,17 @@ import AdminService from '@/logic/admin-service';
   })
   export default class PlayerSkills extends Vue {
 
-    @Prop(Player) player! : Player;
-    @Prop(Boolean) visible! : boolean;
+    @Prop(Player) public player!: Player;
+    @Prop(Boolean) public visible!: boolean;
 
     private revision: number = 0;
     private isVisible: boolean = false;
     private skillEdit: Map<string, ExperienceEdit> = new Map<string, ExperienceEdit>();
 
     public getAllStats(): Skill[] {
-        const stats : Skill[] = [];
+        const stats: Skill[] = [];
         let index = 1;
-        for(const stat in this.skills) {
+        for (const stat in this.skills) {
           if (stat === 'id' || stat === 'revision') continue;
           const statItem = new Skill();
           statItem.index = index++;
@@ -81,10 +77,10 @@ import AdminService from '@/logic/admin-service';
 
     public applyEditExp(stat: Skill) {
       const edit = this.skillEdit.get(stat.name);
-      if (!edit||!this.skills) return;
+      if (!edit || !this.skills) return;
 
-      AdminService.updatePlayerStat(this.player.userId, stat.name, stat.experience).then(res => {
-        if (!edit||!this.skills) return;
+      AdminService.updatePlayerStat(this.player.userId, stat.name, stat.experience).then((res) => {
+        if (!edit || !this.skills) return;
         if (res) {
           edit.experience = stat.experience;
           edit.isEditing = false;
@@ -113,7 +109,7 @@ import AdminService from '@/logic/admin-service';
       return this.player.skills;
     }
 
-    public getStat(name:string):number {
+    public getStat(name: string): number {
       const stats = this.skills;
       if (!stats) return 0;
       return (stats as any)[name];
@@ -129,9 +125,9 @@ import AdminService from '@/logic/admin-service';
       return this.player.name;
     }
 
-    private getDisplayName(name:string): string {
+    private getDisplayName(name: string): string {
       let output = name.charAt(0).toUpperCase();
-      for(let i = 1; i < name.length; ++i) {
+      for (let i = 1; i < name.length; ++i) {
         const letter = name.charAt(i);
         if (letter.toUpperCase() === letter) {
           output += ' ';

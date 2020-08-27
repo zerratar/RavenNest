@@ -148,10 +148,6 @@ table.game-sessions {
   border-bottom: 1px solid #f3f3f3;
 }
 
-.stats-name { 
-
-}
-
 .stats-combat-level { 
     font-size: 14pt;
     margin-bottom: 10px;

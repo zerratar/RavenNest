@@ -21,7 +21,7 @@ export default class ItemRepository {
     }
 
     public static getItem(itemId: string): Item | undefined {
-        return this.items.find(x=> x.id === itemId);
+        return this.items.find((x) => x.id === itemId);
     }
 
     public static async loadItemsAsync() {
@@ -40,7 +40,7 @@ export default class ItemRepository {
       }
 
     private static parseItemData(itemData: any) {
-        for(const raw of itemData) {
+        for (const raw of itemData) {
             ItemRepository.loadedItems.push(new Item(
                 raw.id,
                 raw.name,
