@@ -15,7 +15,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RavenNest.SDK", "src\RavenN
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RavenNest.UnitTests", "Tests\RavenNest.UnitTests\RavenNest.UnitTests.csproj", "{C7ACFCA9-38B3-4063-B478-05804197850E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RavenNest.TestClient", "src\RavenNest.TestClient\RavenNest.TestClient.csproj", "{6B58CBB1-4EB9-42FA-9B15-65EC5196D6DB}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RavenNest.TestClient", "src\RavenNest.TestClient\RavenNest.TestClient.csproj", "{6B58CBB1-4EB9-42FA-9B15-65EC5196D6DB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{B9B540A3-FCD7-4E76-9A9D-D27108AEC010}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.gitignore = .gitignore
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

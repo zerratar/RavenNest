@@ -67,7 +67,7 @@ namespace RavenNest.Sessions
             {
                 var twitchUser = await GetTwitchUserAsync(session, token);
                 if (twitchUser != null)
-                {                    
+                {
                     user = gameData.GetUser(twitchUser.Id);
                 }
             }

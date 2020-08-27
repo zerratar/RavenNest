@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Serializers;
@@ -25,7 +25,7 @@ namespace RavenNest.UnitTests
 
             var targetType = typeof(RavenNest.BusinessLogic.Net.CharacterStateUpdate);
             var data = serializer.Deserialize(payload, targetType);
-            
+
             return Task.CompletedTask;
         }
 

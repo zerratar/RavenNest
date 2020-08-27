@@ -32,7 +32,7 @@ namespace RavenNest.Controllers
         ]
         public HighScoreCollection GetSkillHighScore(string skill, int offset, int skip)
         {
-            return highScoreManager.GetSkillHighScore(skill, offset, skip); 
+            return highScoreManager.GetSkillHighScore(skill, offset, skip);
             //var key = $"highscore_{skill}_{offset}_{skip}";
             //if (highscoreCache.TryGetValue<HighScoreCollection>(key, out var highscoreData))
             //{

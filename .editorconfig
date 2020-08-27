@@ -34,3 +34,24 @@ indent_size=2
 
 [*.{appxmanifest,asax,ascx,aspx,axml,build,config,cshtml,csproj,dbml,discomap,dtd,htm,html,jsproj,lsproj,master,njsproj,nuspec,proj,props,proto,razor,resjson,skin,StyleCop,targets,tasks,vbproj,xaml,xamlx,xml,xoml,xsd}]
 indent_size=2
+
+[*.cs]
+# IDE0055: Fix formatting
+dotnet_diagnostic.IDE0055.severity = warning
+
+# New line preferences
+csharp_new_line_before_catch = true
+csharp_new_line_before_else = true
+csharp_new_line_before_finally = true
+csharp_new_line_before_members_in_anonymous_types = true
+csharp_new_line_before_members_in_object_initializers = true
+csharp_new_line_before_open_brace = all
+csharp_new_line_between_query_expression_clauses = true
+
+# Indentation preferences
+csharp_indent_block_contents = true
+csharp_indent_braces = false
+csharp_indent_case_contents = true
+csharp_indent_case_contents_when_block = false
+csharp_indent_labels = one_less_than_current
+csharp_indent_switch_labels = true
