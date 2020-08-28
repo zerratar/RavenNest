@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -712,7 +712,11 @@ namespace RavenNest.BusinessLogic.Game
                     throw new Exception("Unable to save exp. Character for user ID " + userId + " could not be found.");
 
                 if (!AcquiredUserLock(token, character) && character.UserIdLock != null)
-                    throw new Exception($"Unable to save exp. Character with name {character.Name} is not part of session: " + gameSession.Id + ".");
+                {
+                    SendRemovePlayerFromSession(character, gameSession);
+                    logger.LogWarning($"Unable to save exp. Character with name {character.Name} is not part of session: " + gameSession.Id + ". (SUID: " + gameSession.UserId + " != UIDLOCK: " + character.UserIdLock + "). Sending Remove Player to client.");
+                    return false;
+                }
 
                 var sessionOwner = gameData.GetUser(gameSession.UserId);
                 var expLimit = sessionOwner.IsAdmin.GetValueOrDefault() ? 5000 : 50;
@@ -730,7 +734,8 @@ namespace RavenNest.BusinessLogic.Game
                 var skillIndex = 0;
 
                 if (experience == null)
-                    throw new Exception($"Unable to save exp. Client didnt supply experience, or experience was null. Character with name {character.Name} game session: " + gameSession.Id + ".");
+                    return true; // no skills was updated. Ignore
+                // throw new Exception($"Unable to save exp. Client didnt supply experience, or experience was null. Character with name {character.Name} game session: " + gameSession.Id + ".");
 
                 var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
                 var gains = characterSessionState.ExpGain;
@@ -758,6 +763,7 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
         }
+
 
         public void EquipBestItems(Character character)
         {
@@ -792,6 +798,21 @@ namespace RavenNest.BusinessLogic.Game
                 logger.LogError(exc.ToString());
                 return false;
             }
+        }
+
+        private void SendRemovePlayerFromSession(Character character, DataModels.GameSession gameSession)
+        {
+            var characterUser = gameData.GetUser(character.UserId);
+            var gameEvent = gameData.CreateSessionEvent(
+                GameEventType.PlayerRemove,
+                gameSession,
+                new PlayerRemove()
+                {
+                    Reason = $"{character.Name} joined another session.",
+                    UserId = characterUser.UserId
+                });
+
+            gameData.Add(gameEvent);
         }
 
         private Player CreatePlayer(
