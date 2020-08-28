@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -60,11 +60,18 @@ namespace RavenNest.BusinessLogic.Game
             var isModerator = user.IsModerator.GetValueOrDefault();
             var subInfo = await twitchClient.GetSubscriberAsync(user.UserId);
             var subscriptionTier = 0;
+            var patreonTier = user.PatreonTier ?? 0;
+
             var expMultiplierLimit = 0;
             if (subInfo != null && int.TryParse(subInfo.Tier, out subscriptionTier))
             {
                 subscriptionTier /= 1000;
                 expMultiplierLimit = subscriptionTier == 1 ? 10 : (subscriptionTier - 1) * 25;
+            }
+            if (patreonTier > 0)
+            {
+                var expMulti = patreonTier == 1 ? 10 : (patreonTier - 1) * 25;
+                if (expMulti > expMultiplierLimit) expMultiplierLimit = expMulti;
             }
             if (isModerator)
             {
