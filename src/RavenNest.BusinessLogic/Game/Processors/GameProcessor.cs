@@ -21,6 +21,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private readonly IGameManager gameManager;
         private readonly IIntegrityChecker integrityChecker;
         private readonly IWebSocketConnection ws;
+        private readonly ISessionManager sessionManager;
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly SessionToken sessionToken;
 
@@ -29,6 +30,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         public GameProcessor(
             IIntegrityChecker integrityChecker,
             IWebSocketConnection ws,
+            ISessionManager sessionManager,
             IPlayerInventoryProvider inventoryProvider,
             IGameData gameData,
             IGameManager gameManager,
@@ -38,6 +40,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             this.gameManager = gameManager;
             this.integrityChecker = integrityChecker;
             this.ws = ws;
+            this.sessionManager = sessionManager;
             this.inventoryProvider = inventoryProvider;
             this.sessionToken = sessionToken;
 
@@ -50,6 +53,18 @@ namespace RavenNest.BusinessLogic.Game.Processors
             RegisterPlayerTask<WoodcuttingTaskProcessor>("Woodcutting");
             RegisterPlayerTask<CraftingTaskProcessor>("Crafting");
             RegisterPlayerTask<CookingTaskProcessor>("Cooking");
+
+            SendSessionData();
+        }
+
+        private async void SendSessionData()
+        {
+            var session = gameData.GetSession(sessionToken.SessionId);
+            if (session != null)
+            {
+                await sessionManager.SendPermissionDataAsync(session);
+                sessionManager.SendVillageInfo(session);
+            }
         }
 
         public async Task ProcessAsync(CancellationTokenSource cts)

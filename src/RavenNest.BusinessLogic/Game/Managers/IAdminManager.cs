@@ -1,4 +1,5 @@
 ﻿using RavenNest.Models;
+using System.Threading.Tasks;
 
 namespace RavenNest.BusinessLogic.Game
 {
@@ -14,5 +15,7 @@ namespace RavenNest.BusinessLogic.Game
         bool ResetUserPassword(string userid);
         bool ProcessItemRecovery(string query);
         bool NerfItems();
+        bool RefreshVillageInfo();
+        Task<bool> RefreshPermissionsAsync();
     }
 }

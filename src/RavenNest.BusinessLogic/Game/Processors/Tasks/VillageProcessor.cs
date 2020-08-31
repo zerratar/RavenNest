@@ -21,7 +21,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             CharacterState state)
         {
             if (DateTime.UtcNow - lastUpdate < updateInterval)
-                return;            
+                return;
 
             var village = gameData.GetOrCreateVillageBySession(session);
             var players = gameData.GetSessionCharacters(session);

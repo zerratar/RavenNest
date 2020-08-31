@@ -29,6 +29,7 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<DataModels.InventoryItem> FindPlayerItems(Guid characterId, Func<DataModels.InventoryItem, bool> predicate);
         DataModels.InventoryItem FindPlayerItem(Guid characterId, Func<DataModels.InventoryItem, bool> predicate);
         DataModels.GameSession GetSessionByUserId(string userId);
+        
 
         #endregion
 
@@ -43,6 +44,7 @@ namespace RavenNest.BusinessLogic.Data
         DataModels.GameSession GetSession(Guid sessionId, bool updateSession = true);
         DataModels.GameSession GetUserSession(Guid userId, bool updateSession = true);
         IReadOnlyList<DataModels.GameEvent> GetSessionEvents(DataModels.GameSession gameSession);
+        IReadOnlyList<DataModels.GameEvent> GetUserEvents(Guid userId);
         IReadOnlyList<DataModels.Item> GetItems();
         DataModels.Item GetItem(Guid id);
         IReadOnlyList<DataModels.InventoryItem> GetInventoryItems(Guid characterId, Guid itemId);
@@ -116,6 +118,7 @@ namespace RavenNest.BusinessLogic.Data
         //#endregion
 
         #region Remove
+        void Remove(DataModels.GameEvent gameEvent);
         void Remove(DataModels.User user);
         void Remove(DataModels.Skills skills);
         void Remove(DataModels.Statistics statistics);

@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 using InventoryItem = RavenNest.DataModels.InventoryItem;
 
 namespace RavenNest.BusinessLogic.Game
@@ -22,6 +22,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly IItemResolver itemResolver;
         private readonly IPlayerManager playerManager;
         private readonly IGameData gameData;
+        private readonly ISessionManager sessionManager;
 
         public AdminManager(
             ILogger<AdminManager> logger,
@@ -29,6 +30,7 @@ namespace RavenNest.BusinessLogic.Game
             IItemResolver itemResolver,
             IPlayerManager playerManager,
             IGameData gameData,
+            ISessionManager sessionManager,
             ISecureHasher secureHasher)
         {
             this.logger = logger;
@@ -36,6 +38,7 @@ namespace RavenNest.BusinessLogic.Game
             this.itemResolver = itemResolver;
             this.playerManager = playerManager;
             this.gameData = gameData;
+            this.sessionManager = sessionManager;
         }
 
         public bool NerfItems()
@@ -357,6 +360,27 @@ namespace RavenNest.BusinessLogic.Game
             mainSkills.Slayer += altSkills.Slayer;
             mainSkills.Strength += altSkills.Strength;
             mainSkills.Woodcutting += altSkills.Woodcutting;
+        }
+
+        public bool RefreshVillageInfo()
+        {
+            var sessions = gameData.GetActiveSessions();
+            foreach (var session in sessions)
+            {
+                sessionManager.SendVillageInfo(session);
+            }
+
+            return true;
+        }
+
+        public async Task<bool> RefreshPermissionsAsync()
+        {
+            var sessions = gameData.GetActiveSessions();
+            foreach (var session in sessions)
+            {
+                await sessionManager.SendPermissionDataAsync(session);
+            }
+            return true;
         }
     }
 }

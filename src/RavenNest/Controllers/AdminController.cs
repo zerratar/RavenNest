@@ -35,6 +35,20 @@ namespace RavenNest.Controllers
             this.authManager = authManager;
         }
 
+        [HttpGet("refresh-permissions")]
+        public async Task<bool> RefreshPermissions()
+        {
+            await AssertAdminAccessAsync();
+            return await adminManager.RefreshPermissionsAsync();
+        }
+
+        [HttpGet("refresh-villages")]
+        public async Task<bool> RefreshVillageInfo()
+        {
+            await AssertAdminAccessAsync();
+            return adminManager.RefreshVillageInfo();
+        }
+
         [HttpPost("item-recovery")]
         public async Task<bool> ItemRecovery([FromBody] string query)
         {
@@ -70,7 +84,6 @@ namespace RavenNest.Controllers
             await AssertAdminAccessAsync();
             return adminManager.GetPlayersPaged(offset, size, order, query);
         }
-
 
         [HttpGet("sessions/{offset}/{size}/{order}/{query}")]
         public async Task<PagedSessionCollection> GetSessions(int offset, int size, string order, string query)

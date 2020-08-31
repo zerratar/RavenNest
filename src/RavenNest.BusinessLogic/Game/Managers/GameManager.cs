@@ -1,6 +1,7 @@
 ﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.Models;
+using System.Linq;
 
 namespace RavenNest.BusinessLogic.Game
 {
@@ -26,7 +27,10 @@ namespace RavenNest.BusinessLogic.Game
                 return new EventCollection();
             }
 
-            var events = gameData.GetSessionEvents(gameSession);
+            var events = gameData.GetSessionEvents(gameSession).ToList();
+            if (events == null || events.Count == 0)
+                events = gameData.GetUserEvents(gameSession.UserId).ToList();
+
             var eventCollection = new EventCollection();
 
             foreach (var ev in events)
@@ -34,14 +38,16 @@ namespace RavenNest.BusinessLogic.Game
                 var gameEvent = ModelMapper.Map(ev);
                 if (eventCollection.Revision < gameEvent.Revision)
                     eventCollection.Revision = gameEvent.Revision;
-                if (gameEvent.Revision > gameSession.Revision)
-                    eventCollection.Add(gameEvent);
+
+                //if (gameEvent.Revision > gameSession.Revision)
+                eventCollection.Add(gameEvent);
+                gameData.Remove(ev);
             }
 
-            if (eventCollection.Revision > gameSession.Revision)
-            {
-                gameSession.Revision = eventCollection.Revision;
-            }
+            //if (eventCollection.Revision > gameSession.Revision)
+            //{
+            //    gameSession.Revision = eventCollection.Revision;
+            //}
 
             return eventCollection;
         }
