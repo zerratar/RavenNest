@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -44,61 +44,26 @@ namespace RavenNest.BusinessLogic.Game
             var activeSession = gameData.GetUserSession(userId);
             // x => x.UserId == userId && x.Status == (int)SessionStatus.Active
 
-            if (activeSession != null)
+            var newGameSession = activeSession ?? gameData.CreateSession(userId);
+            if (activeSession == null)
             {
-                EndSession(activeSession);
+                gameData.Add(newGameSession);
             }
 
-            var newGameSession = gameData.CreateSession(userId);
-
-            gameData.Add(newGameSession);
+            newGameSession.Revision = 0;
 
             var sessionState = gameData.GetSessionState(newGameSession.Id);
             sessionState.SyncTime = syncTime;
 
-            var isAdmin = user.IsAdmin.GetValueOrDefault();
-            var isModerator = user.IsModerator.GetValueOrDefault();
-            var subInfo = await twitchClient.GetSubscriberAsync(user.UserId);
-            var subscriptionTier = 0;
-            var patreonTier = user.PatreonTier ?? 0;
+            await SendPermissionDataAsync(newGameSession, user);
 
-            var expMultiplierLimit = 0;
-            if (subInfo != null && int.TryParse(subInfo.Tier, out subscriptionTier))
-            {
-                subscriptionTier /= 1000;
-                expMultiplierLimit = subscriptionTier == 1 ? 10 : (subscriptionTier - 1) * 25;
-            }
-            if (patreonTier > 0)
-            {
-                var expMulti = patreonTier == 1 ? 10 : (patreonTier - 1) * 25;
-                if (expMulti > expMultiplierLimit) expMultiplierLimit = expMulti;
-            }
-            if (isModerator)
-            {
-                subscriptionTier = 3;
-                expMultiplierLimit = 50;
-            }
-            if (isAdmin)
-            {
-                subscriptionTier = 3;
-                expMultiplierLimit = 5000;
-            }
-            if (isAdmin || isModerator || subInfo != null)
-            {
-                var permissionEvent = gameData.CreateSessionEvent(
-                    GameEventType.PermissionChange,
-                    newGameSession,
-                    new Permissions
-                    {
-                        IsAdministrator = user.IsAdmin ?? false,
-                        IsModerator = user.IsModerator ?? false,
-                        SubscriberTier = subscriptionTier,
-                        ExpMultiplierLimit = expMultiplierLimit,
-                    });
+            SendVillageInfo(newGameSession);
 
-                gameData.Add(permissionEvent);
-            }
+            return GenerateSessionToken(token, newGameSession);
+        }
 
+        public void SendVillageInfo(DataModels.GameSession newGameSession)
+        {
             var village = gameData.GetOrCreateVillageBySession(newGameSession);
             var villageHouses = gameData.GetOrCreateVillageHouses(village);
             var villageInfoEvent = gameData.CreateSessionEvent(
@@ -123,8 +88,58 @@ namespace RavenNest.BusinessLogic.Game
             );
 
             gameData.Add(villageInfoEvent);
+        }
 
-            return GenerateSessionToken(token, newGameSession);
+        public async Task SendPermissionDataAsync(DataModels.GameSession gameSession, DataModels.User user = null)
+        {
+            user = user ?? gameData.GetUser(gameSession.UserId);
+            var isAdmin = user.IsAdmin.GetValueOrDefault();
+            var isModerator = user.IsModerator.GetValueOrDefault();
+            var subInfo = await twitchClient.GetSubscriberAsync(user.UserId);
+            var subscriptionTier = 0;
+            var patreonTier = user.PatreonTier ?? 0;
+
+            var expMultiplierLimit = 0;
+            if (subInfo != null && int.TryParse(subInfo.Tier, out subscriptionTier))
+            {
+                subscriptionTier /= 1000;
+                expMultiplierLimit = subscriptionTier == 1 ? 10 : (subscriptionTier - 1) * 25;
+            }
+            if (patreonTier > 0)
+            {
+                var expMulti = patreonTier == 1 ? 10 : (patreonTier - 1) * 25;
+                if (expMulti > expMultiplierLimit)
+                {
+                    expMultiplierLimit = expMulti;
+                    subscriptionTier = patreonTier;
+                }
+            }
+            if (isModerator)
+            {
+                subscriptionTier = 3;
+                expMultiplierLimit = 50;
+            }
+            if (isAdmin)
+            {
+                subscriptionTier = 3;
+                expMultiplierLimit = 5000;
+            }
+
+            if (isAdmin || isModerator || subInfo != null || patreonTier > 0)
+            {
+                var permissionEvent = gameData.CreateSessionEvent(
+                    GameEventType.PermissionChange,
+                    gameSession,
+                    new Permissions
+                    {
+                        IsAdministrator = user.IsAdmin ?? false,
+                        IsModerator = user.IsModerator ?? false,
+                        SubscriberTier = subscriptionTier,
+                        ExpMultiplierLimit = expMultiplierLimit,
+                    });
+
+                gameData.Add(permissionEvent);
+            }
         }
 
         public bool EndSessionAndRaid(

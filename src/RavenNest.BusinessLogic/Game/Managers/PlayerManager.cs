@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -711,13 +711,7 @@ namespace RavenNest.BusinessLogic.Game
                 if (character == null)
                     throw new Exception("Unable to save exp. Character for user ID " + userId + " could not be found.");
 
-                if (!AcquiredUserLock(token, character) && character.UserIdLock != null)
-                {
-                    SendRemovePlayerFromSession(character, gameSession);
-                    logger.LogWarning($"Unable to save exp. Character with name {character.Name} is not part of session: " + gameSession.Id + ". (SUID: " + gameSession.UserId + " != UIDLOCK: " + character.UserIdLock + "). Sending Remove Player to client.");
-                    return false;
-                }
-
+                var removeFromSession = !AcquiredUserLock(token, character) && character.UserIdLock != null;
                 var sessionOwner = gameData.GetUser(gameSession.UserId);
                 var expLimit = sessionOwner.IsAdmin.GetValueOrDefault() ? 5000 : 50;
 
@@ -754,6 +748,16 @@ namespace RavenNest.BusinessLogic.Game
                 skills.Magic += GetDelta(expLimit, gains.Magic, skills.Magic, experience[skillIndex++]);
                 skills.Ranged += GetDelta(expLimit, gains.Ranged, skills.Ranged, experience[skillIndex++]);
                 skills.Sailing += GetDelta(expLimit, gains.Sailing, skills.Sailing, experience[skillIndex++]);
+
+                if (removeFromSession)
+                {
+                    var activeSessionOwner = gameData.GetUser(character.UserIdLock.GetValueOrDefault());
+                    if (activeSessionOwner != null)
+                    {
+                        SendRemovePlayerFromSession(character, gameSession);
+                        logger.LogError($"{character.Name} was saved from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is part of {activeSessionOwner.UserName}.");
+                    }
+                }
 
                 return true;
             }

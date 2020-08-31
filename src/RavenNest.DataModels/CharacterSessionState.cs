@@ -70,7 +70,8 @@ namespace RavenNest.DataModels
         {
             if (StartTime == DateTime.MinValue)
                 StartTime = DateTime.UtcNow;
-            Amount += amount;
+            if (amount > 0)
+                Amount += amount;
             LastUpdate = DateTime.UtcNow;
         }
     }

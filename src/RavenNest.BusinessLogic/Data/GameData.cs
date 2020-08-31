@@ -128,6 +128,7 @@ namespace RavenNest.BusinessLogic.Data
                     // and take a long time to load
                     gameEvents = new EntitySet<GameEvent, Guid>(new List<GameEvent>() /*ctx.GameEvent.ToList()*/, i => i.Id);
                     gameEvents.RegisterLookupGroup(nameof(GameSession), x => x.GameSessionId);
+                    gameEvents.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     inventoryItems = new EntitySet<InventoryItem, Guid>(
                         restorePoint?.Get<InventoryItem>() ??
@@ -272,14 +273,16 @@ namespace RavenNest.BusinessLogic.Data
         public GameEvent CreateSessionEvent<T>(GameEventType type, GameSession session, T data)
         {
             session.Updated = DateTime.UtcNow;
-            return new GameEvent
+            var ev = new GameEvent
             {
                 Id = Guid.NewGuid(),
                 GameSessionId = session.Id,
+                UserId = session.UserId,
                 Type = (int)type,
                 Revision = GetNextGameEventRevision(session.Id),
                 Data = JSON.Stringify(data)
             };
+            return ev;
         }
 
         // This is not code, it is a shrimp. Cant you see?
@@ -313,6 +316,7 @@ namespace RavenNest.BusinessLogic.Data
             if (character == null) return null;
 
             return gameSessions.Entities
+                .OrderByDescending(x => x.Started)
                 .FirstOrDefault(x =>
                     x.UserId == character.UserIdLock &&
                     (SessionStatus)x.Status == SessionStatus.Active);
@@ -413,6 +417,17 @@ namespace RavenNest.BusinessLogic.Data
             return events.Max(x => x.Revision) + 1;
         }
 
+        public int GetNextGameEventRevision(Guid sessionId, int minRevision)
+        {
+            var events = GetSessionEvents(sessionId);
+            if (events.Count == 0) return minRevision + 1;
+            var value = events.Max(x => x.Revision) + 1;
+            if (value <= minRevision)
+                value = minRevision + 1;
+            return value;
+        }
+
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public GameSession GetSession(Guid sessionId, bool updateSession = true)
         {
@@ -437,6 +452,10 @@ namespace RavenNest.BusinessLogic.Data
             gameEvents[nameof(GameSession), sessionId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<GameEvent> GetUserEvents(Guid userId) =>
+            gameEvents[nameof(User), userId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public User GetUser(Guid userId) => users[userId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -454,6 +473,9 @@ namespace RavenNest.BusinessLogic.Data
             if (updateSession && session != null) session.Updated = DateTime.UtcNow;
             return session;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(GameEvent ev) => gameEvents.Remove(ev);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(User user) => users.Remove(user);
@@ -505,7 +527,7 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<GameSession> GetActiveSessions() => gameSessions.Entities
                     .OrderByDescending(x => x.Started)
-                    .Where(x => x.Stopped == null && DateTime.UtcNow - x.Updated <= TimeSpan.FromMinutes(5)).ToList();
+                    .Where(x => x.Stopped == null && DateTime.UtcNow - x.Updated <= TimeSpan.FromMinutes(30)).ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public InventoryItem GetEquippedItem(Guid characterId, ItemCategory category)

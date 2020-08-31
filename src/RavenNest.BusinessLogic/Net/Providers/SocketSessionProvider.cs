@@ -70,6 +70,7 @@ namespace RavenNest.BusinessLogic.Net
                 gameManager,
                 packetManager,
                 packetSerializer,
+                sessionManager,
                 this,
                 ws,
                 sessionToken);
@@ -121,6 +122,7 @@ namespace RavenNest.BusinessLogic.Net
             private readonly IGameProcessor gameProcessor;
             private readonly IGamePacketManager packetManager;
             private readonly IGamePacketSerializer packetSerializer;
+            private readonly ISessionManager sessionManager;
             private readonly WebSocketConnectionProvider sessionProvider;
 
             private readonly WebSocket ws;
@@ -144,6 +146,7 @@ namespace RavenNest.BusinessLogic.Net
                 IGameManager gameManager,
                 IGamePacketManager packetManager,
                 IGamePacketSerializer packetSerializer,
+                ISessionManager sessionManager,
                 WebSocketConnectionProvider sessionProvider,
                 WebSocket ws,
                 SessionToken sessionToken)
@@ -154,11 +157,12 @@ namespace RavenNest.BusinessLogic.Net
                 this.sessionToken = sessionToken;
                 this.packetManager = packetManager;
                 this.packetSerializer = packetSerializer;
+                this.sessionManager = sessionManager;
                 this.sessionProvider = sessionProvider;
                 this.ws = ws;
 
                 this.killTask = new TaskCompletionSource<object>();
-                this.gameProcessor = new GameProcessor(integrityChecker, this, inventoryProvider, gameData, gameManager, sessionToken);
+                this.gameProcessor = new GameProcessor(integrityChecker, this, sessionManager, inventoryProvider, gameData, gameManager, sessionToken);
             }
 
             internal Guid SessionId => this.sessionToken.SessionId;
