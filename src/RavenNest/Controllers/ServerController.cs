@@ -73,6 +73,7 @@ namespace RavenNest.Controllers
             if (authToken == null) throw new Exception(InsufficientPermissions);
             var user = gameData.GetUser(authToken.UserId);
             if (!user.IsAdmin.GetValueOrDefault()) throw new Exception(InsufficientPermissions);
+
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

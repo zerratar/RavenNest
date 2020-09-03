@@ -728,7 +728,7 @@ namespace RavenNest.BusinessLogic.Game
                 var skillIndex = 0;
 
                 if (experience == null)
-                    return true; // no skills was updated. Ignore
+                    return false; // no skills was updated. Ignore
                 // throw new Exception($"Unable to save exp. Client didnt supply experience, or experience was null. Character with name {character.Name} game session: " + gameSession.Id + ".");
 
                 var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
