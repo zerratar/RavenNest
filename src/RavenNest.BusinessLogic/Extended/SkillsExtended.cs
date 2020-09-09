@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 
 namespace RavenNest.BusinessLogic.Extended
 {
@@ -36,19 +37,27 @@ namespace RavenNest.BusinessLogic.Extended
         public int SlayerLevel => GameMath.ExperienceToLevel(Slayer);
         public int SailingLevel => GameMath.ExperienceToLevel(Sailing);
 
-        public decimal AttackProcent => (Attack / GameMath.LevelToExperience(AttackLevel + 1));
-        public decimal DefenseProcent => (Defense / GameMath.LevelToExperience(DefenseLevel + 1));
-        public decimal StrengthProcent => (Strength / GameMath.LevelToExperience(StrengthLevel + 1));
-        public decimal HealthProcent => (Health / GameMath.LevelToExperience(HealthLevel + 1));
-        public decimal MagicProcent => (Magic / GameMath.LevelToExperience(MagicLevel + 1));
-        public decimal RangedProcent => (Ranged / GameMath.LevelToExperience(RangedLevel + 1));
-        public decimal WoodcuttingProcent => (Woodcutting / GameMath.LevelToExperience(WoodcuttingLevel + 1));
-        public decimal FishingProcent => (Fishing / GameMath.LevelToExperience(FishingLevel + 1));
-        public decimal MiningProcent => (Mining / GameMath.LevelToExperience(MiningLevel + 1));
-        public decimal CraftingProcent => (Crafting / GameMath.LevelToExperience(CraftingLevel + 1));
-        public decimal CookingProcent => (Cooking / GameMath.LevelToExperience(CookingLevel + 1));
-        public decimal FarmingProcent => (Farming / GameMath.LevelToExperience(FarmingLevel + 1));
-        public decimal SlayerProcent => (Slayer / GameMath.LevelToExperience(SlayerLevel + 1));
-        public decimal SailingProcent => (Sailing / GameMath.LevelToExperience(SailingLevel + 1));
+        public float AttackProcent => GetPercentForNextLevel(Attack);
+        public float DefenseProcent => GetPercentForNextLevel(Defense);
+        public float StrengthProcent => GetPercentForNextLevel(Strength);
+        public float HealthProcent => GetPercentForNextLevel(Health);
+        public float MagicProcent => GetPercentForNextLevel(Magic);
+        public float RangedProcent => GetPercentForNextLevel(Ranged);
+        public float WoodcuttingProcent => GetPercentForNextLevel(Woodcutting);
+        public float FishingProcent => GetPercentForNextLevel(Fishing);
+        public float MiningProcent => GetPercentForNextLevel(Mining);
+        public float CraftingProcent => GetPercentForNextLevel(Crafting);
+        public float CookingProcent => GetPercentForNextLevel(Cooking);
+        public float FarmingProcent => GetPercentForNextLevel(Farming);
+        public float SlayerProcent => GetPercentForNextLevel(Slayer);
+        public float SailingProcent => GetPercentForNextLevel(Sailing);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static float GetPercentForNextLevel(decimal exp)
+        {
+            var level = GameMath.ExperienceToLevel(exp);
+            var thisLevel = GameMath.LevelToExperience(level);
+            return (float)((exp - thisLevel) / (GameMath.LevelToExperience(level + 1) - thisLevel));
+        }
     }
 }

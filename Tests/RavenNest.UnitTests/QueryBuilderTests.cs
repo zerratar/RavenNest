@@ -2,12 +2,29 @@
 using System.Collections.Generic;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.DataModels;
 
 namespace RavenNest.UnitTests
 {
+    [TestClass]
+    public class ExtendedSkillsTest
+    {
+        [TestMethod]
+        public void TestStrangeProcent()
+        {
+            decimal exp = 995303420;
+            int level = GameMath.ExperienceToLevel(exp);
+            decimal thisLevel = GameMath.LevelToExperience(level);
+            decimal nextLevel = GameMath.LevelToExperience(level + 1);
+            decimal deltaExp = exp - thisLevel;
+            decimal deltaNextLevel = nextLevel - thisLevel;
+            float procent = (float)(deltaExp / deltaNextLevel);
+
+        }
+    }
 
     [TestClass]
     public class InventoryTests

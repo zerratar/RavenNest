@@ -4,8 +4,8 @@
       <div class="stats-row" v-for="skill in getSkills()" :key="skill.name">
         <div class="stats-label">{{skill.name}}</div>
         <div class="stats-progress">
-          <div class="stats-progress-value" :style="styleWidth(skill.percent*120)"></div>
-          <div class="stats-progress-percent">{{Math.round(skill.percent*100,2)}}%</div>
+          <div class="stats-progress-value" :style="styleWidth(skill.procent*120)"></div>
+          <div class="stats-progress-percent">{{Math.round(skill.procent*100,2)}}%</div>
           </div>
         <div class="stats-value">{{skill.level}}</div>
       </div>
