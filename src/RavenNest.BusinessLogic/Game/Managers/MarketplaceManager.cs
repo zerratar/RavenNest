@@ -53,6 +53,11 @@ namespace RavenNest.BusinessLogic.Game
                 return new ItemSellResult(ItemTradeState.RequestToLow);
             }
 
+            if (pricePerItem >= 1_000_000_000)
+            {
+                return new ItemSellResult(ItemTradeState.Failed);
+            }
+
             var character = GetCharacterAsync(token, userId);
             if (character == null) return new ItemSellResult(ItemTradeState.Failed);
 

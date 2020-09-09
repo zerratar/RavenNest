@@ -13,11 +13,16 @@ namespace RavenNest.BusinessLogic.Game
     {
         private readonly ITwitchClient twitchClient;
         private readonly IGameData gameData;
+        private readonly IPlayerManager playerManager;
 
-        public SessionManager(ITwitchClient twitchClient, IGameData gameData)
+        public SessionManager(
+            ITwitchClient twitchClient,
+            IGameData gameData,
+            IPlayerManager playerManager)
         {
             this.twitchClient = twitchClient;
             this.gameData = gameData;
+            this.playerManager = playerManager;
         }
 
         public async Task<SessionToken> BeginSessionAsync(
@@ -50,6 +55,15 @@ namespace RavenNest.BusinessLogic.Game
                 gameData.Add(newGameSession);
             }
 
+            var activeChars = gameData.GetSessionCharacters(newGameSession);
+            if (activeChars != null)
+            {
+                foreach (var c in activeChars)
+                {
+                    c.UserIdLock = null;
+                }
+            }
+
             newGameSession.Revision = 0;
 
             var sessionState = gameData.GetSessionState(newGameSession.Id);
@@ -60,6 +74,26 @@ namespace RavenNest.BusinessLogic.Game
             SendVillageInfo(newGameSession);
 
             return GenerateSessionToken(token, newGameSession);
+        }
+
+        public bool AttachPlayersToSession(SessionToken session, string[] values)
+        {
+            var s = gameData.GetSession(session.SessionId);
+            if (s != null)
+            {
+                var chars = gameData.GetSessionCharacters(s);
+                foreach (var c in chars)
+                {
+                    c.UserIdLock = null;
+                }
+            }
+
+            var result = false;
+            foreach (var val in values)
+            {
+                result = playerManager.AddPlayer(session, val, val) != null || result;
+            }
+            return result;
         }
 
         public void SendVillageInfo(DataModels.GameSession newGameSession)

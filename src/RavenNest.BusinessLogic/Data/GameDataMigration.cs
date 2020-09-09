@@ -87,20 +87,22 @@ namespace RavenNest.BusinessLogic.Data
                                 villages,
                                 villageHouses);
 
+
+
                             var results = 0;
                             foreach (var q in cmdQuery)
                             {
                                 using (var cmd = con.CreateCommand())
                                 {
                                     cmd.CommandText = q;
-                                    results += cmd.ExecuteNonQuery();
+                                    cmd.ExecuteNonQuery();
                                 }
                             }
-                            if (results < 7)
-                            {
-                                failedCount++;
-                                logger.LogError($"{character.Name} failed to migrate!!");
-                            }
+                            //if (results < 7)
+                            //{
+                            //    failedCount++;
+                            //    logger.LogError($"{character.Name} failed to migrate!!");
+                            //}
                         }
                         catch (Exception exc)
                         {
@@ -237,6 +239,14 @@ namespace RavenNest.BusinessLogic.Data
             MarketItem[] marketItems = marketplaceItems.Where(x => x.SellerCharacterId == character.Id).ToArray();
             if (marketItems.Length > 0)
             {
+                foreach (var ma in marketItems)
+                {
+                    if (ma.Amount > 10_000_0000)
+                        ma.Amount = 10_000_000;
+                    if (ma.PricePerItem > 10_000_0000)
+                        ma.PricePerItem = 10_000_000;
+                }
+
                 if (marketItems.Length > 100)
                 {
                     for (var i = 0; i < marketItems.Length;)

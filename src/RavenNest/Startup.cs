@@ -140,6 +140,17 @@ namespace RavenNest
             //});
             //}
 
+            app.Map("/download/latest", builder =>
+            {
+                builder.Run(async context =>
+                {
+                    var gameData = app.ApplicationServices.GetService<IGameData>();
+                    var client = gameData.Client;
+                    var redirectUrl = gameData.Client.DownloadLink.Replace("update.7z", $"Ravenfall.v{client.ClientVersion}-alpha.7z");
+                    context.Response.Redirect(redirectUrl);
+                });
+            });
+
             app.Map("/session-state.js", builder =>
             {
                 builder.Run(async context =>

@@ -227,7 +227,10 @@ namespace RavenNest.BusinessLogic.Docs
         private static string GenerateTypeExample(Type returnType)
         {
             // handle Ravenfall special Many<> and Single<> types
-
+            if (returnType == null)
+            {
+                return "";
+            }
             if (returnType.IsGenericType)
             {
                 var gTypeDef = returnType.GetGenericTypeDefinition();

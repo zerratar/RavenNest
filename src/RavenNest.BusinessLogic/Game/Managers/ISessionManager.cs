@@ -17,5 +17,6 @@ namespace RavenNest.BusinessLogic.Game
         Task SendPermissionDataAsync(DataModels.GameSession gameSession, DataModels.User user = null);
         void EndSession(SessionToken token);
         bool EndSessionAndRaid(SessionToken token, string userIdOrUsername, bool isWarRaid);
+        bool AttachPlayersToSession(SessionToken session, string[] values);
     }
 }

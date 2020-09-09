@@ -75,7 +75,7 @@ namespace RavenNest.BusinessLogic.Data
         private void RemoveOldBackups()
         {
             var backupFolders = System.IO.Directory.GetDirectories(BackupFolder);
-            if (backupFolders.Length > 10)
+            if (backupFolders.Length > 60)
             {
                 var toDelete = backupFolders.OrderByDescending(x => new System.IO.DirectoryInfo(x).CreationTime).Skip(10);
                 foreach (var old in toDelete)
@@ -134,7 +134,6 @@ namespace RavenNest.BusinessLogic.Data
             finally
             {
                 CreateBackup(restorePoint);
-                ClearRestorePoint();
             }
         }
 

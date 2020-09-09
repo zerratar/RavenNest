@@ -85,6 +85,13 @@ namespace RavenNest.Controllers
             this.sessionManager.EndSession(session);
         }
 
+        [HttpPost("attach")]
+        public bool AttachPlayers(Many<string> userids)
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            return sessionManager.AttachPlayersToSession(session, userids.Values);
+        }
 
         #region Admin Player Control
 
