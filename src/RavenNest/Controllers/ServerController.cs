@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
@@ -14,18 +15,20 @@ namespace RavenNest.Controllers
     public class ServerController : ControllerBase
     {
         private const string InsufficientPermissions = "You do not have permissions to call this API";
-
+        private readonly ILogger<ServerController> logger;
         private readonly IAuthManager authManager;
         private readonly IGameData gameData;
         private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly IServerManager serverManager;
 
         public ServerController(
+            ILogger<ServerController> logger,
             IAuthManager authManager,
             IGameData gameData,
             ISessionInfoProvider sessionInfoProvider,
             IServerManager serverManager)
         {
+            this.logger = logger;
             this.authManager = authManager;
             this.gameData = gameData;
             this.sessionInfoProvider = sessionInfoProvider;

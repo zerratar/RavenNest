@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Net;
@@ -15,6 +16,7 @@ namespace RavenNest.Controllers
     public class AdminController : ControllerBase
     {
         private const string InsufficientPermissions = "You do not have permissions to call this API";
+        private readonly ILogger<AdminController> logger;
         private readonly IWebSocketConnectionProvider socketProvider;
         private readonly IGameData gameData;
         private readonly ISessionInfoProvider sessionInfoProvider;
@@ -22,12 +24,14 @@ namespace RavenNest.Controllers
         private readonly IAuthManager authManager;
 
         public AdminController(
+            ILogger<AdminController> logger,
             IWebSocketConnectionProvider socketProvider,
             IGameData gameData,
             ISessionInfoProvider sessionInfoProvider,
             IAdminManager adminManager,
             IAuthManager authManager)
         {
+            this.logger = logger;
             this.socketProvider = socketProvider;
             this.gameData = gameData;
             this.sessionInfoProvider = sessionInfoProvider;
@@ -52,15 +56,31 @@ namespace RavenNest.Controllers
         [HttpPost("item-recovery")]
         public async Task<bool> ItemRecovery([FromBody] string query)
         {
-            await AssertAdminAccessAsync();
-            return adminManager.ProcessItemRecovery(query);
+            try
+            {
+                await AssertAdminAccessAsync();
+                return adminManager.ProcessItemRecovery(query);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                throw;
+            }
         }
 
         [HttpGet("item-recovery/{query}")]
         public async Task<bool> ItemRecoveryAsync(string query)
         {
-            await AssertAdminAccessAsync();
-            return adminManager.ProcessItemRecovery(query);
+            try
+            {
+                await AssertAdminAccessAsync();
+                return adminManager.ProcessItemRecovery(query);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                throw;
+            }
         }
 
         [HttpGet("kill-sockets")]
