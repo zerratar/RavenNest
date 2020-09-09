@@ -66,10 +66,21 @@ namespace RavenNest.BusinessLogic.Game
                 return CreatePlayer(session, userId, userName);
             }
 
+            if (string.IsNullOrEmpty(user.UserName))
+            {
+                user.UserName = userName;
+                user.DisplayName = userName;
+            }
+
             var character = gameData.GetCharacterByUserId(user.Id);
             if (character == null)
             {
                 return CreatePlayer(session, user);
+            }
+
+            if (string.IsNullOrEmpty(character.Name))
+            {
+                character.Name = userName;
             }
 
             // check if we need to remove the player from

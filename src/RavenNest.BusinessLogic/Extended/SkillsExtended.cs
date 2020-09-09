@@ -36,19 +36,19 @@ namespace RavenNest.BusinessLogic.Extended
         public int SlayerLevel => GameMath.ExperienceToLevel(Slayer);
         public int SailingLevel => GameMath.ExperienceToLevel(Sailing);
 
-        public double AttackProcent => (double)(Attack / GameMath.ExperienceToLevel(AttackLevel + 1));
-        public double DefenseProcent => (double)(Attack / GameMath.ExperienceToLevel(DefenseLevel + 1));
-        public double StrengthProcent => (double)(Attack / GameMath.ExperienceToLevel(StrengthLevel + 1));
-        public double HealthProcent => (double)(Attack / GameMath.ExperienceToLevel(HealthLevel + 1));
-        public double MagicProcent => (double)(Attack / GameMath.ExperienceToLevel(MagicLevel + 1));
-        public double RangedProcent => (double)(Attack / GameMath.ExperienceToLevel(RangedLevel + 1));
-        public double WoodcuttingProcent => (double)(Attack / GameMath.ExperienceToLevel(WoodcuttingLevel + 1));
-        public double FishingProcent => (double)(Attack / GameMath.ExperienceToLevel(FishingLevel + 1));
-        public double MiningProcent => (double)(Attack / GameMath.ExperienceToLevel(MiningLevel + 1));
-        public double CraftingProcent => (double)(Attack / GameMath.ExperienceToLevel(CraftingLevel + 1));
-        public double CookingProcent => (double)(Attack / GameMath.ExperienceToLevel(CookingLevel + 1));
-        public double FarmingProcent => (double)(Attack / GameMath.ExperienceToLevel(FarmingLevel + 1));
-        public double SlayerProcent => (double)(Attack / GameMath.ExperienceToLevel(SlayerLevel + 1));
-        public double SailingProcent => (double)(Attack / GameMath.ExperienceToLevel(SailingLevel + 1));
+        public decimal AttackProcent => (Attack / GameMath.LevelToExperience(AttackLevel + 1));
+        public decimal DefenseProcent => (Defense / GameMath.LevelToExperience(DefenseLevel + 1));
+        public decimal StrengthProcent => (Strength / GameMath.LevelToExperience(StrengthLevel + 1));
+        public decimal HealthProcent => (Health / GameMath.LevelToExperience(HealthLevel + 1));
+        public decimal MagicProcent => (Magic / GameMath.LevelToExperience(MagicLevel + 1));
+        public decimal RangedProcent => (Ranged / GameMath.LevelToExperience(RangedLevel + 1));
+        public decimal WoodcuttingProcent => (Woodcutting / GameMath.LevelToExperience(WoodcuttingLevel + 1));
+        public decimal FishingProcent => (Fishing / GameMath.LevelToExperience(FishingLevel + 1));
+        public decimal MiningProcent => (Mining / GameMath.LevelToExperience(MiningLevel + 1));
+        public decimal CraftingProcent => (Crafting / GameMath.LevelToExperience(CraftingLevel + 1));
+        public decimal CookingProcent => (Cooking / GameMath.LevelToExperience(CookingLevel + 1));
+        public decimal FarmingProcent => (Farming / GameMath.LevelToExperience(FarmingLevel + 1));
+        public decimal SlayerProcent => (Slayer / GameMath.LevelToExperience(SlayerLevel + 1));
+        public decimal SailingProcent => (Sailing / GameMath.LevelToExperience(SailingLevel + 1));
     }
 }
