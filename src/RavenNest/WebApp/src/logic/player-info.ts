@@ -75,10 +75,18 @@ export class PlayerInfo {
   private parsePlayerData(data: any): void {
     if (!data || data == null) return;
     for (const propName in data.skills) {
-      if (propName === 'id' || propName === 'revision') {
+      if (propName === 'id' 
+      || propName === 'revision' 
+      || propName.indexOf('Level') >= 0 
+      || propName.indexOf('Procent') >= 0) {
         continue;
       }
-      this.skills[propName.toLowerCase()] = new CharacterSkill(propName, data.skills[propName]);
+
+      this.skills[propName.toLowerCase()] = new CharacterSkill(propName, 
+        data.skills[propName],
+        data.skills[propName + 'Level'],
+        data.skills[propName + 'Procent'],
+        );
     }
     this.inventoryItems = [];
     for (const val of data.inventoryItems) {

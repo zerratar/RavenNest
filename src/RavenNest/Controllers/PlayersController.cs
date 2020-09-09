@@ -203,7 +203,7 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("extended")]
-        private async Task<PlayerExtended> GetPlayerExtendedAsync()
+        public async Task<PlayerExtended> GetPlayerExtendedAsync()
         {
             var twitchUser = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
             if (twitchUser != null)
@@ -224,6 +224,7 @@ namespace RavenNest.Controllers
 
             return null;
         }
+
         private AuthToken GetAuthToken()
         {
             if (HttpContext.Request.Headers.TryGetValue("auth-token", out var value))

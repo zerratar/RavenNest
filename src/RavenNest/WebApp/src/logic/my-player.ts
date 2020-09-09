@@ -28,7 +28,7 @@ export default class MyPlayer {
     }
 
     public static getSkill(name: string): CharacterSkill { // CharacterSkill
-          if (!MyPlayer.player) return new CharacterSkill('', 0);
+          if (!MyPlayer.player) return new CharacterSkill('', 0, 1, 0);
           return MyPlayer.player.getSkill(name);
       }
 
@@ -39,7 +39,7 @@ export default class MyPlayer {
 
     public static async getPlayerDataAsync() {
       MyPlayer.isLoading = true;
-      const url = `api/players`;
+      const url = `api/players/extended`;
       const result = await Requests.sendAsync(url);
       if (result.ok) {
           MyPlayer.player = new PlayerInfo((await result.json()) as Player);
