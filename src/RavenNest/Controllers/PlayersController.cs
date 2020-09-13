@@ -46,7 +46,6 @@ namespace RavenNest.Controllers
             this.settings = settings;
         }
 
-
         [HttpGet]
         [MethodDescriptor(
             Name = "Get Current Player",
@@ -66,9 +65,16 @@ namespace RavenNest.Controllers
 
         [HttpPost("{userId}")]
         //[MethodDescriptor(Name = "Add Player to Game Session", Description = "Adds the target player to the ongoing session. This will lock the target player to the session and then return the player data.", RequiresSession = true)]
-        public Player PlayerJoin(string userId, Single<string> username)
+        public PlayerJoinResult PlayerJoin(string userId, Single<string> username)
         {
             return playerManager.AddPlayer(AssertGetSessionToken(), userId, username.Value);
+        }
+
+        [HttpPost("{userId}/{identifier}")]
+        //[MethodDescriptor(Name = "Add Player to Game Session", Description = "Adds the target player to the ongoing session. This will lock the target player to the session and then return the player data.", RequiresSession = true)]
+        public PlayerJoinResult PlayerJoin(string userId, string identifier, Single<string> username)
+        {
+            return playerManager.AddPlayer(AssertGetSessionToken(), userId, username.Value, identifier);
         }
 
         [HttpGet("{userId}")]
@@ -82,11 +88,29 @@ namespace RavenNest.Controllers
             if (GetSessionToken() == null)
             {
                 AssertAuthTokenValidity(GetAuthToken());
-                return playerManager.GetPlayer(userId);
+                return playerManager.GetPlayer(userId, "1");
             }
 
             return playerManager.GetPlayer(AssertGetSessionToken(), userId);
         }
+
+
+        [HttpGet("{userId}/{identifier}")]
+        [MethodDescriptor(
+            Name = "Get Player by Twitch UserId",
+            Description = "Get the target player using a Twitch UserId. This requires a session token for grabbing a local player but only an auth token for a global player.",
+            RequiresAuth = true)]
+        public Player GetPlayer(string userId, string identifier)
+        {
+            if (GetSessionToken() == null)
+            {
+                AssertAuthTokenValidity(GetAuthToken());
+                return playerManager.GetPlayer(userId, identifier);
+            }
+
+            return playerManager.GetPlayer(AssertGetSessionToken(), userId);
+        }
+
 
         [HttpGet("{userId}/craft/{item}")]
         public AddItemResult CraftItem(string userId, Guid item)
@@ -159,20 +183,26 @@ namespace RavenNest.Controllers
         //}
 
         [HttpPost("{userId}/appearance")]
-        public async Task<bool> UpdateSyntyAppearanceAsync(string userId, SyntyAppearance appearance)
+        public Task<bool> UpdateSyntyAppearanceAsync(string userId, SyntyAppearance appearance)
+        {
+            return UpdateSyntyAppearanceAsync(userId, "1", appearance);
+        }
+
+        [HttpPost("{userId}/{identifier}/appearance")]
+        public async Task<bool> UpdateSyntyAppearanceAsync(string userId, string identifier, SyntyAppearance appearance)
         {
             userId = CleanupUserId(userId); // we get a weird input sent from the client. This shouldnt 
                                             // be fixed here, but as a temporary bugfix
             var twitchUserSession = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
             if (twitchUserSession != null)
             {
-                return playerManager.UpdateAppearance(userId, appearance);
+                return playerManager.UpdateAppearance(userId, identifier, appearance);
             }
 
             var authToken = GetAuthToken();
             if (authToken != null)
             {
-                return playerManager.UpdateAppearance(authToken, userId, appearance);
+                return playerManager.UpdateAppearance(authToken, userId, identifier, appearance);
             }
 
             return playerManager.UpdateAppearance(AssertGetSessionToken(), userId, appearance);
@@ -202,13 +232,13 @@ namespace RavenNest.Controllers
             return playerManager.UpdateMany(AssertGetSessionToken(), states.Values);
         }
 
-        [HttpGet("extended")]
-        public async Task<PlayerExtended> GetPlayerExtendedAsync()
+        [HttpGet("extended/{identifier}")]
+        public async Task<PlayerExtended> GetPlayerExtendedAsync(string identifier)
         {
             var twitchUser = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
             if (twitchUser != null)
             {
-                return playerManager.GetPlayerExtended(twitchUser.Id.ToString());
+                return playerManager.GetPlayerExtended(twitchUser.Id.ToString(), identifier);
             }
 
             var sessionToken = GetSessionToken();
@@ -217,7 +247,7 @@ namespace RavenNest.Controllers
                 var auth = GetAuthToken();
                 if (auth != null && !auth.Expired)
                 {
-                    return playerManager.GetGlobalPlayerExtended(auth.UserId);
+                    return playerManager.GetGlobalPlayerExtended(auth.UserId, identifier);
                 }
 
             }
@@ -257,7 +287,7 @@ namespace RavenNest.Controllers
             var twitchUser = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
             if (twitchUser != null)
             {
-                return playerManager.GetPlayer(twitchUser.Id.ToString());
+                return playerManager.GetPlayer(twitchUser.Id.ToString(), "1");
             }
 
             var sessionToken = GetSessionToken();
@@ -266,7 +296,7 @@ namespace RavenNest.Controllers
                 var auth = GetAuthToken();
                 if (auth != null && !auth.Expired)
                 {
-                    return playerManager.GetGlobalPlayer(auth.UserId);
+                    return playerManager.GetGlobalPlayer(auth.UserId, "1");
                 }
 
                 return null;
@@ -274,7 +304,6 @@ namespace RavenNest.Controllers
 
             return playerManager.GetPlayer(sessionToken);
         }
-
 
         private SessionToken AssertGetSessionToken()
         {

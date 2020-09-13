@@ -65,6 +65,7 @@ namespace RavenNest.BusinessLogic.Game
             TryGetSkillExperience(skill, player.Skills, out var exp, out var level);
             return new HighScoreItem
             {
+                CharacterIndex = player.CharacterIndex,
                 PlayerName = player.Name,
                 Level = level,
                 Experience = exp,

@@ -19,6 +19,12 @@ export class PlayerInfo {
     return this.srcPlayer.name;
   }
 
+  public get characterIndex(): number {
+    if (!this.srcPlayer)
+      return 0;
+    return this.srcPlayer.characterIndex;
+  }
+
   public getEquippedItems(): InventoryItem[] {
     const items = [...this.inventoryItems.filter((x) => x.equipped === true)];
     items.forEach((x) => {

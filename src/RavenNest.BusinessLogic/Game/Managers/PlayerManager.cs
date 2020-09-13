@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extended;
@@ -12,9 +13,7 @@ using RavenNest.Models;
 
 using Appearance = RavenNest.DataModels.Appearance;
 using Gender = RavenNest.DataModels.Gender;
-using InventoryItem = RavenNest.DataModels.InventoryItem;
 using Item = RavenNest.DataModels.Item;
-using ItemCategory = RavenNest.DataModels.ItemCategory;
 using Resources = RavenNest.DataModels.Resources;
 using Skills = RavenNest.DataModels.Skills;
 using Statistics = RavenNest.DataModels.Statistics;
@@ -23,6 +22,7 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class PlayerManager : IPlayerManager
     {
+        private const int MaxCharacterCount = 3;
         private readonly ILogger logger;
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly IGameData gameData;
@@ -40,30 +40,34 @@ namespace RavenNest.BusinessLogic.Game
             this.integrityChecker = integrityChecker;
         }
 
-        public Player CreatePlayerIfNotExists(string userId, string userName)
+        public Player CreatePlayerIfNotExists(string userId, string userName, string identifier)
         {
-            var player = GetPlayer(userId);
+            var player = GetPlayer(userId, identifier);
             if (player != null) return player;
             return CreatePlayer(null, userId, userName);
         }
 
-        public Player CreatePlayer(string userId, string userName)
+        public Player CreatePlayer(string userId, string userName, string identifier)
         {
-            return CreatePlayer(null, userId, userName);
+            return CreatePlayer(null, userId, userName, identifier);
         }
 
-        public Player AddPlayer(SessionToken token, string userId, string userName)
+        public PlayerJoinResult AddPlayer(SessionToken token, string userId, string userName, string identifier = null)
         {
+            var result = new PlayerJoinResult();
             var session = gameData.GetSession(token.SessionId);
             if (session == null || session.Status != (int)SessionStatus.Active)
             {
-                return null;
+                result.ErrorMessage = "Session is unavailable";
+                return result;
             }
 
             var user = gameData.GetUser(userId);
             if (user == null)
             {
-                return CreatePlayer(session, userId, userName);
+                result.Success = true;
+                result.Player = CreatePlayer(session, userId, userName, identifier);
+                return result;
             }
 
             if (string.IsNullOrEmpty(user.UserName))
@@ -72,16 +76,51 @@ namespace RavenNest.BusinessLogic.Game
                 user.DisplayName = userName;
             }
 
-            var character = gameData.GetCharacterByUserId(user.Id);
+            var character = gameData.GetCharacterByUserId(user.Id, identifier);
             if (character == null)
             {
-                return CreatePlayer(session, user);
+                var player = CreatePlayer(session, user, identifier);
+                if (player != null)
+                {
+                    result.Success = true;
+                    result.Player = player;
+                }
+                else
+                {
+                    result.ErrorMessage = "Maximum character count of " + MaxCharacterCount + " exceeded.";
+                }
+                return result;
             }
 
             if (string.IsNullOrEmpty(character.Name))
             {
                 character.Name = userName;
             }
+
+            result.Player = AddPlayer(session, user, character);
+            result.Success = true;
+            return result;
+        }
+        public Player AddPlayer(SessionToken token, Guid characterId)
+        {
+            var session = gameData.GetSession(token.SessionId);
+            if (session == null || session.Status != (int)SessionStatus.Active)
+            {
+                return null;
+            }
+            var character = gameData.GetCharacter(characterId);
+            var user = gameData.GetUser(character.UserId);
+            return AddPlayer(session, user, character);
+        }
+        public Player AddPlayer(DataModels.GameSession session, Guid characterId)
+        {
+            var character = gameData.GetCharacter(characterId);
+            var user = gameData.GetUser(character.UserId);
+            return AddPlayer(session, user, character);
+        }
+
+        private Player AddPlayer(DataModels.GameSession session, User user, Character character)
+        {
 
             // check if we need to remove the player from
             // their active session.
@@ -125,7 +164,7 @@ namespace RavenNest.BusinessLogic.Game
             gameData.Add(gameEvent);
         }
 
-        public Player GetGlobalPlayer(Guid userId)
+        public Player GetGlobalPlayer(Guid userId, string identifier)
         {
             var user = gameData.GetUser(userId);
             if (user == null)
@@ -133,20 +172,10 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
-            return GetGlobalPlayer(user);
-        }
-        public PlayerExtended GetGlobalPlayerExtended(Guid userId)
-        {
-            var user = gameData.GetUser(userId);
-            if (user == null)
-            {
-                return null;
-            }
-
-            return GetGlobalPlayerExtended(user);
+            return GetPlayerByUser(user, identifier);
         }
 
-        public PlayerExtended GetPlayerExtended(string userId)
+        public PlayerExtended GetGlobalPlayerExtended(Guid userId, string identifier)
         {
             var user = gameData.GetUser(userId);
             if (user == null)
@@ -154,10 +183,10 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
-            return GetGlobalPlayerExtended(user);
+            return GetPlayerExtended(user, identifier);
         }
 
-        public Player GetPlayer(string userId)
+        public PlayerExtended GetPlayerExtended(string userId, string identifier)
         {
             var user = gameData.GetUser(userId);
             if (user == null)
@@ -165,7 +194,18 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
-            return GetGlobalPlayer(user);
+            return GetPlayerExtended(user, identifier);
+        }
+
+        public Player GetPlayer(string userId, string identifier)
+        {
+            var user = gameData.GetUser(userId);
+            if (user == null)
+            {
+                return null;
+            }
+
+            return GetPlayerByUser(user, identifier);
         }
 
         public Player GetPlayer(SessionToken sessionToken)
@@ -182,7 +222,12 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
-            var character = gameData.GetCharacterByUserId(user.Id);
+            var sessionCharacters = gameData.GetSessionCharacters(session);
+            var character = sessionCharacters.FirstOrDefault(x => x.UserId == user.Id);
+            if (character == null)
+            {
+                character = gameData.GetCharacterByUserId(user.Id, "1");
+            }
 
             return character.Map(gameData, user);
         }
@@ -239,7 +284,12 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
-            var character = gameData.GetCharacterByUserId(user.Id);
+            var sessionCharacters = gameData.GetSessionCharacters(session);
+            var character = sessionCharacters.FirstOrDefault(x => x.UserId == user.Id);
+            if (character == null)
+            {
+                character = gameData.GetCharacterByUserId(user.Id, "1");
+            }
 
             return character.Map(gameData, user);
         }
@@ -254,20 +304,24 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
-            return UpdateAppearance(userId, appearance);
+            return UpdateAppearance(userId, character.Identifier ?? character.CharacterIndex.ToString(), appearance);
         }
 
         public bool UpdateAppearance(
-            AuthToken token, string userId, Models.SyntyAppearance appearance)
+            AuthToken token,
+            string userId,
+            string identifier,
+            Models.SyntyAppearance appearance)
         {
-            var character = gameData.GetCharacterByUserId(token.UserId);
-            var control = gameData.GetCharacterByUserId(userId);
+
+            var character = gameData.GetCharacterByUserId(token.UserId, identifier);
+            var control = gameData.GetCharacterByUserId(userId, identifier);
             if (character == null || control.Id != character.Id)
             {
                 return false;
             }
 
-            return UpdateAppearance(userId, appearance);
+            return UpdateAppearance(userId, identifier, appearance);
         }
 
         public bool[] UpdateMany(SessionToken token, PlayerState[] states)
@@ -290,10 +344,11 @@ namespace RavenNest.BusinessLogic.Game
                     continue;
                 }
 
-                var character = gameData.GetCharacterByUserId(user.Id);
+                var character = sessionPlayers.FirstOrDefault(x => x.UserId == user.Id);
+                //var character = gameData.GetCharacterByUserId(user.Id);
                 if (character == null)
                 {
-                    logger.LogError($"Saving failed for player with userId {state.UserId}, no character was found matching the id.");
+                    logger.LogError($"Saving failed for player with userId {state.UserId}, no character was found matching the id in the session.");
                     results.Add(false);
                     continue;
                 }
@@ -567,18 +622,28 @@ namespace RavenNest.BusinessLogic.Game
 
         public IReadOnlyList<PlayerFull> GetFullPlayers()
         {
-            var users = gameData.GetUsers();
-            return users.Select(x => new { User = x, Character = gameData.GetCharacterByUserId(x.Id) })
-                .Where(x => x.Character != null)
-                .Select(x => x.User.MapFull(gameData, x.Character)).ToList();
+            var chars = gameData.GetCharacters();
+            return chars.Select(x => new
+            {
+                User = gameData.GetUser(x.UserId),
+                Character = x
+            })
+            .Where(x => x.Character != null)
+            .Select(x => x.User.MapFull(gameData, x.Character))
+            .ToList();
         }
 
         public IReadOnlyList<Player> GetPlayers()
         {
-            var users = gameData.GetUsers();
-            return users.Select(x => new { User = x, Character = gameData.GetCharacterByUserId(x.Id) })
-                .Where(x => x.Character != null)
-                .Select(x => x.User.Map(gameData, x.Character)).ToList();
+            var chars = gameData.GetCharacters();
+            return chars.Select(x => new
+            {
+                User = gameData.GetUser(x.UserId),
+                Character = x
+            })
+            .Where(x => x.Character != null)
+            .Select(x => x.User.Map(gameData, x.Character))
+            .ToList();
         }
 
         public bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics)
@@ -628,14 +693,14 @@ namespace RavenNest.BusinessLogic.Game
             return false;
         }
 
-        public bool UpdateAppearance(string userId, Models.SyntyAppearance appearance)
+        public bool UpdateAppearance(string userId, string identifier, Models.SyntyAppearance appearance)
         {
             try
             {
                 var user = gameData.GetUser(userId);
                 if (user == null) return false;
 
-                var character = gameData.GetCharacterByUserId(user.Id);
+                var character = gameData.GetCharacterByUserId(user.Id, identifier);
                 if (character == null) return false;
 
                 UpdateCharacterAppearance(appearance, character);
@@ -680,15 +745,34 @@ namespace RavenNest.BusinessLogic.Game
             };
         }
 
-        private Player GetGlobalPlayer(User user)
+        private Player GetPlayerByUser(User user, string identifier)
         {
-            var character = gameData.FindCharacter(x => x.UserId == user.Id);
-            return character.Map(gameData, user);
+            var userCharacters = gameData.GetCharacters(x => x.UserId == user.Id);
+            var hasIndex = int.TryParse(identifier, out var index);
+            foreach (var c in userCharacters)
+            {
+                if (identifier == null)
+                {
+                    return c.Map(gameData, user);
+                }
+
+                if (c.Identifier != null && c.Identifier.Equals(identifier, StringComparison.OrdinalIgnoreCase))
+                {
+                    return c.Map(gameData, user);
+                }
+
+                if (hasIndex && index == c.CharacterIndex)
+                {
+                    return c.Map(gameData, user);
+                }
+            }
+            //var character = gameData.FindCharacter(x => x.UserId == user.Id);
+            return null;
         }
 
-        private PlayerExtended GetGlobalPlayerExtended(User user)
+        private PlayerExtended GetPlayerExtended(User user, string identifier)
         {
-            var character = gameData.FindCharacter(x => x.UserId == user.Id);
+            var character = gameData.GetCharacterByUserId(user.Id, identifier);
             return character.MapExtended(gameData, user);
         }
 
@@ -831,7 +915,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         private Player CreatePlayer(
-            DataModels.GameSession session, string userId, string userName)
+            DataModels.GameSession session, string userId, string userName, string identifier)
         {
             var user = new User
             {
@@ -842,18 +926,32 @@ namespace RavenNest.BusinessLogic.Game
             };
 
             gameData.Add(user);
-            return CreatePlayer(session, user);
+            return CreatePlayer(session, user, identifier);
         }
 
-        private Player CreatePlayer(DataModels.GameSession session, User user)
+        private Player CreatePlayer(DataModels.GameSession session, User user, string identifier)
         {
+            var userCharacters = gameData.GetCharacters(x => x.UserId == user.Id);
+            var index = 0;
+            if (userCharacters.Count > 0)
+            {
+                index = userCharacters.Max(x => x.CharacterIndex) + 1;
+            }
+
+            if (userCharacters.Count >= MaxCharacterCount)
+            {
+                return null;
+            }
+
             var character = new Character
             {
                 Id = Guid.NewGuid(),
                 Name = user.UserName,
                 UserId = user.Id,
                 OriginUserId = session?.UserId ?? Guid.Empty,
-                Created = DateTime.UtcNow
+                Created = DateTime.UtcNow,
+                Identifier = identifier,
+                CharacterIndex = index
             };
 
             var appearance = GenerateRandomAppearance();
@@ -913,7 +1011,14 @@ namespace RavenNest.BusinessLogic.Game
             var user = gameData.GetUser(userId);
             if (user == null) return null;
 
-            return gameData.GetCharacterByUserId(user.Id);
+            var sessionCharacters = gameData.GetSessionCharacters(session);
+            var character = sessionCharacters.FirstOrDefault(x => x.UserId == user.Id);
+            if (character == null)
+            {
+                return gameData.GetCharacterByUserId(user.Id, "1");
+            }
+
+            return character;
         }
 
         private DataModels.CharacterState CreateCharacterState(CharacterStateUpdate update)

@@ -46,7 +46,7 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
-        public bool ProcessItemRecovery(string query)
+        public bool ProcessItemRecovery(string query, string identifier)
         {
             try
             {
@@ -71,9 +71,9 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        public bool KickPlayer(string userId)
+        public bool KickPlayer(string userId, string identifier)
         {
-            var character = gameData.GetCharacterByUserId(userId);
+            var character = gameData.GetCharacterByUserId(userId, identifier);
             var userToRemove = gameData.GetUser(character.UserId);
             if (userToRemove == null)
                 return false;
@@ -97,7 +97,7 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
-        public bool SuspendPlayer(string userId)
+        public bool SuspendPlayer(string userId, string identifier)
         {
             // 1. kick player
             // 2. block player from joining any games.
@@ -229,9 +229,9 @@ namespace RavenNest.BusinessLogic.Game
             };
         }
 
-        public bool UpdatePlayerSkill(string userId, string skill, decimal experience)
+        public bool UpdatePlayerSkill(string userId, string skill, decimal experience, string identifier)
         {
-            var character = this.gameData.GetCharacterByUserId(userId);
+            var character = this.gameData.GetCharacterByUserId(userId, identifier);
             if (character == null) return false;
 
             var skills = this.gameData.GetSkills(character.SkillsId);
@@ -256,9 +256,9 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
-        public bool UpdatePlayerName(string userid, string name)
+        public bool UpdatePlayerName(string userid, string name, string identifier)
         {
-            var character = this.gameData.GetCharacterByUserId(userid);
+            var character = this.gameData.GetCharacterByUserId(userid, identifier);
             if (character == null) return false;
             character.Name = name;
 

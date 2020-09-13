@@ -18,7 +18,7 @@
       <tbody>
         <tr v-for="player in players" :key="player.playerName" v-bind:class="{isMe: player.isMe}">
           <td class='player-rank'>{{player.rank}}</td>
-          <td class='player-name'>{{player.playerName}}</td>
+          <td class='player-name'>{{player.playerName}}<span class='player-character-index' alt='Character Number'>#{{player.characterIndex}}</span></td>
           <td class='player-level'>{{player.level}}</td>
           <td class='player-experience'>{{player.experience}}</td>
         </tr>
@@ -120,6 +120,13 @@
 </script>
 
 <style scoped>
+
+  .player-character-index {
+    margin-left: 5px;
+    display: inline-block;
+    color: #a2a2a2;
+    font-size: 9pt;
+  }
 
   .skill-selector a {
     padding: 5px 15px;

@@ -70,8 +70,7 @@
     private playerInfo: PlayerInfo|null = null;
     private readonly tooltipVisibility: Map<string, boolean> = new Map<string, boolean>();
 
-    private mounted() {
-
+    private mounted() {                
         console.log('INVENTORY::' + this.playerId);
         if (this.playerId && this.playerId.length > 0) {
             this.player = PlayerRepository.getPlayer(this.playerId);

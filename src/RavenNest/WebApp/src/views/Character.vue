@@ -2,7 +2,7 @@
     <div class="character">
       
       <h1 class="stats-name">{{getPlayerName()}}</h1>
-
+      <div><span @click="nextIndex()" class='player-character-index' alt='Character Number'>#{{identifier}}/3 (Click to change shown character.)</span></div>
       <div class="stats-row">
         <div class="stats-combat-level">LV : {{getCombatLevel()}}</div>
       </div>
@@ -12,7 +12,7 @@
         <router-link to="/character/inventory" class="item">Inventory</router-link>
       </nav>
 
-      <router-view></router-view>
+      <router-view :key="revision"></router-view>
 
     <div v-if="isLoading" class="loader">
       <div class="lds-ripple">
@@ -40,6 +40,15 @@
   @Component({})
   export default class Character extends Vue {
     private loadCounter: number = 0;
+    private identifier: string = "1";
+    private revision: number=0;
+    private index: number = 0;
+
+    public nextIndex(): void {
+      this.index = (++this.index) % 3;
+      this.identifier = (this.index+1).toString();
+      this.loadPlayerDataAsync(false);
+    }
 
     public getCombatLevel(): number {
       return MyPlayer.getCombatLevel();
@@ -47,6 +56,10 @@
 
     public getPlayerName(): string {
       return MyPlayer.playerName;
+    }
+
+    public getPlayerCharacterIndex(): number {
+      return MyPlayer.characterIndex || 1;
     }
 
     private mounted() {
@@ -60,14 +73,22 @@
       ++this.loadCounter;
       ItemRepository.loadItemsAsync().then(() => {
         --this.loadCounter;
+        ++this.revision;
         this.$forceUpdate();
       });
+      
+      this.loadPlayerDataAsync(true);
+    }
 
+    private loadPlayerDataAsync(reloadRoute:boolean) {
       ++this.loadCounter;
-      MyPlayer.getPlayerDataAsync().then(() => {
+      MyPlayer.getPlayerDataAsync(this.identifier).then(() => {
         --this.loadCounter;
+        ++this.revision;
         this.$forceUpdate();
-        this.$router.push('/character/skills');
+        if (reloadRoute) {
+          this.$router.push('/character/skills');
+        }
       });
     }
 
@@ -78,6 +99,19 @@
 </script>
 
 <style scoped>
+  .player-character-index {
+    margin-left: 5px; 
+    display: inline-block;
+    color: #777777;
+    font-size: 11pt;
+    cursor: pointer;
+    margin-bottom: 15px;
+    border-bottom: 1px solid transparent;
+  }
+  .player-character-index:hover {
+    border-bottom: 1px solid #a2a2a2;
+  }
+
 .character {
     margin-top: 92px;
     font-family: Heebo,sans-serif;

@@ -350,14 +350,52 @@ namespace RavenNest.BusinessLogic.Data
             characters.Entities.FirstOrDefault(x => x.Name.ToLower() == name.ToLower());
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Character GetCharacterByUserId(Guid userId) =>
-            characters[nameof(User), userId].FirstOrDefault();
+        public Character GetCharacterByUserId(Guid userId, string identifier)
+        {
+            var chars = characters[nameof(User), userId];
+            return GetCharacterByIdentifier(chars, identifier);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Character GetCharacterByUserId(string twitchUserId)
+        public Character GetCharacterByUserId(string twitchUserId, string identifier)
         {
             var user = GetUser(twitchUserId);
-            return user == null ? null : characters[nameof(User), user.Id].FirstOrDefault();
+            var chars = user == null ? null : characters[nameof(User), user.Id];
+            return GetCharacterByIdentifier(chars, identifier);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Character GetCharacterBySession(Guid sessionId, string userId)
+        {
+            var session = GetSession(sessionId);
+            var characters = GetSessionCharacters(session);
+            return characters.FirstOrDefault(x => GetUser(x.UserId)?.UserId == userId);
+        }
+
+        private Character GetCharacterByIdentifier(IReadOnlyList<Character> chars, string identifier)
+        {
+            var hasIndex = int.TryParse(identifier, out var index);
+            foreach (var c in chars)
+            {
+                if (hasIndex && c.CharacterIndex == index)
+                {
+                    return c;
+                }
+
+                if (!string.IsNullOrEmpty(c.Identifier)
+                    && !string.IsNullOrEmpty(identifier)
+                    && c.Identifier.Equals(identifier, StringComparison.OrdinalIgnoreCase))
+                {
+                    return c;
+                }
+
+                if (string.IsNullOrEmpty(identifier) && string.IsNullOrEmpty(c.Identifier))
+                {
+                    return c;
+                }
+            }
+
+            return null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -366,6 +404,10 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<Character> GetCharacters(Func<Character, bool> predicate) =>
             characters.Entities.Where(predicate).ToList();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<Character> GetCharacters() =>
+            characters.Entities.ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<User> GetUsers() =>

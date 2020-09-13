@@ -12,6 +12,11 @@ export default class MyPlayer {
         return MyPlayer.player.playerName;
     }
 
+    public static get characterIndex(): number {
+      if (!MyPlayer.player) return 0;
+      return MyPlayer.player.characterIndex;
+    }
+
     public static getEquippedItems(): InventoryItem[] {
       if (!MyPlayer.player) return [];
       return MyPlayer.player.getEquippedItems();
@@ -37,9 +42,9 @@ export default class MyPlayer {
       return MyPlayer.player.getSkills();
     }
 
-    public static async getPlayerDataAsync() {
+    public static async getPlayerDataAsync(identifier: string) {
       MyPlayer.isLoading = true;
-      const url = `api/players/extended`;
+      const url = `api/players/extended/${identifier}`;
       const result = await Requests.sendAsync(url);
       if (result.ok) {
           MyPlayer.player = new PlayerInfo((await result.json()) as Player);

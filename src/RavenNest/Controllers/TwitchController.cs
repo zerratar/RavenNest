@@ -110,7 +110,7 @@ namespace RavenNest.Controllers
             var user = await sessionInfoProvider.GetTwitchUserAsync(session, token);
             if (user != null)
             {
-                playerManager.CreatePlayerIfNotExists(user.Id, user.Login);
+                playerManager.CreatePlayerIfNotExists(user.Id, user.Login, "0");
             }
             return result;
         }

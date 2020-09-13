@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using RavenNest.Models;
@@ -272,7 +273,14 @@ namespace RavenNest.BusinessLogic.Game
             var user = gameData.GetUser(userId);
             if (user == null) return null;
 
-            return gameData.GetCharacterByUserId(user.Id);
+            var session = gameData.GetSession(token.SessionId);
+            if (session == null)
+            {
+                return null;
+            }
+
+            var chars = gameData.GetSessionCharacters(session);
+            return chars.FirstOrDefault(x => x.UserId == user.Id);
         }
 
         private void AddGameEvent(Guid sessionId, GameEventType type, object model)

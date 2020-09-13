@@ -31,7 +31,7 @@
         <tbody>
           <tr class="player-row" v-for="player in getPlayers()" :key="player.userId">
             <td>{{player.userId}}</td>
-            <td>{{player.userName}}</td>
+            <td>{{player.userName}}<span class='player-character-index' alt='Character Number'>#{{player.characterIndex}}</span></td>
             <td>
 
               <span v-if="editingName(player.userId)">
@@ -381,6 +381,12 @@
 </script>
 
 <style lang="scss" scoped>
+.player-character-index {
+  margin-left: 5px;
+  display: inline-block;
+  color: #a2a2a2;
+  font-size: 9pt;
+}
 
 input.table-edit {
     padding: 3px;

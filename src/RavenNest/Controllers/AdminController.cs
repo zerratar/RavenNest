@@ -53,13 +53,13 @@ namespace RavenNest.Controllers
             return adminManager.RefreshVillageInfo();
         }
 
-        [HttpPost("item-recovery")]
-        public async Task<bool> ItemRecovery([FromBody] string query)
+        [HttpPost("item-recovery/{identifier}")]
+        public async Task<bool> ItemRecovery(string identifier, [FromBody] string query)
         {
             try
             {
                 await AssertAdminAccessAsync();
-                return adminManager.ProcessItemRecovery(query);
+                return adminManager.ProcessItemRecovery(query, identifier);
             }
             catch (Exception exc)
             {
@@ -68,13 +68,13 @@ namespace RavenNest.Controllers
             }
         }
 
-        [HttpGet("item-recovery/{query}")]
-        public async Task<bool> ItemRecoveryAsync(string query)
+        [HttpGet("item-recovery/{identifier}/{query}")]
+        public async Task<bool> ItemRecoveryAsync(string identifier, string query)
         {
             try
             {
                 await AssertAdminAccessAsync();
-                return adminManager.ProcessItemRecovery(query);
+                return adminManager.ProcessItemRecovery(query, identifier);
             }
             catch (Exception exc)
             {
@@ -126,32 +126,32 @@ namespace RavenNest.Controllers
             return adminManager.ResetUserPassword(userid);
         }
 
-        [HttpGet("updateplayername/{userid}/{name}")]
-        public async Task<bool> UpdatePlayerName(string userid, string name)
+        [HttpGet("updateplayername/{userid}/{identifier}/{name}")]
+        public async Task<bool> UpdatePlayerName(string userid, string identifier, string name)
         {
             await AssertAdminAccessAsync();
-            return adminManager.UpdatePlayerName(userid, name);
+            return adminManager.UpdatePlayerName(userid, name, identifier);
         }
 
-        [HttpGet("updateplayerskill/{userid}/{skill}/{experience}")]
-        public async Task<bool> UpdatePlayerSkill(string userid, string skill, decimal experience)
+        [HttpGet("updateplayerskill/{userid}/{identifier}/{skill}/{experience}")]
+        public async Task<bool> UpdatePlayerSkill(string userid, string skill, decimal experience, string identifier)
         {
             await AssertAdminAccessAsync();
-            return adminManager.UpdatePlayerSkill(userid, skill, experience);
+            return adminManager.UpdatePlayerSkill(userid, skill, experience, identifier);
         }
 
-        [HttpGet("kick/{userid}")]
-        public async Task<bool> KickPlayer(string userid)
+        [HttpGet("kick/{userid}/{identifier}")]
+        public async Task<bool> KickPlayer(string userid, string identifier)
         {
             await AssertAdminAccessAsync();
-            return adminManager.KickPlayer(userid);
+            return adminManager.KickPlayer(userid, identifier);
         }
 
-        [HttpGet("suspend/{userid}")]
-        public async Task<bool> SuspendPlayer(string userid)
+        [HttpGet("suspend/{userid}/{identifier}")]
+        public async Task<bool> SuspendPlayer(string userid, string identifier)
         {
             await AssertAdminAccessAsync();
-            return adminManager.SuspendPlayer(userid);
+            return adminManager.SuspendPlayer(userid, identifier);
         }
         private async Task AssertAdminAccessAsync()
         {

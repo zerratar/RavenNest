@@ -22,8 +22,7 @@ namespace RavenNest.BusinessLogic.Game
             if (targetHouse == null)
                 return false;
 
-
-            var player = gameData.GetCharacterByUserId(userId);
+            var player = gameData.GetCharacterBySession(session.Id, userId);
             if (player == null)
                 return false;
 
@@ -34,7 +33,7 @@ namespace RavenNest.BusinessLogic.Game
             targetHouse.UserId = player.UserId;
             return true;
         }
-        
+
         public bool BuildHouse(Guid sessionId, int slot, int type)
         {
             var session = gameData.GetSession(sessionId);
