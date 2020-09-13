@@ -76,7 +76,7 @@ namespace RavenNest.BusinessLogic.Game
             return GenerateSessionToken(token, newGameSession);
         }
 
-        public bool AttachPlayersToSession(SessionToken session, string[] values)
+        public bool AttachPlayersToSession(SessionToken session, Guid[] characterIds)
         {
             var s = gameData.GetSession(session.SessionId);
             if (s != null)
@@ -89,9 +89,9 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var result = false;
-            foreach (var val in values)
+            foreach (var val in characterIds)
             {
-                result = playerManager.AddPlayer(session, val, val) != null || result;
+                result = playerManager.AddPlayer(session, val) != null || result;
             }
             return result;
         }

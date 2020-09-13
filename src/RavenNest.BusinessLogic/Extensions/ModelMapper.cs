@@ -163,6 +163,7 @@ namespace RavenNest.BusinessLogic.Extensions
         {
             return new Player
             {
+                Id = character.Id,
                 UserName = user.UserName,
                 UserId = user.UserId,
                 Name = character.Name,
@@ -177,7 +178,9 @@ namespace RavenNest.BusinessLogic.Extensions
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
                 Clan = Map(gameData, gameData.GetClan(character.ClanId.GetValueOrDefault())),
                 OriginUserId = character.OriginUserId,
-                Revision = character.Revision.GetValueOrDefault()
+                Revision = character.Revision.GetValueOrDefault(),
+                Identifier = character.Identifier,
+                CharacterIndex = character.CharacterIndex,
             };
         }
 
@@ -202,7 +205,9 @@ namespace RavenNest.BusinessLogic.Extensions
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
                 Clan = Map(gameData, gameData.GetClan(character.ClanId.GetValueOrDefault())),
                 OriginUserId = character.OriginUserId,
-                Revision = character.Revision.GetValueOrDefault()
+                Revision = character.Revision.GetValueOrDefault(),
+                Identifier = character.Identifier,
+                CharacterIndex = character.CharacterIndex,
             };
         }
 

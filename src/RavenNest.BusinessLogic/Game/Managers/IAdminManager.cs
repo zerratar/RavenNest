@@ -8,12 +8,12 @@ namespace RavenNest.BusinessLogic.Game
         PagedPlayerCollection GetPlayersPaged(int offset, int size, string sortOrder, string query);
         PagedSessionCollection GetSessionsPaged(int offset, int size, string sortOrder, string query);
         bool MergePlayerAccounts(string userId);
-        bool UpdatePlayerName(string userId, string name);
-        bool UpdatePlayerSkill(string userId, string skill, decimal experience);
-        bool KickPlayer(string userId);
-        bool SuspendPlayer(string userId);
+        bool UpdatePlayerName(string userId, string name, string identifier);
+        bool UpdatePlayerSkill(string userId, string skill, decimal experience, string identifier);
+        bool KickPlayer(string userId, string identifier);
+        bool SuspendPlayer(string userId, string identifier);
         bool ResetUserPassword(string userid);
-        bool ProcessItemRecovery(string query);
+        bool ProcessItemRecovery(string query, string identifier);
         bool NerfItems();
         bool RefreshVillageInfo();
         Task<bool> RefreshPermissionsAsync();

@@ -86,214 +86,213 @@ namespace RavenNest.Controllers
         }
 
         [HttpPost("attach")]
-        public bool AttachPlayers(Many<string> userids)
+        public bool AttachPlayers(Many<Guid> characterIds)
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
-            return sessionManager.AttachPlayersToSession(session, userids.Values);
+            return sessionManager.AttachPlayersToSession(session, characterIds.Values);
         }
 
-        #region Admin Player Control
+        //#region Admin Player Control
+        //[HttpGet("{userId}/join/{targetUserId}")]
+        //public bool Join(string userId, string targetUserId)
+        //{
+        //    AssertAdminAuthToken(GetAuthToken());
+        //    return gameManager.Join(userId, targetUserId);
+        //}
 
-        [HttpGet("{userId}/join/{targetUserId}")]
-        public bool Join(string userId, string targetUserId)
-        {
-            AssertAdminAuthToken(GetAuthToken());
-            return gameManager.Join(userId, targetUserId);
-        }
+        //[HttpGet("{userId}/leave")]
+        //public bool Leave(string userId)
+        //{
+        //    AssertAdminAuthToken(GetAuthToken());
+        //    return gameManager.Leave(userId);
+        //}
 
-        [HttpGet("{userId}/leave")]
-        public bool Leave(string userId)
-        {
-            AssertAdminAuthToken(GetAuthToken());
-            return gameManager.Leave(userId);
-        }
+        //[HttpGet("{userId}/walkto/{x}/{y}/{z}")]
+        //public bool WalkTo(string userId, int x, int y, int z)
+        //{
+        //    AssertAdminAuthToken(GetAuthToken());
+        //    return gameManager.WalkTo(userId, x, y, z);
+        //}
 
-        [HttpGet("{userId}/walkto/{x}/{y}/{z}")]
-        public bool WalkTo(string userId, int x, int y, int z)
-        {
-            AssertAdminAuthToken(GetAuthToken());
-            return gameManager.WalkTo(userId, x, y, z);
-        }
+        //[HttpGet("{userId}/attack/{targetId}/{type}")]
+        //public bool Attack(string userId, string targetId, int type)
+        //{
+        //    AssertAdminAuthToken(GetAuthToken());
+        //    return gameManager.Attack(userId, targetId, (AttackType)type);
+        //}
 
-        [HttpGet("{userId}/attack/{targetId}/{type}")]
-        public bool Attack(string userId, string targetId, int type)
-        {
-            AssertAdminAuthToken(GetAuthToken());
-            return gameManager.Attack(userId, targetId, (AttackType)type);
-        }
+        //[HttpGet("{userId}/object-action/{targetId}/{type}")]
+        //public bool ObjectAction(string userId, string targetId, int type)
+        //{
+        //    AssertAdminAuthToken(GetAuthToken());
+        //    return gameManager.ObjectAction(userId, targetId, (ObjectActionType)type);
+        //}
 
-        [HttpGet("{userId}/object-action/{targetId}/{type}")]
-        public bool ObjectAction(string userId, string targetId, int type)
-        {
-            AssertAdminAuthToken(GetAuthToken());
-            return gameManager.ObjectAction(userId, targetId, (ObjectActionType)type);
-        }
+        //[HttpGet("{userId}/task/{task}/{taskArgument}")]
+        //public bool SetTask(string userId, string task, string taskArgument)
+        //{
+        //    AssertAdminAuthToken(GetAuthToken());
+        //    return gameManager.SetTask(userId, task, taskArgument);
+        //}
 
-        [HttpGet("{userId}/task/{task}/{taskArgument}")]
-        public bool SetTask(string userId, string task, string taskArgument)
-        {
-            AssertAdminAuthToken(GetAuthToken());
-            return gameManager.SetTask(userId, task, taskArgument);
-        }
+        //[HttpGet("{userId}/task/{task}")]
+        //public bool SetTask(string userId, string task)
+        //{
+        //    AssertAdminAuthToken(GetAuthToken());
+        //    return gameManager.SetTask(userId, task, task);
+        //}
 
-        [HttpGet("{userId}/task/{task}")]
-        public bool SetTask(string userId, string task)
-        {
-            AssertAdminAuthToken(GetAuthToken());
-            return gameManager.SetTask(userId, task, task);
-        }
+        //[HttpGet("{userId}/raid")]
+        //public bool JoinRaid(string userId)
+        //{
+        //    AssertAdminAuthToken(GetAuthToken());
+        //    return gameManager.JoinRaid(userId);
+        //}
 
-        [HttpGet("{userId}/raid")]
-        public bool JoinRaid(string userId)
-        {
-            AssertAdminAuthToken(GetAuthToken());
-            return gameManager.JoinRaid(userId);
-        }
+        //[HttpGet("{userId}/dungeon")]
+        //public bool JoinDungeon(string userId)
+        //{
+        //    AssertAdminAuthToken(GetAuthToken());
+        //    return gameManager.JoinDungeon(userId);
+        //}
 
-        [HttpGet("{userId}/dungeon")]
-        public bool JoinDungeon(string userId)
-        {
-            AssertAdminAuthToken(GetAuthToken());
-            return gameManager.JoinDungeon(userId);
-        }
+        //[HttpGet("{userId}/arena")]
+        //public bool JoinArena(string userId)
+        //{
+        //    AssertAdminAuthToken(GetAuthToken());
+        //    return gameManager.JoinArena(userId);
+        //}
 
-        [HttpGet("{userId}/arena")]
-        public bool JoinArena(string userId)
-        {
-            AssertAdminAuthToken(GetAuthToken());
-            return gameManager.JoinArena(userId);
-        }
+        //[HttpGet("{userId}/duel/accept")]
+        //public bool DuelAccept(string userId)
+        //{
+        //    AssertAdminAuthToken(GetAuthToken());
+        //    return gameManager.DuelAccept(userId);
+        //}
 
-        [HttpGet("{userId}/duel/accept")]
-        public bool DuelAccept(string userId)
-        {
-            AssertAdminAuthToken(GetAuthToken());
-            return gameManager.DuelAccept(userId);
-        }
+        //[HttpGet("{userId}/duel/decline")]
+        //public bool DuelDecline(string userId)
+        //{
+        //    AssertAdminAuthToken(GetAuthToken());
+        //    return gameManager.DuelDecline(userId);
+        //}
 
-        [HttpGet("{userId}/duel/decline")]
-        public bool DuelDecline(string userId)
-        {
-            AssertAdminAuthToken(GetAuthToken());
-            return gameManager.DuelDecline(userId);
-        }
+        //[HttpGet("{userId}/duel/{targetUserId}")]
+        //public bool DuelRequest(string userId, string targetUserId)
+        //{
+        //    AssertAdminAuthToken(GetAuthToken());
+        //    return gameManager.DuelRequest(userId, targetUserId);
+        //}
 
-        [HttpGet("{userId}/duel/{targetUserId}")]
-        public bool DuelRequest(string userId, string targetUserId)
-        {
-            AssertAdminAuthToken(GetAuthToken());
-            return gameManager.DuelRequest(userId, targetUserId);
-        }
+        //[HttpGet("{userId}/travel/{island}")]
+        //public bool IslandTravel(string userId, string island)
+        //{
+        //    AssertAdminAuthToken(GetAuthToken());
+        //    return gameManager.Travel(userId, island);
+        //}
 
-        [HttpGet("{userId}/travel/{island}")]
-        public bool IslandTravel(string userId, string island)
-        {
-            AssertAdminAuthToken(GetAuthToken());
-            return gameManager.Travel(userId, island);
-        }
+        //[HttpGet("{userId}/travel")]
+        //public bool Travel(string userId)
+        //{
+        //    AssertAdminAuthToken(GetAuthToken());
+        //    return gameManager.Travel(userId, null);
+        //}
 
-        [HttpGet("{userId}/travel")]
-        public bool Travel(string userId)
-        {
-            AssertAdminAuthToken(GetAuthToken());
-            return gameManager.Travel(userId, null);
-        }
+        //#endregion
 
-        #endregion
+        //#region Player Control
 
-        #region Player Control
+        //[HttpGet("join/{targetUserId}")]
+        //public bool UserJoin(string targetUserId)
+        //{
+        //    return gameManager.Join(GetCurrentUser().UserId, targetUserId);
+        //}
 
-        [HttpGet("join/{targetUserId}")]
-        public bool UserJoin(string targetUserId)
-        {
-            return gameManager.Join(GetCurrentUser().UserId, targetUserId);
-        }
+        //[HttpGet("leave")]
+        //public bool UserLeave()
+        //{
+        //    return gameManager.Leave(GetCurrentUser().UserId);
+        //}
 
-        [HttpGet("leave")]
-        public bool UserLeave()
-        {
-            return gameManager.Leave(GetCurrentUser().UserId);
-        }
+        //[HttpGet("walkto/{x}/{y}/{z}")]
+        //public bool UserWalkTo(int x, int y, int z)
+        //{
+        //    return gameManager.WalkTo(GetCurrentUser().UserId, x, y, z);
+        //}
 
-        [HttpGet("walkto/{x}/{y}/{z}")]
-        public bool UserWalkTo(int x, int y, int z)
-        {
-            return gameManager.WalkTo(GetCurrentUser().UserId, x, y, z);
-        }
+        //[HttpGet("attack/{targetId}/{type}")]
+        //public bool UserAttack(string targetId, int type)
+        //{
+        //    return gameManager.Attack(GetCurrentUser().UserId, targetId, (AttackType)type);
+        //}
 
-        [HttpGet("attack/{targetId}/{type}")]
-        public bool UserAttack(string targetId, int type)
-        {
-            return gameManager.Attack(GetCurrentUser().UserId, targetId, (AttackType)type);
-        }
+        //[HttpGet("object-action/{targetId}/{type}")]
+        //public bool UserObjectAction(string targetId, int type)
+        //{
+        //    return gameManager.ObjectAction(GetCurrentUser().UserId, targetId, (ObjectActionType)type);
+        //}
 
-        [HttpGet("object-action/{targetId}/{type}")]
-        public bool UserObjectAction(string targetId, int type)
-        {
-            return gameManager.ObjectAction(GetCurrentUser().UserId, targetId, (ObjectActionType)type);
-        }
+        //[HttpGet("task/{task}/{taskArgument}")]
+        //public bool UserSetTask(string task, string taskArgument)
+        //{
+        //    return gameManager.SetTask(GetCurrentUser().UserId, task, taskArgument);
+        //}
 
-        [HttpGet("task/{task}/{taskArgument}")]
-        public bool UserSetTask(string task, string taskArgument)
-        {
-            return gameManager.SetTask(GetCurrentUser().UserId, task, taskArgument);
-        }
+        //[HttpGet("task/{task}")]
+        //public bool UserSetTask(string task)
+        //{
+        //    return gameManager.SetTask(GetCurrentUser().UserId, task, task);
+        //}
 
-        [HttpGet("task/{task}")]
-        public bool UserSetTask(string task)
-        {
-            return gameManager.SetTask(GetCurrentUser().UserId, task, task);
-        }
+        //[HttpGet("raid")]
+        //public bool UserJoinRaid()
+        //{
+        //    return gameManager.JoinRaid(GetCurrentUser().UserId);
+        //}
 
-        [HttpGet("raid")]
-        public bool UserJoinRaid()
-        {
-            return gameManager.JoinRaid(GetCurrentUser().UserId);
-        }
+        //[HttpGet("dungeon")]
+        //public bool UserJoinDungeon()
+        //{
+        //    return gameManager.JoinDungeon(GetCurrentUser().UserId);
+        //}
 
-        [HttpGet("dungeon")]
-        public bool UserJoinDungeon()
-        {
-            return gameManager.JoinDungeon(GetCurrentUser().UserId);
-        }
+        //[HttpGet("arena")]
+        //public bool UserJoinArena()
+        //{
+        //    return gameManager.JoinArena(GetCurrentUser().UserId);
+        //}
 
-        [HttpGet("arena")]
-        public bool UserJoinArena()
-        {
-            return gameManager.JoinArena(GetCurrentUser().UserId);
-        }
+        //[HttpGet("duel/accept")]
+        //public bool UserDuelAccept()
+        //{
+        //    return gameManager.DuelAccept(GetCurrentUser().UserId);
+        //}
 
-        [HttpGet("duel/accept")]
-        public bool UserDuelAccept()
-        {
-            return gameManager.DuelAccept(GetCurrentUser().UserId);
-        }
+        //[HttpGet("duel/decline")]
+        //public bool UserDuelDecline()
+        //{
+        //    return gameManager.DuelDecline(GetCurrentUser().UserId);
+        //}
 
-        [HttpGet("duel/decline")]
-        public bool UserDuelDecline()
-        {
-            return gameManager.DuelDecline(GetCurrentUser().UserId);
-        }
+        //[HttpGet("duel/{targetUserId}")]
+        //public bool UserDuelRequest(string targetUserId)
+        //{
+        //    return gameManager.DuelRequest(GetCurrentUser().UserId, targetUserId);
+        //}
 
-        [HttpGet("duel/{targetUserId}")]
-        public bool UserDuelRequest(string targetUserId)
-        {
-            return gameManager.DuelRequest(GetCurrentUser().UserId, targetUserId);
-        }
+        //[HttpGet("travel")]
+        //public bool UserTravel()
+        //{
+        //    return gameManager.Travel(GetCurrentUser().UserId, null);
+        //}
 
-        [HttpGet("travel")]
-        public bool UserTravel()
-        {
-            return gameManager.Travel(GetCurrentUser().UserId, null);
-        }
-
-        [HttpGet("travel/{island}")]
-        public bool UserIslandTravel(string island)
-        {
-            return gameManager.Travel(GetCurrentUser().UserId, island);
-        }
-        #endregion
+        //[HttpGet("travel/{island}")]
+        //public bool UserIslandTravel(string island)
+        //{
+        //    return gameManager.Travel(GetCurrentUser().UserId, island);
+        //}
+        //#endregion
 
         private SessionToken GetSessionToken()
         {

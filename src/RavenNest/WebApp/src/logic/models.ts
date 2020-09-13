@@ -40,6 +40,8 @@ export class Player {
     public isModerator: boolean,
     public readonly originUserId: string,
     public readonly revision: number,
+    public readonly identity: string,
+    public readonly characterIndex: number
   ) { }
 }
 

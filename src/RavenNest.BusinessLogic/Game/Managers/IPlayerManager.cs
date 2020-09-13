@@ -8,22 +8,23 @@ namespace RavenNest.BusinessLogic.Game
 {
     public interface IPlayerManager
     {
-        Player CreatePlayerIfNotExists(string userId, string userName);
-        Player CreatePlayer(string userId, string userName);
-        Player AddPlayer(SessionToken token, string userId, string userName);
+        Player CreatePlayerIfNotExists(string userId, string userName, string identifier);
+        Player CreatePlayer(string userId, string userName, string identifier);
+        PlayerJoinResult AddPlayer(SessionToken token, string userId, string userName, string identifier = null);
+        Player AddPlayer(SessionToken token, Guid characterId);
         Player GetPlayer(SessionToken sessionToken, string userId);
         Player GetPlayer(SessionToken sessionToken);
-        Player GetPlayer(string userId);
-        Player GetGlobalPlayer(Guid userId);
-        PlayerExtended GetPlayerExtended(string userId);
-        PlayerExtended GetGlobalPlayerExtended(Guid userId);
+        Player GetPlayer(string userId, string identifier);
+        Player GetGlobalPlayer(Guid userId, string identifier);
+        PlayerExtended GetPlayerExtended(string userId, string identifier);
+        PlayerExtended GetGlobalPlayerExtended(Guid userId, string identifier);
         bool UpdatePlayerState(SessionToken sessionToken, CharacterStateUpdate update);
 
         bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics);
 
         bool UpdateAppearance(SessionToken token, string userId, Models.SyntyAppearance appearance);
-        bool UpdateAppearance(string userId, Models.SyntyAppearance appearance);
-        bool UpdateAppearance(AuthToken token, string userId, Models.SyntyAppearance appearance);
+        bool UpdateAppearance(string userId, string identifier, Models.SyntyAppearance appearance);
+        bool UpdateAppearance(AuthToken token, string userId, string identifier, Models.SyntyAppearance appearance);
 
         bool UpdateExperience(SessionToken token, string userId, decimal[] experience);
         bool UpdateResources(SessionToken token, string userId, decimal[] resources);

@@ -29,7 +29,6 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<DataModels.InventoryItem> FindPlayerItems(Guid characterId, Func<DataModels.InventoryItem, bool> predicate);
         DataModels.InventoryItem FindPlayerItem(Guid characterId, Func<DataModels.InventoryItem, bool> predicate);
         DataModels.GameSession GetSessionByUserId(string userId);
-        
 
         #endregion
 
@@ -37,6 +36,7 @@ namespace RavenNest.BusinessLogic.Data
         User GetUser(Guid userId);
         IReadOnlyList<DataModels.User> GetUsers();
         IReadOnlyList<DataModels.Character> GetCharacters(Func<Character, bool> predicate);
+        IReadOnlyList<DataModels.Character> GetCharacters();
         IReadOnlyList<DataModels.Character> GetSessionCharacters(DataModels.GameSession currentSession);
         User GetUser(string twitchUserId);
         int GetMarketItemCount();
@@ -54,9 +54,9 @@ namespace RavenNest.BusinessLogic.Data
         DataModels.InventoryItem GetInventoryItem(Guid characterId, Guid itemId);
         DataModels.InventoryItem GetEquippedItem(Guid characterId, Guid itemId);
         Character GetCharacter(Guid characterId);
-        Character GetCharacterByUserId(Guid userId);
-        Character GetCharacterByUserId(string twitchUserId);
-
+        Character GetCharacterByUserId(Guid userId, string identifier);
+        Character GetCharacterByUserId(string twitchUserId, string identifier);
+        Character GetCharacterBySession(Guid sessionId, string userId);
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(Guid itemId);
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(int skip, int take);
         IReadOnlyList<DataModels.GameEvent> GetSessionEvents(Guid sessionId);

@@ -318,7 +318,7 @@ namespace RavenNest.BusinessLogic.Net
 
                         await ReceivePacketsAsync(cts.Token);
 
-                        await Task.Delay(100);
+                        await Task.Delay(15);
                     }
                 }
 

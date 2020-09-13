@@ -3,7 +3,7 @@
      
       <div class="stats-row" v-for="skill in getSkills()" :key="skill.name">
         <div class="stats-label">{{skill.name}}</div>
-        <div class="stats-progress">
+        <div class="stats-progress" :title="expDisplay(skill.experience)">
           <div class="stats-progress-value" :style="styleWidth(skill.procent*120)"></div>
           <div class="stats-progress-percent">{{Math.round(skill.procent*100,2)}}%</div>
           </div>
@@ -33,6 +33,10 @@
 
     public getSkills(): CharacterSkill[] {
         return MyPlayer.getSkills();
+    }
+
+    private expDisplay(value: number): string {
+      return value + ' exp';
     }
 
     private styleWidth(value: any): string {
