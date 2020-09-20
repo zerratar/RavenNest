@@ -18,7 +18,7 @@ namespace RavenNest.BusinessLogic.Data
         DataModels.Village GetVillageBySession(DataModels.GameSession session);
         DataModels.Village GetOrCreateVillageBySession(DataModels.GameSession session);
         IReadOnlyList<DataModels.VillageHouse> GetOrCreateVillageHouses(DataModels.Village village);
-        Character GetCharacterByName(string username);
+        Character GetCharacterByName(string username, string identifier);
 
         /// <summary>
         /// Find player items by predicate
@@ -83,6 +83,7 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Add
         void Add(DataModels.Item entity);
+        void Add(DataModels.ItemCraftingRequirement entity);
         void Add(DataModels.CharacterState entity);
         void Add(DataModels.SyntyAppearance entity);
         void Add(DataModels.Statistics entity);
@@ -119,6 +120,7 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Remove
         void Remove(DataModels.GameEvent gameEvent);
+        void Remove(DataModels.ItemCraftingRequirement craftingRequirement);
         void Remove(DataModels.User user);
         void Remove(DataModels.Skills skills);
         void Remove(DataModels.Statistics statistics);

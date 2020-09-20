@@ -20,13 +20,13 @@ namespace RavenNest.BusinessLogic.Game
         PlayerExtended GetGlobalPlayerExtended(Guid userId, string identifier);
         bool UpdatePlayerState(SessionToken sessionToken, CharacterStateUpdate update);
 
-        bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics);
+        bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics, Guid? characterId = null);
 
         bool UpdateAppearance(SessionToken token, string userId, Models.SyntyAppearance appearance);
         bool UpdateAppearance(string userId, string identifier, Models.SyntyAppearance appearance);
         bool UpdateAppearance(AuthToken token, string userId, string identifier, Models.SyntyAppearance appearance);
 
-        bool UpdateExperience(SessionToken token, string userId, decimal[] experience);
+        bool UpdateExperience(SessionToken token, string userId, decimal[] experience, Guid? characterId = null);
         bool UpdateResources(SessionToken token, string userId, decimal[] resources);
 
         bool[] UpdateMany(SessionToken token, PlayerState[] states);

@@ -90,7 +90,9 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(Resources),
                         typeof(Skills),
                         typeof(Statistics),
-                        typeof(MarketItem)});
+                        typeof(MarketItem),
+                        typeof(ItemCraftingRequirement),
+                });
 
                 if (restorePoint != null)
                 {
@@ -152,7 +154,9 @@ namespace RavenNest.BusinessLogic.Data
                     npcItemDrops = new EntitySet<NPCItemDrop, Guid>(ctx.NPCItemDrop.ToList(), i => i.Id);
                     npcItemDrops.RegisterLookupGroup(nameof(NPC), x => x.NpcId);
 
-                    itemCraftingRequirements = new EntitySet<ItemCraftingRequirement, Guid>(ctx.ItemCraftingRequirement.ToList(), i => i.Id);
+                    itemCraftingRequirements = new EntitySet<ItemCraftingRequirement, Guid>(
+                        restorePoint?.Get<ItemCraftingRequirement>() ??
+                        ctx.ItemCraftingRequirement.ToList(), i => i.Id);
                     itemCraftingRequirements.RegisterLookupGroup(nameof(Item), x => x.ItemId);
                     //itemCraftingRequirements.RegisterLookupGroup(nameof(ItemCraftingRequirement.ResourceItemId), x => x.ItemId);
 
@@ -194,7 +198,7 @@ namespace RavenNest.BusinessLogic.Data
                         appearances, syntyAppearances, characters, characterStates,
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems,
                         resources, statistics, skills, users, villages, villageHouses, clans,
-                        npcs, npcSpawns, npcItemDrops
+                        npcs, npcSpawns, npcItemDrops, itemCraftingRequirements
                     };
                 }
                 stopWatch.Stop();
@@ -215,7 +219,10 @@ namespace RavenNest.BusinessLogic.Data
         public GameClient Client { get; private set; }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void Add(VillageHouse house) => Update(() => villageHouses.Add(house));
+        public void Add(ItemCraftingRequirement entity) => Update(() => itemCraftingRequirements.Add(entity));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(VillageHouse house) => Update(() => villageHouses.Add(house));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(Village entity) => Update(() => villages.Add(entity));
@@ -346,8 +353,12 @@ namespace RavenNest.BusinessLogic.Data
             characters[characterId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Character GetCharacterByName(string name) =>
-            characters.Entities.FirstOrDefault(x => x.Name.ToLower() == name.ToLower());
+        public Character GetCharacterByName(string name, string identifier)
+        {
+            var c = characters.Entities.FirstOrDefault(x => x.Name.ToLower() == name.ToLower());
+            if (c == null) return null;
+            return GetCharacterByUserId(c.UserId, identifier);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Character GetCharacterByUserId(Guid userId, string identifier)
@@ -375,13 +386,9 @@ namespace RavenNest.BusinessLogic.Data
         private Character GetCharacterByIdentifier(IReadOnlyList<Character> chars, string identifier)
         {
             var hasIndex = int.TryParse(identifier, out var index);
+            index = index > 0 ? index - 1 : 0;
             foreach (var c in chars)
             {
-                if (hasIndex && c.CharacterIndex == index)
-                {
-                    return c;
-                }
-
                 if (!string.IsNullOrEmpty(c.Identifier)
                     && !string.IsNullOrEmpty(identifier)
                     && c.Identifier.Equals(identifier, StringComparison.OrdinalIgnoreCase))
@@ -389,6 +396,10 @@ namespace RavenNest.BusinessLogic.Data
                     return c;
                 }
 
+                if (hasIndex && c.CharacterIndex == index)
+                {
+                    return c;
+                }
                 if (string.IsNullOrEmpty(identifier) && string.IsNullOrEmpty(c.Identifier))
                 {
                     return c;
@@ -503,9 +514,11 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public User GetUser(string twitchUserId) => users.Entities
-                .FirstOrDefault(x =>
-                    x.UserName.Equals(twitchUserId, StringComparison.OrdinalIgnoreCase) ||
-                    x.UserId.Equals(twitchUserId, StringComparison.OrdinalIgnoreCase));
+                .Where(x =>
+                    x.UserName?.ToLower()?.Trim() == twitchUserId?.ToLower()?.Trim() ||
+                    x.UserId?.ToLower()?.Trim() == twitchUserId?.ToLower()?.Trim())
+                .OrderBy(x => x.Created)
+                .FirstOrDefault();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public GameSession GetUserSession(Guid userId, bool updateSession = true)
@@ -519,6 +532,9 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(GameEvent ev) => gameEvents.Remove(ev);
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(ItemCraftingRequirement entity) => itemCraftingRequirements.Remove(entity);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(User user) => users.Remove(user);

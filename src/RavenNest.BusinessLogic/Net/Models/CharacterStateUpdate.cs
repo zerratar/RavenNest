@@ -1,7 +1,10 @@
-﻿namespace RavenNest.BusinessLogic.Net
+﻿using System;
+
+namespace RavenNest.BusinessLogic.Net
 {
     public class CharacterStateUpdate
     {
+        public Guid CharacterId { get; set; }
         public string UserId { get; set; }
         public int Health { get; set; }
         public string Island { get; set; }
@@ -17,6 +20,7 @@
 
     public class CharacterSkillUpdate
     {
+        public Guid CharacterId { get; set; }
         public string UserId { get; set; }
         public decimal[] Experience { get; set; }
     }

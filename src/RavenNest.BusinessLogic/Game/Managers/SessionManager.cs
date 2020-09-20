@@ -15,6 +15,12 @@ namespace RavenNest.BusinessLogic.Game
         private readonly IGameData gameData;
         private readonly IPlayerManager playerManager;
 
+        private readonly int[] MaxMultiplier = new int[]
+        {
+            //0, 10, 15, 20
+            0, 15, 30, 50
+        };
+
         public SessionManager(
             ITwitchClient twitchClient,
             IGameData gameData,
@@ -137,22 +143,27 @@ namespace RavenNest.BusinessLogic.Game
             if (subInfo != null && int.TryParse(subInfo.Tier, out subscriptionTier))
             {
                 subscriptionTier /= 1000;
-                expMultiplierLimit = subscriptionTier == 1 ? 10 : (subscriptionTier - 1) * 25;
+                expMultiplierLimit = MaxMultiplier[subscriptionTier];
+                //subscriptionTier == 1 ? 10 : (subscriptionTier - 1) * 25;
             }
+
             if (patreonTier > 0)
             {
-                var expMulti = patreonTier == 1 ? 10 : (patreonTier - 1) * 25;
+                var expMulti = MaxMultiplier[patreonTier];
+                //patreonTier == 1 ? 10 : (patreonTier - 1) * 25;
                 if (expMulti > expMultiplierLimit)
                 {
                     expMultiplierLimit = expMulti;
                     subscriptionTier = patreonTier;
                 }
             }
+
             if (isModerator)
             {
                 subscriptionTier = 3;
-                expMultiplierLimit = 50;
+                expMultiplierLimit = MaxMultiplier[subscriptionTier];
             }
+
             if (isAdmin)
             {
                 subscriptionTier = 3;

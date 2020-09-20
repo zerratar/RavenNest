@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
+using TwitchLib.Api.Helix.Models.Users.Internal;
 
 namespace RavenNest.BusinessLogic.Data
 {
@@ -50,6 +51,9 @@ namespace RavenNest.BusinessLogic.Data
                     var restoreTypes = restorePoint.GetEntityTypes();
                     foreach (var restoreType in restoreTypes)
                     {
+                        if (restoreType == typeof(ItemCraftingRequirement))
+                            continue;
+
                         var table = $"[DB_A3551F_ravenfall].[dbo].[{restoreType.Name}]";
                         try
                         {
@@ -72,6 +76,33 @@ namespace RavenNest.BusinessLogic.Data
                     {
                         try
                         {
+                            var targetUser = users.FirstOrDefault(x => x.Id == character.UserId);
+                            if (targetUser != null && string.IsNullOrEmpty(targetUser.UserId))
+                            {
+                                if (int.TryParse(character.Name, out var tid))
+                                {
+                                    targetUser.UserId = character.Name;
+                                }
+                            }
+
+                            if (!string.IsNullOrEmpty(character.Identifier)
+                            && int.TryParse(character.Name, out var twitchId))
+                            {
+                                var user = users.FirstOrDefault(x => x.UserId == character.Name);
+                                if (user != null)
+                                {
+
+
+                                    var otherChars = characters.Where(x => x.UserId == user.Id).ToList();
+                                    if (otherChars.Any(x => x.Id != character.Id))
+                                        continue;
+                                }
+                                else
+                                {
+                                    continue;
+                                }
+                            }
+
                             var cmdQuery = BuildInsertQuery(
                                 queryBuilder,
                                 character,
@@ -86,8 +117,6 @@ namespace RavenNest.BusinessLogic.Data
                                 invItems,
                                 villages,
                                 villageHouses);
-
-
 
                             var results = 0;
                             foreach (var q in cmdQuery)
@@ -122,6 +151,88 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
+        public void MigrateTest(IEntityRestorePoint restorePoint)
+        {
+            try
+            {
+                var sw = new Stopwatch();
+                sw.Start();
+                var queryBuilder = new QueryBuilder();
+                var users = restorePoint.Get<User>();
+                var characters = restorePoint.Get<Character>();
+                var skills = restorePoint.Get<Skills>();
+                var marketplaceItems = restorePoint.Get<MarketItem>();
+                var syntyAppearance = restorePoint.Get<SyntyAppearance>();
+                var appearances = restorePoint.Get<Appearance>();
+                var resources = restorePoint.Get<Resources>();
+                var charStates = restorePoint.Get<CharacterState>();
+                var charStats = restorePoint.Get<Statistics>();
+                var iitems = restorePoint.Get<InventoryItem>();
+                IReadOnlyList<InventoryItem> invItems = Merge(iitems);
+                var villages = restorePoint.Get<Village>();
+                var villageHouses = restorePoint.Get<VillageHouse>();
+
+                var failedCount = 0;
+                logger?.LogInformation("Migrating user data...");
+                var index = 0;
+                foreach (var character in characters)
+                {
+                    if (!string.IsNullOrEmpty(character.Identifier)
+                        && int.TryParse(character.Name, out var twitchId))
+                    {
+                        var user = users.FirstOrDefault(x => x.UserId == character.Name);
+                        if (user != null)
+                        {
+                            var otherChars = characters.Where(x => x.UserId == user.Id).ToList();
+                            if (otherChars.Any(x => x.Id != character.Id))
+                                continue;
+                        }
+                        else
+                        {
+                            continue;
+                        }
+                    }
+
+                    try
+                    {
+                        var cmdQuery = BuildInsertQuery(
+                            queryBuilder,
+                            character,
+                            users,
+                            marketplaceItems,
+                            skills,
+                            syntyAppearance,
+                            appearances,
+                            resources,
+                            charStates,
+                            charStats,
+                            invItems,
+                            villages,
+                            villageHouses);
+
+                        //if (results < 7)
+                        //{
+                        //    failedCount++;
+                        //    logger.LogError($"{character.Name} failed to migrate!!");
+                        //}
+                    }
+                    catch (Exception exc)
+                    {
+                        logger?.LogError($"Failed to migrate player!!: " + exc);
+                    }
+                    ++index;
+                }
+
+
+                sw.Stop();
+                logger?.LogInformation($"Data migration inserted {characters.Count} characters, {failedCount} failed inserts and took a total of: " + sw.Elapsed);
+            }
+            catch (Exception exc)
+            {
+                logger?.LogError($"Data migration failed!! " + exc);
+            }
+        }
+
         private IReadOnlyList<InventoryItem> Merge(IReadOnlyList<InventoryItem> readOnlyLists)
         {
             var before = readOnlyLists.Count;
@@ -130,7 +241,13 @@ namespace RavenNest.BusinessLogic.Data
             {
                 foreach (var playerItems in readOnlyLists.GroupBy(x => x.CharacterId))
                 {
-                    foreach (var itemStacks in playerItems.GroupBy(x => x.ItemId))
+                    var dupeFix = new List<InventoryItem>();
+                    foreach (var inv in playerItems.GroupBy(x => x.Id))
+                    {
+                        dupeFix.Add(inv.OrderByDescending(x => x.Amount).FirstOrDefault());
+                    }
+
+                    foreach (var itemStacks in dupeFix.GroupBy(x => x.ItemId))
                     {
                         var amount = itemStacks.FirstOrDefault().Amount;
                         var itemId = itemStacks.Key;
@@ -266,7 +383,7 @@ namespace RavenNest.BusinessLogic.Data
 
             Village village = villages.FirstOrDefault(x => x.UserId == user.Id);
             if (village != null)
-                query.AppendLine(qb.Insert(village));
+                queries.Add(qb.Insert(village));
 
             if (village != null)
             {

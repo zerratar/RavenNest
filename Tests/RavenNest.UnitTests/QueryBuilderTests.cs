@@ -1,103 +1,41 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
-using RavenNest.BusinessLogic.Game;
 using RavenNest.DataModels;
 
 namespace RavenNest.UnitTests
 {
-    [TestClass]
-    public class ExtendedSkillsTest
-    {
-        [TestMethod]
-        public void TestStrangeProcent()
-        {
-            decimal exp = 995303420;
-            int level = GameMath.ExperienceToLevel(exp);
-            decimal thisLevel = GameMath.LevelToExperience(level);
-            decimal nextLevel = GameMath.LevelToExperience(level + 1);
-            decimal deltaExp = exp - thisLevel;
-            decimal deltaNextLevel = nextLevel - thisLevel;
-            float procent = (float)(deltaExp / deltaNextLevel);
-
-        }
-    }
-
-    [TestClass]
-    public class InventoryTests
-    {
-
-        [TestMethod]
-        public void TestInventory()
-        {
-            var provider = new PlayerInventoryProvider(null);
-            var playerId = Guid.NewGuid();
-            var inventory = provider.Get(playerId);
-            var itemId = Guid.Empty;
-            var threadA = new Thread(new ThreadStart(() => AddItems(inventory, itemId, 10, 500)));
-            var threadB = new Thread(new ThreadStart(() => AddItems(inventory, itemId, 50, 100)));
-            var threadC = new Thread(new ThreadStart(() => AddItems(inventory, itemId, 50, 1)));
-            var threadD = new Thread(new ThreadStart(() => EquipItem(inventory, itemId)));
-            var threadE = new Thread(new ThreadStart(() => UnequipItem(inventory, itemId)));
-            threadA.Start();
-            threadB.Start();
-            threadC.Start();
-            threadD.Start();
-            threadE.Start();
-
-            threadC.Join();
-            threadD.Join();
-            threadE.Join();
-            threadA.Join();
-            threadB.Join();
-
-            var stack = inventory.GetItem(itemId, false);
-            Assert.AreEqual(110, stack.Amount);
-        }
-        private void EquipItem(PlayerInventory inventory, Guid itemId)
-        {
-            for (var i = 0; i < 100; ++i)
-            {
-                inventory.EquipItem(itemId);
-                System.Threading.Thread.Sleep(1);
-            }
-        }
-
-        private void UnequipItem(PlayerInventory inventory, Guid itemId)
-        {
-            for (var i = 0; i < 100; ++i)
-            {
-                inventory.UnequipItem(itemId);
-                System.Threading.Thread.Sleep(1);
-            }
-        }
-
-        private void AddItems(PlayerInventory inventory, Guid itemId, int totalItemAmount, int tickTimeMs)
-        {
-            for (var i = 0; i < totalItemAmount; ++i)
-            {
-                inventory.AddItem(itemId);
-                System.Threading.Thread.Sleep(tickTimeMs);
-            }
-        }
-    }
-
-    [TestClass]
-    public class HashTest
-    {
-        [TestMethod]
-        public void GenerateHash1()
-        {
-            var hasher = new SecureHasher();
-        }
-    }
 
     [TestClass]
     public class QueryBuilderTests
     {
+
+        [TestMethod]
+        public void TestQueryBuild()
+        {
+            GameDataMigration migration = new GameDataMigration(null);
+            IGameDataBackupProvider backupProvider = new GameDataBackupProvider();
+
+            IEntityRestorePoint restorePoint = backupProvider.GetRestorePoint(new[] {
+                        typeof(Appearance),
+                        typeof(SyntyAppearance),
+                        typeof(Character),
+                        typeof(CharacterState),
+                        typeof(InventoryItem),
+                        typeof(User),
+                        typeof(GameSession),
+                        typeof(Village),
+                        typeof(VillageHouse),
+                        typeof(Resources),
+                        typeof(Skills),
+                        typeof(Statistics),
+                        typeof(MarketItem)});
+
+            migration.MigrateTest(restorePoint);
+
+        }
+
 
         [TestMethod]
         public void Test_insert()

@@ -50,7 +50,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             try
             {
-                var items = itemResolver.Resolve(query);
+                var items = itemResolver.Resolve(query, identifier);
 
                 foreach (var charItems in items.GroupBy(x => x.Character.Id))
                 {
@@ -114,6 +114,70 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
+        public bool FixCharacterIndices(string userId)
+        {
+            if (string.IsNullOrEmpty(userId))
+            {
+                var users = gameData.GetUsers();
+                foreach (var u in users)
+                {
+                    FixCharacterIndices(u);
+                }
+                return true;
+            }
+
+            var user = gameData.GetUser(userId);
+            if (user == null)
+                return false;
+
+            return FixCharacterIndices(user);
+        }
+
+        private bool FixCharacterIndices(User user)
+        {
+            var characters = gameData
+                .GetCharacters(x => x.UserId == user.Id)
+                .OrderBy(x => x.Created)
+                .ToList();
+
+            var index = 0;
+            foreach (var c in characters)
+            {
+                c.CharacterIndex = index++;
+            }
+
+            return true;
+        }
+
+        public bool SetCraftingRequirements(string itemQuery, string requirementQuery)
+        {
+            var targetItem = itemResolver.Resolve(itemQuery).FirstOrDefault();
+            if (targetItem == null)
+                return false;
+
+            var requirements = itemResolver.Resolve(requirementQuery);
+            if (requirements.Count == 0)
+                return false;
+
+            var existingRequirements = gameData.GetCraftingRequirements(targetItem.Item.Id);
+            foreach (var er in existingRequirements)
+            {
+                gameData.Remove(er);
+            }
+
+            foreach (var req in requirements)
+            {
+                gameData.Add(new DataModels.ItemCraftingRequirement
+                {
+                    Id = Guid.NewGuid(),
+                    Amount = (int)req.Amount,
+                    ItemId = targetItem.Item.Id,
+                    ResourceItemId = req.Item.Id
+                });
+            }
+            return true;
+        }
+
         public bool MergePlayerAccounts(string userId)
         {
             var user = gameData.GetUser(userId);
@@ -125,7 +189,7 @@ namespace RavenNest.BusinessLogic.Game
                 .OrderByDescending(x => x.Revision)
                 .ToList();
 
-            var main = characters.FirstOrDefault(x => x.UserId == user.Id);
+            var main = gameData.GetCharacterByUserId(user.Id, "1");
             if (main == null)
                 return false;
 
@@ -137,7 +201,7 @@ namespace RavenNest.BusinessLogic.Game
 
             foreach (var alt in characters)
             {
-                if (alt.Id == main.Id)
+                if (alt.Id == main.Id || alt.UserId == main.UserId)
                     continue;
 
                 var altSkills = gameData.GetSkills(alt.SkillsId);
@@ -196,7 +260,7 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
 
-            return true;
+            return FixCharacterIndices(user);
         }
 
         public PagedPlayerCollection GetPlayersPaged(int offset, int size, string sortOrder, string query)
