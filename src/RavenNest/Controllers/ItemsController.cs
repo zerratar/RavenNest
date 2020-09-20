@@ -37,24 +37,10 @@ namespace RavenNest.Controllers
             Name = "Get all available items",
             Description = "This will return the list of all available items in Ravenfall. This is required as no other endpoints will give out any item data other than item id. This list of items is then necessary to do an item lookup.",
             RequiresSession = false,
-            RequiresAuth = true)
+            RequiresAuth = false)
         ]
-        public async Task<ItemCollection> Get()
+        public async Task<ActionResult<ItemCollection>> Get()
         {
-            var twitchUser = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
-            if (twitchUser == null)
-            {
-                var authToken = GetAuthToken();
-                try
-                {
-                    AssertAuthTokenValidity(authToken);
-                }
-                catch (NullReferenceException)
-                {
-                    return new ItemCollection();
-                }
-            }
-
             if (itemManager == null)
             {
                 return new ItemCollection();
