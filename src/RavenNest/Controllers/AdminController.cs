@@ -46,6 +46,28 @@ namespace RavenNest.Controllers
             return await adminManager.RefreshPermissionsAsync();
         }
 
+        [HttpGet("fix-index/{userId}")]
+        public async Task<bool> FixIndices(string userId)
+        {
+            await AssertAdminAccessAsync();
+            return adminManager.FixCharacterIndices(userId);
+        }
+
+
+        [HttpGet("crafting-req/{itemQuery}/{requirementQuery}")]
+        public async Task<bool> SetCraftingRequirement(string itemQuery, string requirementQuery)
+        {
+            await AssertAdminAccessAsync();
+            return adminManager.SetCraftingRequirements(itemQuery, requirementQuery);
+        }
+
+        [HttpGet("fix-index")]
+        public async Task<bool> FixIndex()
+        {
+            await AssertAdminAccessAsync();
+            return adminManager.FixCharacterIndices(null);
+        }
+
         [HttpGet("refresh-villages")]
         public async Task<bool> RefreshVillageInfo()
         {

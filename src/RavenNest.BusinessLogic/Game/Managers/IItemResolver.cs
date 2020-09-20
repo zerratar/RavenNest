@@ -10,7 +10,8 @@ namespace RavenNest.BusinessLogic.Game
 {
     public interface IItemResolver
     {
-        IReadOnlyList<PlayerItem> Resolve(string query);
+        IReadOnlyList<PlayerItemStack> Resolve(string query, string charIdentifier);
+        IReadOnlyList<ItemStack> Resolve(string query);
     }
 
     public class ItemResolver : IItemResolver
@@ -22,9 +23,17 @@ namespace RavenNest.BusinessLogic.Game
             this.gameData = gameData;
         }
 
-        public IReadOnlyList<PlayerItem> Resolve(string query)
+        public IReadOnlyList<ItemStack> Resolve(string query)
         {
-            var itemOutput = new List<PlayerItem>();
+            if (string.IsNullOrEmpty(query)) return new List<ItemStack>();
+            query = query.Trim();
+
+            return ResolveStacks(query);
+        }
+
+        public IReadOnlyList<PlayerItemStack> Resolve(string query, string charIdentifier)
+        {
+            var itemOutput = new List<PlayerItemStack>();
 
             if (string.IsNullOrEmpty(query)) return itemOutput;
             query = query.Trim();
@@ -36,58 +45,76 @@ namespace RavenNest.BusinessLogic.Game
                     continue;
 
                 var username = line.Split(' ')[0];
-                Character player = gameData.GetCharacterByName(username);
+                Character player = gameData.GetCharacterByName(username, charIdentifier);
                 query = query.Substring(username.Length).Trim();
 
-                if (string.IsNullOrEmpty(query)) return itemOutput;
+                if (string.IsNullOrEmpty(query))
+                    return itemOutput;
 
-                var itemQueries = query.Split(',');
-                foreach (var itemQ in itemQueries)
+                Resolve(query, itemOutput, player);
+            }
+            return itemOutput;
+        }
+
+        private void Resolve(string query, List<PlayerItemStack> itemOutput, Character player)
+        {
+            var result = ResolveStacks(query);
+            foreach (var i in result)
+            {
+                itemOutput.Add(new PlayerItemStack(player, i.Item, i.Amount));
+            }
+        }
+
+        private List<ItemStack> ResolveStacks(string query)
+        {
+            var result = new List<ItemStack>();
+            var itemQueries = query.Split(',');
+            foreach (var itemQ in itemQueries)
+            {
+                var itemQueryRaw = itemQ.Trim();
+                if (string.IsNullOrEmpty(itemQueryRaw))
+                    continue;
+
+                var lexer = new Lexer();
+                var tokens = lexer.Tokenize(itemQueryRaw, true);
+                var index = tokens.Count - 1;
+
+                var amount = 1L;
+                var modifiedQuery = "";
+
+                while (true)
                 {
-                    var itemQueryRaw = itemQ.Trim();
-                    if (string.IsNullOrEmpty(itemQueryRaw))
-                        continue;
-
-                    var lexer = new Lexer();
-                    var tokens = lexer.Tokenize(itemQueryRaw, true);
-                    var index = tokens.Count - 1;
-
-                    var amount = 1L;
-                    var modifiedQuery = "";
-
-                    while (true)
+                    var token = tokens[index];
+                    if (token.Type == TokenType.Identifier)
                     {
-                        var token = tokens[index];
-                        if (token.Type == TokenType.Identifier)
+                        if (TryParseAmount(token, out var a))
                         {
-                            if (TryParseAmount(token, out var a))
-                            {
-                                amount = a;
-                            }
-                            else
-                            {
-                                modifiedQuery = token.Value + modifiedQuery;
-                            }
+                            amount = a;
                         }
                         else
                         {
                             modifiedQuery = token.Value + modifiedQuery;
                         }
-                        if (--index < 0) break;
                     }
-
-                    var itemQuery = modifiedQuery.Trim();
-                    var items = gameData.GetItems();
-                    var item = items.FirstOrDefault(x => IsMatch(x.Name, itemQuery));
-                    if (item == null)
+                    else
                     {
-                        continue;
+                        modifiedQuery = token.Value + modifiedQuery;
                     }
-
-                    itemOutput.Add(new PlayerItem(player, item, amount));
+                    if (--index < 0) break;
                 }
+
+                var itemQuery = modifiedQuery.Trim();
+                var items = gameData.GetItems();
+                var item = items.FirstOrDefault(x => IsMatch(x.Name, itemQuery));
+                if (item == null)
+                {
+                    continue;
+                }
+
+                result.Add(new ItemStack(item, amount));
             }
-            return itemOutput;
+
+            return result;
         }
 
         private static bool TryParseAmount(Token token, out long amount)
@@ -194,18 +221,26 @@ namespace RavenNest.BusinessLogic.Game
         }
 
     }
-
-    public class PlayerItem
+    public class ItemStack
     {
-        public PlayerItem(Character character, Item item, decimal amount)
+        public ItemStack(Item item, decimal amount)
         {
             Item = item;
             Amount = amount;
-            Character = character;
         }
 
         public Item Item { get; }
         public decimal Amount { get; }
+    }
+
+    public class PlayerItemStack : ItemStack
+    {
+        public PlayerItemStack(Character character, Item item, decimal amount)
+            : base(item, amount)
+        {
+            Character = character;
+        }
+
         public Character Character { get; }
     }
 

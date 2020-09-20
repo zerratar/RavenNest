@@ -7,7 +7,9 @@ namespace RavenNest.BusinessLogic.Game
     {
         PagedPlayerCollection GetPlayersPaged(int offset, int size, string sortOrder, string query);
         PagedSessionCollection GetSessionsPaged(int offset, int size, string sortOrder, string query);
+        bool SetCraftingRequirements(string itemQuery, string requirementQuery);
         bool MergePlayerAccounts(string userId);
+        bool FixCharacterIndices(string userId);
         bool UpdatePlayerName(string userId, string name, string identifier);
         bool UpdatePlayerSkill(string userId, string skill, decimal experience, string identifier);
         bool KickPlayer(string userId, string identifier);

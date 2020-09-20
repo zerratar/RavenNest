@@ -44,7 +44,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             var player = GetPlayer(userId, identifier);
             if (player != null) return player;
-            return CreatePlayer(null, userId, userName);
+            return CreatePlayer(userId, userName, identifier);
         }
 
         public Player CreatePlayer(string userId, string userName, string identifier)
@@ -124,6 +124,15 @@ namespace RavenNest.BusinessLogic.Game
 
             // check if we need to remove the player from
             // their active session.
+
+            var sessionChars = gameData.GetSessionCharacters(session);
+            var charactersInSession = sessionChars.Where(x => x.UserId == user.Id).ToList();
+
+            foreach (var cs in charactersInSession)
+            {
+                cs.UserIdLock = null;
+            }
+
             if (character.UserIdLock != null)
             {
                 TryRemovePlayerFromPreviousSession(character, session);
@@ -333,7 +342,7 @@ namespace RavenNest.BusinessLogic.Game
                 return Enumerable.Range(0, states.Length).Select(x => false).ToArray();
             }
 
-            var sessionPlayers = gameData.GetSessionCharacters(gameSession);
+            //var sessionPlayers = gameData.GetSessionCharacters(gameSession);
             foreach (var state in states)
             {
                 var user = gameData.GetUser(state.UserId);
@@ -344,7 +353,7 @@ namespace RavenNest.BusinessLogic.Game
                     continue;
                 }
 
-                var character = sessionPlayers.FirstOrDefault(x => x.UserId == user.Id);
+                var character = gameData.GetCharacter(state.CharacterId);//sessionPlayers.FirstOrDefault(x => x.UserId == user.Id);
                 //var character = gameData.GetCharacterByUserId(user.Id);
                 if (character == null)
                 {
@@ -364,12 +373,12 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     if (state.Experience != null && state.Experience.Length > 0)
                     {
-                        UpdateExperience(token, state.UserId, state.Experience);
+                        UpdateExperience(token, state.UserId, state.Experience, state.CharacterId);
                     }
 
                     if (state.Statistics != null && state.Statistics.Length > 0)
                     {
-                        UpdateStatistics(token, state.UserId, state.Statistics);
+                        UpdateStatistics(token, state.UserId, state.Statistics, state.CharacterId);
                     }
 
                     EquipBestItems(character);
@@ -628,7 +637,7 @@ namespace RavenNest.BusinessLogic.Game
                 User = gameData.GetUser(x.UserId),
                 Character = x
             })
-            .Where(x => x.Character != null)
+            .Where(x => x.Character != null && x.User != null)
             .Select(x => x.User.MapFull(gameData, x.Character))
             .ToList();
         }
@@ -641,14 +650,17 @@ namespace RavenNest.BusinessLogic.Game
                 User = gameData.GetUser(x.UserId),
                 Character = x
             })
-            .Where(x => x.Character != null)
+            .Where(x => x.Character != null && x.User != null)
             .Select(x => x.User.Map(gameData, x.Character))
             .ToList();
         }
 
-        public bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics)
+        public bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics, Guid? characterId = null)
         {
-            var character = GetCharacter(token, userId);
+            var character = characterId != null
+                ? gameData.GetCharacter(characterId.Value)
+                : GetCharacter(token, userId);
+
             if (character == null) return false;
             if (!AcquiredUserLock(token, character)) return false;
 
@@ -749,6 +761,8 @@ namespace RavenNest.BusinessLogic.Game
         {
             var userCharacters = gameData.GetCharacters(x => x.UserId == user.Id);
             var hasIndex = int.TryParse(identifier, out var index);
+            index = index > 0 ? index - 1 : 0;
+
             foreach (var c in userCharacters)
             {
                 if (identifier == null)
@@ -773,6 +787,16 @@ namespace RavenNest.BusinessLogic.Game
         private PlayerExtended GetPlayerExtended(User user, string identifier)
         {
             var character = gameData.GetCharacterByUserId(user.Id, identifier);
+            if (character == null) return new PlayerExtended
+            {
+                Appearance = new Models.SyntyAppearance(),
+                Clan = new Models.Clan(),
+                InventoryItems = new List<Models.InventoryItem>(),
+                Skills = new SkillsExtended(),
+                Resources = new Models.Resources(),
+                State = new Models.CharacterState(),
+                Statistics = new Models.Statistics()
+            };
             return character.MapExtended(gameData, user);
         }
 
@@ -797,12 +821,13 @@ namespace RavenNest.BusinessLogic.Game
         public bool UpdateExperience(
             SessionToken token,
             string userId,
-            decimal[] experience)
+            decimal[] experience,
+            Guid? characterId = null)
         {
             try
             {
                 var gameSession = gameData.GetSession(token.SessionId);
-                var character = GetCharacter(token, userId);
+                var character = /*characterId != null ? gameData.GetCharacter(characterId.Value) :*/ GetCharacter(token, userId);
                 if (character == null)
                     throw new Exception("Unable to save exp. Character for user ID " + userId + " could not be found.");
 
@@ -917,15 +942,19 @@ namespace RavenNest.BusinessLogic.Game
         private Player CreatePlayer(
             DataModels.GameSession session, string userId, string userName, string identifier)
         {
-            var user = new User
+            var user = gameData.GetUser(userId);
+            if (user == null)
             {
-                Id = Guid.NewGuid(),
-                UserId = userId,
-                UserName = userName,
-                Created = DateTime.UtcNow
-            };
+                user = new User
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = userId,
+                    UserName = userName,
+                    Created = DateTime.UtcNow
+                };
+                gameData.Add(user);
+            }
 
-            gameData.Add(user);
             return CreatePlayer(session, user, identifier);
         }
 
@@ -960,13 +989,20 @@ namespace RavenNest.BusinessLogic.Game
             var skills = GenerateSkills();
             var resources = GenerateResources();
             var statistics = GenerateStatistics();
+            var state = new DataModels.CharacterState()
+            {
+                Id = Guid.NewGuid(),
+                Health = 10,
+            };
 
+            gameData.Add(state);
             gameData.Add(syntyAppearance);
             gameData.Add(statistics);
             gameData.Add(skills);
             gameData.Add(appearance);
             gameData.Add(resources);
 
+            character.StateId = state.Id;
             character.SyntyAppearanceId = syntyAppearance.Id;
             character.ResourcesId = resources.Id;
             character.AppearanceId = appearance.Id;
@@ -1013,6 +1049,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var sessionCharacters = gameData.GetSessionCharacters(session);
             var character = sessionCharacters.FirstOrDefault(x => x.UserId == user.Id);
+            //var chars = sessionCharacters.Where(x => x.UserId == user.Id).ToList();
             if (character == null)
             {
                 return gameData.GetCharacterByUserId(user.Id, "1");

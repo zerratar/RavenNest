@@ -21,10 +21,16 @@ namespace RavenNest.BusinessLogic.Game
 
         public HighScoreCollection GetSkillHighScore(string skill, int skip = 0, int take = 100)
         {
-            var players = playerManager.GetPlayers();
-            var items = players
-                .OrderByDescending(x => TryGetSkillExperience(skill, x.Skills, out var exp, out var level) ? exp : 0)
-                .ThenByDescending(x => TryGetSkillExperience(skill, x.Skills, out var exp, out var level) ? level : 0)
+            var players = playerManager.GetPlayers().Where(x => !x.IsAdmin && x.CharacterIndex == 0).ToList();
+
+            var items =
+                (skill == null
+                ? (players
+                    .OrderByDescending(x => OrderByLevel(skill, x))
+                    .ThenByDescending(x => OrderByExp(skill, x)))
+                : (players
+                    .OrderByDescending(x => OrderByExp(skill, x))
+                    .ThenByDescending(x => OrderByLevel(skill, x))))
                 .Skip(skip)
                 .Take(take)
                 .Select((x, y) => Map(y + 1, skill, x))
@@ -34,29 +40,26 @@ namespace RavenNest.BusinessLogic.Game
             {
                 Players = items,
                 Skill = skill,
-                Offset = 0,
+                Offset = skip,
                 Total = players.Count
             };
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int OrderByLevel(string skill, Player x)
+        {
+            return TryGetSkillExperience(skill, x.Skills, out _, out var level) ? level : 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private decimal OrderByExp(string skill, Player x)
+        {
+            return TryGetSkillExperience(skill, x.Skills, out var exp, out _) ? exp : 0;
+        }
+
         public HighScoreCollection GetHighScore(int skip = 0, int take = 100)
         {
-            var players = playerManager.GetPlayers();
-            var items = players
-                .OrderByDescending(x => TryGetSkillExperience(null, x.Skills, out var exp, out var level) ? level : 0)
-                .ThenByDescending(x => TryGetSkillExperience(null, x.Skills, out var exp, out var level) ? exp : 0)
-                .Skip(skip)
-                .Take(take)
-                .Select((x, y) => Map(y + 1, null, x))
-                .ToList();
-
-            return new HighScoreCollection
-            {
-                Players = items,
-                Skill = null,
-                Offset = skip,
-                Total = players.Count
-            };
+            return GetSkillHighScore(null, skip, take);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
