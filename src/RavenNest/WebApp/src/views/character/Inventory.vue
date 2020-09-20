@@ -127,36 +127,40 @@
 
     public getItemType(item: InventoryItem): string {
         if (!item.item) return '';
-        switch (item.item.type) {
-            case 1: return 'Two Handed Sword';
-            case 2: return 'One Handed Sword';
-            case 3: return 'Two Handed Axe';
-            case 4: return 'One Handed Axe';
-            case 5: return 'Two Handed Staff';
-            case 6: return 'Two Handed Bow';
-            case 7: return 'One Handed Mace';
-            case 8: return 'Helm';
-            case 9: return 'Chest';
-            case 10: return 'Gloves';
-            case 11: return 'Boots';
-            case 12: return 'Leggings';
-            case 13: return 'Shield';
-            case 14: return 'Left Shoulder Piece';
-            case 15: return 'Right Shoulder Piece';
-            case 16: return 'Ring';
-            case 17: return 'Amulet';
-            case 18: return 'Food';
-            case 19: return 'Potion';
-            case 20: return 'Pet';
-            case 21: return 'Coins';
-            case 22: return 'Wood';
-            case 23: return 'Ore';
-            case 24: return 'Fish';
-            case 25: return 'Wheat';
-            case 26: return 'Arrows';
-            case 27: return 'Magic';
-            default: return '';
-        }
+        return Inventory.getItemTypeByIndex(item.item.type);
+    }
+
+    public static getItemTypeByIndex(itemIndex: number): string {
+      switch (itemIndex) {
+          case 1: return 'Two Handed Sword';
+          case 2: return 'One Handed Sword';
+          case 3: return 'Two Handed Axe';
+          case 4: return 'One Handed Axe';
+          case 5: return 'Two Handed Staff';
+          case 6: return 'Two Handed Bow';
+          case 7: return 'One Handed Mace';
+          case 8: return 'Helm';
+          case 9: return 'Chest';
+          case 10: return 'Gloves';
+          case 11: return 'Boots';
+          case 12: return 'Leggings';
+          case 13: return 'Shield';
+          case 14: return 'Left Shoulder Piece';
+          case 15: return 'Right Shoulder Piece';
+          case 16: return 'Ring';
+          case 17: return 'Amulet';
+          case 18: return 'Food';
+          case 19: return 'Potion';
+          case 20: return 'Pet';
+          case 21: return 'Coins';
+          case 22: return 'Wood';
+          case 23: return 'Ore';
+          case 24: return 'Fish';
+          case 25: return 'Wheat';
+          case 26: return 'Arrows';
+          case 27: return 'Magic';
+          default: return '';
+      }
     }
 
     public getItemRequirementLevel(item: InventoryItem): number {

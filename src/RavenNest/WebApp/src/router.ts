@@ -61,5 +61,9 @@ export default new Router({
     path: '/password-recovery',
     name: 'password-recovery',
     component: () => import('./views/PasswordRecovery.vue'),
+  }, {
+    path: '/items',
+    name: 'items',
+    component: () => import('./views/ItemList.vue'),
   } ],
 });
