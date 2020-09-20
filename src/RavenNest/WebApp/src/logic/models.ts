@@ -41,7 +41,7 @@ export class Player {
     public readonly originUserId: string,
     public readonly revision: number,
     public readonly identity: string,
-    public readonly characterIndex: number
+    public readonly characterIndex: number,
   ) { }
 }
 
