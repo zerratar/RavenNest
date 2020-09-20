@@ -40,13 +40,13 @@
   @Component({})
   export default class Character extends Vue {
     private loadCounter: number = 0;
-    private identifier: string = "1";
-    private revision: number=0;
+    private identifier: string = '1';
+    private revision: number = 0;
     private index: number = 0;
 
     public nextIndex(): void {
       this.index = (++this.index) % 3;
-      this.identifier = (this.index+1).toString();
+      this.identifier = (this.index + 1).toString();
       this.loadPlayerDataAsync(false);
     }
 
@@ -76,11 +76,11 @@
         ++this.revision;
         this.$forceUpdate();
       });
-      
+
       this.loadPlayerDataAsync(true);
     }
 
-    private loadPlayerDataAsync(reloadRoute:boolean) {
+    private loadPlayerDataAsync(reloadRoute: boolean) {
       ++this.loadCounter;
       MyPlayer.getPlayerDataAsync(this.identifier).then(() => {
         --this.loadCounter;
