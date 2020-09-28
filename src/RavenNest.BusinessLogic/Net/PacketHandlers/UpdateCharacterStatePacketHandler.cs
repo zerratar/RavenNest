@@ -43,7 +43,8 @@ namespace RavenNest.BusinessLogic.Net
 
             if (packet.Data is CharacterSkillUpdate update)
             {
-                result = this.playerManager.UpdateExperience(connection.SessionToken, update.UserId, update.Experience, update.CharacterId);
+                result = this.playerManager.UpdateExperience(
+                    connection.SessionToken, update.UserId, update.Level, update.Experience, update.CharacterId);
             }
 
             await connection.ReplyAsync(packet.CorrelationId, packet.Type, result, CancellationToken.None);

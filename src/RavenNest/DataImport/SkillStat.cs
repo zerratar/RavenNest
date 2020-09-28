@@ -15,7 +15,7 @@ namespace RavenNest
         {
             newLevels = 0;
             this.Experience += exp;
-            var newLevel = GameMath.ExperienceToLevel(Experience);
+            var newLevel = GameMath.OLD_ExperienceToLevel(Experience);
             var levelDiff = newLevel - Level;
             if (levelDiff > 0)
             {

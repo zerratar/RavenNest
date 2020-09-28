@@ -26,7 +26,7 @@ namespace RavenNest.BusinessLogic.Game
         bool UpdateAppearance(string userId, string identifier, Models.SyntyAppearance appearance);
         bool UpdateAppearance(AuthToken token, string userId, string identifier, Models.SyntyAppearance appearance);
 
-        bool UpdateExperience(SessionToken token, string userId, decimal[] experience, Guid? characterId = null);
+        bool UpdateExperience(SessionToken token, string userId, int[] level, decimal[] experience, Guid? characterId = null);
         bool UpdateResources(SessionToken token, string userId, decimal[] resources);
 
         bool[] UpdateMany(SessionToken token, PlayerState[] states);

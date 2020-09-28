@@ -21,6 +21,22 @@ namespace RavenNest.Models
         public decimal Farming { get; set; }
         public decimal Slayer { get; set; }
         public decimal Sailing { get; set; }
+
+        public int AttackLevel { get; set; }
+        public int DefenseLevel { get; set; }
+        public int StrengthLevel { get; set; }
+        public int HealthLevel { get; set; }
+        public int MagicLevel { get; set; }
+        public int RangedLevel { get; set; }
+        public int WoodcuttingLevel { get; set; }
+        public int FishingLevel { get; set; }
+        public int MiningLevel { get; set; }
+        public int CraftingLevel { get; set; }
+        public int CookingLevel { get; set; }
+        public int FarmingLevel { get; set; }
+        public int SlayerLevel { get; set; }
+        public int SailingLevel { get; set; }
+
         public int Revision { get; set; }
     }
 }

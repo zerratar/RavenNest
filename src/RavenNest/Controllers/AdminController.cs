@@ -61,6 +61,13 @@ namespace RavenNest.Controllers
             return adminManager.SetCraftingRequirements(itemQuery, requirementQuery);
         }
 
+        //[HttpGet("fix-exp/{characterId}")]
+        //public async Task<bool> FixExp(Guid characterId)
+        //{
+        //    await AssertAdminAccessAsync();
+        //    return adminManager.FixCharacterExpGain(characterId);
+        //}
+
         [HttpGet("fix-index")]
         public async Task<bool> FixIndex()
         {

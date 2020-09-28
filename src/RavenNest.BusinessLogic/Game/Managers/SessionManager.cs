@@ -167,7 +167,7 @@ namespace RavenNest.BusinessLogic.Game
             if (isAdmin)
             {
                 subscriptionTier = 3;
-                expMultiplierLimit = 5000;
+                expMultiplierLimit = 50000000;
             }
 
             if (isAdmin || isModerator || subInfo != null || patreonTier > 0)

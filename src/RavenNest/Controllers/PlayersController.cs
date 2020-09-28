@@ -208,11 +208,11 @@ namespace RavenNest.Controllers
             return playerManager.UpdateAppearance(AssertGetSessionToken(), userId, appearance);
         }
 
-        [HttpPost("{userId}/experience")]
-        public bool UpdateExperienceAsync(string userId, Many<decimal> experience)
-        {
-            return playerManager.UpdateExperience(AssertGetSessionToken(), userId, experience.Values);
-        }
+        //[HttpPost("{userId}/experience")]
+        //public bool UpdateExperienceAsync(string userId, Many<decimal> experience)
+        //{
+        //    return playerManager.UpdateExperience(AssertGetSessionToken(), userId, new int[0], experience.Values);
+        //}
 
         [HttpPost("{userId}/statistics")]
         public bool UpdateStatistics(string userId, Many<decimal> statistics)

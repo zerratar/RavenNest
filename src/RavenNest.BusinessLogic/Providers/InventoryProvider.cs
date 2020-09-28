@@ -1,4 +1,4 @@
-using RavenNest.BusinessLogic;
+﻿using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using System;
@@ -360,8 +360,8 @@ public class PlayerInventory
     public static bool CanEquipItem(Item item, Skills skills)
     {
         return item.Category != (int)ItemCategory.Resource &&
-               item.RequiredDefenseLevel <= GameMath.ExperienceToLevel(skills.Defense) &&
-               item.RequiredAttackLevel <= GameMath.ExperienceToLevel(skills.Attack);
+               item.RequiredDefenseLevel <= skills.DefenseLevel && //GameMath.ExperienceToLevel(skills.Defense) &&
+               item.RequiredAttackLevel <= skills.AttackLevel; //GameMath.ExperienceToLevel(skills.Attack);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

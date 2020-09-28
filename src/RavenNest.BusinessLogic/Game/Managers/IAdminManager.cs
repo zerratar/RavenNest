@@ -1,4 +1,5 @@
 ﻿using RavenNest.Models;
+using System;
 using System.Threading.Tasks;
 
 namespace RavenNest.BusinessLogic.Game
@@ -19,5 +20,6 @@ namespace RavenNest.BusinessLogic.Game
         bool NerfItems();
         bool RefreshVillageInfo();
         Task<bool> RefreshPermissionsAsync();
+        //bool FixCharacterExpGain(Guid characterId);
     }
 }

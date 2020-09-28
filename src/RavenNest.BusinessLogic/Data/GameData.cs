@@ -201,6 +201,9 @@ namespace RavenNest.BusinessLogic.Data
                         npcs, npcSpawns, npcItemDrops, itemCraftingRequirements
                     };
                 }
+
+                //UpgradeSkillLevels(skills);
+
                 stopWatch.Stop();
                 logger.LogDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
                 logger.LogDebug("GameData initialized... Starting kernel...");
@@ -214,6 +217,45 @@ namespace RavenNest.BusinessLogic.Data
                 System.IO.File.WriteAllText("ravenfall-error.log", exc.ToString());
             }
 
+        }
+
+        private void UpgradeSkillLevels(EntitySet<Skills, Guid> skills)
+        {
+
+            // total exp 170: 0
+            // 170 + overflow
+
+            // (total) exp required for current level
+            // 170: 170totalexp - total exp for current level
+            // 
+
+
+            foreach (var skill in skills.Entities)
+            {
+                var data = skill.GetSkills();
+                foreach (var s in data)
+                {
+                    var lv = s.Level;
+                    if (lv > 0)
+                        continue;
+
+                    Update(() =>
+                    {
+                        lv = 1;
+                        var xp = s.Experience;
+                        var expForNextLevel = GameMath.ExperienceForLevel(lv + 1);
+                        while (xp >= expForNextLevel)
+                        {
+                            xp -= expForNextLevel;
+                            ++lv;
+                            expForNextLevel = GameMath.ExperienceForLevel(lv + 1);
+                        }
+
+                        s.Experience = xp;
+                        s.Level = lv;
+                    });
+                }
+            }
         }
 
         public GameClient Client { get; private set; }
@@ -532,7 +574,7 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(GameEvent ev) => gameEvents.Remove(ev);
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(ItemCraftingRequirement entity) => itemCraftingRequirements.Remove(entity);
 
@@ -619,9 +661,9 @@ namespace RavenNest.BusinessLogic.Data
 
                 var user = GetUser(session.UserId);
                 var villageExp = user.IsAdmin.GetValueOrDefault()
-                    ? GameMath.LevelToExperience(30)
+                    ? GameMath.OLD_LevelToExperience(30)
                     : 0;
-                var villageLevel = GameMath.ExperienceToLevel(villageExp);
+                var villageLevel = GameMath.OLD_ExperienceToLevel(villageExp);
 
                 village = new Village()
                 {
