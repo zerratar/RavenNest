@@ -10,6 +10,10 @@ namespace RavenNest.Models
         public int Level { get; set; }
         public int WeaponAim { get; set; }
         public int WeaponPower { get; set; }
+        public int MagicAim { get; set; }
+        public int MagicPower { get; set; }
+        public int RangedAim { get; set; }
+        public int RangedPower { get; set; }
         public int ArmorPower { get; set; }
         public int RequiredAttackLevel { get; set; }
         public int RequiredDefenseLevel { get; set; }

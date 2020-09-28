@@ -24,13 +24,9 @@ namespace RavenNest.BusinessLogic.Game
             var players = playerManager.GetPlayers().Where(x => !x.IsAdmin && x.CharacterIndex == 0).ToList();
 
             var items =
-                (skill == null
-                ? (players
+                players
                     .OrderByDescending(x => OrderByLevel(skill, x))
-                    .ThenByDescending(x => OrderByExp(skill, x)))
-                : (players
-                    .OrderByDescending(x => OrderByExp(skill, x))
-                    .ThenByDescending(x => OrderByLevel(skill, x))))
+                    .ThenByDescending(x => OrderByExp(skill, x))
                 .Skip(skip)
                 .Take(take)
                 .Select((x, y) => Map(y + 1, skill, x))
@@ -80,34 +76,36 @@ namespace RavenNest.BusinessLogic.Game
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryGetSkillExperience(string skill, Skills skills, out decimal exp, out int level)
         {
-            var props = propertyProvider.GetProperties<Skills, decimal>();
+            var expProps = propertyProvider.GetProperties<Skills, decimal>();
+            var lvlProps = propertyProvider.GetProperties<Skills, int>();
 
             exp = 0;
             level = 0;
 
             if (string.IsNullOrEmpty(skill))
             {
-                foreach (var property in props)
+                foreach (var prop in expProps)
                 {
-                    var experience = (decimal)property.GetValue(skills);
-                    level += GameMath.ExperienceToLevel(experience);
-                    exp += experience;
+                    exp += (decimal)prop.GetValue(skills);
+                }
+                foreach (var prop in lvlProps)
+                {
+                    level += (int)prop.GetValue(skills);
                 }
 
-                exp = Math.Floor(exp);
                 return true;
             }
 
-            var targetProperty = props.FirstOrDefault(x =>
-                x.PropertyType == typeof(decimal) && x.Name.Equals(skill, StringComparison.OrdinalIgnoreCase));
-
-            if (targetProperty == null)
-            {
+            var expProp = expProps.FirstOrDefault(x => x.Name.Equals(skill, StringComparison.OrdinalIgnoreCase));
+            if (expProp == null)
                 return false;
-            }
 
-            exp = Math.Floor((decimal)targetProperty.GetValue(skills));
-            level = GameMath.ExperienceToLevel(exp);
+            var lvlProp = lvlProps.FirstOrDefault(x => x.Name.IndexOf(skill, StringComparison.OrdinalIgnoreCase) >= 0);
+            if (lvlProp == null)
+                return false;
+
+            exp = Math.Floor((decimal)expProp.GetValue(skills));
+            level = (int)lvlProp.GetValue(skills);
             return true;
         }
     }

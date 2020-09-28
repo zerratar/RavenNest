@@ -1,42 +1,37 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore.Diagnostics;
+using System;
 
 namespace RavenNest.BusinessLogic
 {
     public static class GameMath
     {
-        public const int MaxLevel = 170;
+        public const int MaxLevel = 300;
 
-        //public static readonly double[] ExperienceArray =
-        //{
-        //        83, 174, 276, 388, 512, 650, 801, 969, 1154, 1358, 1584, 1833, 2107, 2411, 2746, 3115, 3523, 3973,
-        //        4470, 5018, 5624, 6291, 7028, 7842, 8740, 9730, 10824, 12031, 13363, 14833, 16456, 18247, 20224, 22406,
-        //        24815, 27473, 30408, 33648, 37224, 41171, 45529, 50339, 55649, 61512, 67983, 75127, 83014, 91721, 101333,
-        //        111945, 123660, 136594, 150872, 166636, 184040, 203254, 224466, 247886, 273742, 302288, 333804, 368599,
-        //        407015, 449428, 496254, 547953, 605032, 668051, 737627, 814445, 899257, 992895, 1096278, 1210421, 1336443,
-        //        1475581, 1629200, 1798808, 1986068, 2192818, 2421087, 2673114, 2951373, 3258594, 3597792, 3972294, 4385776,
-        //        4842295, 5346332, 5902831, 6517253, 7195629, 7944614, 8771558, 9684577, 10692629, 11805606, 13034431, 14391160
-        //    };
+        [Obsolete]
+        private const int OLD_MaxLevel = 170;
 
-        private static decimal[] ExperienceArray = new decimal[MaxLevel];
+        [Obsolete]
+        private static decimal[] OLD_TotalExperienceArray = new decimal[OLD_MaxLevel];
+
+        private static double[] ExperienceArray = new double[MaxLevel];
 
         static GameMath()
         {
-            //long l = 0;
-            //for (var i1 = 0; i1 < MaxLevel; i1++)
-            //{
-            //    var j1 = i1 + 1;
-            //    var l1 = (int)(j1 + 300D * Math.Pow(2D, j1 / 7D));
-            //    l += l1;
-            //    ExperienceArray[i1] = (l & 0xffffffffc) / 4d;
-            //}
-
             var l = 0L;
-            for (var i1 = 0; i1 < MaxLevel; i1++)
+            for (var i1 = 0; i1 < OLD_MaxLevel; i1++)
             {
                 var j1 = i1 + 1M;
                 var l1 = (long)(j1 + (decimal)(300D * Math.Pow(2D, (double)(j1 / 7M))));
                 l += l1;
-                ExperienceArray[i1] = (decimal)((l & 0xffffffffc) / 4d);
+                OLD_TotalExperienceArray[i1] = (decimal)((l & 0xffffffffc) / 4d);
+            }
+
+
+            for (var levelIndex = 0; levelIndex < MaxLevel; levelIndex++)
+            {
+                var level = levelIndex + 1M;
+                var expForLevel = Math.Floor(300D * Math.Pow(2D, (double)(level / 7M)));
+                ExperienceArray[levelIndex] = Math.Round(expForLevel / 4d, 0, MidpointRounding.ToEven);
             }
         }
 
@@ -66,20 +61,27 @@ namespace RavenNest.BusinessLogic
             return (int)((combatLevel * 10 + 10) * 1.5D);
         }
 
-        public static int ExperienceToLevel(decimal exp)
+        public static decimal ExperienceForLevel(int level)
         {
-            for (int level = 0; level < MaxLevel - 1; level++)
+            return (decimal)(level - 2 < 0 ? 0 : ExperienceArray[level - 2]);
+        }
+
+        [Obsolete]
+        public static int OLD_ExperienceToLevel(decimal exp)
+        {
+            for (int level = 0; level < OLD_MaxLevel - 1; level++)
             {
-                if (exp >= ExperienceArray[level])
+                if (exp >= OLD_TotalExperienceArray[level])
                     continue;
                 return (level + 1);
             }
-            return MaxLevel;
+            return OLD_MaxLevel;
         }
 
-        public static decimal LevelToExperience(int level)
+        [Obsolete]
+        public static decimal OLD_LevelToExperience(int level)
         {
-            return level - 2 < 0 ? 0 : ExperienceArray[level - 2];
+            return level - 2 < 0 ? 0 : OLD_TotalExperienceArray[level - 2];
         }
 
         public static decimal GetFishingExperience(int level)

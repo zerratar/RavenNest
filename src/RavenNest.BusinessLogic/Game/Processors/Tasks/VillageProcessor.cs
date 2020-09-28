@@ -16,8 +16,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             IIntegrityChecker integrityChecker,
             IGameData gameData,
             IPlayerInventoryProvider inventoryProvider,
-            DataModels.GameSession session, 
-            Character character, 
+            DataModels.GameSession session,
+            Character character,
             CharacterState state)
         {
             if (DateTime.UtcNow - lastUpdate < updateInterval)
@@ -27,7 +27,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             var players = gameData.GetSessionCharacters(session);
             village.Experience += players.Count * 20;
 
-            var newLevel = GameMath.ExperienceToLevel(village.Experience);
+            var newLevel = GameMath.OLD_ExperienceToLevel(village.Experience);
             var levelDelta = newLevel - village.Level;
 
             village.Level = newLevel;

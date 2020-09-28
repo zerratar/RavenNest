@@ -46,6 +46,33 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
+        //public bool FixCharacterExpGain(Guid characterId)
+        //{
+        //    var character = gameData.GetCharacter(characterId);
+        //    if (character == null) return false;
+        //    var playerSkills = gameData.GetSkills(character.SkillsId);
+        //    if (playerSkills == null) return false;
+
+        //    var skills = playerSkills.GetSkills();
+        //    foreach (var skill in skills)
+        //    {
+        //        var level = skill.Level;
+        //        var cappedLevel = level > 170 ? 170 : level;
+        //        var expBase = GameMath.OLD_ExperienceToLevel(cappedLevel);
+
+        //        var newLevelDiff = level - cappedLevel;
+        //        var totalGainedExp = 0m;
+        //        for (var i = 1; i <= newLevelDiff; ++i)
+        //        {
+        //            totalGainedExp += GameMath.ExperienceForLevel(level + i);
+        //        }
+
+
+
+        //        skill.Experience
+        //    }
+        //}
+
         public bool ProcessItemRecovery(string query, string identifier)
         {
             try

@@ -22,7 +22,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             {
                 session.Updated = DateTime.UtcNow;
                 var skills = gameData.GetSkills(character.SkillsId);
-                var miningLevel = GameMath.ExperienceToLevel(skills.Mining);
+                var miningLevel = skills.MiningLevel;
                 var chance = Random.NextDouble();
 
                 var multiDrop = Random.NextDouble();

@@ -373,7 +373,7 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     if (state.Experience != null && state.Experience.Length > 0)
                     {
-                        UpdateExperience(token, state.UserId, state.Experience, state.CharacterId);
+                        UpdateExperience(token, state.UserId, state.Level, state.Experience, state.CharacterId);
                     }
 
                     if (state.Statistics != null && state.Statistics.Length > 0)
@@ -414,7 +414,7 @@ namespace RavenNest.BusinessLogic.Game
             var skills = gameData.GetSkills(character.SkillsId);
             if (skills == null) return AddItemResult.Failed;
 
-            var craftingLevel = GameMath.ExperienceToLevel(skills.Crafting);
+            var craftingLevel = skills.CraftingLevel;
             if (item.WoodCost > resources.Wood || item.OreCost > resources.Ore || item.RequiredCraftingLevel > craftingLevel)
                 return AddItemResult.Failed;
 
@@ -821,6 +821,7 @@ namespace RavenNest.BusinessLogic.Game
         public bool UpdateExperience(
             SessionToken token,
             string userId,
+            int[] level,
             decimal[] experience,
             Guid? characterId = null)
         {
@@ -845,8 +846,6 @@ namespace RavenNest.BusinessLogic.Game
                     // throw new Exception($"Unable to save exp. Character with name {character.Name} does not have any skills.");
                 }
 
-                var skillIndex = 0;
-
                 if (experience == null)
                     return false; // no skills was updated. Ignore
                 // throw new Exception($"Unable to save exp. Client didnt supply experience, or experience was null. Character with name {character.Name} game session: " + gameSession.Id + ".");
@@ -854,20 +853,20 @@ namespace RavenNest.BusinessLogic.Game
                 var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
                 var gains = characterSessionState.ExpGain;
 
-                skills.Attack += GetDelta(expLimit, gains.Attack, skills.Attack, experience[skillIndex++]);
-                skills.Defense += GetDelta(expLimit, gains.Defense, skills.Defense, experience[skillIndex++]);
-                skills.Strength += GetDelta(expLimit, gains.Strength, skills.Strength, experience[skillIndex++]);
-                skills.Health += GetDelta(expLimit, gains.Health, skills.Health, experience[skillIndex++]);
-                skills.Woodcutting += GetDelta(expLimit, gains.Woodcutting, skills.Woodcutting, experience[skillIndex++]);
-                skills.Fishing += GetDelta(expLimit, gains.Fishing, skills.Fishing, experience[skillIndex++]);
-                skills.Mining += GetDelta(expLimit, gains.Mining, skills.Mining, experience[skillIndex++]);
-                skills.Crafting += GetDelta(expLimit, gains.Crafting, skills.Crafting, experience[skillIndex++]);
-                skills.Cooking += GetDelta(expLimit, gains.Cooking, skills.Cooking, experience[skillIndex++]);
-                skills.Farming += GetDelta(expLimit, gains.Farming, skills.Farming, experience[skillIndex++]);
-                skills.Slayer += GetDelta(expLimit, gains.Slayer, skills.Slayer, experience[skillIndex++]);
-                skills.Magic += GetDelta(expLimit, gains.Magic, skills.Magic, experience[skillIndex++]);
-                skills.Ranged += GetDelta(expLimit, gains.Ranged, skills.Ranged, experience[skillIndex++]);
-                skills.Sailing += GetDelta(expLimit, gains.Sailing, skills.Sailing, experience[skillIndex++]);
+
+                for (var skillIndex = 0; skillIndex < experience.Length; ++skillIndex)
+                {
+                    var sl = level[skillIndex];
+                    var xp = experience[skillIndex];
+                    if (sl <= 170 &&
+                        experience[skillIndex] >= GameMath.ExperienceForLevel(sl))
+                    {
+                        xp -= GameMath.OLD_LevelToExperience(sl);
+                        if (xp < 0) xp = 0;
+                    }
+
+                    skills.SetLevel(skillIndex, level[skillIndex], experience[skillIndex]);
+                }
 
                 if (removeFromSession)
                 {
@@ -888,6 +887,24 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        //private void SetSkillLevel(int skillIndex, Skills skills, int v1, decimal v2)
+        //{
+        //    skills.AttackLevel = skills.AttackLevel > level[skillIndex] ? skills.AttackLevel : level[skillIndex];
+        //    skills.Attack += GetDelta(expLimit, gains.Attack, skills.Attack, experience[skillIndex++]);
+        //    skills.Defense += GetDelta(expLimit, gains.Defense, skills.Defense, experience[skillIndex++]);
+        //    skills.Strength += GetDelta(expLimit, gains.Strength, skills.Strength, experience[skillIndex++]);
+        //    skills.Health += GetDelta(expLimit, gains.Health, skills.Health, experience[skillIndex++]);
+        //    skills.Woodcutting += GetDelta(expLimit, gains.Woodcutting, skills.Woodcutting, experience[skillIndex++]);
+        //    skills.Fishing += GetDelta(expLimit, gains.Fishing, skills.Fishing, experience[skillIndex++]);
+        //    skills.Mining += GetDelta(expLimit, gains.Mining, skills.Mining, experience[skillIndex++]);
+        //    skills.Crafting += GetDelta(expLimit, gains.Crafting, skills.Crafting, experience[skillIndex++]);
+        //    skills.Cooking += GetDelta(expLimit, gains.Cooking, skills.Cooking, experience[skillIndex++]);
+        //    skills.Farming += GetDelta(expLimit, gains.Farming, skills.Farming, experience[skillIndex++]);
+        //    skills.Slayer += GetDelta(expLimit, gains.Slayer, skills.Slayer, experience[skillIndex++]);
+        //    skills.Magic += GetDelta(expLimit, gains.Magic, skills.Magic, experience[skillIndex++]);
+        //    skills.Ranged += GetDelta(expLimit, gains.Ranged, skills.Ranged, experience[skillIndex++]);
+        //    skills.Sailing += GetDelta(expLimit, gains.Sailing, skills.Sailing, experience[skillIndex++]);
+        //}
 
         public void EquipBestItems(Character character)
         {
@@ -1035,7 +1052,20 @@ namespace RavenNest.BusinessLogic.Game
             return new Skills
             {
                 Id = Guid.NewGuid(),
-                Health = 1154
+                HealthLevel = 10,
+                AttackLevel = 1,
+                CraftingLevel = 1,
+                CookingLevel = 1,
+                DefenseLevel = 1,
+                FarmingLevel = 1,
+                FishingLevel = 1,
+                MagicLevel = 1,
+                MiningLevel = 1,
+                RangedLevel = 1,
+                SailingLevel = 1,
+                SlayerLevel = 1,
+                StrengthLevel = 1,
+                WoodcuttingLevel = 1
             };
         }
 
