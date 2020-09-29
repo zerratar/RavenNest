@@ -840,6 +840,12 @@ namespace RavenNest.BusinessLogic.Game
                 var expLimit = sessionOwner.IsAdmin.GetValueOrDefault() ? 5000 : 50;
 
                 var skills = gameData.GetSkills(character.SkillsId);
+
+                var sessionState = gameData.GetSessionState(gameSession.Id);
+
+                if (level == null)
+                    throw new Exception("Unable to save exp for " + character.Name + ". Client did not provide level data. Session: " + sessionOwner?.UserName + " (" + gameSession.Id + "), Client Version: " + sessionState?.ClientVersion);
+
                 if (experience == null)
                     return false; // no skills was updated. Ignore
                 // throw new Exception($"Unable to save exp. Client didnt supply experience, or experience was null. Character with name {character.Name} game session: " + gameSession.Id + ".");
