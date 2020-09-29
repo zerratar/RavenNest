@@ -74,6 +74,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var sessionState = gameData.GetSessionState(newGameSession.Id);
             sessionState.SyncTime = syncTime;
+            sessionState.ClientVersion = clientVersion;
 
             await SendPermissionDataAsync(newGameSession, user);
 

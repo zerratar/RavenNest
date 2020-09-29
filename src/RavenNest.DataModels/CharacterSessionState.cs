@@ -20,6 +20,7 @@ namespace RavenNest.DataModels
     public class SessionState
     {
         public float SyncTime { get; set; }
+        public string ClientVersion {get;set;}
         public ConcurrentDictionary<Guid, NPCState> NPCStates { get; set; } = new ConcurrentDictionary<Guid, NPCState>();
     }
 
