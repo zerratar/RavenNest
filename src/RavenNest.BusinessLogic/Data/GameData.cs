@@ -202,7 +202,7 @@ namespace RavenNest.BusinessLogic.Data
                     };
                 }
 
-                //UpgradeSkillLevels(skills);
+                UpgradeSkillLevels(skills);
 
                 stopWatch.Stop();
                 logger.LogDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
