@@ -81,6 +81,16 @@ namespace RavenNest.DataModels
         public int RangedLevel { get => rangedLevel; set => Set(ref rangedLevel, value); }
         public int SailingLevel { get => sailingLevel; set => Set(ref sailingLevel, value); }
 
+        public int GetLevel(int skillIndex) 
+        {
+             var name = skillNames[skillIndex];
+             if (!expProperties.TryGetValue(name, out var expProp))
+                expProp = EnsureDictionaries(name);
+            levelProperties.TryGetValue(name, out var lvlProp);
+
+            return (int)lvlProp.GetValue(this);
+        }
+
         public void SetLevel(int skillIndex, int level, decimal exp)
         {
             var name = skillNames[skillIndex];

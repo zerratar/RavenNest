@@ -843,8 +843,6 @@ namespace RavenNest.BusinessLogic.Game
 
                 var sessionState = gameData.GetSessionState(gameSession.Id);
 
-                if (level == null)
-                    throw new Exception("Unable to save exp for " + character.Name + ". Client did not provide level data. Session: " + sessionOwner?.UserName + " (" + gameSession.Id + "), Client Version: " + sessionState?.ClientVersion);
 
                 if (experience == null)
                     return false; // no skills was updated. Ignore
@@ -852,11 +850,28 @@ namespace RavenNest.BusinessLogic.Game
 
                 var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
                 var gains = characterSessionState.ExpGain;
-
+                var savedSkillsCount = 0;
                 for (var skillIndex = 0; skillIndex < experience.Length; ++skillIndex)
-                {
-                    var sl = level[skillIndex];
+                {                    
+                    var sl = level != null ? level[skillIndex] : 0;
                     var xp = experience[skillIndex];
+                    
+                    if (sl == 0) {
+                        var maxXP = GameMath.OLD_LevelToExperience(170);
+                        var curLevel = skills.GetLevel(skillIndex);
+                        var minXP = GameMath.OLD_LevelToExperience(curLevel);
+                        if (xp > minXP && xp < maxXP && curLevel <= 170) {
+                            sl = GameMath.OLD_ExperienceToLevel(xp);
+                            xp -= GameMath.OLD_LevelToExperience(sl);                           
+                            logger.LogWarning(character.Name + ". (Skill Index: "+skillIndex+") Client did not provide level data. Saving using old way of saving. Session: " + sessionOwner?.UserName + " (" + gameSession.Id + "), Client Version: " + sessionState.ClientVersion);
+                        }
+                    }
+
+                    if (level == null && sl == 0)
+                        continue;
+                        // throw new Exception("Unable to save exp for " + character.Name + ". Client did not provide level data. Session: " + sessionOwner?.UserName + " (" + gameSession.Id + "), Client Version: " + sessionState.ClientVersion);
+
+                    ++savedSkillsCount;
                     if (sl <= 170 &&
                         experience[skillIndex] >= GameMath.ExperienceForLevel(sl))
                     {
@@ -864,7 +879,12 @@ namespace RavenNest.BusinessLogic.Game
                         if (xp < 0) xp = 0;
                     }
 
-                    skills.SetLevel(skillIndex, level[skillIndex], experience[skillIndex]);
+                    
+                    skills.SetLevel(skillIndex, sl, experience[skillIndex]);
+                }
+
+                if (savedSkillsCount != experience.Length) {
+                    logger.LogError(character.Name + " could only save " + savedSkillsCount + " out of " + experience.Length + " skills. Client did not provide level data. Saving using old way of saving. Session: " + sessionOwner?.UserName + " (" + gameSession.Id + "), Client Version: " + sessionState.ClientVersion);
                 }
 
                 if (removeFromSession)
