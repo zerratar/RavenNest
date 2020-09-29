@@ -89,8 +89,17 @@ namespace RavenNest.DataModels
 
             levelProperties.TryGetValue(name, out var lvlProp);
 
-            expProp.SetValue(this, exp);
-            lvlProp.SetValue(this, level);
+            var curLevel = (int)lvlProp.GetValue(level);
+            var curExp   = (decimal)expProp.GetValue(level);
+            if (level > curLevel)
+            {
+                lvlProp.SetValue(this, level);
+                expProp.SetValue(this, exp);
+            }
+            else if (level == curLevel && exp > curExp)
+            {
+                expProp.SetValue(this, exp);
+            }
         }
 
 
