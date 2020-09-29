@@ -51,6 +51,11 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
+            if (clientVersion.ToLower() != game.ClientVersion.ToLower()) 
+            {
+                return new SessionToken();
+            }
+
             var userId = token.UserId;
             var activeSession = gameData.GetUserSession(userId);
             // x => x.UserId == userId && x.Status == (int)SessionStatus.Active

@@ -56,6 +56,11 @@ namespace RavenNest.Controllers
                 param.Value1,
                 param.Value2);
 
+            if (session != null && session.AuthToken == null) 
+            {
+                return null;
+            }
+
             if (session == null)
             {
                 HttpContext.Response.StatusCode = 403;
