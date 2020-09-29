@@ -74,15 +74,16 @@ namespace RavenNest.BusinessLogic.Data
 
         private void RemoveOldBackups()
         {
-            var backupFolders = System.IO.Directory.GetDirectories(BackupFolder);
-            if (backupFolders.Length > 60)
-            {
-                var toDelete = backupFolders.OrderByDescending(x => new System.IO.DirectoryInfo(x).CreationTime).Skip(10);
-                foreach (var old in toDelete)
-                {
-                    System.IO.Directory.Delete(old, true);
-                }
-            }
+            #warning Backups not being removed right now
+            // var backupFolders = System.IO.Directory.GetDirectories(BackupFolder);
+            // if (backupFolders.Length > 60)
+            // {
+            //     var toDelete = backupFolders.OrderByDescending(x => new System.IO.DirectoryInfo(x).CreationTime).Skip(10);
+            //     foreach (var old in toDelete)
+            //     {
+            //         System.IO.Directory.Delete(old, true);
+            //     }
+            // }
         }
 
         public void CreateRestorePoint(IEntitySet[] entitySets)
@@ -170,7 +171,6 @@ namespace RavenNest.BusinessLogic.Data
 
                 var output = new List<IEntity>();
                 var data = System.IO.File.ReadAllText(file);
-
 
                 var collectionType = typeof(List<>).MakeGenericType(type);
                 var entities = JsonConvert.DeserializeObject(data, collectionType) as IEnumerable;
