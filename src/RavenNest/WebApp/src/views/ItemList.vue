@@ -18,6 +18,7 @@
           <th>Material Type</th>
           <th>Crafting Level</th>
           <th>Vendor Price</th>
+          <th>Crafting Requirements</th>
         </tr>
       </thead>
       <tbody>
@@ -34,6 +35,7 @@
           <td class='item'>{{item.material}}</td>
           <td class='item'>{{item.requiredCraftingLevel}}</td>
           <td class='item'><img class="ravenCoins" src="/favicon.ico" />{{item.shopSellPrice}}</td>
+          <td class='item'>{{item.craftingReq}}</td>
         </tr>
       </tbody>
     </table>
@@ -75,6 +77,22 @@
           item.type = Inventory.getItemTypeByIndex(item.type);
           item.category = ItemList.getItemCategoryByIndex(item.category);
           item.material = ItemList.getItemMaterialByIndex(item.material);
+
+          if (item.requiredCraftingLevel <= 9999) {
+            const requirements: string[] = [];
+            item.craftingRequirements.forEach((req: any) => {
+              const foundResource = this.items.filter((el) => el.id === req.resourceItemId)[0];
+              requirements.push(foundResource.name + ' x' + req.amount);
+            });
+
+            if (requirements.length > 0)
+              item.craftingReq = requirements.join(', ');
+            else
+              item.craftingReq = 'none';
+
+          } else {
+            item.craftingReq = 'Can\'t be crafted';
+          }
         });
       }
 
