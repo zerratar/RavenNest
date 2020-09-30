@@ -35,12 +35,10 @@ namespace RavenNest.Controllers
             Name = "Get Marketplace Listing",
             Description = "Gets a range of items available on the marketplace based on a set offset and size.",
             RequiresSession = false,
-            RequiresAuth = true)
+            RequiresAuth = false)
         ]
         public MarketItemCollection Get(int offset, int size)
         {
-            var auth = GetAuthToken();
-            AssertAuthTokenValidity(auth);
             return this.marketplace.GetItems(offset, size);
         }
 

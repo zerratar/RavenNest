@@ -63,7 +63,11 @@ export default new Router({
     component: () => import('./views/PasswordRecovery.vue'),
   }, {
     path: '/items',
-    name: 'items',
+    name: 'itemList',
     component: () => import('./views/ItemList.vue'),
+  }, {
+    path: '/market',
+    name: 'market',
+    component: () => import('./views/Marketplace.vue'),
   } ],
 });
