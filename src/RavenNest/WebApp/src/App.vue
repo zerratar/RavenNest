@@ -11,6 +11,7 @@
           <a href="https://wiki.ravenfall.stream/index.php/How_To_Play" class="item" target="_blank">How to play</a>
           <router-link to="/highscore" class="item">Hiscore</router-link>
           <router-link to="/docs" class="item">API</router-link>        
+          <router-link to="/items" class="item">ITEMS</router-link>
           <router-link to="/character" class="item" v-if="authenticated()">Stats</router-link>
           <a href="/assets" target="_blank" class="item" v-if="authenticated()">Customize</a>
           <router-link to="/admin" class="item" v-if="administrator()">Admin</router-link>
