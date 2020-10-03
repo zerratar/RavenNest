@@ -15,6 +15,7 @@ namespace RavenNest.BusinessLogic.Data
         void CreateBackup(IEntitySet[] entitySets);
         void ClearRestorePoint();
         IEntityRestorePoint GetRestorePoint(params Type[] types);
+        IEntityRestorePoint GetRestorePoint(string path, params Type[] types);
     }
 
     public class GameDataBackupProvider : IGameDataBackupProvider
@@ -74,7 +75,7 @@ namespace RavenNest.BusinessLogic.Data
 
         private void RemoveOldBackups()
         {
-            #warning Backups not being removed right now
+#warning Backups not being removed right now
             // var backupFolders = System.IO.Directory.GetDirectories(BackupFolder);
             // if (backupFolders.Length > 60)
             // {
@@ -107,6 +108,28 @@ namespace RavenNest.BusinessLogic.Data
                 var entities = entitySet.GetEntities();
                 StoreEntities(type, entities, dataFolder);
             }
+        }
+
+        public IEntityRestorePoint GetRestorePoint(string path, params Type[] types)
+        {
+            lock (ioMutex)
+            {
+                var restorePointFiles = System.IO.Directory.GetFiles(path, "*" + FileTypeExt);
+                if (restorePointFiles.Length == 0)
+                {
+                    return null;
+                }
+            }
+
+            var restorePoint = new EntityRestorePoint();
+            foreach (var type in types)
+            {
+                var entities = LoadEntities(type, path);
+                if (entities != null && entities.Count > 0)
+                    restorePoint.AddEntities(type, entities);
+            }
+
+            return restorePoint;
         }
 
         public IEntityRestorePoint GetRestorePoint(params Type[] types)
