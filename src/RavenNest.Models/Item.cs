@@ -17,6 +17,9 @@ namespace RavenNest.Models
         public int ArmorPower { get; set; }
         public int RequiredAttackLevel { get; set; }
         public int RequiredDefenseLevel { get; set; }
+        public int RequiredMagicLevel { get; set; }
+        public int RequiredRangedLevel { get; set; }
+        public int RequiredSlayerLevel { get; set; }
         public ItemCategory Category { get; set; }
         public ItemType Type { get; set; }
         public ItemMaterial Material { get; set; }
