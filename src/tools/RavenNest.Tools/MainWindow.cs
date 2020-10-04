@@ -84,7 +84,7 @@ namespace RavenNest.Tools
                 var dbContextProvider = new RavenfallDbContextProvider(Options.Create(appSettings));
 
                 ToolStatus.Text = "Processing " + skillsIds.Length + " players...";
-                using (var con = dbContextProvider.Get())
+                var con = dbContextProvider.Get();
                 {
                     var skillsDoubled = 0;
                     var zeroSkills = 0;
@@ -181,6 +181,8 @@ namespace RavenNest.Tools
                             ToolStatus.Text = "No players was saved. Save cancelled.";
                             ToolProgress.Value = 0;
                         }
+
+                        con.Dispose();
                     });
                 }
             });

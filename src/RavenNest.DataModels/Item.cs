@@ -19,6 +19,9 @@ namespace RavenNest.DataModels
         private int armorPower; public int ArmorPower { get => armorPower; set => Set(ref armorPower, value); }
         private int requiredAttackLevel; public int RequiredAttackLevel { get => requiredAttackLevel; set => Set(ref requiredAttackLevel, value); }
         private int requiredDefenseLevel; public int RequiredDefenseLevel { get => requiredDefenseLevel; set => Set(ref requiredDefenseLevel, value); }
+        private int requiredMagicLevel; public int RequiredMagicLevel { get => requiredMagicLevel; set => Set(ref requiredMagicLevel, value); }
+        private int requiredRangedLevel; public int RequiredRangedLevel { get => requiredRangedLevel; set => Set(ref requiredRangedLevel, value); }
+        private int requiredSlayerLevel; public int RequiredSlayerLevel { get => requiredSlayerLevel; set => Set(ref requiredSlayerLevel, value); }
         private int material; public int Material { get => material; set => Set(ref material, value); }
         private string maleModelId; public string MaleModelId { get => maleModelId; set => Set(ref maleModelId, value); }
         private string femaleModelId; public string FemaleModelId { get => femaleModelId; set => Set(ref femaleModelId, value); }
