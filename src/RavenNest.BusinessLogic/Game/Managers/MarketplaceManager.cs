@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using RavenNest.Models;
-using InventoryItem = RavenNest.DataModels.InventoryItem;
 
 namespace RavenNest.BusinessLogic.Game
 {
@@ -49,6 +47,12 @@ namespace RavenNest.BusinessLogic.Game
         public ItemSellResult SellItem(
             SessionToken token, string userId, Guid itemId, long amount, decimal pricePerItem)
         {
+            var i = gameData.GetItem(itemId);
+            if (i != null && i.Category == (int)DataModels.ItemCategory.StreamerToken)
+            {
+                return new ItemSellResult(ItemTradeState.Failed);
+            }
+
             if (amount <= 0 || pricePerItem <= 0)
             {
                 return new ItemSellResult(ItemTradeState.RequestToLow);
@@ -84,7 +88,7 @@ namespace RavenNest.BusinessLogic.Game
                 return new ItemSellResult(ItemTradeState.DoesNotOwn);
             }
 
-            inventory.RemoveItem(itemId, amount);
+            inventory.RemoveItem(itemId, amount, tag: itemToSell.Tag);
 
             var marketItem = new DataModels.MarketItem
             {
@@ -94,6 +98,7 @@ namespace RavenNest.BusinessLogic.Game
                 ItemId = itemId,
                 PricePerItem = pricePerItem,
                 SellerCharacterId = character.Id,
+                Tag = itemToSell.Tag
             };
 
             gameData.Add(marketItem);
@@ -244,7 +249,7 @@ namespace RavenNest.BusinessLogic.Game
 
 
             var inventory = inventoryProvider.Get(character.Id);
-            inventory.AddItem(itemId, buyAmount);
+            inventory.AddItem(itemId, buyAmount, tag: marketItem.Tag);
 
             var model = new ItemTradeUpdate
             {

@@ -197,11 +197,11 @@ public class PlayerInventory
         }
     }
 
-    public ReadOnlyInventoryItem AddItem(Guid itemId, long amount = 1, bool equipped = false)
+    public ReadOnlyInventoryItem AddItem(Guid itemId, long amount = 1, bool equipped = false, string tag = null)
     {
         lock (mutex)
         {
-            var stack = Get(itemId, false);
+            var stack = Get(itemId, false, tag);
             if (stack != null && !equipped)
             {
                 stack.Amount += amount;
@@ -209,7 +209,7 @@ public class PlayerInventory
             }
             else
             {
-                stack = Create(itemId, amount, equipped);
+                stack = Create(itemId, amount, equipped, tag);
                 items.Add(stack);
                 gameData?.Add(stack);
             }
@@ -217,11 +217,11 @@ public class PlayerInventory
         }
     }
 
-    public bool RemoveItem(Guid itemId, long amount = 1, bool equipped = false)
+    public bool RemoveItem(Guid itemId, long amount = 1, bool equipped = false, string tag = null)
     {
         lock (mutex)
         {
-            var stack = Get(itemId, equipped);
+            var stack = Get(itemId, equipped, tag);
             if (stack == null || stack.Amount < amount)
             {
                 return false;
@@ -236,19 +236,19 @@ public class PlayerInventory
         }
     }
 
-    public ReadOnlyInventoryItem GetItem(Guid itemId, bool equipped = false)
+    public ReadOnlyInventoryItem GetItem(Guid itemId, bool equipped = false, string tag = null)
     {
         lock (mutex)
         {
-            return this.items.FirstOrDefault(x => x.ItemId == itemId && x.Equipped == equipped).AsReadOnly();
+            return this.items.FirstOrDefault(x => x.ItemId == itemId && x.Equipped == equipped && (x.Tag == tag || tag == null)).AsReadOnly();
         }
     }
 
-    private InventoryItem Get(Guid itemId, bool equipped = false)
+    private InventoryItem Get(Guid itemId, bool equipped = false, string tag = null)
     {
         lock (mutex)
         {
-            return this.items.FirstOrDefault(x => x.ItemId == itemId && x.Equipped == equipped);
+            return this.items.FirstOrDefault(x => x.ItemId == itemId && x.Equipped == equipped && (x.Tag == tag || tag == null));
         }
     }
 
@@ -316,8 +316,15 @@ public class PlayerInventory
             {
                 foreach (var itemStacks in items.GroupBy(x => x.ItemId))
                 {
+
                     var amount = itemStacks.OrderByDescending(x => x.Amount).FirstOrDefault(x => !x.Equipped)?.Amount ?? 0;
                     var itemId = itemStacks.Key;
+
+                    var item = gameData.GetItem(itemId);
+                    // do not stack streamer tokens
+                    if (item != null && item.Category == (int)ItemCategory.StreamerToken)
+                        continue;
+
                     var characterId = itemStacks.FirstOrDefault().CharacterId;
 
                     var equipped = itemStacks.FirstOrDefault(x => x.Equipped);
@@ -344,7 +351,7 @@ public class PlayerInventory
         }
     }
 
-    private InventoryItem Create(Guid itemId, long amount, bool equipped)
+    private InventoryItem Create(Guid itemId, long amount, bool equipped, string tag)
     {
         return new InventoryItem
         {
@@ -352,7 +359,8 @@ public class PlayerInventory
             CharacterId = characterId,
             Amount = amount,
             ItemId = itemId,
-            Equipped = equipped
+            Equipped = equipped,
+            Tag = tag
         };
     }
 
@@ -407,17 +415,19 @@ public struct ReadOnlyInventoryItem
     public long Amount { get; }
 
     public bool Equipped { get; }
+    public string Tag { get; }
 
-    private ReadOnlyInventoryItem(Guid id, Guid itemId, long amount, bool equipped)
+    private ReadOnlyInventoryItem(Guid id, Guid itemId, long amount, bool equipped, string tag)
     {
         Id = id;
         ItemId = itemId;
         Amount = amount;
         Equipped = equipped;
+        Tag = tag;
     }
 
     public static ReadOnlyInventoryItem Create(InventoryItem item)
     {
-        return new ReadOnlyInventoryItem(item.Id, item.ItemId, item.Amount ?? 1, item.Equipped);
+        return new ReadOnlyInventoryItem(item.Id, item.ItemId, item.Amount ?? 1, item.Equipped, item.Tag);
     }
 }

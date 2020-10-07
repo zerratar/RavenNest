@@ -11,5 +11,6 @@ namespace RavenNest.Models
         public long Amount { get; set; }
 
         public bool Equipped { get; set; }
+        public string Tag { get; set; }
     }
 }
