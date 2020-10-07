@@ -89,7 +89,9 @@ public class PlayerInventory
             }
 
             foreach (var itemGroup in inventoryItems
-                .Where(x => x.Item.Category != (int)ItemCategory.Weapon && x.Item.Category != (int)ItemCategory.Pet)
+                .Where(x =>
+                    x.Item.Category != (int)ItemCategory.Weapon &&
+                    x.Item.Category != (int)ItemCategory.Pet)
                 .GroupBy(x => x.Item.Type))
             {
                 var itemToEquip = itemGroup
@@ -368,6 +370,7 @@ public class PlayerInventory
     public static bool CanEquipItem(Item item, Skills skills)
     {
         return item.Category != (int)ItemCategory.Resource &&
+               item.Category != (int)ItemCategory.StreamerToken &&
                item.RequiredDefenseLevel <= skills.DefenseLevel && //GameMath.ExperienceToLevel(skills.Defense) &&
                item.RequiredAttackLevel <= skills.AttackLevel; //GameMath.ExperienceToLevel(skills.Attack);
     }
