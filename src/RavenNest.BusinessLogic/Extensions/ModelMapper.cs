@@ -134,7 +134,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 Id = items.Id,
                 Amount = items.Amount.GetValueOrDefault(),
                 Equipped = items.Equipped,
-                ItemId = items.ItemId
+                ItemId = items.ItemId,
+                Tag = items.Tag
                 //Item = Map(items.Item)
             };
         }

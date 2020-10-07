@@ -9,5 +9,6 @@ namespace RavenNest.Models
         public Guid ItemId { get; set; }
         public long Amount { get; set; }
         public decimal PricePerItem { get; set; }
+        public string Tag { get; set; }
     }
 }

@@ -31,6 +31,7 @@
         Fish,
         Wheat,
         Arrows,
-        Magic
+        Magic,
+        StreamerToken
     }
 }

@@ -9,6 +9,7 @@
         Food,
         Potion,
         Pet,
-        Resource
+        Resource,
+        StreamerToken
     }
 }

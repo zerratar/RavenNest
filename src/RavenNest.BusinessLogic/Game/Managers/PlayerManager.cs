@@ -446,17 +446,30 @@ namespace RavenNest.BusinessLogic.Game
         public AddItemResult AddItem(SessionToken token, string userId, Guid itemId)
         {
             var item = gameData.GetItem(itemId);
-            if (item == null) return AddItemResult.Failed;
+            if (item == null)
+                return AddItemResult.Failed;
 
             var character = GetCharacter(token, userId);
-            if (character == null) return AddItemResult.Failed;
+            if (character == null)
+                return AddItemResult.Failed;
 
             if (!integrityChecker.VerifyPlayer(token.SessionId, character.Id, 0))
                 return AddItemResult.Failed;
 
-            var inventory = inventoryProvider.Get(character.Id);
+            var session = gameData.GetSession(token.SessionId);
+            if (session == null)
+                return AddItemResult.Failed;
 
-            inventory.AddItem(itemId);
+            var sessionOwner = gameData.GetUser(session.UserId);
+            if (sessionOwner == null)
+                return AddItemResult.Failed;
+
+            string tag = null;
+            if (item.Category == (int)DataModels.ItemCategory.StreamerToken)
+                tag = sessionOwner.UserId;
+
+            var inventory = inventoryProvider.Get(character.Id);
+            inventory.AddItem(itemId, tag: tag);
             inventory.EquipBestItems();
 
             return inventory.GetEquippedItem(itemId).IsNotNull()
@@ -477,7 +490,8 @@ namespace RavenNest.BusinessLogic.Game
                 return 0;
 
             var item = gameData.GetItem(itemId);
-            if (item == null) return 0;
+            if (item == null || item.Category == (int)DataModels.ItemCategory.StreamerToken)
+                return 0;
 
             var inventory = inventoryProvider.Get(player.Id);
 
@@ -520,6 +534,10 @@ namespace RavenNest.BusinessLogic.Game
             var receiver = GetCharacter(token, receiverUserId);
             if (receiver == null) return 0;
 
+            var item = gameData.GetItem(itemId);
+            if (item == null || item.Category == (int)DataModels.ItemCategory.StreamerToken)
+                return 0;
+
             var inventory = inventoryProvider.Get(gifter.Id);
 
             var gift = inventory.GetItem(itemId);
@@ -528,7 +546,7 @@ namespace RavenNest.BusinessLogic.Game
             var giftedItemCount = amount;
             if (gift.Amount >= amount)
             {
-                inventory.RemoveItem(gift.ItemId, amount);
+                inventory.RemoveItem(gift.ItemId, amount, tag: gift.Tag);
             }
             else
             {
@@ -537,7 +555,7 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var recvInventory = inventoryProvider.Get(receiver.Id);
-            recvInventory.AddItem(itemId, giftedItemCount);
+            recvInventory.AddItem(itemId, giftedItemCount, tag: gift.Tag);
             recvInventory.EquipBestItems();
 
             gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, gameData.GetSession(token.SessionId), new ItemAdd
