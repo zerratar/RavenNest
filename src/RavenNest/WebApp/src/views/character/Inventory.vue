@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="player-inventory">     
         <div>
             <h2>Equipped</h2>
@@ -159,6 +159,7 @@
           case 25: return 'Wheat';
           case 26: return 'Arrows';
           case 27: return 'Magic';
+          case 28: return 'Streamer Unique Token';
           default: return '';
       }
     }
@@ -229,8 +230,6 @@
     flex-flow: column;
     text-align: left;
 }
-
-
 
 .item-stat {
     display: flex;

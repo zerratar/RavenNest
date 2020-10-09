@@ -1,4 +1,4 @@
-import GameMath from './game-math';
+﻿import GameMath from './game-math';
 
 export class CharacterSkill {
   constructor(
@@ -179,7 +179,8 @@ export class InventoryItem {
     public readonly id: string,
     public readonly itemId: string,
     public readonly equipped: boolean,
-    public readonly amount: number) { }
+    public readonly amount: number,
+    public readonly tag: string) { }
 }
 
 export class ItemStat {

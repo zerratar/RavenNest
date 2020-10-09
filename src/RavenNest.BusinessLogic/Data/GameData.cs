@@ -498,8 +498,13 @@ namespace RavenNest.BusinessLogic.Data
         public int GetMarketItemCount() => marketItems.Entities.Count;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<MarketItem> GetMarketItems(Guid itemId) =>
-            marketItems[nameof(Item), itemId];
+        public IReadOnlyList<MarketItem> GetMarketItems(Guid itemId, string tag = null)
+        {
+            if (string.IsNullOrEmpty(tag))
+                return marketItems[nameof(Item), itemId];
+
+            return marketItems[nameof(Item), itemId].Where(x => x.Tag == tag).ToList();
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<MarketItem> GetMarketItems(int skip, int take) =>

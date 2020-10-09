@@ -44,7 +44,6 @@ namespace RavenNest.BusinessLogic.Game
         {
             try
             {
-
                 var user = gameData.GetUser(userId);
                 if (user == null)
                 {

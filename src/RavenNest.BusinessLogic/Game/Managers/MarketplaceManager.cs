@@ -47,11 +47,10 @@ namespace RavenNest.BusinessLogic.Game
         public ItemSellResult SellItem(
             SessionToken token, string userId, Guid itemId, long amount, decimal pricePerItem)
         {
-            var i = gameData.GetItem(itemId);
-            if (i != null && i.Category == (int)DataModels.ItemCategory.StreamerToken)
-            {
-                return new ItemSellResult(ItemTradeState.Failed);
-            }
+            //if (i != null && i.Category == (int)DataModels.ItemCategory.StreamerToken)
+            //{
+            //    return new ItemSellResult(ItemTradeState.Failed);
+            //}
 
             if (amount <= 0 || pricePerItem <= 0)
             {
@@ -72,8 +71,14 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var inventory = inventoryProvider.Get(character.Id);
+            var session = gameData.GetSession(token.SessionId);
+            var sessionOwner = gameData.GetUser(session.UserId);
+            var item = gameData.GetItem(itemId);
+            string itemTag = null;
+            if (item.Category == (int)DataModels.ItemCategory.StreamerToken)
+                itemTag = sessionOwner.UserId;
 
-            var itemToSell = inventory.GetItem(itemId);
+            var itemToSell = inventory.GetItem(itemId, tag: itemTag);
 
             if (itemToSell.IsNull())
             {
@@ -127,7 +132,15 @@ namespace RavenNest.BusinessLogic.Game
                 return new ItemBuyResult(ItemTradeState.Failed, new long[0], new decimal[0], 0, 0);
             }
 
-            var possibleMarketItems = gameData.GetMarketItems(itemId);
+            var session = gameData.GetSession(token.SessionId);
+            var sessionOwner = gameData.GetUser(session.UserId);
+            var item = gameData.GetItem(itemId);
+            string itemTag = null;
+            if (item.Category == (int)DataModels.ItemCategory.StreamerToken)
+                itemTag = sessionOwner.UserId;
+
+
+            var possibleMarketItems = gameData.GetMarketItems(itemId, itemTag);
             var requestAmount = amount;
 
             var resources = gameData.GetResources(character.ResourcesId);
