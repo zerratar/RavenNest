@@ -147,9 +147,9 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Player Map(this Character character, IGameData gameData, User user, bool rejoin = false)
+        public static Player Map(this Character character, IGameData gameData, User user, bool rejoin = false, bool isSessionPlayer = false)
         {
-            return user.Map(gameData, character, rejoin);
+            return user.Map(gameData, character, rejoin, isSessionPlayer);
         }
 
 
@@ -160,8 +160,17 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Player Map(this User user, IGameData gameData, Character character, bool rejoin = false)
+        public static Player Map(this User user, IGameData gameData, Character character, bool rejoin = false, bool inGame = false)
         {
+            var playItems = gameData.GetAllPlayerItems(character.Id);
+            if (inGame && character.UserIdLock != null)
+            {
+                var targetStreamUser = gameData.GetUser(character.UserIdLock.Value);
+                // if we got streamer tokens, only send the ones for the appropriate streamer
+                playItems = playItems.Where(x => x.Tag == null || x.Tag == targetStreamUser.UserId).ToList();
+            }
+
+            var invItems = Map(playItems);
             return new Player
             {
                 Id = character.Id,
@@ -175,7 +184,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 Resources = Map(gameData.GetResources(character.ResourcesId)),
                 Skills = Map(gameData.GetSkills(character.SkillsId)),
                 State = Map(gameData.GetState(character.StateId)),
-                InventoryItems = Map(gameData.GetAllPlayerItems(character.Id)),
+                InventoryItems = invItems,
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
                 Clan = Map(gameData, gameData.GetClan(character.ClanId.GetValueOrDefault())),
                 OriginUserId = character.OriginUserId,
