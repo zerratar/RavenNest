@@ -51,7 +51,7 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
-            if (clientVersion.ToLower() != game.ClientVersion.ToLower()) 
+            if (clientVersion.ToLower() != game.ClientVersion.ToLower())
             {
                 return new SessionToken();
             }
@@ -85,7 +85,7 @@ namespace RavenNest.BusinessLogic.Game
 
             SendVillageInfo(newGameSession);
 
-            return GenerateSessionToken(token, newGameSession);
+            return GenerateSessionToken(token, user, newGameSession);
         }
 
         public bool AttachPlayersToSession(SessionToken session, Guid[] characterIds)
@@ -264,14 +264,20 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static SessionToken GenerateSessionToken(AuthToken token, DataModels.GameSession session)
+        private static SessionToken GenerateSessionToken(
+            AuthToken token,
+            DataModels.User user,
+            DataModels.GameSession session)
         {
             return new SessionToken
             {
                 AuthToken = token.Token,
                 ExpiresUtc = DateTime.UtcNow + TimeSpan.FromDays(180),
                 SessionId = session.Id,
-                StartedUtc = session.Started
+                StartedUtc = session.Started,
+                TwitchDisplayName = user.DisplayName,
+                TwitchUserId = user.UserId,
+                TwitchUserName = user.UserName
             };
         }
     }

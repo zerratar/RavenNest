@@ -9,5 +9,8 @@ namespace RavenNest.Models
         public DateTime ExpiresUtc { get; set; }
         public string AuthToken { get; set; }
         public bool Expired => DateTime.UtcNow >= ExpiresUtc;
+        public string TwitchUserId { get; set; }
+        public string TwitchUserName { get; set; }
+        public string TwitchDisplayName { get; set; }
     }
 }

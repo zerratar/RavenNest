@@ -92,7 +92,7 @@ namespace RavenNest.BusinessLogic.Game
                 return result;
             }
 
-            if (string.IsNullOrEmpty(character.Name))
+            if (string.IsNullOrEmpty(character.Name) || (!string.IsNullOrEmpty(userName) && character.Name != userName))
             {
                 character.Name = userName;
             }
@@ -535,12 +535,19 @@ namespace RavenNest.BusinessLogic.Game
             if (receiver == null) return 0;
 
             var item = gameData.GetItem(itemId);
-            if (item == null || item.Category == (int)DataModels.ItemCategory.StreamerToken)
+            if (item == null)
                 return 0;
+
+            var session = gameData.GetSession(token.SessionId);
+            var sessionOwner = gameData.GetUser(session.UserId);
+
+            string itemTag = null;
+            if (item.Category == (int)DataModels.ItemCategory.StreamerToken)
+                itemTag = sessionOwner.UserId;
 
             var inventory = inventoryProvider.Get(gifter.Id);
 
-            var gift = inventory.GetItem(itemId);
+            var gift = inventory.GetItem(itemId, tag: itemTag);
             if (gift.IsNull()) return 0;
 
             var giftedItemCount = amount;

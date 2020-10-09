@@ -70,6 +70,18 @@ namespace RavenNest.Sessions
                 {
                     user = gameData.GetUser(twitchUser.Id);
                 }
+                if (user != null)
+                {
+                    if (!string.IsNullOrEmpty(twitchUser.DisplayName) && twitchUser.DisplayName != user.DisplayName)
+                    {
+                        user.DisplayName = twitchUser.DisplayName;
+                    }
+
+                    if (!string.IsNullOrEmpty(twitchUser.Email) && twitchUser.Email != user.Email)
+                    {
+                        user.Email = twitchUser.Email;
+                    }
+                }
             }
 
             if (user == null && TryGetAuthToken(session, out var auth))
