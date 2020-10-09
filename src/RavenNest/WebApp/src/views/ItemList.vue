@@ -119,7 +119,10 @@
       return 0;
     }
 
-    public static getItemImage(itemId: string): string {
+    public static getItemImage(itemId: string, tag: string|null = null): string {
+        if (tag != null) {
+          return `/api/twitch/logo/${tag}`;
+        }
         return `/assets/imgs/items/${itemId}.png`;
     }
 

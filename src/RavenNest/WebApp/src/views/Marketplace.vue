@@ -77,7 +77,7 @@
       if (result.ok) {
         this.items = await result.json();
         this.items.forEach((item) => {
-          item.imgPath = ItemList.getItemImage(item.id);
+          item.imgPath = ItemList.getItemImage(item.id, item.tag);
           item.type = Inventory.getItemTypeByIndex(item.type);
           item.category = ItemList.getItemCategoryByIndex(item.category);
           item.material = ItemList.getItemMaterialByIndex(item.material);

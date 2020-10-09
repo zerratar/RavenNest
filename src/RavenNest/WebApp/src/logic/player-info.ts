@@ -90,7 +90,7 @@ export class PlayerInfo {
     this.inventoryItems = [];
     for (const val of data.inventoryItems) {
       const item: any = val;
-      const invItem = new InventoryItem(item.id, item.itemId, item.equipped, item.amount);
+      const invItem = new InventoryItem(item.id, item.itemId, item.equipped, item.amount, item.tag);
       this.inventoryItems.push(invItem);
     }
     this.state = new PlayerState(data.state.id, data.state.health, data.state.inRaid, data.state.inArena,

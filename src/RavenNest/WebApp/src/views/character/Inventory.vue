@@ -4,7 +4,7 @@
             <h2>Equipped</h2>
             <div class="inventory-items">
                 <div class="inventory-item equipped" v-for="item in getEquippedItems()" :key="item.id">
-                    <div class="item-image" :data-item="item.id" @mouseover="mouseOverItem(item)" @mouseleave="mouseExitItem(item)"><img :src="getItemImage(item.itemId)" /></div>
+                    <div class="item-image" :data-item="item.id" @mouseover="mouseOverItem(item)" @mouseleave="mouseExitItem(item)"><img :src="getItemImage(item.itemId, item.tag)" /></div>
                     <div class="item-tooltip" :class="{visible: getTooltipVisible(item)}" :data-item="item.id">
                         <div class="item-name" :data-tier="getItemTier(item)">{{getItemName(item)}}</div>
                         <div class="item-type">{{getItemType(item)}}</div>
@@ -188,7 +188,10 @@
         return MyPlayer.getInventoryItems();
     }
 
-    public getItemImage(itemId: string): string {
+    public getItemImage(itemId: string, tag: string|null): string {
+        if (tag != null) {
+          return `/api/twitch/logo/${tag}`;
+        }
         return `/assets/imgs/items/${itemId}.png`;
     }
 
