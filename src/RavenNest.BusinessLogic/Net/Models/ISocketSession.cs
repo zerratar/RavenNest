@@ -20,6 +20,9 @@ namespace RavenNest.BusinessLogic.Net
             object request,
             CancellationToken cancellationToken);
 
+        Task ReplyAsync(GamePacket packet, object request);
+        Task ReplyAsync(GamePacket packet, object request, CancellationToken cancellationToken);
+
         Task<bool> PushAsync(string id, object request, CancellationToken cancellationToken);
 
         Task KeepAlive();

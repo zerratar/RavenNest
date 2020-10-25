@@ -1,11 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore.Diagnostics;
-using System;
+﻿using System;
 
 namespace RavenNest.BusinessLogic
 {
     public static class GameMath
     {
-        public const int MaxLevel = 300;
+        public const int MaxLevel = 999;
 
         [Obsolete]
         private const int OLD_MaxLevel = 170;

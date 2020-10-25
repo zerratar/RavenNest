@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Text;
+using Newtonsoft.Json.Serialization;
 
 namespace RavenNest.BusinessLogic.Net
 {
@@ -211,6 +212,16 @@ namespace RavenNest.BusinessLogic.Net
                 }
 
                 return false;
+            }
+
+            public Task ReplyAsync(GamePacket packet, object request)
+            {
+                return ReplyAsync(packet.CorrelationId, packet.Type, request, CancellationToken.None);
+            }
+
+            public Task ReplyAsync(GamePacket packet, object request, CancellationToken cancellationToken)
+            {
+                return ReplyAsync(packet.CorrelationId, packet.Type, request, cancellationToken);
             }
 
             public Task ReplyAsync(Guid correlationId, string id, object request, CancellationToken cancellationToken)

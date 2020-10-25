@@ -11,8 +11,6 @@ namespace RavenNest.BusinessLogic.Net
 
         public override void Handle(GamePacket packet)
         {
-
         }
     }
-
 }

@@ -9,6 +9,11 @@ namespace RavenNest.Models
         public int RaidsWon { get; set; }
         public int RaidsLost { get; set; }
         public int RaidsJoined { get; set; }
+        public int DungeonsJoined { get; set; }
+        public int DungeonsWon { get; set; }
+        public int DungeonsDied { get; set; }
+        public int MinigameWons { get; set; }
+
 
         public int DuelsWon { get; set; }
         public int DuelsLost { get; set; }

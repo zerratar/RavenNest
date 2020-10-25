@@ -52,7 +52,12 @@ namespace RavenNest.Controllers
         {
             var reqCode = HttpContext.Request.Query["code"];
             var reqState = HttpContext.Request.Query["state"];
+
+#if DEBUG
+            var requestUrl = "https://localhost:5001/login";
+#else 
             var requestUrl = "https://www.ravenfall.stream/login";
+#endif
             try
             {
                 var sessionInfo = await TwitchAuthenticateAsync(reqCode);
@@ -161,6 +166,15 @@ namespace RavenNest.Controllers
                 &redirect_uri=<your registered redirect URI>
              */
 
+#if DEBUG
+            var parameters = new Dictionary<string, string> {
+                { "client_id", settings.TwitchClientId },
+                { "client_secret", settings.TwitchClientSecret },
+                { "code", code },
+                { "grant_type","authorization_code" },
+                { "redirect_uri", "https://localhost:5001/api/twitch/authorize"}
+            };
+#else
             var parameters = new Dictionary<string, string> {
                 { "client_id", settings.TwitchClientId },
                 { "client_secret", settings.TwitchClientSecret },
@@ -168,8 +182,9 @@ namespace RavenNest.Controllers
                 { "grant_type","authorization_code" },
                 { "redirect_uri", "https://www.ravenfall.stream/api/twitch/authorize"}
             };
+#endif
 
-            var reqUrl = "https://id.twitch.tv/oauth2/token"
+            var reqUrl = "https://id.twitch.tv/oauth2/token?"
                 + string.Join("&", parameters.Select(x => x.Key + "=" + x.Value));
 
             var req = (HttpWebRequest)HttpWebRequest.Create(reqUrl);
