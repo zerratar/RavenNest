@@ -1,4 +1,5 @@
 ﻿using RavenNest.BusinessLogic.Game;
+using System.Threading.Tasks;
 
 namespace RavenNest.BusinessLogic.Net
 {
@@ -13,5 +14,4 @@ namespace RavenNest.BusinessLogic.Net
 
         public abstract void Handle(GamePacket packet);
     }
-
 }

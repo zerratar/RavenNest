@@ -21,4 +21,9 @@
     <ProjectReference Include="..\RavenNest.Models\RavenNest.Models.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Game\Achievements\" />
+    <Folder Include="Game\Quests\" />
+  </ItemGroup>
+
 </Project>

@@ -145,13 +145,13 @@
     }
 
     private async updateGameClientLoginStateAsync() {
-      const token = this.getQueryParam('code');
+      const token = this.getQueryParam('token');
       const state = this.getQueryParam('state');
       const user = this.getQueryParam('user');
       const id = this.getQueryParam('id');
       if (token != null && token.length > 0) {
         try {
-          let requestUrl = 'http://localhost:8182/?code=' + token + '&state=' + state;
+          let requestUrl = 'http://localhost:8182/?token=' + token + '&state=' + state;
           if (id != null && id.length > 0) {
             requestUrl += '&id=' + id;
           }

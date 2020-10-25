@@ -24,20 +24,38 @@ namespace RavenNest.BusinessLogic.Game
     {
         private const int MaxCharacterCount = 3;
         private readonly ILogger logger;
+        private readonly IPlayerHighscoreProvider highscoreProvider;
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly IGameData gameData;
         private readonly IIntegrityChecker integrityChecker;
 
         public PlayerManager(
             ILogger<PlayerManager> logger,
+            IPlayerHighscoreProvider highscoreProvider,
             IPlayerInventoryProvider inventoryProvider,
             IGameData gameData,
             IIntegrityChecker integrityChecker)
         {
             this.logger = logger;
+            this.highscoreProvider = highscoreProvider;
             this.inventoryProvider = inventoryProvider;
             this.gameData = gameData;
             this.integrityChecker = integrityChecker;
+        }
+
+        public int GetHighscore(SessionToken sessionToken, Guid characterId, string skillName)
+        {
+            if (skillName == "all")
+                skillName = null;
+
+            var player = GetPlayer(characterId);
+            var item = highscoreProvider.GetSkillHighScore(player, GetPlayers(), skillName);
+            if (item != null)
+            {
+                return item.Rank;
+            }
+
+            return -1;
         }
 
         public Player CreatePlayerIfNotExists(string userId, string userName, string identifier)
@@ -167,7 +185,8 @@ namespace RavenNest.BusinessLogic.Game
                         ? $"{character.Name} joined {targetSessionUser.UserName}'s stream"
                         : $"{character.Name} joined another session.",
 
-                    UserId = characterUser.UserId
+                    UserId = characterUser.UserId,
+                    CharacterId = character.Id
                 });
 
             gameData.Add(gameEvent);
@@ -182,6 +201,86 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             return GetPlayerByUser(user, identifier);
+        }
+
+        public bool AddTokens(SessionToken sessionToken, string userId, int amount)
+        {
+            var character = GetCharacter(sessionToken, userId);
+            if (character == null)
+                return false;
+
+            var session = gameData.GetSession(sessionToken.SessionId);
+            var inventory = inventoryProvider.Get(character.Id);
+            inventory.AddStreamerTokens(session, amount);
+            return true;
+        }
+
+        public int RedeemTokens(SessionToken sessionToken, string userId, int amount, bool exact)
+        {
+            try
+            {
+                var character = GetCharacter(sessionToken, userId);
+                if (character == null)
+                {
+                    logger.LogError("Unable to redeem tokens for " + userId + " amount: " + amount + ". Character not found in session: " + sessionToken.SessionId);
+                    return 0;
+                }
+
+                var session = gameData.GetSession(sessionToken.SessionId);
+                var inventory = inventoryProvider.Get(character.Id);
+                var streamerTokens = inventory.GetStreamerTokens(session);
+                if (streamerTokens.Count == 0)
+                {
+                    logger.LogError("Unable to redeem tokens for " + userId + " amount: " + amount + ". Does not have any tokens.");
+                    return 0;
+                }
+
+                var totalStreamerTokenCount = (int)streamerTokens.Sum(x => x.Amount);
+                if (totalStreamerTokenCount == 0)
+                {
+                    logger.LogError("Unable to redeem tokens for " + userId + " amount: " + amount + ". Does not have any tokens.");
+                    return 0;
+                }
+
+                var toConsume = amount;
+                if (exact)
+                {
+                    if (totalStreamerTokenCount < amount)
+                    {
+                        logger.LogError("Unable to redeem tokens for " + userId + " amount: " + amount + ". Exact amount was expected, but only has " + totalStreamerTokenCount);
+                        return 0;
+                    }
+                    toConsume = amount;
+                }
+                else if (totalStreamerTokenCount < amount)
+                {
+                    toConsume = totalStreamerTokenCount;
+                }
+
+                long leftToConsume = toConsume;
+                foreach (var token in streamerTokens)
+                {
+                    if (leftToConsume == 0) break;
+                    if (leftToConsume >= token.Amount)
+                    {
+                        leftToConsume -= token.Amount;
+                        inventory.RemoveStack(token.Id);
+                        continue;
+                    }
+
+                    inventory.RemoveItem(token.ItemId, leftToConsume, tag: token.Tag);
+                    leftToConsume = 0;
+                    break;
+                }
+
+                logger.LogError("User " + userId + " redeemed " + toConsume + " tokens. Player has " + totalStreamerTokenCount + " Tokens. Expected to be redeemed " + amount);
+                return (int)toConsume;
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Unable to redeem tokens for " + userId + " amount: " + amount + ". " + exc);
+                return 0;
+            }
         }
 
         public PlayerExtended GetGlobalPlayerExtended(Guid userId, string identifier)
@@ -205,6 +304,15 @@ namespace RavenNest.BusinessLogic.Game
 
             return GetPlayerExtended(user, identifier);
         }
+
+
+        public Player GetPlayer(Guid characterId)
+        {
+            var chara = gameData.GetCharacter(characterId);
+            var user = gameData.GetUser(chara.UserId);
+            return chara.Map(gameData, user);
+        }
+
 
         public Player GetPlayer(string userId, string identifier)
         {
@@ -565,12 +673,12 @@ namespace RavenNest.BusinessLogic.Game
             recvInventory.AddItem(itemId, giftedItemCount, tag: gift.Tag);
             recvInventory.EquipBestItems();
 
-            gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, gameData.GetSession(token.SessionId), new ItemAdd
-            {
-                UserId = receiverUserId,
-                Amount = giftedItemCount,
-                ItemId = itemId
-            }));
+            //gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, gameData.GetSession(token.SessionId), new ItemAdd
+            //{
+            //    UserId = receiverUserId,
+            //    Amount = giftedItemCount,
+            //    ItemId = itemId
+            //}));
 
             return giftedItemCount;
         }
@@ -997,7 +1105,8 @@ namespace RavenNest.BusinessLogic.Game
                 new PlayerRemove()
                 {
                     Reason = $"{character.Name} joined another session.",
-                    UserId = characterUser.UserId
+                    UserId = characterUser.UserId,
+                    CharacterId = character.Id
                 });
 
             gameData.Add(gameEvent);

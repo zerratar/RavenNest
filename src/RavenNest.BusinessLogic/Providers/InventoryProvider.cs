@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
 
 public interface IPlayerInventoryProvider
 {
@@ -91,7 +92,8 @@ public class PlayerInventory
             foreach (var itemGroup in inventoryItems
                 .Where(x =>
                     x.Item.Category != (int)ItemCategory.Weapon &&
-                    x.Item.Category != (int)ItemCategory.Pet)
+                    x.Item.Category != (int)ItemCategory.Pet &&
+                    x.Item.Category != (int)ItemCategory.StreamerToken)
                 .GroupBy(x => x.Item.Type))
             {
                 var itemToEquip = itemGroup
@@ -243,6 +245,32 @@ public class PlayerInventory
         lock (mutex)
         {
             return this.items.FirstOrDefault(x => x.ItemId == itemId && x.Equipped == equipped && (x.Tag == tag || tag == null)).AsReadOnly();
+        }
+    }
+
+    internal void AddStreamerTokens(GameSession session, int amount)
+    {
+        lock (mutex)
+        {
+            var streamer = gameData.GetUser(session.UserId);
+            var tokenTag = streamer.UserId;
+            var item = gameData.GetItems().FirstOrDefault(x => x.Category == (int)ItemCategory.StreamerToken);
+            AddItem(item.Id, amount, tag: tokenTag);
+        }
+    }
+
+    internal IReadOnlyList<ReadOnlyInventoryItem> GetStreamerTokens(GameSession session)
+    {
+        lock (mutex)
+        {
+            var streamer = gameData.GetUser(session.UserId);
+            if (streamer == null) return new List<ReadOnlyInventoryItem>();
+            return this.items
+                .Where(x =>
+                    gameData.GetItem(x.ItemId).Category == (int)ItemCategory.StreamerToken &&
+                    (x.Tag == streamer.UserId || x.Tag == null))
+                .Select(x => x.AsReadOnly())
+                .ToList();
         }
     }
 

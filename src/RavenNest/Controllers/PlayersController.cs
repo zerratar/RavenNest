@@ -111,6 +111,24 @@ namespace RavenNest.Controllers
             return playerManager.GetPlayer(AssertGetSessionToken(), userId);
         }
 
+        [HttpGet("highscore/{characterId}/{skillName}")]
+        public int GetHighscore(Guid characterId, string skillName)
+        {
+            return playerManager.GetHighscore(AssertGetSessionToken(), characterId, skillName);
+        }
+
+        [HttpGet("{userId}/redeem-tokens/{amount}/{exact}")]
+        public int RedeemTokens(string userId, int amount, bool exact)
+        {
+            return playerManager.RedeemTokens(AssertGetSessionToken(), userId, amount, exact);
+        }
+
+
+        [HttpGet("{userId}/add-tokens/{amount}")]
+        public bool AddTokens(string userId, int amount)
+        {
+            return playerManager.AddTokens(AssertGetSessionToken(), userId, amount);
+        }
 
         [HttpGet("{userId}/craft/{item}")]
         public AddItemResult CraftItem(string userId, Guid item)

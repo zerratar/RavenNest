@@ -276,6 +276,7 @@ namespace RavenNest
             services.AddSingleton<IIntegrityChecker, PlayerIntegrityChecker>();
 
             services.AddSingleton<ITwitchClient, TwitchClient>();
+            services.AddSingleton<IPlayerHighscoreProvider, PlayerHighscoreProvider>();
 
             // Register providers
             services.AddSingleton<IRavenfallDbContextProvider, RavenfallDbContextProvider>();

@@ -1,5 +1,4 @@
 ﻿using RavenNest.BusinessLogic.Game;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace RavenNest.BusinessLogic.Net
@@ -12,9 +11,8 @@ namespace RavenNest.BusinessLogic.Net
         {
             this.playerManager = playerManager;
         }
-        public async Task HandleAsync(
-            IWebSocketConnection connection,
-            GamePacket packet)
+
+        public async Task HandleAsync(IWebSocketConnection connection, GamePacket packet)
         {
             var result = false;
 
@@ -23,32 +21,7 @@ namespace RavenNest.BusinessLogic.Net
                 result = this.playerManager.UpdatePlayerState(connection.SessionToken, update);
             }
 
-            await connection.ReplyAsync(packet.CorrelationId, packet.Type, result, CancellationToken.None);
+            await connection.ReplyAsync(packet, result);
         }
-    }
-
-    internal class UpdateCharacterSkillPacketHandler : IGamePacketHandler
-    {
-        private readonly IPlayerManager playerManager;
-
-        public UpdateCharacterSkillPacketHandler(IPlayerManager playerManager)
-        {
-            this.playerManager = playerManager;
-        }
-        public async Task HandleAsync(
-            IWebSocketConnection connection,
-            GamePacket packet)
-        {
-            var result = false;
-
-            if (packet.Data is CharacterSkillUpdate update)
-            {
-                result = this.playerManager.UpdateExperience(
-                    connection.SessionToken, update.UserId, update.Level, update.Experience, update.CharacterId);
-            }
-
-            await connection.ReplyAsync(packet.CorrelationId, packet.Type, result, CancellationToken.None);
-        }
-
     }
 }
