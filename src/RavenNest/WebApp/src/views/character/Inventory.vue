@@ -39,7 +39,7 @@
                         </div>
 
                         <div class="item-requirement">
-                            <div>Requires {{getItemRequirementSkill(item)}} level</div>
+                            <div>{{getItemRequirementSkill(item)}}</div>
                             <div>{{getItemRequirementLevel(item)}}</div>
                         </div>
                     </div>                    
@@ -98,8 +98,12 @@
         const itemStats: ItemStat[] = [];
         const item = invItem.item;
         if (!item) return itemStats;
-        if (item.weaponAim > 0) itemStats.push(new ItemStat('Aim', item.weaponAim));
-        if (item.weaponPower > 0) itemStats.push(new ItemStat('Power', item.weaponPower));
+        if (item.weaponAim > 0) itemStats.push(new ItemStat('Weapon Aim', item.weaponAim));        
+        if (item.weaponPower > 0) itemStats.push(new ItemStat('Weapon Power', item.weaponPower));
+        if (item.rangedAim > 0) itemStats.push(new ItemStat('Ranged Aim', item.rangedAim));        
+        if (item.rangedPower > 0) itemStats.push(new ItemStat('Ranged Power', item.rangedPower));
+        if (item.magicAim > 0) itemStats.push(new ItemStat('Magic Aim', item.magicAim));
+        if (item.magicPower > 0) itemStats.push(new ItemStat('Magic Power', item.magicPower));        
         if (item.armorPower > 0) itemStats.push(new ItemStat('Armor', item.armorPower));
         return itemStats;
     }
@@ -107,8 +111,8 @@
     public getItemTier(item: InventoryItem): string {
         if (!item.item) return '0';
         if (item.item.type === 20) return 'pet';
-        if (item.item.requiredAttackLevel === 100 || item.item.requiredDefenseLevel === 100) return '8';
-        if (item.item.requiredAttackLevel === 120 || item.item.requiredDefenseLevel === 120) return '9';
+        if (item.item.requiredMagicLevel === 100 || item.item.requiredRangedLevel === 100 || item.item.requiredAttackLevel === 100 || item.item.requiredDefenseLevel === 100) return '8';
+        if (item.item.requiredMagicLevel >= 120 || item.item.requiredRangedLevel >= 120 || item.item.requiredAttackLevel >= 120 || item.item.requiredDefenseLevel >= 120) return '9';
         return item.item.material.toString();
     }
 
@@ -164,18 +168,30 @@
       }
     }
 
-    public getItemRequirementLevel(item: InventoryItem): number {
+    public getItemRequirementLevel(item: InventoryItem): any {
         if (!item.item) return 0;
         if (item.item.requiredAttackLevel > 0)
             return item.item.requiredAttackLevel;
-        return item.item.requiredDefenseLevel;
+        if (item.item.requiredDefenseLevel > 0)        
+          return item.item.requiredDefenseLevel;
+        if (item.item.requiredRangedLevel > 0)        
+          return item.item.requiredRangedLevel;
+        if (item.item.requiredMagicLevel > 0)
+          return item.item.requiredMagicLevel;
+        return '';
     }
 
     public getItemRequirementSkill(item: InventoryItem): string {
         if (!item.item) return '';
         if (item.item.requiredAttackLevel > 0)
-            return 'attack';
-        return 'defense';
+            return 'Requires Attack Level';
+        if (item.item.requiredDefenseLevel > 0)
+          return 'Requires Defense Level';
+        if (item.item.requiredRangedLevel > 0)        
+          return 'Requires Ranged Level';
+        if (item.item.requiredMagicLevel > 0)
+          return 'Requires Magic Level';
+        return '';
     }
 
     public getEquippedItems(): InventoryItem[] {

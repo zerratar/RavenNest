@@ -43,7 +43,7 @@
                         </div>
 
                         <div class="item-requirement">
-                            <div>Requires {{getItemRequirementSkill(item)}} level</div>
+                            <div>{{getItemRequirementSkill(item)}}</div>
                             <div>{{getItemRequirementLevel(item)}}</div>
                         </div>
                     </div>                    
@@ -215,18 +215,30 @@
         }
     }
 
-    public getItemRequirementLevel(item: InventoryItem): number {
+    public getItemRequirementLevel(item: InventoryItem): any {
         if (!item.item) return 0;
         if (item.item.requiredAttackLevel > 0)
             return item.item.requiredAttackLevel;
-        return item.item.requiredDefenseLevel;
+        if (item.item.requiredDefenseLevel > 0)        
+          return item.item.requiredDefenseLevel;
+        if (item.item.requiredRangedLevel > 0)        
+          return item.item.requiredRangedLevel;
+        if (item.item.requiredMagicLevel > 0)
+          return item.item.requiredMagicLevel;
+        return '';
     }
 
     public getItemRequirementSkill(item: InventoryItem): string {
         if (!item.item) return '';
         if (item.item.requiredAttackLevel > 0)
-            return 'attack';
-        return 'defense';
+            return 'Requires Attack Level';
+        if (item.item.requiredDefenseLevel > 0)
+          return 'Requires Defense Level';
+        if (item.item.requiredRangedLevel > 0)        
+          return 'Requires Ranged Level';
+        if (item.item.requiredMagicLevel > 0)
+          return 'Requires Magic Level';
+        return '';
     }
 
     public getEquippedItems(): InventoryItem[] {

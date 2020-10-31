@@ -18,6 +18,7 @@ namespace RavenNest.BusinessLogic.Game
         Player GetGlobalPlayer(Guid userId, string identifier);
         PlayerExtended GetPlayerExtended(string userId, string identifier);
         PlayerExtended GetGlobalPlayerExtended(Guid userId, string identifier);
+        void UpdatePlayerActivity(SessionToken sessionToken, PlayerSessionActivity update);
         bool UpdatePlayerState(SessionToken sessionToken, CharacterStateUpdate update);
 
         bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics, Guid? characterId = null);
