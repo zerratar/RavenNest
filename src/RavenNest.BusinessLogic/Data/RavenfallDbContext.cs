@@ -26,6 +26,8 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<VillageHouse> VillageHouse { get; set; }
         public virtual DbSet<Clan> Clan { get; set; }
 
+        public virtual DbSet<CharacterSessionActivity> CharacterSessionActivity { get; set; }
+
         //public virtual DbSet<CharacterSession> CharacterSession { get; set; }
         public virtual DbSet<GameSession> GameSession { get; set; }
         public virtual DbSet<GameEvent> GameEvent { get; set; }
@@ -54,6 +56,9 @@ namespace RavenNest.BusinessLogic.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<CharacterSessionActivity>(entity =>
+                entity.Property(e => e.Id).ValueGeneratedNever());
+
             modelBuilder.Entity<Appearance>(entity =>
                 entity.Property(e => e.Id).ValueGeneratedNever());
 

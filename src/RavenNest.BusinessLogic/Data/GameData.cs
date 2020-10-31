@@ -28,6 +28,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly ConcurrentDictionary<Guid, SessionState> sessionStates
             = new ConcurrentDictionary<Guid, SessionState>();
 
+        private readonly EntitySet<CharacterSessionActivity, Guid> characterSessionActivities;
         private readonly EntitySet<Appearance, Guid> appearances;
         private readonly EntitySet<SyntyAppearance, Guid> syntyAppearances;
         private readonly EntitySet<Character, Guid> characters;
@@ -92,6 +93,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(Statistics),
                         typeof(MarketItem),
                         typeof(ItemCraftingRequirement),
+                        typeof(CharacterSessionActivity),
                 });
 
                 if (restorePoint != null)
@@ -102,6 +104,14 @@ namespace RavenNest.BusinessLogic.Data
 
                 using (var ctx = this.db.Get())
                 {
+
+                    characterSessionActivities = new EntitySet<CharacterSessionActivity, Guid>(
+                        restorePoint?.Get<CharacterSessionActivity>() ?? ctx.CharacterSessionActivity.ToList(), i => i.Id);
+
+                    characterSessionActivities.RegisterLookupGroup(nameof(GameSession), x => x.SessionId);
+                    characterSessionActivities.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
+                    characterSessionActivities.RegisterLookupGroup(nameof(User), x => x.UserId);
+
                     appearances = new EntitySet<Appearance, Guid>(
                         restorePoint?.Get<Appearance>() ??
                         ctx.Appearance.ToList(), i => i.Id);
@@ -198,7 +208,7 @@ namespace RavenNest.BusinessLogic.Data
                         appearances, syntyAppearances, characters, characterStates,
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems,
                         resources, statistics, skills, users, villages, villageHouses, clans,
-                        npcs, npcSpawns, npcItemDrops, itemCraftingRequirements
+                        npcs, npcSpawns, npcItemDrops, itemCraftingRequirements, characterSessionActivities
                     };
                 }
 
@@ -259,6 +269,9 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         public GameClient Client { get; private set; }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(CharacterSessionActivity ev) => Update(() => characterSessionActivities.Add(ev));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(ItemCraftingRequirement entity) => Update(() => itemCraftingRequirements.Add(entity));
@@ -576,6 +589,16 @@ namespace RavenNest.BusinessLogic.Data
             if (updateSession && session != null) session.Updated = DateTime.UtcNow;
             return session;
         }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public CharacterSessionActivity GetSessionActivity(Guid sessionId, Guid characterId)
+        {
+            return characterSessionActivities[nameof(Character), characterId].FirstOrDefault(x => x.SessionId == sessionId);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(CharacterSessionActivity ev) => characterSessionActivities.Remove(ev);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(GameEvent ev) => gameEvents.Remove(ev);
@@ -968,6 +991,7 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ICollection<EntityChangeSet> JoinChangeSets(params ICollection<EntityChangeSet>[] changesets) =>
             changesets.SelectMany(x => x).OrderBy(x => x.LastModified).ToList();
+
     }
 
     public class DataSaveError

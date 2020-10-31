@@ -349,6 +349,45 @@ namespace RavenNest.BusinessLogic.Game
             return character.Map(gameData, user);
         }
 
+        public void UpdatePlayerActivity(SessionToken sessionToken, PlayerSessionActivity update)
+        {
+            var session = gameData.GetSession(sessionToken.SessionId);
+            if (session == null)
+                return;
+
+            var character = gameData.GetCharacter(update.CharacterId);
+            if (character == null)
+                return;
+
+            var user = gameData.GetUser(update.UserId);
+            if (user == null)
+                return;
+
+            var sessionActivity = gameData.GetSessionActivity(session.Id, update.CharacterId);
+            if (sessionActivity == null)
+            {
+                sessionActivity = new CharacterSessionActivity
+                {
+                    Id = Guid.NewGuid(),
+                    SessionId = session.Id,
+                    UserId = user.Id,
+                    UserName = update.UserName,
+                    CharacterId = update.CharacterId,
+                };
+                gameData.Add(sessionActivity);
+            }
+
+            sessionActivity.TripCount = update.TripCount;
+            sessionActivity.Tripped = update.Tripped;
+            sessionActivity.TotalTriggerCount = update.TotalTriggerCount;
+            sessionActivity.TotalInputCount = update.TotalInputCount;
+            sessionActivity.ResponseStreak = update.ResponseStreak;
+            sessionActivity.MinResponseTime = update.MinResponseTime.ToString();
+            sessionActivity.MaxResponseTime = update.MaxResponseTime.ToString();
+            sessionActivity.AvgResponseTime = update.AvgResponseTime.ToString();
+            sessionActivity.MaxResponseStreak = update.MaxResponseStreak;
+        }
+
         public bool UpdatePlayerState(
             SessionToken sessionToken,
             CharacterStateUpdate update)
@@ -465,7 +504,7 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 var character = gameData.GetCharacter(state.CharacterId);//sessionPlayers.FirstOrDefault(x => x.UserId == user.Id);
-                //var character = gameData.GetCharacterByUserId(user.Id);
+                                                                         //var character = gameData.GetCharacterByUserId(user.Id);
                 if (character == null)
                 {
                     logger.LogError($"Saving failed for player with userId {state.UserId}, no character was found matching the id in the session.");
@@ -979,7 +1018,7 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (experience == null)
                     return false; // no skills was updated. Ignore
-                // throw new Exception($"Unable to save exp. Client didnt supply experience, or experience was null. Character with name {character.Name} game session: " + gameSession.Id + ".");
+                                  // throw new Exception($"Unable to save exp. Client didnt supply experience, or experience was null. Character with name {character.Name} game session: " + gameSession.Id + ".");
 
                 var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
                 var gains = characterSessionState.ExpGain;
@@ -1425,5 +1464,6 @@ namespace RavenNest.BusinessLogic.Game
         {
             return Math.Max(currentExp, newExp) - currentExp;
         }
+
     }
 }

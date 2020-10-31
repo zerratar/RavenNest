@@ -82,6 +82,8 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Add
+
+        void Add(CharacterSessionActivity ev);
         void Add(DataModels.Item entity);
         void Add(DataModels.ItemCraftingRequirement entity);
         void Add(DataModels.CharacterState entity);
@@ -119,6 +121,7 @@ namespace RavenNest.BusinessLogic.Data
         //#endregion
 
         #region Remove
+        void Remove(CharacterSessionActivity ev);
         void Remove(DataModels.GameEvent gameEvent);
         void Remove(DataModels.ItemCraftingRequirement craftingRequirement);
         void Remove(DataModels.User user);
@@ -148,5 +151,7 @@ namespace RavenNest.BusinessLogic.Data
 
         object SyncLock { get; }
         bool InitializedSuccessful { get; }
+
+        CharacterSessionActivity GetSessionActivity(Guid id, Guid characterId);
     }
 }

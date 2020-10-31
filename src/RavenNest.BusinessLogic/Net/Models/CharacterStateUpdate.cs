@@ -17,13 +17,4 @@ namespace RavenNest.BusinessLogic.Net
         public float Y { get; set; }
         public float Z { get; set; }
     }
-
-    public class CharacterSkillUpdate
-    {
-        public Guid CharacterId { get; set; }
-        public string UserId { get; set; }
-        public decimal[] Experience { get; set; }
-        public int[] Level { get; set; }
-    }
-
 }
