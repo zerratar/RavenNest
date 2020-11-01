@@ -151,13 +151,26 @@ namespace RavenNest.Controllers
         [HttpGet("{userId}/unequip/{item}")]
         public bool UnEquipItem(string userId, Guid item)
         {
-            return playerManager.UnEquipItem(AssertGetSessionToken(), userId, item);
+            return playerManager.UnequipItem(AssertGetSessionToken(), userId, item);
+        }
+
+
+        [HttpGet("{userId}/unequipall")]
+        public bool UnequipAllItems(string userId)
+        {
+            return playerManager.UnequipAllItems(AssertGetSessionToken(), userId);
         }
 
         [HttpGet("{userId}/equip/{item}")]
         public bool EquipItem(string userId, Guid item)
         {
             return playerManager.EquipItem(AssertGetSessionToken(), userId, item);
+        }
+
+        [HttpGet("{userId}/equipall")]
+        public bool EquipBestItems(string userId)
+        {
+            return playerManager.EquipBestItems(AssertGetSessionToken(), userId);
         }
 
         [HttpGet("{userId}/gift/{receiverUserId}/{itemId}/{amount}")]

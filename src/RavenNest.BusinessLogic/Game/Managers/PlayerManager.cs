@@ -617,7 +617,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var inventory = inventoryProvider.Get(character.Id);
             inventory.AddItem(itemId, tag: tag);
-            inventory.EquipBestItems();
+            //inventory.EquipBestItems();
 
             return inventory.GetEquippedItem(itemId).IsNotNull()
                 ? AddItemResult.AddedAndEquipped
@@ -710,7 +710,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var recvInventory = inventoryProvider.Get(receiver.Id);
             recvInventory.AddItem(itemId, giftedItemCount, tag: gift.Tag);
-            recvInventory.EquipBestItems();
+            //recvInventory.EquipBestItems();
 
             //gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, gameData.GetSession(token.SessionId), new ItemAdd
             //{
@@ -730,7 +730,6 @@ namespace RavenNest.BusinessLogic.Game
             var item = gameData.GetItem(itemId);
             if (item == null) return false;
 
-
             var inventory = inventoryProvider.Get(character.Id);
             var invItem = inventory.GetItem(itemId);
 
@@ -741,7 +740,7 @@ namespace RavenNest.BusinessLogic.Game
             return inventory.EquipItem(itemId);
         }
 
-        public bool UnEquipItem(SessionToken token, string userId, Guid itemId)
+        public bool UnequipItem(SessionToken token, string userId, Guid itemId)
         {
             var character = GetCharacter(token, userId);
             if (character == null) return false;
@@ -751,6 +750,26 @@ namespace RavenNest.BusinessLogic.Game
             if (invItem.IsNull()) return false;
 
             return inventory.UnequipItem(itemId);
+        }
+
+        public bool EquipBestItems(SessionToken token, string userId)
+        {
+            var character = GetCharacter(token, userId);
+            if (character == null) return false;
+
+            var inventory = inventoryProvider.Get(character.Id);
+            inventory.EquipBestItems();
+            return true;
+        }
+
+        public bool UnequipAllItems(SessionToken token, string userId)
+        {
+            var character = GetCharacter(token, userId);
+            if (character == null) return false;
+
+            var inventory = inventoryProvider.Get(character.Id);
+            inventory.UnequipAllItems();
+            return true;
         }
 
         public bool ToggleHelmet(SessionToken token, string userId)

@@ -39,7 +39,9 @@ namespace RavenNest.BusinessLogic.Game
         int VendorItem(SessionToken token, string userId, Guid itemId, int amount);
 
         bool EquipItem(SessionToken token, string userId, Guid itemId);
-        bool UnEquipItem(SessionToken token, string userId, Guid itemId);
+        bool UnequipItem(SessionToken token, string userId, Guid itemId);
+        bool EquipBestItems(SessionToken token, string userId);
+        bool UnequipAllItems(SessionToken token, string userId);
 
         bool ToggleHelmet(SessionToken token, string userId);
 
