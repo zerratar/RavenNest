@@ -1,12 +1,10 @@
-﻿using RavenNest.BusinessLogic;
-using RavenNest.BusinessLogic.Data;
+﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Security.Cryptography.X509Certificates;
 
 public interface IPlayerInventoryProvider
 {
@@ -46,7 +44,7 @@ public class PlayerInventory
         this.characterId = characterId;
         this.items = gameData?.GetAllPlayerItems(characterId)?.ToList() ?? new List<InventoryItem>();
         MergeItems(this.items.ToList());
-        EquipBestItems();
+        //EquipBestItems();
     }
 
     public void EquipBestItems()
@@ -65,11 +63,17 @@ public class PlayerInventory
                 .OrderByDescending(x => GetItemValue(x.Item))
                 .ToList();
 
-            var weaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon);
-            if (weaponToEquip != null)
-            {
-                EquipItem(weaponToEquip.InventoryItem.ItemId);
-            }
+            var meleeWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && (x.Item.Type == (int)ItemType.OneHandedSword || x.Item.Type == (int)ItemType.TwoHandedSword || x.Item.Type == (int)ItemType.TwoHandedAxe));
+            if (meleeWeaponToEquip != null)
+                EquipItem(meleeWeaponToEquip.InventoryItem.ItemId);
+
+            var rangedWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && x.Item.Type == (int)ItemType.TwoHandedBow);
+            if (rangedWeaponToEquip != null)
+                EquipItem(rangedWeaponToEquip.InventoryItem.ItemId);
+
+            var magicWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && x.Item.Type == (int)ItemType.TwoHandedStaff);
+            if (magicWeaponToEquip != null)
+                EquipItem(magicWeaponToEquip.InventoryItem.ItemId);
 
             ReadOnlyInventoryItem equippedPet;
             if (equippedPetInventoryItem.IsNotNull())
@@ -120,16 +124,17 @@ public class PlayerInventory
     {
         lock (mutex)
         {
-            var equipped = GetItem(itemId, true);
+            var equipped = GetEquippedItem(itemId);
             if (equipped.IsNotNull())
             {
-                return false;
+                return true;
             }
+
             var item = gameData.GetItem(itemId);
             if (item != null)
             {
-                var eq = GetEquippedItem(item.Category, item.Type);
-                if (eq.IsNotNull())
+                var eqs = GetEquippedItems(item.Category, item.Type);
+                foreach (var eq in eqs)
                 {
                     UnequipItem(eq.ItemId);
                 }
@@ -147,11 +152,12 @@ public class PlayerInventory
     {
         lock (mutex)
         {
-            var equipped = GetItem(itemId, true);
-            if (equipped.IsNotNull())
+            var equipped = GetEquippedItem(itemId);
+            if (equipped.IsNull())
             {
                 return false;
             }
+
             if (RemoveItem(itemId, 1, true))
             {
                 AddItem(itemId, 1);
@@ -244,7 +250,9 @@ public class PlayerInventory
     {
         lock (mutex)
         {
-            return this.items.FirstOrDefault(x => x.ItemId == itemId && x.Equipped == equipped && (x.Tag == tag || tag == null)).AsReadOnly();
+            return this.items
+                .FirstOrDefault(x => x.ItemId == itemId && x.Equipped == equipped && (x.Tag == tag || tag == null))
+                .AsReadOnly();
         }
     }
 
@@ -289,6 +297,18 @@ public class PlayerInventory
             return this.items.Where(x => x.Equipped).Select(x => x.AsReadOnly()).ToList();
         }
     }
+    public IReadOnlyList<ReadOnlyInventoryItem> GetEquippedItems(int category, int itemType)
+    {
+        lock (mutex)
+        {
+            return this.items.Where(x =>
+            {
+                var item = gameData.GetItem(x.ItemId);
+                return x.Equipped && item.Category == category && item.Type == itemType;
+            }).Select(x => x.AsReadOnly()).ToList();
+        }
+    }
+
     public IReadOnlyList<ReadOnlyInventoryItem> GetInventoryItems()
     {
         lock (mutex)
@@ -323,7 +343,7 @@ public class PlayerInventory
         }
     }
 
-    private void UnequipAllItems()
+    public void UnequipAllItems()
     {
         lock (mutex)
         {
@@ -399,6 +419,8 @@ public class PlayerInventory
     {
         return item.Category != (int)ItemCategory.Resource &&
                item.Category != (int)ItemCategory.StreamerToken &&
+               item.RequiredMagicLevel <= skills.MagicLevel &&
+               item.RequiredRangedLevel <= skills.RangedLevel &&
                item.RequiredDefenseLevel <= skills.DefenseLevel && //GameMath.ExperienceToLevel(skills.Defense) &&
                item.RequiredAttackLevel <= skills.AttackLevel; //GameMath.ExperienceToLevel(skills.Attack);
     }
@@ -412,9 +434,9 @@ public class PlayerInventory
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int GetItemValue(Item itemA)
+    public static int GetItemValue(Item item)
     {
-        return itemA.Level + itemA.WeaponAim + itemA.WeaponPower + itemA.ArmorPower;
+        return item.Level + item.WeaponAim + item.WeaponPower + item.ArmorPower + item.MagicAim + item.MagicPower + item.RangedAim + item.RangedPower;
     }
 }
 

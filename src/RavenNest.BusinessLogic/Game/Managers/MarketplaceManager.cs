@@ -227,7 +227,7 @@ namespace RavenNest.BusinessLogic.Game
 
 
             var inventory = inventoryProvider.Get(character.Id);
-            inventory.EquipBestItems();
+            //inventory.EquipBestItems();
 
             return new ItemBuyResult(
                 ItemTradeState.Success,
