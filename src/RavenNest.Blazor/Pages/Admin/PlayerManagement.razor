@@ -1,0 +1,21 @@
+﻿@layout AdminLayout
+@page "/admin/players"
+@inject RavenNest.Blazor.Services.AuthService AuthService
+
+
+@if (isAdmin)
+{
+  <p>Welcome to the admin panel, @session.UserName</p>
+}
+
+
+@code {
+  private RavenNest.Sessions.SessionInfo session;
+  private bool isAdmin;
+
+  protected override void OnInitialized()
+  {
+    session = AuthService.GetSession();
+    isAdmin = session != null && session.Administrator;
+  }
+}

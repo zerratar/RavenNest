@@ -1,14 +1,29 @@
+.nav {
+    width: 100%;
+}
+
 .navbar-toggler {
     background-color: rgba(255, 255, 255, 0.1);
 }
 
 .top-row {
     height: 3.5rem;
-    background-color: rgba(0,0,0,0.4);
 }
 
 .navbar-brand {
     font-size: 1.1rem;
+}
+
+.nav-list {
+    display: flex;
+    flex-grow: 1;
+}
+
+.navbar-brand img {
+    height: 36px;
+    position: relative;
+    top: 0px;
+    left: 25px;
 }
 
 .oi {
@@ -40,14 +55,18 @@
         line-height: 3rem;
     }
 
-.nav-item ::deep a.active {
-    background-color: rgba(255,255,255,0.25);
-    color: white;
-}
+        .nav-item ::deep a.active {
+            background-color: rgba(255,255,255,0.25);
+            color: white;
+        }
 
-.nav-item ::deep a:hover {
-    background-color: rgba(255,255,255,0.1);
-    color: white;
+        .nav-item ::deep a:hover {
+            background-color: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+.collapse {
+    display:none;
 }
 
 @media (min-width: 641px) {
@@ -55,8 +74,7 @@
         display: none;
     }
 
-    .collapse {
-        /* Never collapse the sidebar for wide screens */
-        display: block;
+    .collapse {        
+        display: flex;
     }
 }
