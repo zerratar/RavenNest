@@ -40,75 +40,75 @@
 
 @code {
 
-    private string message;
-    private UserLoginModel loginModel = new UserLoginModel();
-    private RavenNest.Sessions.SessionInfo session;
-    private bool loginFailed = false;
-    private bool userInitiatedLogin = false;
+  private string message;
+  private UserLoginModel loginModel = new UserLoginModel();
+  private RavenNest.Sessions.SessionInfo session;
+  private bool loginFailed = false;
+  private bool userInitiatedLogin = false;
 
-    private bool IsAuthenticated => session != null && session.UserId != null;
-    private bool IsLoggingIn => !IsAuthenticated && (userInitiatedLogin || HasQueryParams());
+  private bool IsAuthenticated => session != null && session.UserId != null;
+  private bool IsLoggingIn => !IsAuthenticated && (userInitiatedLogin || HasQueryParams());
 
-    protected override void OnInitialized()
+  protected override void OnInitialized()
+  {
+    HandleTwitchTokens();
+    NavigateToHomeIfAuthenticated();
+  }
+
+  private bool HasQueryParams()
+  {
+    return NavigationManager.ToAbsoluteUri(NavigationManager.Uri).ToString().Contains("=");
+  }
+
+  private async void HandleTwitchTokens()
+  {
+    var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+    var atn = "access_token";
+    userInitiatedLogin = true;
+    if (!uri.ToString().Contains(atn + "="))
     {
-      HandleTwitchTokens();
-      NavigateToHomeIfAuthenticated();
-    }
-
-    private bool HasQueryParams()
-    {
-      return NavigationManager.ToAbsoluteUri(NavigationManager.Uri).ToString().Contains("=");
-    }
-
-    private async void HandleTwitchTokens()
-    {
-      var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-      var atn = "access_token";
-      userInitiatedLogin = true;
-      if (!uri.ToString().Contains(atn + "="))
-      {        
-        session = AuthService.GetSession();
-        userInitiatedLogin = false;
-        return;
-      }
-      loginFailed = false;
-      
-      var token = uri.ToString()
-          .Split(new string[] { "=" }, StringSplitOptions.RemoveEmptyEntries)[1]
-          .Split('&')[0];
-      session = await AuthService.TwitchLoginAsync(token);
+      session = AuthService.GetSession();
       userInitiatedLogin = false;
-      loginFailed = !IsAuthenticated;
-      NavigateToHomeIfAuthenticated();
+      return;
     }
+    loginFailed = false;
 
-    private async void HandleValidSubmit()
+    var token = uri.ToString()
+        .Split(new string[] { "=" }, StringSplitOptions.RemoveEmptyEntries)[1]
+        .Split('&')[0];
+    session = await AuthService.TwitchLoginAsync(token);
+    userInitiatedLogin = false;
+    loginFailed = !IsAuthenticated;
+    NavigateToHomeIfAuthenticated();
+  }
+
+  private async void HandleValidSubmit()
+  {
+    userInitiatedLogin = true;
+    session = await AuthService.LoginAsync(loginModel);
+
+    NavigateToHomeIfAuthenticated();
+  }
+
+  private void LoginWithTwitch()
+  {
+    userInitiatedLogin = true;
+    var url = AuthService.GetTwitchLoginUrl();
+    if (!string.IsNullOrEmpty(url))
     {
-      userInitiatedLogin = true;
-      session = await AuthService.LoginAsync(loginModel);
-
-      NavigateToHomeIfAuthenticated();
+      NavigationManager.NavigateTo(url, true);
     }
+  }
 
-    private void LoginWithTwitch()
-    {
-      userInitiatedLogin = true;
-      var url = AuthService.GetTwitchLoginUrl();
-      if (!string.IsNullOrEmpty(url))
-      {
-        NavigationManager.NavigateTo(url, true);
-      }
-    }
+  private void NavigateToHomeIfAuthenticated()
+  {
+    if (!IsAuthenticated)
+      return;
 
-    private void NavigateToHomeIfAuthenticated()
-    {
-      if (!IsAuthenticated)
-        return;
-
-      loginFailed = false;
-      userInitiatedLogin = false;
-      MainLayout.Instance.UpdateSession();
-      NavigationManager.NavigateTo("/");
-    }
+    loginFailed = false;
+    userInitiatedLogin = false;
+    MainLayout.Instance.UpdateSession();
+    NavigationManager.NavigateTo("/");
+  }
 
 }
