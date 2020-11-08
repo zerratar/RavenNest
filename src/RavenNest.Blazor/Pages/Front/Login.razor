@@ -1,4 +1,5 @@
 ﻿@page "/login"
+@page "/login/{redirectUrl}"
 @using RavenNest.Blazor.Services.Models
 @using Microsoft.AspNetCore.WebUtilities
 @inject NavigationManager NavigationManager
@@ -39,6 +40,9 @@
 }
 
 @code {
+
+  [Parameter]
+  public string RedirectUrl { get; set; }
 
   private string message;
   private UserLoginModel loginModel = new UserLoginModel();
@@ -108,7 +112,9 @@
     loginFailed = false;
     userInitiatedLogin = false;
     MainLayout.Instance.UpdateSession();
-    NavigationManager.NavigateTo("/");
+    if (!string.IsNullOrEmpty(RedirectUrl))
+      NavigationManager.NavigateTo(RedirectUrl);
+    else
+      NavigationManager.NavigateTo("/");
   }
-
 }
