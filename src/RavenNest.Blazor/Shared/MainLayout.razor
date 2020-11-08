@@ -2,7 +2,7 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 <div class="page">
   <div class="sidebar">
-    <NavMenu Authenticated="IsAuthenticated"></NavMenu>
+    <NavMenu Authenticated="IsAuthenticated" Administrator="IsAdministrator"></NavMenu>
   </div>
 
   <div class="main">
@@ -40,6 +40,6 @@
     {
       session = AuthService.GetSession();
     }
-
+    private bool IsAdministrator => IsAuthenticated && session.Administrator;
     private bool IsAuthenticated => session != null && session.UserId != null;
 }
