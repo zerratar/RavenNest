@@ -1,36 +1,31 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
 @inject RavenNest.Blazor.Services.AuthService AuthService
 <div class="page">
-  <div class="sidebar">
-    <NavMenu Dashboard="true" />
-  </div>
+  @if (IsAdministrator)
+  {
+    <div class="sidebar">
+      <NavMenu Dashboard="true" Administrator="true" />
+    </div>
 
-  <div class="main">
-    <div class="top-row px-4">
-      @if (IsAuthenticated)
-      {
+    <div class="main">
+      <div class="top-row px-4">
         <NavLink class="nav-link" href="/logout" Match="NavLinkMatch.All">
           <span class="oi oi-account-logout" aria-hidden="true"></span> logout
         </NavLink>
-      }
-      else
-      {
-        <NavLink class="nav-link" href="/login" Match="NavLinkMatch.All">
-          <span class="oi oi-account-login" aria-hidden="true"></span> login
-        </NavLink>
-      }
-    </div>
+      </div>
 
-    <h1>Dashboard ya'll</h1>
+      <h1>Admin panel ya'll</h1>
 
-    <div class="content px-4">
-      @Body
+      <div class="content px-4">
+        @Body
+      </div>
     </div>
-  </div>
+  }
 </div>
 
 @code {
-  public static DashboardLayout Instance { get; private set; }
+  public static AdminLayout Instance { get; private set; }
   private RavenNest.Sessions.SessionInfo session;
   protected override void OnInitialized()
   {
@@ -38,10 +33,19 @@
     session = AuthService.GetSession();
   }
 
+  protected override void OnAfterRender(bool firstRender)
+  {
+    if (!IsAdministrator)
+    {
+      NavigationManager.NavigateTo("/");
+    }
+  }
+
   public void UpdateSession()
   {
     session = AuthService.GetSession();
   }
 
+  private bool IsAdministrator => IsAuthenticated && session.Administrator;
   private bool IsAuthenticated => session != null && session.UserId != null;
 }
