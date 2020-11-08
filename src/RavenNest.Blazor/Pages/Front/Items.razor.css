@@ -2,9 +2,11 @@
     width: 100%;
     border-collapse: collapse;
 }
-.item-stat{
-    margin-right:5px;
+
+.item-stat {
+    margin-right: 5px;
 }
+
 th, td {
     text-align: right;
     padding: 10px 15px;
@@ -23,10 +25,12 @@ table.items-list td:nth-of-type(2) {
 table.items-list tr:nth-of-type(even) {
     background-color: #f6f6f6;
 }
-table.items-list tr:nth-of-type(even).selected,
-.item-row.selected {
-    background-color: aquamarine;
-}
+
+    table.items-list tr:nth-of-type(even).selected,
+    .item-row.selected {
+        background-color: aquamarine;
+    }
+
 table.items-list tr.isMe {
     background-color: #6acc91;
     color: white;
@@ -38,7 +42,8 @@ table.items-list tr.isMe {
 }
 
 .ravenCoins {
-    margin-bottom: -1.5px;
-    height: 100%;
+    margin-bottom: 5.5px;
+    /* height: 100%; */
+    height: 22px;
     margin-right: 1px;
 }
