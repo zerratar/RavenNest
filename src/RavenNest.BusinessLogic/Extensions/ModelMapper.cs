@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Microsoft.Data.SqlClient.Server;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.DataModels;
@@ -26,6 +27,8 @@ namespace RavenNest.BusinessLogic.Extensions
         {
             var session = DataMapper.Map<Models.GameSession, DataModels.GameSession>(data);
             var user = gameData.GetUser(session.UserId);
+            if (user == null)
+                return null;
 
             session.TwitchUserId = user.UserId;
             session.UserName = user.UserName;
@@ -33,6 +36,7 @@ namespace RavenNest.BusinessLogic.Extensions
             session.ModPrivileges = user.IsModerator.GetValueOrDefault();
             session.Players = gameData.GetSessionCharacters(data)
                 .Select(x => Map(gameData, x))
+                .Where(x => x != null)
                 .ToList();
 
             return session;
@@ -42,6 +46,7 @@ namespace RavenNest.BusinessLogic.Extensions
         public static Models.GameSessionPlayer Map(IGameData gameData, DataModels.Character character)
         {
             var user = gameData.GetUser(character.UserId);
+            if (user == null) return null;
             return new GameSessionPlayer
             {
                 TwitchUserId = user.UserId,
@@ -69,6 +74,7 @@ namespace RavenNest.BusinessLogic.Extensions
         {
             if (data == null) return null;
             var user = gameData.GetUser(data.UserId);
+            if (user == null) return null;
             return new Models.Clan()
             {
                 Id = data.Id,
@@ -171,6 +177,9 @@ namespace RavenNest.BusinessLogic.Extensions
             }
 
             var invItems = Map(playItems);
+            if (user == null)
+                return null;
+
             return new Player
             {
                 Id = character.Id,
@@ -224,6 +233,7 @@ namespace RavenNest.BusinessLogic.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PlayerExtended MapExtended(this User user, IGameData gameData, Character character)
         {
+            var items = gameData.GetAllPlayerItems(character.Id).OrderBy(x => gameData.GetItem(x.ItemId).Name).ToList();
             return new PlayerExtended
             {
                 UserName = user.UserName,
@@ -235,7 +245,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 Resources = Map(gameData.GetResources(character.ResourcesId)),
                 Skills = MapExtended(gameData.GetSkills(character.SkillsId)),
                 State = Map(gameData.GetState(character.StateId)),
-                InventoryItems = Map(gameData.GetAllPlayerItems(character.Id)),
+                InventoryItems = Map(items),
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
                 Clan = Map(gameData, gameData.GetClan(character.ClanId.GetValueOrDefault())),
                 OriginUserId = character.OriginUserId,

@@ -307,18 +307,27 @@ namespace RavenNest.BusinessLogic.Game
 
         public PagedSessionCollection GetSessionsPaged(int offset, int size, string sortOrder, string query)
         {
-            var activeSessions = gameData.GetActiveSessions();
-            var lastActiveRange = DateTime.UtcNow.AddMinutes(-30);
-            activeSessions = FilterByQuery(query, activeSessions.Where(x => x.Updated >= lastActiveRange));
-            activeSessions = OrderBy(sortOrder, activeSessions);
-
-            return new PagedSessionCollection()
+            try
             {
-                TotalSize = activeSessions.Count,
-                Items = activeSessions.Skip(offset).Take(size)
-                    .Select(x => ModelMapper.Map(gameData, x))
-                    .ToList()
-            };
+                var activeSessions = gameData.GetActiveSessions();
+                var lastActiveRange = DateTime.UtcNow.AddMinutes(-30);
+                activeSessions = FilterByQuery(query, activeSessions.Where(x => x.Updated >= lastActiveRange));
+                activeSessions = OrderBy(sortOrder, activeSessions);
+
+                return new PagedSessionCollection()
+                {
+                    TotalSize = activeSessions.Count,
+                    Items = activeSessions.Skip(offset).Take(size)
+                        .Select(x => ModelMapper.Map(gameData, x))
+                        .Where(x => x != null)
+                        .ToList()
+                };
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                return null;
+            }
         }
 
         public bool UpdatePlayerSkill(string userId, string skill, decimal experience, string identifier)

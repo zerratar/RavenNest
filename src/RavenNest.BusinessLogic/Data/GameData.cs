@@ -442,8 +442,13 @@ namespace RavenNest.BusinessLogic.Data
         {
             var hasIndex = int.TryParse(identifier, out var index);
             index = index > 0 ? index - 1 : 0;
-            foreach (var c in chars)
+            foreach (var c in chars.OrderBy(x => x.CharacterIndex))
             {
+                if (hasIndex && c.CharacterIndex == index)
+                {
+                    return c;
+                }
+
                 if (!string.IsNullOrEmpty(c.Identifier)
                     && !string.IsNullOrEmpty(identifier)
                     && c.Identifier.Equals(identifier, StringComparison.OrdinalIgnoreCase))
@@ -451,10 +456,6 @@ namespace RavenNest.BusinessLogic.Data
                     return c;
                 }
 
-                if (hasIndex && c.CharacterIndex == index)
-                {
-                    return c;
-                }
                 if (string.IsNullOrEmpty(identifier) && string.IsNullOrEmpty(c.Identifier))
                 {
                     return c;
@@ -554,7 +555,11 @@ namespace RavenNest.BusinessLogic.Data
         public IReadOnlyList<Character> GetSessionCharacters(GameSession currentSession)
         {
             if (currentSession == null) return null;
-            return characters[nameof(GameSession), currentSession.UserId].Where(x => x.LastUsed > currentSession.Started).ToList();
+            return characters[nameof(GameSession), currentSession.UserId]
+                .Where(x => x.LastUsed >= currentSession.Started)
+                .OrderByDescending(x => x.LastUsed)
+                .Where(x => GetUser(x.UserId) != null)
+                .ToList();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

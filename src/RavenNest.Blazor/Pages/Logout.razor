@@ -1,0 +1,17 @@
+﻿@page "/logout"
+@using RavenNest.Blazor.Services.Models
+@using Microsoft.AspNetCore.WebUtilities
+@inject NavigationManager NavigationManager
+@inject RavenNest.Blazor.Services.AuthService AuthService
+
+<p>Logging out... Please wait</p>
+
+@code {
+
+    protected override void OnInitialized()
+    {
+      AuthService.Logout();
+      MainLayout.Instance.UpdateSession();
+      NavigationManager.NavigateTo("/");
+    }
+}
