@@ -1,7 +1,7 @@
 ﻿@inject RavenNest.Blazor.Services.AuthService AuthService
 
 <div class="top-row pl-4 navbar navbar-dark">
-  <a class="navbar-brand" href="">RavenNest.Blazor</a>
+  <a class="navbar-brand" href=""><img src="/imgs/logo.png" /></a>
   <button class="navbar-toggler" @onclick="ToggleNavMenu">
     <span class="navbar-toggler-icon"></span>
   </button>
@@ -13,20 +13,66 @@
     {
       <li class="nav-item px-3">
         <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-          <span class="oi oi-home" aria-hidden="true"></span> Back
+          <span class="oi oi-arrow-left" aria-hidden="true"></span> Back
         </NavLink>
       </li>
+      @if (Admin)
+      {
+        <li class="nav-item px-3">
+          <NavLink class="nav-link" href="/admin" Match="NavLinkMatch.All">
+            <span class="oi oi-dashboard" aria-hidden="true"></span> Overview
+          </NavLink>
+        </li>
+        <li class="nav-item px-3">
+          <NavLink class="nav-link" href="/admin/server" Match="NavLinkMatch.All">
+            <span class="oi oi-people" aria-hidden="true"></span> Server Management
+          </NavLink>
+        </li>
+        <li class="nav-item px-3">
+          <NavLink class="nav-link" href="/admin/players" Match="NavLinkMatch.All">
+            <span class="oi oi-people" aria-hidden="true"></span> Player Management
+          </NavLink>
+        </li>
+        <li class="nav-item px-3">
+          <NavLink class="nav-link" href="/admin/items" Match="NavLinkMatch.All">
+            <span class="oi oi-people" aria-hidden="true"></span> Item Management
+          </NavLink>
+        </li>
+        <li class="nav-item px-3">
+          <NavLink class="nav-link" href="/admin/sessions" Match="NavLinkMatch.All">
+            <span class="oi oi-people" aria-hidden="true"></span> Game Sessions
+          </NavLink>
+        </li>
+      }
+      else
+      {
+        <li class="nav-item px-3">
+          <NavLink class="nav-link" href="/dashboard" Match="NavLinkMatch.All">
+            <span class="oi oi-dashboard" aria-hidden="true"></span> Overview
+          </NavLink>
+        </li>
+        <li class="nav-item px-3">
+          <NavLink class="nav-link" href="/quests" Match="NavLinkMatch.All">
+            <span class="oi oi-badge" aria-hidden="true"></span> Quests
+          </NavLink>
+        </li>
+        <li class="nav-item px-3">
+          <NavLink class="nav-link" href="/achievements" Match="NavLinkMatch.All">
+            <span class="oi oi-star" aria-hidden="true"></span> Achievements
+          </NavLink>
+        </li>
+        <li class="nav-item px-3">
+          <NavLink class="nav-link" href="/characters" Match="NavLinkMatch.All">
+            <span class="oi oi-people" aria-hidden="true"></span> My Characters
+          </NavLink>
+        </li>
+      }
     }
     else
     {
       <li class="nav-item px-3">
         <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
           <span class="oi oi-home" aria-hidden="true"></span> Home
-        </NavLink>
-      </li>
-      <li class="nav-item px-3">
-        <NavLink class="nav-link" href="/highscore" Match="NavLinkMatch.All">
-          <span class="oi oi-bar-chart" aria-hidden="true"></span> Highscore
         </NavLink>
       </li>
       @if (IsAuthenticated)
@@ -45,34 +91,91 @@
           </li>
         }
       }
+      <li class="nav-item px-3">
+        <NavLink class="nav-link" href="/how-to-play" Match="NavLinkMatch.All">
+          <span class="oi oi-info" aria-hidden="true"></span> How to play
+        </NavLink>
+      </li>
+      <li class="nav-item px-3">
+        <NavLink class="nav-link" href="/download" Match="NavLinkMatch.All">
+          <span class="oi oi-cloud-download" aria-hidden="true"></span> Download
+        </NavLink>
+      </li>
+      <li class="nav-item px-3">
+        <NavLink class="nav-link" href="/highscore" Match="NavLinkMatch.All">
+          <span class="oi oi-bar-chart" aria-hidden="true"></span> Highscore
+        </NavLink>
+      </li>
+      <li class="nav-item px-3">
+        <NavLink class="nav-link" href="/marketplace" Match="NavLinkMatch.All">
+          <span class="oi oi-basket" aria-hidden="true"></span> Marketplace
+        </NavLink>
+      </li>
+      <li class="nav-item px-3">
+        <NavLink class="nav-link" href="/items" Match="NavLinkMatch.All">
+          <span class="oi oi-magnifying-glass" aria-hidden="true"></span> Items
+        </NavLink>
+      </li>
+      <li class="nav-item px-3">
+        <NavLink class="nav-link" href="/about" Match="NavLinkMatch.All">
+          <span class="oi oi-info" aria-hidden="true"></span> About
+        </NavLink>
+      </li>
+      <li class="nav-item px-3">
+        <NavLink class="nav-link" href="/team" Match="NavLinkMatch.All">
+          <span class="oi oi-people" aria-hidden="true"></span> The Team
+        </NavLink>
+      </li>
+      <li class="nav-item px-3">
+        <NavLink class="nav-link" href="/credits" Match="NavLinkMatch.All">
+          <span class="oi oi-people" aria-hidden="true"></span> Credits
+        </NavLink>
+      </li>
     }
   </ul>
 </div>
 
 @code {
-    [Parameter]
-    public bool Dashboard { get; set; }
+  /// <summary>
+  /// Whether or not we should display the dashboard menu
+  /// </summary>
+  [Parameter]
+  public bool Dashboard { get; set; }
 
-    [Parameter]
-    public bool Authenticated { get; set; }
+  /// <summary>
+  /// Whether or not the user is authenticated
+  /// </summary>
+  [Parameter]
+  public bool Authenticated { get; set; }
 
-    [Parameter]
-    public bool Administrator { get; set; }
+  /// <summary>
+  /// Whether or not the user is an administrator
+  /// </summary>
+  [Parameter]
+  public bool Administrator { get; set; }
 
-    public static NavMenu Instance { get; private set; }
+  /// <summary>
+  /// Whether or not we should display the admin panel menu
+  /// </summary>
+  [Parameter]
+  public bool Admin { get; set; }
 
-    private bool collapseNavMenu = true;
-    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+  public static NavMenu Instance { get; private set; }
 
-    protected override void OnInitialized()
-    {
-      Instance = this;
-    }
+  private string MenuTitle => Dashboard ? "Dashboard" : "Ravenfall";
 
-    private void ToggleNavMenu()
-    {
-      collapseNavMenu = !collapseNavMenu;
-    }
+  private bool collapseNavMenu = true;
+  private string NavMenuCssClass => collapseNavMenu ? "nav-list collapse" : "nav-list";
 
-    private bool IsAuthenticated => Authenticated;
+  protected override void OnInitialized()
+  {
+    Instance = this;
+  }
+
+  private void ToggleNavMenu()
+  {
+    collapseNavMenu = !collapseNavMenu;
+  }
+
+  private bool IsAuthenticated => Authenticated;
 }
