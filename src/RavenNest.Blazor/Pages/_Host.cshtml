@@ -17,6 +17,17 @@
   <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
   <link href="css/site.css" rel="stylesheet" />
   <link href="RavenNest.Blazor.styles.css" rel="stylesheet" />
+  <script>
+    window.scrollToElementId = (elementId, offset) => {
+      var element = document.getElementById(elementId);
+      if (!element) {
+        return false;
+      }
+      //element.scrollIntoView();
+      window.scroll({ top: (element.offsetTop - offset), left: 0, behavior: 'smooth' });
+      return true;
+    }
+  </script>
 </head>
 <body>
     <component type="typeof(App)" render-mode="ServerPrerendered" />

@@ -1,16 +1,145 @@
 ﻿@page "/items"
+@page "/items/{Id}"
 @using RavenNest.Blazor.Services.Models
 @using Microsoft.AspNetCore.WebUtilities
 @using RavenNest.Blazor.Services
 @inject NavigationManager NavigationManager
 @inject AuthService AuthService
+@inject ItemService ItemService
+@inject IJSRuntime JS;
 
-<h1>Items list coming soon</h1>
+@if (items == null)
+{
+  <LoadIndicator></LoadIndicator>
+}
+else
+{
+  <table class="items-list">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Name</th>
+        <th>Stats</th>
+        <th>Level Req</th>
+        <th>Category</th>
+        <th>Item Type</th>
+        <th>Material Type</th>
+        <th>Crafting Level</th>
+        <th>Vendor Price</th>
+        <th>Crafting Requirements</th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach (var item in items)
+      {
+        <tr id="@item.Id" class="@(Id == item.Id.ToString() ? "item-row selected" : "item-row")">
+          <td><img src="/imgs/items/@(item.Id).png" style="width: 40px" /></td>
+          <td class='item'>@item.Name</td>
+          <td class='item'>
+            @if (item.WeaponAim > 0)
+            {
+              <span class="item-stat" title="Weapon Aim - Increases your hit rate in melee"><i class="fas fa-crosshairs"></i>@item.WeaponAim</span>
+            }
+            @if (item.WeaponPower > 0)
+            {
+              <span class="item-stat" title="Weapon Power - Increases your maximum damage in melee"><i class="fas fa-swords"></i>@item.WeaponPower</span>
+            }
+            @if (item.RangedAim > 0)
+            {
+              <span class="item-stat" title="Ranged Aim - Increases your ranged hit rate"><i class="fas fa-crosshairs"></i>@item.RangedAim</span>
+            }
+            @if (item.RangedPower > 0)
+            {
+              <span class="item-stat" title="Ranged Power - Increases your ranged maximum damage"><i class="fas fa-bow-arrow"></i>@item.RangedPower</span>
+            }
+            @if (item.MagicAim > 0)
+            {
+              <span class="item-stat" title="Magic Aim - Increases your magic hit rate">
+                <i class="fas fa-wand"></i>@item.MagicAim
+              </span>
+            }
+            @if (item.MagicPower > 0)
+            {
+              <span class="item-stat" title="Magic Power - Increases your magic maximum damage">
+                <i class="fas fa-hand-holding-magic"></i>
+                @item.MagicPower
+              </span>
+            }
+            @if (item.ArmorPower > 0)
+            {
+              <span class="item-stat" title="Armor Power - Decreases the hit rate of your attacker"><i class="fas fa-shield"></i>@item.ArmorPower</span>
+            }
+          </td>
+          <td class='item'>
+            @if (item.RequiredAttackLevel > 0)
+            {
+              <span class="item-stat" title="Required Attack Level">
+                <i class="fas fa-swords"></i>
+                @item.RequiredAttackLevel
+              </span>
+            }
+            @if (item.RequiredDefenseLevel > 0)
+            {
+              <span class="item-stat" title="Required Defense Level">
+                <i class="fas fa-shield"></i>
+                @item.RequiredDefenseLevel
+              </span>
+            }
+            @if (item.RequiredMagicLevel > 0)
+            {
+              <span class="item-stat" title="Required Magic Level">
+                <i class="fas fa-hand-holding-magic"></i>
+                @item.RequiredMagicLevel
+              </span>
+            }
+            @if (item.RequiredRangedLevel > 0)
+            {
+              <span class="item-stat" title="Required Ranged Level">
+                <i class="fas fa-bow-arrow"></i>
+                @item.RequiredRangedLevel
+              </span>
+            }
+          </td>
+          <td class='item'>@item.Category</td>
+          <td class='item'>@item.Type</td>
+          <td class='item'>@item.Material</td>
+          <td class='item'>@item.RequiredCraftingLevel</td>
+          <td class='item'><img class="ravenCoins" src="/favicon.ico" />@item.ShopSellPrice</td>
+          <td class='item'>
+            @foreach (var req in item.CraftingRequirements)
+            {
+              var reqItem = items.First(x => x.Id == req.ResourceItemId);
+              <span><a href="/items/@reqItem.Id">@(reqItem.Name)</a> x@(req.Amount)&nbsp;</span>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
 
 @code {
+  [Parameter]
+  public string Id { get; set; }
 
-    protected override void OnInitialized()
-    {
-    }
-
+  private RavenNest.Models.ItemCollection items;
+  protected override void OnInitialized()
+  {
+    LoadItems();
+  }
+  protected override void OnAfterRender(bool firstRender)
+  {
+    base.OnAfterRender(firstRender);
+    if (!string.IsNullOrEmpty(Id))
+      ScrollToElementId(Id);
+  }
+  private async void LoadItems()
+  {
+    items = await ItemService.GetItemsAsync();
+    StateHasChanged();
+  }
+  private async void ScrollToElementId(string elementId)
+  {
+    await JS.InvokeAsync<bool>("scrollToElementId", new object[] { elementId, 5 });
+  }
 }
