@@ -1,6 +1,7 @@
 ﻿@layout DashboardLayout
 @page "/dashboard"
-@inject RavenNest.Blazor.Services.AuthService  AuthService
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject NavigationManager NavigationManager
 
 @if (session.UserId == null)
 {
@@ -17,5 +18,14 @@ else
   protected override void OnInitialized()
   {
     session = AuthService.GetSession();
+
+  }
+
+  protected override void OnAfterRender(bool firstRender)
+  {
+    if (session.UserId == null)
+    {
+      NavigationManager.NavigateTo("/login");
+    }
   }
 }
