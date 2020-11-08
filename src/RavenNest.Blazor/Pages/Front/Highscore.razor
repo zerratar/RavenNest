@@ -1,0 +1,53 @@
+﻿@page "/highscore"
+@using RavenNest.Blazor.Services.Models
+@using Microsoft.AspNetCore.WebUtilities
+@using RavenNest.Blazor.Services
+@inject NavigationManager NavigationManager
+@inject HighscoreService HighscoreService
+@inject AuthService AuthService
+
+@if (highscores == null)
+{
+  <h2>Loading highscores...</h2>
+  <LoadIndicator></LoadIndicator>
+}
+else
+{
+  <h2>Top 100 players, all skills</h2>
+  <table class="highscore-list">
+    <thead>
+      <tr>
+        <th>Rank</th>
+        <th>Player</th>
+        <th>Level</th>
+        <th>Experience</th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach (var item in highscores.Players)
+      {
+        <tr>
+          <td class='player-rank'>@item.Rank</td>
+          <td class='player-name'>@item.PlayerName<span class='player-character-index' alt='Character Number'>#@item.CharacterIndex</span></td>
+          <td class='player-level'>@item.Level</td>
+          <td class='player-experience'>@item.Experience</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+
+@code {
+    private Models.HighScoreCollection highscores;
+
+    protected override void OnInitialized()
+    {
+      LoadHighscoreAsync();
+    }
+
+    private async Task LoadHighscoreAsync()
+    {
+      highscores = await HighscoreService.GetHighscoreAsync(0, 100);
+      StateHasChanged();
+    }
+}

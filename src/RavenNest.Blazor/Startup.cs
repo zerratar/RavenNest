@@ -176,6 +176,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<WeatherForecastService>();
 
             services.AddSingleton<AuthService>();
+            services.AddSingleton<HighscoreService>();
 
 
             services.AddSingleton<IKernel, Kernel>();

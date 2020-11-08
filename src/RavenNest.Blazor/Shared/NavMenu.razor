@@ -1,27 +1,67 @@
-﻿<div class="top-row pl-4 navbar navbar-dark">
-    <a class="navbar-brand" href="">RavenNest.Blazor</a>
-    <button class="navbar-toggler" @onclick="ToggleNavMenu">
-        <span class="navbar-toggler-icon"></span>
-    </button>
+﻿@inject RavenNest.Blazor.Services.AuthService AuthService
+
+<div class="top-row pl-4 navbar navbar-dark">
+  <a class="navbar-brand" href="">RavenNest.Blazor</a>
+  <button class="navbar-toggler" @onclick="ToggleNavMenu">
+    <span class="navbar-toggler-icon"></span>
+  </button>
 </div>
 
 <div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
-    <ul class="nav flex-column">
+  <ul class="nav flex-column">
+    @if (Dashboard)
+    {
+      <li class="nav-item px-3">
+        <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+          <span class="oi oi-home" aria-hidden="true"></span> Back
+        </NavLink>
+      </li>
+    }
+    else
+    {
+      <li class="nav-item px-3">
+        <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+          <span class="oi oi-home" aria-hidden="true"></span> Home
+        </NavLink>
+      </li>
+      <li class="nav-item px-3">
+        <NavLink class="nav-link" href="/highscore" Match="NavLinkMatch.All">
+          <span class="oi oi-bar-chart" aria-hidden="true"></span> Highscore
+        </NavLink>
+      </li>
+      @if (IsAuthenticated)
+      {
         <li class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
-            </NavLink>
+          <NavLink class="nav-link" href="/dashboard" Match="NavLinkMatch.All">
+            <span class="oi oi-dashboard" aria-hidden="true"></span> Dashboard
+          </NavLink>
         </li>
-    </ul>
+      }
+    }
+  </ul>
 </div>
 
 @code {
-    private bool collapseNavMenu = true;
+  [Parameter]
+  public bool Dashboard { get; set; }
 
-    private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+  [Parameter]
+  public bool Authenticated { get; set; }
 
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
+  public static NavMenu Instance { get; private set; }
+
+  private bool collapseNavMenu = true;
+  private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+  protected override void OnInitialized()
+  {
+    Instance = this;
+  }
+
+  private void ToggleNavMenu()
+  {
+    collapseNavMenu = !collapseNavMenu;
+  }
+
+  private bool IsAuthenticated => Authenticated;
 }

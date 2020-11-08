@@ -28,9 +28,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RavenNest.Tools", "src\tool
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{4B6B7254-0011-4E8D-B51D-24AE557028D2}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RavenNest.Blazor", "src\RavenNest.Blazor\RavenNest.Blazor.csproj", "{677D1722-8E65-468E-B37F-74142D144581}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RavenNest.Blazor", "src\RavenNest.Blazor\RavenNest.Blazor.csproj", "{677D1722-8E65-468E-B37F-74142D144581}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RavenNest.Blazor.Services", "src\RavenNest.Blazor.Services\RavenNest.Blazor.Services.csproj", "{F82556D9-E183-45B6-ADD2-4621E37B69A4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RavenNest.Blazor.Services", "src\RavenNest.Blazor.Services\RavenNest.Blazor.Services.csproj", "{F82556D9-E183-45B6-ADD2-4621E37B69A4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

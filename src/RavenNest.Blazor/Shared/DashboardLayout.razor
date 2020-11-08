@@ -2,7 +2,7 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 <div class="page">
   <div class="sidebar">
-    <NavMenu />
+    <NavMenu Dashboard="true" />
   </div>
 
   <div class="main">
@@ -30,18 +30,18 @@
 </div>
 
 @code {
-  public static DashboardLayout Instance { get; private set; }
-  private RavenNest.Sessions.SessionInfo session;
-  protected override void OnInitialized()
-  {
-    Instance = this;
-    session = AuthService.GetSession();
-  }
+    public static DashboardLayout Instance { get; private set; }
+    private RavenNest.Sessions.SessionInfo session;
+    protected override void OnInitialized()
+    {
+      Instance = this;
+      session = AuthService.GetSession();
+    }
 
-  public void UpdateSession()
-  {
-    session = AuthService.GetSession();
-  }
+    public void UpdateSession()
+    {
+      session = AuthService.GetSession();
+    }
 
-  private bool IsAuthenticated => session != null && session.UserId != null;
+    private bool IsAuthenticated => session != null && session.UserId != null;
 }
