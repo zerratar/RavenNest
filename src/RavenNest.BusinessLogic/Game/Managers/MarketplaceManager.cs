@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using RavenNest.Models;
@@ -9,15 +10,18 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class MarketplaceManager : IMarketplaceManager
     {
+        private readonly ILogger<MarketplaceManager> logger;
         private readonly IPlayerManager playerManager;
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly IGameData gameData;
 
         public MarketplaceManager(
+            ILogger<MarketplaceManager> logger,
             IPlayerManager playerManager,
             IPlayerInventoryProvider inventoryProvider,
             IGameData gameData)
         {
+            this.logger = logger;
             this.playerManager = playerManager;
             this.inventoryProvider = inventoryProvider;
             this.gameData = gameData;
@@ -25,23 +29,34 @@ namespace RavenNest.BusinessLogic.Game
 
         public MarketItemCollection GetItems(int offset, int size)
         {
-            var collection = new MarketItemCollection();
-            var marketItemCount = gameData.GetMarketItemCount();
-            var items = gameData.GetMarketItems(offset, size);
+            try
+            {
+                var collection = new MarketItemCollection();
+                var marketItemCount = gameData.GetMarketItemCount();
+                var items = gameData.GetMarketItems(offset, size);
 
-            collection.Offset = offset;
-            collection.Total = marketItemCount;
-            collection.AddRange(
-                items.Select(x =>
-                {
-                    var character = gameData.GetCharacter(x.SellerCharacterId);
-                    var user = gameData.GetUser(character.UserId);
-                    var item = DataMapper.Map<Models.MarketItem, DataModels.MarketItem>(x);
-                    item.SellerUserId = user.UserId;
-                    return item;
-                }));
+                collection.Offset = offset;
+                collection.Total = marketItemCount;
+                collection.AddRange(
+                    items.Select(x =>
+                    {
+                        var character = gameData.GetCharacter(x.SellerCharacterId);
+                        if (character == null) return null;
+                        var user = gameData.GetUser(character.UserId);
+                        if (user == null) return null;
+                        var item = DataMapper.Map<Models.MarketItem, DataModels.MarketItem>(x);
+                        item.SellerUserId = user.UserId;
+                        return item;
+                    })
+                    .Where(x => x != null));
 
-            return collection;
+                return collection;
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                return null;
+            }
         }
 
         public ItemSellResult SellItem(

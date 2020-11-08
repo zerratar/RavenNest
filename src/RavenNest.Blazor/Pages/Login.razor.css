@@ -1,0 +1,129 @@
+﻿.input-row {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-flow: column;
+    flex-flow: column;
+    max-width: 100%;
+    width: 410px;
+    left: 50%;
+    -webkit-transform: translate(-50%);
+    transform: translate(-50%);
+    position: relative;
+}
+
+label {
+    text-align: left;
+    font-size: 12pt;
+    font-weight: 600;
+    padding: 5px 0;
+}
+
+input#inputPassword,
+input#inputUsername {
+    padding: 16px 35px;
+    font-size: 13pt;
+    border: 1px solid #cecccc;
+    MARGIN-BOTTOM: 10px;
+    background-color: transparent;
+    width: 100%;
+    display: inline-block;
+    box-sizing: border-box;
+}
+
+input#inputUsername {
+    margin-top: 20px;
+}
+
+.content > .login {
+    margin-top: 162px;
+    flex-grow: 1;
+    padding-bottom: 40px;
+}
+
+.login-title {
+}
+
+.login-subtitle {
+    font-size: 18pt;
+    font-weight: 500;
+    max-width: 100%;
+    width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+button.login-button {
+    font-size: 12pt;
+    font-weight: 300;
+    background: none;
+    border: 0;
+    background-color: #2a93d2;
+    color: white;
+    padding: 15px 25px;
+    width: 350px;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    cursor: pointer;
+    user-select: none;
+    margin-top: 10px;
+    margin-bottom: 30px;
+}
+
+    button.login-button:active {
+        /* border:1px solid #0a5585; */
+        background-color: #0a5585;
+    }
+
+.login.seperator {
+    display: block;
+    background: url(/assets/imgs/line.png) 0 50% no-repeat;
+    text-align: center;
+}
+
+.seperator.text {
+    display: inline-block;
+    padding: 0 12px;
+    font-weight: bold;
+    font-size: 17px;
+    background: white;
+    vertical-align: top;
+}
+
+.login.twitch {
+    PADDING: 15PX 25px;
+    color: white;
+    background-color: #6441a3;
+    cursor: pointer;
+    user-select: none;
+    margin-top: 25px;
+}
+
+    .login.twitch:active {
+        background-color: #3a2464;
+    }
+
+.bad-login-result {
+    color: #e84118;
+    margin-bottom: 25px;
+}
+
+    .bad-login-result:empty {
+        margin-bottom: 0;
+    }
+
+.input-icon {
+    position: absolute;
+    z-index: 10;
+    margin-left: 13px;
+    margin-top: 15px;
+    color: #c7c7c7;
+}
+
+    .input-icon.user {
+        margin-top: 36px;
+    }

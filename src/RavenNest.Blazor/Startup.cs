@@ -1,29 +1,31 @@
-﻿using System;
-using System.Reflection;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.ResponseCompression;
-using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using RavenNest.Blazor.Data;
+using RavenNest.Blazor.Services;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
-using RavenNest.BusinessLogic.Docs;
-using RavenNest.BusinessLogic.Docs.Html;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Serializers;
 using RavenNest.Health;
 using RavenNest.Sessions;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
-namespace RavenNest
+namespace RavenNest.Blazor
 {
     public class Startup
     {
@@ -35,6 +37,7 @@ namespace RavenNest
         public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
+        // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
             var appSettingsSection = Configuration.GetSection("AppSettings");
@@ -62,16 +65,16 @@ namespace RavenNest
                 options.Cookie.IsEssential = true;
             });
 
+
+            services.AddRazorPages();
+            services.AddServerSideBlazor();
+            services.AddHttpContextAccessor();
+
             RegisterServices(services);
 
-            services.AddMvc().AddJsonOptions(options =>
-            {
-                options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
-                options.JsonSerializerOptions.IgnoreNullValues = true;
-            }).SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
 
             services.Configure<GzipCompressionProviderOptions>(options =>
-                options.Level = System.IO.Compression.CompressionLevel.Optimal);
+              options.Level = System.IO.Compression.CompressionLevel.Optimal);
 
             services.AddResponseCompression(options =>
             {
@@ -81,11 +84,13 @@ namespace RavenNest
             services.AddRavenNestHealthChecks(Configuration.GetSection("AppSettings"));
         }
 
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostApplicationLifetime applicationLifetime, IWebHostEnvironment env)
         {
             applicationLifetime.ApplicationStopping.Register(() => app.ApplicationServices.GetService<IGameData>().Flush());
 
             app.AddRequestTiming();
+            app.AddSessionCookies();
 
             app.UseCors(builder =>
                 builder
@@ -93,11 +98,21 @@ namespace RavenNest
                     .AllowAnyMethod()
                     .AllowAnyOrigin());
 
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            else
+            {
+                app.UseExceptionHandler("/Error");
+                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+                app.UseHsts();
+            }
+
             app.UseResponseCompression();
             app.UseSession();
-            app.UseDefaultFiles();
+            app.UseHttpsRedirection();
             app.UseStaticFiles();
-
             app.Map("/download/latest", builder =>
             {
                 builder.Run(async context =>
@@ -117,7 +132,7 @@ namespace RavenNest
                     context.Response.ContentType = "text/javascript";
                     var service = app.ApplicationServices.GetService<ISessionInfoProvider>();
 
-                    service.TryGet(context.Session, out sessionInfo);
+                    service.TryGet(context.GetSessionId(), out sessionInfo);
                     context.Response.Headers.Add("Cache-Control", "no-cache, no-store");
                     context.Response.Headers.Add("Expires", "-1");
 
@@ -131,13 +146,14 @@ namespace RavenNest
                 KeepAliveInterval = TimeSpan.FromSeconds(120),
                 ReceiveBufferSize = 4096
             });
-
             app.UseRouting();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapRavenNestHealthChecks();
+                endpoints.MapBlazorHub();
                 endpoints.MapControllers();
-                endpoints.MapFallbackToController("Index", "Home");
+                endpoints.MapFallbackToPage("/_Host");
             });
 
             app.MapWhen(x => !x.WebSockets.IsWebSocketRequest && !x.Request.Path.Value.StartsWith("/api"), builder =>
@@ -152,36 +168,16 @@ namespace RavenNest
                     endpoints.MapFallbackToController("Index", "Home");
                 });
             });
-
-            TryGenerateDocumentation(env);
-        }
-
-        private static void TryGenerateDocumentation(IWebHostEnvironment env)
-        {
-            try
-            {
-                var docGenerator = new DocumentGenerator();
-                var settings = new DefaultGeneratorSettings
-                {
-                    OutputFolder = System.IO.Path.Combine(env.WebRootPath, "docs"),
-                    Assembly = Assembly.GetExecutingAssembly()
-                };
-
-                var apiDocument = docGenerator.Generate(new DefaultDocumentSettings
-                {
-                    Name = "RavenNest API Documentation",
-                    Version = "v1.0"
-                }, settings);
-
-                var processor = new HtmlDocumentProcessor();
-
-                processor.ProcessAsync(settings, apiDocument).Wait();
-            }
-            catch { }
         }
 
         private static void RegisterServices(IServiceCollection services)
         {
+            // keep this one for now... LUL
+            services.AddSingleton<WeatherForecastService>();
+
+            services.AddSingleton<AuthService>();
+
+
             services.AddSingleton<IKernel, Kernel>();
             services.AddSingleton<IMemoryCache, MemoryCache>();
             services.AddSingleton<ISecureHasher, SecureHasher>();

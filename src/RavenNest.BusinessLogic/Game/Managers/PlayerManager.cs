@@ -957,19 +957,19 @@ namespace RavenNest.BusinessLogic.Game
             var hasIndex = int.TryParse(identifier, out var index);
             index = index > 0 ? index - 1 : 0;
 
-            foreach (var c in userCharacters)
+            foreach (var c in userCharacters.OrderBy(x => x.CharacterIndex))
             {
                 if (identifier == null)
                 {
                     return c.Map(gameData, user);
                 }
 
-                if (c.Identifier != null && c.Identifier.Equals(identifier, StringComparison.OrdinalIgnoreCase))
+                if (hasIndex && index == c.CharacterIndex)
                 {
                     return c.Map(gameData, user);
                 }
 
-                if (hasIndex && index == c.CharacterIndex)
+                if (c.Identifier != null && c.Identifier.Equals(identifier, StringComparison.OrdinalIgnoreCase))
                 {
                     return c.Map(gameData, user);
                 }

@@ -1,0 +1,45 @@
+﻿@inherits LayoutComponentBase
+@inject RavenNest.Blazor.Services.AuthService AuthService
+<div class="page">
+  <div class="sidebar">
+    <NavMenu />
+  </div>
+
+  <div class="main">
+    <div class="top-row px-4">
+      @if (IsAuthenticated)
+      {
+        <NavLink class="nav-link" href="/logout" Match="NavLinkMatch.All">
+          <span class="oi oi-account-logout" aria-hidden="true"></span> logout
+        </NavLink>
+      }
+      else
+      {
+        <NavLink class="nav-link" href="/login" Match="NavLinkMatch.All">
+          <span class="oi oi-account-login" aria-hidden="true"></span> login
+        </NavLink>
+      }
+    </div>
+
+    <div class="content px-4">
+      @Body
+    </div>
+  </div>
+</div>
+
+@code {
+  public static MainLayout Instance { get; private set; }
+  private RavenNest.Sessions.SessionInfo session;
+  protected override void OnInitialized()
+  {
+    Instance = this;
+    session = AuthService.GetSession();
+  }
+
+  public void UpdateSession()
+  {
+    session = AuthService.GetSession();
+  }
+
+  private bool IsAuthenticated => session != null && session.UserId != null;
+}
