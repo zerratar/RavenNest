@@ -177,7 +177,7 @@ namespace RavenNest.Blazor
 
             services.AddSingleton<AuthService>();
             services.AddSingleton<HighscoreService>();
-
+            services.AddSingleton<ItemService>();
 
             services.AddSingleton<IKernel, Kernel>();
             services.AddSingleton<IMemoryCache, MemoryCache>();
