@@ -5,6 +5,7 @@
 
 .item-stat {
     margin-right: 5px;
+    white-space: nowrap;
 }
 
 th, td {
