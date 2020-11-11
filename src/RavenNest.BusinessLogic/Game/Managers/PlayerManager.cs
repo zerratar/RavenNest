@@ -94,6 +94,20 @@ namespace RavenNest.BusinessLogic.Game
                 user.DisplayName = userName;
             }
 
+            if (user.Status.GetValueOrDefault() == (int)AccountStatus.TemporarilySuspended)
+            {
+                result.Success = false;
+                result.ErrorMessage = "You have been temporarily suspended from playing. Contact the staff for more information.";
+                return result;
+            }
+
+            if (user.Status.GetValueOrDefault() == (int)AccountStatus.PermanentlySuspended)
+            {
+                result.Success = false;
+                result.ErrorMessage = "You have been permanently suspended from playing. Contact the staff for more information.";
+                return result;
+            }
+
             var character = gameData.GetCharacterByUserId(user.Id, identifier);
             if (character == null)
             {

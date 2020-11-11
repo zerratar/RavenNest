@@ -20,6 +20,7 @@ namespace RavenNest.DataModels
         private bool? isAdmin; public bool? IsAdmin { get => isAdmin; set => Set(ref isAdmin, value); }
         private bool? isModerator; public bool? IsModerator { get => isModerator; set => Set(ref isModerator, value); }
         private int? patreonTier; public int? PatreonTier { get => patreonTier; set => Set(ref patreonTier, value); }
+        private int? status; public int? Status { get => status; set => Set(ref status, value); }
         private DateTime created; public DateTime Created { get => created; set => Set(ref created, value); }
     }
 }
