@@ -108,6 +108,28 @@ namespace RavenNest.BusinessLogic.Game
             return result;
         }
 
+        public void SendExpMultiplier(DataModels.GameSession session)
+        {
+            var activeEvent = gameData.GetActiveExpMultiplierEvent();
+            if (activeEvent == null)
+                return;
+
+            var expEvent = gameData.CreateSessionEvent(
+               GameEventType.ExpMultiplier,
+               session,
+               new ExpMultiplier
+               {
+                   EndTime = activeEvent.EndTime,
+                   EventName = activeEvent.EventName,
+                   Multiplier = activeEvent.Multiplier,
+                   StartTime = activeEvent.StartTime
+               }
+           );
+
+            gameData.Add(expEvent);
+        }
+
+
         public void SendVillageInfo(DataModels.GameSession newGameSession)
         {
             var village = gameData.GetOrCreateVillageBySession(newGameSession);
