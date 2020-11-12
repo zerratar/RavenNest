@@ -19,5 +19,6 @@ namespace RavenNest.BusinessLogic.Game
         void EndSession(SessionToken token);
         bool EndSessionAndRaid(SessionToken token, string userIdOrUsername, bool isWarRaid);
         bool AttachPlayersToSession(SessionToken session, Guid[] characterIds);
+        void SendExpMultiplier(DataModels.GameSession session);
     }
 }

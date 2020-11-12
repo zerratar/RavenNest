@@ -25,12 +25,15 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private readonly ISessionManager sessionManager;
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly SessionToken sessionToken;
+        
+        private readonly TimeSpan ExpMultiplierPushInterval = TimeSpan.FromSeconds(10);
         private readonly TimeSpan villageInfoPushInterval = TimeSpan.FromSeconds(5);
         private readonly TimeSpan permissionInfoPushInterval = TimeSpan.FromSeconds(60);
 
         private int gameRevision = 0;
         private DateTime lastVillageInfoPush;
         private DateTime lastPermissionInfoPush;
+        private DateTime lastExpMultiPush;
 
         public GameProcessor(
             IIntegrityChecker integrityChecker,
@@ -69,6 +72,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             {
                 await sessionManager.SendPermissionDataAsync(session);
                 sessionManager.SendVillageInfo(session);
+                sessionManager.SendExpMultiplier(session);
             }
         }
 
@@ -77,6 +81,8 @@ namespace RavenNest.BusinessLogic.Game.Processors
             UpdateSessionTasks();
 
             PushVillageInfo();
+
+            PushExpMultiplier();
 
             await PushGameEventsAsync(cts);
 
@@ -93,6 +99,20 @@ namespace RavenNest.BusinessLogic.Game.Processors
                 {
                     lastVillageInfoPush = DateTime.UtcNow;
                     sessionManager.SendVillageInfo(session);
+                }
+            }
+        }
+
+        private void PushExpMultiplier()
+        {
+            var session = gameData.GetSession(sessionToken.SessionId);
+            if (session != null)
+            {
+                var elapsed = DateTime.UtcNow - lastExpMultiPush;
+                if (elapsed >= ExpMultiplierPushInterval)
+                {
+                    lastExpMultiPush = DateTime.UtcNow;
+                    sessionManager.SendExpMultiplier(session);
                 }
             }
         }

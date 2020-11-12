@@ -4,6 +4,7 @@ using System;
 
 namespace RavenNest.UnitTests
 {
+
     [TestClass]
     public class ExtendedSkillsTest
     {

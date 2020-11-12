@@ -110,16 +110,18 @@ namespace RavenNest.Controllers
                 {
                     var data = sr.ReadToEnd();
 
-                    try
-                    {
-                        var filename = caller ?? "patreon";
+                    //try
+                    //{
+                    //    var filename = caller ?? "patreon";
 
-                        System.IO.File.WriteAllText(filename + ".json", data);
-                    }
-                    catch (Exception exc)
-                    {
-                        logger.LogError(exc.ToString());
-                    }
+                    //    System.IO.File.WriteAllText(filename + ".json", data);
+                    //}
+                    //catch (Exception exc)
+                    //{
+                    //    logger.LogError(exc.ToString());
+                    //}
+
+                    logger.LogError(data);
 
                     return JsonConvert.DeserializeObject<PatreonWebhook>(data);
                 }

@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.DataModels;
-using RavenNest.Models;
 
 namespace RavenNest.BusinessLogic.Data
 {
@@ -60,6 +59,8 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(Guid itemId, string tag = null);
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(int skip, int take);
         IReadOnlyList<DataModels.GameEvent> GetSessionEvents(Guid sessionId);
+        ExpMultiplierEvent GetActiveExpMultiplierEvent();
+
         /// <summary>
         /// Gets all player items, this includes both equipped and items in the inventory.
         /// </summary>
@@ -83,6 +84,7 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Add
 
+        void Add(ExpMultiplierEvent ev);
         void Add(CharacterSessionActivity ev);
         void Add(DataModels.Item entity);
         void Add(DataModels.ItemCraftingRequirement entity);

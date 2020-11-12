@@ -16,7 +16,7 @@ namespace RavenNest.BusinessLogic.Data
             : base(options)
         {
         }
-
+        public virtual DbSet<ExpMultiplierEvent> ExpMultiplierEvent { get; set; }
         public virtual DbSet<Appearance> Appearance { get; set; }
         public virtual DbSet<SyntyAppearance> SyntyAppearance { get; set; }
         public virtual DbSet<Character> Character { get; set; }
@@ -56,6 +56,9 @@ namespace RavenNest.BusinessLogic.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<ExpMultiplierEvent>(entity => 
+                entity.Property(e => e.Id).ValueGeneratedNever());
+
             modelBuilder.Entity<CharacterSessionActivity>(entity =>
                 entity.Property(e => e.Id).ValueGeneratedNever());
 

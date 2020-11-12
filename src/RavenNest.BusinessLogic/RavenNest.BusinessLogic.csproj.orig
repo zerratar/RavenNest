@@ -1,0 +1,34 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <LangVersion>7.1</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+<<<<<<< HEAD
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="3.1.9" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="5.0.0" />
+=======
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="3.1.9" />
+>>>>>>> origin/dependabot/nuget/master/Microsoft.EntityFrameworkCore-5.0.0
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="5.0.0" />
+	<PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="5.0.0" />
+	<PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+	<PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
+	<PackageReference Include="TwitchLib.Api" Version="3.1.4-CI-20201109-24" />
+	<PackageReference Include="TwitchLib.Api.Helix" Version="3.1.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RavenNest.DataModels\RavenNest.DataModels.csproj" />
+    <ProjectReference Include="..\RavenNest.Models\RavenNest.Models.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Game\Achievements\" />
+    <Folder Include="Game\Quests\" />
+  </ItemGroup>
+
+</Project>

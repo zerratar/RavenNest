@@ -34,6 +34,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<Character, Guid> characters;
         private readonly EntitySet<CharacterState, Guid> characterStates;
         private readonly EntitySet<GameSession, Guid> gameSessions;
+        private readonly EntitySet<ExpMultiplierEvent, Guid> expMultiplierEvents;
         private readonly EntitySet<GameEvent, Guid> gameEvents;
         private readonly EntitySet<InventoryItem, Guid> inventoryItems;
         private readonly EntitySet<MarketItem, Guid> marketItems;
@@ -111,6 +112,9 @@ namespace RavenNest.BusinessLogic.Data
                     characterSessionActivities.RegisterLookupGroup(nameof(GameSession), x => x.SessionId);
                     characterSessionActivities.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
                     characterSessionActivities.RegisterLookupGroup(nameof(User), x => x.UserId);
+
+                    expMultiplierEvents = new EntitySet<ExpMultiplierEvent, Guid>(
+                        ctx.ExpMultiplierEvent.ToList(), i => i.Id);
 
                     appearances = new EntitySet<Appearance, Guid>(
                         restorePoint?.Get<Appearance>() ??
@@ -205,6 +209,7 @@ namespace RavenNest.BusinessLogic.Data
 
                     entitySets = new IEntitySet[]
                     {
+                        expMultiplierEvents,
                         appearances, syntyAppearances, characters, characterStates,
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems,
                         resources, statistics, skills, users, villages, villageHouses, clans,
@@ -269,6 +274,8 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         public GameClient Client { get; private set; }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(ExpMultiplierEvent ev) => Update(() => expMultiplierEvents.Add(ev));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(CharacterSessionActivity ev) => Update(() => characterSessionActivities.Add(ev));
@@ -561,6 +568,13 @@ namespace RavenNest.BusinessLogic.Data
                 .Where(x => GetUser(x.UserId) != null)
                 .ToList();
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ExpMultiplierEvent GetActiveExpMultiplierEvent() =>
+            this.expMultiplierEvents.Entities
+            .Where(x => x.StartTime <= DateTime.UtcNow && x.EndTime >= DateTime.UtcNow)
+            .OrderByDescending(x => x.Multiplier)
+            .FirstOrDefault();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<GameEvent> GetSessionEvents(GameSession gameSession) =>
@@ -996,7 +1010,6 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ICollection<EntityChangeSet> JoinChangeSets(params ICollection<EntityChangeSet>[] changesets) =>
             changesets.SelectMany(x => x).OrderBy(x => x.LastModified).ToList();
-
     }
 
     public class DataSaveError
