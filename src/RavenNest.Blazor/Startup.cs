@@ -196,6 +196,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<IServerManager, ServerManager>();
             services.AddSingleton<IGamePacketManager, GamePacketManager>();
             services.AddSingleton<IVillageManager, VillageManager>();
+            services.AddSingleton<IPatreonManager, PatreonManager>();
 
             services.AddSingleton<IQueryBuilder, QueryBuilder>();
             services.AddSingleton<IItemResolver, ItemResolver>();

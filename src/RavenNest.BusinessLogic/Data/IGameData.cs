@@ -27,6 +27,8 @@ namespace RavenNest.BusinessLogic.Data
         /// <returns></returns>
         IReadOnlyList<DataModels.InventoryItem> FindPlayerItems(Guid characterId, Func<DataModels.InventoryItem, bool> predicate);
         DataModels.InventoryItem FindPlayerItem(Guid characterId, Func<DataModels.InventoryItem, bool> predicate);
+        UserPatreon GetPatreonUser(long patreonId);
+        UserPatreon GetPatreonUser(Guid userId);
         DataModels.GameSession GetSessionByUserId(string userId);
 
         #endregion
@@ -84,6 +86,7 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Add
 
+        void Add(UserPatreon pat);
         void Add(ExpMultiplierEvent ev);
         void Add(CharacterSessionActivity ev);
         void Add(DataModels.Item entity);
