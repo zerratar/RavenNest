@@ -462,13 +462,16 @@ namespace RavenNest.BusinessLogic.Data
         {
             var hasIndex = int.TryParse(identifier, out var index);
             index = index > 0 ? index - 1 : 0;
+
+            if (hasIndex)
+            {
+                var c1 = chars.FirstOrDefault(x => x.CharacterIndex == index);
+                if (c1 != null)
+                    return c1;
+            }
+
             foreach (var c in chars.OrderBy(x => x.CharacterIndex))
             {
-                if (hasIndex && c.CharacterIndex == index)
-                {
-                    return c;
-                }
-
                 if (!string.IsNullOrEmpty(c.Identifier)
                     && !string.IsNullOrEmpty(identifier)
                     && c.Identifier.Equals(identifier, StringComparison.OrdinalIgnoreCase))

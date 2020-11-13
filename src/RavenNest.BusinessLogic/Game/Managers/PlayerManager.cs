@@ -967,28 +967,10 @@ namespace RavenNest.BusinessLogic.Game
 
         private Player GetPlayerByUser(User user, string identifier)
         {
-            var userCharacters = gameData.GetCharacters(x => x.UserId == user.Id);
-            var hasIndex = int.TryParse(identifier, out var index);
-            index = index > 0 ? index - 1 : 0;
+            var character = gameData.GetCharacterByUserId(user.Id, identifier);
+            if (character != null)
+                return character.Map(gameData, user);
 
-            foreach (var c in userCharacters.OrderBy(x => x.CharacterIndex))
-            {
-                if (identifier == null)
-                {
-                    return c.Map(gameData, user);
-                }
-
-                if (hasIndex && index == c.CharacterIndex)
-                {
-                    return c.Map(gameData, user);
-                }
-
-                if (c.Identifier != null && c.Identifier.Equals(identifier, StringComparison.OrdinalIgnoreCase))
-                {
-                    return c.Map(gameData, user);
-                }
-            }
-            //var character = gameData.FindCharacter(x => x.UserId == user.Id);
             return null;
         }
 
