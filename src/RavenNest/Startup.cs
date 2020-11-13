@@ -198,6 +198,7 @@ namespace RavenNest
             services.AddSingleton<IHighScoreManager, HighScoreManager>();
             services.AddSingleton<IServerManager, ServerManager>();
             services.AddSingleton<IGamePacketManager, GamePacketManager>();
+            services.AddSingleton<IPatreonManager, PatreonManager>();
             services.AddSingleton<IVillageManager, VillageManager>();
 
             services.AddSingleton<IQueryBuilder, QueryBuilder>();

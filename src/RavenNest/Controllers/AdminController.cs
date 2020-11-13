@@ -137,8 +137,15 @@ namespace RavenNest.Controllers
         [HttpGet("sessions/{offset}/{size}/{order}/{query}")]
         public async Task<PagedSessionCollection> GetSessions(int offset, int size, string order, string query)
         {
-            await AssertAdminAccessAsync();
-            return adminManager.GetSessionsPaged(offset, size, order, query);
+            try
+            {
+                await AssertAdminAccessAsync();
+                return adminManager.GetSessionsPaged(offset, size, order, query);
+            }
+            catch
+            {
+                return new PagedSessionCollection();
+            }
         }
 
         [HttpGet("mergeplayer/{userid}")]

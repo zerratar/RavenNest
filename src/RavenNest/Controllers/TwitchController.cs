@@ -54,7 +54,7 @@ namespace RavenNest.Controllers
             var reqState = HttpContext.Request.Query["state"];
 
 #if DEBUG
-            var requestUrl = "https://localhost:5001/login";
+            var requestUrl = $"https://{HttpContext.Request.Host}/login";
 #else 
             var requestUrl = "https://www.ravenfall.stream/login";
 #endif

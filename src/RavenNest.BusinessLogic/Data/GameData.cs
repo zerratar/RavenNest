@@ -28,6 +28,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly ConcurrentDictionary<Guid, SessionState> sessionStates
             = new ConcurrentDictionary<Guid, SessionState>();
 
+        private readonly EntitySet<UserPatreon, Guid> patreons;
         private readonly EntitySet<CharacterSessionActivity, Guid> characterSessionActivities;
         private readonly EntitySet<Appearance, Guid> appearances;
         private readonly EntitySet<SyntyAppearance, Guid> syntyAppearances;
@@ -80,6 +81,7 @@ namespace RavenNest.BusinessLogic.Data
                 stopWatch.Start();
 
                 IEntityRestorePoint restorePoint = backupProvider.GetRestorePoint(new[] {
+                        typeof(UserPatreon),
                         typeof(Appearance),
                         typeof(SyntyAppearance),
                         typeof(Character),
@@ -112,6 +114,12 @@ namespace RavenNest.BusinessLogic.Data
                     characterSessionActivities.RegisterLookupGroup(nameof(GameSession), x => x.SessionId);
                     characterSessionActivities.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
                     characterSessionActivities.RegisterLookupGroup(nameof(User), x => x.UserId);
+
+                    patreons = new EntitySet<UserPatreon, Guid>(
+                        restorePoint?.Get<UserPatreon>() ??
+                        ctx.UserPatreon.ToList(), i => i.Id);
+
+                    patreons.RegisterLookupGroup(nameof(User), x => x.UserId.GetValueOrDefault());
 
                     expMultiplierEvents = new EntitySet<ExpMultiplierEvent, Guid>(
                         ctx.ExpMultiplierEvent.ToList(), i => i.Id);
@@ -209,6 +217,7 @@ namespace RavenNest.BusinessLogic.Data
 
                     entitySets = new IEntitySet[]
                     {
+                        patreons,
                         expMultiplierEvents,
                         appearances, syntyAppearances, characters, characterStates,
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems,
@@ -274,6 +283,10 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         public GameClient Client { get; private set; }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(UserPatreon ev) => Update(() => patreons.Add(ev));
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(ExpMultiplierEvent ev) => Update(() => expMultiplierEvents.Add(ev));
 
@@ -571,7 +584,7 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ExpMultiplierEvent GetActiveExpMultiplierEvent() =>
-            this.expMultiplierEvents.Entities
+            this.expMultiplierEvents?.Entities?
             .Where(x => x.StartTime <= DateTime.UtcNow && x.EndTime >= DateTime.UtcNow)
             .OrderByDescending(x => x.Multiplier)
             .FirstOrDefault();
@@ -598,6 +611,14 @@ namespace RavenNest.BusinessLogic.Data
                     x.UserId?.ToLower()?.Trim() == twitchUserId?.ToLower()?.Trim())
                 .OrderBy(x => x.Created)
                 .FirstOrDefault();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public UserPatreon GetPatreonUser(Guid userId) =>
+            patreons[nameof(User), userId].FirstOrDefault();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public UserPatreon GetPatreonUser(long patreonId) =>
+            patreons.Entities.FirstOrDefault(x => x.PatreonId == patreonId);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public GameSession GetUserSession(Guid userId, bool updateSession = true)

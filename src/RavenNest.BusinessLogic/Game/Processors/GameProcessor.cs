@@ -25,7 +25,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private readonly ISessionManager sessionManager;
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly SessionToken sessionToken;
-        
+
         private readonly TimeSpan ExpMultiplierPushInterval = TimeSpan.FromSeconds(10);
         private readonly TimeSpan villageInfoPushInterval = TimeSpan.FromSeconds(5);
         private readonly TimeSpan permissionInfoPushInterval = TimeSpan.FromSeconds(60);

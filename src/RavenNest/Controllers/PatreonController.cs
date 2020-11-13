@@ -5,10 +5,14 @@ using Newtonsoft.Json;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.BusinessLogic.Patreon;
 using RavenNest.Sessions;
 using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 
 namespace RavenNest.Controllers
 {
@@ -23,6 +27,7 @@ namespace RavenNest.Controllers
         private readonly IRavenfallDbContextProvider dbProvider;
         private readonly ISecureHasher secureHasher;
         private readonly IAuthManager authManager;
+        private readonly IPatreonManager patreonManager;
         private readonly AppSettings settings;
 
         public PatreonController(
@@ -34,6 +39,7 @@ namespace RavenNest.Controllers
             IRavenfallDbContextProvider dbProvider,
             ISecureHasher secureHasher,
             IAuthManager authManager,
+            IPatreonManager patreonManager,
             IOptions<AppSettings> settings)
         {
             this.logger = logger;
@@ -43,52 +49,36 @@ namespace RavenNest.Controllers
             this.dbProvider = dbProvider;
             this.secureHasher = secureHasher;
             this.authManager = authManager;
+            this.patreonManager = patreonManager;
             this.settings = settings.Value;
         }
 
-        [HttpGet("update-meber")]
-        public void UpdateMember()
-        {
-            AssertValidSignature(settings.PatreonUpdateMember);
-            var data = GetPatreonData();
-        }
-
-        [HttpGet("create-meber")]
-        public void CreateMember()
-        {
-            AssertValidSignature(settings.PatreonCreateMember);
-            var data = GetPatreonData();
-        }
-
-        [HttpGet("delete-member")]
-        public void DeleteMember()
-        {
-            AssertValidSignature(settings.PatreonDeleteMember);
-            var data = GetPatreonData();
-        }
-
-        [HttpGet("update-pledge")]
-        public void UpdatePledge()
+        [HttpPost("update-pledge")]
+        public async Task UpdatePledge()
         {
             AssertValidSignature(settings.PatreonUpdatePledge);
-            var data = GetPatreonData();
+            var data = ConvertPledgeData(await GetPatreonData());
+            if (data == null) return;
+            patreonManager.UpdatePledge(data);
         }
 
-        [HttpGet("delete-pledge")]
-        public void DeletePledge()
+        [HttpPost("delete-pledge")]
+        public async Task DeletePledge()
         {
             AssertValidSignature(settings.PatreonDeletePledge);
-            var data = GetPatreonData();
+            var data = ConvertPledgeData(await GetPatreonData());
+            if (data == null) return;
+            patreonManager.RemovePledge(data);
         }
 
-
-        [HttpGet("create-pledge")]
-        public void CreatePledge()
+        [HttpPost("create-pledge")]
+        public async Task CreatePledge()
         {
             AssertValidSignature(settings.PatreonCreatePledge);
-            var data = GetPatreonData();
+            var data = ConvertPledgeData(await GetPatreonData());
+            if (data == null) return;
+            patreonManager.AddPledge(data);
         }
-
 
         private void AssertValidSignature(string secret)
         {
@@ -99,30 +89,74 @@ namespace RavenNest.Controllers
             // uh..
         }
 
-        private PatreonWebhook GetPatreonData([CallerMemberName] string caller = null)
+        private PatreonPledgeData ConvertPledgeData(PatreonWebhook data)
         {
-            if (HttpContext.Request.Body == null)
+            if (data == null)
                 return null;
 
+            var fullName = data.Data.Attributes.FullName;
+            var pledgeAmountCents = data.Data.Attributes.PledgeAmountCents;
+            var status = data.Data.Attributes.PatronStatus;
+
+            var userData = data.Included.FirstOrDefault(x => x.Type == TypeEnum.User);
+
+            var reward = data.Included
+                .Where(x => x.Type == TypeEnum.Reward)
+                .OrderByDescending(x => x.Attributes.Amount)
+                .FirstOrDefault();
+
+            var isActive = status == "active_patreon" && reward != null;
+            var social = userData.Attributes.SocialConnections;
+            var twitchUserId = "";
+            var rewardTitle = reward?.Attributes?.Title;
+            int rewardTier = GetRewardTier(rewardTitle);
+            if (social != null && social.Twitch != null)
+            {
+                twitchUserId = social.Twitch.UserId;
+            }
+
+            return new PatreonPledgeData
+            {
+                PatreonId = userData.Id,
+                Email = userData.Attributes.Email,
+                FirstName = userData.Attributes.FirstName,
+                FullName = userData.Attributes.FullName,
+                TwitchUserId = twitchUserId,
+                PledgeAmountCents = pledgeAmountCents,
+                RewardTitle = rewardTitle,
+                Tier = rewardTier,
+            };
+        }
+
+        private int GetRewardTier(string rewardTitle)
+        {
+            if (string.IsNullOrEmpty(rewardTitle))
+                return 0;
+
+            var title = rewardTitle.ToLower();
+            switch (title)
+            {
+                default:
+                    return 0;
+                case "mithril":
+                case "adamantite":
+                    return 2;
+                case "rune":
+                    return 2;
+                case "dragon":
+                case "abraxas":
+                case "phantom":
+                    return 3;
+            }
+        }
+
+        private async Task<PatreonWebhook> GetPatreonData([CallerMemberName] string caller = null)
+        {
             try
             {
                 using (var sr = new StreamReader(HttpContext.Request.Body))
                 {
-                    var data = sr.ReadToEnd();
-
-                    //try
-                    //{
-                    //    var filename = caller ?? "patreon";
-
-                    //    System.IO.File.WriteAllText(filename + ".json", data);
-                    //}
-                    //catch (Exception exc)
-                    //{
-                    //    logger.LogError(exc.ToString());
-                    //}
-
-                    logger.LogError(data);
-
+                    var data = await sr.ReadToEndAsync();
                     return JsonConvert.DeserializeObject<PatreonWebhook>(data);
                 }
             }
@@ -132,58 +166,5 @@ namespace RavenNest.Controllers
                 return null;
             }
         }
-    }
-
-    public partial class PatreonWebhook
-    {
-        public PatreonWebhookData Data { get; set; }
-    }
-
-    public partial class PatreonWebhookData
-    {
-        public Attributes Attributes { get; set; }
-        public long Id { get; set; }
-        public Relationships Relationships { get; set; }
-        public string Type { get; set; }
-    }
-
-    public partial class Attributes
-    {
-        public long AmountCents { get; set; }
-        public DateTimeOffset CreatedAt { get; set; }
-        public string DeclinedSince { get; set; }
-        public bool PatronPaysFees { get; set; }
-        public string PledgeCapCents { get; set; }
-    }
-
-    public partial class Relationships
-    {
-        public Address Address { get; set; }
-        public Address Card { get; set; }
-        public Creator Creator { get; set; }
-        public Creator Patron { get; set; }
-        public Creator Reward { get; set; }
-    }
-
-    public partial class Address
-    {
-        public string Data { get; set; }
-    }
-
-    public partial class Creator
-    {
-        public CreatorData Data { get; set; }
-        public Links Links { get; set; }
-    }
-
-    public partial class CreatorData
-    {
-        public long Id { get; set; }
-        public string Type { get; set; }
-    }
-
-    public partial class Links
-    {
-        public Uri Related { get; set; }
     }
 }
