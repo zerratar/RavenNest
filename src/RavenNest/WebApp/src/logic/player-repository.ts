@@ -37,6 +37,16 @@ export default class PlayerRepository {
         return null;
     }
 
+    public static getPlayerById(id: string): Player | null {
+      for (const page of PlayerRepository.repo.getPages()) {
+          const player = page.items.find((x) => x.id === id);
+          if (player) {
+              return player;
+          }
+      }
+      return null;
+  }
+
     public static getPlayers(pageIndex: number, sortOrder: string, query: string): Player[] {
         [sortOrder, query] = PlayerRepository.ensureFilters(sortOrder, query);
 

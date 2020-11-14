@@ -98,15 +98,15 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        public bool KickPlayer(string userId, string identifier)
+        public bool KickPlayer(Guid characterId)
         {
-            var character = gameData.GetCharacterByUserId(userId, identifier);
+            var character = gameData.GetCharacter(characterId);
             var userToRemove = gameData.GetUser(character.UserId);
             if (userToRemove == null)
                 return false;
 
-            var currentSession = gameData.GetSessionByUserId(userId);
-            //var currentSession = gameData.GetUserSession(character.UserIdLock.GetValueOrDefault());
+            //var currentSession = gameData.GetSessionByUserId(userId);
+            var currentSession = gameData.GetUserSession(character.UserIdLock.GetValueOrDefault());
             if (currentSession == null)
                 return false;
 
@@ -125,7 +125,7 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
-        public bool SuspendPlayer(string userId, string identifier)
+        public bool SuspendPlayer(string userId)
         {
             // 1. kick player
             // 2. block player from joining any games.
@@ -330,16 +330,19 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        public bool UpdatePlayerSkill(string userId, string skill, decimal experience, string identifier)
+        public bool UpdatePlayerSkill(Guid characterId, string skill, decimal experience)
         {
-            var character = this.gameData.GetCharacterByUserId(userId, identifier);
+            var character = this.gameData.GetCharacter(characterId);
             if (character == null) return false;
 
             var skills = this.gameData.GetSkills(character.SkillsId);
             if (skills == null) return false;
 
-            var playerSession = gameData.GetSessionByUserId(userId);
+            //var playerSession = gameData.GetSessionByUserId(userId);
+            var playerSession = gameData.GetUserSession(character.UserIdLock.GetValueOrDefault());
             if (playerSession == null) return true;
+
+            var user = this.gameData.GetUser(character.UserId);
 
             SetValue(skills, skill, experience);
 
@@ -348,7 +351,7 @@ namespace RavenNest.BusinessLogic.Game
                 playerSession,
                 new PlayerExpUpdate
                 {
-                    UserId = userId,
+                    UserId = user.UserId,
                     Skill = skill,
                     Experience = experience
                 });
@@ -357,21 +360,25 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
-        public bool UpdatePlayerName(string userid, string name, string identifier)
+        public bool UpdatePlayerName(Guid characterId, string name)
         {
-            var character = this.gameData.GetCharacterByUserId(userid, identifier);
+            var character = this.gameData.GetCharacter(characterId);
             if (character == null) return false;
             character.Name = name;
 
-            var playerSession = gameData.GetSessionByUserId(userid);
+
+            var playerSession = gameData.GetUserSession(character.UserIdLock.GetValueOrDefault());
+            //var playerSession = gameData.GetSessionByUserId(userid);
             if (playerSession == null) return true;
+
+            var user = this.gameData.GetUser(character.UserId);
 
             var gameEvent = gameData.CreateSessionEvent(
                 GameEventType.PlayerNameUpdate,
                 playerSession,
                 new PlayerNameUpdate
                 {
-                    UserId = userid,
+                    UserId = user.UserId,
                     Name = name
                 });
 

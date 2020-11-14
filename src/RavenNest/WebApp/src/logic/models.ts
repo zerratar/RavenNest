@@ -21,11 +21,21 @@ export class GameSession {
     public readonly started: string,
     public readonly updated: string,
     public readonly status: number,
+    public readonly players: GameSessionPlayer[]
   ) { }
 }
 
+export class GameSessionPlayer {
+  constructor(
+    public readonly twitchUserId: string,
+    public readonly userName: string,
+    public readonly isAdmin: boolean,
+    public readonly isModerator: boolean,
+  ) { }
+}
 export class Player {
   constructor(
+    public readonly id: string,
     public readonly userId: string,
     public readonly userName: string,
     public name: string,
@@ -42,6 +52,7 @@ export class Player {
     public readonly revision: number,
     public readonly identity: string,
     public readonly characterIndex: number,
+    public readonly sessionName: string
   ) { }
 }
 

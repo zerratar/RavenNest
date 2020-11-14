@@ -4,17 +4,17 @@ export default class AdminService {
 
     private static requestCounter: number = 0;
 
-    public static async updatePlayerName(userId: string, newName: string): Promise<boolean> {
+    public static async updatePlayerName(characterId: string, newName: string): Promise<boolean> {
         ++AdminService.requestCounter;
-        const url = `api/admin/updateplayername/${userId}/${newName}`;
+        const url = `api/admin/updateplayername/${characterId}/${newName}`;
         const result = await Requests.sendAsync(url);
         --AdminService.requestCounter;
         return result.ok && await result.json();
     }
 
-    public static async updatePlayerStat(userId: string, statName: string, experience: number): Promise<boolean> {
+    public static async updatePlayerStat(characterId: string, statName: string, experience: number): Promise<boolean> {
         ++AdminService.requestCounter;
-        const url = `api/admin/updateplayerskill/${userId}/${statName}/${experience}`;
+        const url = `api/admin/updateplayerskill/${characterId}/${statName}/${experience}`;
         const result = await Requests.sendAsync(url);
         --AdminService.requestCounter;
         return result.ok && await result.json();
@@ -36,9 +36,9 @@ export default class AdminService {
         return result.ok && await result.json();
     }
 
-    public static async kickPlayer(userId: string): Promise<boolean> {
+    public static async kickPlayer(characterId: string): Promise<boolean> {
         ++AdminService.requestCounter;
-        const url = `api/admin/kick/${userId}`;
+        const url = `api/admin/kick/${characterId}`;
         const result = await Requests.sendAsync(url);
         --AdminService.requestCounter;
         return result.ok && await result.json();

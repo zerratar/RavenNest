@@ -206,10 +206,20 @@ namespace RavenNest.BusinessLogic.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static PlayerFull MapFull(this User user, IGameData gameData, Character character)
         {
+            var sessionName = "";
+            if (character.UserIdLock != null)
+            {
+                var sessionOwner = gameData.GetUser(character.UserIdLock.GetValueOrDefault());
+                if (sessionOwner != null)
+                {
+                    sessionName = sessionOwner.UserName;
+                }
+            }
+
             return new PlayerFull
             {
                 Created = user.Created,
-                Id = user.Id,
+                Id = character.Id,
                 PasswordHash = user.PasswordHash,
                 UserName = user.UserName,
                 UserId = user.UserId,
@@ -227,6 +237,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 Revision = character.Revision.GetValueOrDefault(),
                 Identifier = character.Identifier,
                 CharacterIndex = character.CharacterIndex,
+                SessionName = sessionName,
             };
         }
 
@@ -236,6 +247,7 @@ namespace RavenNest.BusinessLogic.Extensions
             var items = gameData.GetAllPlayerItems(character.Id).OrderBy(x => gameData.GetItem(x.ItemId).Name).ToList();
             return new PlayerExtended
             {
+                Id = character.Id,
                 UserName = user.UserName,
                 UserId = user.UserId,
                 Name = character.Name,
