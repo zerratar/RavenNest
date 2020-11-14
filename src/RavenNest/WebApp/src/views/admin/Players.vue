@@ -23,40 +23,42 @@
             <th @click="orderBy('Id')">Id <i :class="getSortOrderClass('Id')"></i></th>
             <th @click="orderBy('UserName')">UserName <i :class="getSortOrderClass('UserName')"></i></th>
             <th @click="orderBy('Name')">Name <i :class="getSortOrderClass('Name')"></i></th>
+            <th @click="orderBy('SessionName')">Session <i :class="getSortOrderClass('SessionName')"></i></th>
             <th @click="orderBy('IsAdmin')">Admin <i :class="getSortOrderClass('IsAdmin')"></i></th>
             <th @click="orderBy('IsModerator')">Moderator <i :class="getSortOrderClass('IsModerator')"></i></th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          <tr class="player-row" v-for="player in getPlayers()" :key="player.userId">
+          <tr class="player-row" v-for="player in getPlayers()" :key="player.id">
             <td>{{player.userId}}</td>
             <td>{{player.userName}}<span class='player-character-index' alt='Character Number'>#{{player.characterIndex}}</span></td>
             <td>
 
               <span v-if="editingName(player.userId)">
                 <input class="table-edit" v-model="player.name"/>
-                <button class="link-button" @click="applyEditName(player.userId)"><i class="fas fa-check"></i></button>
-                <button class="link-button" @click="cancelEditName(player.userId)"><i class="fas fa-times"></i></button>
+                <button class="link-button" @click="applyEditName(player.id)"><i class="fas fa-check"></i></button>
+                <button class="link-button" @click="cancelEditName(player.id)"><i class="fas fa-times"></i></button>
               </span>
 
               <span v-if="!editingName(player.userId)">
                 {{player.name}}
-                <button class="link-button" @click="editName(player.userId)" ><i class="fas fa-pencil-alt"></i></button>
+                <button class="link-button" @click="editName(player.id)" ><i class="fas fa-pencil-alt"></i></button>
               </span>
               
             </td>
+            <td>{{player.sessionName}}</td>
             <td>{{player.isAdmin}}</td>            
             <td>{{player.isModerator}}</td>
             <td>
-              <button class="link-button" @click="showStatistics(player.userId)">statistics</button>
-              <button class="link-button" @click="showResources(player.userId)">resources</button>
-              <button class="link-button" @click="showSkills(player.userId)">skills</button>
-              <button class="link-button" @click="showState(player.userId)">state</button>
-              <button class="link-button" @click="showInventory(player.userId)">inventory</button>
+              <button class="link-button" @click="showStatistics(player.id)">statistics</button>
+              <button class="link-button" @click="showResources(player.id)">resources</button>
+              <button class="link-button" @click="showSkills(player.id)">skills</button>
+              <button class="link-button" @click="showState(player.id)">state</button>
+              <button class="link-button" @click="showInventory(player.id)">inventory</button>
               <button class="link-button" @click="mergePlayer(player.userId)">merge</button>
               <button class="link-button" @click="resetPassword(player.userId)">reset pass</button>
-              <button class="link-button" @click="kickPlayer(player.userId)">kick</button>
+              <button class="link-button" @click="kickPlayer(player.id)">kick</button>
               <button class="link-button" @click="suspend(player.userId)">suspend</button>
             </td>
           </tr>
@@ -189,22 +191,22 @@
       this.applyFilter();
     }
 
-    private editingName(userId: string): boolean {
-      const edit = this.playerEdit.get(userId);
+    private editingName(characterId: string): boolean {
+      const edit = this.playerEdit.get(characterId);
       return !!edit && edit.isEditing;
     }
 
-    private applyEditName(userId: string) {
+    private applyEditName(characterId: string) {
       this.hideModals();
-      const edit = this.playerEdit.get(userId);
+      const edit = this.playerEdit.get(characterId);
       if (!edit) return;
-      const player = PlayerRepository.getPlayer(userId);
+      const player = PlayerRepository.getPlayerById(characterId);
       if (!player) {
-        console.error('no user found for editing name (userId: ${userId})');
+        console.error('no user found for editing name (userId: ${characterId})');
         return;
       }
 
-      AdminService.updatePlayerName(userId, player.name).then((res) => {
+      AdminService.updatePlayerName(characterId, player.name).then((res) => {
         if (res) {
           edit.name = player.name;
           edit.isEditing = false;
@@ -213,13 +215,13 @@
       });
     }
 
-    private cancelEditName(userId: string) {
+    private cancelEditName(characterId: string) {
       this.hideModals();
-      const edit = this.playerEdit.get(userId);
+      const edit = this.playerEdit.get(characterId);
       if (!edit) return;
-      const player = PlayerRepository.getPlayer(userId);
+      const player = PlayerRepository.getPlayerById(characterId);
       if (!player) {
-        console.error('no user found for editing name (userId: ${userId})');
+        console.error('no user found for editing name (userId: ${characterId})');
         return;
       }
       player.name = edit.name;
@@ -227,10 +229,10 @@
       ++this.revision;
     }
 
-    private editName(userId: string) {
+    private editName(characterId: string) {
       this.hideModals();
-      let edit = this.playerEdit.get(userId);
-      const player = PlayerRepository.getPlayer(userId);
+      let edit = this.playerEdit.get(characterId);
+      const player = PlayerRepository.getPlayerById(characterId);
       if (!player) {
         console.error('no user found for editing name (userId: ${userId})');
         return;
@@ -238,9 +240,9 @@
 
       if (!edit) {
         edit = new PlayerEdit();
-        edit.userId = userId;
+        edit.userId = characterId;
         edit.name = player.name;
-        this.playerEdit.set(userId, edit);
+        this.playerEdit.set(characterId, edit);
       }
 
       edit.isEditing = true;
@@ -248,31 +250,31 @@
     }
 
     // tslint:disable-next-line:ban-types
-    private showModal(userId: string, action: Function) {
+    private showModal(id: string, action: Function) {
       this.hideModals();
-      this.playerInFocus = PlayerRepository.getPlayer(userId);
+      this.playerInFocus = PlayerRepository.getPlayerById(id);
       action();
       ++this.revision;
     }
 
-    private showStatistics(userId: string) {
-      this.showModal(userId, () => this.isStatisticsVisible = true);
+    private showStatistics(characterId: string) {
+      this.showModal(characterId, () => this.isStatisticsVisible = true);
     }
 
-    private showSkills(userId: string) {
-      this.showModal(userId, () => this.isSkillsVisible = true);
+    private showSkills(characterId: string) {
+      this.showModal(characterId, () => this.isSkillsVisible = true);
     }
 
-    private showState(userId: string) {
-      this.showModal(userId, () => this.isStateVisible = true);
+    private showState(characterId: string) {
+      this.showModal(characterId, () => this.isStateVisible = true);
     }
 
-    private showResources(userId: string) {
-      this.showModal(userId, () => this.isResourcesVisible = true);
+    private showResources(characterId: string) {
+      this.showModal(characterId, () => this.isResourcesVisible = true);
     }
 
-    private showInventory(userId: string) {
-      this.showModal(userId, () => {
+    private showInventory(characterId: string) {
+      this.showModal(characterId, () => {
         this.isInventoryVisible = true;
         const player = this.getFocusedPlayer();
         if (!player) return;

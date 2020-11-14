@@ -11,10 +11,10 @@ namespace RavenNest.BusinessLogic.Game
         bool SetCraftingRequirements(string itemQuery, string requirementQuery);
         bool MergePlayerAccounts(string userId);
         bool FixCharacterIndices(string userId);
-        bool UpdatePlayerName(string userId, string name, string identifier);
-        bool UpdatePlayerSkill(string userId, string skill, decimal experience, string identifier);
-        bool KickPlayer(string userId, string identifier);
-        bool SuspendPlayer(string userId, string identifier);
+        bool UpdatePlayerName(Guid characterId, string name);
+        bool UpdatePlayerSkill(Guid characterId, string skill, decimal experience);
+        bool KickPlayer(Guid characterId);
+        bool SuspendPlayer(string userId);
         bool ResetUserPassword(string userid);
         bool ProcessItemRecovery(string query, string identifier);
         bool NerfItems();

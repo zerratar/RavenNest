@@ -82,5 +82,6 @@ namespace RavenNest.Models
         public DateTime Created { get; set; }
         public string Identifier { get; set; }
         public int CharacterIndex { get; set; }
+        public string SessionName { get; set; }
     }
 }

@@ -9,6 +9,7 @@
             <td>UserName</td>
             <td>Has Admin Priveleges</td>
             <td>Has Mod Priveleges</td>
+            <td>Players</td>
             <td>Started</td>
             <td>Last updated</td>
             <td>Status</td>
@@ -22,6 +23,7 @@
             <td><a :href="streamerUrl(session.userName)" target="_blank">{{session.userName}}</a></td>
             <td>{{session.adminPrivileges}}</td>
             <td>{{session.modPrivileges}}</td>
+            <td>{{playerCount(session)}}</td>
             <td>{{session.started}}</td>
             <td>{{session.updated}}</td>
             <td>{{session.status}}</td>
@@ -61,6 +63,13 @@
 
     public streamerUrl(name: string): string {
       return `https://www.twitch.tv/${name}`;
+    }
+
+    public playerCount(session:GameSession):number {
+      if (session.players != null){
+        return session.players.length;
+      }
+      return 0;      
     }
 
     private mounted() {
