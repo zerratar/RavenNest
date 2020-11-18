@@ -8,12 +8,10 @@ using System.Threading.Tasks;
 
 namespace RavenNest.Blazor.Services
 {
-    public class AuthService
+    public class AuthService : RavenNestService
     {
         private readonly IAuthManager authManager;
         private readonly IPlayerManager playerManager;
-        private readonly IHttpContextAccessor accessor;
-        private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly AppSettings settings;
 
         public AuthService(
@@ -22,23 +20,11 @@ namespace RavenNest.Blazor.Services
             IPlayerManager playerManager,
             IHttpContextAccessor accessor,
             ISessionInfoProvider sessionInfoProvider)
+            : base(accessor, sessionInfoProvider)
         {
             this.authManager = authManager;
             this.playerManager = playerManager;
-            this.accessor = accessor;
-            this.sessionInfoProvider = sessionInfoProvider;
             this.settings = settings.Value;
-        }
-
-        public HttpContext Context => accessor.HttpContext;
-        public ISession Session => accessor.HttpContext.Session;
-
-        public SessionInfo GetSession()
-        {
-            var id = SessionCookie.GetSessionId(Context);
-            if (!this.sessionInfoProvider.TryGet(id, out var sessionInfo))
-                sessionInfo = new SessionInfo();
-            return sessionInfo;
         }
 
         public void Logout()

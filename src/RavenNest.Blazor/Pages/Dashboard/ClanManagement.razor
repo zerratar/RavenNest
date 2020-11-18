@@ -1,0 +1,76 @@
+﻿@layout DashboardLayout
+@page "/clan"
+@using RavenNest.Blazor.Components
+@using RavenNest.Blazor.Services
+@inject RavenNest.Blazor.Services.ClanService ClanService
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject NavigationManager NavigationManager
+
+@if (session.UserId == null)
+{
+  <p>You don't seem to be logged in.</p>
+}
+else
+{
+  if (clan == null)
+  {
+    if (session.Tier == 0 && !session.Administrator && !session.Moderator)
+    {
+      <p>You cannot create a clan. You need to have at least the <a href="https://www.patreon.com/ravenfall" target="_blank">Mithril Tier on patreon</a></p>
+    }
+    else
+    {
+      <p>You do not have a clan. You may create one if you like.</p>
+      <EditForm Model="@createClan" OnValidSubmit="@HandleCreateClan">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <InputText id="name" @bind-Value="createClan.Name" />
+        <button type="submit">Submit</button>
+      </EditForm>
+    }
+  }
+  else
+  {
+    if (!string.IsNullOrEmpty(clan.Logo))
+    {
+      <img src="@clan.Logo" class="clan-logo" />
+    }
+    else
+    {
+      <img src="/api/twitch/logo/@session.UserId" class="clan-logo" />
+    }
+    <h1>@clan.Name</h1>
+    <ClanMemberList ClanId="@clan.Id" CanManage="@canManageMembers"></ClanMemberList>
+    <ClanRoleList ClanId="@clan.Id" CanManage="@canManageMembers"></ClanRoleList>
+  }
+}
+
+@code {
+  private RavenNest.Sessions.SessionInfo session;
+  private RavenNest.Models.Clan clan;
+  private bool canManageMembers;
+
+  private CreateClanModel createClan = new CreateClanModel();
+
+  protected override void OnInitialized()
+  {
+    session = AuthService.GetSession();
+    clan = ClanService.GetClan();
+    if (clan != null)
+      canManageMembers = clan.Owner == session.UserId;
+  }
+
+  private void HandleCreateClan()
+  {
+    clan = ClanService.CreateClan(createClan);
+    canManageMembers = true;
+  }
+
+  protected override void OnAfterRender(bool firstRender)
+  {
+    if (session.UserId == null)
+    {
+      NavigationManager.NavigateTo("/login");
+    }
+  }
+}

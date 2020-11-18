@@ -178,6 +178,9 @@ namespace RavenNest.Blazor
             services.AddSingleton<AuthService>();
             services.AddSingleton<HighscoreService>();
             services.AddSingleton<ItemService>();
+            services.AddSingleton<ClanService>();
+            services.AddSingleton<PlayerService>();
+            services.AddSingleton<NotificationService>();
 
             services.AddSingleton<IKernel, Kernel>();
             services.AddSingleton<IMemoryCache, MemoryCache>();
@@ -198,6 +201,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<IVillageManager, VillageManager>();
             services.AddSingleton<IPatreonManager, PatreonManager>();
             services.AddSingleton<IClanManager, ClanManager>();
+            services.AddSingleton<INotificationManager, NotificationManager>();
 
             services.AddSingleton<IQueryBuilder, QueryBuilder>();
             services.AddSingleton<IItemResolver, ItemResolver>();

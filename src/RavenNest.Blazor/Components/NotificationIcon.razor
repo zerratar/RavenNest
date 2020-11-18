@@ -1,0 +1,95 @@
+﻿@implements IDisposable
+@using RavenNest.DataModels
+@using RavenNest.Blazor.Services
+
+@inject RavenNest.Blazor.Services.NotificationService NotificationService
+@inject RavenNest.BusinessLogic.IKernel Kernel
+<div class="notification-icon" @onclick="ToggleVisibility">
+  <i class="fas fa-bell"></i>
+  <span class="notification-count">@UnreadMessageCount</span>
+</div>
+
+@if (ListVisible)
+{
+  <div class="notification-list">
+    <ul>
+      @foreach (var n in notifications)
+      {
+        <li class="list-item">
+          <a href="@(n.RedirectUrl)">@n.Title</a>
+        </li>
+      }
+    </ul>
+  </div>
+}
+
+@code {
+    [Parameter]
+    public string UserId { get; set; }
+
+    public bool ListVisible;
+    public int UnreadMessageCount = 0;
+
+    private UserNotification alert;
+    private IReadOnlyList<UserNotification> notifications;
+    private BusinessLogic.ITimeoutHandle updateTimer;
+    private bool disposed;
+    private bool firstRead;
+
+    protected override async Task OnInitializedAsync()
+    {
+      //notifications = await NotificationService.GetNotificationsAsync();
+      //UnreadMessageCount = notifications.Count(x => !x.Read);
+      ReloadNotifications();
+    }
+
+    private void ToggleVisibility()
+    {
+      ListVisible = !ListVisible;
+    }
+
+    private async void ReloadNotifications()
+    {
+
+      notifications = await NotificationService.GetNotificationsAsync(UserId);
+      var newCount = notifications.Count(x => !x.HasRead);
+      var newMessages = UnreadMessageCount != newCount;
+      if (newMessages)
+      {
+        UnreadMessageCount = newCount;
+        if (!firstRead)
+        {
+          firstRead = true;
+        }
+        else
+        {
+          alert = notifications.FirstOrDefault(x => !x.HasRead);
+        }
+      }
+      try
+      {
+        if (disposed) return;
+        updateTimer = Kernel.SetTimeout(ReloadNotifications, 500);
+        
+        if (newMessages)
+          InvokeAsync(this.StateHasChanged);
+      }
+      catch
+      {
+        // ignored, most likely the object has been disposed
+      }
+    }
+
+    public void HideAlert()
+    {
+      alert = null;
+    }
+
+    public void Dispose()
+    {
+      if (disposed) return;
+      disposed = true;
+      if (updateTimer != null)
+        Kernel.ClearTimeout(updateTimer);
+    }
+}

@@ -11,5 +11,6 @@ namespace RavenNest.Sessions
         public bool Moderator { get; set; }
         public bool Administrator { get; set; }
         public bool RequiresPasswordChange { get; set; }
+        public int Tier { get; set; }
     }
 }

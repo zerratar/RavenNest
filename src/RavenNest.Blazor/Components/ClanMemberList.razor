@@ -1,0 +1,117 @@
+﻿@using RavenNest.Models
+@using RavenNest.Blazor.Services
+@using Blazored.Typeahead
+@inject RavenNest.Blazor.Services.ClanService ClanService
+@inject RavenNest.Blazor.Services.PlayerService PlayerService
+
+<h3>Member list</h3>
+
+@if (members == null)
+{
+  <LoadIndicator></LoadIndicator>
+}
+else
+{
+  <h2>Search for character to invite</h2>
+  <BlazoredTypeahead SearchMethod="SearchPlayer"
+                     @bind-Value="selectedPlayer"
+                     @onselectionchange="SelectedPlayerChanged">
+    <SelectedTemplate>
+      @context.UserName (Level @GetCombatLevel(context) #@context.CharacterIndex)
+    </SelectedTemplate>
+    <ResultTemplate>
+      @context.UserName (Level @GetCombatLevel(context) #@context.CharacterIndex)
+    </ResultTemplate>
+  </BlazoredTypeahead>
+
+  @if (selectedPlayer != null)
+  {
+    <button @onclick="SendInvite" class="btn btn-primary">Send Invite</button>
+  }
+  <h2>Clan Members</h2>
+
+  <table class="items-list">
+    <thead>
+      <tr>
+        <th></th>
+        <th>Name</th>
+        <th>Role</th>
+        <th>Joined</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach (var item in members)
+      {
+        <tr id="@item.Player.Id" class="item-row">
+          <td><img src="/api/twitch/logo/@(item.Player.UserId)" style="width: 40px" /></td>
+          <td class='item'>@item.Player.UserName</td>
+          <td class='item'>@(item.InvitationPending ? "-" : item.Player.ClanRole.Name)</td>
+          <td class='item'>@(item.InvitationPending ? "Invite Pending" : item.Player.ClanRole.Joined)</td>
+          <td>
+            @if (item.InvitationPending)
+            {
+              <button class="btn btn-warning" @onclick="(()=>RemoveInvite(item.Player.Id))">Remove Invite</button>
+            }
+            else
+            {
+              <button class="btn btn-danger" @onclick="(()=>RemoveMember(item.Player.Id))">Remove Member</button>
+            }
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+
+@code {
+    [Parameter]
+    public Guid ClanId { get; set; }
+
+    [Parameter]
+    public bool CanManage { get; set; }
+
+    private Player selectedPlayer;
+
+    IReadOnlyList<ClanMember> members = null;
+
+    public int GetCombatLevel(Player player)
+    {
+      return (int)(((player.Skills.AttackLevel + player.Skills.DefenseLevel + player.Skills.HealthLevel + player.Skills.StrengthLevel) / 4f) +
+             ((player.Skills.RangedLevel + player.Skills.MagicLevel) / 8f));
+    }
+
+    protected override void OnInitialized()
+    {
+      members = ClanService.GetMembers(ClanId);
+    }
+
+    private void SendInvite()
+    {
+      if (selectedPlayer == null)
+        return;
+
+      members = ClanService.InvitePlayer(ClanId, selectedPlayer.Id);
+      selectedPlayer = null;
+    }
+
+    private void RemoveInvite(Guid characterId)
+    {
+      members = ClanService.RemoveInvite(ClanId, characterId);
+    }
+
+    private void RemoveMember(Guid characterId)
+    {
+      members = ClanService.RemoveMember(ClanId, characterId);
+    }
+
+    private void SelectedPlayerChanged()
+    {
+    }
+
+    private async Task<IEnumerable<Player>> SearchPlayer(string searchText)
+    {
+      var result = (await PlayerService.SearchForPlayersAsync(searchText));
+      return result.Where(x => x.Clan?.Id == null).ToList();
+    }
+}

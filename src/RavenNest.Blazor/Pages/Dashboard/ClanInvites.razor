@@ -1,0 +1,80 @@
+﻿@layout DashboardLayout
+@page "/clan-invites"
+@using RavenNest.Blazor.Services
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.Blazor.Services.ClanService ClanService
+@inject NavigationManager NavigationManager
+
+@if (session.UserId == null)
+{
+  <p>You don't seem to be logged in.</p>
+}
+else
+{
+  if (invites == null)
+  {
+    <LoadIndicator></LoadIndicator>
+  }
+  else
+  {
+    <table class="items-list">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Clan</th>
+          <th>Received</th>
+          <th>Sender</th>
+          <th>Character</th>
+          <th>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @foreach (var item in invites)
+        {
+          <tr id="@item.InviteId" class="item-row">
+            <td><img src="@item.ClanLogo" style="width: 40px" /></td>
+            <td class='item'>@item.ClanName</td>
+            <td class='item'>@item.Created</td>
+            <td class='item'>@item.Inviter.DisplayName</td>
+            <td class='item'>@item.Character.Name #@item.Character.CharacterIndex</td>
+            <td>
+              <button class="btn btn-success" @onclick="(()=>AcceptInvite(item.InviteId))">Accept</button>
+              <button class="btn btn-danger" @onclick="(()=>DeclineInvite(item.InviteId))">Decline</button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+}
+
+@code {
+    private RavenNest.Sessions.SessionInfo session;
+    private IReadOnlyList<ClanInvite> invites;
+    protected override async Task OnInitializedAsync()
+    {
+      session = AuthService.GetSession();
+      invites = await ClanService.GetClanInvitesAsync();
+    }
+
+    public async void AcceptInvite(Guid inviteId)
+    {
+      this.invites = await ClanService.AcceptClanInviteAsync(inviteId);
+      InvokeAsync(this.StateHasChanged);
+    }
+
+    public async void DeclineInvite(Guid inviteId)
+    {
+      this.invites = await ClanService.DeclineClanInviteAsync(inviteId);
+      InvokeAsync(this.StateHasChanged);
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+      if (session.UserId == null)
+      {
+        NavigationManager.NavigateTo("/login");
+      }
+    }
+}

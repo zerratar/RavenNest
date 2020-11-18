@@ -1,0 +1,30 @@
+﻿@layout DashboardLayout
+@page "/loyalty"
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject NavigationManager NavigationManager
+
+@if (session.UserId == null)
+{
+  <p>You don't seem to be logged in.</p>
+}
+else
+{
+  <p>Welcome back, @session.UserName</p>
+}
+
+@code {
+  private RavenNest.Sessions.SessionInfo session;
+
+  protected override void OnInitialized()
+  {
+    session = AuthService.GetSession();
+  }
+
+  protected override void OnAfterRender(bool firstRender)
+  {
+    if (session.UserId == null)
+    {
+      NavigationManager.NavigateTo("/login");
+    }
+  }
+}

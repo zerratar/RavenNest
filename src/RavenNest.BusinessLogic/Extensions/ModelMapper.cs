@@ -84,13 +84,14 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Models.ClanRole Map(DataModels.ClanRole data)
+        public static Models.ClanRole Map(DataModels.ClanRole data, DataModels.CharacterClanMembership membership = null)
         {
             return new Models.ClanRole
             {
                 Id = data.Id,
                 Level = data.Level,
-                Name = data.Name
+                Name = data.Name,
+                Joined = membership?.Joined
             };
         }
 
@@ -196,7 +197,7 @@ namespace RavenNest.BusinessLogic.Extensions
 
             var clanMembership = gameData.GetClanMembership(character.Id);
             var clan = clanMembership != null ? Map(gameData, gameData.GetClan(clanMembership.ClanId)) : null;
-            var clanRole = clanMembership != null ? Map(gameData.GetClanRole(clanMembership.ClanRoleId)) : null;
+            var clanRole = clanMembership != null ? Map(gameData.GetClanRole(clanMembership.ClanRoleId), clanMembership) : null;
             return new Player
             {
                 Id = character.Id,
@@ -236,7 +237,7 @@ namespace RavenNest.BusinessLogic.Extensions
 
             var clanMembership = gameData.GetClanMembership(character.Id);
             var clan = clanMembership != null ? Map(gameData, gameData.GetClan(clanMembership.ClanId)) : null;
-            var clanRole = clanMembership != null ? Map(gameData.GetClanRole(clanMembership.ClanRoleId)) : null;
+            var clanRole = clanMembership != null ? Map(gameData.GetClanRole(clanMembership.ClanRoleId), clanMembership) : null;
 
             return new WebsiteAdminPlayer
             {
@@ -271,7 +272,7 @@ namespace RavenNest.BusinessLogic.Extensions
 
             var clanMembership = gameData.GetClanMembership(character.Id);
             var clan = clanMembership != null ? Map(gameData, gameData.GetClan(clanMembership.ClanId)) : null;
-            var clanRole = clanMembership != null ? Map(gameData.GetClanRole(clanMembership.ClanRoleId)) : null;
+            var clanRole = clanMembership != null ? Map(gameData.GetClanRole(clanMembership.ClanRoleId), clanMembership) : null;
 
             return new WebsitePlayer
             {

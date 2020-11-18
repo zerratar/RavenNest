@@ -10,10 +10,159 @@ namespace RavenNest.BusinessLogic.Game
     public class ClanManager : IClanManager
     {
         private readonly IGameData gameData;
+        private readonly INotificationManager notificationManager;
 
-        public ClanManager(IGameData gameData)
+        public ClanManager(
+            IGameData gameData,
+            INotificationManager notificationManager)
         {
             this.gameData = gameData;
+            this.notificationManager = notificationManager;
+        }
+
+        public bool RemovePlayerInvite(Guid inviteId)
+        {
+            var invite = gameData.GetClanInvite(inviteId);
+            if (invite == null)
+                return false;
+
+            if (invite.NotificationId != null)
+            {
+                var notification = gameData.GetNotification(invite.NotificationId.GetValueOrDefault());
+                if (notification != null)
+                {
+                    gameData.Remove(notification);
+                }
+            }
+
+            gameData.Remove(invite);
+            return true;
+        }
+
+        public bool RemovePlayerInvite(Guid clanId, Guid characterId)
+        {
+            // character does not exist
+            var character = gameData.GetCharacter(characterId);
+            if (character == null)
+                return false;
+
+            // clan does not exist
+            var clan = gameData.GetClan(clanId);
+            if (clan == null)
+                return false;
+
+            // no invite available
+            var invite = gameData.GetClanInvitesByCharacter(characterId).FirstOrDefault(x => x.ClanId == clanId);
+            if (invite == null)
+                return false;
+
+            if (invite.NotificationId != null)
+            {
+                var notification = gameData.GetNotification(invite.NotificationId.GetValueOrDefault());
+                if (notification != null)
+                {
+                    gameData.Remove(notification);
+                }
+            }
+
+            gameData.Remove(invite);
+            return true;
+        }
+
+        public bool SendPlayerInvite(Guid clanId, Guid characterId, Guid? senderUserId = null)
+        {
+            // character does not exist
+            var character = gameData.GetCharacter(characterId);
+            if (character == null)
+                return false;
+
+            // clan does not exist
+            var clan = gameData.GetClan(clanId);
+            if (clan == null)
+                return false;
+
+            // existing invite to same clan.
+            var invite = gameData.GetClanInvitesByCharacter(characterId).FirstOrDefault(x => x.ClanId == clanId);
+            if (invite != null)
+                return false;
+
+            invite = new DataModels.CharacterClanInvite
+            {
+                Id = Guid.NewGuid(),
+                CharacterId = characterId,
+                ClanId = clanId,
+                Created = DateTime.UtcNow,
+                InviterUserId = senderUserId
+            };
+            invite.NotificationId = notificationManager.ClanInviteReceived(clanId, characterId, senderUserId)?.Id;
+            gameData.Add(invite);
+            return true;
+        }
+
+        public bool AcceptClanInvite(Guid inviteId)
+        {
+            // invite does not exist
+            var invite = gameData.GetClanInvite(inviteId);
+            if (invite == null)
+                return false;
+
+            // character does not exist
+            var character = gameData.GetCharacter(invite.CharacterId);
+            if (character == null)
+                return false;
+
+            // clan does not exist
+            var clan = gameData.GetClan(invite.ClanId);
+            if (clan == null)
+                return false;
+
+            var roles = gameData.GetClanRoles(clan.Id);
+            var role = roles.OrderBy(x => x.Level).FirstOrDefault(x => x.Level > 0);
+            if (role == null)
+                role = roles.FirstOrDefault();
+
+            gameData.Add(new DataModels.CharacterClanMembership
+            {
+                Id = Guid.NewGuid(),
+                ClanId = clan.Id,
+                CharacterId = character.Id,
+                ClanRoleId = role?.Id ?? Guid.Empty,
+                Joined = DateTime.UtcNow,
+            });
+            gameData.Remove(invite);
+
+            notificationManager.ClanInviteAccepted(invite.ClanId, invite.CharacterId, DateTime.UtcNow, invite.InviterUserId);
+            return true;
+        }
+
+        public bool RemoveClanInvite(Guid inviteId)
+        {
+            // invite does not exist
+            var invite = gameData.GetClanInvite(inviteId);
+            if (invite == null)
+                return false;
+
+            gameData.Remove(invite);
+            return true;
+        }
+
+        public Clan GetClanByUserId(string userId)
+        {
+            var user = gameData.GetUser(userId);
+            if (user == null)
+                return null;
+            var clan = gameData.GetClanByUser(user.Id);
+            if (clan == null)
+                return null;
+            return ModelMapper.Map(gameData, clan);
+        }
+
+        public Clan GetClan(Guid clanId)
+        {
+            var clan = gameData.GetClan(clanId);
+            if (clan == null)
+                return null;
+            return ModelMapper.Map(gameData, clan);
         }
 
         public bool AddClanMember(Guid clanId, Guid characterId, Guid roleId)
@@ -46,7 +195,6 @@ namespace RavenNest.BusinessLogic.Game
                 Id = Guid.NewGuid(),
                 Joined = DateTime.UtcNow
             });
-
             return true;
         }
 
@@ -80,6 +228,15 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
+        public Clan CreateClan(string userId, string name, string logo)
+        {
+            var user = gameData.GetUser(userId);
+            if (user == null)
+                return null;
+
+            return CreateClan(user.Id, name, logo);
+        }
+
         public Clan CreateClan(Guid ownerUserId, string name, string logoImageFile)
         {
             // already have a clan
@@ -97,10 +254,46 @@ namespace RavenNest.BusinessLogic.Game
                 Id = Guid.NewGuid(),
                 Logo = logoImageFile,
                 Name = name,
-                UserId = ownerUserId
+                UserId = ownerUserId,
+                Created = DateTime.UtcNow
             };
             gameData.Add(clan);
+
+            CreateDefaultRoles(clan);
+
             return ModelMapper.Map(gameData, clan);
+        }
+
+        private void CreateDefaultRoles(DataModels.Clan clan)
+        {
+            gameData.Add(new DataModels.ClanRole
+            {
+                ClanId = clan.Id,
+                Id = Guid.NewGuid(),
+                Level = 3,
+                Name = "Officer",
+            });
+            gameData.Add(new DataModels.ClanRole
+            {
+                ClanId = clan.Id,
+                Id = Guid.NewGuid(),
+                Level = 2,
+                Name = "Member",
+            });
+            gameData.Add(new DataModels.ClanRole
+            {
+                ClanId = clan.Id,
+                Id = Guid.NewGuid(),
+                Level = 1,
+                Name = "Recruit",
+            });
+            gameData.Add(new DataModels.ClanRole
+            {
+                ClanId = clan.Id,
+                Id = Guid.NewGuid(),
+                Level = 0,
+                Name = "Inactive",
+            });
         }
 
         public bool CreateClanRole(Guid clanId, string name, int level)
@@ -144,6 +337,24 @@ namespace RavenNest.BusinessLogic.Game
                 .ToList();
         }
 
+        public IReadOnlyList<Player> GetInvitedPlayers(Guid clanId)
+        {
+            // clan does not exist
+            var clan = gameData.GetClan(clanId);
+            if (clan == null)
+                return null;
+
+            // no invites
+            var invites = gameData.GetClanInvites(clanId);
+            if (invites == null || invites.Count == 0)
+                return new List<Player>();
+
+            return invites
+                .Select(x => gameData.GetCharacter(x.CharacterId))
+                .Select(x => ModelMapper.Map(gameData.GetUser(x.UserId), gameData, x))
+                .ToList();
+        }
+
         public IReadOnlyList<ClanRole> GetClanRoles(Guid clanId)
         {
             // clan does not exist
@@ -152,7 +363,9 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
 
             return gameData.GetClanRoles(clanId)
-                .Select(ModelMapper.Map)
+                .OrderByDescending(x => x.Level)
+                .ThenBy(x => x.Name)
+                .Select(x => ModelMapper.Map(x))
                 .ToList();
         }
 
