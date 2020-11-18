@@ -1,0 +1,32 @@
+﻿@using RavenNest.BusinessLogic.Extended
+
+<h3>Skills</h3>
+<div class="player-skills">
+
+  @foreach (var skill in Player.Skills.AsList())
+  {
+    <div class="stats-row">
+      <div class="stats-label">@skill.Name</div>
+      <div class="stats-progress" title="@ExpDisplay(skill.Experience)">
+        <div class="stats-progress-value" style="@StyleWidth((int)(skill.Percent*120))"></div>
+        <div class="stats-progress-percent">@Math.Round(skill.Percent * 100, 2)%</div>
+      </div>
+      <div class="stats-value">@skill.Level</div>
+    </div>
+  }
+</div>
+
+@code {
+  [Parameter]
+  public WebsitePlayer Player { get; set; }
+
+  private string ExpDisplay(decimal value)
+  {
+    return value + " exp";
+  }
+
+  private string StyleWidth(int value)
+  {
+    return $"width: {value}px";
+  }
+}

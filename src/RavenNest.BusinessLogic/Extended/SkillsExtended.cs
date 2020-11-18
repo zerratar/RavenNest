@@ -1,5 +1,7 @@
 ﻿using RavenNest.Models;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace RavenNest.BusinessLogic.Extended
@@ -31,5 +33,37 @@ namespace RavenNest.BusinessLogic.Extended
             //var thisLevel = GameMath.OLD_LevelToExperience(level);
             return (float)(thisLevel / nextLevel);
         }
+        public IReadOnlyList<PlayerSkill> AsList()
+        {
+            var props = typeof(SkillsExtended)
+                .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+                .ToDictionary(x => x.Name, x => x);
+            var skills = new List<PlayerSkill>();
+            var names = props.Values.Where(x => x.Name.EndsWith("Level")).Select(x => x.Name.Replace("Level", ""));
+            foreach (var name in names)
+            {
+                var n = name;
+                var experience = (decimal)props[n].GetValue(this);
+                var level = (int)props[n + "Level"].GetValue(this);
+                var percent = (float)props[n + "Procent"].GetValue(this);
+                skills.Add(new PlayerSkill
+                {
+                    Name = n,
+                    Experience = experience,
+                    Level = level,
+                    Percent = percent
+                });
+            }
+
+            return skills;
+        }
+    }
+
+    public class PlayerSkill
+    {
+        public string Name { get; set; }
+        public int Level { get; set; }
+        public decimal Experience { get; set; }
+        public float Percent { get; set; }
     }
 }

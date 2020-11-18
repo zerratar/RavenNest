@@ -1,0 +1,77 @@
+﻿
+.item-tooltip {
+    position: absolute;
+    display: flex;
+    z-index: 1;
+    width: 200px;
+    background-color: #000000e6;
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    flex-flow: column;
+    text-align: left;
+}
+
+.inventory .item-tooltip {
+    margin-top: -25px;
+}
+
+.item-stat {
+    display: flex;
+    justify-content: space-between;
+}
+
+.item-name {
+    font-size: 15pt;
+    margin-bottom: -5px;
+}
+
+.item-type {
+    font-size: 10pt;
+    margin-bottom: 10px;
+}
+
+.item-requirement {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10pt;
+    margin-top: 5px;
+}
+
+/* ultima */
+.item-name[data-tier='pet'] {
+    COLOR: #ffae00;
+}
+/* phantom */
+.item-name[data-tier='10'] {
+    COLOR: #e34ff1;
+}
+/* ultima */
+.item-name[data-tier='9'] {
+    COLOR: #e34ff1;
+}
+
+/* dragon */
+.item-name[data-tier='8'] {
+    COLOR: #f14f4f;
+}
+
+/* rune */
+.item-name[data-tier='7'] {
+    COLOR: #4ff1c7;
+}
+
+/* adamantite */
+.item-name[data-tier='6'] {
+    color: #70ac5e;
+}
+
+/* mithril */
+.item-name[data-tier='5'] {
+    color: #5a85ff;
+}
+
+/* black */
+.item-name[data-tier='4'] {
+    color: #9191cd;
+}

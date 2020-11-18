@@ -9,6 +9,7 @@ namespace RavenNest.BusinessLogic.Game
     public interface IItemManager
     {
         ItemCollection GetAllItems();
+        Item GetItem(Guid itemId);
         bool AddItem(Item item);
         bool UpdateItem(Item item);
         bool RemoveItem(Guid itemId);
@@ -44,6 +45,12 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             return memoryCache.Set("GetAllItems", collection, DateTime.UtcNow.AddSeconds(ItemCacheDurationSeconds));
+        }
+
+        public Item GetItem(Guid itemId)
+        {
+            var dataItem = gameData.GetItem(itemId);
+            return ModelMapper.Map(gameData, dataItem);
         }
 
         public bool AddItem(Item item)

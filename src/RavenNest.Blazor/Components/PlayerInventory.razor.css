@@ -1,0 +1,46 @@
+﻿.player-inventory {
+    background-color: #ececec;
+    padding-top: 25px;
+    border-top: 1px solid #dfdfdf;
+    margin-top: 25px;
+    padding-bottom: 25px;
+}
+
+.inventory-items {
+    display: flex;
+    flex-flow: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.inventory-item {
+    margin: 5px;
+}
+
+.inventory .inventory-item {
+    margin-bottom: -25px;
+}
+
+.item-amount {
+    position: relative;
+    top: -31px;
+    right: -61px;
+    background-color: white;
+    width: 30px;
+    color: #353535;
+    border-radius: 0 0 14px 0;
+}
+
+.inventory-item .item-image img {
+    width: 75px;
+    height: 75px;
+    max-width: 100%;
+    border: 3px solid #ffffff;
+    border-radius: 20px;
+    /* cursor: pointer; */
+    padding: 5px;
+}
+
+.inventory-item.equipped .item-image img {
+    border-color: #4e97b3;
+}

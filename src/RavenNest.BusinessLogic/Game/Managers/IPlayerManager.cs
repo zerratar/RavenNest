@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.Models;
@@ -19,6 +20,7 @@ namespace RavenNest.BusinessLogic.Game
         Player GetPlayer(Guid userId, string identifier);
         WebsitePlayer GetWebsitePlayer(string userId, string identifier);
         WebsitePlayer GetWebsitePlayer(Guid userId, string identifier);
+        IReadOnlyList<WebsitePlayer> GetWebsitePlayers(string userId);
         void UpdateUserLoyalty(SessionToken sessionToken, UserLoyaltyUpdate update);
         void UpdatePlayerActivity(SessionToken sessionToken, PlayerSessionActivity update);
         bool UpdatePlayerState(SessionToken sessionToken, CharacterStateUpdate update);
@@ -26,6 +28,7 @@ namespace RavenNest.BusinessLogic.Game
         bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics, Guid? characterId = null);
 
         bool UpdateAppearance(SessionToken token, string userId, Models.SyntyAppearance appearance);
+
         bool UpdateAppearance(string userId, string identifier, Models.SyntyAppearance appearance);
         bool UpdateAppearance(AuthToken token, string userId, string identifier, Models.SyntyAppearance appearance);
 

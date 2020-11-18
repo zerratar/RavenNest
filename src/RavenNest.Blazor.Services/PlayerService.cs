@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
 using RavenNest.Sessions;
@@ -23,6 +24,37 @@ namespace RavenNest.Blazor.Services
         {
             this.gameData = gameData;
             this.playerManager = playerManager;
+        }
+        
+        public int GetCombatLevel(WebsitePlayer player)
+        {
+            return (int)(((player.Skills.AttackLevel + player.Skills.DefenseLevel + player.Skills.HealthLevel + player.Skills.StrengthLevel) / 4f) +
+                   ((player.Skills.RangedLevel + player.Skills.MagicLevel) / 8f));
+        }
+        public int GetCombatLevel(Player player)
+        {
+            return (int)(((player.Skills.AttackLevel + player.Skills.DefenseLevel + player.Skills.HealthLevel + player.Skills.StrengthLevel) / 4f) +
+                   ((player.Skills.RangedLevel + player.Skills.MagicLevel) / 8f));
+        }
+
+        public async Task<WebsitePlayer> GetMyPlayerByIndexAsync(int index)
+        {
+            return await Task.Run(() =>
+            {
+                var session = GetSession();
+                var userId = session.UserId;
+                return playerManager.GetWebsitePlayer(userId, index.ToString());
+            });
+        }
+
+        public async Task<IReadOnlyList<WebsitePlayer>> GetMyPlayersAsync()
+        {
+            return await Task.Run(() =>
+            {
+                var session = GetSession();
+                var userId = session.UserId;
+                return playerManager.GetWebsitePlayers(userId);
+            });
         }
 
         public async Task<IReadOnlyList<Player>> SearchForPlayersAsync(string searchText, bool ignoreClanInvitedPlayers = true)
