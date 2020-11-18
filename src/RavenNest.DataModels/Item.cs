@@ -35,5 +35,6 @@ namespace RavenNest.DataModels
         private long oreCost; public long OreCost { get => oreCost; set => Set(ref oreCost, value); }
         private long shopBuyPrice; public long ShopBuyPrice { get => shopBuyPrice; set => Set(ref shopBuyPrice, value); }
         private long shopSellPrice; public long ShopSellPrice { get => shopSellPrice; set => Set(ref shopSellPrice, value); }
+        private bool? soulbound; public bool? Soulbound { get => soulbound; set => Set(ref soulbound, value); }
     }
 }

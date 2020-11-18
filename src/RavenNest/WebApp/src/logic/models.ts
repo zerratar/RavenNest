@@ -9,6 +9,12 @@ export class CharacterSkill {
   }
 }
 
+export class PlayerCollection {
+  constructor(
+    public readonly players: GameSessionPlayer[]) {
+  }
+}
+
 export class GameSession {
   constructor(
     public readonly id: string,

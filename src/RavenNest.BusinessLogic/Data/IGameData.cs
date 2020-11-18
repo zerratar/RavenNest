@@ -40,6 +40,7 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<DataModels.Character> GetCharacters();
         IReadOnlyList<DataModels.Character> GetSessionCharacters(DataModels.GameSession currentSession);
         User GetUser(string twitchUserId);
+        UserLoyalty GetUserLoyalty(Guid userId);
         int GetMarketItemCount();
         int GetNextGameEventRevision(Guid sessionId);
         DataModels.GameSession GetSession(Guid sessionId, bool updateSession = true);
@@ -85,8 +86,16 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Add
+        void Add(CharacterClanMembership ev);
+        void Add(ClanRole ev);
+        void Add(Clan ev);
+
+        void Add(UserLoyalty loyalty);
+        void Add(UserLoyaltyRank loyaltyRank);
+        void Add(UserLoyaltyReward loyaltyRankReward);
 
         void Add(UserPatreon pat);
+        IReadOnlyList<CharacterClanMembership> GetClanMemberships(Guid clanId);
         void Add(ExpMultiplierEvent ev);
         void Add(CharacterSessionActivity ev);
         void Add(DataModels.Item entity);
@@ -112,20 +121,10 @@ namespace RavenNest.BusinessLogic.Data
 
         #endregion
 
-        //#region Update
-        //void Update(DataModels.CharacterState state);
-        //void Update(DataModels.Resources resources);
-        //void Update(DataModels.InventoryItem itemToEquip);
-        //void Update(DataModels.Skills skills);
-        //void Update(DataModels.SyntyAppearance syntyAppearance);
-        //void Update(DataModels.Appearance appearance);
-        //void Update(DataModels.MarketItem marketItem);
-        //void Update(GameSession session);
-        //void Update(Character character);
-        //void UpdateRange(IEnumerable<DataModels.InventoryItem> weapons);
-        //#endregion
-
         #region Remove
+        void Remove(CharacterClanMembership ev);
+        void Remove(ClanRole ev);
+        void Remove(Clan ev);
         void Remove(CharacterSessionActivity ev);
         void Remove(DataModels.GameEvent gameEvent);
         void Remove(DataModels.ItemCraftingRequirement craftingRequirement);
@@ -141,6 +140,10 @@ namespace RavenNest.BusinessLogic.Data
         DataModels.Resources GetResourcesByCharacterId(Guid sellerCharacterId);
         DataModels.Statistics GetStatistics(Guid statisticsId);
         DataModels.Clan GetClan(Guid clanId);
+        DataModels.Clan GetClanByUser(Guid userId);
+        DataModels.ClanRole GetClanRole(Guid roleId);
+        IReadOnlyList<DataModels.ClanRole> GetClanRoles(Guid clanId);
+        DataModels.CharacterClanMembership GetClanMembership(Guid characterId);
 
         DataModels.SyntyAppearance GetAppearance(Guid? syntyAppearanceId);
         DataModels.Skills GetSkills(Guid skillsId);

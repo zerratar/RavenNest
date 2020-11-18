@@ -19,7 +19,7 @@ namespace RavenNest.BusinessLogic.Net
             packetHandlers["update_character_state"] = new UpdateCharacterStatePacketHandler(playerManager);
             packetHandlers["update_character_skills"] = new UpdateCharacterSkillPacketHandler(playerManager);
             packetHandlers["update_user_session_stats"] = new UpdateUserSessionStatsPacketHandler(playerManager);
-
+            packetHandlers["update_user_loyalty"] = new UpdateUserLoyaltyPacketHandler(playerManager);
         }
 
         public IGamePacketHandler Default { get; }

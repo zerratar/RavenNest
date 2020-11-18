@@ -28,6 +28,16 @@ namespace RavenNest.BusinessLogic.Data
         private readonly ConcurrentDictionary<Guid, SessionState> sessionStates
             = new ConcurrentDictionary<Guid, SessionState>();
 
+
+        private readonly EntitySet<UserLoyalty, Guid> loyalty;
+        private readonly EntitySet<UserLoyaltyRank, Guid> loyaltyRanks;
+        private readonly EntitySet<UserLoyaltyReward, Guid> loyaltyRewards;
+        private readonly EntitySet<UserClaimedLoyaltyReward, Guid> claimedLoyaltyRewards;
+
+        private readonly EntitySet<Clan, Guid> clans;
+        private readonly EntitySet<ClanRole, Guid> clanRoles;
+        private readonly EntitySet<CharacterClanMembership, Guid> clanMemberships;
+
         private readonly EntitySet<UserPatreon, Guid> patreons;
         private readonly EntitySet<CharacterSessionActivity, Guid> characterSessionActivities;
         private readonly EntitySet<Appearance, Guid> appearances;
@@ -49,7 +59,6 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<Skills, Guid> skills;
         private readonly EntitySet<User, Guid> users;
         private readonly EntitySet<GameClient, Guid> gameClients;
-        private readonly EntitySet<Clan, Guid> clans;
         private readonly EntitySet<Village, Guid> villages;
         private readonly EntitySet<VillageHouse, Guid> villageHouses;
 
@@ -81,6 +90,10 @@ namespace RavenNest.BusinessLogic.Data
                 stopWatch.Start();
 
                 IEntityRestorePoint restorePoint = backupProvider.GetRestorePoint(new[] {
+                        typeof(UserLoyalty),
+                        typeof(ClanRole),
+                        typeof(CharacterClanMembership),
+                        typeof(UserClaimedLoyaltyReward),
                         typeof(UserPatreon),
                         typeof(Appearance),
                         typeof(SyntyAppearance),
@@ -107,10 +120,21 @@ namespace RavenNest.BusinessLogic.Data
 
                 using (var ctx = this.db.Get())
                 {
+                    loyalty = new EntitySet<UserLoyalty, Guid>(restorePoint?.Get<UserLoyalty>() ?? ctx.UserLoyalty.ToList(), i => i.Id);
+                    loyalty.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                    characterSessionActivities = new EntitySet<CharacterSessionActivity, Guid>(
-                        restorePoint?.Get<CharacterSessionActivity>() ?? ctx.CharacterSessionActivity.ToList(), i => i.Id);
+                    loyaltyRanks = new EntitySet<UserLoyaltyRank, Guid>(ctx.UserLoyaltyRank.ToList(), i => i.Id);
 
+                    loyaltyRewards = new EntitySet<UserLoyaltyReward, Guid>(ctx.UserLoyaltyReward.ToList(), i => i.Id);
+                    loyaltyRewards.RegisterLookupGroup(nameof(UserLoyaltyRank), x => x.RankId);
+
+                    claimedLoyaltyRewards = new EntitySet<UserClaimedLoyaltyReward, Guid>(
+                        restorePoint?.Get<UserClaimedLoyaltyReward>() ?? ctx.UserClaimedLoyaltyReward.ToList(), i => i.Id);
+                    claimedLoyaltyRewards.RegisterLookupGroup(nameof(User), x => x.UserId);
+                    claimedLoyaltyRewards.RegisterLookupGroup(nameof(UserLoyaltyReward), x => x.RewarId);
+                    claimedLoyaltyRewards.RegisterLookupGroup(nameof(Character), x => x.CharacterId.GetValueOrDefault());
+
+                    characterSessionActivities = new EntitySet<CharacterSessionActivity, Guid>(restorePoint?.Get<CharacterSessionActivity>() ?? ctx.CharacterSessionActivity.ToList(), i => i.Id);
                     characterSessionActivities.RegisterLookupGroup(nameof(GameSession), x => x.SessionId);
                     characterSessionActivities.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
                     characterSessionActivities.RegisterLookupGroup(nameof(User), x => x.UserId);
@@ -139,14 +163,8 @@ namespace RavenNest.BusinessLogic.Data
                     characters.RegisterLookupGroup(nameof(User), x => x.UserId);
                     characters.RegisterLookupGroup(nameof(GameSession), x => x.UserIdLock.GetValueOrDefault());
 
-                    characterStates = new EntitySet<CharacterState, Guid>(
-                        restorePoint?.Get<CharacterState>() ??
-                        ctx.CharacterState.ToList(), i => i.Id);
-
-                    gameSessions = new EntitySet<GameSession, Guid>(
-                        restorePoint?.Get<GameSession>() ??
-                        ctx.GameSession.ToList(), i => i.Id);
-
+                    characterStates = new EntitySet<CharacterState, Guid>(restorePoint?.Get<CharacterState>() ?? ctx.CharacterState.ToList(), i => i.Id);
+                    gameSessions = new EntitySet<GameSession, Guid>(restorePoint?.Get<GameSession>() ?? ctx.GameSession.ToList(), i => i.Id);
                     gameSessions.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     // we can still store the game events, but no need to load them on startup as the DB will quickly be filled.
@@ -155,16 +173,10 @@ namespace RavenNest.BusinessLogic.Data
                     gameEvents.RegisterLookupGroup(nameof(GameSession), x => x.GameSessionId);
                     gameEvents.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                    inventoryItems = new EntitySet<InventoryItem, Guid>(
-                        restorePoint?.Get<InventoryItem>() ??
-                        ctx.InventoryItem.ToList(), i => i.Id);
-
+                    inventoryItems = new EntitySet<InventoryItem, Guid>(restorePoint?.Get<InventoryItem>() ?? ctx.InventoryItem.ToList(), i => i.Id);
                     inventoryItems.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
-                    marketItems = new EntitySet<MarketItem, Guid>(
-                        restorePoint?.Get<MarketItem>() ??
-                        ctx.MarketItem.ToList(), i => i.Id);
-
+                    marketItems = new EntitySet<MarketItem, Guid>(restorePoint?.Get<MarketItem>() ?? ctx.MarketItem.ToList(), i => i.Id);
                     marketItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
                     items = new EntitySet<Item, Guid>(ctx.Item.ToList(), i => i.Id);
@@ -180,9 +192,19 @@ namespace RavenNest.BusinessLogic.Data
                         restorePoint?.Get<ItemCraftingRequirement>() ??
                         ctx.ItemCraftingRequirement.ToList(), i => i.Id);
                     itemCraftingRequirements.RegisterLookupGroup(nameof(Item), x => x.ItemId);
-                    //itemCraftingRequirements.RegisterLookupGroup(nameof(ItemCraftingRequirement.ResourceItemId), x => x.ItemId);
 
-                    clans = new EntitySet<Clan, Guid>(ctx.Clan.ToList(), i => i.Id);
+                    clans = new EntitySet<Clan, Guid>(
+                        restorePoint?.Get<Clan>() ?? ctx.Clan.ToList(), i => i.Id);
+                    clans.RegisterLookupGroup(nameof(User), x => x.UserId);
+
+                    clanRoles = new EntitySet<ClanRole, Guid>(
+                        restorePoint?.Get<ClanRole>() ?? ctx.ClanRole.ToList(), i => i.Id);
+                    clanRoles.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
+
+                    clanMemberships = new EntitySet<CharacterClanMembership, Guid>(
+                        restorePoint?.Get<CharacterClanMembership>() ?? ctx.CharacterClanMembership.ToList(), i => i.Id);
+                    clanMemberships.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
+                    clanMemberships.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
                     villages = new EntitySet<Village, Guid>(
                         restorePoint?.Get<Village>() ??
@@ -217,11 +239,12 @@ namespace RavenNest.BusinessLogic.Data
 
                     entitySets = new IEntitySet[]
                     {
-                        patreons,
+                        patreons, loyalty, loyaltyRewards, loyaltyRanks, claimedLoyaltyRewards,
                         expMultiplierEvents,
                         appearances, syntyAppearances, characters, characterStates,
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems,
-                        resources, statistics, skills, users, villages, villageHouses, clans,
+                        resources, statistics, skills, users, villages, villageHouses,
+                        clans, clanRoles, clanMemberships,
                         npcs, npcSpawns, npcItemDrops, itemCraftingRequirements, characterSessionActivities
                     };
                 }
@@ -245,15 +268,12 @@ namespace RavenNest.BusinessLogic.Data
 
         private void UpgradeSkillLevels(EntitySet<Skills, Guid> skills)
         {
-
             // total exp 170: 0
             // 170 + overflow
 
             // (total) exp required for current level
             // 170: 170totalexp - total exp for current level
             // 
-
-
             foreach (var skill in skills.Entities)
             {
                 var data = skill.GetSkills();
@@ -283,6 +303,21 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         public GameClient Client { get; private set; }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(Clan entity) => Update(() => this.clans.Add(entity));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(ClanRole entity) => Update(() => this.clanRoles.Add(entity));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(CharacterClanMembership entity) => Update(() => this.clanMemberships.Add(entity));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(UserLoyalty loyalty) => Update(() => this.loyalty.Add(loyalty));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(UserLoyaltyRank loyaltyRank) => Update(() => loyaltyRanks.Add(loyaltyRank));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(UserLoyaltyReward loyaltyRankReward) => Update(() => loyaltyRewards.Add(loyaltyRankReward));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(UserPatreon ev) => Update(() => patreons.Add(ev));
@@ -616,6 +651,9 @@ namespace RavenNest.BusinessLogic.Data
                 .FirstOrDefault();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public UserLoyalty GetUserLoyalty(Guid userId) => loyalty[nameof(User), userId].FirstOrDefault();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public UserPatreon GetPatreonUser(Guid userId) =>
             patreons[nameof(User), userId].FirstOrDefault();
 
@@ -639,6 +677,13 @@ namespace RavenNest.BusinessLogic.Data
         {
             return characterSessionActivities[nameof(Character), characterId].FirstOrDefault(x => x.SessionId == sessionId);
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(Clan entity) => this.clans.Remove(entity);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(ClanRole entity) => this.clanRoles.Remove(entity);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(CharacterClanMembership entity) => this.clanMemberships.Remove(entity);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(CharacterSessionActivity ev) => characterSessionActivities.Remove(ev);
@@ -692,6 +737,30 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Clan GetClan(Guid clanId) => clans[clanId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<CharacterClanMembership> GetClanMemberships(Guid clanId)
+        {
+            return clanMemberships[nameof(Clan), clanId];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Clan GetClanByUser(Guid userId)
+        {
+            return clans[nameof(User), userId].FirstOrDefault();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public CharacterClanMembership GetClanMembership(Guid characterId) =>
+            clanMemberships[nameof(Character), characterId].FirstOrDefault();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ClanRole GetClanRole(Guid roleId) =>
+            clanRoles[roleId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<ClanRole> GetClanRoles(Guid clanId) =>
+            clanRoles[nameof(Clan), clanId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CharacterState GetState(Guid? stateId) => stateId == null ? null : characterStates[stateId.Value];

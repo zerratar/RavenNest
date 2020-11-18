@@ -77,6 +77,12 @@ namespace RavenNest.Controllers
             return playerManager.AddPlayer(AssertGetSessionToken(), userId, username.Value, identifier);
         }
 
+        [HttpPost()]
+        public PlayerJoinResult PlayerJoin(PlayerJoinData playerData)
+        {
+            return playerManager.AddPlayer(AssertGetSessionToken(), playerData);
+        }
+
         [HttpGet("{userId}")]
         [MethodDescriptor(
             Name = "Get Player by Twitch UserId",
