@@ -42,22 +42,16 @@ namespace RavenNest.BusinessLogic
             {
                 var p = props.FirstOrDefault(x => x.Name == prop.Name);
                 if (p == null)
-                {
                     continue;
-                }
 
                 try
                 {
                     if (data == null) continue;
                     var value = prop.GetValue(data);
                     if (prop.PropertyType.IsEnum)
-                    {
                         p.SetValue(output, Convert.ToInt32(value));
-                    }
                     else
-                    {
                         p.SetValue(output, value);
-                    }
                 }
                 catch
                 {

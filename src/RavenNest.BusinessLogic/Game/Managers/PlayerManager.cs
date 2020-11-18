@@ -243,7 +243,7 @@ namespace RavenNest.BusinessLogic.Game
             gameData.Add(gameEvent);
         }
 
-        public Player GetGlobalPlayer(Guid userId, string identifier)
+        public Player GetPlayer(Guid userId, string identifier)
         {
             var user = gameData.GetUser(userId);
             if (user == null)
@@ -334,7 +334,7 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        public PlayerExtended GetGlobalPlayerExtended(Guid userId, string identifier)
+        public WebsitePlayer GetWebsitePlayer(Guid userId, string identifier)
         {
             var user = gameData.GetUser(userId);
             if (user == null)
@@ -342,10 +342,10 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
-            return GetPlayerExtended(user, identifier);
+            return GetWebsitePlayer(user, identifier);
         }
 
-        public PlayerExtended GetPlayerExtended(string userId, string identifier)
+        public WebsitePlayer GetWebsitePlayer(string userId, string identifier)
         {
             var user = gameData.GetUser(userId);
             if (user == null)
@@ -353,7 +353,7 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
-            return GetPlayerExtended(user, identifier);
+            return GetWebsitePlayer(user, identifier);
         }
 
 
@@ -904,7 +904,7 @@ namespace RavenNest.BusinessLogic.Game
             return itemCollection;
         }
 
-        public IReadOnlyList<PlayerFull> GetFullPlayers()
+        public IReadOnlyList<WebsiteAdminPlayer> GetFullPlayers()
         {
             var chars = gameData.GetCharacters();
             return chars.Select(x => new
@@ -913,7 +913,7 @@ namespace RavenNest.BusinessLogic.Game
                 Character = x
             })
             .Where(x => x.Character != null && x.User != null)
-            .Select(x => x.User.MapFull(gameData, x.Character))
+            .Select(x => x.User.MapForAdmin(gameData, x.Character))
             .ToList();
         }
 
@@ -1041,10 +1041,10 @@ namespace RavenNest.BusinessLogic.Game
             return null;
         }
 
-        private PlayerExtended GetPlayerExtended(User user, string identifier)
+        private WebsitePlayer GetWebsitePlayer(User user, string identifier)
         {
             var character = gameData.GetCharacterByUserId(user.Id, identifier);
-            if (character == null) return new PlayerExtended
+            if (character == null) return new WebsitePlayer
             {
                 Appearance = new Models.SyntyAppearance(),
                 Clan = new Models.Clan(),
@@ -1054,7 +1054,7 @@ namespace RavenNest.BusinessLogic.Game
                 State = new Models.CharacterState(),
                 Statistics = new Models.Statistics()
             };
-            return character.MapExtended(gameData, user);
+            return character.MapForWebsite(gameData, user);
         }
 
         private void UpdateCharacterAppearance(Models.SyntyAppearance appearance, Character character)
