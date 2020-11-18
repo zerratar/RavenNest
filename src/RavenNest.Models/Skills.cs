@@ -6,7 +6,6 @@ namespace RavenNest.Models
     public class Skills
     {
         public Guid Id { get; set; }
-
         public decimal Attack { get; set; }
         public decimal Defense { get; set; }
         public decimal Strength { get; set; }

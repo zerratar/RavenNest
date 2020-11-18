@@ -1,6 +1,10 @@
 ﻿@layout DashboardLayout
+@using RavenNest.Models
+@using RavenNest.BusinessLogic.Extended
 @page "/characters"
+@page "/characters/{index}"
 @inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject NavigationManager NavigationManager
 
 @if (session.UserId == null)
@@ -9,16 +13,91 @@
 }
 else
 {
-  <p>Welcome back, @session.UserName</p>
+  if (players == null)
+  {
+    <LoadIndicator></LoadIndicator>
+  }
+  else
+  {
+    if (selectedPlayer == null)
+    {
+      <p>Please select one of your characters to see further details.</p>
+      <div class="character-selection">
+        @foreach (var p in players)
+        {
+          <div class="character" @onclick="(()=> SelectPlayer(p))">
+            <div class="character-name">
+              @p.Name
+            </div>
+            <div class="character-index">
+              @p.CharacterIndex  @(p.Identifier != null ? $"({p.Identifier})" : "")
+            </div>
+            <div class="character-level">
+              @PlayerService.GetCombatLevel(p)
+            </div>
+          </div>
+        }
+      </div>
+    }
+    else
+    {
+      <button class="btn btn-primary" @onclick="(()=>SelectPlayer(null))">Select another character</button>
+      <div class="character-details">
+        <h1>@selectedPlayer.Name</h1>
+        <div class="character-index">
+          @selectedPlayer.CharacterIndex @(selectedPlayer.Identifier != null ? $"({selectedPlayer.Identifier})" : "")
+        </div>
+        <div class="character-level">
+          @PlayerService.GetCombatLevel(selectedPlayer)
+        </div>
+      </div>
+
+      <button class="btn btn-primary @SelectedClass(CharacterViewState.Skills)" @onclick="ShowSkills">Skills</button>
+      <button class="btn btn-primary @SelectedClass(CharacterViewState.Inventory)" @onclick="ShowInventory">Inventory</button>
+      @if (selectedPlayer.Clan != null)
+      {
+        <button class="btn btn-primary @SelectedClass(CharacterViewState.Clan)" @onclick="ShowClan">Clan</button>
+      }
+
+      switch (viewState)
+      {
+        case CharacterViewState.Inventory:
+          <PlayerInventory Player="@selectedPlayer"></PlayerInventory>
+          break;
+        case CharacterViewState.Clan:
+          <PlayerClan Player="@selectedPlayer"></PlayerClan>
+          break;
+        case CharacterViewState.Skills:
+          <PlayerSkills Player="@selectedPlayer"></PlayerSkills>
+          break;
+      }
+    }
+  }
 }
 
 @code {
-  private RavenNest.Sessions.SessionInfo session;
 
-  protected override void OnInitialized()
+  [Parameter]
+  public string Index { get; set; }
+
+  private WebsitePlayer selectedPlayer;
+  private IReadOnlyList<WebsitePlayer> players;
+  private RavenNest.Sessions.SessionInfo session;
+  private CharacterViewState viewState;
+
+  private string SelectedClass(CharacterViewState state)
+  {
+    return viewState == state ? "selected" : "";
+  }
+
+  protected override async Task OnInitializedAsync()
   {
     session = AuthService.GetSession();
-
+    if (Index != null && int.TryParse(Index, out var i))
+    {
+      selectedPlayer = await PlayerService.GetMyPlayerByIndexAsync(i);
+    }
+    players = await PlayerService.GetMyPlayersAsync();
   }
 
   protected override void OnAfterRender(bool firstRender)
@@ -27,5 +106,32 @@ else
     {
       NavigationManager.NavigateTo("/login");
     }
+  }
+
+  private void ShowInventory()
+  {
+    viewState = CharacterViewState.Inventory;
+  }
+
+  private void ShowSkills()
+  {
+    viewState = CharacterViewState.Skills;
+  }
+
+  private void ShowClan()
+  {
+    viewState = CharacterViewState.Clan;
+  }
+
+  private void SelectPlayer(WebsitePlayer player)
+  {
+    selectedPlayer = player;
+  }
+
+  private enum CharacterViewState
+  {
+    Skills,
+    Inventory,
+    Clan
   }
 }

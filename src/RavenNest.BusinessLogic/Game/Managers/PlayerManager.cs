@@ -349,13 +349,23 @@ namespace RavenNest.BusinessLogic.Game
         {
             var user = gameData.GetUser(userId);
             if (user == null)
-            {
                 return null;
-            }
 
             return GetWebsitePlayer(user, identifier);
         }
 
+        public IReadOnlyList<WebsitePlayer> GetWebsitePlayers(string userId)
+        {
+            var user = gameData.GetUser(userId);
+            if (user == null)
+                return null;
+
+            var userChars = gameData.GetCharacters(x => x.UserId == user.Id);
+            var result = new List<WebsitePlayer>();
+            foreach (var c in userChars)
+                result.Add(GetWebsitePlayer(user, c.Identifier));
+            return result;
+        }
 
         public Player GetPlayer(Guid characterId)
         {

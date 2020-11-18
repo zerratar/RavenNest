@@ -16,6 +16,11 @@ namespace RavenNest.Blazor.Services
             this.itemManager = itemManager;
         }
 
+        public Item GetItem(Guid itemId)
+        {
+            return itemManager.GetItem(itemId);
+        }
+
         public ItemCollection GetItems()
         {
             return itemManager.GetAllItems();

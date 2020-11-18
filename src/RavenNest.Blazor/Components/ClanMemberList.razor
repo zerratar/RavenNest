@@ -17,10 +17,10 @@ else
                      @bind-Value="selectedPlayer"
                      @onselectionchange="SelectedPlayerChanged">
     <SelectedTemplate>
-      @context.UserName (Level @GetCombatLevel(context) #@context.CharacterIndex)
+      @context.UserName (Level @PlayerService.GetCombatLevel(context) #@context.CharacterIndex)
     </SelectedTemplate>
     <ResultTemplate>
-      @context.UserName (Level @GetCombatLevel(context) #@context.CharacterIndex)
+      @context.UserName (Level @PlayerService.GetCombatLevel(context) #@context.CharacterIndex)
     </ResultTemplate>
   </BlazoredTypeahead>
 
@@ -74,12 +74,6 @@ else
     private Player selectedPlayer;
 
     IReadOnlyList<ClanMember> members = null;
-
-    public int GetCombatLevel(Player player)
-    {
-      return (int)(((player.Skills.AttackLevel + player.Skills.DefenseLevel + player.Skills.HealthLevel + player.Skills.StrengthLevel) / 4f) +
-             ((player.Skills.RangedLevel + player.Skills.MagicLevel) / 8f));
-    }
 
     protected override void OnInitialized()
     {
