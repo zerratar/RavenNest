@@ -1,4 +1,4 @@
 ﻿namespace RavenNest.Models
 {
-    public class PagedPlayerCollection : PagedCollection<PlayerFull> { }
+    public class PagedPlayerCollection : PagedCollection<WebsiteAdminPlayer> { }
 }

@@ -16,9 +16,9 @@ namespace RavenNest.BusinessLogic.Game
         Player GetPlayer(SessionToken sessionToken, string userId);
         Player GetPlayer(SessionToken sessionToken);
         Player GetPlayer(string userId, string identifier);
-        Player GetGlobalPlayer(Guid userId, string identifier);
-        PlayerExtended GetPlayerExtended(string userId, string identifier);
-        PlayerExtended GetGlobalPlayerExtended(Guid userId, string identifier);
+        Player GetPlayer(Guid userId, string identifier);
+        WebsitePlayer GetWebsitePlayer(string userId, string identifier);
+        WebsitePlayer GetWebsitePlayer(Guid userId, string identifier);
         void UpdateUserLoyalty(SessionToken sessionToken, UserLoyaltyUpdate update);
         void UpdatePlayerActivity(SessionToken sessionToken, PlayerSessionActivity update);
         bool UpdatePlayerState(SessionToken sessionToken, CharacterStateUpdate update);
@@ -50,7 +50,7 @@ namespace RavenNest.BusinessLogic.Game
         ItemCollection GetEquippedItems(SessionToken token, string userId);
         ItemCollection GetAllItems(SessionToken token, string userId);
         IReadOnlyList<Player> GetPlayers();
-        IReadOnlyList<PlayerFull> GetFullPlayers();
+        IReadOnlyList<WebsiteAdminPlayer> GetFullPlayers();
         void EquipBestItems(DataModels.Character character);
         bool AcquiredUserLock(SessionToken token, DataModels.Character character);
         bool AddTokens(SessionToken sessionToken, string userId, int amount);

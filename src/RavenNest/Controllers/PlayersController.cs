@@ -270,12 +270,12 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("extended/{identifier}")]
-        public async Task<PlayerExtended> GetPlayerExtendedAsync(string identifier)
+        public async Task<WebsitePlayer> GetPlayerExtendedAsync(string identifier)
         {
             var twitchUser = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
             if (twitchUser != null)
             {
-                return playerManager.GetPlayerExtended(twitchUser.Id.ToString(), identifier);
+                return playerManager.GetWebsitePlayer(twitchUser.Id.ToString(), identifier);
             }
 
             var sessionToken = GetSessionToken();
@@ -284,7 +284,7 @@ namespace RavenNest.Controllers
                 var auth = GetAuthToken();
                 if (auth != null && !auth.Expired)
                 {
-                    return playerManager.GetGlobalPlayerExtended(auth.UserId, identifier);
+                    return playerManager.GetWebsitePlayer(auth.UserId, identifier);
                 }
 
             }
@@ -333,7 +333,7 @@ namespace RavenNest.Controllers
                 var auth = GetAuthToken();
                 if (auth != null && !auth.Expired)
                 {
-                    return playerManager.GetGlobalPlayer(auth.UserId, "1");
+                    return playerManager.GetPlayer(auth.UserId, "1");
                 }
 
                 return null;
