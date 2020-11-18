@@ -23,7 +23,8 @@
             <td><a :href="streamerUrl(session.userName)" target="_blank">{{session.userName}}</a></td>
             <td>{{session.adminPrivileges}}</td>
             <td>{{session.modPrivileges}}</td>
-            <td>{{playerCount(session)}}</td>
+            <td>
+              <button class="link-button" @click="showPlayerList(session.id)">{{playerCount(session)}}</button></td>
             <td>{{session.started}}</td>
             <td>{{session.updated}}</td>
             <td>{{session.status}}</td>
@@ -31,6 +32,8 @@
         </tbody>
       </table>
 
+     <player-list :key="revision" v-on:closed="hideModals" :visible="getModalVisible()" :players="getPlayerCollection()"></player-list>
+     
       <div v-if="isLoading" class="loader">
         <div class="lds-ripple">
           <div></div>
@@ -45,12 +48,13 @@
   import { Component, Vue } from 'vue-property-decorator';
   import { SessionState } from '@/App.vue';
   import GameMath from '@/logic/game-math';
-  import { GameSession } from '@/logic/models';
+  import { GameSession, GameSessionPlayer, PlayerCollection } from '@/logic/models';
   import SessionRepository from '@/logic/session-repository';
   import MyPlayer from '@/logic/my-player';
   import Requests from '@/requests';
   import router from 'vue-router';
   import AdminService from '@/logic/admin-service';
+  import PlayerList from './PlayerList.vue';
 
   @Component({})
   export default class Sessions extends Vue {
@@ -60,6 +64,36 @@
     private sortOrder: string = '';
     private query: string = '';
     private revision: number = 0;
+    private selectedSessionId:string='';
+    private isModalVisible:boolean = false;
+
+
+    public getModalVisible(): boolean { return this.isModalVisible; }
+
+    private showPlayerList(id:string) {
+      this.showModal(id, () => this.isModalVisible = true);
+    }
+
+    // tslint:disable-next-line:ban-types
+    private showModal(id: string, action: Function) {
+      this.hideModals();
+      this.selectedSessionId=id;
+      action();
+      ++this.revision;
+    }
+
+    private hideModals() {
+      this.isModalVisible = false;
+    }
+
+    public getPlayerCollection(): PlayerCollection {
+      const sessions = this.getSessions();
+      const session = sessions.find(x => x.id == this.selectedSessionId);
+      if (session != undefined){
+        return new PlayerCollection(session.players);
+      }
+      return new PlayerCollection([]);
+    }
 
     public streamerUrl(name: string): string {
       return `https://www.twitch.tv/${name}`;
@@ -109,6 +143,15 @@
 </script>
 
 <style scoped>
+
+button.link-button {
+    background-color: #0e0e0f;
+    color: #fff;
+    border: 0;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin: 2px;
+}
 
 table.game-sessions {
     width: 100%;

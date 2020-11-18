@@ -90,6 +90,10 @@ namespace RavenNest.BusinessLogic.Game
             var sessionOwner = gameData.GetUser(session.UserId);
             var item = gameData.GetItem(itemId);
             string itemTag = null;
+
+            if (item.Soulbound.GetValueOrDefault())
+                return new ItemSellResult(ItemTradeState.Failed);
+
             if (item.Category == (int)DataModels.ItemCategory.StreamerToken)
                 itemTag = sessionOwner.UserId;
 

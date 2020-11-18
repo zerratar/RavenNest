@@ -67,12 +67,37 @@ namespace RavenNest.BusinessLogic.Game
 
         public Player CreatePlayer(string userId, string userName, string identifier)
         {
-            return CreatePlayer(null, userId, userName, identifier);
+            return CreateUserAndPlayer(null, new PlayerJoinData
+            {
+                UserId = userId,
+                UserName = userName,
+                Identifier = identifier
+            });
         }
 
-        public PlayerJoinResult AddPlayer(SessionToken token, string userId, string userName, string identifier = null)
+        public PlayerJoinResult AddPlayer(
+            SessionToken token,
+            string userId,
+            string userName,
+            string identifier = null)
+        {
+            return AddPlayer(token, new PlayerJoinData
+            {
+                Identifier = identifier,
+                UserId = userId,
+                UserName = userName
+            });
+        }
+
+        public PlayerJoinResult AddPlayer(
+            SessionToken token,
+            PlayerJoinData playerData)
         {
             var result = new PlayerJoinResult();
+            var userId = playerData.UserId;
+            var userName = playerData.UserName;
+            var identifier = playerData.Identifier;
+
             var session = gameData.GetSession(token.SessionId);
             if (session == null || session.Status != (int)SessionStatus.Active)
             {
@@ -84,7 +109,7 @@ namespace RavenNest.BusinessLogic.Game
             if (user == null)
             {
                 result.Success = true;
-                result.Player = CreatePlayer(session, userId, userName, identifier);
+                result.Player = CreateUserAndPlayer(session, playerData);
                 return result;
             }
 
@@ -108,10 +133,22 @@ namespace RavenNest.BusinessLogic.Game
                 return result;
             }
 
+            var loyalty = gameData.GetUserLoyalty(user.Id);
+            if (loyalty == null)
+            {
+                CreateUserLoyalty(session, user, playerData);
+            }
+            else
+            {
+                loyalty.IsModerator = playerData.Moderator;
+                loyalty.IsSubscriber = playerData.Subscriber;
+                loyalty.IsVip = playerData.Vip;
+            }
+
             var character = gameData.GetCharacterByUserId(user.Id, identifier);
             if (character == null)
             {
-                var player = CreatePlayer(session, user, identifier);
+                var player = CreatePlayer(session, user, playerData);
                 if (player != null)
                 {
                     result.Success = true;
@@ -129,10 +166,11 @@ namespace RavenNest.BusinessLogic.Game
                 character.Name = userName;
             }
 
-            result.Player = AddPlayer(session, user, character);
+            result.Player = AddPlayerToSession(session, user, character);
             result.Success = true;
             return result;
         }
+
         public Player AddPlayer(SessionToken token, Guid characterId)
         {
             var session = gameData.GetSession(token.SessionId);
@@ -142,21 +180,20 @@ namespace RavenNest.BusinessLogic.Game
             }
             var character = gameData.GetCharacter(characterId);
             var user = gameData.GetUser(character.UserId);
-            return AddPlayer(session, user, character);
+            return AddPlayerToSession(session, user, character);
         }
+
         public Player AddPlayer(DataModels.GameSession session, Guid characterId)
         {
             var character = gameData.GetCharacter(characterId);
             var user = gameData.GetUser(character.UserId);
-            return AddPlayer(session, user, character);
+            return AddPlayerToSession(session, user, character);
         }
 
-        private Player AddPlayer(DataModels.GameSession session, User user, Character character)
+        private Player AddPlayerToSession(DataModels.GameSession session, User user, Character character)
         {
-
             // check if we need to remove the player from
             // their active session.
-
             var sessionChars = gameData.GetSessionCharacters(session);
             var charactersInSession = sessionChars.Where(x => x.UserId == user.Id).ToList();
 
@@ -361,6 +398,36 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             return character.Map(gameData, user);
+        }
+
+        public void UpdateUserLoyalty(SessionToken sessionToken, UserLoyaltyUpdate update)
+        {
+            var session = gameData.GetSession(sessionToken.SessionId);
+            if (session == null)
+                return;
+
+            var character = gameData.GetCharacter(update.CharacterId);
+            if (character == null)
+                return;
+
+            var user = gameData.GetUser(update.UserId);
+            if (user == null)
+                return;
+
+            var loyalty = gameData.GetUserLoyalty(user.Id);
+            if (loyalty == null)
+            {
+                loyalty = CreateUserLoyalty(session, user, new PlayerJoinData { UserId = update.UserId, Moderator = update.IsModerator, Subscriber = update.IsSubscriber });
+            }
+
+            loyalty.IsModerator = update.IsModerator;
+            loyalty.IsSubscriber = update.IsSubscriber;
+            loyalty.IsVip = update.IsVip;
+            loyalty.CheeredBits += update.NewCheeredBits;
+            if (update.NewGiftedSubs > 0)
+                loyalty.AddGiftedSubs(update.NewGiftedSubs);
+            if (update.NewCheeredBits > 0)
+                loyalty.AddCheeredBits(update.NewCheeredBits);
         }
 
         public void UpdatePlayerActivity(SessionToken sessionToken, PlayerSessionActivity update)
@@ -696,7 +763,7 @@ namespace RavenNest.BusinessLogic.Game
             if (receiver == null) return 0;
 
             var item = gameData.GetItem(itemId);
-            if (item == null)
+            if (item == null || item.Soulbound.GetValueOrDefault())
                 return 0;
 
             var session = gameData.GetSession(token.SessionId);
@@ -1096,25 +1163,6 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        //private void SetSkillLevel(int skillIndex, Skills skills, int v1, decimal v2)
-        //{
-        //    skills.AttackLevel = skills.AttackLevel > level[skillIndex] ? skills.AttackLevel : level[skillIndex];
-        //    skills.Attack += GetDelta(expLimit, gains.Attack, skills.Attack, experience[skillIndex++]);
-        //    skills.Defense += GetDelta(expLimit, gains.Defense, skills.Defense, experience[skillIndex++]);
-        //    skills.Strength += GetDelta(expLimit, gains.Strength, skills.Strength, experience[skillIndex++]);
-        //    skills.Health += GetDelta(expLimit, gains.Health, skills.Health, experience[skillIndex++]);
-        //    skills.Woodcutting += GetDelta(expLimit, gains.Woodcutting, skills.Woodcutting, experience[skillIndex++]);
-        //    skills.Fishing += GetDelta(expLimit, gains.Fishing, skills.Fishing, experience[skillIndex++]);
-        //    skills.Mining += GetDelta(expLimit, gains.Mining, skills.Mining, experience[skillIndex++]);
-        //    skills.Crafting += GetDelta(expLimit, gains.Crafting, skills.Crafting, experience[skillIndex++]);
-        //    skills.Cooking += GetDelta(expLimit, gains.Cooking, skills.Cooking, experience[skillIndex++]);
-        //    skills.Farming += GetDelta(expLimit, gains.Farming, skills.Farming, experience[skillIndex++]);
-        //    skills.Slayer += GetDelta(expLimit, gains.Slayer, skills.Slayer, experience[skillIndex++]);
-        //    skills.Magic += GetDelta(expLimit, gains.Magic, skills.Magic, experience[skillIndex++]);
-        //    skills.Ranged += GetDelta(expLimit, gains.Ranged, skills.Ranged, experience[skillIndex++]);
-        //    skills.Sailing += GetDelta(expLimit, gains.Sailing, skills.Sailing, experience[skillIndex++]);
-        //}
-
         public void EquipBestItems(Character character)
         {
             inventoryProvider.Get(character.Id).EquipBestItems();
@@ -1166,26 +1214,27 @@ namespace RavenNest.BusinessLogic.Game
             gameData.Add(gameEvent);
         }
 
-        private Player CreatePlayer(
-            DataModels.GameSession session, string userId, string userName, string identifier)
+        private Player CreateUserAndPlayer(
+            DataModels.GameSession session,
+            PlayerJoinData playerData)
         {
-            var user = gameData.GetUser(userId);
+            var user = gameData.GetUser(playerData.UserId);
             if (user == null)
             {
                 user = new User
                 {
                     Id = Guid.NewGuid(),
-                    UserId = userId,
-                    UserName = userName,
+                    UserId = playerData.UserId,
+                    UserName = playerData.UserName,
                     Created = DateTime.UtcNow
                 };
                 gameData.Add(user);
             }
 
-            return CreatePlayer(session, user, identifier);
+            return CreatePlayer(session, user, playerData);
         }
 
-        private Player CreatePlayer(DataModels.GameSession session, User user, string identifier)
+        private Player CreatePlayer(DataModels.GameSession session, User user, PlayerJoinData playerData)
         {
             var userCharacters = gameData.GetCharacters(x => x.UserId == user.Id);
             var index = 0;
@@ -1206,7 +1255,7 @@ namespace RavenNest.BusinessLogic.Game
                 UserId = user.Id,
                 OriginUserId = session?.UserId ?? Guid.Empty,
                 Created = DateTime.UtcNow,
-                Identifier = identifier,
+                Identifier = playerData.Identifier,
                 CharacterIndex = index
             };
 
@@ -1222,6 +1271,8 @@ namespace RavenNest.BusinessLogic.Game
                 Health = 10,
             };
 
+            CreateUserLoyalty(session, user, playerData);
+
             gameData.Add(state);
             gameData.Add(syntyAppearance);
             gameData.Add(statistics);
@@ -1235,10 +1286,31 @@ namespace RavenNest.BusinessLogic.Game
             character.AppearanceId = appearance.Id;
             character.StatisticsId = statistics.Id;
             character.SkillsId = skills.Id;
-            character.UserIdLock = session?.UserId;
             character.LastUsed = DateTime.UtcNow;
             gameData.Add(character);
-            return character.Map(gameData, user);
+
+            return AddPlayerToSession(session, user, character);
+        }
+
+        private UserLoyalty CreateUserLoyalty(DataModels.GameSession session, User user, PlayerJoinData playerData)
+        {
+            var loyalty = new UserLoyalty
+            {
+                Id = Guid.NewGuid(),
+                Playtime = "00:00:00",
+                Points = 0,
+                Experience = 0,
+                StreamerUserId = session.UserId,
+                UserId = user.Id,
+                Level = 1,
+                CheeredBits = 0,
+                GiftedSubs = 0,
+                IsModerator = playerData.Moderator,
+                IsSubscriber = playerData.Subscriber,
+                IsVip = playerData.Vip
+            };
+            gameData.Add(loyalty);
+            return loyalty;
         }
 
         private Statistics GenerateStatistics()

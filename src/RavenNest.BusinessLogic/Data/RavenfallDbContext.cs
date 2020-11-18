@@ -18,7 +18,12 @@ namespace RavenNest.BusinessLogic.Data
         }
         public virtual DbSet<ExpMultiplierEvent> ExpMultiplierEvent { get; set; }
         public virtual DbSet<UserPatreon> UserPatreon { get; set; }
-        
+
+        public virtual DbSet<UserLoyalty> UserLoyalty { get; set; }
+        public virtual DbSet<UserLoyaltyRank> UserLoyaltyRank { get; set; }
+        public virtual DbSet<UserLoyaltyReward> UserLoyaltyReward { get; set; }
+        public virtual DbSet<UserClaimedLoyaltyReward> UserClaimedLoyaltyReward { get; set; }
+
         public virtual DbSet<Appearance> Appearance { get; set; }
         public virtual DbSet<SyntyAppearance> SyntyAppearance { get; set; }
         public virtual DbSet<Character> Character { get; set; }
@@ -27,7 +32,8 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<Village> Village { get; set; }
         public virtual DbSet<VillageHouse> VillageHouse { get; set; }
         public virtual DbSet<Clan> Clan { get; set; }
-
+        public virtual DbSet<ClanRole> ClanRole { get; set; }
+        public virtual DbSet<CharacterClanMembership> CharacterClanMembership { get; set; }
         public virtual DbSet<CharacterSessionActivity> CharacterSessionActivity { get; set; }
 
         //public virtual DbSet<CharacterSession> CharacterSession { get; set; }
@@ -58,240 +64,68 @@ namespace RavenNest.BusinessLogic.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<UserPatreon>(entity =>
-                entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<UserClaimedLoyaltyReward>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<UserLoyalty>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<UserLoyaltyRank>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<UserLoyaltyReward>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<UserPatreon>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
-            modelBuilder.Entity<ExpMultiplierEvent>(entity => 
-                entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<ExpMultiplierEvent>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<CharacterSessionActivity>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<Appearance>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<SyntyAppearance>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<ServerLogs>(entity => entity.Property<ServerLogSeverity>(x => x.Severity).HasConversion<int>());
 
-            modelBuilder.Entity<CharacterSessionActivity>(entity =>
-                entity.Property(e => e.Id).ValueGeneratedNever());
-
-            modelBuilder.Entity<Appearance>(entity =>
-                entity.Property(e => e.Id).ValueGeneratedNever());
-
-            modelBuilder.Entity<SyntyAppearance>(entity =>
-                entity.Property(e => e.Id).ValueGeneratedNever());
-
-            modelBuilder.Entity<ServerLogs>(entity =>
-                    entity.Property<ServerLogSeverity>(x => x.Severity).HasConversion<int>());
-
-            modelBuilder.Entity<CharacterState>(entity =>
-                entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<CharacterState>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
             modelBuilder.Entity<Character>(entity =>
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();
-
                 entity.Property(e => e.Created).HasColumnType("datetime");
-
                 entity.Property(e => e.Name).IsRequired();
-
-                //entity.HasOne(d => d.State)
-                //    .WithMany(p => p.Character)
-                //    .HasForeignKey(d => d.StateId)
-                //    .OnDelete(DeleteBehavior.ClientSetNull)
-                //    .HasConstraintName("FK_Character_CharacterState");
-
-                //entity.HasOne(d => d.Appearance)
-                //    .WithMany(p => p.Character)
-                //    .HasForeignKey(d => d.AppearanceId)
-                //    .OnDelete(DeleteBehavior.ClientSetNull)
-                //    .HasConstraintName("FK_Character_Appearance");
-
-                //entity.HasOne(d => d.SyntyAppearance)
-                //    .WithMany(p => p.Character)
-                //    .HasForeignKey(d => d.SyntyAppearanceId)
-                //    .OnDelete(DeleteBehavior.ClientSetNull)
-                //    .HasConstraintName("FK_Character_SyntyAppearance");
-
-
-                //entity.HasOne(d => d.Statistics)
-                //    .WithMany(p => p.Character)
-                //    .HasForeignKey(d => d.StatisticsId)
-                //    .OnDelete(DeleteBehavior.ClientSetNull)
-                //    .HasConstraintName("FK_Character_Statistics");
-
-
-                //entity.HasOne(d => d.OriginUser)
-                //    .WithMany(p => p.CharacterOriginUser)
-                //    .HasForeignKey(d => d.OriginUserId)
-                //    .OnDelete(DeleteBehavior.ClientSetNull)
-                //    .HasConstraintName("FK_Character_User1");
-
-                //entity.HasOne(d => d.Resources)
-                //    .WithMany(p => p.Character)
-                //    .HasForeignKey(d => d.ResourcesId)
-                //    .OnDelete(DeleteBehavior.ClientSetNull)
-                //    .HasConstraintName("FK_Character_Resources");
-
-                //entity.HasOne(d => d.Skills)
-                //    .WithMany(p => p.Character)
-                //    .HasForeignKey(d => d.SkillsId)
-                //    .OnDelete(DeleteBehavior.ClientSetNull)
-                //    .HasConstraintName("FK_Character_Skills");
-
-                //entity.HasOne(d => d.User)
-                //    .WithMany(p => p.CharacterUser)
-                //    .HasForeignKey(d => d.UserId)
-                //    .OnDelete(DeleteBehavior.ClientSetNull)
-                //    .HasConstraintName("FK_Character_User");
             });
 
-            //modelBuilder.Entity<CharacterSession>(entity =>
-            //{
-            //    entity.Property(e => e.Id).ValueGeneratedNever();
+            modelBuilder.Entity<GameEvent>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<GameClient>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
-            //    entity.Property(e => e.Started).HasColumnType("datetime");
+            modelBuilder.Entity<NPC>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<NPCItemDrop>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<NPCSpawn>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
-            //    entity.Property(e => e.Ended).HasColumnType("datetime");
+            modelBuilder.Entity<Village>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<VillageHouse>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
-            //    entity.HasOne(d => d.Character)
-            //        .WithMany(p => p.CharacterSession)
-            //        .HasForeignKey(d => d.CharacterId)
-            //        .OnDelete(DeleteBehavior.ClientSetNull)
-            //        .HasConstraintName("FK_CharacterSession_Character");
-
-            //    entity.HasOne(d => d.Session)
-            //        .WithMany(p => p.CharacterSession)
-            //        .HasForeignKey(d => d.SessionId)
-            //        .OnDelete(DeleteBehavior.ClientSetNull)
-            //        .HasConstraintName("FK_CharacterSession_GameSession");
-            //});
-
-            modelBuilder.Entity<GameEvent>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-
-                //entity.HasOne(d => d.GameSession)
-                //    .WithMany(p => p.GameEvents)
-                //    .HasForeignKey(d => d.GameSessionId)
-                //    .OnDelete(DeleteBehavior.ClientSetNull)
-                //    .HasConstraintName("FK_GameEvent_GameSession");
-            });
-
-            modelBuilder.Entity<GameClient>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-            });
-
-            modelBuilder.Entity<NPC>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-            });
-            modelBuilder.Entity<NPCItemDrop>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-            });
-            modelBuilder.Entity<NPCSpawn>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-            });
-            modelBuilder.Entity<Village>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-            });
-
-            modelBuilder.Entity<VillageHouse>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-            });
-
-            modelBuilder.Entity<Clan>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-            });
+            modelBuilder.Entity<Clan>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<ClanRole>(e => e.Property(x => x.Id).ValueGeneratedNever());
+            modelBuilder.Entity<CharacterClanMembership>(e => e.Property(x => x.Id).ValueGeneratedNever());
 
             modelBuilder.Entity<GameSession>(entity =>
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();
-
                 entity.Property(e => e.Started).HasColumnType("datetime");
-
                 entity.Property(e => e.Stopped).HasColumnType("datetime").IsRequired(false);
-
-                //entity.HasOne(d => d.User)
-                //    .WithMany(p => p.GameSession)
-                //    .HasForeignKey(d => d.UserId)
-                //    .OnDelete(DeleteBehavior.ClientSetNull)
-                //    .HasConstraintName("FK_GameSession_User");
             });
 
-            modelBuilder.Entity<MarketItem>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-
-                //entity.HasOne(d => d.SellerCharacter)
-                //    .WithMany(p => p.MarketItem)
-                //    .HasForeignKey(d => d.SellerCharacterId)
-                //    .OnDelete(DeleteBehavior.ClientSetNull)
-                //    .HasConstraintName("FK_MarketItem_Character");
-
-                //entity.HasOne(d => d.Item)
-                //    .WithMany(p => p.MarketItem)
-                //    .HasForeignKey(d => d.ItemId)
-                //    .OnDelete(DeleteBehavior.ClientSetNull)
-                //    .HasConstraintName("FK_MarketItem_Item");
-            });
-
-
-            modelBuilder.Entity<InventoryItem>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-
-                //entity.HasOne(d => d.Character)
-                //    .WithMany(p => p.InventoryItem)
-                //    .HasForeignKey(d => d.CharacterId)
-                //    .OnDelete(DeleteBehavior.ClientSetNull)
-                //    .HasConstraintName("FK_InventoryItem_Character");
-
-                //entity.HasOne(d => d.Item)
-                //    .WithMany(p => p.InventoryItem)
-                //    .HasForeignKey(d => d.ItemId)
-                //    .OnDelete(DeleteBehavior.ClientSetNull)
-                //    .HasConstraintName("FK_InventoryItem_Item");
-            });
-
-
-            modelBuilder.Entity<ItemCraftingRequirement>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-            });
+            modelBuilder.Entity<MarketItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<InventoryItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<ItemCraftingRequirement>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
             modelBuilder.Entity<Item>(entity =>
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();
-
                 entity.Property(e => e.FemaleModelId).HasMaxLength(50);
-
                 entity.Property(e => e.MaleModelId).HasMaxLength(50);
-
-                entity.Property(e => e.Name)
-                    .IsRequired()
-                    .HasMaxLength(50);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
             });
 
-            modelBuilder.Entity<Resources>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-            });
-
-            modelBuilder.Entity<Skills>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-            });
-
-            modelBuilder.Entity<Statistics>(entity =>
-            {
-                entity.Property(e => e.Id).ValueGeneratedNever();
-            });
+            modelBuilder.Entity<Resources>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<Skills>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<Statistics>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
             modelBuilder.Entity<User>(entity =>
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();
-
                 entity.Property(e => e.Created).HasColumnType("datetime");
-
                 entity.Property(e => e.UserId).IsRequired();
             });
         }

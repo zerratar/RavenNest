@@ -53,7 +53,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             this.sessionToken = sessionToken;
 
             RegisterPlayerTask<VillageProcessor>(VillageProcessorName);
-
+            RegisterPlayerTask<LoyaltyProcessor>("Loyalty");
             RegisterPlayerTask<FightingTaskProcessor>("Fighting");
             RegisterPlayerTask<MiningTaskProcessor>("Mining");
             RegisterPlayerTask<FishingTaskProcessor>("Fishing");

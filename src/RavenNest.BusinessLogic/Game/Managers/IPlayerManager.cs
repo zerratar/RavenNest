@@ -10,6 +10,7 @@ namespace RavenNest.BusinessLogic.Game
     {
         Player CreatePlayerIfNotExists(string userId, string userName, string identifier);
         Player CreatePlayer(string userId, string userName, string identifier);
+        PlayerJoinResult AddPlayer(SessionToken token, PlayerJoinData playerJoinData);
         PlayerJoinResult AddPlayer(SessionToken token, string userId, string userName, string identifier = null);
         Player AddPlayer(SessionToken token, Guid characterId);
         Player GetPlayer(SessionToken sessionToken, string userId);
@@ -18,6 +19,7 @@ namespace RavenNest.BusinessLogic.Game
         Player GetGlobalPlayer(Guid userId, string identifier);
         PlayerExtended GetPlayerExtended(string userId, string identifier);
         PlayerExtended GetGlobalPlayerExtended(Guid userId, string identifier);
+        void UpdateUserLoyalty(SessionToken sessionToken, UserLoyaltyUpdate update);
         void UpdatePlayerActivity(SessionToken sessionToken, PlayerSessionActivity update);
         bool UpdatePlayerState(SessionToken sessionToken, CharacterStateUpdate update);
 

@@ -85,6 +85,17 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Models.ClanRole Map(DataModels.ClanRole data)
+        {
+            return new Models.ClanRole
+            {
+                Id = data.Id,
+                Level = data.Level,
+                Name = data.Name
+            };
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.Skills Map(Skills data)
         {
             return DataMapper.Map<Models.Skills, Skills>(data);
@@ -166,7 +177,12 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Player Map(this User user, IGameData gameData, Character character, bool rejoin = false, bool inGame = false)
+        public static Player Map(
+            this User user,
+            IGameData gameData,
+            Character character,
+            bool rejoin = false,
+            bool inGame = false)
         {
             var playItems = gameData.GetAllPlayerItems(character.Id);
             if (inGame && character.UserIdLock != null)

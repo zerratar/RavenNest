@@ -77,6 +77,12 @@ namespace RavenNest.Controllers
             return playerManager.AddPlayer(AssertGetSessionToken(), userId, username.Value, identifier);
         }
 
+        [HttpPost]
+        public PlayerJoinResult PlayerJoin(PlayerJoinData playerData)
+        {
+            return playerManager.AddPlayer(AssertGetSessionToken(), playerData);
+        }
+
         [HttpGet("{userId}")]
         [MethodDescriptor(
             Name = "Get Player by Twitch UserId",
@@ -185,34 +191,6 @@ namespace RavenNest.Controllers
             return playerManager.VendorItem(AssertGetSessionToken(), userId, item, amount);
         }
 
-        //[HttpPost("appearance")]
-        //[MethodDescriptor(
-        //    Name = "Update player appearance as Twitch User",
-        //    Description = "Update the target player with a new appearance. This requires you to be authenticated with Twitch to update.")
-        //]
-        //public async Task<bool> UpdateAppearanceForTwitchUserAsync(Many<int> appearance)
-        //{
-        //    var twitchUserSession = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.Session);
-        //    if (twitchUserSession == null)
-        //    {
-        //        return false;
-        //    }
-
-        //    return await playerManager.UpdateAppearanceAsync(twitchUserSession.Id, appearance.Values);
-        //}
-
-        //[HttpPost("{userId}/appearance")]
-        //[MethodDescriptor(
-        //    Name = "Update player appearance",
-        //    Description = "Update the target player with a new appearance. This requires a session token to update a target player.",
-        //    RequiresSession = true)
-        //]
-        //public Task<bool> UpdateAppearanceAsync(string userId, Many<int> appearance)
-        //{
-        //    var assertGetSessionToken = AssertGetSessionToken();
-        //    return playerManager.UpdateAppearanceAsync(assertGetSessionToken, userId, appearance.Values);
-        //}
-
         [HttpPost("{userId}/appearance")]
         public Task<bool> UpdateSyntyAppearanceAsync(string userId, SyntyAppearance appearance)
         {
@@ -238,12 +216,6 @@ namespace RavenNest.Controllers
 
             return playerManager.UpdateAppearance(AssertGetSessionToken(), userId, appearance);
         }
-
-        //[HttpPost("{userId}/experience")]
-        //public bool UpdateExperienceAsync(string userId, Many<decimal> experience)
-        //{
-        //    return playerManager.UpdateExperience(AssertGetSessionToken(), userId, new int[0], experience.Values);
-        //}
 
         [HttpPost("{userId}/statistics")]
         public bool UpdateStatistics(string userId, Many<decimal> statistics)

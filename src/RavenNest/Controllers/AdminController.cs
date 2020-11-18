@@ -162,32 +162,32 @@ namespace RavenNest.Controllers
             return adminManager.ResetUserPassword(userid);
         }
 
-        [HttpGet("updateplayername/{userid}/{identifier}/{name}")]
-        public async Task<bool> UpdatePlayerName(string userid, string identifier, string name)
+        [HttpGet("updateplayername/{characterId}/{name}")]
+        public async Task<bool> UpdatePlayerName(Guid characterId, string name)
         {
             await AssertAdminAccessAsync();
-            return adminManager.UpdatePlayerName(userid, name, identifier);
+            return adminManager.UpdatePlayerName(characterId, name);
         }
 
-        [HttpGet("updateplayerskill/{userid}/{identifier}/{skill}/{experience}")]
-        public async Task<bool> UpdatePlayerSkill(string userid, string skill, decimal experience, string identifier)
+        [HttpGet("updateplayerskill/{characterId}/{skill}/{experience}")]
+        public async Task<bool> UpdatePlayerSkill(Guid characterId, string skill, decimal experience)
         {
             await AssertAdminAccessAsync();
-            return adminManager.UpdatePlayerSkill(userid, skill, experience, identifier);
+            return adminManager.UpdatePlayerSkill(characterId, skill, experience);
         }
 
-        [HttpGet("kick/{userid}/{identifier}")]
-        public async Task<bool> KickPlayer(string userid, string identifier)
+        [HttpGet("kick/{characterId}")]
+        public async Task<bool> KickPlayer(Guid characterId)
         {
             await AssertAdminAccessAsync();
-            return adminManager.KickPlayer(userid, identifier);
+            return adminManager.KickPlayer(characterId);
         }
 
-        [HttpGet("suspend/{userid}/{identifier}")]
-        public async Task<bool> SuspendPlayer(string userid, string identifier)
+        [HttpGet("suspend/{userid}")]
+        public async Task<bool> SuspendPlayer(string userid)
         {
             await AssertAdminAccessAsync();
-            return adminManager.SuspendPlayer(userid, identifier);
+            return adminManager.SuspendPlayer(userid);
         }
         private async Task AssertAdminAccessAsync()
         {
