@@ -18,7 +18,7 @@ namespace RavenNest.BusinessLogic.Data
         }
         public virtual DbSet<ExpMultiplierEvent> ExpMultiplierEvent { get; set; }
         public virtual DbSet<UserPatreon> UserPatreon { get; set; }
-
+        public virtual DbSet<UserNotification> UserNotification { get; set; }
         public virtual DbSet<UserLoyalty> UserLoyalty { get; set; }
         public virtual DbSet<UserLoyaltyRank> UserLoyaltyRank { get; set; }
         public virtual DbSet<UserLoyaltyReward> UserLoyaltyReward { get; set; }
@@ -34,6 +34,7 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<Clan> Clan { get; set; }
         public virtual DbSet<ClanRole> ClanRole { get; set; }
         public virtual DbSet<CharacterClanMembership> CharacterClanMembership { get; set; }
+        public virtual DbSet<CharacterClanInvite> CharacterClanInvite { get; set; }
         public virtual DbSet<CharacterSessionActivity> CharacterSessionActivity { get; set; }
 
         //public virtual DbSet<CharacterSession> CharacterSession { get; set; }
@@ -69,6 +70,7 @@ namespace RavenNest.BusinessLogic.Data
             modelBuilder.Entity<UserLoyaltyRank>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserLoyaltyReward>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserPatreon>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<UserNotification>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
             modelBuilder.Entity<ExpMultiplierEvent>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<CharacterSessionActivity>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
@@ -98,6 +100,7 @@ namespace RavenNest.BusinessLogic.Data
             modelBuilder.Entity<Clan>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<ClanRole>(e => e.Property(x => x.Id).ValueGeneratedNever());
             modelBuilder.Entity<CharacterClanMembership>(e => e.Property(x => x.Id).ValueGeneratedNever());
+            modelBuilder.Entity<CharacterClanInvite>(e => e.Property(x => x.Id).ValueGeneratedNever());
 
             modelBuilder.Entity<GameSession>(entity =>
             {

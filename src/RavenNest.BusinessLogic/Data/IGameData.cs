@@ -17,6 +17,7 @@ namespace RavenNest.BusinessLogic.Data
         DataModels.Village GetVillageBySession(DataModels.GameSession session);
         DataModels.Village GetOrCreateVillageBySession(DataModels.GameSession session);
         IReadOnlyList<DataModels.VillageHouse> GetOrCreateVillageHouses(DataModels.Village village);
+
         Character GetCharacterByName(string username, string identifier);
 
         /// <summary>
@@ -28,9 +29,13 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<DataModels.InventoryItem> FindPlayerItems(Guid characterId, Func<DataModels.InventoryItem, bool> predicate);
         DataModels.InventoryItem FindPlayerItem(Guid characterId, Func<DataModels.InventoryItem, bool> predicate);
         UserPatreon GetPatreonUser(long patreonId);
+        UserNotification GetNotification(Guid notificationId);
         UserPatreon GetPatreonUser(Guid userId);
         DataModels.GameSession GetSessionByUserId(string userId);
-
+        CharacterClanInvite GetClanInvite(Guid inviteId);
+        IReadOnlyList<CharacterClanInvite> GetClanInvitesByCharacter(Guid characterId);
+        IReadOnlyList<CharacterClanInvite> GetClanInvitesSent(Guid userId);
+        IReadOnlyList<CharacterClanInvite> GetClanInvites(Guid clanId);
         #endregion
 
         #region Get
@@ -50,7 +55,6 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<DataModels.Item> GetItems();
         DataModels.Item GetItem(Guid id);
         IReadOnlyList<DataModels.InventoryItem> GetInventoryItems(Guid characterId, Guid itemId);
-
         IReadOnlyList<DataModels.InventoryItem> GetInventoryItems(Guid characterId);
 
         DataModels.InventoryItem GetInventoryItem(Guid characterId, Guid itemId);
@@ -62,6 +66,8 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(Guid itemId, string tag = null);
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(int skip, int take);
         IReadOnlyList<DataModels.GameEvent> GetSessionEvents(Guid sessionId);
+        IReadOnlyList<DataModels.UserNotification> GetNotifications(Guid userId);
+
         ExpMultiplierEvent GetActiveExpMultiplierEvent();
 
         /// <summary>
@@ -86,7 +92,9 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Add
+        void Add(UserNotification ev);
         void Add(CharacterClanMembership ev);
+        void Add(CharacterClanInvite ev);
         void Add(ClanRole ev);
         void Add(Clan ev);
 
@@ -122,7 +130,9 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Remove
+        void Remove(UserNotification ev);
         void Remove(CharacterClanMembership ev);
+        void Remove(CharacterClanInvite ev);
         void Remove(ClanRole ev);
         void Remove(Clan ev);
         void Remove(CharacterSessionActivity ev);

@@ -9,6 +9,7 @@
     <div class="top-row px-4">
       @if (IsAuthenticated)
       {
+        <NotificationIcon UserId="@session.UserId"></NotificationIcon>
         <NavLink class="nav-link" href="/logout" Match="NavLinkMatch.All">
           <span class="oi oi-account-logout" aria-hidden="true"></span> logout
         </NavLink>

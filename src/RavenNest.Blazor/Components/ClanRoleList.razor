@@ -1,0 +1,44 @@
+﻿@using RavenNest.Models;
+@inject RavenNest.Blazor.Services.ClanService ClanService
+
+<h3>Role list</h3>
+
+@if (roles == null)
+{
+  <LoadIndicator></LoadIndicator>
+}
+else
+{
+  <table class="items-list">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Level</th>
+      </tr>
+    </thead>
+    <tbody>
+      @foreach (var item in roles)
+      {
+        <tr id="@item.Id" class="item-row">
+          <td class='item'>@item.Name</td>
+          <td class='item'>@item.Level</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+
+@code {
+  [Parameter]
+  public Guid ClanId { get; set; }
+
+  [Parameter]
+  public bool CanManage { get; set; }
+
+  IReadOnlyList<ClanRole> roles = null;
+
+  protected override void OnInitialized()
+  {
+    roles = ClanService.GetRoles(ClanId);
+  }
+}

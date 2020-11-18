@@ -1,0 +1,34 @@
+﻿.notification-icon {
+    cursor: pointer;
+}
+
+.notification-list {
+    position: absolute;
+    top: 56px;
+    right: 0px;
+    color: white;
+    background-color: #101010;
+    white-space: pre-wrap;
+}
+
+    .notification-list ul {
+        padding: 0;
+        margin: 0;
+    }
+
+.list-item {
+    list-style: none;
+    padding: 5px 10px;
+    box-sizing: border-box;
+}
+
+li.list-item a{
+    margin: 0 !important;
+    padding: 0px;
+    color: white;
+}
+
+.top-row a, .top-row .btn-link {
+    margin: 0;
+    padding: 0px;
+}

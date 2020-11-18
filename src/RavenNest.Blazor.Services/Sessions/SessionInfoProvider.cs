@@ -105,6 +105,7 @@ namespace RavenNest.Sessions
                 si.UserId = user.UserId;
                 si.UserName = user.UserName;
                 si.RequiresPasswordChange = string.IsNullOrEmpty(user.PasswordHash);
+                si.Tier = user.PatreonTier ?? 0;
             }
 
             var sessionState = JSON.Stringify(si);
