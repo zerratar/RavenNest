@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -96,6 +97,17 @@ namespace RavenNest.Sessions
                 user = gameData.GetUser(auth.UserId);
             }
 
+            UpdateSessionInfoData(si, user);
+
+            var sessionState = JSON.Stringify(si);
+            //await logger.WriteDebugAsync("SET SESSION STATE (" + session.Id + "): " + sessionState);
+
+            SetString(sessionId, AuthState, sessionState);
+            return si;
+        }
+
+        private void UpdateSessionInfoData(SessionInfo si, User user)
+        {
             if (user != null)
             {
                 si.Id = user.Id;
@@ -106,13 +118,31 @@ namespace RavenNest.Sessions
                 si.UserName = user.UserName;
                 si.RequiresPasswordChange = string.IsNullOrEmpty(user.PasswordHash);
                 si.Tier = user.PatreonTier ?? 0;
+
+                var playSessions = new List<CharacterGameSession>();
+                var myChars = gameData.GetCharacters(x => x.UserId == user.Id);
+                foreach (var myChar in myChars)
+                {
+                    if (myChar.UserIdLock != null)
+                    {
+                        var owner = gameData.GetUser(myChar.UserIdLock.Value);
+                        var session = gameData.GetSessionByUserId(owner.UserId);
+                        if (session != null)
+                        {
+                            playSessions.Add(new CharacterGameSession
+                            {
+                                CharacterId = myChar.Id,
+                                CharacterIndex = myChar.CharacterIndex,
+                                CharacterName = myChar.Name,
+                                SessionTwitchUserId = owner.UserId,
+                                SessionTwitchUserName = owner.UserName,
+                                Joined = myChar.LastUsed.GetValueOrDefault()
+                            });
+                        }
+                    }
+                }
+                si.PlaySessions = playSessions;
             }
-
-            var sessionState = JSON.Stringify(si);
-            //await logger.WriteDebugAsync("SET SESSION STATE (" + session.Id + "): " + sessionState);
-
-            SetString(sessionId, AuthState, sessionState);
-            return si;
         }
 
         public bool TryGet(string sessionId, out SessionInfo sessionInfo)
@@ -128,6 +158,11 @@ namespace RavenNest.Sessions
             try
             {
                 sessionInfo = JSON.Parse<SessionInfo>(json);
+                if (sessionInfo.Authenticated)
+                {
+                    var user = gameData.GetUser(sessionInfo.UserId);
+                    UpdateSessionInfoData(sessionInfo, user);
+                }
             }
             catch (Exception exc)
             {

@@ -20,6 +20,10 @@
   <link rel="icon" type="image/png" href="favicon.png" sizes="32x32">
   <link rel="icon" type="image/png" href="favicon.png" sizes="96x96">
   <link href="_content/Blazored.Typeahead/blazored-typeahead.css" rel="stylesheet" />
+
+  <!-- Load the Twitch embed script -->
+  <script src="https://embed.twitch.tv/embed/v1.js"></script>
+
   <script>
     window.scrollToElementId = (elementId, offset) => {
       var element = document.getElementById(elementId);
@@ -33,6 +37,14 @@
     window.toast = (option) => {
       $('.toast').toast(option);
     };
+
+    //window.createTwitchEmbed = (elementId, channel) => {
+    //  new Twitch.Embed(elementId, {
+    //    width: 854,
+    //    height: 480,
+    //    channel: "monstercat",
+    //  });
+    //}
   </script>
 </head>
 <body>

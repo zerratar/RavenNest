@@ -1,0 +1,42 @@
+﻿@if (IsPlaying)
+{
+
+<div class="twitch-play-sessions">
+  @if (showTwitchStreams)
+  {
+    <button @onclick="ToggleTwitchStreams">Hide</button>
+    foreach (var play in Session.PlaySessions)
+    {
+      <div class="twitch-play">
+        <div class="stream-name">Watch your character @(play.CharacterName)#@play.CharacterIndex on @(play.SessionTwitchUserName)'s stream</div>
+        <iframe src="https://player.twitch.tv/?channel=@(play.SessionTwitchUserName)&parent=localhost"
+                height="200"
+                width="360"
+                frameborder="0"
+                scrolling="no"
+                allowfullscreen="true">
+        </iframe>
+      </div>
+    }
+  }
+  else
+  {
+    <button @onclick="ToggleTwitchStreams">Show streams</button>
+  }
+</div>
+
+}
+
+
+@code {
+    [Parameter]
+    public RavenNest.Sessions.SessionInfo Session { get; set; }
+
+    private bool IsPlaying => Session.UserId != null && Session?.PlaySessions?.Count > 0;
+    private bool showTwitchStreams = true;
+
+    private void ToggleTwitchStreams()
+    {
+      showTwitchStreams = !showTwitchStreams;
+    }
+}

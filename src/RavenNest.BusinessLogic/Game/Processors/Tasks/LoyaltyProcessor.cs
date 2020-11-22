@@ -34,7 +34,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             lastUpdate[user.Id] = now;
 
             // only add EXP if they are a subscriber, moderator or vip
-            if (!loyalty.IsSubscriber && !loyalty.IsModerator && !loyalty.IsVip)
+            if (!loyalty.IsSubscriber && !loyalty.IsModerator && !loyalty.IsVip && loyalty.UserId != loyalty.StreamerUserId)
                 return;
 
             loyalty.AddExperience((decimal)elapsed.TotalSeconds * UserLoyalty.ExpPerSecond);

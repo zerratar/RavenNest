@@ -25,6 +25,12 @@
     <div class="content px-4">
       @Body
     </div>
+
+
+    @if (IsAuthenticated)
+    {
+      <TwitchStreams Session="session"></TwitchStreams>
+    }
   </div>
 </div>
 

@@ -1,42 +1,46 @@
 ﻿@page "/login"
 @page "/login/{redirectUrl}"
+@page "/login/twitch"
 @using RavenNest.Blazor.Services.Models
 @using Microsoft.AspNetCore.WebUtilities
 @inject NavigationManager NavigationManager
 @inject RavenNest.Blazor.Services.AuthService AuthService
 
-@if (!IsLoggingIn)
+@if (IsTwitchLogin)
 {
-  @if (session.UserId == null)
-  {
-    <EditForm Model="@loginModel" OnValidSubmit="@HandleValidSubmit">
-      <DataAnnotationsValidator />
-      <ValidationSummary />
+  <p>Logging in using Twitch... Get your PogChamp ready!</p>
+}
+else @if (!IsLoggingIn)
+{
+@if (session.UserId == null)
+{
+  <EditForm Model="@loginModel" OnValidSubmit="@HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
 
-      <InputText placeholder="Username" id="username" @bind-Value="loginModel.Username" />
-      <InputText type="password" placeholder="Password" id="password" @bind-Value="loginModel.Password" />
+    <InputText placeholder="Username" id="username" @bind-Value="loginModel.Username" />
+    <InputText type="password" placeholder="Password" id="password" @bind-Value="loginModel.Password" />
 
-      <button type="submit">Submit</button>
-    </EditForm>
+    <button type="submit">Submit</button>
+  </EditForm>
 
-    <div class="login twitch" @onclick="LoginWithTwitch">
-      <i class="fab fa-twitch"></i> Login with Twitch
-    </div>
-  }
-  else
-  {
-    <p>Welcome back, @session.UserName</p>
-  }
-
-  @if (loginFailed)
-  {
-    <p>Whops. Wrong username or password.</p>
-  }
+  <div class="login twitch" @onclick="LoginWithTwitch">
+    <i class="fab fa-twitch"></i> Login with Twitch
+  </div>
+}
+else
+{
+  <p>Welcome back, @session.UserName</p>
 }
 
-@if (IsLoggingIn)
+@if (loginFailed)
 {
-  <p>Logging in... Hold on to your horses!</p>
+  <p>Whops. Wrong username or password.</p>
+}
+}
+else if (IsLoggingIn)
+{
+<p>Logging in... Hold on to your horses!</p>
 }
 
 @code {
@@ -49,9 +53,11 @@
   private RavenNest.Sessions.SessionInfo session;
   private bool loginFailed = false;
   private bool userInitiatedLogin = false;
-
+  private bool twitchLoginInitiated = false;
   private bool IsAuthenticated => session != null && session.UserId != null;
   private bool IsLoggingIn => !IsAuthenticated && (userInitiatedLogin || HasQueryParams());
+
+  private bool IsTwitchLogin => twitchLoginInitiated || NavigationManager.Uri.Contains("login/twitch", StringComparison.OrdinalIgnoreCase);
 
   protected override void OnInitialized()
   {
@@ -97,6 +103,7 @@
   private void LoginWithTwitch()
   {
     userInitiatedLogin = true;
+    twitchLoginInitiated = true;
     var url = AuthService.GetTwitchLoginUrl();
     if (!string.IsNullOrEmpty(url))
     {

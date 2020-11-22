@@ -4,6 +4,7 @@ using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
 using RavenNest.Sessions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,7 +26,7 @@ namespace RavenNest.Blazor.Services
             this.gameData = gameData;
             this.playerManager = playerManager;
         }
-        
+
         public int GetCombatLevel(WebsitePlayer player)
         {
             return (int)(((player.Skills.AttackLevel + player.Skills.DefenseLevel + player.Skills.HealthLevel + player.Skills.StrengthLevel) / 4f) +
@@ -37,6 +38,13 @@ namespace RavenNest.Blazor.Services
                    ((player.Skills.RangedLevel + player.Skills.MagicLevel) / 8f));
         }
 
+        public async Task<WebsitePlayer> GetPlayerAsync(Guid characterId)
+        {
+            return await Task.Run(() =>
+            {
+                return playerManager.GetWebsitePlayer(characterId);
+            });
+        }
         public async Task<WebsitePlayer> GetMyPlayerByIndexAsync(int index)
         {
             return await Task.Run(() =>

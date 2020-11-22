@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace RavenNest.Sessions
 {
@@ -12,5 +13,16 @@ namespace RavenNest.Sessions
         public bool Administrator { get; set; }
         public bool RequiresPasswordChange { get; set; }
         public int Tier { get; set; }
+        public List<CharacterGameSession> PlaySessions { get; set; }
+    }
+
+    public class CharacterGameSession
+    {
+        public Guid CharacterId { get; set; }
+        public string CharacterName { get; set; }
+        public int CharacterIndex { get; set; }
+        public string SessionTwitchUserId { get; set; }
+        public string SessionTwitchUserName { get; set; }
+        public DateTime Joined { get; set; }
     }
 }

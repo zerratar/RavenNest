@@ -11,6 +11,7 @@ namespace RavenNest.BusinessLogic.Game
     {
         Player CreatePlayerIfNotExists(string userId, string userName, string identifier);
         Player CreatePlayer(string userId, string userName, string identifier);
+        bool RemovePlayerFromActiveSession(SessionToken token, Guid characterId);
         PlayerJoinResult AddPlayer(SessionToken token, PlayerJoinData playerJoinData);
         PlayerJoinResult AddPlayer(SessionToken token, string userId, string userName, string identifier = null);
         Player AddPlayer(SessionToken token, Guid characterId);
@@ -18,6 +19,7 @@ namespace RavenNest.BusinessLogic.Game
         Player GetPlayer(SessionToken sessionToken);
         Player GetPlayer(string userId, string identifier);
         Player GetPlayer(Guid userId, string identifier);
+        WebsitePlayer GetWebsitePlayer(Guid characterId);
         WebsitePlayer GetWebsitePlayer(string userId, string identifier);
         WebsitePlayer GetWebsitePlayer(Guid userId, string identifier);
         IReadOnlyList<WebsitePlayer> GetWebsitePlayers(string userId);
