@@ -52,11 +52,10 @@ namespace RavenNest.Controllers
         {
             var reqCode = HttpContext.Request.Query["code"];
             var reqState = HttpContext.Request.Query["state"];
-
 #if DEBUG
-            var requestUrl = "https://localhost:5001/login";
+            var requestUrl = $"https://{HttpContext.Request.Host}/login/twitch";
 #else 
-            var requestUrl = "https://www.ravenfall.stream/login";
+            var requestUrl = "https://www.ravenfall.stream/login/twitch";
 #endif
             try
             {
@@ -126,11 +125,11 @@ namespace RavenNest.Controllers
         {
 #if DEBUG
             return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
-            + "https://localhost:5001/login"
+            + $"https://{HttpContext.Request.Host}/login/twitch"
             + "&response_type=token&scope=user:read:email";
 #else
             return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
-            + "https://www.ravenfall.stream/login"
+            + "https://www.ravenfall.stream/login/twitch"
             + "&response_type=token&scope=user:read:email";
 #endif
         }

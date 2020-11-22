@@ -18,9 +18,19 @@ namespace RavenNest.Blazor.Services
             return highScoreManager.GetHighScore(offset, take);
         }
 
+        public HighScoreCollection GetHighscore(string skill, int offset, int take)
+        {
+            return highScoreManager.GetSkillHighScore(skill, offset, take);
+        }
+
         public async Task<HighScoreCollection> GetHighscoreAsync(int offset, int take)
         {
             return await Task.Run(() => GetHighscore(offset, take));
+        }
+
+        public async Task<HighScoreCollection> GetHighscoreAsync(string skill, int offset, int take)
+        {
+            return await Task.Run(() => GetHighscore(skill, offset, take));
         }
     }
 }

@@ -6,6 +6,14 @@
     font-size: 9pt;
 }
 
+.highscore-item {
+    cursor: pointer;
+}
+
+    .highscore-item:hover {
+        background-color: beige !important;
+    }
+
 .skill-selector a {
     padding: 5px 15px;
     margin-bottom: 15px;

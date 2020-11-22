@@ -33,6 +33,10 @@
 @code {
   [Parameter]
   public WebsitePlayer Player { get; set; }
+  
+  [Parameter]
+  public bool CanManage { get; set; }
+
   private Guid tooltipItem;
 
   public IReadOnlyList<Models.InventoryItem> GetInventoryItems()

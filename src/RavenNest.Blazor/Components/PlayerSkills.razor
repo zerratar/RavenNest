@@ -17,16 +17,19 @@
 </div>
 
 @code {
-  [Parameter]
-  public WebsitePlayer Player { get; set; }
+    [Parameter]
+    public WebsitePlayer Player { get; set; }
 
-  private string ExpDisplay(decimal value)
-  {
-    return value + " exp";
-  }
+    [Parameter]
+    public bool CanManage { get; set; }
 
-  private string StyleWidth(int value)
-  {
-    return $"width: {value}px";
-  }
+    private string ExpDisplay(decimal value)
+    {
+      return value + " exp";
+    }
+
+    private string StyleWidth(int value)
+    {
+      return $"width: {value}px";
+    }
 }

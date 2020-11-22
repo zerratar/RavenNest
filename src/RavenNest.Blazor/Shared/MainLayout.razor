@@ -25,22 +25,27 @@
     <div class="content px-4">
       @Body
     </div>
+
+    @if (IsAuthenticated)
+    {
+      <TwitchStreams Session="session"></TwitchStreams>
+    }
   </div>
 </div>
 
 @code {
-    public static MainLayout Instance { get; private set; }
-    private RavenNest.Sessions.SessionInfo session;
-    protected override void OnInitialized()
-    {
-      Instance = this;
-      session = AuthService.GetSession();
-    }
+  public static MainLayout Instance { get; private set; }
+  private RavenNest.Sessions.SessionInfo session;
+  protected override void OnInitialized()
+  {
+    Instance = this;
+    session = AuthService.GetSession();
+  }
 
-    public void UpdateSession()
-    {
-      session = AuthService.GetSession();
-    }
-    private bool IsAdministrator => IsAuthenticated && session.Administrator;
-    private bool IsAuthenticated => session != null && session.UserId != null;
+  public void UpdateSession()
+  {
+    session = AuthService.GetSession();
+  }
+  private bool IsAdministrator => IsAuthenticated && session.Administrator;
+  private bool IsAuthenticated => session != null && session.UserId != null;
 }

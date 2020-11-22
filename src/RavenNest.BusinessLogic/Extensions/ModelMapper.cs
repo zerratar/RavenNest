@@ -198,6 +198,7 @@ namespace RavenNest.BusinessLogic.Extensions
             var clanMembership = gameData.GetClanMembership(character.Id);
             var clan = clanMembership != null ? Map(gameData, gameData.GetClan(clanMembership.ClanId)) : null;
             var clanRole = clanMembership != null ? Map(gameData.GetClanRole(clanMembership.ClanRoleId), clanMembership) : null;
+
             return new Player
             {
                 Id = character.Id,

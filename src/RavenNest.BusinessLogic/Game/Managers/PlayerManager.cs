@@ -214,6 +214,22 @@ namespace RavenNest.BusinessLogic.Game
             return character.Map(gameData, user, rejoin, true);
         }
 
+        public bool RemovePlayerFromActiveSession(SessionToken token, Guid characterId)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return false;
+            var user = gameData.GetUser(character.UserId);
+            if (user == null) return false;
+            var session = gameData.GetSession(token.SessionId);
+            if (session == null) return false;
+            var sessionOwner = gameData.GetUser(session.UserId);
+            if (sessionOwner == null) return false;
+            if (sessionOwner.Id != character.UserIdLock)
+                return false;
+            character.UserIdLock = null;
+            return true;
+        }
+
         private void TryRemovePlayerFromPreviousSession(Character character, DataModels.GameSession joiningSession)
         {
             var userToRemove = gameData.GetUser(character.UserId);
@@ -343,6 +359,15 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             return GetWebsitePlayer(user, identifier);
+        }
+
+        public WebsitePlayer GetWebsitePlayer(Guid characterId)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return null;
+            var user = gameData.GetUser(character.UserId);
+            if (user == null) return null;
+            return GetWebsitePlayer(user, character);
         }
 
         public WebsitePlayer GetWebsitePlayer(string userId, string identifier)
@@ -1054,6 +1079,11 @@ namespace RavenNest.BusinessLogic.Game
         private WebsitePlayer GetWebsitePlayer(User user, string identifier)
         {
             var character = gameData.GetCharacterByUserId(user.Id, identifier);
+            return GetWebsitePlayer(user, character);
+        }
+
+        private WebsitePlayer GetWebsitePlayer(User user, Character character)
+        {
             if (character == null) return new WebsitePlayer
             {
                 Appearance = new Models.SyntyAppearance(),

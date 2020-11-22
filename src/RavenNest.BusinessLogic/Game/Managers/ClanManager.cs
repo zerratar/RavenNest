@@ -121,12 +121,18 @@ namespace RavenNest.BusinessLogic.Game
             if (role == null)
                 role = roles.FirstOrDefault();
 
+            if (role == null)
+            {
+                CreateDefaultRoles(clan);
+                role = gameData.GetClanRoles(clan.Id).OrderBy(x => x.Level).FirstOrDefault(x => x.Level > 0);
+            }
+
             gameData.Add(new DataModels.CharacterClanMembership
             {
                 Id = Guid.NewGuid(),
                 ClanId = clan.Id,
                 CharacterId = character.Id,
-                ClanRoleId = role?.Id ?? Guid.Empty,
+                ClanRoleId = role.Id,
                 Joined = DateTime.UtcNow,
             });
             gameData.Remove(invite);

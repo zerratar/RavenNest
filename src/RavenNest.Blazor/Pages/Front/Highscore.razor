@@ -1,4 +1,5 @@
 ﻿@page "/highscore"
+@page "/highscore/{highscoreSkill}"
 @using RavenNest.Blazor.Services.Models
 @using Microsoft.AspNetCore.WebUtilities
 @using RavenNest.Blazor.Services
@@ -13,7 +14,21 @@
 }
 else
 {
-  <h2>Top 100 players, all skills</h2>
+  if (activeSkill != null)
+  {
+    <h2>Highscore Top 100 players - @activeSkill.Name</h2>
+  }
+  else
+  {
+    <h2>Highscore Top 100 players</h2>
+  }
+
+  <div class="skill-selector">
+    @foreach (var skill in Skills)
+    {
+      <button @onclick="(()=>SelectSkill(skill))" class="btn @(skill.Active ? "active" : "")">@skill.Name</button>
+    }
+  </div>
   <table class="highscore-list">
     <thead>
       <tr>
@@ -26,7 +41,7 @@ else
     <tbody>
       @foreach (var item in highscores.Players)
       {
-        <tr>
+        <tr class="highscore-item" @onclick="(() => DisplayPlayer(item))">
           <td class='player-rank'>@item.Rank</td>
           <td class='player-name'>@item.PlayerName<span class='player-character-index' alt='Character Number'>#@item.CharacterIndex</span></td>
           <td class='player-level'>@item.Level</td>
@@ -38,16 +53,72 @@ else
 }
 
 @code {
-    private Models.HighScoreCollection highscores;
+  [Parameter]
+  public string HighscoreSkill { get; set; }
+  private Models.HighScoreCollection highscores;
+  private Skill activeSkill;
+  protected override void OnInitialized()
+  {
+    LoadHighscoreAsync();
+  }
+  private void SelectSkill(Skill skill)
+  {
+    NavigationManager.NavigateTo(skill.Link, true);
+  }
+  private void DisplayPlayer(Models.HighScoreItem player)
+  {
+    NavigationManager.NavigateTo("/inspect/" + player.CharacterId);
+  }
 
-    protected override void OnInitialized()
+  private async Task LoadHighscoreAsync()
+  {
+    if (HighscoreSkill != null)
     {
-      LoadHighscoreAsync();
+      highscores = await HighscoreService.GetHighscoreAsync(HighscoreSkill, 0, 100);
+      var s = Skills.FirstOrDefault(x => x.Name.Equals(HighscoreSkill, StringComparison.OrdinalIgnoreCase));
+      if (s != null)
+      {
+        s.Active = true;
+        activeSkill = s;
+      }
     }
-
-    private async Task LoadHighscoreAsync()
+    else
     {
       highscores = await HighscoreService.GetHighscoreAsync(0, 100);
-      StateHasChanged();
     }
+    StateHasChanged();
+  }
+
+  private Skill[] Skills { get; } =
+    new[] {
+        new Skill("All", true),
+        new Skill("Attack"),
+        new Skill("Defense"),
+        new Skill("Strength"),
+        new Skill("Health"),
+        new Skill("Magic"),
+        new Skill("Ranged"),
+        new Skill("Woodcutting"),
+        new Skill("Fishing"),
+        new Skill("Mining"),
+        new Skill("Crafting"),
+        new Skill("Cooking"),
+        new Skill("Farming"),
+        new Skill("Slayer"),
+        new Skill("Sailing"),
+    };
+
+  private class Skill
+  {
+    public Skill() { }
+    public Skill(string name, bool active = false)
+    {
+      Name = name;
+      Active = active;
+    }
+
+    public string Link => $"/highscore/{this.Name}";
+    public string Name { get; set; }
+    public bool Active { get; set; }
+  }
 }

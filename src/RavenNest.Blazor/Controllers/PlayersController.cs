@@ -78,9 +78,15 @@ namespace RavenNest.Controllers
         }
 
         [HttpPost]
-        public PlayerJoinResult PlayerJoin(PlayerJoinData playerData)
+        public PlayerJoinResult PlayerJoin([FromBody] PlayerJoinData playerData)
         {
             return playerManager.AddPlayer(AssertGetSessionToken(), playerData);
+        }
+
+        [HttpDelete("{characterId}")]
+        public bool RemovePlayer(Guid characterId)
+        {
+            return playerManager.RemovePlayerFromActiveSession(AssertGetSessionToken(), characterId);
         }
 
         [HttpGet("{userId}")]
