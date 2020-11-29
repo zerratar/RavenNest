@@ -15,6 +15,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
     public class GameProcessor : IGameProcessor
     {
         private const string VillageProcessorName = "Village";
+        private const string LoyaltyProcessorName = "loyalty";
 
         private readonly ConcurrentDictionary<string, ITaskProcessor> taskProcessors = new ConcurrentDictionary<string, ITaskProcessor>();
 
@@ -53,7 +54,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             this.sessionToken = sessionToken;
 
             RegisterPlayerTask<VillageProcessor>(VillageProcessorName);
-            RegisterPlayerTask<LoyaltyProcessor>("Loyalty");
+            RegisterPlayerTask<LoyaltyProcessor>(LoyaltyProcessorName);
             RegisterPlayerTask<FightingTaskProcessor>("Fighting");
             RegisterPlayerTask<MiningTaskProcessor>("Mining");
             RegisterPlayerTask<FishingTaskProcessor>("Fishing");
@@ -158,6 +159,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             var session = gameData.GetSession(sessionToken.SessionId);
             var characters = gameData.GetSessionCharacters(session);
             var villageProcessor = GetTaskProcessor(VillageProcessorName);
+            var loyaltyProcessor = GetTaskProcessor(LoyaltyProcessorName);
 
             if (session == null)
                 return;
@@ -176,6 +178,8 @@ namespace RavenNest.BusinessLogic.Game.Processors
                     gameData.Add(state);
                     character.StateId = state.Id;
                 }
+
+                loyaltyProcessor.Handle(integrityChecker, gameData, inventoryProvider, session, character, state);
 
                 if (string.IsNullOrEmpty(state.Task) || state.InArena || state.InRaid || state.Island == "War" || !string.IsNullOrEmpty(state.DuelOpponent))
                 {

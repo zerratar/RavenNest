@@ -1,0 +1,247 @@
+﻿.section, h1, h2, h3, p {
+    font-family: 'Heebo', sans-serif;
+}
+
+.news-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-around;
+    margin-top: 60px;
+}
+
+.news-item {
+    display: flex;
+    flex-flow: row;
+    width: 660px;
+}
+
+.news-item-image img {
+    width: 200px;
+}
+
+.news-item-text {
+    display: flex;
+    flex-flow: column;
+    margin-left: 20px;
+}
+
+.news-header {
+}
+
+.news-description {
+    font-weight: lighter;
+    font-size: 16pt;
+}
+
+.section-buttons {
+    display: flex;
+    justify-content: center;
+}
+
+.feature-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-around;
+    max-width: 100%;
+    width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.feature-item img {
+    width: 127px;
+    margin-bottom: 25px;
+}
+
+.feature-item {
+    margin-top: 50px;
+    width: 300px;
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.feature-item-text {
+    font-size: 19pt;
+    color: #303030;
+    text-align: center;
+    font-weight: 300;
+    font-family: 'Heebo', sans-serif;
+}
+
+
+.top-section {
+    width: 100vw;
+    height: 720px;
+    background-image: url(/imgs/TopImage.png);
+    margin-top: -95px;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.content {
+    margin-top: -95px;
+}
+
+.section {
+    padding: 30px 100px 50px 100px;
+}
+
+.section:last-of-type {
+    padding-bottom: 220px;
+}
+
+.section:nth-child(even) {
+    background-color: #eae9e1;
+}
+
+.patreon-content {
+    font-family: 'Heebo', sans-serif;
+    text-shadow: 3px 2px 7px rgba(0,0,0,0.5);
+    display: flex;
+    flex-flow: column;
+    max-width: 100%;
+    width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    align-items: center;
+    justify-items: center;
+    text-align: center;
+}
+
+.patreon-content .raven-btn {
+    width: 280px;
+}
+
+.patreon-text {
+    font-size: 16pt;
+    margin-top: 10px;
+    margin-bottom: 25px;
+}
+
+.patreon-header {
+    font-weight: bold;
+    font-size: 44pt;
+    text-shadow: 3px 2px 7px rgba(0,0,0,0.5);
+}
+
+.patreon-text b {
+    white-space: nowrap;
+}
+
+.section.patreon {
+    background-color: white;
+    background-image: url(/imgs/PatreonBackground.png);
+    background-size: cover;
+    background-position: center;
+    color: white;
+}
+
+.section.patreon h1,
+.section.patreon h2,
+.section.patreon h3,
+.section.patreon p,
+.section.patreon a,
+.section.patreon i,
+.section.patreon span {
+    color: white;
+    text-shadow: 3px 2px 7px rgba(0,0,0,0.5);
+}
+
+.top-section {
+    background-image: url('/imgs/TopImage.png');
+    width: 100vw;
+    height: 720px;
+    background-position: center;
+    background-size: cover;
+    margin-top: -95px;
+    z-index: 0;
+    padding: 150px 50px;
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+}
+
+.hero-text {
+    font-size: 16pt;
+    text-align: center;
+    margin-bottom: 30px;
+    color: white;
+    max-width: 100%;
+    width: 840px;
+}
+
+.hero-text b {
+    font-weight: 600;
+}
+
+.hero-buttons {
+    margin-top: 50px;
+    max-width: 100%;
+    width: 470px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.white-section-break {
+    background-image: url('/imgs/SectionSplitWhite.png');
+    position: relative;
+    top: -166px;
+    width: 100%;
+    height: 166px;
+    display: inline-block;
+    z-index: 1;
+}
+
+.page-content {
+    margin-top: -166px;
+    padding: 0;
+}
+
+.twitch-stream-item {
+    width: 360px;
+}
+
+.streamer-name {
+    font-size: 21pt;
+}
+
+.twitch-content h3 {
+    text-align: center;
+    font-weight: 500;
+    margin-bottom: 60px;
+    margin-top: 50px;
+}
+
+.twitch-streams {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-around;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.twitch-content {
+    width: 550px;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.twitch-stream-header {
+    position: absolute;
+    box-sizing: border-box;
+    width: 360px;
+    padding: 7px 15px 40px 15px;
+    background: linear-gradient(180deg, black, rgba(0,0,0,0.75), transparent);
+    color: white;
+}

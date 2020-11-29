@@ -23,17 +23,15 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 session.Updated = DateTime.UtcNow;
                 var skills = gameData.GetSkills(character.SkillsId);
                 var miningLevel = skills.MiningLevel;
+                var multiDrop = Random.NextDouble();
+                var isMultiDrop = multiDrop <= 0.1;
                 var chance = Random.NextDouble();
 
-                var multiDrop = Random.NextDouble();
-                var isMultiDrop = multiDrop >= 0.5;
-
-                // clamp to always be 10% chance on each resource gain.
-                // so we dont get drops too often.
-                if (chance <= 0.1)
+                if (chance <= 0.33)
                 {
-                    foreach (var res in DroppableResources.OrderBy(x => random.NextDouble()))
+                    foreach (var res in DroppableResources.OrderByDescending(x => x.SkillLevel).ThenBy(x => Random.NextDouble()))
                     {
+                        chance = Random.NextDouble();
                         if (miningLevel >= res.SkillLevel && chance <= res.GetDropChance(miningLevel))
                         {
                             IncrementItemStack(gameData, inventoryProvider, session, character, res.Id);

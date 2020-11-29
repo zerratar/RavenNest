@@ -1,0 +1,76 @@
+﻿.raven-btn {
+    font-family: 'Heebo', sans-serif;
+}
+
+.raven-btn:focus,
+.raven-btn:active {
+    outline: none;
+}
+
+/* default colors */
+.raven-btn:active {
+    background-color: #754c07;
+    border-color: #754c07;
+}
+
+.raven-btn:hover, .raven-btn:hover .inner {
+    background-color: #986209;
+    border-color: #986209;
+}
+
+.raven-btn {
+    padding: 5px;
+    border: 1px solid #a66e17;
+    background-color: transparent;
+    box-shadow: 1px 1px 7px 3px rgba(0,0,0,0.1), inset 1px 1px 7px 3px rgba(0,0,0,0.1);
+}
+
+.raven-btn .inner {
+    background-color: #a66e17;
+    padding: 11px 25px;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: white;
+}
+
+.raven-btn .inner i {
+    margin-right: 10px;
+}
+
+/* orange */
+.raven-btn.orange:active {
+    background-color: #e55844;
+    border-color: #e55844;
+}
+
+.raven-btn.orange:hover, .raven-btn.orange:hover .inner {
+    background-color: #ed5e4a;
+    border-color: #ed5e4a;
+}
+
+.raven-btn.orange {
+    border-color: #f96854;
+}
+
+.raven-btn.orange .inner {
+    background-color: #f96854;
+}
+
+/* blue */
+.raven-btn.blue:active {
+    background-color: #005d76;
+    border-color: #005d76;
+}
+
+.raven-btn.blue:hover, .raven-btn.blue:hover .inner {
+    background-color: #006f8e;
+    border-color: #006f8e;
+}
+
+.raven-btn.blue {
+    border-color: #007798;
+}
+
+.raven-btn.blue .inner {
+    background-color: #007798;
+}

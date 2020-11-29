@@ -15,15 +15,12 @@ namespace RavenNest.DataModels
         private string island; public string Island { get => island; set => Set(ref island, value); }
         
         private decimal? x;
-        [Obsolete("Will be removed in the future")]
         public decimal? X { get => x; set => Set(ref x, value); }
         
         private decimal? y;
-        [Obsolete("Will be removed in the future")]
         public decimal? Y { get => y; set => Set(ref y, value); }
 
         private decimal? z;
-        [Obsolete("Will be removed in the future")] 
         public decimal? Z { get => z; set => Set(ref z, value); }
         //public ICollection<Character> Character { get; set; }
     }

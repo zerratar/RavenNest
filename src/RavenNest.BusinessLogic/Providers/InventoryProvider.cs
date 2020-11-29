@@ -417,6 +417,9 @@ public class PlayerInventory
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool CanEquipItem(Item item, Skills skills)
     {
+        if (item == null)
+            return false;
+
         return item.Category != (int)ItemCategory.Resource &&
                item.Category != (int)ItemCategory.StreamerToken &&
                item.RequiredMagicLevel <= skills.MagicLevel &&

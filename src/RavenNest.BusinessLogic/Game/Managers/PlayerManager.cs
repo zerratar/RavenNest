@@ -207,6 +207,21 @@ namespace RavenNest.BusinessLogic.Game
                 TryRemovePlayerFromPreviousSession(character, session);
             }
 
+            var app = gameData.GetAppearance(character.SyntyAppearanceId);
+            var clanMembership = gameData.GetClanMembership(character.Id);
+            if (clanMembership != null)
+            {
+                var role = gameData.GetClanRole(clanMembership.ClanRoleId);
+                if (role != null && app != null && app.Cape == -1)
+                {
+                    app.Cape = role.Cape;
+                }
+            }
+            else
+            {
+                app.Cape = -1;
+            }
+
             var rejoin = character.UserIdLock == session.UserId;
             character.UserIdLock = session.UserId;
             character.LastUsed = DateTime.UtcNow;
@@ -458,7 +473,6 @@ namespace RavenNest.BusinessLogic.Game
             loyalty.IsModerator = update.IsModerator;
             loyalty.IsSubscriber = update.IsSubscriber;
             loyalty.IsVip = update.IsVip;
-            loyalty.CheeredBits += update.NewCheeredBits;
             if (update.NewGiftedSubs > 0)
                 loyalty.AddGiftedSubs(update.NewGiftedSubs);
             if (update.NewCheeredBits > 0)
@@ -535,6 +549,9 @@ namespace RavenNest.BusinessLogic.Game
                     state.Island = update.Island;
                     state.Task = update.Task;
                     state.TaskArgument = update.TaskArgument;
+                    state.X = (decimal)update.X;
+                    state.Y = (decimal)update.Y;
+                    state.Z = (decimal)update.Z;
                 }
                 return true;
             }
@@ -1463,7 +1480,8 @@ namespace RavenNest.BusinessLogic.Game
                 Hair = Utility.Random(0, 38),
                 FacialHair = gender == Gender.Male ? Utility.Random(0, 18) : -1,
                 Head = Utility.Random(0, 23),
-                HelmetVisible = true
+                HelmetVisible = true,
+                Cape = -1,
             };
         }
 
@@ -1544,7 +1562,7 @@ namespace RavenNest.BusinessLogic.Game
                 MouthModelNumber = Utility.Random(1, 10),
                 MaleHairModelNumber = Utility.Random(0, 10),
                 FemaleHairModelNumber = Utility.Random(0, 20),
-                BeardModelNumber = Utility.Random(0, 10)
+                BeardModelNumber = Utility.Random(0, 10),
             };
         }
 

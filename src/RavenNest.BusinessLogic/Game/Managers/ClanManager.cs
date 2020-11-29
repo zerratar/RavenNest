@@ -121,6 +121,12 @@ namespace RavenNest.BusinessLogic.Game
             if (role == null)
                 role = roles.FirstOrDefault();
 
+            var appearance = gameData.GetAppearance(character.SyntyAppearanceId);
+            if (appearance == null)
+                return false;
+
+            appearance.Cape = 0;
+
             if (role == null)
             {
                 CreateDefaultRoles(clan);
@@ -278,6 +284,7 @@ namespace RavenNest.BusinessLogic.Game
                 Id = Guid.NewGuid(),
                 Level = 3,
                 Name = "Officer",
+                Cape = 0,
             });
             gameData.Add(new DataModels.ClanRole
             {
@@ -285,6 +292,7 @@ namespace RavenNest.BusinessLogic.Game
                 Id = Guid.NewGuid(),
                 Level = 2,
                 Name = "Member",
+                Cape = 0,
             });
             gameData.Add(new DataModels.ClanRole
             {
@@ -292,6 +300,7 @@ namespace RavenNest.BusinessLogic.Game
                 Id = Guid.NewGuid(),
                 Level = 1,
                 Name = "Recruit",
+                Cape = 0,
             });
             gameData.Add(new DataModels.ClanRole
             {
@@ -299,6 +308,7 @@ namespace RavenNest.BusinessLogic.Game
                 Id = Guid.NewGuid(),
                 Level = 0,
                 Name = "Inactive",
+                Cape = 0,
             });
         }
 
@@ -394,6 +404,9 @@ namespace RavenNest.BusinessLogic.Game
 
             if (membership.ClanId != clanId)
                 return false;
+
+            var appearance = gameData.GetAppearance(character.SyntyAppearanceId);
+            appearance.Cape = -1;
 
             gameData.Remove(membership);
             return true;
