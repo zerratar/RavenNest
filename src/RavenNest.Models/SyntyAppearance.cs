@@ -10,6 +10,7 @@ namespace RavenNest.Models
         public int Head { get; set; }
         public int Eyebrows { get; set; }
         public int FacialHair { get; set; }
+        public int Cape { get; set; }
         public string SkinColor { get; set; }
         public string HairColor { get; set; }
         public string BeardColor { get; set; }

@@ -8,7 +8,6 @@ using Microsoft.Extensions.Logging;
 
 namespace RavenNest
 {
-
     public class RequestTiming
     {
         public static async Task TimingMiddleware(HttpContext context, Func<Task> next)

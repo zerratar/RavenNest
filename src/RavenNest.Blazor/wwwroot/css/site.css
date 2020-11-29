@@ -2,20 +2,139 @@
 
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    overflow-x: hidden;
 }
 
-a, .btn-link {
-    color: #0366d6;
+h1 {
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #303030;
+}
+
+h2, h3 {
+    font-weight: bold;
+    color: #303030;
+}
+
+.section.patreon h1:after,
+h1:after {
+    content: "";
+    background-image: url('/imgs/LineBreakBlack.png');
+    display: block;
+    width: 100%;
+    height: 3px;
+    margin-top: 10px;
+    margin-bottom: 30px;
+    margin-left: -5px;
+}
+
+
+.section.patreon h1:after {
+    background-image: url('/imgs/LineBreakWhite.png');
+    height: 25px;
+    margin-left: -20px;
+}
+
+.section-split {
+    background-image: url('/imgs/SectionEndSplitBlack.png');
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    max-width: 100%;
+    width: 1100px;
+    height: 2px;
+    margin-top: 60px;
+    margin-bottom: 40px;
+}
+
+footer, .footer {
+    width: 100%;
+    background-color: black;
+    color: #868686;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    min-height: 160px;
+    -webkit-box-align: center;
+    -ms-flex-align: center;
+    align-items: center;
+    -webkit-box-pack: center;
+    -ms-flex-pack: center;
+    justify-content: center;
+    color: white;
+}
+
+    footer:before {
+        content: "";
+        background-image: url(/imgs/FooterSplit.png);
+        display: inline-block;
+        width: 100%;
+        height: 200px;
+        position: absolute;
+        /* top: -200px; */
+        z-index: 1;
+        left: 0;
+        margin-top: -400px;
+        /*    margin-top: 10px;
+    margin-bottom: 30px;*/
+    }
+
+.footer-row {
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+    align-items: center;
+}
+
+footer > div > img, .footer-logo {
+    width: 370px;
+    margin-bottom: 20px;
+    margin-top: 40px;
+}
+
+footer h3:before {
+    content: "";
+    background-image: url('/imgs/WhiteHeaderSplit.png');
+    display: block;
+    width: 100%;
+    height: 2px;
+    margin-top: 10px;
+    margin-bottom: 30px;
+}
+
+footer h1,
+footer h2,
+footer h3,
+footer p,
+footer a,
+footer i,
+footer span {
+    color: white;
+}
+
+footer h3 {
+    font-weight: 300;
+    font-size: 19pt;
+    font-weight: 300;
+    font-size: 19pt;
+    max-width: 100%;
+    width: 780px;
+    text-align: center;
+}
+
+.oi {
+    font-family: Icons !important;
+}
+
+.fab {
+    font-family: "Font Awesome 5 Brands" !important;
+    font-weight: 400;
 }
 
 .btn-primary {
     color: #fff;
     background-color: #1b6ec2;
     border-color: #1861ac;
-}
-
-.content {
-    padding-top: 1.1rem;
 }
 
 .valid.modified:not([type=checkbox]) {

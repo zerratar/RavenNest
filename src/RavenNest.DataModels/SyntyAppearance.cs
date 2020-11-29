@@ -11,6 +11,7 @@ namespace RavenNest.DataModels
         private int head; public int Head { get => head; set => Set(ref head, value); }
         private int eyebrows; public int Eyebrows { get => eyebrows; set => Set(ref eyebrows, value); }
         private int facialHair; public int FacialHair { get => facialHair; set => Set(ref facialHair, value); }
+        private int cape; public int Cape { get => cape; set => Set(ref cape, value); }
         private string skinColor; public string SkinColor { get => skinColor; set => Set(ref skinColor, value); }
         private string hairColor; public string HairColor { get => hairColor; set => Set(ref hairColor, value); }
         private string beardColor; public string BeardColor { get => beardColor; set => Set(ref beardColor, value); }

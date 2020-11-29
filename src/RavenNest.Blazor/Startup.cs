@@ -181,6 +181,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<ClanService>();
             services.AddSingleton<PlayerService>();
             services.AddSingleton<NotificationService>();
+            services.AddSingleton<TwitchService>();
 
             services.AddSingleton<IKernel, Kernel>();
             services.AddSingleton<IMemoryCache, MemoryCache>();

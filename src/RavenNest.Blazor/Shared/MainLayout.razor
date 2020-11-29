@@ -1,30 +1,84 @@
 ﻿@inherits LayoutComponentBase
 @inject RavenNest.Blazor.Services.AuthService AuthService
 <div class="page">
-  <div class="sidebar">
-    <NavMenu Authenticated="IsAuthenticated" Administrator="IsAdministrator"></NavMenu>
-  </div>
+  @*<div class="sidebar">
+      <NavMenu Authenticated="IsAuthenticated" Administrator="IsAdministrator"></NavMenu>
+    </div>*@
 
   <div class="main">
-    <div class="top-row px-4">
-      @if (IsAuthenticated)
-      {
-        <NotificationIcon UserId="@session.UserId"></NotificationIcon>
-        <NavLink class="nav-link" href="/logout" Match="NavLinkMatch.All">
-          <span class="oi oi-account-logout" aria-hidden="true"></span> logout
-        </NavLink>
-      }
-      else
-      {
-        <NavLink class="nav-link" href="/login" Match="NavLinkMatch.All">
-          <span class="oi oi-account-login" aria-hidden="true"></span> login
-        </NavLink>
-      }
+    <div class="top-nav px-4">
+      <div class="top-row corner">
+        @if (IsAuthenticated)
+        {
+          <NotificationIcon UserId="@session.UserId"></NotificationIcon>
+          <NavLink class="nav-link" href="/logout" Match="NavLinkMatch.All">
+            <span class="oi oi-account-logout" aria-hidden="true"></span> LOGOUT
+          </NavLink>
+        }
+        else
+        {
+          <NavLink class="nav-link" href="/login" Match="NavLinkMatch.All">
+            <span class="oi oi-account-login" aria-hidden="true"></span> LOGIN
+          </NavLink>
+        }
+
+        <a class="nav-link" href="https://discord.gg/gtfDts7" target="_blank">
+          SUPPORT
+        </a>
+
+        <a class="nav-link" href="https://wiki.ravenfall.stream/" target="_blank">
+          WIKI
+        </a>
+      </div>
+      <div class="top-row stretch">
+        <div class="main-nav">
+          <img src="/imgs/RavenfallGray.png" class="logo" />
+          <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+            HOME
+          </NavLink>
+          <a class="nav-link" href="#">
+            GAME
+          </a>
+          <a class="nav-link" href="#">
+            NEWS
+          </a>
+          <a class="nav-link" href="#">
+            COMMUNITY
+          </a>
+        </div>
+        <div class="top-social">
+          <a class="nav-link" href="#">
+            <i class="fab fa-twitch"></i>
+          </a>
+          <a class="nav-link" href="#">
+            <i class="fab fa-discord"></i>
+          </a>
+          <a class="nav-link" href="#">
+            <i class="fab fa-twitter"></i>
+          </a>
+          <a class="nav-link" href="#">
+            <i class="fab fa-youtube"></i>
+          </a>
+          <a class="nav-link" href="#">
+            <i class="fab fa-reddit"></i>
+          </a>
+        </div>
+      </div>
     </div>
 
-    <div class="content px-4">
+    <div class="content">
       @Body
     </div>
+
+    <footer>
+      <div class="footer-row top">
+        <img class="footer-logo" src="/imgs/RavenfallGray.png" />
+        <h3>Copyright &copy; @(DateTime.Now.Year) <a href="www.shinobytes.com">shinobytes.com</a>, all rights reserved.</h3>
+      </div>
+      <div class="footer-row">
+
+      </div>
+    </footer>    
 
     @if (IsAuthenticated)
     {

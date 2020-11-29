@@ -1,11 +1,46 @@
+
+a, i, p, b, h1, h2, h3, h4, span {
+    font-family: 'Heebo', sans-serif;
+}
+
+.nav-link, .top-row a {
+    color: white;
+}
+
 .page {
     position: relative;
     display: flex;
     flex-direction: column;
 }
 
+.content {
+    display: flex;
+    flex-flow: column;
+}
+
 .main {
     flex: 1;
+}
+
+.top-row.corner .nav-link {
+    font-size: 10pt;
+}
+
+
+h1 {
+    font-weight:800;
+}
+
+.main-nav {
+    display: flex;
+    flex-grow: 1;
+    width: 100%;
+    justify-content: center;
+    align-items: baseline;
+}
+
+.main-nav .nav-link {
+    font-weight: bold;
 }
 
 .sidebar {
@@ -15,34 +50,61 @@
 }
 
 .top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
+    display: flex;
+    flex-flow: row;
+    align-items: baseline;
+    width: 100%;
+    justify-items: right;
+    justify-content: right;
     justify-content: flex-end;
-    height: 3.5rem;
+}
+
+.top-row.stretch {
+    flex-grow: 1;
+}
+
+img.logo {
+    width: 160px;
+}
+
+.top-social {
+    display: flex;
+    justify-items: right;
+    justify-content: right;
+}
+
+    .top-social a.nav-link {
+        margin: 0;
+    }
+
+.top-nav {
+    flex-flow: column;
+    justify-content: flex-end;
     display: flex;
     align-items: center;
 }
 
-    .top-row ::deep a, .top-row .btn-link {
+
+    .top-nav ::deep a, .top-nav .btn-link {
         white-space: nowrap;
         margin-left: 1.5rem;
     }
 
-    .top-row a:first-child {
+    .top-nav a:first-child {
         overflow: hidden;
         text-overflow: ellipsis;
     }
 
 @media (max-width: 640.98px) {
-    .top-row:not(.auth) {
+    .top-nav:not(.auth) {
         display: none;
     }
 
-    .top-row.auth {
+    .top-nav.auth {
         justify-content: space-between;
     }
 
-    .top-row a, .top-row .btn-link {
+    .top-nav a, .top-nav .btn-link {
         margin-left: 0;
     }
 }
@@ -59,13 +121,10 @@
         top: 0;
     }
 
-    .top-row {
+    .top-nav {
         position: sticky;
         top: 0;
         z-index: 1;
-    }
-
-    .main > div {
         padding-left: 2rem !important;
         padding-right: 1.5rem !important;
     }
