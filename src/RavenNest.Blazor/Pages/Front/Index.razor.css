@@ -14,10 +14,15 @@
     display: flex;
     flex-flow: row;
     width: 660px;
+    margin-bottom: 25px;
+    text-decoration: none;
+    color: #303030;
 }
 
 .news-item-image img {
     width: 200px;
+    height: 100%;
+    object-fit: cover;
 }
 
 .news-item-text {
@@ -244,4 +249,17 @@
     padding: 7px 15px 40px 15px;
     background: linear-gradient(180deg, black, rgba(0,0,0,0.75), transparent);
     color: white;
+}
+
+.twitch-content p {
+    text-align: center;
+    font-size: 19pt;
+    color: #303030;
+    font-weight: 300;
+    font-family: 'Heebo', sans-serif;
+}
+
+.news-item:hover {
+    background-color: rgba(0,0,0,0.03);
+    cursor: pointer;
 }

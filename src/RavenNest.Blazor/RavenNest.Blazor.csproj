@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <UserSecretsId>6cb7cef3-a971-415f-9577-97280f9779c2</UserSecretsId>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,8 +24,23 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="Components\RavenButton - Copy - Copy.razor.cs">
+      <DependentUpon>RavenButton - Copy.razor.cs</DependentUpon>
+    </Compile>
+    <Compile Update="Components\RavenButton - Copy.razor.cs">
+      <DependentUpon>RavenButton.razor.cs</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="Components\ClanMemberList - Copy.razor.css">
       <DependentUpon>ClanMemberList.razor.css</DependentUpon>
+    </None>
+    <None Update="Components\RavenButton - Copy - Copy.razor.css">
+      <DependentUpon>RavenButton - Copy.razor.css</DependentUpon>
+    </None>
+    <None Update="Components\RavenButton - Copy.razor.css">
+      <DependentUpon>RavenButton.razor.css</DependentUpon>
     </None>
     <None Update="Pages\Login - Copy.razor.css">
       <DependentUpon>Login.razor.css</DependentUpon>

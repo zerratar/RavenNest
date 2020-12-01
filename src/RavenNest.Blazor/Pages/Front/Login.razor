@@ -6,42 +6,49 @@
 @inject NavigationManager NavigationManager
 @inject RavenNest.Blazor.Services.AuthService AuthService
 
-@if (IsTwitchLogin)
-{
-  <p>Logging in using Twitch... Get your PogChamp ready!</p>
-}
-else @if (!IsLoggingIn)
-{
-@if (session.UserId == null)
-{
-  <EditForm Model="@loginModel" OnValidSubmit="@HandleValidSubmit">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+<div class="top-section">
 
-    <InputText placeholder="Username" id="username" @bind-Value="loginModel.Username" />
-    <InputText type="password" placeholder="Password" id="password" @bind-Value="loginModel.Password" />
+  @if (IsTwitchLogin)
+  {
+    <p class="login-message">Logging in using Twitch... Get your PogChamp ready!</p>
+  }
+  else if (!IsLoggingIn)
+  {
+    if (session.UserId == null)
+    {
+      <h1 class="login-header">LOGIN TO YOUR ACCOUNT</h1>
+      <h4 class="login-slogan">Get access to all the features<br />Ravenfall has to offer.</h4>
 
-    <button type="submit">Submit</button>
-  </EditForm>
+      <EditForm Model="@loginModel" OnValidSubmit="@HandleValidSubmit">
+        <DataAnnotationsValidator />
 
-  <div class="login twitch" @onclick="LoginWithTwitch">
-    <i class="fab fa-twitch"></i> Login with Twitch
-  </div>
-}
-else
-{
-  <p>Welcome back, @session.UserName</p>
-}
+        <div class="input-fields">
+          <InputText class="raven-input" placeholder="USERNAME" id="username" @bind-Value="loginModel.Username" />
+          <InputText class="raven-input" type="password" placeholder="PASSWORD" id="password" @bind-Value="loginModel.Password" />
+        </div>
 
-@if (loginFailed)
-{
-  <p>Whops. Wrong username or password.</p>
-}
-}
-else if (IsLoggingIn)
-{
-<p>Logging in... Hold on to your horses!</p>
-}
+        <ValidationSummary />
+        <RavenButton CssClass="blue login-btn" Type="submit"><i class="fas fa-key"></i> Login</RavenButton>
+      </EditForm>
+
+      <div class="login-separator"></div>
+      <RavenButton CssClass="twitch twitch-login-btn" OnClick="LoginWithTwitch"><i class="fab fa-twitch"></i> Login with Twitch</RavenButton>
+    }
+    else
+    {
+      <p>Welcome back, @session.UserName</p>
+    }
+
+    if (loginFailed)
+    {
+      <p>Whops. Wrong username or password.</p>
+    }
+  }
+  else if (IsLoggingIn)
+  {
+    <p class="login-message">Logging in... Hold on to your horses!</p>
+  }
+</div>
 
 @code {
 
@@ -96,7 +103,12 @@ else if (IsLoggingIn)
   {
     userInitiatedLogin = true;
     session = await AuthService.LoginAsync(loginModel);
-
+    if (string.IsNullOrEmpty(session.UserId))
+    {
+      userInitiatedLogin = false;
+      loginFailed = true;
+      return;
+    }
     NavigateToHomeIfAuthenticated();
   }
 
@@ -116,12 +128,16 @@ else if (IsLoggingIn)
     if (!IsAuthenticated)
       return;
 
-    loginFailed = false;
-    userInitiatedLogin = false;
-    MainLayout.Instance.UpdateSession();
-    if (!string.IsNullOrEmpty(RedirectUrl))
-      NavigationManager.NavigateTo(RedirectUrl);
-    else
-      NavigationManager.NavigateTo("/");
+    try
+    {
+      loginFailed = false;
+      userInitiatedLogin = false;
+      MainLayout.Instance.UpdateSession();
+      if (!string.IsNullOrEmpty(RedirectUrl))
+        NavigationManager.NavigateTo(RedirectUrl);
+      else
+        NavigationManager.NavigateTo("/");
+    }
+    catch { }
   }
 }

@@ -1,6 +1,8 @@
 ﻿@page "/"
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.TwitchService TwitchService
+@inject RavenNest.Blazor.Services.NewsService NewsService
+@inject NavigationManager NavigationManager
 
 <div class="top-section">
   <div class="hero-text">
@@ -18,29 +20,29 @@
   <div class="section">
     <h1>News</h1>
     <div class="news-list">
-      <!-- TODO: load the news from the server -->
-      <div class="news-item">
-        <div class="news-item-image">
-          <img src="https://www.gamasutra.com/db_area/images/news/2018/Jun/320213/supermario64thumb1.jpg" />
-        </div>
-        <div class="news-item-text">
-          <h3 class="news-header">Patch Notes: v0.6.4 Alpha</h3>
-          <div class="news-description">Please ensure that your client is restarted and is up to date before you continue your session to prevent character progression loss.</div>
-        </div>
-      </div><!-- end of news item -->
-      <div class="news-item">
-        <div class="news-item-image">
-          <img src="https://www.gamasutra.com/db_area/images/news/2018/Jun/320213/supermario64thumb1.jpg" />
-        </div>
-        <div class="news-item-text">
-          <h3 class="news-header">Patch Notes: v0.6.4 Alpha</h3>
-          <div class="news-description">Please ensure that your client is restarted and is up to date before you continue your session to prevent character progression loss.</div>
-        </div>
-      </div><!-- end of news item -->
+      @if (news == null)
+      {
+        <LoadIndicator></LoadIndicator>
+      }
+      else
+      {
+        foreach (var item in news)
+        {
+          <a class="news-item" href="@item.NewsSource" target="_blank">
+            <div class="news-item-image">
+              <img src="@item.ImageSource" />
+            </div>
+            <div class="news-item-text">
+              <h3 class="news-header">@item.Title</h3>
+              <div class="news-description">@item.ShortDescription</div>
+            </div>
+          </a>
+        }
+      }
     </div>
     <div class="section-split"></div>
     <div class="section-buttons">
-      <RavenButton><i class="fal fa-newspaper"></i>&nbsp;More News</RavenButton>
+      <RavenLink Href="https://www.medium.com/ravenfall"><i class="fal fa-newspaper"></i>&nbsp;More News</RavenLink>
     </div>
   </div>
   <div class="section">
@@ -140,7 +142,7 @@
 
       <div class="section-split"></div>
       <div class="section-buttons">
-        <RavenButton CssClass="purple"><i class="fab fa-twitch"></i>&nbsp;All Streams</RavenButton>
+        <RavenButton CssClass="twitch"><i class="fab fa-twitch"></i>&nbsp;All Streams</RavenButton>
       </div>
     }
   </div>
@@ -154,7 +156,7 @@
       <div class="patreon-text">
         Our generous community is supporting Ravenfall through Patreon. Support the game for at least <b>$5 / month</b>, and you have access to a Patron-only channel on Discord with exclusive updates and surveys
       </div>
-      <RavenButton CssClass="orange"><i class="fab fa-patreon"></i>&nbsp;BECOME A PATRON</RavenButton>
+      <RavenLink Href="https://www.patreon.com/ravenfall"><i class="fab fa-patreon"></i>&nbsp;BECOME A PATRON</RavenLink>
     </div>
   </div>
 </div>

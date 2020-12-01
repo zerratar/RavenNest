@@ -161,6 +161,13 @@ namespace RavenNest.BusinessLogic.Game
                 return result;
             }
 
+            if (gameData.GetSkills(character.SkillsId) == null)
+            {
+                var skills = GenerateSkills();
+                character.SkillsId = skills.Id;
+                gameData.Add(skills);
+            }
+
             if (string.IsNullOrEmpty(character.Name) || (!string.IsNullOrEmpty(userName) && character.Name != userName))
             {
                 character.Name = userName;
@@ -545,6 +552,7 @@ namespace RavenNest.BusinessLogic.Game
                     state.DuelOpponent = update.DuelOpponent;
                     state.Health = update.Health;
                     state.InArena = update.InArena;
+                    state.InDungeon = update.InDungeon;
                     state.InRaid = update.InRaid;
                     state.Island = update.Island;
                     state.Task = update.Task;
@@ -1152,6 +1160,13 @@ namespace RavenNest.BusinessLogic.Game
 
                 var skills = gameData.GetSkills(character.SkillsId);
 
+                if (skills == null)
+                {
+                    skills = GenerateSkills();
+                    character.SkillsId = skills.Id;
+                    gameData.Add(skills);
+                }
+
                 var sessionState = gameData.GetSessionState(gameSession.Id);
 
 
@@ -1169,6 +1184,8 @@ namespace RavenNest.BusinessLogic.Game
 
                     if (sl == 0)
                     {
+                        if (skills == null) continue;
+
                         var maxXP = GameMath.OLD_LevelToExperience(170);
                         var curLevel = skills.GetLevel(skillIndex);
                         var minXP = GameMath.OLD_LevelToExperience(curLevel);
@@ -1436,6 +1453,7 @@ namespace RavenNest.BusinessLogic.Game
                 Health = update.Health,
                 InArena = update.InArena,
                 InRaid = update.InRaid,
+                InDungeon = update.InDungeon,
                 Island = update.Island,
                 Task = update.Task,
                 TaskArgument = update.TaskArgument

@@ -11,6 +11,7 @@ a, i, p, b, h1, h2, h3, h4, span {
     position: relative;
     display: flex;
     flex-direction: column;
+    background-color:white;
 }
 
 .content {
@@ -71,6 +72,7 @@ img.logo {
     display: flex;
     justify-items: right;
     justify-content: right;
+    position: absolute;
 }
 
     .top-social a.nav-link {
@@ -85,10 +87,12 @@ img.logo {
 }
 
 
-    .top-nav ::deep a, .top-nav .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-    }
+.top-nav ::deep a, .top-nav .btn-link {
+    white-space: nowrap;
+    margin-left: 1.5rem;
+    color: white;
+    font-weight: bold;
+}
 
     .top-nav a:first-child {
         overflow: hidden;
