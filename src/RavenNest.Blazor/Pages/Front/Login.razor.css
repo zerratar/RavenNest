@@ -1,4 +1,85 @@
-﻿.input-row {
+﻿.section, h1, h2, h3, p {
+    font-family: 'Heebo', sans-serif;
+}
+
+.login-header {
+    color: white;
+    margin-top: -140px;
+}
+
+.login-header:after {
+    background-image: url(/imgs/LineBreakWhite.png);
+    height: 20px;
+}
+
+.login-slogan {
+    color: white;
+    font-weight: 300;
+    font-size: 24pt;
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.login-separator {
+    color: white;
+    width: 1095px;
+    max-width: 100%;
+    text-align: center;
+    background-image: url(/imgs/LoginSeparator.png);
+    height: 2px;
+    background-size: cover;
+}
+
+.login-separator:after {
+    content: "OR";
+    position: absolute;
+    font-size: 18pt;
+    margin-top: -15px;
+}
+
+form {
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.content {
+    margin-top: -95px;
+}
+
+.section {
+    padding: 30px 100px 50px 100px;
+}
+
+.section:last-of-type {
+    padding-bottom: 220px;
+}
+
+.input-fields {
+    display: flex;
+    flex-flow: column;
+}
+
+.raven-input:-moz-placeholder,
+.raven-input::placeholder {
+    font-weight: 300;
+}
+
+.top-section {
+    width: 100vw;
+    height: 1200px;
+    background-image: url(/imgs/LoginBackground.png);
+    margin-top: -95px;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.input-row {
     display: -webkit-box;
     display: -ms-flexbox;
     display: flex;
@@ -74,10 +155,10 @@ button.login-button {
     margin-bottom: 30px;
 }
 
-    button.login-button:active {
-        /* border:1px solid #0a5585; */
-        background-color: #0a5585;
-    }
+button.login-button:active {
+    /* border:1px solid #0a5585; */
+    background-color: #0a5585;
+}
 
 .login.seperator {
     display: block;
@@ -103,18 +184,18 @@ button.login-button {
     margin-top: 25px;
 }
 
-    .login.twitch:active {
-        background-color: #3a2464;
-    }
+.login.twitch:active {
+    background-color: #3a2464;
+}
 
 .bad-login-result {
     color: #e84118;
     margin-bottom: 25px;
 }
 
-    .bad-login-result:empty {
-        margin-bottom: 0;
-    }
+.bad-login-result:empty {
+    margin-bottom: 0;
+}
 
 .input-icon {
     position: absolute;
@@ -124,6 +205,6 @@ button.login-button {
     color: #c7c7c7;
 }
 
-    .input-icon.user {
-        margin-top: 36px;
-    }
+.input-icon.user {
+    margin-top: 36px;
+}

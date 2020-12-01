@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\RavenNest.Blazor.Services\RavenNest.Blazor.Services.csproj" />
     <ProjectReference Include="..\..\src\RavenNest.BusinessLogic\RavenNest.BusinessLogic.csproj" />
     <ProjectReference Include="..\..\src\RavenNest.DataModels\RavenNest.DataModels.csproj" />
   </ItemGroup>

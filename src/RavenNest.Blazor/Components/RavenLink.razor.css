@@ -1,5 +1,6 @@
 ﻿.raven-btn {
     font-family: 'Heebo', sans-serif;
+    text-decoration: none;
 }
 
 .raven-btn:focus,
@@ -73,23 +74,4 @@
 
 .raven-btn.blue .inner {
     background-color: #007798;
-}
-
-/* twitch */
-.raven-btn.twitch:active {
-    background-color: #860aa9;
-    border-color: #860aa9;
-}
-
-.raven-btn.twitch:hover, .raven-btn.twitch:hover .inner {
-    background-color: #8f0eb4;
-    border-color: #8f0eb4;
-}
-
-.raven-btn.twitch {
-    border-color: #940fba;
-}
-
-.raven-btn.twitch .inner {
-    background-color: #940fba;
 }

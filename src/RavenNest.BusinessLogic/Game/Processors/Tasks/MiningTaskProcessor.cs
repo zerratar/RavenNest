@@ -22,6 +22,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             {
                 session.Updated = DateTime.UtcNow;
                 var skills = gameData.GetSkills(character.SkillsId);
+                if (skills == null)
+                    return;
+
                 var miningLevel = skills.MiningLevel;
                 var multiDrop = Random.NextDouble();
                 var isMultiDrop = multiDrop <= 0.1;

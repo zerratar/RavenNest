@@ -9,6 +9,7 @@ namespace RavenNest.Models
         public string DuelOpponent { get; set; }
         public bool InRaid { get; set; }
         public bool InArena { get; set; }
+        public bool InDungeon { get; set; }
         public string Task { get; set; }
         public string TaskArgument { get; set; }
         public string Island { get; set; }

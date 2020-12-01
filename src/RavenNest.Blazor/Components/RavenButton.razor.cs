@@ -5,7 +5,8 @@ namespace RavenNest.Blazor.Components
 {
     public partial class RavenButton
     {
-        public event EventHandler OnClick;
+        [Parameter]
+        public EventCallback<RavenButton> OnClick { get; set; }
 
         [Parameter]
         public RenderFragment ChildContent { get; set; }
@@ -13,12 +14,19 @@ namespace RavenNest.Blazor.Components
         [Parameter]
         public string CssClass { get; set; }
 
+        [Parameter]
+        public string Type { get; set; }
         private void ClickEvent()
         {
-            if (OnClick != null)
-            {
-                OnClick.Invoke(this, EventArgs.Empty);
-            }
+            OnClick.InvokeAsync(this);
+        }
+
+        protected override void OnInitialized()
+        {
+            if (string.IsNullOrEmpty(Type))
+                Type = "submit";
+
+            base.OnInitialized();
         }
     }
 }
