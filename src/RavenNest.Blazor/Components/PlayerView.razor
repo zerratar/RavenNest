@@ -3,21 +3,30 @@
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 
 <div class="character-details">
-  <h1>@SelectedPlayer.Name</h1>
-  <div class="character-index">
-    @SelectedPlayer.CharacterIndex @(SelectedPlayer.Identifier != null ? $"({SelectedPlayer.Identifier})" : "")
-  </div>
-  <div class="character-level">
-    @PlayerService.GetCombatLevel(SelectedPlayer)
-  </div>
+  <h1>
+    <span>@SelectedPlayer.Name</span>
+    <span class="character-index">
+      @SelectedPlayer.CharacterIndex @(SelectedPlayer.Identifier != null ? $"({SelectedPlayer.Identifier})" : "")
+    </span>
+    <span class="character-level">
+      @PlayerService.GetCombatLevel(SelectedPlayer)
+    </span>
+  </h1>
 </div>
 
-<button class="btn btn-primary @SelectedClass(CharacterViewState.Skills)" @onclick="ShowSkills">Skills</button>
-<button class="btn btn-primary @SelectedClass(CharacterViewState.Inventory)" @onclick="ShowInventory">Inventory</button>
-@if (SelectedPlayer.Clan != null)
-{
-  <button class="btn btn-primary @SelectedClass(CharacterViewState.Clan)" @onclick="ShowClan">Clan</button>
-}
+<div class="character-details-tabs">
+  <button class="tab-link @SelectedClass(CharacterViewState.Skills)" @onclick="ShowSkills">Skills</button>
+  <button class="tab-link @SelectedClass(CharacterViewState.Inventory)" @onclick="ShowInventory">Inventory</button>
+  @if (CanManage)
+  {
+    <button class="tab-link @SelectedClass(CharacterViewState.Customization)" @onclick="ShowCustomization">Cutomize</button>
+  }
+
+  @if (SelectedPlayer.Clan != null)
+  {
+    <button class="tab-link @SelectedClass(CharacterViewState.Clan)" @onclick="ShowClan">Clan</button>
+  }
+</div>
 
 @switch (viewState)
 {
@@ -29,6 +38,9 @@
     break;
   case CharacterViewState.Clan:
     <PlayerClan Player="@SelectedPlayer" CanManage="CanManage"></PlayerClan>
+    break;
+  case CharacterViewState.Customization:
+    <PlayerCustomization Player="@SelectedPlayer" CanManage="CanManage"></PlayerCustomization>
     break;
 }
 
@@ -43,7 +55,7 @@
 
   private string SelectedClass(CharacterViewState state)
   {
-    return viewState == state ? "selected" : "";
+    return viewState == state ? "active" : "";
   }
 
   private void ShowInventory()
@@ -61,10 +73,16 @@
     viewState = CharacterViewState.Clan;
   }
 
+  private void ShowCustomization()
+  {
+    viewState = CharacterViewState.Customization;
+  }
+
   private enum CharacterViewState
   {
     Skills,
     Inventory,
-    Clan
+    Clan,
+    Customization
   }
 }

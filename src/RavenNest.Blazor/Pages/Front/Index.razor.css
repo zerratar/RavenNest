@@ -77,26 +77,25 @@
     font-family: 'Heebo', sans-serif;
 }
 
-
-.top-section {
-    width: 100vw;
-    height: 720px;
-    background-image: url(/imgs/TopImage.png);
-    margin-top: -95px;
-    background-size: cover;
-    background-position: center;
-    display: flex;
-    flex-flow: column;
-    justify-content: center;
-    align-items: center;
-}
-
-.content {
-    margin-top: -95px;
-}
-
 .section {
     padding: 30px 100px 50px 100px;
+}
+
+.top-section {
+    background-image: url('/imgs/TopImage.png');
+    width: 100vw;
+    height: 720px;
+    background-position: center;
+    background-size: cover;
+    margin-top: -95px;
+    z-index: 0;
+    padding: 150px 50px;
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+}
+.content {
+    margin-top: -95px;
 }
 
 .section:last-of-type {
@@ -160,19 +159,6 @@
     text-shadow: 3px 2px 7px rgba(0,0,0,0.5);
 }
 
-.top-section {
-    background-image: url('/imgs/TopImage.png');
-    width: 100vw;
-    height: 720px;
-    background-position: center;
-    background-size: cover;
-    margin-top: -95px;
-    z-index: 0;
-    padding: 150px 50px;
-    display: flex;
-    flex-flow: column;
-    align-items: center;
-}
 
 .hero-text {
     font-size: 16pt;
@@ -186,28 +172,19 @@
 .hero-text b {
     font-weight: 600;
 }
+p.invalid {
+    color: red;
+    /* font-weight: bold; */
+    font-size: 14pt;
+}
 
 .hero-buttons {
     margin-top: 50px;
     max-width: 100%;
     width: 470px;
     display: flex;
-    justify-content: space-between;
-}
-
-.white-section-break {
-    background-image: url('/imgs/SectionSplitWhite.png');
-    position: relative;
-    top: -166px;
-    width: 100%;
-    height: 166px;
-    display: inline-block;
-    z-index: 1;
-}
-
-.page-content {
-    margin-top: -166px;
-    padding: 0;
+    /*justify-content: space-between;*/
+    justify-content: center;
 }
 
 .twitch-stream-item {
@@ -262,4 +239,23 @@
 .news-item:hover {
     background-color: rgba(0,0,0,0.03);
     cursor: pointer;
+}
+@media (max-width: 1519px) {
+    .news-item {
+        width: 48%;
+    }
+
+    .news-list {
+        align-items: initial;
+    }
+
+    .news-item-image img {
+        width: 110px;
+    }
+}
+
+@media (max-width: 1155px) {
+    .news-item {
+        width: 100%;
+    }
 }

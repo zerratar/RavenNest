@@ -1,5 +1,6 @@
 ﻿@layout DashboardLayout
 @page "/clan"
+@page "/clan/ranks"
 @using RavenNest.Blazor.Components
 @using RavenNest.Blazor.Services
 @inject RavenNest.Blazor.Services.ClanService ClanService
@@ -20,57 +21,94 @@ else
     }
     else
     {
-      <p>You do not have a clan. You may create one if you like.</p>
-      <EditForm Model="@createClan" OnValidSubmit="@HandleCreateClan">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
-        <InputText id="name" @bind-Value="createClan.Name" />
-        <button type="submit">Submit</button>
-      </EditForm>
+      <div class="clan-create">
+        <p>You do not have a clan. You may create one if you like.</p>
+        <EditForm Model="@createClan" OnValidSubmit="@HandleCreateClan">
+          <DataAnnotationsValidator />
+          <ValidationSummary />
+          <InputText id="name" @bind-Value="createClan.Name" />
+          <button type="submit">Submit</button>
+        </EditForm>
+      </div>
     }
   }
   else
   {
-    if (!string.IsNullOrEmpty(clan.Logo))
-    {
-      <img src="@clan.Logo" class="clan-logo" />
-    }
-    else
-    {
-      <img src="/api/twitch/logo/@session.UserId" class="clan-logo" />
-    }
-    <h1>@clan.Name</h1>
-    <ClanMemberList ClanId="@clan.Id" CanManage="@canManageMembers"></ClanMemberList>
-    <ClanRoleList ClanId="@clan.Id" CanManage="@canManageMembers"></ClanRoleList>
+    <div class="clan-header">
+      @if (!string.IsNullOrEmpty(clan.Logo))
+      {
+        <img src="@clan.Logo" class="clan-logo" />
+      }
+      else
+      {
+        <img src="/api/twitch/logo/@session.UserId" class="clan-logo" />
+      }
+      <h1>@clan.Name</h1>
+    </div>
+
+    <div class="clan-view-tabs">
+      <button class="tab-link @(!showRanks ? "active":"")" href="/clan" @onclick="ShowMembers">
+        Members
+      </button>
+      <button class="tab-link @(showRanks ? "active":"")" href="/clan/ranks" @onclick="ShowRanks">
+        Ranks
+      </button>
+    </div>
+    <div class="clan-view">
+      @if (showRanks)
+      {
+        <div class="clan-roles">
+          <ClanRoleList ClanId="@clan.Id" CanManage="@canManageMembers"></ClanRoleList>
+        </div>
+      }
+      else
+      {
+        <div class="clan-members">
+          <ClanMemberList ClanId="@clan.Id" CanManage="@canManageMembers"></ClanMemberList>
+        </div>
+      }
+    </div>
   }
 }
 
 @code {
-  private RavenNest.Sessions.SessionInfo session;
-  private RavenNest.Models.Clan clan;
-  private bool canManageMembers;
+    private RavenNest.Sessions.SessionInfo session;
+    private RavenNest.Models.Clan clan;
+    private bool canManageMembers;
 
-  private CreateClanModel createClan = new CreateClanModel();
+    private bool showRanks;
 
-  protected override void OnInitialized()
-  {
-    session = AuthService.GetSession();
-    clan = ClanService.GetClan();
-    if (clan != null)
-      canManageMembers = clan.Owner == session.UserId;
-  }
+    private CreateClanModel createClan = new CreateClanModel();
 
-  private void HandleCreateClan()
-  {
-    clan = ClanService.CreateClan(createClan);
-    canManageMembers = true;
-  }
-
-  protected override void OnAfterRender(bool firstRender)
-  {
-    if (session.UserId == null)
+    private void ShowMembers()
     {
-      NavigationManager.NavigateTo("/login");
+      showRanks = false;
     }
-  }
+    private void ShowRanks()
+    {
+      showRanks = true;
+    }
+
+    protected override void OnInitialized()
+    {
+      showRanks = NavigationManager.Uri.ToString().IndexOf("ranks", StringComparison.OrdinalIgnoreCase) > 0;
+      session = AuthService.GetSession();
+      clan = ClanService.GetClan();
+      if (clan != null)
+        canManageMembers = clan.Owner == session.UserId;
+    }
+
+    private void HandleCreateClan()
+    {
+      clan = ClanService.CreateClan(createClan);
+      canManageMembers = true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+      if (session.UserId == null)
+      {
+        NavigationManager.NavigateTo("/login");
+      }
+    }
 }

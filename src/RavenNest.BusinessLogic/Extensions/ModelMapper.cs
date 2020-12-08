@@ -279,6 +279,7 @@ namespace RavenNest.BusinessLogic.Extensions
             {
                 Id = character.Id,
                 UserName = user.UserName,
+                CharacterIndex = character.CharacterIndex,
                 UserId = user.UserId,
                 Name = character.Name,
                 IsAdmin = user.IsAdmin.GetValueOrDefault(),

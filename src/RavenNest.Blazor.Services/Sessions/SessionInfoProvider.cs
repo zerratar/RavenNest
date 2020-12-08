@@ -125,6 +125,7 @@ namespace RavenNest.Sessions
                 {
                     if (myChar.UserIdLock != null)
                     {
+                        var skills = gameData.GetSkills(myChar.SkillsId);
                         var owner = gameData.GetUser(myChar.UserIdLock.Value);
                         var session = gameData.GetSessionByUserId(owner.UserId);
                         if (session != null)
@@ -132,6 +133,7 @@ namespace RavenNest.Sessions
                             playSessions.Add(new CharacterGameSession
                             {
                                 CharacterId = myChar.Id,
+                                CharacterCombatLevel = GetCombatLevel(skills),
                                 CharacterIndex = myChar.CharacterIndex,
                                 CharacterName = myChar.Name,
                                 SessionTwitchUserId = owner.UserId,
@@ -143,6 +145,11 @@ namespace RavenNest.Sessions
                 }
                 si.PlaySessions = playSessions;
             }
+        }
+        public int GetCombatLevel(DataModels.Skills skills)
+        {
+            return (int)(((skills.AttackLevel + skills.DefenseLevel + skills.HealthLevel + skills.StrengthLevel) / 4f) +
+                   ((skills.RangedLevel + skills.MagicLevel) / 8f));
         }
 
         public bool TryGet(string sessionId, out SessionInfo sessionInfo)

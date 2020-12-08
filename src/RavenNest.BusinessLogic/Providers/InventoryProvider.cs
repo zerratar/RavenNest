@@ -184,7 +184,7 @@ public class PlayerInventory
         lock (mutex)
         {
             var item = this.items
-                .FirstOrDefault(x => !x.Equipped && gameData.GetItem(x.ItemId).Category == (int)itemCategory);
+                .FirstOrDefault(x => !x.Equipped && gameData.GetItem(x.ItemId)?.Category == (int)itemCategory);
             if (item != null)
                 return item.AsReadOnly();
             return default;

@@ -1,0 +1,13 @@
+﻿@inject RavenNest.Blazor.Services.ClanService ClanService
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+<div class="webgl-content">
+  <div id="unityContainer" style="width: 960px; height: 600px"></div>
+  <div class="footer">
+    <div class="webgl-logo"></div>
+    <div class="fullscreen" onclick="unityInstance.SetFullscreen(1)"></div>
+    <div class="title">Ravenfall Character Customization</div>
+  </div>
+</div>

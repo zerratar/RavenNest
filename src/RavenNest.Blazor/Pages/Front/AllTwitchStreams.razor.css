@@ -1,0 +1,72 @@
+﻿
+.section {
+    padding: 30px 100px 50px 100px;
+}
+
+.top-section {
+    background-image: url('/imgs/TopImage.png');
+    width: 100vw;
+    background-position: center;
+    background-size: cover;
+    margin-top: -95px;
+    z-index: 0;
+    padding: 150px 50px;
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+}
+
+.content {
+    margin-top: -95px;
+}
+
+.section:last-of-type {
+    padding-bottom: 220px;
+}
+
+
+.twitch-stream-item {
+    width: 360px;
+}
+
+.streamer-name {
+    font-size: 21pt;
+}
+
+.twitch-content h3 {
+    font-weight: 500;
+    margin-bottom: 60px;
+    margin-top: 30px;
+}
+
+.twitch-streams {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-around;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.twitch-content {
+    width:100%;
+    max-width: 100%;
+}
+
+.twitch-stream-header {
+    position: absolute;
+    box-sizing: border-box;
+    width: 360px;
+    padding: 7px 15px 40px 15px;
+    background: linear-gradient(180deg, black, rgba(0,0,0,0.75), transparent);
+    color: white;
+}
+
+.twitch-content p {
+    text-align: center;
+    font-size: 19pt;
+    color: #303030;
+    font-weight: 300;
+    font-family: 'Heebo', sans-serif;
+}

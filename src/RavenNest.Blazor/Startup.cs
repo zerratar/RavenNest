@@ -111,7 +111,7 @@ namespace RavenNest.Blazor
 
             app.UseResponseCompression();
             app.UseSession();
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.Map("/download/latest", builder =>
             {
@@ -183,6 +183,10 @@ namespace RavenNest.Blazor
             services.AddSingleton<NotificationService>();
             services.AddSingleton<TwitchService>();
             services.AddSingleton<NewsService>();
+            services.AddSingleton<MarketplaceService>();
+            services.AddSingleton<AccountService>();
+            services.AddSingleton<UserService>();
+            services.AddSingleton<ServerService>();
 
             services.AddSingleton<IKernel, Kernel>();
             services.AddSingleton<IMemoryCache, MemoryCache>();

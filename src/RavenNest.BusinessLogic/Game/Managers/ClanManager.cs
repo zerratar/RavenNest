@@ -111,6 +111,10 @@ namespace RavenNest.BusinessLogic.Game
             if (character == null)
                 return false;
 
+            var membership = gameData.GetClanMembership(invite.CharacterId);
+            if (membership != null)
+                return false;
+
             // clan does not exist
             var clan = gameData.GetClan(invite.ClanId);
             if (clan == null)
@@ -166,6 +170,14 @@ namespace RavenNest.BusinessLogic.Game
             var clan = gameData.GetClanByUser(user.Id);
             if (clan == null)
                 return null;
+            return ModelMapper.Map(gameData, clan);
+        }
+
+        public Clan GetClanByCharacter(Guid characterId)
+        {
+            var clanMembership = gameData.GetClanMembership(characterId);
+            if (clanMembership == null) return null;
+            var clan = gameData.GetClan(clanMembership.ClanId);
             return ModelMapper.Map(gameData, clan);
         }
 
@@ -383,6 +395,32 @@ namespace RavenNest.BusinessLogic.Game
                 .ThenBy(x => x.Name)
                 .Select(x => ModelMapper.Map(x))
                 .ToList();
+        }
+
+        public void UpdateMemberRole(Guid clanId, Guid characterId, Guid roleId)
+        {
+            var clan = gameData.GetClan(clanId);
+            if (clan == null)
+                return;
+
+            // character does not exist
+            var character = gameData.GetCharacter(characterId);
+            if (character == null)
+                return;
+
+            // character already a member of a clan
+            var membership = gameData.GetClanMembership(characterId);
+            if (membership == null)
+                return;
+
+            if (membership.ClanId != clanId)
+                return;
+
+            var role = gameData.GetClanRole(roleId);
+            if (role == null)
+                return;
+
+            membership.ClanRoleId = role.Id;
         }
 
         public bool RemoveClanMember(Guid clanId, Guid characterId)

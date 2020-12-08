@@ -70,7 +70,7 @@ namespace RavenNest.BusinessLogic.Game
                 CharacterId = player.Id,
                 PlayerName = player.Name,
                 Level = level,
-                Experience = exp,
+                Experience = Math.Floor(exp),
                 Rank = rank,
                 Skill = skill
             };
