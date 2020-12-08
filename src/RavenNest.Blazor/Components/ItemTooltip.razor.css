@@ -10,9 +10,6 @@
     border-radius: 8px;
     flex-flow: column;
     text-align: left;
-}
-
-.inventory .item-tooltip {
     margin-top: -25px;
 }
 

@@ -187,7 +187,7 @@ namespace RavenNest
             services.AddSingleton<ISecureHasher, SecureHasher>();
             services.AddSingleton<IBinarySerializer, CompressedJsonSerializer>();
             services.AddSingleton<IGamePacketSerializer, GamePacketSerializer>();
-
+            
             services.AddSingleton<IPlayerManager, PlayerManager>();
             services.AddSingleton<IGameManager, GameManager>();
             services.AddSingleton<IMarketplaceManager, MarketplaceManager>();

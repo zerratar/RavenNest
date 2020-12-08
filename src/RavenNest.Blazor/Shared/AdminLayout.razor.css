@@ -3,9 +3,12 @@
     display: flex;
     flex-direction: column;
 }
-
+.content {
+    background-color: white;
+}
 .main {
     flex: 1;
+    background-color: white;
 }
 
 .sidebar {

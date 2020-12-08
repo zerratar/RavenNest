@@ -32,6 +32,7 @@ namespace RavenNest.Blazor.Services
             return (int)(((player.Skills.AttackLevel + player.Skills.DefenseLevel + player.Skills.HealthLevel + player.Skills.StrengthLevel) / 4f) +
                    ((player.Skills.RangedLevel + player.Skills.MagicLevel) / 8f));
         }
+
         public int GetCombatLevel(Player player)
         {
             return (int)(((player.Skills.AttackLevel + player.Skills.DefenseLevel + player.Skills.HealthLevel + player.Skills.StrengthLevel) / 4f) +
@@ -65,17 +66,29 @@ namespace RavenNest.Blazor.Services
             });
         }
 
-        public async Task<IReadOnlyList<Player>> SearchForPlayersAsync(string searchText, bool ignoreClanInvitedPlayers = true)
+        public async Task<PagedCollection<WebsiteAdminPlayer>> GetPlayerPageAsync(string search, int pageIndex, int pageSize)
+        {
+            var players = await SearchForPlayersAsync(search, false, true);
+            var pageItems = players.Skip(pageSize * pageIndex).Take(pageSize).ToList();
+            return new PagedCollection<WebsiteAdminPlayer>(pageItems, players.Count);
+        }
+
+        public Task<IReadOnlyList<WebsiteAdminPlayer>> SearchForPlayersAsync(string searchText)
+        {
+            return SearchForPlayersAsync(searchText, false);
+        }
+
+        public async Task<IReadOnlyList<WebsiteAdminPlayer>> SearchForPlayersAsync(string searchText, bool ignoreClanInvitedPlayers = true, bool allOnEmptySearch = false)
         {
             return await Task.Run(() =>
             {
-                var players = playerManager.GetPlayers();
+                var players = playerManager.GetFullPlayers();
                 if (ignoreClanInvitedPlayers)
                 {
                     var session = GetSession();
                     var user = gameData.GetUser(session.UserId);
                     if (user == null)
-                        return new List<Player>();
+                        return new List<WebsiteAdminPlayer>();
 
                     var clan = gameData.GetClanByUser(user.Id);
                     players = players.Where(x => x.Clan == null &&
@@ -85,7 +98,10 @@ namespace RavenNest.Blazor.Services
 
                 if (string.IsNullOrEmpty(searchText))
                 {
-                    return new List<Player>();
+                    if (allOnEmptySearch)
+                        return players.ToList();
+
+                    return new List<WebsiteAdminPlayer>();
                 }
 
                 return players.Where(x =>

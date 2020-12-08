@@ -1,7 +1,8 @@
 ﻿@inject RavenNest.Blazor.Services.AuthService AuthService
+@using RavenNest.Blazor.Components
 
 <div class="top-row pl-4 navbar navbar-dark">
-  <a class="navbar-brand" href=""><img src="/imgs/logo.png" /></a>
+  <a class="navbar-brand" href=""><img src="/imgs/RavenfallGray.png" /></a>
   <button class="navbar-toggler" @onclick="ToggleNavMenu">
     <span class="navbar-toggler-icon"></span>
   </button>
@@ -13,40 +14,45 @@
     {
       <li class="nav-item px-3">
         <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-          <span class="oi oi-arrow-left" aria-hidden="true"></span> Back
+          <span class="oi oi-arrow-left" aria-hidden="true"></span> Frontpage
         </NavLink>
       </li>
       @if (Admin)
       {
         <li class="nav-item px-3">
           <NavLink class="nav-link" href="/admin" Match="NavLinkMatch.All">
-            <span class="oi oi-dashboard" aria-hidden="true"></span> Overview
+            <span class="oi oi-dashboard" aria-hidden="true"></span>&nbsp;Overview
           </NavLink>
         </li>
         <li class="nav-item px-3">
           <NavLink class="nav-link" href="/admin/server" Match="NavLinkMatch.All">
-            <span class="oi oi-people" aria-hidden="true"></span> Server Management
+            <span class="oi oi-people" aria-hidden="true"></span>&nbsp;Server
+          </NavLink>
+        </li>
+        <li class="nav-item px-3">
+          <NavLink class="nav-link" href="/admin/users" Match="NavLinkMatch.All">
+            <span class="oi oi-people" aria-hidden="true"></span>&nbsp;Users
           </NavLink>
         </li>
         <li class="nav-item px-3">
           <NavLink class="nav-link" href="/admin/players" Match="NavLinkMatch.All">
-            <span class="oi oi-people" aria-hidden="true"></span> Player Management
+            <span class="oi oi-people" aria-hidden="true"></span>&nbsp;Players
           </NavLink>
         </li>
         <li class="nav-item px-3">
           <NavLink class="nav-link" href="/admin/items" Match="NavLinkMatch.All">
-            <span class="oi oi-people" aria-hidden="true"></span> Item Management
+            <span class="oi oi-people" aria-hidden="true"></span>&nbsp;Items
           </NavLink>
         </li>
         <li class="nav-item px-3">
           <NavLink class="nav-link" href="/admin/sessions" Match="NavLinkMatch.All">
-            <span class="oi oi-people" aria-hidden="true"></span> Game Sessions
+            <span class="oi oi-people" aria-hidden="true"></span>&nbsp;Game Sessions
           </NavLink>
         </li>
       }
       else
       {
-        <li class="nav-item px-3">
+        @*<li class="nav-item px-3">
           <NavLink class="nav-link" href="/dashboard" Match="NavLinkMatch.All">
             <span class="oi oi-dashboard" aria-hidden="true"></span> Overview
           </NavLink>
@@ -60,22 +66,59 @@
           <NavLink class="nav-link" href="/achievements" Match="NavLinkMatch.All">
             <span class="oi oi-star" aria-hidden="true"></span> Achievements
           </NavLink>
-        </li>
+        </li>*@
 
         <li class="nav-item px-3">
           <NavLink class="nav-link" href="/characters" Match="NavLinkMatch.All">
-            <span class="oi oi-people" aria-hidden="true"></span> Characters
+            <span class="fas fa-users" aria-hidden="true"></span>&nbsp;Characters
           </NavLink>
         </li>
 
         <li class="nav-item px-3">
           <NavLink class="nav-link" href="/clan" Match="NavLinkMatch.All">
-            <span class="oi oi-people" aria-hidden="true"></span> Streamer Clan
+            <span class="fas fa-shield-alt" aria-hidden="true"></span>&nbsp;Clan
+          </NavLink>
+        </li>
+        @*<li class="nav-item px-3">
+          <NavLink class="nav-link" href="/leaderboard" Match="NavLinkMatch.All">
+            <span class="fas fa-chart-bar" aria-hidden="true"></span>&nbsp;Leaderboard
           </NavLink>
         </li>
         <li class="nav-item px-3">
+          <NavLink class="nav-link" href="/marketplace" Match="NavLinkMatch.All">
+            <span class="fas fa-balance-scale-right" aria-hidden="true"></span>&nbsp;Marketplace
+          </NavLink>
+        </li>
+        <li class="nav-item px-3">
+          <NavLink class="nav-link" href="/items" Match="NavLinkMatch.All">
+            <span class="fas fa-star" aria-hidden="true"></span>&nbsp;Items
+          </NavLink>
+        </li>*@
+        @if (IsAdministrator)
+        {
+          <li class="nav-item px-3">
+            <NavLink class="nav-link" href="/admin" Match="NavLinkMatch.All">
+              <span class="fas fa-key" aria-hidden="true"></span>&nbsp;Admin
+            </NavLink>
+          </li>
+        }
+        @*<li class="nav-item px-3">
           <NavLink class="nav-link" href="/loyalty" Match="NavLinkMatch.All">
-            <span class="oi oi-people" aria-hidden="true"></span> Viewer Loyalty
+            <span class="oi oi-people" aria-hidden="true"></span>&nbsp;Viewer Loyalty
+          </NavLink>
+        </li>*@
+      }
+
+      @if (session?.UserId != null)
+      {
+        <li class="nav-item px-3">
+          <NavLink class="nav-link" href="/password" Match="NavLinkMatch.All">
+            <span class="fas fa-key" aria-hidden="true"></span>&nbsp;Password
+          </NavLink>
+        </li>
+        <li class="nav-item px-3 login">
+          <NavLink class="nav-link" href="/logout">
+            <span class="oi oi-account-logout" aria-hidden="true"></span> logout
           </NavLink>
         </li>
       }
@@ -94,7 +137,7 @@
             <span class="oi oi-dashboard" aria-hidden="true"></span> Dashboard
           </NavLink>
         </li>
-        @if (Administrator)
+        @if (IsAdministrator)
         {
           <li class="nav-item px-3">
             <NavLink class="nav-link" href="/admin" Match="NavLinkMatch.All">
@@ -147,6 +190,14 @@
   </ul>
 </div>
 
+
+@if (session?.UserId != null)
+{
+  <div class="notifications">
+    <NotificationIcon UserId="@session.UserId"></NotificationIcon>
+  </div>
+}
+
 @code {
   /// <summary>
   /// Whether or not we should display the dashboard menu
@@ -174,6 +225,8 @@
 
   public static NavMenu Instance { get; private set; }
 
+  private RavenNest.Sessions.SessionInfo session;
+
   private string MenuTitle => Dashboard ? "Dashboard" : "Ravenfall";
 
   private bool collapseNavMenu = true;
@@ -181,6 +234,7 @@
 
   protected override void OnInitialized()
   {
+    session = AuthService.GetSession();
     Instance = this;
   }
 
@@ -188,6 +242,6 @@
   {
     collapseNavMenu = !collapseNavMenu;
   }
-
+  private bool IsAdministrator => Administrator || session.Administrator;
   private bool IsAuthenticated => Authenticated;
 }

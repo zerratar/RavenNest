@@ -1,4 +1,6 @@
-﻿<button class="raven-btn @(CssClass)" type="@Type" @onclick="ClickEvent">
+﻿@inject NavigationManager NavigationManager
+
+<button class="raven-btn @(CssClass)" type="@Type" @onclick="ClickEvent">
   <div class="inner">
     @ChildContent
   </div>

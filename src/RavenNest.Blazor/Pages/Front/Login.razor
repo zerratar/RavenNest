@@ -32,7 +32,7 @@
       </EditForm>
 
       <div class="login-separator"></div>
-      <RavenButton CssClass="twitch twitch-login-btn" OnClick="LoginWithTwitch"><i class="fab fa-twitch"></i> Login with Twitch</RavenButton>
+      <RavenButton CssClass="twitch twitch-login-btn" OnClick="LoginWithTwitch"><i class="fab fa-twitch"></i>&nbsp;Signup/signin with Twitch</RavenButton>
     }
     else
     {
@@ -41,7 +41,7 @@
 
     if (loginFailed)
     {
-      <p>Whops. Wrong username or password.</p>
+      <p class="invalid">Whops. Wrong username or password.</p>
     }
   }
   else if (IsLoggingIn)
@@ -135,8 +135,10 @@
       MainLayout.Instance.UpdateSession();
       if (!string.IsNullOrEmpty(RedirectUrl))
         NavigationManager.NavigateTo(RedirectUrl);
+      else if (session.RequiresPasswordChange)
+        NavigationManager.NavigateTo("/password");
       else
-        NavigationManager.NavigateTo("/");
+        NavigationManager.NavigateTo("/characters"); // "/"
     }
     catch { }
   }

@@ -1,11 +1,15 @@
+html, body {
+    background-color: white;
+}
+
 .page {
     position: relative;
     display: flex;
     flex-direction: column;
 }
-
 .main {
     flex: 1;
+    background-color: white;
 }
 
 .sidebar {

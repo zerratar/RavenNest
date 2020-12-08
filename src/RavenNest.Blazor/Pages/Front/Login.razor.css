@@ -2,6 +2,12 @@
     font-family: 'Heebo', sans-serif;
 }
 
+p.invalid {
+    color: red;
+    /* font-weight: bold; */
+    font-size: 14pt;
+}
+
 .login-header {
     color: white;
     margin-top: -140px;
@@ -59,11 +65,6 @@ form {
 .input-fields {
     display: flex;
     flex-flow: column;
-}
-
-.raven-input:-moz-placeholder,
-.raven-input::placeholder {
-    font-weight: 300;
 }
 
 .top-section {

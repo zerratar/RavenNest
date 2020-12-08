@@ -2,7 +2,7 @@
 @namespace RavenNest.Blazor.Pages
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @{
-    Layout = null;
+  Layout = null;
 }
 
 <!DOCTYPE html>
@@ -16,9 +16,14 @@
   <script src="https://kit.fontawesome.com/3f217f080c.js" crossorigin="anonymous"></script>
   <title>Ravenfall.stream</title>
   <base href="~/" />
+
+  <link rel="stylesheet" href="https://ravennestblobstorage.blob.core.windows.net/cdn/unity/TemplateData/style.css">
+  <script src="https://ravennestblobstorage.blob.core.windows.net/cdn/unity/TemplateData/UnityProgress.js"></script>
+  <script src="https://ravennestblobstorage.blob.core.windows.net/cdn/unity/Build/UnityLoader.js"></script>
+
   <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
   <link href="css/site.css" rel="stylesheet" />
-  <link href="RavenNest.Blazor.styles.css" rel="stylesheet" />
+  <link href="/RavenNest.styles.css" rel="stylesheet" />
   <link rel="icon" type="image/png" href="favicon.png" sizes="32x32">
   <link rel="icon" type="image/png" href="favicon.png" sizes="96x96">
   <link href="_content/Blazored.Typeahead/blazored-typeahead.css" rel="stylesheet" />
@@ -40,13 +45,16 @@
       $('.toast').toast(option);
     };
 
-        //window.createTwitchEmbed = (elementId, channel) => {
-        //  new Twitch.Embed(elementId, {
-        //    width: 854,
-        //    height: 480,
-        //    channel: "monstercat",
-        //  });
-        //}
+    window.showCharacterCustomization = () => {
+      window.unityInstance = UnityLoader.instantiate("unityContainer", "https://ravennestblobstorage.blob.core.windows.net/cdn/unity/Build/WebGL.json", { onProgress: UnityProgress });
+    };
+                //window.createTwitchEmbed = (elementId, channel) => {
+                //  new Twitch.Embed(elementId, {
+                //    width: 854,
+                //    height: 480,
+                //    channel: "monstercat",
+                //  });
+                //}
   </script>
 </head>
 <body>

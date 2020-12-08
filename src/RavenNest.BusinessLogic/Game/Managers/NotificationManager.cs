@@ -72,9 +72,21 @@ namespace RavenNest.BusinessLogic.Game
             return notification;
         }
 
-        public IReadOnlyList<UserNotification> GetNotifications(Guid id)
+        public void DeleteNotification(Guid notificationId)
         {
-            return gameData.GetNotifications(id).OrderByDescending(x => x.Time).ToList();
+            var notification = gameData.GetNotification(notificationId);
+            if (notification == null)
+                return;
+
+            gameData.Remove(notification);
+        }
+
+        public IReadOnlyList<UserNotification> GetNotifications(Guid id, int take = int.MaxValue)
+        {
+            return gameData.GetNotifications(id)
+                .OrderByDescending(x => x.Time)
+                .Take(take)
+                .ToList();
         }
     }
 }

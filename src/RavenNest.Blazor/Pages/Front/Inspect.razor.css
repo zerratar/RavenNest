@@ -1,0 +1,29 @@
+﻿
+.section {
+    padding: 30px 100px 50px 100px;
+    margin-bottom: 150px;
+}
+
+.top-section {
+    background-image: url('/imgs/TopImage.png');
+    width: 100vw;
+    background-position: center;
+    background-size: cover;
+    margin-top: -95px;
+    z-index: 0;
+    padding: 150px 50px;
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+}
+
+.content {
+    margin-top: -95px;
+    min-height: 400px;
+}
+
+@media screen and (max-width: 800px) {
+    .section {
+        padding: 20px 30px 50px 20px;
+    }
+}

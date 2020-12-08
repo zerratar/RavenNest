@@ -9,8 +9,8 @@
     <b>Ravenfall</b> is a <b>Twitch</b> Integrated Idle game you can play with your viewers. The viewers control their characters using chat commands to train their characters in various skills and competing in the leaderboard or helping out fighting huge bosses together.
   </div>
   <div class="hero-buttons">
-    <RavenButton CssClass="blue"><i class="oi oi-info"></i>&nbsp;Learn More</RavenButton>
-    <RavenButton><i class="oi oi-people"></i>&nbsp;Join the Community</RavenButton>
+    @*<RavenLink Href="#features" CssClass="blue"><i class="oi oi-info"></i>&nbsp;Learn More</RavenLink>*@
+    <RavenLink Href="https://discord.gg/gtfDts7"><i class="oi oi-people"></i>&nbsp;Join the Community</RavenLink>
   </div>
 </div>
 
@@ -47,7 +47,7 @@
   </div>
   <div class="section">
     <h1>Features</h1>
-
+    <a id="features" name="features"></a>
     <div class="feature-list">
       <div class="feature-item">
         <img src="/imgs/users.png" />
@@ -127,9 +127,9 @@
             <div class="twitch-stream-header">
               <div class="streamer-name">@stream.TwitchUserName</div>
               <div class="streamer-title">@stream.UserTitle</div>
-              <div class="streamer-details">@stream.PlayerCount players, Ravenfall running for @(stream.Uptime)</div>
+              <div class="streamer-details">@stream.PlayerCount players</div>
             </div>
-            <iframe src="https://player.twitch.tv/?channel=@(stream.TwitchUserName)&parent=localhost:44387"
+            <iframe src="https://player.twitch.tv/?channel=@(stream.TwitchUserName)&autoplay=false&parent=www.ravenfall.stream&parent=ravenfall.stream&parent=www.ravenfall.gg&parent=ravenfall.gg&parent=localhost"
                     height="200"
                     width="360"
                     frameborder="0"
@@ -142,7 +142,7 @@
 
       <div class="section-split"></div>
       <div class="section-buttons">
-        <RavenButton CssClass="twitch"><i class="fab fa-twitch"></i>&nbsp;All Streams</RavenButton>
+        <RavenButton CssClass="twitch" NavigateTo="/streams"><i class="fab fa-twitch"></i>&nbsp;All Streams</RavenButton>
       </div>
     }
   </div>

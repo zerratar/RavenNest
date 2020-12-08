@@ -1,2 +1,27 @@
-﻿.clan-logo {
+﻿button.tab-link {
+    border: 0;
+    padding: 10px;
+    outline: 0;
+}
+
+button.tab-link.active {
+    color: white;
+    background-color: black;
+}
+.clan-view-tabs {
+    margin-bottom: 25px;
+}
+.clan-header {
+    display: flex;
+    padding-top: 20px;
+}
+
+.clan-header h1 {
+    flex-grow: 1;
+    margin-left: 20px;
+}
+
+.clan-logo {
+    width: 64px;
+    height: 64px;
 }

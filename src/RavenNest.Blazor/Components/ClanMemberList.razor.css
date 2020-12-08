@@ -1,4 +1,66 @@
-﻿table.items-list {
+﻿.clan-member-invite {
+    position: absolute;
+    background-color: #ffffff;
+    width: 100%;
+    left: 50%;
+    width: 620px;
+    max-width: 100%;
+    transform: translateX(-50%);
+    padding: 15px;
+    box-shadow: 5px 5px 20px rgba(0,0,0,0.25);
+    display: flex;
+    flex-flow: column;
+}
+
+.clan-member-list-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.clan-member-list-header button.btn.btn-success {    
+    height: 38px;
+}
+
+button.btn.btn-secondary {
+    margin-left: 10px;
+}
+
+.clan-member-invite-controls {
+    display: flex;
+    flex-flow: row;
+    justify-content: flex-end;
+    margin-top: 15px;
+}
+.clan-member-invite-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.clan-member-invite-header h2 {
+    font-weight: 300;
+    font-size: 18pt;
+    text-align: center;
+    width: 100%;
+    position: relative;
+    top: 5px;
+    margin-bottom: 25px;
+}
+
+.clan-member-invite-header button.close {
+    margin-top: -20px;
+}
+
+input.blazored-typeahead__input {
+    border-radius: 0;
+}
+
+.blazored-typeahead {
+    border-radius: 0;
+    margin-top: 15px;
+}
+
+table.items-list {
     width: 100%;
     border-collapse: collapse;
 }

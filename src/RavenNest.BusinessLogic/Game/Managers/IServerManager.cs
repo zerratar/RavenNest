@@ -12,6 +12,7 @@ namespace RavenNest.BusinessLogic.Game
     public interface IServerManager
     {
         void BroadcastMessageAsync(string message, int time);
+        void SendExpMultiplierEventAsync(int multiplier, string message, DateTime? startTime, DateTime endTime);
     }
 
     public class ServerManager : IServerManager
@@ -24,20 +25,10 @@ namespace RavenNest.BusinessLogic.Game
 
         public void BroadcastMessageAsync(string message, int time)
         {
-            // 1. get all active sessions
             var sessions = gameData.GetActiveSessions();
 
-            //var sessions = await db.GameSession
-            //    .Include(x => x.GameEvents)
-            //    .Where(x => x.Stopped != null)
-            //    .ToListAsync();
-
-            // 2. push a new event for each session
             foreach (var session in sessions)
             {
-                //var revision = session.GameEvents.Count > 0
-                //    ? session.GameEvents.Max(x => x.Revision) + 1 : 1;
-
                 var gameEvent = gameData.CreateSessionEvent(GameEventType.ServerMessage, session, new ServerMessage()
                 {
                     Message = message,
@@ -45,20 +36,25 @@ namespace RavenNest.BusinessLogic.Game
                 });
 
                 gameData.Add(gameEvent);
-
-                //await db.GameEvent.AddAsync(new DataModels.GameEvent()
-                //{
-                //    Id = Guid.NewGuid(),
-                //    GameSessionId = session.Id,
-                //    GameSession = session,
-                //    Data = JSON.Stringify(new ServerMessage()
-                //    {
-                //        Message = message,
-                //    }),
-                //    Type = (int)GameEventType.ServerMessage,
-                //    Revision = revision
-                //});
             }
+        }
+
+        public void SendExpMultiplierEventAsync(int multiplier, string message, DateTime? startTime, DateTime endTime)
+        {
+            var start = startTime ?? DateTime.UtcNow;
+            var activeEvent = gameData.GetActiveExpMultiplierEvent();
+            if (activeEvent != null)
+            {
+                if (start < activeEvent.EndTime)
+                    activeEvent.EndTime = start;
+            }
+            var ev = new ExpMultiplierEvent();
+            ev.Id = Guid.NewGuid();
+            ev.EventName = message;
+            ev.Multiplier = multiplier;
+            ev.StartTime = start;
+            ev.EndTime = endTime;
+            gameData.Add(ev);
         }
     }
 }

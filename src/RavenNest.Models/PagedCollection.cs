@@ -6,5 +6,11 @@ namespace RavenNest.Models
     {
         public long TotalSize { get; set; }
         public IReadOnlyList<T> Items { get; set; }
+        public PagedCollection() { }
+        public PagedCollection(IReadOnlyList<T> source, int totalSize)
+        {
+            TotalSize = totalSize;
+            Items = source;
+        }
     }
 }

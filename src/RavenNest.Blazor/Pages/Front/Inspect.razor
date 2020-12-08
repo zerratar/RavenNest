@@ -4,31 +4,41 @@
 @using RavenNest.BusinessLogic.Extended
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 
-<h3>Inspect</h3>
-@if (CharacterId == null)
-{
-  <p>Oh no. You don't seem to be inspecting a player at all.</p>
-}
-else if (player == null)
-{
-  <LoadIndicator></LoadIndicator>
-}
-else
-{
-  <PlayerView SelectedPlayer="player"></PlayerView>
-}
-@code {
+  <div class="top-section">
+    <div class="hero-text">
+    </div>
+  </div>
 
-  [Parameter]
-  public string CharacterId { get; set; }
+  <div class="white-section-break"></div>
+  <div class="page-content">
+    <div class="section">
+      <h3>Inspect</h3>
+      @if (CharacterId == null)
+      {
+        <p>Oh no. You don't seem to be inspecting a player at all.</p>
+      }
+      else if (player == null)
+      {
+        <LoadIndicator></LoadIndicator>
+      }
+      else
+      {
+        <PlayerView SelectedPlayer="player"></PlayerView>
+      }
+    </div>
+  </div>
+  @code {
 
-  private WebsitePlayer player;
+    [Parameter]
+    public string CharacterId { get; set; }
 
-  protected override async Task OnInitializedAsync()
-  {
-    if (CharacterId != null && Guid.TryParse(CharacterId, out var guid))
+    private WebsitePlayer player;
+
+    protected override async Task OnInitializedAsync()
     {
-      player = await PlayerService.GetPlayerAsync(guid);
+      if (CharacterId != null && Guid.TryParse(CharacterId, out var guid))
+      {
+        player = await PlayerService.GetPlayerAsync(guid);
+      }
     }
   }
-}

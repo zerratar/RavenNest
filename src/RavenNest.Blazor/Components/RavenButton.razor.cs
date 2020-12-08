@@ -9,6 +9,9 @@ namespace RavenNest.Blazor.Components
         public EventCallback<RavenButton> OnClick { get; set; }
 
         [Parameter]
+        public string NavigateTo { get; set; }
+
+        [Parameter]
         public RenderFragment ChildContent { get; set; }
 
         [Parameter]
@@ -19,6 +22,10 @@ namespace RavenNest.Blazor.Components
         private void ClickEvent()
         {
             OnClick.InvokeAsync(this);
+            if (!string.IsNullOrEmpty(NavigateTo))
+            {
+                NavigationManager.NavigateTo(NavigateTo);
+            }
         }
 
         protected override void OnInitialized()

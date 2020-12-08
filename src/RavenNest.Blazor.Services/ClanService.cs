@@ -57,6 +57,19 @@ namespace RavenNest.Blazor.Services
             return GetMembers(clanId);
         }
 
+        public async Task<IReadOnlyList<ClanMember>> UpdateMemberRoleAsync(Guid clanId, Guid characterId, Guid roleId)
+        {
+            var session = GetSession();
+            if (!session.Authenticated)
+                return null;
+
+            return await Task.Run(() =>
+            {
+                this.clanManager.UpdateMemberRole(clanId, characterId, roleId);
+                return GetMembers(clanId);
+            });
+        }
+
         public IReadOnlyList<ClanMember> InvitePlayer(Guid clanId, Guid characterId)
         {
             var session = GetSession();

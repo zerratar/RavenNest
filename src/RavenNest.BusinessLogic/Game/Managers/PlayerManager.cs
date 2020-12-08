@@ -410,7 +410,7 @@ namespace RavenNest.BusinessLogic.Game
             var userChars = gameData.GetCharacters(x => x.UserId == user.Id);
             var result = new List<WebsitePlayer>();
             foreach (var c in userChars)
-                result.Add(GetWebsitePlayer(user, c.Identifier));
+                result.Add(GetWebsitePlayer(user, c));
             return result;
         }
 

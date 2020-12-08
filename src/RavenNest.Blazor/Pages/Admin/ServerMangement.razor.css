@@ -1,0 +1,29 @@
+﻿.experience-multiplier,
+.server-notification {
+    margin-top: 50px;
+}
+
+.input-fields {
+    display: flex;
+    flex-flow: column;
+}
+
+input.input {
+    padding: 5px 15px;
+    margin: 5px;
+    max-width: 100%;
+    width: 350px;
+}
+
+.server-notification form {
+    flex-flow: row;
+    justify-content: start;
+    margin-bottom: 35px;
+}
+
+.experience-multiplier form {
+    flex-flow: row;
+    justify-content: start;
+    margin-bottom: 35px;
+    align-items: baseline;
+}

@@ -1,0 +1,14 @@
+﻿.clan-header {
+    display: flex;
+    padding-top: 20px;
+}
+
+.clan-header h1 {
+    flex-grow: 1;
+    margin-left: 20px;
+}
+
+.clan-logo {
+    width: 64px;
+    height: 64px;
+}

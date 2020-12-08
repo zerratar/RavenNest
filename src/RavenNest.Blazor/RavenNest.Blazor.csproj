@@ -1,9 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <UserSecretsId>6cb7cef3-a971-415f-9577-97280f9779c2</UserSecretsId>
     <Nullable>disable</Nullable>
+    <AssemblyName>RavenNest</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -41,6 +42,9 @@
     </None>
     <None Update="Components\RavenButton - Copy.razor.css">
       <DependentUpon>RavenButton.razor.css</DependentUpon>
+    </None>
+    <None Update="Pages\Admin\PlayerManagement - Copy.razor.css">
+      <DependentUpon>PlayerManagement.razor.css</DependentUpon>
     </None>
     <None Update="Pages\Login - Copy.razor.css">
       <DependentUpon>Login.razor.css</DependentUpon>

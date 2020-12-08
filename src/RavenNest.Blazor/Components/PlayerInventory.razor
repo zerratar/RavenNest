@@ -1,14 +1,13 @@
 ﻿@using RavenNest.BusinessLogic.Extended
 @using RavenNest.Models
-<h3>Inventory</h3>
 <div class="player-inventory">
   <div>
     <h2>Equipped</h2>
     <div class="inventory-items">
       @foreach (var item in GetEquippedItems())
       {
-        <div class="inventory-item equipped">
-          <div class="item-image" data-item="@item.Id" @onmouseover="(()=>MouseOverItem(item))" @onmouseout="(()=>MouseExitItem(item))"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
+        <div class="inventory-item equipped" @onmouseover="(()=>MouseOverItem(item))" @onmouseout="(()=>MouseExitItem(item))">
+          <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
           <ItemTooltip Item="item" Visible="@(item.Id == tooltipItem)"></ItemTooltip>
         </div>
       }
@@ -20,8 +19,8 @@
     <div class="inventory-items inventory">
       @foreach (var item in GetInventoryItems())
       {
-        <div class="inventory-item">
-          <div class="item-image" data-item="@item.Id" @onmouseover="(()=>MouseOverItem(item))" @onmouseout="(()=>MouseExitItem(item))"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
+        <div class="inventory-item" @onmouseover="(()=>MouseOverItem(item))" @onmouseout="(()=>MouseExitItem(item))">
+          <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
           <div class="item-amount">@GetItemAmount(item)</div>
           <ItemTooltip Item="item" Visible="@(item.Id == tooltipItem)"></ItemTooltip>
         </div>

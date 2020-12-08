@@ -10,6 +10,7 @@ namespace RavenNest.BusinessLogic.Game
         IReadOnlyList<Player> GetInvitedPlayers(Guid clanId);
         IReadOnlyList<ClanRole> GetClanRoles(Guid clanId);
         Clan GetClan(Guid clanId);
+        Clan GetClanByCharacter(Guid characterId);
         Clan GetClanByUserId(string userId);
         Clan CreateClan(string userId, string name, string logo);
         Clan CreateClan(Guid ownerUserId, string name, string logoImageFile);
@@ -25,5 +26,6 @@ namespace RavenNest.BusinessLogic.Game
         bool SendPlayerInvite(Guid clanId, Guid characterId, Guid? sender = null);
         bool RemovePlayerInvite(Guid clanId, Guid characterId);
         bool RemovePlayerInvite(Guid inviteId);
+        void UpdateMemberRole(Guid clanId, Guid characterId, Guid roleId);
     }
 }
