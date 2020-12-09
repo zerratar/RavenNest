@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using RavenNest.Models;
 using RavenNest.Twitch;
@@ -16,5 +17,6 @@ namespace RavenNest.Sessions
         Task<SessionInfo> SetTwitchTokenAsync(string sessionId, string token);
         Task<SessionInfo> SetAuthTokenAsync(string sessionId, AuthToken token);
         Task<SessionInfo> StoreAsync(string sessionId);
+        void SetActiveCharacter(SessionInfo session, Guid id);
     }
 }

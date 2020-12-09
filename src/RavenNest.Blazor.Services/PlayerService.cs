@@ -27,6 +27,21 @@ namespace RavenNest.Blazor.Services
             this.playerManager = playerManager;
         }
 
+        public void SetActiveCharacter(WebsitePlayer player)
+        {
+            var session = GetSession();
+            sessionInfoProvider.SetActiveCharacter(session, player.Id);
+        }
+
+        public void UpdatePlayerIdentifier(Guid characterId, string identifier)
+        {
+            var c = gameData.GetCharacter(characterId);
+            if (c != null)
+            {
+                c.Identifier = identifier;
+            }
+        }
+
         public int GetCombatLevel(WebsitePlayer player)
         {
             return (int)(((player.Skills.AttackLevel + player.Skills.DefenseLevel + player.Skills.HealthLevel + player.Skills.StrengthLevel) / 4f) +

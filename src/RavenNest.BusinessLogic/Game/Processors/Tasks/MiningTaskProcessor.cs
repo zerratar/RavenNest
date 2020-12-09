@@ -30,9 +30,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 var isMultiDrop = multiDrop <= 0.1;
                 var chance = Random.NextDouble();
 
-                if (chance <= 0.33)
+                if (chance <= 0.5)
                 {
-                    foreach (var res in DroppableResources.OrderByDescending(x => x.SkillLevel).ThenBy(x => Random.NextDouble()))
+                    foreach (var res in DroppableResources.OrderByDescending(x => x.SkillLevel))
                     {
                         chance = Random.NextDouble();
                         if (miningLevel >= res.SkillLevel && chance <= res.GetDropChance(miningLevel))

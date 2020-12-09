@@ -108,7 +108,7 @@ a.nav-link.dd-item {
     color: #d0d0d0 !important;
 }
 
-input#password::placeholder {
+.password input#password::placeholder {
     color: #d0d0d0;
 }
 

@@ -292,6 +292,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
                 Clan = clan,
                 ClanRole = clanRole,
+                Identifier = character.Identifier,
                 OriginUserId = character.OriginUserId,
                 Revision = character.Revision.GetValueOrDefault()
             };

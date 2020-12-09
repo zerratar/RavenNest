@@ -66,6 +66,13 @@ namespace RavenNest.Sessions
             return !string.IsNullOrEmpty(token);
         }
 
+        public void SetActiveCharacter(SessionInfo session, Guid id)
+        {
+            session.ActiveCharacterId = id;
+            var sessionState = JSON.Stringify(session);
+            SetString(session.SessionId, AuthState, sessionState);
+        }
+
         public async Task<SessionInfo> StoreAsync(string sessionId)
         {
             var si = new SessionInfo();
@@ -97,6 +104,7 @@ namespace RavenNest.Sessions
                 user = gameData.GetUser(auth.UserId);
             }
 
+            si.SessionId = sessionId;
             UpdateSessionInfoData(si, user);
 
             var sessionState = JSON.Stringify(si);

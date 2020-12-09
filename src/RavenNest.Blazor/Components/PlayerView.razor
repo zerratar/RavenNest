@@ -12,6 +12,49 @@
       @PlayerService.GetCombatLevel(SelectedPlayer)
     </span>
   </h1>
+  @if (CanManage)
+  {
+    @if (SelectedPlayer.Identifier != null)
+    {
+      <p>
+        You can use
+        <b>
+          !join
+          @if (SelectedPlayer.CharacterIndex > 0)
+          {
+            @(SelectedPlayer.CharacterIndex+1)
+          }
+        </b> or <b>!join @SelectedPlayer.Identifier</b> to play with this character on stream.
+        @if (!editingAlias)
+        {
+          <a class="change-identifier" @onclick="EditAlias">Change Alias</a>
+        }
+      </p>
+    }
+    else
+    {
+      <p>
+        You can use <b>
+          !join
+          @if (SelectedPlayer.CharacterIndex > 0)
+          {
+            @(SelectedPlayer.CharacterIndex+1)
+          }
+        </b> to play with this character on stream.
+        @if (!editingAlias)
+        {
+          <a class="change-identifier" @onclick="EditAlias">Change Alias</a>
+        }
+      </p>
+    }
+
+    @if (editingAlias)
+    {
+      <input type="text" placeholder="Enter an alias to use for !join" class="input edit-identifier" @bind-value="SelectedPlayer.Identifier" />
+      <a @onclick="UpdateAlias"><i class="fas fa-check"></i></a>
+      <a @onclick="CancelEditAlias"><i class="fas fa-times"></i></a>
+    }
+  }
 </div>
 
 <div class="character-details-tabs">
@@ -19,7 +62,7 @@
   <button class="tab-link @SelectedClass(CharacterViewState.Inventory)" @onclick="ShowInventory">Inventory</button>
   @if (CanManage)
   {
-    <button class="tab-link @SelectedClass(CharacterViewState.Customization)" @onclick="ShowCustomization">Cutomize</button>
+    <button class="tab-link @SelectedClass(CharacterViewState.Customization)" @onclick="ShowCustomization">Customise</button>
   }
 
   @if (SelectedPlayer.Clan != null)
@@ -45,44 +88,80 @@
 }
 
 @code {
-  [Parameter]
-  public RavenNest.BusinessLogic.Extended.WebsitePlayer SelectedPlayer { get; set; }
+    [Parameter]
+    public RavenNest.BusinessLogic.Extended.WebsitePlayer SelectedPlayer { get; set; }
 
-  [Parameter]
-  public bool CanManage { get; set; }
+    [Parameter]
+    public bool CanManage { get; set; }
 
-  private CharacterViewState viewState;
+    private bool editingAlias;
+    private string oldIdentifier;
+    private CharacterViewState viewState;
 
-  private string SelectedClass(CharacterViewState state)
-  {
-    return viewState == state ? "active" : "";
-  }
+    protected override void OnInitialized()
+    {
+      if (SelectedPlayer != null && CanManage)
+      {
+        PlayerService.SetActiveCharacter(SelectedPlayer);
+      }
+    }
 
-  private void ShowInventory()
-  {
-    viewState = CharacterViewState.Inventory;
-  }
+    protected override void OnParametersSet()
+    {
+      if (SelectedPlayer != null && CanManage)
+      {
+        PlayerService.SetActiveCharacter(SelectedPlayer);
+      }
+    }
 
-  private void ShowSkills()
-  {
-    viewState = CharacterViewState.Skills;
-  }
+    private string SelectedClass(CharacterViewState state)
+    {
+      return viewState == state ? "active" : "";
+    }
 
-  private void ShowClan()
-  {
-    viewState = CharacterViewState.Clan;
-  }
+    private void EditAlias()
+    {
+      oldIdentifier = SelectedPlayer.Identifier;
+      editingAlias = true;
+    }
 
-  private void ShowCustomization()
-  {
-    viewState = CharacterViewState.Customization;
-  }
+    private void CancelEditAlias()
+    {
+      SelectedPlayer.Identifier = oldIdentifier;
+      editingAlias = false;
+    }
+    private void UpdateAlias()
+    {
+      PlayerService.UpdatePlayerIdentifier(SelectedPlayer.Id, SelectedPlayer.Identifier);
+      editingAlias = false;
+      InvokeAsync(StateHasChanged);
+    }
 
-  private enum CharacterViewState
-  {
-    Skills,
-    Inventory,
-    Clan,
-    Customization
-  }
+    private void ShowInventory()
+    {
+      viewState = CharacterViewState.Inventory;
+    }
+
+    private void ShowSkills()
+    {
+      viewState = CharacterViewState.Skills;
+    }
+
+    private void ShowClan()
+    {
+      viewState = CharacterViewState.Clan;
+    }
+
+    private void ShowCustomization()
+    {
+      viewState = CharacterViewState.Customization;
+    }
+
+    private enum CharacterViewState
+    {
+      Skills,
+      Inventory,
+      Clan,
+      Customization
+    }
 }

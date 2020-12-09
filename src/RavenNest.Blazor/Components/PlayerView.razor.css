@@ -1,4 +1,17 @@
-﻿button.tab-link {
+﻿a.change-identifier {
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+input.input.edit-identifier {
+    padding: 5px 15px;
+    margin-bottom: 10px;
+    margin-right: 5px;
+    border: 2px solid black;
+    width: 240px;
+    max-width: 100%;
+}
+button.tab-link {
     border: 0;
     padding: 10px;
     outline: 0;

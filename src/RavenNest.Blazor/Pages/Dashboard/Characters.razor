@@ -53,6 +53,9 @@ else
   protected override async Task OnInitializedAsync()
   {
     session = AuthService.GetSession();
+    if (session == null || session.UserId == null)
+      return;
+
     if (CharacterId != null && Guid.TryParse(CharacterId, out var guid))
     {
       selectedPlayer = await PlayerService.GetPlayerAsync(guid);
