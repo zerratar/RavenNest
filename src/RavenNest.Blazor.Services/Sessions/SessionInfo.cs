@@ -6,6 +6,7 @@ namespace RavenNest.Sessions
     public class SessionInfo
     {
         public Guid Id { get; set; }
+        public string SessionId { get; set; }
         public string UserId { get; set; }
         public string UserName { get; set; }
         public bool Authenticated { get; set; }
@@ -14,6 +15,7 @@ namespace RavenNest.Sessions
         public bool RequiresPasswordChange { get; set; }
         public int Tier { get; set; }
         public List<CharacterGameSession> PlaySessions { get; set; }
+        public Guid? ActiveCharacterId { get; set; }
     }
 
     public class CharacterGameSession

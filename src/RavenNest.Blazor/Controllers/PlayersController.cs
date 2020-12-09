@@ -198,9 +198,16 @@ namespace RavenNest.Controllers
         }
 
         [HttpPost("{userId}/appearance")]
-        public Task<bool> UpdateSyntyAppearanceAsync(string userId, SyntyAppearance appearance)
+        public async Task<bool> UpdateSyntyAppearanceAsync(string userId, SyntyAppearance appearance)
         {
-            return UpdateSyntyAppearanceAsync(userId, "1", appearance);
+            userId = CleanupUserId(userId);
+            var sessionId = HttpContext.GetSessionId();
+            if (sessionInfoProvider.TryGet(sessionId, out var si) && si.ActiveCharacterId != null)
+            {
+                return playerManager.UpdateAppearance(si.ActiveCharacterId.Value, appearance);
+            }
+
+            return await UpdateSyntyAppearanceAsync(userId, "1", appearance);
         }
 
         [HttpPost("{userId}/{identifier}/appearance")]
@@ -208,7 +215,8 @@ namespace RavenNest.Controllers
         {
             userId = CleanupUserId(userId); // we get a weird input sent from the client. This shouldnt 
                                             // be fixed here, but as a temporary bugfix
-            var twitchUserSession = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.GetSessionId());
+            var sessionId = HttpContext.GetSessionId();
+            var twitchUserSession = await sessionInfoProvider.GetTwitchUserAsync(sessionId);
             if (twitchUserSession != null)
             {
                 return playerManager.UpdateAppearance(userId, identifier, appearance);
@@ -293,6 +301,13 @@ namespace RavenNest.Controllers
         }
         private async Task<Player> GetPlayerAsync()
         {
+            var sessionId = HttpContext.GetSessionId();
+
+            if (sessionInfoProvider.TryGet(sessionId, out var si) && si.ActiveCharacterId != null)
+            {
+                return playerManager.GetPlayer(si.ActiveCharacterId.Value);
+            }
+
             var twitchUser = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.GetSessionId());
             if (twitchUser != null)
             {

@@ -1040,6 +1040,35 @@ namespace RavenNest.BusinessLogic.Game
             return false;
         }
 
+        public bool UpdateAppearance(Guid characterId, Models.SyntyAppearance appearance)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null)
+                return false;
+
+            var user = gameData.GetUser(character.UserId);
+            if (user == null)
+                return false;
+
+            UpdateCharacterAppearance(appearance, character);
+
+            var sessionOwnerUserId = character.UserIdLock.GetValueOrDefault();
+            var gameSession = gameData.GetUserSession(sessionOwnerUserId);
+
+            if (gameSession != null)
+            {
+                var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerAppearance, gameSession, new SyntyAppearanceUpdate
+                {
+                    UserId = user.UserId,
+                    Value = appearance
+                });
+
+                gameData.Add(gameEvent);
+            }
+
+            return true;
+        }
+
         public bool UpdateAppearance(string userId, string identifier, Models.SyntyAppearance appearance)
         {
             try
