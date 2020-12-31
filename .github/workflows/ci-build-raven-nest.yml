@@ -2,9 +2,9 @@ name: CI Build RaveNest
 
 on:
   push:
-    branches: [ master, Development ]
+    branches: [ master ]
   pull_request:
-    branches: [ master, Development ]
+    branches: [ master ]
 
 jobs:
   build-dotnet:
@@ -28,7 +28,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x, 14.x]
+        node-version: [14.x]
 
     steps:
     - uses: actions/checkout@v2
