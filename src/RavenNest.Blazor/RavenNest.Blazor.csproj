@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="3.2.0" />
+    <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="5.0.0" />
     <PackageReference Include="Blazored.Typeahead" Version="4.4.1" />
     <PackageReference Include="ChartJs.Blazor.Fork" Version="2.0.0" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="5.0.0" />
