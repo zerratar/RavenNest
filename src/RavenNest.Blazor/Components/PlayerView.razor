@@ -1,6 +1,7 @@
 ﻿@using RavenNest.Models
 @using RavenNest.BusinessLogic.Extended
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
+@inject RavenNest.Blazor.Services.AuthService AuthService
 
 <div class="character-details">
   <h1>
@@ -93,13 +94,15 @@
 
     [Parameter]
     public bool CanManage { get; set; }
-
+    
+    private Sessions.SessionInfo session;
     private bool editingAlias;
     private string oldIdentifier;
     private CharacterViewState viewState;
 
     protected override void OnInitialized()
     {
+      session = AuthService.GetSession();
       if (SelectedPlayer != null && CanManage)
       {
         PlayerService.SetActiveCharacter(SelectedPlayer);

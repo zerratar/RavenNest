@@ -38,6 +38,16 @@ namespace RavenNest.Blazor.Services
             });
         }
 
+        public async Task<IReadOnlyList<WebsiteAdminUser>> GetUsersByCreatedAsync(DateTime start, DateTime end)
+        {
+            return await Task.Run(() =>
+            {
+                var players = playerManager.GetFullPlayers();
+                var users = GetUsers(players);
+                return users.Where(x => x.Created >= start && x.Created <= end).ToList();
+            });
+        }
+
         public async Task<PagedCollection<WebsiteAdminUser>> GetUserPageAsync(string search, int pageIndex, int pageSize)
         {
             var players = await SearchForPlayersAsync(search);
@@ -53,7 +63,7 @@ namespace RavenNest.Blazor.Services
                 var users = GetUsers(players);
                 if (string.IsNullOrEmpty(searchText))
                 {
-                    return GetUsers(players);
+                    return users;
                 }
 
                 return users.Where(x =>

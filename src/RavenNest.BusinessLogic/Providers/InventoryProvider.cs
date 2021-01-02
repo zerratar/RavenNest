@@ -1,489 +1,715 @@
 ﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-public interface IPlayerInventoryProvider
+namespace RavenNest.BusinessLogic.Providers
 {
-    PlayerInventory Get(Guid characterId);
-}
-
-public class PlayerInventoryProvider : IPlayerInventoryProvider
-{
-    private readonly IGameData gameData;
-    private readonly ConcurrentDictionary<Guid, PlayerInventory> inventories
-        = new ConcurrentDictionary<Guid, PlayerInventory>();
-
-    public PlayerInventoryProvider(IGameData gameData)
+    public class PlayerInventory
     {
-        this.gameData = gameData;
-    }
-    public PlayerInventory Get(Guid characterId)
-    {
-        if (inventories.TryGetValue(characterId, out var inventory))
+        private readonly Guid characterId;
+        private readonly IGameData gameData;
+        private readonly object mutex = new object();
+        private List<InventoryItem> items;
+
+        private static readonly Random random = new Random();
+        public PlayerInventory(IGameData gameData, Guid characterId)
         {
-            return inventory;
+            this.gameData = gameData;
+            this.characterId = characterId;
+            items = GetInventoryItems(characterId);
+            //MergeItems(this.items.ToList());
         }
-        return inventories[characterId] = new PlayerInventory(gameData, characterId);
-    }
-}
 
-public class PlayerInventory
-{
-    private readonly Guid characterId;
-    private readonly IGameData gameData;
-    private readonly object mutex = new object();
-    private List<InventoryItem> items;
-
-    public PlayerInventory(IGameData gameData, Guid characterId)
-    {
-        this.gameData = gameData;
-        this.characterId = characterId;
-        this.items = gameData?.GetAllPlayerItems(characterId)?.ToList() ?? new List<InventoryItem>();
-        MergeItems(this.items.ToList());
-        //EquipBestItems();
-    }
-
-    public void EquipBestItems()
-    {
-        lock (mutex)
+        private List<InventoryItem> GetInventoryItems(Guid characterId)
         {
-            var character = gameData.GetCharacter(characterId);
-            var equippedPetInventoryItem = GetEquippedItem(ItemCategory.Pet);
-
-            UnequipAllItems();
-
-            var skills = gameData.GetSkills(character.SkillsId);
-            var inventoryItems = GetInventoryItems()
-                .Select(x => new { InventoryItem = x, Item = gameData.GetItem(x.ItemId) })
-                .Where(x => CanEquipItem(x.Item, skills))
-                .OrderByDescending(x => GetItemValue(x.Item))
-                .ToList();
-
-            var meleeWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && (x.Item.Type == (int)ItemType.OneHandedSword || x.Item.Type == (int)ItemType.TwoHandedSword || x.Item.Type == (int)ItemType.TwoHandedAxe));
-            if (meleeWeaponToEquip != null)
-                EquipItem(meleeWeaponToEquip.InventoryItem.ItemId);
-
-            var rangedWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && x.Item.Type == (int)ItemType.TwoHandedBow);
-            if (rangedWeaponToEquip != null)
-                EquipItem(rangedWeaponToEquip.InventoryItem.ItemId);
-
-            var magicWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && x.Item.Type == (int)ItemType.TwoHandedStaff);
-            if (magicWeaponToEquip != null)
-                EquipItem(magicWeaponToEquip.InventoryItem.ItemId);
-
-            ReadOnlyInventoryItem equippedPet;
-            if (equippedPetInventoryItem.IsNotNull())
+            var output = new List<InventoryItem>();
+            var invItems = gameData?.GetAllPlayerItems(characterId)?.ToList() ?? new List<InventoryItem>();
+            foreach (var i in invItems)
             {
-                equippedPet = GetItem(equippedPetInventoryItem.ItemId, false);
-                if (equippedPet.IsNotNull())
-                {
-                    EquipItem(equippedPet.ItemId);
-                }
+                output.Add(i);
             }
-            else
-            {
-                var petToEquip = GetInventoryItem(ItemCategory.Pet);
-                if (petToEquip.IsNotNull())
-                {
-                    EquipItem(petToEquip.ItemId);
-                }
-            }
+            return output;
+        }
 
-            foreach (var itemGroup in inventoryItems
-                .Where(x =>
-                    x.Item.Category != (int)ItemCategory.Weapon &&
-                    x.Item.Category != (int)ItemCategory.Pet &&
-                    x.Item.Category != (int)ItemCategory.StreamerToken)
-                .GroupBy(x => x.Item.Type))
+        public void EquipBestItems()
+        {
+            lock (mutex)
             {
-                var itemToEquip = itemGroup
+                var character = gameData.GetCharacter(characterId);
+                var equippedPetInventoryItem = GetEquippedItem(ItemCategory.Pet);
+
+                UnequipAllItems();
+
+                var skills = gameData.GetCharacterSkills(character.SkillsId);
+                var inventoryItems = GetUnequippedItems()
+                    //.Select(x => new { InventoryItem = x, Item = x.Item })
+                    .Where(x => CanEquipItem(x.Item, skills))
                     .OrderByDescending(x => GetItemValue(x.Item))
-                    .FirstOrDefault();
+                    .ToList();
 
-                if (itemToEquip != null)
+                var meleeWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && (x.Item.Type == (int)ItemType.OneHandedSword || x.Item.Type == (int)ItemType.TwoHandedSword || x.Item.Type == (int)ItemType.TwoHandedAxe));
+                if (meleeWeaponToEquip.IsNotNull())
+                    EquipItem(meleeWeaponToEquip);
+
+                var rangedWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && x.Item.Type == (int)ItemType.TwoHandedBow);
+                if (rangedWeaponToEquip.IsNotNull())
+                    EquipItem(rangedWeaponToEquip);
+
+                var magicWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && x.Item.Type == (int)ItemType.TwoHandedStaff);
+                if (magicWeaponToEquip.IsNotNull())
+                    EquipItem(magicWeaponToEquip);
+
+                ReadOnlyInventoryItem equippedPet;
+                if (equippedPetInventoryItem.IsNotNull())
                 {
-                    EquipItem(itemToEquip.InventoryItem.ItemId);
+                    equippedPet = GetUnequippedItem(equippedPetInventoryItem.ItemId);
+                    if (equippedPet.IsNotNull())
+                    {
+                        EquipItem(equippedPet);
+                    }
+                }
+                else
+                {
+                    var petToEquip = GetUnequippedItem(ItemCategory.Pet);
+                    if (petToEquip.IsNotNull())
+                    {
+                        EquipItem(petToEquip);
+                    }
+                }
+
+                foreach (var itemGroup in inventoryItems
+                    .Where(x =>
+                        x.Item.Category != (int)ItemCategory.Weapon &&
+                        x.Item.Category != (int)ItemCategory.Pet &&
+                        x.Item.Category != (int)ItemCategory.StreamerToken &&
+                        x.Item.Category != (int)ItemCategory.Scroll)
+                    .GroupBy(x => x.Item.Type))
+                {
+                    var itemToEquip = itemGroup
+                        .OrderByDescending(x => GetItemValue(x.Item))
+                        .FirstOrDefault();
+
+                    if (itemToEquip.IsNotNull())
+                    {
+                        EquipItem(itemToEquip);
+                    }
                 }
             }
         }
-    }
 
-    public IReadOnlyList<ReadOnlyInventoryItem> GetAllItems()
-    {
-        lock (mutex)
+        public IReadOnlyList<ReadOnlyInventoryItem> GetAllItems()
         {
-            return this.items.Select(x => x.AsReadOnly()).ToList();
-        }
-    }
-
-    public bool EquipItem(Guid itemId)
-    {
-        lock (mutex)
-        {
-            var equipped = GetEquippedItem(itemId);
-            if (equipped.IsNotNull())
+            lock (mutex)
             {
-                return true;
+                return items.Select(x => x.AsReadOnly(gameData)).ToList();
             }
+        }
 
-            var item = gameData.GetItem(itemId);
-            if (item != null)
+        public bool EquipItem(ReadOnlyInventoryItem invItem)
+        {
+            lock (mutex)
             {
-                var eqs = GetEquippedItems(item.Category, item.Type);
-                foreach (var eq in eqs)
+                if (invItem.Equipped)
                 {
-                    UnequipItem(eq.ItemId);
+                    return false;
                 }
-            }
-            if (RemoveItem(itemId, 1))
-            {
-                AddItem(itemId, 1, true);
-                return true;
-            }
-            return false;
-        }
-    }
 
-    public bool UnequipItem(Guid itemId)
-    {
-        lock (mutex)
-        {
-            var equipped = GetEquippedItem(itemId);
-            if (equipped.IsNull())
-            {
+                var itemId = invItem.ItemId;
+                var item = invItem.Item;
+                if (item != null)
+                {
+                    var eq = GetEquippedItem(invItem.EquipmentSlot);
+                    if (eq.IsNotNull())
+                    {
+                        UnequipItem(eq);
+                    }
+                }
+
+                if (RemoveItem(invItem, 1, out var attributes))
+                {
+                    AddItem(invItem, 1, true);
+                    return true;
+                }
                 return false;
             }
+        }
 
-            if (RemoveItem(itemId, 1, true))
+        public ReadOnlyInventoryItem GetEquippedItem(EquipmentSlot slot)
+        {
+            return GetEquippedItems().FirstOrDefault(x => x.EquipmentSlot == slot);
+        }
+
+        public bool UnequipItem(ReadOnlyInventoryItem item)
+        {
+            lock (mutex)
             {
-                AddItem(itemId, 1);
-                return true;
+                if (!item.Equipped)
+                {
+                    return false;
+                }
+
+                if (RemoveItem(item, 1, out var attributes))
+                {
+                    AddItem(item, 1, false);
+                    return true;
+                }
+                return false;
             }
-            return false;
         }
-    }
 
-    public ReadOnlyInventoryItem GetEquippedItem(ItemCategory itemCategory)
-    {
-        lock (mutex)
+        public ReadOnlyInventoryItem GetEquippedItem(ItemCategory itemCategory)
         {
-            var item = this.items
-                .FirstOrDefault(x => x.Equipped && gameData.GetItem(x.ItemId).Category == (int)itemCategory);
-            if (item != null)
-                return item.AsReadOnly();
-            return default;
-        }
-    }
-
-    public ReadOnlyInventoryItem GetInventoryItem(ItemCategory itemCategory)
-    {
-        lock (mutex)
-        {
-            var item = this.items
-                .FirstOrDefault(x => !x.Equipped && gameData.GetItem(x.ItemId)?.Category == (int)itemCategory);
-            if (item != null)
-                return item.AsReadOnly();
-            return default;
-        }
-    }
-    public ReadOnlyInventoryItem GetEquippedItem(int itemCategory, int itemType)
-    {
-        lock (mutex)
-        {
-            var result = this.items.FirstOrDefault(x =>
+            lock (mutex)
             {
-                var item = gameData.GetItem(x.ItemId);
-                return x.Equipped && item.Category == itemCategory && item.Type == itemType;
-            });
-
-            if (result != null)
-                return result.AsReadOnly();
-
-            return default;
+                var item = items
+                    .FirstOrDefault(x => x.Equipped && gameData.GetItem(x.ItemId)?.Category == (int)itemCategory);
+                if (item != null)
+                    return item.AsReadOnly(gameData);
+                return default;
+            }
         }
-    }
 
-    public ReadOnlyInventoryItem AddItem(Guid itemId, long amount = 1, bool equipped = false, string tag = null)
-    {
-        lock (mutex)
+        public ReadOnlyInventoryItem GetUnequippedItem(ItemCategory itemCategory)
         {
-            var stack = Get(itemId, false, tag);
-            if (stack != null && !equipped)
+            lock (mutex)
             {
-                stack.Amount += amount;
-                return stack.AsReadOnly();
+                var item = items
+                    .FirstOrDefault(x => !x.Equipped && gameData.GetItem(x.ItemId)?.Category == (int)itemCategory);
+                if (item != null)
+                    return item.AsReadOnly(gameData);
+                return default;
+            }
+        }
+
+        public IReadOnlyList<ReadOnlyInventoryItem> GetUnequippedItems(ItemCategory itemCategory)
+        {
+            lock (mutex)
+            {
+                return items
+                    .Where(x => !x.Equipped && gameData.GetItem(x.ItemId)?.Category == (int)itemCategory)
+                    .Select(x => x.AsReadOnly(gameData))
+                    .ToList();
+            }
+        }
+
+        public ReadOnlyInventoryItem GetEquippedItem(int itemCategory, int itemType)
+        {
+            lock (mutex)
+            {
+                var result = items.FirstOrDefault(x =>
+                {
+                    var item = gameData.GetItem(x.ItemId);
+                    return x.Equipped && item.Category == itemCategory && item.Type == itemType;
+                });
+
+                if (result != null)
+                    return result.AsReadOnly(gameData);
+
+                return default;
+            }
+        }
+
+        public void AddItem(
+            Guid itemId,
+            long amount = 1,
+            bool equipped = false,
+            string tag = null,
+            bool soulbound = false,
+            bool randomMagicAttributes = false,
+            IReadOnlyList<InventoryItemAttribute> magicAttributes = null)
+        {
+            lock (mutex)
+            {
+                var willBeSoulbound = magicAttributes != null || randomMagicAttributes;
+                if (willBeSoulbound)
+                {
+                    for (var i = 0; i < amount; ++i)
+                    {
+                        var s = CreateInventoryItem(itemId, amount, equipped, tag, willBeSoulbound);
+                        var attributes = new List<InventoryItemAttribute>();
+                        if (magicAttributes != null)
+                        {
+                            foreach (var att in magicAttributes)
+                            {
+                                att.InventoryItemId = s.Id;
+                                gameData.Add(att);
+                            }
+                        }
+                        else if (randomMagicAttributes)
+                        {
+                            attributes = CreateRandomAttributes(s);
+                            foreach (var att in attributes)
+                            {
+                                gameData.Add(att);
+                            }
+                        }
+
+                        items.Add(s);
+                        gameData.Add(s);
+                    }
+                    return;
+                }
+
+                var stack = Get(itemId, false, tag);
+                if (stack != null && !equipped)
+                {
+                    stack.Amount += amount;
+                }
+                else
+                {
+                    var item = CreateInventoryItem(itemId, amount, equipped, tag, soulbound);
+                    items.Add(item);
+                    gameData.Add(item);
+                }
+            }
+        }
+
+        private List<InventoryItemAttribute> CreateRandomAttributes(InventoryItem s)
+        {
+            var item = gameData.GetItem(s.ItemId);
+            var totReq = item.RequiredAttackLevel + item.RequiredDefenseLevel + item.RequiredMagicLevel + item.RequiredRangedLevel + item.RequiredSlayerLevel;
+            var attrCount = (int)Math.Floor(Math.Floor(totReq / 10f) / 5);
+            var availableAttributes = gameData.GetItemAttributes();
+            var addedAttrId = new HashSet<Guid>();
+
+            if (availableAttributes.Count == 0)
+                return new List<InventoryItemAttribute>();
+
+            var output = new List<InventoryItemAttribute>();
+
+            // make sure we dont get stuck in an infinite loop.
+            attrCount = Math.Min(attrCount, availableAttributes.Count);
+            for (var i = 0; i < attrCount; ++i)
+            {
+                ItemAttribute attr = null;
+                do attr = availableAttributes[random.Next(0, availableAttributes.Count)];
+                while (addedAttrId.Contains(attr.Id));
+                if (addedAttrId.Add(attr.Id))
+                {
+                    output.Add(new InventoryItemAttribute
+                    {
+                        AttributeId = attr.Id,
+                        Id = Guid.NewGuid(),
+                        InventoryItemId = s.Id,
+                        Value = GenerateRandomAttributeValue(attr)
+                    });
+                }
+            }
+            return output;
+        }
+
+        private string GenerateRandomAttributeValue(ItemAttribute attr)
+        {
+            var minValue = GetValue(attr.MinValue, out var minAttrValType);
+            var maxValue = GetValue(attr.MinValue, out var maxAttrValType);
+            var ran = random.NextDouble();
+            var value = Math.Max(minValue, (decimal)ran * maxValue);
+            return maxAttrValType == AttributeValueType.Percent ? $"{value}%" : value.ToString();
+        }
+
+        private decimal GetValue(string val, out AttributeValueType valueType)
+        {
+            valueType = AttributeValueType.Number;
+            if (string.IsNullOrEmpty(val))
+            {
+                return 0m;
             }
             else
             {
-                stack = Create(itemId, amount, equipped, tag);
-                items.Add(stack);
-                gameData?.Add(stack);
-            }
-            return stack.AsReadOnly();
-        }
-    }
+                if (val.EndsWith("%"))
+                {
+                    if (decimal.TryParse(val.Replace("%", ""), out var value))
+                    {
+                        valueType = AttributeValueType.Percent;
+                        return value / 100m;
+                    }
+                }
 
-    public bool RemoveItem(Guid itemId, long amount = 1, bool equipped = false, string tag = null)
-    {
-        lock (mutex)
+                decimal.TryParse(val, out var number);
+                return number;
+            }
+        }
+
+        public ReadOnlyInventoryItem AddItem(ReadOnlyInventoryItem invItem, long amount = 1, bool? equipped = null)
         {
-            var stack = Get(itemId, equipped, tag);
+            lock (mutex)
+            {
+                var eq = equipped ?? invItem.Equipped;
+                var stack = Get(invItem) ?? Get(invItem.ItemId, eq, invItem.Tag);
+                var magicAttributes = invItem.Attributes ?? new List<InventoryItemAttribute>();
+                var soulbound = invItem.Soulbound || magicAttributes.Count > 0;
+                var noMagicAttr = magicAttributes.Count == 0;
+
+                //if (stack == null && !eq && noMagicAttr)
+                //{
+                //    stack = Get(invItem.ItemId, eq, invItem.Tag);
+                //}
+
+                if (stack != null && !eq && noMagicAttr)
+                {
+                    stack.Amount += amount;
+                    return stack.AsReadOnly(gameData);
+                }
+                else
+                {
+                    var i = CreateInventoryItem(invItem, amount, eq, soulbound);
+                    foreach (var attr in magicAttributes)
+                    {
+                        var attribute = CreateMagicAttribute(i.Id, attr);
+                        gameData.Add(attribute);
+                    }
+
+                    items.Add(i);
+                    gameData.Add(i);
+                    stack = i;
+                }
+                return stack.AsReadOnly(gameData);
+            }
+        }
+
+        private InventoryItem CreateInventoryItem(ReadOnlyInventoryItem invItem, long amount, bool eq, bool soulbound)
+        {
+            return CreateInventoryItem(invItem.ItemId, amount, eq, invItem.Tag, soulbound);
+        }
+
+        private InventoryItemAttribute CreateMagicAttribute(Guid inventoryItemId, InventoryItemAttribute attr)
+        {
+            return new InventoryItemAttribute
+            {
+                Id = Guid.NewGuid(),
+                AttributeId = attr.AttributeId,
+                InventoryItemId = inventoryItemId,
+                Value = attr.Value
+            };
+        }
+
+        public bool RemoveItem(ReadOnlyInventoryItem item, long amount)
+        {
+            return RemoveItem(item, amount, out _);
+        }
+
+        public bool RemoveItem(ReadOnlyInventoryItem item, long amount, out IReadOnlyList<InventoryItemAttribute> magicAttributes)
+        {
+            return RemoveItemStack(Get(item), amount, out magicAttributes);
+        }
+
+        private bool RemoveItemStack(
+            InventoryItem stack,
+            long amount,
+            out IReadOnlyList<InventoryItemAttribute> magicAttributes)
+        {
+            magicAttributes = null;
             if (stack == null || stack.Amount < amount)
             {
                 return false;
             }
+
             stack.Amount -= amount;
-            if (stack.Amount == 0)
+            if (stack.Amount <= 0)
             {
-                items.Remove(stack);
-                gameData?.Remove(stack);
+                RemoveStack(stack, out magicAttributes);
             }
             return true;
         }
-    }
 
-    public ReadOnlyInventoryItem GetItem(Guid itemId, bool equipped = false, string tag = null)
-    {
-        lock (mutex)
+        public ReadOnlyInventoryItem GetEquippedItem(Guid itemId, string tag = null)
         {
-            return this.items
-                .FirstOrDefault(x => x.ItemId == itemId && x.Equipped == equipped && (x.Tag == tag || tag == null))
-                .AsReadOnly();
-        }
-    }
-
-    internal void AddStreamerTokens(GameSession session, int amount)
-    {
-        lock (mutex)
-        {
-            var streamer = gameData.GetUser(session.UserId);
-            var tokenTag = streamer.UserId;
-            var item = gameData.GetItems().FirstOrDefault(x => x.Category == (int)ItemCategory.StreamerToken);
-            AddItem(item.Id, amount, tag: tokenTag);
-        }
-    }
-
-    internal IReadOnlyList<ReadOnlyInventoryItem> GetStreamerTokens(GameSession session)
-    {
-        lock (mutex)
-        {
-            var streamer = gameData.GetUser(session.UserId);
-            if (streamer == null) return new List<ReadOnlyInventoryItem>();
-            return this.items
-                .Where(x =>
-                    gameData.GetItem(x.ItemId).Category == (int)ItemCategory.StreamerToken &&
-                    (x.Tag == streamer.UserId || x.Tag == null))
-                .Select(x => x.AsReadOnly())
-                .ToList();
-        }
-    }
-
-    private InventoryItem Get(Guid itemId, bool equipped = false, string tag = null)
-    {
-        lock (mutex)
-        {
-            return this.items.FirstOrDefault(x => x.ItemId == itemId && x.Equipped == equipped && (x.Tag == tag || tag == null));
-        }
-    }
-
-    public IReadOnlyList<ReadOnlyInventoryItem> GetEquippedItems()
-    {
-        lock (mutex)
-        {
-            return this.items.Where(x => x.Equipped).Select(x => x.AsReadOnly()).ToList();
-        }
-    }
-    public IReadOnlyList<ReadOnlyInventoryItem> GetEquippedItems(int category, int itemType)
-    {
-        lock (mutex)
-        {
-            return this.items.Where(x =>
+            lock (mutex)
             {
-                var item = gameData.GetItem(x.ItemId);
-                return x.Equipped && item.Category == category && item.Type == itemType;
-            }).Select(x => x.AsReadOnly()).ToList();
-        }
-    }
-
-    public IReadOnlyList<ReadOnlyInventoryItem> GetInventoryItems()
-    {
-        lock (mutex)
-        {
-            return this.items.Where(x => !x.Equipped).Select(x => x.AsReadOnly()).ToList();
-        }
-    }
-
-    public ReadOnlyInventoryItem GetEquippedItem(Guid itemId)
-    {
-        lock (mutex)
-        {
-            var item = this.items.FirstOrDefault(x => x.Equipped && x.ItemId == itemId);
-            if (item != null)
-                return item.AsReadOnly();
-            return default;
-        }
-    }
-
-    public void RemoveStack(Guid inventoryItemId)
-    {
-        lock (mutex)
-        {
-            var stack = this.items.FirstOrDefault(x => x.Id == inventoryItemId);
-            if (stack == null)
-            {
-                return;
+                return items
+                    .FirstOrDefault(x => x.ItemId == itemId && x.Equipped == true && (x.Tag == tag || tag == null))
+                    .AsReadOnly(gameData);
             }
-
-            items.Remove(stack);
-            gameData?.Remove(stack);
         }
-    }
 
-    public void UnequipAllItems()
-    {
-        lock (mutex)
+        public ReadOnlyInventoryItem GetUnequippedItem(Guid itemId, string tag = null)
         {
-            var equippedItems = GetEquippedItems();
-            foreach (var equippedItem in equippedItems)
+            lock (mutex)
             {
-                if (RemoveItem(equippedItem.ItemId, 1, true))
+                return items
+                    .FirstOrDefault(x => x.ItemId == itemId && x.Equipped == false && (x.Tag == tag || tag == null))
+                    .AsReadOnly(gameData);
+            }
+        }
+
+        internal void AddStreamerTokens(GameSession session, int amount)
+        {
+            lock (mutex)
+            {
+                var streamer = gameData.GetUser(session.UserId);
+                var tokenTag = streamer.UserId;
+                var item = gameData.GetItems().FirstOrDefault(x => x.Category == (int)ItemCategory.StreamerToken);
+                AddItem(item.Id, amount, tag: tokenTag, soulbound: true);
+            }
+        }
+
+        internal IReadOnlyList<ReadOnlyInventoryItem> GetStreamerTokens(GameSession session)
+        {
+            lock (mutex)
+            {
+                var streamer = gameData.GetUser(session.UserId);
+                if (streamer == null) return new List<ReadOnlyInventoryItem>();
+                return items
+                    .Where(x => gameData.GetItem(x.ItemId).Category == (int)ItemCategory.StreamerToken
+                       && (x.Tag == streamer.UserId || x.Tag == null))
+                    .Select(x => x.AsReadOnly(gameData))
+                    .ToList();
+            }
+        }
+
+        private InventoryItem Get(Guid itemId, bool equipped = false, string tag = null)
+        {
+            lock (mutex)
+            {
+                return items.FirstOrDefault(x => x.ItemId == itemId && x.Equipped == equipped && (x.Tag == tag || tag == null));
+            }
+        }
+
+        private InventoryItem Get(ReadOnlyInventoryItem item)
+        {
+            lock (mutex)
+            {
+                return items.FirstOrDefault(x => x.Id == item.Id);
+            }
+        }
+
+        public ReadOnlyInventoryItem GetEquippedItem(Guid itemId)
+        {
+            lock (mutex)
+            {
+                var item = items.FirstOrDefault(x => x.Equipped && x.ItemId == itemId);
+                if (item != null)
+                    return item.AsReadOnly(gameData);
+                return default;
+            }
+        }
+
+        public IReadOnlyList<ReadOnlyInventoryItem> GetEquippedItems()
+        {
+            lock (mutex)
+            {
+                return items.Where(x => x.Equipped).Select(x => x.AsReadOnly(gameData)).ToList();
+            }
+        }
+        public IReadOnlyList<ReadOnlyInventoryItem> GetEquippedItems(int category, int itemType)
+        {
+            lock (mutex)
+            {
+                return items.Where(x =>
                 {
-                    AddItem(equippedItem.ItemId);
+                    var item = gameData.GetItem(x.ItemId);
+                    return x.Equipped && item.Category == category && item.Type == itemType;
+                }).Select(x => x.AsReadOnly(gameData)).ToList();
+            }
+        }
+
+        public IReadOnlyList<ReadOnlyInventoryItem> GetUnequippedItems()
+        {
+            lock (mutex)
+            {
+                return items.Where(x => !x.Equipped).Select(x => x.AsReadOnly(gameData)).ToList();
+            }
+        }
+
+
+        public void RemoveStack(ReadOnlyInventoryItem stack)
+        {
+            RemoveStack(Get(stack), out _);
+        }
+
+        public void RemoveStack(InventoryItem stack)
+        {
+            RemoveStack(stack, out _);
+        }
+
+        public void RemoveStack(InventoryItem stack, out IReadOnlyList<InventoryItemAttribute> magicAttributes)
+        {
+            lock (mutex)
+            {
+                magicAttributes = gameData.GetInventoryItemAttributes(stack.Id);
+                if (magicAttributes != null && magicAttributes.Count > 0)
+                {
+                    foreach (var attribute in magicAttributes)
+                    {
+                        gameData.Remove(attribute);
+                    }
+                }
+
+                items.Remove(stack);
+                gameData.Remove(stack);
+            }
+        }
+
+        public void RemoveStack(Guid inventoryItemId, out IReadOnlyList<InventoryItemAttribute> magicAttributes)
+        {
+            lock (mutex)
+            {
+                magicAttributes = null;
+                var stack = items.FirstOrDefault(x => x.Id == inventoryItemId);
+                if (stack == null)
+                {
+                    return;
+                }
+                RemoveStack(stack, out magicAttributes);
+            }
+        }
+        public void UnequipAllItems()
+        {
+            lock (mutex)
+            {
+                var equippedItems = GetEquippedItems();
+                foreach (var equippedItem in equippedItems)
+                {
+                    UnequipItem(equippedItem);
                 }
             }
         }
-    }
 
-    private void MergeItems(IList<InventoryItem> items)
-    {
-        lock (mutex)
+        private InventoryItem CreateInventoryItem(Guid itemId, long amount, bool equipped, string tag, bool soulbound)
         {
-            if (items.Count > 0)
+            return new InventoryItem
             {
-                foreach (var itemStacks in items.GroupBy(x => x.ItemId))
-                {
+                Id = Guid.NewGuid(),
+                CharacterId = characterId,
+                Amount = amount,
+                ItemId = itemId,
+                Equipped = equipped,
+                Tag = tag,
+                Soulbound = soulbound
+            };
+        }
 
-                    var amount = itemStacks.OrderByDescending(x => x.Amount).FirstOrDefault(x => !x.Equipped)?.Amount ?? 0;
-                    var itemId = itemStacks.Key;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool CanEquipItem(Item item, Skills skills)
+        {
+            if (item == null)
+                return false;
 
-                    var item = gameData.GetItem(itemId);
-                    // do not stack streamer tokens
-                    if (item != null && item.Category == (int)ItemCategory.StreamerToken)
-                        continue;
+            return item.Category != (int)ItemCategory.Resource &&
+                   item.Category != (int)ItemCategory.StreamerToken &&
+                   item.Category != (int)ItemCategory.Scroll &&
+                   item.RequiredMagicLevel <= skills.MagicLevel &&
+                   item.RequiredRangedLevel <= skills.RangedLevel &&
+                   item.RequiredDefenseLevel <= skills.DefenseLevel && //GameMath.ExperienceToLevel(skills.Defense) &&
+                   item.RequiredAttackLevel <= skills.AttackLevel; //GameMath.ExperienceToLevel(skills.Attack);
+        }
 
-                    var characterId = itemStacks.FirstOrDefault().CharacterId;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsItemBetter(Item itemA, Item itemB)
+        {
+            var valueA = GetItemValue(itemA);
+            var valueB = GetItemValue(itemB);
+            return valueA > valueB;
+        }
 
-                    var equipped = itemStacks.FirstOrDefault(x => x.Equipped);
-                    if (equipped != null)
-                    {
-                        equipped.Amount = 1;
-                    }
-
-                    var stack = amount <= 0 ? null : itemStacks.FirstOrDefault(x => !x.Equipped);
-                    if (stack != null)
-                    {
-                        stack.Amount = amount;
-                    }
-
-                    foreach (var itemStack in itemStacks)
-                    {
-                        if (itemStack.Id == stack?.Id || equipped?.Id == itemStack.Id)
-                            continue;
-
-                        RemoveStack(itemStack.Id);
-                    }
-                }
-            }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetItemValue(Item item)
+        {
+            return item.Level + item.WeaponAim + item.WeaponPower + item.ArmorPower + item.MagicAim + item.MagicPower + item.RangedAim + item.RangedPower;
         }
     }
 
-    private InventoryItem Create(Guid itemId, long amount, bool equipped, string tag)
+    public enum AttributeValueType : int
     {
-        return new InventoryItem
+        Number = 0,
+        Percent = 1
+    }
+
+    public static class InventoryItemExtensions
+    {
+        public static ReadOnlyInventoryItem AsReadOnly(this InventoryItem item, IGameData gameData)
         {
-            Id = Guid.NewGuid(),
-            CharacterId = characterId,
-            Amount = amount,
-            ItemId = itemId,
-            Equipped = equipped,
-            Tag = tag
-        };
+            if (item == null) return default;
+            return ReadOnlyInventoryItem.Create(gameData, item);
+        }
+
+        public static bool IsNull(this ReadOnlyInventoryItem item)
+        {
+            return item.Id == Guid.Empty;
+        }
+
+        public static bool IsNotNull(this ReadOnlyInventoryItem item)
+        {
+            return item.Id != Guid.Empty;
+        }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool CanEquipItem(Item item, Skills skills)
+    public struct ReadOnlyInventoryItem
     {
-        if (item == null)
-            return false;
+        public Guid Id { get; }
+        public Guid ItemId { get; }
+        public long Amount { get; }
+        public bool Equipped { get; }
+        public string Tag { get; }
+        public bool Soulbound { get; }
+        public EquipmentSlot EquipmentSlot { get; }
+        public IReadOnlyList<InventoryItemAttribute> Attributes { get; }
+        public Item Item { get; }
+        private ReadOnlyInventoryItem(
+            Guid id,
+            Guid itemId,
+            long amount,
+            bool equipped,
+            string tag,
+            bool soulbound,
+            Item item,
+            EquipmentSlot equipmentSlot,
+            IReadOnlyList<InventoryItemAttribute> attributes)
+        {
+            Id = id;
+            ItemId = itemId;
+            Amount = amount;
+            Equipped = equipped;
+            Item = item;
+            Tag = tag;
+            EquipmentSlot = equipmentSlot;
+            Soulbound = soulbound;
+            Attributes = attributes;
+        }
 
-        return item.Category != (int)ItemCategory.Resource &&
-               item.Category != (int)ItemCategory.StreamerToken &&
-               item.RequiredMagicLevel <= skills.MagicLevel &&
-               item.RequiredRangedLevel <= skills.RangedLevel &&
-               item.RequiredDefenseLevel <= skills.DefenseLevel && //GameMath.ExperienceToLevel(skills.Defense) &&
-               item.RequiredAttackLevel <= skills.AttackLevel; //GameMath.ExperienceToLevel(skills.Attack);
-    }
+        public static ReadOnlyInventoryItem Create(IGameData gameData, InventoryItem item)
+        {
+            var i = gameData.GetItem(item.ItemId);
+            if (i == null)
+                return new ReadOnlyInventoryItem();
+            return new ReadOnlyInventoryItem(
+                item.Id,
+                item.ItemId,
+                item.Amount ?? 1,
+                item.Equipped,
+                item.Tag,
+                item.Soulbound.GetValueOrDefault(),
+                i,
+                GetEquipmentSlot((ItemType)i.Type),
+                gameData.GetInventoryItemAttributes(item.Id) ?? new List<InventoryItemAttribute>());
+        }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsItemBetter(Item itemA, Item itemB)
-    {
-        var valueA = GetItemValue(itemA);
-        var valueB = GetItemValue(itemB);
-        return valueA > valueB;
-    }
+        public static EquipmentSlot GetEquipmentSlot(ItemType type)
+        {
+            switch (type)
+            {
+                case ItemType.Amulet: return EquipmentSlot.Amulet;
+                case ItemType.Ring: return EquipmentSlot.Ring;
+                case ItemType.Shield: return EquipmentSlot.Shield;
+                case ItemType.Helm: return EquipmentSlot.Head;
+                case ItemType.Chest: return EquipmentSlot.Chest;
+                case ItemType.Gloves: return EquipmentSlot.Gloves;
+                case ItemType.Leggings: return EquipmentSlot.Leggings;
+                case ItemType.Boots: return EquipmentSlot.Boots;
+                case ItemType.Pet: return EquipmentSlot.Pet;
+                case ItemType.OneHandedAxe: return EquipmentSlot.MeleeWeapon;
+                case ItemType.TwoHandedAxe: return EquipmentSlot.MeleeWeapon;
+                case ItemType.OneHandedMace: return EquipmentSlot.MeleeWeapon;
+                case ItemType.OneHandedSword: return EquipmentSlot.MeleeWeapon;
+                case ItemType.TwoHandedSword: return EquipmentSlot.MeleeWeapon;
+                case ItemType.TwoHandedStaff: return EquipmentSlot.MagicWeapon;
+                case ItemType.TwoHandedBow: return EquipmentSlot.RangedWeapon;
+            }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static int GetItemValue(Item item)
-    {
-        return item.Level + item.WeaponAim + item.WeaponPower + item.ArmorPower + item.MagicAim + item.MagicPower + item.RangedAim + item.RangedPower;
-    }
-}
-
-public static class InventoryItemExtensions
-{
-    public static ReadOnlyInventoryItem AsReadOnly(this InventoryItem item)
-    {
-        if (item == null) return default;
-        return ReadOnlyInventoryItem.Create(item);
-    }
-
-    public static bool IsNull(this ReadOnlyInventoryItem item)
-    {
-        return item.Id == Guid.Empty;
-    }
-
-    public static bool IsNotNull(this ReadOnlyInventoryItem item)
-    {
-        return item.Id != Guid.Empty;
-    }
-}
-
-public struct ReadOnlyInventoryItem
-{
-    public Guid Id { get; }
-
-    public Guid ItemId { get; }
-
-    public long Amount { get; }
-
-    public bool Equipped { get; }
-    public string Tag { get; }
-
-    private ReadOnlyInventoryItem(Guid id, Guid itemId, long amount, bool equipped, string tag)
-    {
-        Id = id;
-        ItemId = itemId;
-        Amount = amount;
-        Equipped = equipped;
-        Tag = tag;
-    }
-
-    public static ReadOnlyInventoryItem Create(InventoryItem item)
-    {
-        return new ReadOnlyInventoryItem(item.Id, item.ItemId, item.Amount ?? 1, item.Equipped, item.Tag);
+            return EquipmentSlot.None;
+        }
     }
 }

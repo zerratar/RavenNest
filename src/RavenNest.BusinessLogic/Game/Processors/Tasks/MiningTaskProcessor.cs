@@ -1,15 +1,13 @@
 ﻿using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 
 namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
     public class MiningTaskProcessor : ResourceTaskProcessor
     {
-        private readonly Random random = new Random();
-
         public override void Handle(
             IIntegrityChecker integrityChecker,
             IGameData gameData,
@@ -21,7 +19,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             UpdateResourceGain(integrityChecker, gameData, inventoryProvider, session, character, resources =>
             {
                 session.Updated = DateTime.UtcNow;
-                var skills = gameData.GetSkills(character.SkillsId);
+                var skills = gameData.GetCharacterSkills(character.SkillsId);
                 if (skills == null)
                     return;
 
@@ -29,13 +27,12 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 var multiDrop = Random.NextDouble();
                 var isMultiDrop = multiDrop <= 0.1;
                 var chance = Random.NextDouble();
-
-                if (chance <= 0.5)
+                if (chance <= 0.33)
                 {
                     foreach (var res in DroppableResources.OrderByDescending(x => x.SkillLevel))
                     {
                         chance = Random.NextDouble();
-                        if (miningLevel >= res.SkillLevel && chance <= res.GetDropChance(miningLevel))
+                        if (miningLevel >= res.SkillLevel && (chance <= res.GetDropChance(miningLevel)))
                         {
                             IncrementItemStack(gameData, inventoryProvider, session, character, res.Id);
                             if (isMultiDrop)

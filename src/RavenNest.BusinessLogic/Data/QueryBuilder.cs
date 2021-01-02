@@ -38,6 +38,9 @@ namespace RavenNest.BusinessLogic.Data
             foreach (var entity in saveData.Entities)
             {
                 var type = entity.GetType();
+                if (type.FullName.Contains("Extended"))
+                    type = type.BaseType;
+
                 var properties = GetProperties(type);
                 var idProperty = GetProperty(type, "Id");
                 var propertySets = GetSqlReadyPropertySet(entity, properties.Where(x => x.Name != "Id").ToArray());
@@ -57,9 +60,12 @@ namespace RavenNest.BusinessLogic.Data
             foreach (var group in saveData.Entities.GroupBy(x => x.GetType()))
             {
                 var type = group.Key;
+                if (type.FullName.Contains("Extended"))
+                    type = type.BaseType;
+
                 var idProperty = GetProperty(type, "Id");
                 //var properties = GetProperties(type);            
-                sb.AppendLine($"DELETE FROM [{group.Key.Name}] WHERE ");
+                sb.AppendLine($"DELETE FROM [{type.Name}] WHERE ");
 
                 var wheres = group.Select(entity => "(Id = " + GetSqlReadyPropertyValue(idProperty.PropertyType, idProperty.GetValue(entity)) + ")").ToList();
                 sb.Append(string.Join(" OR \r\n", wheres));
@@ -77,9 +83,12 @@ namespace RavenNest.BusinessLogic.Data
             foreach (var group in saveData.Entities.GroupBy(x => x.GetType()))
             {
                 var type = group.Key;
+                if (type.FullName.Contains("Extended"))
+                    type = type.BaseType;
+
                 var properties = GetProperties(type);
                 var propertyNames = string.Join(", ", properties.Select(x => x.Name));
-                sb.AppendLine($"INSERT INTO [{group.Key.Name}] ({propertyNames}) VALUES ");
+                sb.AppendLine($"INSERT INTO [{type.Name}] ({propertyNames}) VALUES ");
 
                 var rows = group.Select(x => "(" + string.Join(",", GetSqlReadyPropertyValues(x, properties)) + ")");
                 var line = string.Join(",\r\n", rows);

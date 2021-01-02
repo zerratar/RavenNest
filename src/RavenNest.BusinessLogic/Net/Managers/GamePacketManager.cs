@@ -11,11 +11,12 @@ namespace RavenNest.BusinessLogic.Net
         private readonly ILogger logger;
         private readonly IPlayerManager playerManager;
 
-        public GamePacketManager(ILogger<GamePacketManager> logger, IPlayerManager playerManager)
+        public GamePacketManager(ILogger<GamePacketManager> logger, ISessionManager sessionManager, IPlayerManager playerManager)
         {
             this.logger = logger;
             this.playerManager = playerManager;
             Default = new UnsupportedPacketHandler(logger);
+            packetHandlers["sync_time"] = new SyncTimePacketHandler(sessionManager);
             packetHandlers["update_character_state"] = new UpdateCharacterStatePacketHandler(playerManager);
             packetHandlers["update_character_skills"] = new UpdateCharacterSkillPacketHandler(playerManager);
             packetHandlers["update_user_session_stats"] = new UpdateUserSessionStatsPacketHandler(playerManager);

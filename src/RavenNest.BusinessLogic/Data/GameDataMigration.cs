@@ -37,7 +37,7 @@ namespace RavenNest.BusinessLogic.Data
                 var resources = restorePoint.Get<Resources>();
                 var charStates = restorePoint.Get<CharacterState>();
                 var charStats = restorePoint.Get<Statistics>();
-                IReadOnlyList<InventoryItem> invItems = Merge(restorePoint.Get<InventoryItem>());
+                var invItems = restorePoint.Get<InventoryItem>();
                 var villages = restorePoint.Get<Village>();
                 var villageHouses = restorePoint.Get<VillageHouse>();
 
@@ -62,64 +62,11 @@ namespace RavenNest.BusinessLogic.Data
                                 cmd.CommandText = $"truncate table {table};";
                                 cmd.ExecuteNonQuery();
                             }
-                        }
-                        catch (Exception exc)
-                        {
-                            logger.LogError($"Failed to truncate table {table}! Aborting migration!! Exc: " + exc);
-                            return;
-                        }
-                    }
 
-                    logger.LogInformation("Migrating user data...");
-                    var index = 0;
-                    foreach (var character in characters)
-                    {
-                        try
-                        {
-                            var targetUser = users.FirstOrDefault(x => x.Id == character.UserId);
-                            if (targetUser != null && string.IsNullOrEmpty(targetUser.UserId))
-                            {
-                                if (int.TryParse(character.Name, out var tid))
-                                {
-                                    targetUser.UserId = character.Name;
-                                }
-                            }
-
-                            if (!string.IsNullOrEmpty(character.Identifier)
-                            && int.TryParse(character.Name, out var twitchId))
-                            {
-                                var user = users.FirstOrDefault(x => x.UserId == character.Name);
-                                if (user != null)
-                                {
-
-
-                                    var otherChars = characters.Where(x => x.UserId == user.Id).ToList();
-                                    if (otherChars.Any(x => x.Id != character.Id))
-                                        continue;
-                                }
-                                else
-                                {
-                                    continue;
-                                }
-                            }
-
-                            var cmdQuery = BuildInsertQuery(
-                                queryBuilder,
-                                character,
-                                users,
-                                marketplaceItems,
-                                skills,
-                                syntyAppearance,
-                                appearances,
-                                resources,
-                                charStates,
-                                charStats,
-                                invItems,
-                                villages,
-                                villageHouses);
-
-                            var results = 0;
-                            foreach (var q in cmdQuery)
+                            logger.LogInformation($"Migrating {table} data...");
+                            var entities = restorePoint.Get(restoreType);
+                            var queries = BuildInsertQuery(queryBuilder, entities);
+                            foreach (var q in queries)
                             {
                                 using (var cmd = con.CreateCommand())
                                 {
@@ -127,17 +74,13 @@ namespace RavenNest.BusinessLogic.Data
                                     cmd.ExecuteNonQuery();
                                 }
                             }
-                            //if (results < 7)
-                            //{
-                            //    failedCount++;
-                            //    logger.LogError($"{character.Name} failed to migrate!!");
-                            //}
                         }
                         catch (Exception exc)
                         {
-                            logger.LogError($"Failed to migrate player!!: " + exc);
+                            logger.LogError($"Failed to truncate table {table}! Aborting migration!! Exc: " + exc);
+                            return;
                         }
-                        ++index;
+
                     }
                     con.Close();
                 }
@@ -274,6 +217,22 @@ namespace RavenNest.BusinessLogic.Data
                 }
             }
             return items;
+        }
+
+        private string[] BuildInsertQuery(
+            QueryBuilder qb, IReadOnlyList<IEntity> entities, int batchSize = 50)
+        {
+            var queries = new List<string>();
+            var i = 0;
+            var size = batchSize;
+            while (true)
+            {
+                var batch = entities.Skip(i * size).Take(size).ToList();
+                if (batch.Count == 0) break;
+                queries.Add(qb.InsertMany(batch));
+                ++i;
+            }
+            return queries.ToArray();
         }
 
         private string[] BuildInsertQuery(
@@ -501,6 +460,26 @@ namespace RavenNest.BusinessLogic.Data
                 return sb.ToString();
             }
 
+            internal string InsertMany(IEnumerable<IEntity> entity)
+            {
+                var e = entity.FirstOrDefault();
+                if (e == null)
+                {
+                    return null;
+                }
+
+                var type = e.GetType();
+
+                var props = GetProperties(type);
+                var propertyNames = string.Join(", ", props.Select(x => x.Name));
+                var values = string.Join(",\r\n", entity.Select(x => "(" + string.Join(",", GetSqlReadyPropertyValues(x, props)) + ")"));
+
+                var sb = new StringBuilder();
+                sb.Append("INSERT INTO [" + type.Name + "] ");
+                sb.AppendLine("(" + propertyNames + ") VALUES");
+                sb.AppendLine(values);
+                return sb.ToString();
+            }
             internal string InsertMany<T>(IEnumerable<T> entity) where T : IEntity
             {
                 var type = typeof(T);

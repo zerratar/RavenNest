@@ -20,7 +20,7 @@ namespace RavenNest.Models
         public decimal Farming { get; set; }
         public decimal Slayer { get; set; }
         public decimal Sailing { get; set; }
-
+        public decimal Healing { get; set; }
         public int AttackLevel { get; set; }
         public int DefenseLevel { get; set; }
         public int StrengthLevel { get; set; }
@@ -35,7 +35,7 @@ namespace RavenNest.Models
         public int FarmingLevel { get; set; }
         public int SlayerLevel { get; set; }
         public int SailingLevel { get; set; }
-
+        public int HealingLevel { get; set; }
         public int Revision { get; set; }
     }
 }

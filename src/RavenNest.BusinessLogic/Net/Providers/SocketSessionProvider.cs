@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Text;
 using Newtonsoft.Json.Serialization;
+using RavenNest.BusinessLogic.Providers;
 
 namespace RavenNest.BusinessLogic.Net
 {

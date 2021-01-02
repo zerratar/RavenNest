@@ -79,21 +79,13 @@
             <span class="fas fa-shield-alt" aria-hidden="true"></span>&nbsp;Clan
           </NavLink>
         </li>
-        @*<li class="nav-item px-3">
-          <NavLink class="nav-link" href="/leaderboard" Match="NavLinkMatch.All">
-            <span class="fas fa-chart-bar" aria-hidden="true"></span>&nbsp;Leaderboard
+
+        <li class="nav-item px-3">
+          <NavLink class="nav-link" href="/loyalty" Match="NavLinkMatch.All">
+            <span class="fas fa-users" aria-hidden="true"></span>&nbsp;Loyalty
           </NavLink>
         </li>
-        <li class="nav-item px-3">
-          <NavLink class="nav-link" href="/marketplace" Match="NavLinkMatch.All">
-            <span class="fas fa-balance-scale-right" aria-hidden="true"></span>&nbsp;Marketplace
-          </NavLink>
-        </li>
-        <li class="nav-item px-3">
-          <NavLink class="nav-link" href="/items" Match="NavLinkMatch.All">
-            <span class="fas fa-star" aria-hidden="true"></span>&nbsp;Items
-          </NavLink>
-        </li>*@
+
         @if (IsAdministrator)
         {
           <li class="nav-item px-3">
@@ -102,11 +94,6 @@
             </NavLink>
           </li>
         }
-        @*<li class="nav-item px-3">
-          <NavLink class="nav-link" href="/loyalty" Match="NavLinkMatch.All">
-            <span class="oi oi-people" aria-hidden="true"></span>&nbsp;Viewer Loyalty
-          </NavLink>
-        </li>*@
       }
 
       @if (session?.UserId != null)

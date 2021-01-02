@@ -10,6 +10,7 @@
         Potion,
         Pet,
         Resource,
-        StreamerToken
+        StreamerToken,
+        Scroll
     }
 }

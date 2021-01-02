@@ -43,7 +43,7 @@ namespace RavenNest.Controllers
         public async Task<bool> RefreshPermissions()
         {
             await AssertAdminAccessAsync();
-            return await adminManager.RefreshPermissionsAsync();
+            return adminManager.RefreshPermissions();
         }
 
         [HttpGet("fix-index/{userId}")]

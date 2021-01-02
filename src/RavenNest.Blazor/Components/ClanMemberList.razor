@@ -3,6 +3,7 @@
 @using Blazored.Typeahead
 @inject RavenNest.Blazor.Services.ClanService ClanService
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
+@inject NavigationManager NavigationManager
 
 @if (members == null)
 {
@@ -58,7 +59,9 @@ else
         {
           <tr id="@item.Player.Id" class="item-row">
             <td><img src="/api/twitch/logo/@(item.Player.UserId)" style="width: 40px" /></td>
-            <td class='item'>@item.Player.UserName</td>
+            <td class='item link' @onclick="(()=>InspectPlayer(item.Player))">
+              @GetPlayerName(item.Player)
+            </td>
             <td class='item'>
               @if (item.InvitationPending)
               {
@@ -138,6 +141,21 @@ else
   {
     members = ClanService.GetMembers(ClanId);
     roles = ClanService.GetRoles(ClanId);
+  }
+
+  private string GetPlayerName(Player player)
+  {
+    var name = player.Name;
+    if (!string.IsNullOrEmpty(player.Identifier))
+      name += " (" + player.Identifier + ")";
+    if (player.CharacterIndex > 0)
+      name += " #" + player.CharacterIndex;
+    return name;
+  }
+
+  private void InspectPlayer(Player player)
+  {
+    NavigationManager.NavigateTo("/inspect/" + player.Id);
   }
 
   private void SelectedRoleChanged(ChangeEventArgs e)

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.Models;
@@ -11,6 +12,7 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class SessionManager : ISessionManager
     {
+        private readonly ILogger<SessionManager> logger;
         private readonly ITwitchClient twitchClient;
         private readonly IGameData gameData;
         private readonly IPlayerManager playerManager;
@@ -18,14 +20,17 @@ namespace RavenNest.BusinessLogic.Game
         private readonly int[] MaxMultiplier = new int[]
         {
             //0, 10, 15, 20
-            0, 15, 30, 50
+            //0, 15, 30, 50
+            200, 200, 200, 200, 200, 200, 200, 200, 200
         };
 
         public SessionManager(
+            ILogger<SessionManager> logger,
             ITwitchClient twitchClient,
             IGameData gameData,
             IPlayerManager playerManager)
         {
+            this.logger = logger;
             this.twitchClient = twitchClient;
             this.gameData = gameData;
             this.playerManager = playerManager;
@@ -92,7 +97,7 @@ namespace RavenNest.BusinessLogic.Game
             sessionState.SyncTime = syncTime;
             sessionState.ClientVersion = clientVersion;
 
-            await SendPermissionDataAsync(newGameSession, user);
+            SendPermissionData(newGameSession, user);
 
             SendVillageInfo(newGameSession);
 
@@ -125,21 +130,28 @@ namespace RavenNest.BusinessLogic.Game
             if (activeEvent == null)
                 return;
 
-            var expEvent = gameData.CreateSessionEvent(
-               GameEventType.ExpMultiplier,
-               session,
-               new ExpMultiplier
-               {
-                   EndTime = activeEvent.EndTime,
-                   EventName = activeEvent.EventName,
-                   Multiplier = activeEvent.Multiplier,
-                   StartTime = activeEvent.StartTime
-               }
-           );
+            var userId = session.UserId;
+            var user = gameData.GetUser(userId);
+            var patreonTier = user.PatreonTier.GetValueOrDefault();
 
-            gameData.Add(expEvent);
+            var multiplier = MaxMultiplier[patreonTier];
+            if (multiplier > 0)
+            {
+                var expMulti = Math.Min(multiplier, activeEvent.Multiplier);
+                var expEvent = gameData.CreateSessionEvent(
+                      GameEventType.ExpMultiplier,
+                      session,
+                      new ExpMultiplier
+                      {
+                          EndTime = activeEvent.EndTime,
+                          EventName = activeEvent.EventName,
+                          Multiplier = expMulti,
+                          StartTime = activeEvent.StartTime
+                      }
+                  );
+                gameData.Add(expEvent);
+            }
         }
-
 
         public void SendVillageInfo(DataModels.GameSession newGameSession)
         {
@@ -169,33 +181,16 @@ namespace RavenNest.BusinessLogic.Game
             gameData.Add(villageInfoEvent);
         }
 
-        public async Task SendPermissionDataAsync(DataModels.GameSession gameSession, DataModels.User user = null)
+        public void SendPermissionData(DataModels.GameSession gameSession, DataModels.User user = null)
         {
             user = user ?? gameData.GetUser(gameSession.UserId);
             var isAdmin = user.IsAdmin.GetValueOrDefault();
             var isModerator = user.IsModerator.GetValueOrDefault();
-            var subInfo = await twitchClient.GetSubscriberAsync(user.UserId);
-            var subscriptionTier = 0;
+            //var subInfo = await twitchClient.GetSubscriberAsync(user.UserId);
             var patreonTier = user.PatreonTier ?? 0;
 
-            var expMultiplierLimit = 0;
-            if (subInfo != null && int.TryParse(subInfo.Tier, out subscriptionTier))
-            {
-                subscriptionTier /= 1000;
-                expMultiplierLimit = MaxMultiplier[subscriptionTier];
-                //subscriptionTier == 1 ? 10 : (subscriptionTier - 1) * 25;
-            }
-
-            if (patreonTier > 0)
-            {
-                var expMulti = MaxMultiplier[patreonTier];
-                //patreonTier == 1 ? 10 : (patreonTier - 1) * 25;
-                if (expMulti > expMultiplierLimit)
-                {
-                    expMultiplierLimit = expMulti;
-                    subscriptionTier = patreonTier;
-                }
-            }
+            var subscriptionTier = patreonTier;
+            var expMultiplierLimit = MaxMultiplier[patreonTier];
 
             if (isModerator)
             {
@@ -208,22 +203,18 @@ namespace RavenNest.BusinessLogic.Game
                 subscriptionTier = 3;
                 expMultiplierLimit = 50000000;
             }
+            var permissionEvent = gameData.CreateSessionEvent(
+                GameEventType.PermissionChange,
+                gameSession,
+                new Permissions
+                {
+                    IsAdministrator = user.IsAdmin ?? false,
+                    IsModerator = user.IsModerator ?? false,
+                    SubscriberTier = subscriptionTier,
+                    ExpMultiplierLimit = expMultiplierLimit,
+                });
 
-            if (isAdmin || isModerator || subInfo != null || patreonTier > 0)
-            {
-                var permissionEvent = gameData.CreateSessionEvent(
-                    GameEventType.PermissionChange,
-                    gameSession,
-                    new Permissions
-                    {
-                        IsAdministrator = user.IsAdmin ?? false,
-                        IsModerator = user.IsModerator ?? false,
-                        SubscriberTier = subscriptionTier,
-                        ExpMultiplierLimit = expMultiplierLimit,
-                    });
-
-                gameData.Add(permissionEvent);
-            }
+            gameData.Add(permissionEvent);
         }
 
         public bool EndSessionAndRaid(
@@ -244,13 +235,20 @@ namespace RavenNest.BusinessLogic.Game
 
             var characters = gameData.GetSessionCharacters(currentSession);
 
+            var state = gameData.GetSessionState(token.SessionId);
+            //Version.TryParse(state.ClientVersion, out var clientVersion);
+            //var characterIdClientVersion = new Version("0.7.1");
             var ge = gameData.CreateSessionEvent(
                 isWarRaid ? GameEventType.WarRaid : GameEventType.Raid,
+
                 targetSession, new
                 {
                     RaiderUserName = sessionUser.UserName,
                     RaiderUserId = sessionUser.UserId,
-                    Players = characters.Select(x => gameData.GetUser(x.UserId).UserId).ToArray()
+                    Players = characters.Select(x => x.Id.ToString()).ToArray()
+                    //clientVersion != null && clientVersion >= characterIdClientVersion
+                    //? characters.Select(x => x.Id.ToString()).ToArray()
+                    //: characters.Select(x => gameData.GetUser(x.UserId).UserId).ToArray()
                 });
 
             gameData.Add(ge);
@@ -312,6 +310,34 @@ namespace RavenNest.BusinessLogic.Game
                 TwitchUserId = user.UserId,
                 TwitchUserName = user.UserName
             };
+        }
+
+        public void SendServerTime(DataModels.GameSession session)
+        {
+            var serverTime = gameData.CreateSessionEvent(
+                GameEventType.ServerTime,
+                session,
+                new ServerTime
+                {
+                    TimeUtc = DateTime.UtcNow
+                }
+            );
+            gameData.Add(serverTime);
+        }
+
+        public void RecordTimeMismatch(SessionToken sessionToken, TimeSyncUpdate update)
+        {
+            var session = gameData.GetSession(sessionToken.SessionId);
+            if (session == null) return;
+            var owner = gameData.GetUser(session.UserId);
+            if (owner == null) return;
+
+            logger.LogError("Session by " + owner.UserName + " has a time mismatch of " + update.Delta.TotalSeconds + " seconds. Server Time: " + update.ServerTime + ", Local Time: " + update.LocalTime);
+            if (update.Delta.TotalSeconds >= 30)
+            {
+                logger.LogError("Session by " + owner.UserName + " Terminated due to high time mismatch. Potential speedhack");
+                EndSession(sessionToken);
+            }
         }
     }
 }

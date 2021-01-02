@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using RavenNest.Models;
 
 namespace RavenNest.BusinessLogic.Game
@@ -7,6 +8,8 @@ namespace RavenNest.BusinessLogic.Game
     {
         GameInfo GetGameInfo(SessionToken session);
         EventCollection GetGameEvents(SessionToken session);
+        ScrollUseResult UseScroll(SessionToken session, Guid characterId, ScrollType scrollType);
+
         //bool Join(string userId, string targetUserId);
         //bool Leave(string userId);
         //bool WalkTo(string userId, int x, int y, int z);

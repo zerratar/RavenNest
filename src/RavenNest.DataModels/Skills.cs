@@ -13,7 +13,7 @@ namespace RavenNest.DataModels
             nameof(Health), nameof(Woodcutting), nameof(Fishing),
             nameof(Mining), nameof(Crafting), nameof(Cooking),
             nameof(Farming), nameof(Slayer), nameof(Magic),
-            nameof(Ranged), nameof(Sailing),
+            nameof(Ranged), nameof(Sailing),nameof(Healing),
         };
 
         private static ConcurrentDictionary<string, PropertyInfo> expProperties = new ConcurrentDictionary<string, PropertyInfo>();
@@ -34,6 +34,7 @@ namespace RavenNest.DataModels
         private decimal farming;
         private decimal slayer;
         private decimal sailing;
+        private decimal healing;
         private int attackLevel;
         private int defenseLevel;
         private int strengthLevel;
@@ -48,7 +49,7 @@ namespace RavenNest.DataModels
         private int farmingLevel;
         private int slayerLevel;
         private int sailingLevel;
-
+        private int healingLevel;
 
         public Guid Id { get => id; set => Set(ref id, value); }
         public decimal Attack { get => attack; set => Set(ref attack, value); }
@@ -65,7 +66,7 @@ namespace RavenNest.DataModels
         public decimal Magic { get => magic; set => Set(ref magic, value); }
         public decimal Ranged { get => ranged; set => Set(ref ranged, value); }
         public decimal Sailing { get => sailing; set => Set(ref sailing, value); }
-
+        public decimal Healing { get => healing; set => Set(ref healing, value); }
         public int AttackLevel { get => attackLevel; set => Set(ref attackLevel, value); }
         public int DefenseLevel { get => defenseLevel; set => Set(ref defenseLevel, value); }
         public int StrengthLevel { get => strengthLevel; set => Set(ref strengthLevel, value); }
@@ -80,11 +81,12 @@ namespace RavenNest.DataModels
         public int MagicLevel { get => magicLevel; set => Set(ref magicLevel, value); }
         public int RangedLevel { get => rangedLevel; set => Set(ref rangedLevel, value); }
         public int SailingLevel { get => sailingLevel; set => Set(ref sailingLevel, value); }
+        public int HealingLevel { get => healingLevel; set => Set(ref healingLevel, value); }
 
-        public int GetLevel(int skillIndex) 
+        public int GetLevel(int skillIndex)
         {
-             var name = skillNames[skillIndex];
-             if (!expProperties.TryGetValue(name, out var expProp))
+            var name = skillNames[skillIndex];
+            if (!expProperties.TryGetValue(name, out var expProp))
                 expProp = EnsureDictionaries(name);
             levelProperties.TryGetValue(name, out var lvlProp);
 
@@ -100,7 +102,7 @@ namespace RavenNest.DataModels
             levelProperties.TryGetValue(name, out var lvlProp);
 
             var curLevel = (int)lvlProp.GetValue(this);
-            var curExp   = (decimal)expProp.GetValue(this);
+            var curExp = (decimal)expProp.GetValue(this);
             if (level > curLevel)
             {
                 lvlProp.SetValue(this, level);
@@ -111,7 +113,6 @@ namespace RavenNest.DataModels
                 expProp.SetValue(this, exp);
             }
         }
-
 
         public IReadOnlyList<StatsUpdater> GetSkills()
         {

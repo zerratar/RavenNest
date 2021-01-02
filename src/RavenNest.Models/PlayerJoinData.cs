@@ -1,4 +1,6 @@
-﻿namespace RavenNest.Models
+﻿using System;
+
+namespace RavenNest.Models
 {
     public class PlayerJoinData
     {
@@ -8,5 +10,6 @@
         public bool Subscriber { get; set; }
         public bool Moderator { get; set; }
         public bool Vip { get; set; }
+        public Guid CharacterId { get; set; }
     }
 }

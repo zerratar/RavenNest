@@ -1,0 +1,59 @@
+﻿
+.skill-selector a {
+    padding: 5px 15px;
+    margin-bottom: 15px;
+    display: inline-block;
+    text-decoration: none;
+    cursor: pointer;
+    color: #333;
+    transition: all 150ms ease-in-out;
+    border-bottom: 1px solid white;
+}
+
+.skill-selector a:hover {
+    color: #3498db;
+}
+
+.skill-selector a::after {
+    content: "";
+    height: 1px;
+    width: 0%;
+    border-bottom: 1px solid white;
+    position: relative;
+    display: block;
+    line-height: 2px;
+    color: white;
+    font-size: 0pt;
+    top: 0px;
+}
+
+.skill-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    flex-flow: wrap;
+    justify-items: center;
+    align-content: center;
+}
+
+.skill-selector a.active {
+    background-color: #0e0e0f;
+    color: white;
+}
+
+a.active::after,
+.skill-selector a:hover::after {
+    content: "";
+    height: 1px;
+    width: 0%;
+    border-bottom: 1px solid #333;
+    position: relative;
+    display: block;
+    line-height: 2px;
+    color: white;
+    font-size: 0pt;
+    top: 0px;
+    animation: selection linear 0.125s;
+    animation-fill-mode: forwards;
+}

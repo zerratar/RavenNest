@@ -32,6 +32,7 @@
         Wheat,
         Arrows,
         Magic,
-        StreamerToken
+        StreamerToken,
+        Scroll
     }
 }

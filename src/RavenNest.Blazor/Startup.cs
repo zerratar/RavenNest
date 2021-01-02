@@ -87,7 +87,8 @@ namespace RavenNest.Blazor
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IHostApplicationLifetime applicationLifetime, IWebHostEnvironment env)
         {
-            applicationLifetime.ApplicationStopping.Register(() => app.ApplicationServices.GetService<IGameData>().Flush());
+            applicationLifetime.ApplicationStopping.Register(
+                () => app.ApplicationServices.GetService<IGameData>().Flush());
 
             app.AddRequestTiming();
             app.AddSessionCookies();
@@ -187,6 +188,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<AccountService>();
             services.AddSingleton<UserService>();
             services.AddSingleton<ServerService>();
+            services.AddSingleton<LoyaltyService>();
 
             services.AddSingleton<IKernel, Kernel>();
             services.AddSingleton<IMemoryCache, MemoryCache>();
@@ -208,6 +210,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<IPatreonManager, PatreonManager>();
             services.AddSingleton<IClanManager, ClanManager>();
             services.AddSingleton<INotificationManager, NotificationManager>();
+            services.AddSingleton<ILoyaltyManager, LoyaltyManager>();
 
             services.AddSingleton<IQueryBuilder, QueryBuilder>();
             services.AddSingleton<IItemResolver, ItemResolver>();
