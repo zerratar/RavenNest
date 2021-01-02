@@ -16,15 +16,15 @@ namespace RavenNest.BusinessLogic.Game
             this.playerManager = playerManager;
         }
 
-        public HighScoreCollection GetSkillHighScore(string skill, int skip = 0, int take = 100)
+        public HighScoreCollection GetSkillHighScore(string skill, int skip = 0, int take = 100, int characterIndex = 0)
         {
-            var players = playerManager.GetPlayers().Where(x => !x.IsAdmin && x.CharacterIndex == 0).ToList();
+            var players = playerManager.GetPlayers().Where(x => !x.IsAdmin && (characterIndex == -1 || x.CharacterIndex == characterIndex)).ToList();
             return highscoreProvider.GetSkillHighScore(players, skill, skip, take);
         }
 
-        public HighScoreCollection GetHighScore(int skip = 0, int take = 100)
+        public HighScoreCollection GetHighScore(int skip = 0, int take = 100, int characterIndex = 0)
         {
-            return GetSkillHighScore(null, skip, take);
+            return GetSkillHighScore(null, skip, take, characterIndex);
         }
     }
 }

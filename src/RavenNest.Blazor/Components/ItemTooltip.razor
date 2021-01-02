@@ -31,6 +31,7 @@
   {
     var stats = new List<ItemStat>();
     var i = ItemService.GetItem(Item.ItemId);
+    if (i == null) return stats;
     if (i.WeaponAim > 0) stats.Add(new ItemStat("Weapon Aim", i.WeaponAim));
     if (i.WeaponPower > 0) stats.Add(new ItemStat("Weapon Power", i.WeaponPower));
     if (i.RangedAim > 0) stats.Add(new ItemStat("Ranged Aim", i.RangedAim));
@@ -45,6 +46,7 @@
   public string GetItemRequirementLevel()
   {
     var i = ItemService.GetItem(Item.ItemId);
+    if (i == null) return "";
     if (i.RequiredAttackLevel > 0) return i.RequiredAttackLevel.ToString();
     if (i.RequiredDefenseLevel > 0) return i.RequiredDefenseLevel.ToString();
     if (i.RequiredRangedLevel > 0) return i.RequiredRangedLevel.ToString();
@@ -55,6 +57,7 @@
   public string GetItemRequirementSkill()
   {
     var i = ItemService.GetItem(Item.ItemId);
+    if (i == null) return "";
     if (i.RequiredAttackLevel > 0) return "Requires Attack Level";
     if (i.RequiredDefenseLevel > 0) return "Requires Defense Level";
     if (i.RequiredRangedLevel > 0) return "Requires Ranged Level";
@@ -64,17 +67,19 @@
 
   public string GetItemName()
   {
-    return ItemService.GetItem(Item.ItemId).Name;
+    return ItemService.GetItem(Item.ItemId)?.Name;
   }
 
   public string GetItemType()
   {
-    return ItemService.GetItem(Item.ItemId).Type.ToString();
+    return ItemService.GetItem(Item.ItemId)?.Type.ToString();
   }
 
   public string GetItemTier()
   {
     var i = ItemService.GetItem(Item.ItemId);
+    if (i == null)
+      return "Unknown";
     if (i.Type == Models.ItemType.Pet) return "pet";
     if (i.RequiredMagicLevel == 100 || i.RequiredRangedLevel == 100 || i.RequiredAttackLevel == 100 || i.RequiredDefenseLevel == 100) return "8";
     if (i.RequiredMagicLevel >= 120 || i.RequiredRangedLevel >= 120 || i.RequiredAttackLevel >= 120 || i.RequiredDefenseLevel >= 120) return "9";

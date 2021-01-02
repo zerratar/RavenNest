@@ -15,7 +15,7 @@
 }
 else
 {
-  <div class="character-view-tabs character-selection">
+  <div class="tab-view character-selection">
     @foreach (var p in players)
     {
       <button class="tab-link @(p.Id == selectedPlayer?.Id ? "active" : "")" @onclick="(()=> SelectPlayer(p))">

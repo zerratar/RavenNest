@@ -24,6 +24,9 @@ namespace RavenNest.BusinessLogic.Game
 
         public HighScoreCollection GetSkillHighScore(IReadOnlyList<Player> players, string skill, int skip = 0, int take = 100)
         {
+            if (skill == "All")
+                skill = null;
+
             //var players = playerManager.GetPlayers().Where(x => !x.IsAdmin && x.CharacterIndex == 0).ToList();
             var items =
                 players

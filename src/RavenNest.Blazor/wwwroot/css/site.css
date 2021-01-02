@@ -2,9 +2,9 @@
 
 html, body {
     font-family: 'Heebo', sans-serif;
-    overflow-x: hidden;
     background-color: black;
 }
+
 span.notification-count {
     color: white;
     background-color: red;
@@ -18,6 +18,10 @@ span.notification-count {
     margin-left: -7px;
     position: relative;
 }
+td.item.link {
+    cursor: pointer;
+    text-decoration: underline;
+}
 .white-section-break {
     background-image: url('/imgs/SectionSplitWhite.png');
     position: relative;
@@ -28,7 +32,68 @@ span.notification-count {
     z-index: 0;
 }
 
+.loyalty-reward-list {
+    display: flex;
+    flex-flow: wrap;
+}
+.loyalty-users {
+    margin-top: 25px;
+}
+
+.reward-item-icon img {
+    width: 64px;
+}
+
+.reward-item {
+    display: flex;
+    padding: 5px;
+    background-color: #f6f6f6;
+    cursor: pointer;
+}
+
+.reward-item-details {
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+    margin-right: 10px;
+}
+
+.reward-redeem-confirmation {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 20px;
+    background-color: white;
+    display: flex;
+    flex-flow: column;
+    box-shadow: 3px 3px 6px rgba(0,0,0,0.125);
+    max-width: 100%;
+}
+
+.confirm-body select {
+    width: 100%;
+    margin-bottom: 10px;
+    border: 1px solid #c6c6c6;
+}
+
+.confirm-body h3 {
+    font-weight: 300;
+    font-size: 14pt;
+}
+
+.confirm-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.confirm-header button.close {
+    padding: 0 10px;
+}
+
 .page-content {
+    max-width: 100%;
     margin-top: -166px;
     padding: 0;
 }
@@ -129,6 +194,16 @@ a.nav-link.dd-item {
     margin-left: auto;
     margin-right: auto;
     margin-top: -250px;
+}
+
+.main {
+    overflow-x: auto;
+}
+
+.top-section,
+.main,
+.content {
+    max-width: 100%;
 }
 
 .content form {
@@ -321,9 +396,11 @@ footer h3 {
     .section {
         padding: 30px 20px 50px 20px !important;
     }
+
     .dd-content {
         margin-left: -103px;
     }
+
     .main-nav {
         flex-wrap: wrap;
     }

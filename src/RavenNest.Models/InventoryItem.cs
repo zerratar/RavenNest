@@ -12,5 +12,6 @@ namespace RavenNest.Models
 
         public bool Equipped { get; set; }
         public string Tag { get; set; }
+        public bool? Soulbound { get; set; }
     }
 }

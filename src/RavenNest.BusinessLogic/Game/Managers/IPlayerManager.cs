@@ -40,6 +40,7 @@ namespace RavenNest.BusinessLogic.Game
 
         bool[] UpdateMany(SessionToken token, PlayerState[] states);
 
+        void AddItem(Guid characterId, Guid itemId, int amount = 1);
         AddItemResult AddItem(SessionToken token, string userId, Guid itemId);
         AddItemResult CraftItem(SessionToken token, string userId, Guid itemId);
 

@@ -2,6 +2,10 @@
 @page "/leaderboard"
 @page "/highscore/{highscoreSkill}"
 @page "/leaderboard/{highscoreSkill}"
+@page "/leaderboard/{highscoreSkill}/{characterIndex}"
+@page "/highscore/{highscoreSkill}/{characterIndex}"
+@page "/leaderboard/{highscoreSkill}/{characterIndex}/{top}"
+@page "/highscore/{highscoreSkill}/{characterIndex}/{top}"
 @using RavenNest.Blazor.Services.Models
 @using Microsoft.AspNetCore.WebUtilities
 @using RavenNest.Blazor.Services
@@ -34,9 +38,21 @@
     else
     {
       <div class="skill-selector">
+        @for (var i = 0; i < characterIndexNames.Length; ++i)
+        {
+          var name = characterIndexNames[i];
+          var index = characterIndices[i];
+          int.TryParse(CharacterIndex, out var selectedIndex);
+          {
+            <button @onclick="(() => SelectIndex(index))" class="btn @(selectedIndex == index ? "active" : "")">@name</button>
+          }
+        }
+      </div>
+
+      <div class="skill-selector">
         @foreach (var skill in Skills)
         {
-          <button @onclick="(()=>SelectSkill(skill))" class="btn @(skill.Active ? "active" : "")">@skill.Name</button>
+          <button @onclick="(() => SelectSkill(skill))" class="btn @(skill.Active ? "active" : "")">@skill.Name</button>
         }
       </div>
       <table class="highscore-list">
@@ -66,16 +82,38 @@
 
 @code {
     [Parameter]
+    public string CharacterIndex { get; set; }
+    [Parameter]
     public string HighscoreSkill { get; set; }
+    [Parameter]
+    public int Top { get; set; }
+
     private Models.HighScoreCollection highscores;
     private Skill activeSkill;
+    private string[] characterIndexNames = new string[] { "All Characters", "Main", "Second", "Third" };
+    private int[] characterIndices = new int[] { -1, 0, 1, 2 };
+
     protected override void OnInitialized()
     {
+      if (Top == 0) Top = 100;
       LoadHighscoreAsync();
     }
+
+    private void SelectIndex(int index)
+    {
+      if (activeSkill != null)
+      {
+        NavigationManager.NavigateTo(string.Format(activeSkill.Link, index), true);
+      }
+      else
+      {
+        NavigationManager.NavigateTo("/leaderboard/All/" + index, true);
+      }
+    }
+
     private void SelectSkill(Skill skill)
     {
-      NavigationManager.NavigateTo(skill.Link, true);
+      NavigationManager.NavigateTo(string.Format(skill.Link, CharacterIndex), true);
     }
     private void DisplayPlayer(Models.HighScoreItem player)
     {
@@ -84,9 +122,10 @@
 
     private async Task LoadHighscoreAsync()
     {
+      int.TryParse(CharacterIndex, out var ci);
       if (HighscoreSkill != null)
       {
-        highscores = await HighscoreService.GetHighscoreAsync(HighscoreSkill, 0, 100);
+        highscores = await HighscoreService.GetHighscoreAsync(HighscoreSkill, 0, Top, ci);
         var s = Skills.FirstOrDefault(x => x.Name.Equals(HighscoreSkill, StringComparison.OrdinalIgnoreCase));
         if (s != null)
         {
@@ -97,7 +136,7 @@
       }
       else
       {
-        highscores = await HighscoreService.GetHighscoreAsync(0, 100);
+        highscores = await HighscoreService.GetHighscoreAsync(0, Top, ci);
       }
       StateHasChanged();
     }
@@ -119,7 +158,8 @@
         new Skill("Farming"),
         new Skill("Slayer"),
         new Skill("Sailing"),
-            };
+        new Skill("Healing"),
+                              };
 
     private class Skill
     {
@@ -130,7 +170,7 @@
         Active = active;
       }
 
-      public string Link => $"/highscore/{this.Name}";
+      public string Link => this.Name == "All" ? "/leaderboard/All/{0}" : "/leaderboard/" + this.Name + "/{0}";
       public string Name { get; set; }
       public bool Active { get; set; }
     }

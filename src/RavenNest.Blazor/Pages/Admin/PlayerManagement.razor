@@ -2,6 +2,7 @@
 @page "/admin/players"
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
+@inject NavigationManager NavigationManager
 
 <div class="pagenation">
   <div class="page-navigation">
@@ -14,7 +15,7 @@
   </div>
   <div class="search-bar">
     <EditForm Model="searchModel" OnSubmit="Filter">
-      <InputText class="search-input" placeholder="Search for id, username or name" @bind-Value="searchModel.Query"/>
+      <InputText class="search-input" placeholder="Search for id, username or name" @bind-Value="searchModel.Query" />
     </EditForm>
   </div>
   <div class="total-players"><span>@totalCount</span> players</div>
@@ -44,7 +45,7 @@
       {
         <tr class="player-row">
           <td>@player.UserId</td>
-          <td>@player.UserName<span class='player-character-index' alt='Character Number'>#@player.CharacterIndex</span></td>
+          <td @onclick="(() => DisplayPlayer(player))">@player.UserName<span class='player-character-index' alt='Character Number'>#@player.CharacterIndex</span></td>
           <td>
 
             @*<span v-if="editingName(player.userId)">
@@ -74,56 +75,61 @@
 
 
 @code {
-    private bool loading = false;
-    private PlayerSearchModel searchModel = new PlayerSearchModel();
-    private RavenNest.Sessions.SessionInfo session;
-    private IReadOnlyList<Models.WebsiteAdminPlayer> players;
-    private int pageIndex = 0;
-    private int pageSize = 50;
-    private int pageCount = 1;
-    private long totalCount = 0;
+  private bool loading = false;
+  private PlayerSearchModel searchModel = new PlayerSearchModel();
+  private RavenNest.Sessions.SessionInfo session;
+  private IReadOnlyList<Models.WebsiteAdminPlayer> players;
+  private int pageIndex = 0;
+  private int pageSize = 50;
+  private int pageCount = 1;
+  private long totalCount = 0;
 
-    protected override void OnInitialized()
-    {
-      session = AuthService.GetSession();
-      LoadPlayerPageAsync(pageIndex, pageSize);
-    }
+  protected override void OnInitialized()
+  {
+    session = AuthService.GetSession();
+    LoadPlayerPageAsync(pageIndex, pageSize);
+  }
 
-    private void Filter()
-    {
+  private void DisplayPlayer(Models.WebsiteAdminPlayer player)
+  {
+    NavigationManager.NavigateTo("/inspect/" + player.Id);
+  }
+
+  private void Filter()
+  {
+    pageIndex = 0;
+    LoadPlayerPageAsync(pageIndex, pageSize);
+  }
+
+  private void NextPage()
+  {
+    ++pageIndex;
+    LoadPlayerPageAsync(pageIndex, pageSize);
+  }
+
+  private void PreviousPage()
+  {
+    var oldPage = pageIndex;
+    if (--pageIndex < 0)
       pageIndex = 0;
+    if (oldPage != pageIndex)
       LoadPlayerPageAsync(pageIndex, pageSize);
-    }
+  }
 
-    private void NextPage()
-    {
-      ++pageIndex;
-      LoadPlayerPageAsync(pageIndex, pageSize);
-    }
+  private async Task LoadPlayerPageAsync(int index, int take)
+  {
+    loading = true;
+    var filter = searchModel.Query;
+    var result = await PlayerService.GetPlayerPageAsync(filter, index, take);
+    players = result.Items;
+    totalCount = result.TotalSize;
+    pageCount = (int)Math.Floor((double)this.totalCount / this.pageSize) + 1;
+    loading = false;
+    await InvokeAsync(StateHasChanged);
+  }
 
-    private void PreviousPage()
-    {
-      var oldPage = pageIndex;
-      if (--pageIndex < 0)
-        pageIndex = 0;
-      if (oldPage != pageIndex)
-        LoadPlayerPageAsync(pageIndex, pageSize);
-    }
-
-    private async Task LoadPlayerPageAsync(int index, int take)
-    {
-      loading = true;
-      var filter = searchModel.Query;
-      var result = await PlayerService.GetPlayerPageAsync(filter, index, take);
-      players = result.Items;
-      totalCount = result.TotalSize;
-      pageCount = (int)Math.Floor((double)this.totalCount / this.pageSize) + 1;
-      loading = false;
-      await InvokeAsync(StateHasChanged);
-    }
-
-    public class PlayerSearchModel
-    {
-      public string Query { get; set; }
-    }
+  public class PlayerSearchModel
+  {
+    public string Query { get; set; }
+  }
 }

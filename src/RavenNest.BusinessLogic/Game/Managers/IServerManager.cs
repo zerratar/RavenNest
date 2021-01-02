@@ -1,16 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
-using RavenNest.BusinessLogic.Data;
+﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Net;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using RavenNest.DataModels;
+using TwitchLib.Api.Helix.Models.Videos;
 
 namespace RavenNest.BusinessLogic.Game
 {
     public interface IServerManager
     {
+        bool IncreaseGlobalExpMultiplier(DataModels.User user);
         void BroadcastMessageAsync(string message, int time);
         void SendExpMultiplierEventAsync(int multiplier, string message, DateTime? startTime, DateTime endTime);
     }
@@ -39,12 +37,43 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        public bool IncreaseGlobalExpMultiplier(DataModels.User user)
+        {
+            var activeEvent = gameData.GetActiveExpMultiplierEvent();
+            if (activeEvent != null && !activeEvent.StartedByPlayer) return false;
+
+            if (activeEvent == null)
+            {
+                activeEvent = new ExpMultiplierEvent
+                {
+                    Id = Guid.NewGuid(),
+                    Multiplier = 2,
+                    StartedByPlayer = true,
+                    EventName = user.UserName,
+                    StartTime = DateTime.UtcNow,
+                    EndTime = DateTime.UtcNow.AddMinutes(15)
+                };
+                gameData.Add(activeEvent);
+            }
+            else
+            {
+                activeEvent.Multiplier++;
+                activeEvent.EndTime = activeEvent.EndTime.AddMinutes(5);
+            }
+
+            activeEvent.EventName = user.UserName;
+            return true;
+        }
+
         public void SendExpMultiplierEventAsync(int multiplier, string message, DateTime? startTime, DateTime endTime)
         {
             var start = startTime ?? DateTime.UtcNow;
             var activeEvent = gameData.GetActiveExpMultiplierEvent();
             if (activeEvent != null)
             {
+                if (activeEvent.StartedByPlayer && activeEvent.Multiplier >= multiplier)
+                    return;
+
                 if (start < activeEvent.EndTime)
                     activeEvent.EndTime = start;
             }

@@ -1,5 +1,11 @@
 ﻿@using RavenNest.BusinessLogic.Extended
 @using RavenNest.Models
+@using Blazored.Typeahead
+
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.Blazor.Services.PlayerService PlayerService
+@inject RavenNest.Blazor.Services.ItemService ItemService
+
 <div class="player-inventory">
   <div>
     <h2>Equipped</h2>
@@ -16,6 +22,14 @@
 
   <div>
     <h2>Inventory</h2>
+
+    @if (CanModify)
+    {
+      <div class="inventory-management">
+        <button @onclick="ShowAddItem" class="btn btn-primary">Add item</button>
+      </div>
+    }
+
     <div class="inventory-items inventory">
       @foreach (var item in GetInventoryItems())
       {
@@ -26,17 +40,79 @@
         </div>
       }
     </div>
+
+    @if (CanModify)
+    {
+      if (addItemDialogVisible)
+      {
+        <div class="clan-member-invite">
+          <div class="clan-member-invite-header">
+            <h2>Search for item to add</h2>
+            <button class="close" @onclick="HideAddItem">x</button>
+          </div>
+          <BlazoredTypeahead SearchMethod="SearchItem"
+                             @bind-Value="selectedItem">
+            <SelectedTemplate>
+              @context.Name
+            </SelectedTemplate>
+            <ResultTemplate>
+              @context.Name
+            </ResultTemplate>
+          </BlazoredTypeahead>
+
+          <div class="clan-member-invite-controls">
+            @if (selectedItem != null)
+            {
+              <button @onclick="AddItem" class="btn btn-primary">Add</button>
+            }
+            <button @onclick="HideAddItem" class="btn btn-secondary">Cancel</button>
+          </div>
+        </div>
+      }
+    }
   </div>
 </div>
 
 @code {
   [Parameter]
   public WebsitePlayer Player { get; set; }
-  
+
   [Parameter]
   public bool CanManage { get; set; }
 
   private Guid tooltipItem;
+  private Sessions.SessionInfo session;
+
+
+  private Item selectedItem;
+  private bool addItemDialogVisible;
+  private bool CanModify => session != null && session.Administrator;
+
+  protected override void OnInitialized()
+  {
+    session = AuthService.GetSession();
+  }
+
+  public void AddItem()
+  {
+    if (selectedItem == null)
+      return;
+
+    HideAddItem();
+
+    Player = PlayerService.AddItem(Player.Id, selectedItem);
+    selectedItem = null;
+  }
+
+  public void HideAddItem()
+  {
+    addItemDialogVisible = false;
+  }
+
+  public void ShowAddItem()
+  {
+    addItemDialogVisible = true;
+  }
 
   public IReadOnlyList<Models.InventoryItem> GetInventoryItems()
   {
@@ -82,5 +158,11 @@
     }
 
     return item.Amount.ToString();
+  }
+
+
+  private async Task<IEnumerable<Item>> SearchItem(string searchText)
+  {
+    return await ItemService.SearchAsync(searchText);
   }
 }

@@ -2,6 +2,7 @@
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Net;
+using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using System;
@@ -82,7 +83,7 @@ namespace RavenNest.BusinessLogic.Game
                 foreach (var charItems in items.GroupBy(x => x.Character.Id))
                 {
                     var inventory = inventoryProvider.Get(charItems.Key);
-                    var invItems = inventory.GetInventoryItems();
+                    var invItems = inventory.GetUnequippedItems();
                     foreach (var item in charItems)
                     {
                         inventory.AddItem(item.Item.Id, (long)item.Amount);
@@ -221,7 +222,7 @@ namespace RavenNest.BusinessLogic.Game
             if (main == null)
                 return false;
 
-            var mainSkills = gameData.GetSkills(main.SkillsId);
+            var mainSkills = gameData.GetCharacterSkills(main.SkillsId);
             var mainResources = gameData.GetResources(main.ResourcesId);
 
             var mainInventory = gameData.GetInventoryItems(main.Id);
@@ -232,7 +233,7 @@ namespace RavenNest.BusinessLogic.Game
                 if (alt.Id == main.Id || alt.UserId == main.UserId)
                     continue;
 
-                var altSkills = gameData.GetSkills(alt.SkillsId);
+                var altSkills = gameData.GetCharacterSkills(alt.SkillsId);
                 if (altSkills != null)
                 {
                     MergeSkills(mainSkills, altSkills);
@@ -335,7 +336,7 @@ namespace RavenNest.BusinessLogic.Game
             var character = this.gameData.GetCharacter(characterId);
             if (character == null) return false;
 
-            var skills = this.gameData.GetSkills(character.SkillsId);
+            var skills = this.gameData.GetCharacterSkills(character.SkillsId);
             if (skills == null) return false;
 
             //var playerSession = gameData.GetSessionByUserId(userId);
@@ -481,12 +482,12 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
-        public async Task<bool> RefreshPermissionsAsync()
+        public bool RefreshPermissions()
         {
             var sessions = gameData.GetActiveSessions();
             foreach (var session in sessions)
             {
-                await sessionManager.SendPermissionDataAsync(session);
+                sessionManager.SendPermissionData(session);
             }
             return true;
         }

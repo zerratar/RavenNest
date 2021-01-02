@@ -133,7 +133,7 @@ namespace RavenNest.Sessions
                 {
                     if (myChar.UserIdLock != null)
                     {
-                        var skills = gameData.GetSkills(myChar.SkillsId);
+                        var skills = gameData.GetCharacterSkills(myChar.SkillsId);
                         var owner = gameData.GetUser(myChar.UserIdLock.Value);
                         var session = gameData.GetSessionByUserId(owner.UserId);
                         if (session != null)

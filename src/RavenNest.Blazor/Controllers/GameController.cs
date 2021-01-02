@@ -3,6 +3,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
@@ -22,8 +23,10 @@ namespace RavenNest.Controllers
         private readonly ISessionManager sessionManager;
         private readonly IGameManager gameManager;
         private readonly ISecureHasher secureHasher;
+        private readonly ILogger<GameController> logger;
 
         public GameController(
+            ILogger<GameController> logger,
             IGameData gameData,
             IAuthManager authManager,
             ISessionInfoProvider sessionInfoProvider,
@@ -31,6 +34,7 @@ namespace RavenNest.Controllers
             IGameManager gameManager,
             ISecureHasher secureHasher)
         {
+            this.logger = logger;
             this.gameData = gameData;
             this.authManager = authManager;
             this.sessionInfoProvider = sessionInfoProvider;
@@ -60,7 +64,7 @@ namespace RavenNest.Controllers
                 param.Value1,
                 param.Value2);
 
-            if (session != null && session.AuthToken == null) 
+            if (session != null && session.AuthToken == null)
             {
                 return null;
             }
@@ -96,6 +100,36 @@ namespace RavenNest.Controllers
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
             return sessionManager.AttachPlayersToSession(session, characterIds.Values);
+        }
+
+        [HttpGet("use-scroll/{characterId}/{scrollType}")]
+        public ScrollUseResult UseScroll(Guid characterId, string scrollType)
+        {
+            var st = ScrollType.Raid;
+
+            if (string.IsNullOrEmpty(scrollType))
+            {
+                logger.LogError("Unable to use scroll: " + characterId + " / " + scrollType);
+                return ScrollUseResult.Error;
+            }
+
+            if (int.TryParse(scrollType, out var ist))
+            {
+                st = (ScrollType)ist;
+            }
+
+            if (scrollType.ToLower().Contains("exp"))
+                st = ScrollType.Experience;
+            else if (scrollType.ToLower().Contains("raid"))
+                st = ScrollType.Raid;
+            else if (scrollType.ToLower().Contains("dungeon"))
+                st = ScrollType.Dungeon;
+
+
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+
+            return gameManager.UseScroll(session, characterId, st);
         }
 
         //#region Admin Player Control

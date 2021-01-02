@@ -6,6 +6,7 @@ using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Patreon;
+using RavenNest.BusinessLogic.Providers;
 using RavenNest.Sessions;
 using System;
 using System.IO;

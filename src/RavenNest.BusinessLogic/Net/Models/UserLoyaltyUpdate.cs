@@ -11,5 +11,6 @@ namespace RavenNest.BusinessLogic.Net
         public bool IsVip { get; set; }
         public int NewGiftedSubs { get; set; }
         public int NewCheeredBits { get; set; }
+        public string UserName { get; set; }
     }
 }

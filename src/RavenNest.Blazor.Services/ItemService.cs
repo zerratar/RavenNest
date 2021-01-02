@@ -1,6 +1,8 @@
 ﻿using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace RavenNest.Blazor.Services
@@ -21,6 +23,15 @@ namespace RavenNest.Blazor.Services
         public ItemCollection GetItems()
         {
             return itemManager.GetAllItems();
+        }
+
+        public Task<IEnumerable<Item>> SearchAsync(string search)
+        {
+            return Task.Run(() =>
+            {
+                var items = itemManager.GetAllItems();
+                return items.Where(x => x.Name.Contains(search, StringComparison.OrdinalIgnoreCase));
+            });
         }
 
         public async Task<ItemCollection> GetItemsAsync()

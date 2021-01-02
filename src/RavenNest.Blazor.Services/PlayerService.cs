@@ -54,6 +54,12 @@ namespace RavenNest.Blazor.Services
                    ((player.Skills.RangedLevel + player.Skills.MagicLevel) / 8f));
         }
 
+        public WebsitePlayer AddItem(Guid characterId, Item item)
+        {
+            playerManager.AddItem(characterId, item.Id);
+            return playerManager.GetWebsitePlayer(characterId);
+        }
+
         public async Task<WebsitePlayer> GetPlayerAsync(Guid characterId)
         {
             return await Task.Run(() =>

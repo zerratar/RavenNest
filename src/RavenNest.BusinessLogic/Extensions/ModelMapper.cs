@@ -67,19 +67,38 @@ namespace RavenNest.BusinessLogic.Extensions
             return DataMapper.Map<Models.Statistics, DataModels.Statistics>(data);
         }
 
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.Clan Map(IGameData gameData, DataModels.Clan data)
         {
             if (data == null) return null;
             var user = gameData.GetUser(data.UserId);
             if (user == null) return null;
+
+            var s = gameData.GetClanSkills(data.Id);
+            var skills = new Models.ClanSkill[s.Count];
+            for (var i = 0; i < s.Count; ++i)
+            {
+                var s0 = s[i];
+                var s1 = gameData.GetSkill(s0.SkillId);
+                skills[i] = new Models.ClanSkill
+                {
+                    Id = s0.Id,
+                    Experience = s0.Experience,
+                    Level = s0.Level,
+                    MaxLevel = s1.MaxLevel,
+                    Name = s1.Name
+                };
+            }
+
             return new Models.Clan()
             {
                 Id = data.Id,
                 Logo = data.Logo,
                 Name = data.Name,
-                Owner = user.UserId
+                Owner = user.UserId,
+                Experience = data.Experience,
+                Level = data.Level,
+                ClanSkills = skills
             };
         }
 
@@ -122,8 +141,8 @@ namespace RavenNest.BusinessLogic.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.Item Map(IGameData gameData, Item item)
         {
+            if (item == null) return null;
             var mapped = DataMapper.Map<Models.Item, Item>(item);
-
             mapped.CraftingRequirements = gameData.GetCraftingRequirements(item.Id)
                 .Select(x => DataMapper.Map<Models.ItemCraftingRequirement, DataModels.ItemCraftingRequirement>(x))
                 .ToList();
@@ -210,8 +229,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 IsModerator = user.IsModerator.GetValueOrDefault(),
                 Appearance = Map(gameData.GetAppearance(character.SyntyAppearanceId)),
                 Resources = Map(gameData.GetResources(character.ResourcesId)),
-                Skills = Map(gameData.GetSkills(character.SkillsId)),
-                State = Map(gameData.GetState(character.StateId)),
+                Skills = Map(gameData.GetCharacterSkills(character.SkillsId)),
+                State = Map(gameData.GetCharacterState(character.StateId)),
                 InventoryItems = invItems,
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
                 Clan = clan,
@@ -252,8 +271,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 IsModerator = user.IsModerator.GetValueOrDefault(),
                 Appearance = Map(gameData.GetAppearance(character.SyntyAppearanceId)),
                 Resources = Map(gameData.GetResources(character.ResourcesId)),
-                Skills = Map(gameData.GetSkills(character.SkillsId)),
-                State = Map(gameData.GetState(character.StateId)),
+                Skills = Map(gameData.GetCharacterSkills(character.SkillsId)),
+                State = Map(gameData.GetCharacterState(character.StateId)),
                 InventoryItems = Map(gameData.GetAllPlayerItems(character.Id)),
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
                 Clan = clan,
@@ -269,7 +288,7 @@ namespace RavenNest.BusinessLogic.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static WebsitePlayer MapForWebsite(this User user, IGameData gameData, Character character)
         {
-            var items = gameData.GetAllPlayerItems(character.Id).OrderBy(x => gameData.GetItem(x.ItemId).Name).ToList();
+            var items = gameData.GetAllPlayerItems(character.Id).OrderBy(x => gameData.GetItem(x.ItemId)?.Name).ToList();
 
             var clanMembership = gameData.GetClanMembership(character.Id);
             var clan = clanMembership != null ? Map(gameData, gameData.GetClan(clanMembership.ClanId)) : null;
@@ -286,8 +305,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 IsModerator = user.IsModerator.GetValueOrDefault(),
                 Appearance = Map(gameData.GetAppearance(character.SyntyAppearanceId)),
                 Resources = Map(gameData.GetResources(character.ResourcesId)),
-                Skills = MapForWebsite(gameData.GetSkills(character.SkillsId)),
-                State = Map(gameData.GetState(character.StateId)),
+                Skills = MapForWebsite(gameData.GetCharacterSkills(character.SkillsId)),
+                State = Map(gameData.GetCharacterState(character.StateId)),
                 InventoryItems = Map(items),
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
                 Clan = clan,

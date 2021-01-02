@@ -43,6 +43,13 @@ namespace RavenNest.Blazor.Services
             if (!session.Authenticated)
                 return null;
 
+            var user = gameData.GetUser(session.UserId);
+            if (user == null) return null;
+
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return null;
+            if (character.UserId != user.Id) return null;
+
             this.clanManager.RemoveClanMember(clanId, characterId);
             return GetMembers(clanId);
         }

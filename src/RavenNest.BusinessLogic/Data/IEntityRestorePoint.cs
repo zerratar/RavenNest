@@ -8,5 +8,6 @@ namespace RavenNest.BusinessLogic.Data
     {
         IReadOnlyList<Type> GetEntityTypes();
         IReadOnlyList<T> Get<T>() where T : IEntity;
+        IReadOnlyList<IEntity> Get(Type type);
     }
 }

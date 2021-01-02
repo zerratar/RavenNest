@@ -10,5 +10,6 @@ namespace RavenNest.DataModels
         private long? amount; public long? Amount { get => amount; set => Set(ref amount, value); }
         private bool equipped; public bool Equipped { get => equipped; set => Set(ref equipped, value); }
         private string tag; public string Tag { get => tag; set => Set(ref tag, value); }
+        private bool? soulbound; public bool? Soulbound { get => soulbound; set => Set(ref soulbound, value); }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.DataModels;
 
@@ -13,12 +14,14 @@ namespace RavenNest.BusinessLogic.Data
         User FindUser(Func<User, bool> predicate);
         Character FindCharacter(Func<Character, bool> predicate);
         DataModels.GameSession FindSession(Func<DataModels.GameSession, bool> predicate);
+        IReadOnlyList<DataModels.GameSession> FindSessions(Func<DataModels.GameSession, bool> predicate);
         User FindUser(string userIdOrUsername);
         DataModels.Village GetVillageBySession(DataModels.GameSession session);
         DataModels.Village GetOrCreateVillageBySession(DataModels.GameSession session);
         IReadOnlyList<DataModels.VillageHouse> GetOrCreateVillageHouses(DataModels.Village village);
 
         Character GetCharacterByName(string username, string identifier);
+        IReadOnlyList<UserLoyaltyReward> GetLoyaltyRewards();
 
         /// <summary>
         /// Find player items by predicate
@@ -31,10 +34,12 @@ namespace RavenNest.BusinessLogic.Data
         UserPatreon GetPatreonUser(long patreonId);
         UserNotification GetNotification(Guid notificationId);
         UserPatreon GetPatreonUser(Guid userId);
+        IReadOnlyList<Skill> GetSkills();
         DataModels.GameSession GetSessionByUserId(string userId);
         CharacterClanInvite GetClanInvite(Guid inviteId);
         IReadOnlyList<CharacterClanInvite> GetClanInvitesByCharacter(Guid characterId);
         IReadOnlyList<CharacterClanInvite> GetClanInvitesSent(Guid userId);
+        IReadOnlyList<InventoryItemAttribute> GetInventoryItemAttributes(Guid inventoryItemId);
         IReadOnlyList<CharacterClanInvite> GetClanInvites(Guid clanId);
         #endregion
 
@@ -45,15 +50,19 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<DataModels.Character> GetCharacters();
         IReadOnlyList<DataModels.Character> GetSessionCharacters(DataModels.GameSession currentSession);
         User GetUser(string twitchUserId);
-        UserLoyalty GetUserLoyalty(Guid userId);
+        UserLoyalty GetUserLoyalty(Guid userId, Guid streamerUserId);
+        IReadOnlyList<UserLoyalty> GetUserLoyalties(Guid userId);
+        IReadOnlyList<UserLoyalty> GetStreamerLoyalties(Guid streamerUserId);
         int GetMarketItemCount();
         int GetNextGameEventRevision(Guid sessionId);
         DataModels.GameSession GetSession(Guid sessionId, bool updateSession = true);
         DataModels.GameSession GetUserSession(Guid userId, bool updateSession = true);
         IReadOnlyList<DataModels.GameEvent> GetSessionEvents(DataModels.GameSession gameSession);
         IReadOnlyList<DataModels.GameEvent> GetUserEvents(Guid userId);
+        IReadOnlyList<DataModels.ClanSkill> GetClanSkills(Guid id);
         IReadOnlyList<DataModels.Item> GetItems();
         DataModels.Item GetItem(Guid id);
+        DataModels.Skill GetSkill(Guid skillId);
         IReadOnlyList<DataModels.InventoryItem> GetInventoryItems(Guid characterId, Guid itemId);
         IReadOnlyList<DataModels.InventoryItem> GetInventoryItems(Guid characterId);
 
@@ -92,12 +101,13 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Add
+        void Add(ClanSkill entity);
         void Add(UserNotification ev);
         void Add(CharacterClanMembership ev);
         void Add(CharacterClanInvite ev);
         void Add(ClanRole ev);
         void Add(Clan ev);
-
+        void Add(InventoryItemAttribute attr);
         void Add(UserLoyalty loyalty);
         void Add(UserLoyaltyRank loyaltyRank);
         void Add(UserLoyaltyReward loyaltyRankReward);
@@ -130,6 +140,7 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Remove
+        void Remove(InventoryItemAttribute attr);
         void Remove(UserNotification ev);
         void Remove(CharacterClanMembership ev);
         void Remove(CharacterClanInvite ev);
@@ -156,8 +167,8 @@ namespace RavenNest.BusinessLogic.Data
         DataModels.CharacterClanMembership GetClanMembership(Guid characterId);
 
         DataModels.SyntyAppearance GetAppearance(Guid? syntyAppearanceId);
-        DataModels.Skills GetSkills(Guid skillsId);
-        DataModels.CharacterState GetState(Guid? stateId);
+        DataModels.Skills GetCharacterSkills(Guid skillsId);
+        DataModels.CharacterState GetCharacterState(Guid? stateId);
         #endregion
 
         IReadOnlyList<DataModels.GameSession> GetActiveSessions();
@@ -171,5 +182,6 @@ namespace RavenNest.BusinessLogic.Data
         bool InitializedSuccessful { get; }
 
         CharacterSessionActivity GetSessionActivity(Guid id, Guid characterId);
+        IReadOnlyList<ItemAttribute> GetItemAttributes();
     }
 }

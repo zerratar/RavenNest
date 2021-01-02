@@ -25,7 +25,11 @@ else
       }
       <h1>@clan.Name</h1>
     </div>
-    <button class="btn btn-danger" @onclick="(async () => await LeaveClanAsync())">Leave Clan</button>
+
+    if (CanManage)
+    {
+      <button class="btn btn-danger" @onclick="(async () => await LeaveClanAsync())">Leave Clan</button>
+    }
     <p>More coming soon.</p>
   }
 }

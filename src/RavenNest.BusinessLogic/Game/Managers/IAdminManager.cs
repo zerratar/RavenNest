@@ -19,7 +19,7 @@ namespace RavenNest.BusinessLogic.Game
         bool ProcessItemRecovery(string query, string identifier);
         bool NerfItems();
         bool RefreshVillageInfo();
-        Task<bool> RefreshPermissionsAsync();
+        bool RefreshPermissions();
         //bool FixCharacterExpGain(Guid characterId);
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
 using RavenNest.Models;
 
@@ -97,7 +98,7 @@ namespace RavenNest.BusinessLogic.Game
             if (item.Category == (int)DataModels.ItemCategory.StreamerToken)
                 itemTag = sessionOwner.UserId;
 
-            var itemToSell = inventory.GetItem(itemId, tag: itemTag);
+            var itemToSell = inventory.GetUnequippedItem(itemId, tag: itemTag);
 
             if (itemToSell.IsNull())
             {
@@ -112,7 +113,7 @@ namespace RavenNest.BusinessLogic.Game
                 return new ItemSellResult(ItemTradeState.DoesNotOwn);
             }
 
-            inventory.RemoveItem(itemId, amount, tag: itemToSell.Tag);
+            inventory.RemoveItem(itemToSell, amount);
 
             var marketItem = new DataModels.MarketItem
             {
