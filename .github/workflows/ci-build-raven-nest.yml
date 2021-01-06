@@ -9,7 +9,7 @@ on:
 jobs:
   build-dotnet:
     name: Build Service
-    runs-on: self-hosted, rf-staging
+    runs-on: rf-staging
 
     steps:
     - uses: actions/checkout@v2
