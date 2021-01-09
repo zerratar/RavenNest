@@ -361,6 +361,13 @@ namespace RavenNest.BusinessLogic.Net
 
                     await HandlePacketDataAsync(receiveBuffer.Array, 0, receiveBuffer.Count, result.EndOfMessage);
                 }
+                catch (WebSocketException s)
+                {
+                    // ignore websocket exceptions. those are most likely premature disconnections
+                    // happens when server restarts/shutsdown or client just lost connection.
+                    // nothing important to record really. 
+                    this.Dispose();
+                }
                 catch (Exception exc)
                 {
                     this.logger.LogError(exc.ToString());
