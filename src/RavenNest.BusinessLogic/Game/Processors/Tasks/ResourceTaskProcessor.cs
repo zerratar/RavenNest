@@ -77,6 +77,17 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             }
         }
 
+        protected DataModels.Resources GetVillageResources(IGameData gameData, DataModels.GameSession session)
+        {
+            DataModels.Resources resx = null;
+            var village = gameData.GetVillageBySession(session);
+            if (village != null)
+            {
+                resx = gameData.GetResources(village.ResourcesId);
+            }
+            return resx;
+        }
+
         protected void UpdateResources(
             IGameData gameData,
             DataModels.GameSession session,

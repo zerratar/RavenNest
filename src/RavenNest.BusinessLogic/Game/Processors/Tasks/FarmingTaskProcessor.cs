@@ -14,7 +14,15 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             Character character, 
             CharacterState state)
         {
-            UpdateResourceGain(integrityChecker, gameData, inventoryProvider, session, character, resources => ++resources.Wheat);
+            UpdateResourceGain(integrityChecker, gameData, inventoryProvider, session, character, resources =>
+            {
+                ++resources.Wheat;
+                var villageResources = GetVillageResources(gameData, session);
+                if (villageResources != null)
+                {
+                    ++villageResources.Wheat;
+                }
+            });
         }
     }
 }

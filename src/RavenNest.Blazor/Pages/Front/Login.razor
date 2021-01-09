@@ -10,9 +10,13 @@
 
   @if (IsTwitchLogin)
   {
-    <p class="login-message">Logging in using Twitch... Get your PogChamp ready!</p>
+    <p class="login-message">Logging in using Twitch... </p>
   }
-  else if (!IsLoggingIn)
+  else if (IsLoggingIn)
+  {
+    <p class="login-message">Logging in... Hold on to your horses!</p>
+  }
+  else
   {
     if (session.UserId == null)
     {
@@ -43,10 +47,6 @@
     {
       <p class="invalid">Whops. Wrong username or password.</p>
     }
-  }
-  else if (IsLoggingIn)
-  {
-    <p class="login-message">Logging in... Hold on to your horses!</p>
   }
 </div>
 

@@ -46,6 +46,12 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 }
 
                 ++resources.Ore;
+
+                var villageResources = GetVillageResources(gameData, session);
+                if (villageResources != null)
+                {
+                    ++villageResources.Ore;
+                }
             });
         }
     }

@@ -1304,7 +1304,7 @@ namespace RavenNest.BusinessLogic.Game
                     if (activeSessionOwner != null)
                     {
                         SendRemovePlayerFromSession(character, gameSession);
-                        logger.LogError($"{character.Name} was saved from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is part of {activeSessionOwner.UserName}.");
+                        logger.LogWarning($"{character.Name} was saved from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is part of {activeSessionOwner.UserName}.");
                     }
                 }
 

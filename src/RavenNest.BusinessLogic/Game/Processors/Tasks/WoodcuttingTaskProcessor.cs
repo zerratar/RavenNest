@@ -7,14 +7,22 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     public class WoodcuttingTaskProcessor : ResourceTaskProcessor
     {
         public override void Handle(
-            IIntegrityChecker integrityChecker, 
+            IIntegrityChecker integrityChecker,
             IGameData gameData,
             IPlayerInventoryProvider inventoryProvider,
-            GameSession session, 
-            Character character, 
+            GameSession session,
+            Character character,
             CharacterState state)
         {
-            UpdateResourceGain(integrityChecker, gameData, inventoryProvider, session, character, resources => ++resources.Wood);
+            UpdateResourceGain(integrityChecker, gameData, inventoryProvider, session, character, resources =>
+            {
+                ++resources.Wood;
+                var villageResources = GetVillageResources(gameData, session);
+                if (villageResources != null)
+                {
+                    ++villageResources.Wood;
+                }
+            });
         }
     }
 }

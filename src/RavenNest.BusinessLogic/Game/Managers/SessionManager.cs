@@ -241,11 +241,15 @@ namespace RavenNest.BusinessLogic.Game
             var ge = gameData.CreateSessionEvent(
                 isWarRaid ? GameEventType.WarRaid : GameEventType.Raid,
 
-                targetSession, new
+                targetSession, new StreamRaidInfo
                 {
                     RaiderUserName = sessionUser.UserName,
                     RaiderUserId = sessionUser.UserId,
-                    Players = characters.Select(x => x.Id.ToString()).ToArray()
+                    Players = characters.Select(x =>
+                    {
+                        var u = gameData.GetUser(x.UserId);
+                        return new UserCharacter { CharacterId = x.Id, UserId = u?.UserId, Username = u?.UserName };
+                    }).ToList()
                     //clientVersion != null && clientVersion >= characterIdClientVersion
                     //? characters.Select(x => x.Id.ToString()).ToArray()
                     //: characters.Select(x => gameData.GetUser(x.UserId).UserId).ToArray()
@@ -333,7 +337,7 @@ namespace RavenNest.BusinessLogic.Game
             if (owner == null) return;
 
             logger.LogError("Session by " + owner.UserName + " has a time mismatch of " + update.Delta.TotalSeconds + " seconds. Server Time: " + update.ServerTime + ", Local Time: " + update.LocalTime);
-            if (update.Delta.TotalSeconds >= 30)
+            if (update.Delta.TotalSeconds >= 3600)
             {
                 logger.LogError("Session by " + owner.UserName + " Terminated due to high time mismatch. Potential speedhack");
                 EndSession(sessionToken);
