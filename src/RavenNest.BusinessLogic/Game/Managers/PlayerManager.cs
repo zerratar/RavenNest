@@ -419,7 +419,7 @@ namespace RavenNest.BusinessLogic.Game
             if (user == null)
                 return null;
 
-            var userChars = gameData.GetCharacters(x => x.UserId == user.Id);
+            var userChars = gameData.GetCharacters(x => x.UserId == user.Id).OrderBy(x => x.CharacterIndex);
             var result = new List<WebsitePlayer>();
             foreach (var c in userChars)
                 result.Add(GetWebsitePlayer(user, c));
@@ -1445,7 +1445,10 @@ namespace RavenNest.BusinessLogic.Game
                 Health = 10,
             };
 
-            CreateUserLoyalty(session, user, playerData);
+            if (session != null)
+            {
+                CreateUserLoyalty(session, user, playerData);
+            }
 
             gameData.Add(state);
             gameData.Add(syntyAppearance);
@@ -1468,6 +1471,9 @@ namespace RavenNest.BusinessLogic.Game
 
         private UserLoyalty CreateUserLoyalty(DataModels.GameSession session, User user, PlayerJoinData playerData)
         {
+            if (session == null)
+                return null;
+
             var loyalty = new UserLoyalty
             {
                 Id = Guid.NewGuid(),

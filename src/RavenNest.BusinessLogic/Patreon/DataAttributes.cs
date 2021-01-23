@@ -21,7 +21,7 @@ namespace RavenNest.BusinessLogic.Patreon
         public bool IsFollower { get; set; }
 
         [JsonProperty("last_charge_date")]
-        public DateTimeOffset LastChargeDate { get; set; }
+        public DateTimeOffset? LastChargeDate { get; set; }
 
         [JsonProperty("last_charge_status")]
         public string LastChargeStatus { get; set; }
@@ -36,6 +36,6 @@ namespace RavenNest.BusinessLogic.Patreon
         public long PledgeAmountCents { get; set; }
 
         [JsonProperty("pledge_relationship_start")]
-        public DateTimeOffset PledgeRelationshipStart { get; set; }
+        public DateTimeOffset? PledgeRelationshipStart { get; set; }
     }
 }
