@@ -112,7 +112,7 @@ namespace RavenNest.Blazor
 
             app.UseResponseCompression();
             app.UseSession();
-            //app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.Map("/download/latest", builder =>
             {
