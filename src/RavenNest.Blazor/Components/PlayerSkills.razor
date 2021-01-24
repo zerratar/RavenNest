@@ -7,18 +7,18 @@
     <div class="training-skill">
       @if (Player.State != null && !string.IsNullOrEmpty(Player.State.Island))
       {
-        <span>You're currently training <b>@trainingSkill</b> with this character at <b>@Player.State.Island</b>.</span>
+        <span>You're currently training <b>@GetTrainingSkillName()</b> with this character at <b>@Player.State.Island</b>.</span>
       }
       else
       {
-        <span>You're currently training <b>@trainingSkill</b> with this character.</span>
+        <span>You're currently training <b>@GetTrainingSkillName()</b> with this character.</span>
       }
     </div>
   }
 
   @foreach (var skill in Player.Skills.AsList())
   {
-    var isActive = !string.IsNullOrEmpty(trainingSkill) && skill.Name.Equals(trainingSkill, StringComparison.OrdinalIgnoreCase);
+    var isActive = IsTrainingSkill(skill);
     <div class="stats-row@(isActive ? " active" : "")" title="@(isActive?"You're currently training this skill." : "")">
       <div class="stats-label">@skill.Name</div>
       <div class="stats-progress" title="@ExpDisplay(skill.Experience)">
@@ -61,6 +61,42 @@
     {
       currentHealth = Player.Skills.HealthLevel;
     }
+  }
+
+  private string GetTrainingSkillName()
+  {
+    if (string.IsNullOrEmpty(trainingSkill))
+      return null;
+
+    if (trainingSkill.Equals("all", StringComparison.OrdinalIgnoreCase))
+      return "All";
+
+    if (Player == null || Player.Skills == null)
+      return null;
+
+    var training = Player.Skills.AsList().FirstOrDefault(IsTrainingSkill);
+    return training?.Name;
+  }
+
+  private bool IsTrainingSkill(PlayerSkill skill)
+  {
+    if (string.IsNullOrEmpty(trainingSkill))
+      return false;
+
+    if (skill.Name.StartsWith(trainingSkill, StringComparison.OrdinalIgnoreCase))
+      return true;
+
+    if (trainingSkill.ToLower() == "all")
+    {
+      return skill.Name.Equals("attack", StringComparison.OrdinalIgnoreCase) ||
+             skill.Name.Equals("defense", StringComparison.OrdinalIgnoreCase) ||
+             skill.Name.Equals("strength", StringComparison.OrdinalIgnoreCase);
+    }
+
+    if (skill.Name.ToLower() == "attack" && trainingSkill.ToLower() == "atk")
+      return true;
+
+    return false;
   }
 
   private string ExpDisplay(decimal value)
