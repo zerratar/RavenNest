@@ -56,9 +56,9 @@ namespace RavenNest.BusinessLogic.Data
 
         public void CreateBackup(IEntitySet[] entitySets)
         {
+            RemoveOldBackups();
             var backupFolder = GetBackupFolder();
             StoreData(entitySets, backupFolder);
-            RemoveOldBackups();
         }
 
         private void CreateBackup(EntityRestorePoint restorePoint)
@@ -75,16 +75,22 @@ namespace RavenNest.BusinessLogic.Data
 
         private void RemoveOldBackups()
         {
-#warning Backups not being removed right now
-            // var backupFolders = System.IO.Directory.GetDirectories(BackupFolder);
-            // if (backupFolders.Length > 60)
-            // {
-            //     var toDelete = backupFolders.OrderByDescending(x => new System.IO.DirectoryInfo(x).CreationTime).Skip(10);
-            //     foreach (var old in toDelete)
-            //     {
-            //         System.IO.Directory.Delete(old, true);
-            //     }
-            // }
+            try
+            {
+                var backupFolders = System.IO.Directory.GetDirectories(BackupFolder);
+                if (backupFolders.Length > 10)
+                {
+                    var toDelete = backupFolders.OrderByDescending(x => new System.IO.DirectoryInfo(x).CreationTime).Skip(10);
+                    foreach (var old in toDelete)
+                    {
+                        System.IO.Directory.Delete(old, true);
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                // ignored for now
+            }
         }
 
         public void CreateRestorePoint(IEntitySet[] entitySets)
