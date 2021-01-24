@@ -107,6 +107,10 @@ namespace RavenNest.Blazor.Services
                 var loyalties = new List<PlayerLoyalty>();
                 foreach (var d in data)
                 {
+                    var u = gameData.GetUser(d.UserId);
+                    if (u == null)
+                        continue;
+
                     totalSubsGifted += d.GiftedSubs;
                     totalBitsCheered += d.CheeredBits;
                     if (d.IsSubscriber)
@@ -116,7 +120,6 @@ namespace RavenNest.Blazor.Services
                         totalPlayerTime += val;
                     }
 
-                    var u = gameData.GetUser(d.UserId);
                     var totalPlayTime = TimeSpan.Zero;
                     if (d.Playtime != null)
                         TimeSpan.TryParse(d.Playtime, out totalPlayTime);
@@ -172,6 +175,12 @@ namespace RavenNest.Blazor.Services
                 foreach (var l in loyalties)
                 {
                     var streamer = gameData.GetUser(l.StreamerUserId);
+                    if (streamer == null)
+                        continue;
+
+                    var u = gameData.GetUser(l.UserId);
+                    if (u == null)
+                        continue;
 
                     if (streamer.Id == user.Id)
                         continue; // ignore ourselves. So we as the streamer can't redeem on our own stream.
