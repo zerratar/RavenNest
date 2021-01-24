@@ -2,6 +2,7 @@
 using RavenNest.BusinessLogic.Patreon;
 using RavenNest.DataModels;
 using System;
+using System.Linq;
 
 namespace RavenNest.BusinessLogic.Game
 {
@@ -14,43 +15,44 @@ namespace RavenNest.BusinessLogic.Game
             this.gameData = gameData;
         }
 
-        public void AddPledge(PatreonPledgeData data)
+        public void AddPledge(IPatreonData data)
         {
             var user = GetUser(data, out var patreon, true);
             if (user != null)
                 user.PatreonTier = patreon.Tier;
         }
 
-        public void RemovePledge(PatreonPledgeData data)
+        public void RemovePledge(IPatreonData data)
         {
             var user = GetUser(data, out var patreon);
             if (user != null)
                 user.PatreonTier = null;
         }
 
-        public void UpdatePledge(PatreonPledgeData data)
+        public void UpdatePledge(IPatreonData data)
         {
             var user = GetUser(data, out var patreon, true);
             if (user != null)
                 user.PatreonTier = patreon.Tier;
         }
 
-        private User GetUser(PatreonPledgeData data, out UserPatreon patreon, bool createPatreonIfNotExists = false)
+        private User GetUser(IPatreonData data, out UserPatreon patreon, bool createPatreonIfNotExists = false)
         {
             User user = null;
+            var firstName = data.FullName?.Split(' ')?.FirstOrDefault();
             patreon = gameData.GetPatreonUser(data.PatreonId);
             if (patreon == null || patreon.UserId == null)
                 user = TryGetUser(data);
             else
                 user = gameData.GetUser(patreon.UserId.GetValueOrDefault());
 
-            if (createPatreonIfNotExists)
+            if (createPatreonIfNotExists && patreon == null)
             {
                 patreon = new UserPatreon()
                 {
                     Id = Guid.NewGuid(),
                     Email = data.Email,
-                    FirstName = data.FirstName,
+                    FirstName = firstName,
                     FullName = data.FullName,
                     PatreonId = data.PatreonId,
                     PledgeAmount = data.PledgeAmountCents,
@@ -65,17 +67,18 @@ namespace RavenNest.BusinessLogic.Game
             return user;
         }
 
-        private User TryGetUser(PatreonPledgeData data)
+        private User TryGetUser(IPatreonData data)
         {
+            var firstName = data.FullName?.Split(' ')?.FirstOrDefault();
             return gameData.FindUser(u =>
             {
                 if (u == null)
                     return false;
 
-                if (u.UserId == data.TwitchUserId)
+                if (!string.IsNullOrEmpty(data.TwitchUserId) && u.UserId == data.TwitchUserId)
                     return true;
 
-                if (!string.IsNullOrEmpty(u.UserName) && u.UserName.ToLower() == data.FirstName?.ToLower())
+                if (!string.IsNullOrEmpty(u.UserName) && u.UserName.ToLower() == firstName?.ToLower())
                     return true;
 
                 if (u.Email?.ToLower() == data.Email.ToLower())
