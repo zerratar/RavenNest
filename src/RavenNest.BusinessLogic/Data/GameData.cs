@@ -14,7 +14,7 @@ namespace RavenNest.BusinessLogic.Data
 {
     public class GameData : IGameData
     {
-        private const int BackupInterval = 60000;
+        private const int BackupInterval = 60 * 60 * 1000; // once per hour
         private const int SaveInterval = 10000;
         private const int SaveMaxBatchSize = 50;
 
