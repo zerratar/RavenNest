@@ -4,7 +4,16 @@
 
   @if (!string.IsNullOrEmpty(trainingSkill))
   {
-    <div class="training-skill">You're currently training <b>@trainingSkill</b> with this character.</div>
+    <div class="training-skill">
+      @if (Player.State != null && !string.IsNullOrEmpty(Player.State.Island))
+      {
+        <span>You're currently training <b>@trainingSkill</b> with this character at <b>@Player.State.Island</b>.</span>
+      }
+      else
+      {
+        <span>You're currently training <b>@trainingSkill</b> with this character.</span>
+      }
+    </div>
   }
 
   @foreach (var skill in Player.Skills.AsList())
