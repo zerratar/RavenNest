@@ -69,6 +69,9 @@ namespace RavenNest.BusinessLogic.Game
         {
             return gameData.FindUser(u =>
             {
+                if (u == null)
+                    return false;
+
                 if (u.UserId == data.TwitchUserId)
                     return true;
 
