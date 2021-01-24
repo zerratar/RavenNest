@@ -25,7 +25,8 @@ namespace RavenNest.BusinessLogic.Game
         public void RemovePledge(IPatreonData data)
         {
             var user = GetUser(data, out var patreon);
-            if (user != null)
+            if (user != null &&
+                (data.Status == null || data.Status.IndexOf("active", StringComparison.OrdinalIgnoreCase) < 0))
                 user.PatreonTier = null;
         }
 
