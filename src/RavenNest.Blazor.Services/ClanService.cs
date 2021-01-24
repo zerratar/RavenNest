@@ -188,6 +188,22 @@ namespace RavenNest.Blazor.Services
                 return allInvites;
             });
         }
+
+        public bool UpdateClanName(Guid clanId, string newName)
+        {
+            var session = GetSession();
+            if (!session.Authenticated)
+                return false;
+
+            var clan = clanManager.GetClan(clanId);
+            if (clan == null)
+                return false;
+
+            if (clan.Owner != session.UserId)
+                return false;
+
+            return this.clanManager.UpdateClanName(clanId, newName);
+        }
         public Clan CreateClan(CreateClanModel model)
         {
             var session = GetSession();

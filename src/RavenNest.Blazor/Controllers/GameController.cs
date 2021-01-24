@@ -94,6 +94,30 @@ namespace RavenNest.Controllers
             return this.sessionManager.EndSessionAndRaid(session, username, war.Value);
         }
 
+        [HttpGet("raid/{username}/{war}")]
+        public bool GetEndSessionAndRaid(string username, bool war)
+        {
+            try
+            {
+                var session = GetSessionToken();
+                AssertSessionTokenValidity(session);
+                return this.sessionManager.EndSessionAndRaid(session, username, war);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                return false;
+            }
+        }
+
+        [HttpGet("end")]
+        public void GetEndSession()
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            this.sessionManager.EndSession(session);
+        }
+
         [HttpPost]
         public void PostEndSession()
         {
@@ -101,7 +125,7 @@ namespace RavenNest.Controllers
             AssertSessionTokenValidity(session);
             this.sessionManager.EndSession(session);
         }
-        
+
         [HttpDelete]
         public void EndSession()
         {
@@ -113,9 +137,17 @@ namespace RavenNest.Controllers
         [HttpPost("attach")]
         public bool AttachPlayers(Many<Guid> characterIds)
         {
-            var session = GetSessionToken();
-            AssertSessionTokenValidity(session);
-            return sessionManager.AttachPlayersToSession(session, characterIds.Values);
+            try
+            {
+                var session = GetSessionToken();
+                AssertSessionTokenValidity(session);
+                return sessionManager.AttachPlayersToSession(session, characterIds.Values);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                return false;
+            }
         }
 
         [HttpGet("use-scroll/{characterId}/{scrollType}")]

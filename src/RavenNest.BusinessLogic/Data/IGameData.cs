@@ -183,5 +183,6 @@ namespace RavenNest.BusinessLogic.Data
 
         CharacterSessionActivity GetSessionActivity(Guid id, Guid characterId);
         IReadOnlyList<ItemAttribute> GetItemAttributes();
+        IReadOnlyList<Clan> GetClans();
     }
 }

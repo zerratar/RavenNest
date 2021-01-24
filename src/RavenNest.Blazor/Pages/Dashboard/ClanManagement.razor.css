@@ -4,13 +4,23 @@
     outline: 0;
 }
 
+.clan-name-error {
+    color: red;
+}
+
+.clan-name-success {
+    color: green;
+}
+
 button.tab-link.active {
     color: white;
     background-color: black;
 }
+
 .clan-view-tabs {
     margin-bottom: 25px;
 }
+
 .clan-header {
     display: flex;
     padding-top: 20px;
