@@ -34,6 +34,7 @@ namespace RavenNest.BusinessLogic.Extended
             //var thisLevel = GameMath.OLD_LevelToExperience(level);
             return (float)(thisLevel / nextLevel);
         }
+
         public IReadOnlyList<PlayerSkill> AsList()
         {
             var props = typeof(SkillsExtended)

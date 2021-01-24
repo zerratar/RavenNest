@@ -1199,6 +1199,7 @@ namespace RavenNest.BusinessLogic.Game
                 State = new Models.CharacterState(),
                 Statistics = new Models.Statistics()
             };
+
             return character.MapForWebsite(gameData, user);
         }
 
