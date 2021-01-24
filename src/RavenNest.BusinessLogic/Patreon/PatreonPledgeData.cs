@@ -1,6 +1,6 @@
 ﻿namespace RavenNest.BusinessLogic.Patreon
 {
-    public class PatreonPledgeData
+    public class PatreonPledgeData : IPatreonData
     {
         public long PatreonId { get; set; }
         public string TwitchUserId { get; set; }
