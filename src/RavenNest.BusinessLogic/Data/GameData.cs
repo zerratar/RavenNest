@@ -505,10 +505,16 @@ namespace RavenNest.BusinessLogic.Data
             users.Entities.FirstOrDefault(predicate);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public User FindUser(string userIdOrUsername) =>
-            users.Entities.FirstOrDefault(x =>
-                    x.UserId == userIdOrUsername ||
-                    x.UserName.Equals(userIdOrUsername, StringComparison.OrdinalIgnoreCase));
+        public User FindUser(string userIdOrUsername)
+        {
+            if (string.IsNullOrWhiteSpace(userIdOrUsername))
+                return null;
+
+            return users.Entities.FirstOrDefault(x =>
+                    x != null &&
+                    (x.UserId == userIdOrUsername ||
+                    (x.UserName?.Equals(userIdOrUsername, StringComparison.OrdinalIgnoreCase) ?? false)));
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<UserLoyaltyReward> GetLoyaltyRewards()
