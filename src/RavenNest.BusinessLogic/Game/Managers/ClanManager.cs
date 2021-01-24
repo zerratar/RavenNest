@@ -99,6 +99,24 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
+        public int GetNameChangeCount(Guid clanId)
+        {
+            var clan = gameData.GetClan(clanId);
+            if (clan == null)
+                return 0;
+
+            return clan.NameChangeCount;
+        }
+
+        public bool CanChangeClanName(Guid clanId)
+        {
+            var clan = gameData.GetClan(clanId);
+            if (clan == null)
+                return false;
+
+            return clan.CanChangeName || clan.NameChangeCount < 2;
+        }
+
         public bool AcceptClanInvite(Guid inviteId)
         {
             // invite does not exist
@@ -263,8 +281,10 @@ namespace RavenNest.BusinessLogic.Game
 
         public Clan CreateClan(Guid ownerUserId, string name, string logoImageFile)
         {
-            if (string.IsNullOrEmpty(name))
+            if (string.IsNullOrWhiteSpace(name))
                 return null;
+
+            name = name.Trim();
 
             // already have a clan
             var clan = gameData.GetClanByUser(ownerUserId);
@@ -283,6 +303,7 @@ namespace RavenNest.BusinessLogic.Game
             clan = new DataModels.Clan()
             {
                 Id = Guid.NewGuid(),
+                CanChangeName = true,
                 Logo = logoImageFile,
                 Name = name,
                 UserId = ownerUserId,
@@ -501,13 +522,30 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool UpdateClanName(Guid clanId, string newName)
         {
+            if (string.IsNullOrWhiteSpace(newName))
+                return false;
+
+            newName = newName.Trim();
             // clan does not exist
             var clan = gameData.GetClan(clanId);
             if (clan == null)
                 return false;
 
-            clan.Name = newName;
-            return true;
+            if (clan.Name.Trim().Equals(newName, StringComparison.Ordinal))
+            {
+                clan.Name = newName;
+                return true;
+            }
+
+            if (clan.CanChangeName || clan.NameChangeCount < 2)
+            {
+                clan.Name = newName;
+                clan.CanChangeName = false;
+                clan.NameChangeCount++;
+                return true;
+            }
+
+            return false;
         }
     }
 }

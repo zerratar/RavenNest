@@ -27,5 +27,7 @@ namespace RavenNest.BusinessLogic.Game
         bool RemovePlayerInvite(Guid clanId, Guid characterId);
         bool RemovePlayerInvite(Guid inviteId);
         void UpdateMemberRole(Guid clanId, Guid characterId, Guid roleId);
+        bool CanChangeClanName(Guid clanId);
+        int GetNameChangeCount(Guid clanId);
     }
 }

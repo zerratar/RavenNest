@@ -44,19 +44,33 @@ else
       {
         <img src="/api/twitch/logo/@session.UserId" class="clan-logo" />
       }
-      <h1>@clan.Name</h1>
-      @if (!editingClanName)
-      {
-        <a class="change-identifier" @onclick="EditClanName"><span class="fa fa-pen"></span></a>
-        <p class="clan-name-success">@changeNameSuccess</p>
-      }
-      else
-      {
-        <input type="text" placeholder="Enter a new clan name" class="input edit-identifier" @bind-value="clan.Name" />
-        <a @onclick="UpdateAlias"><i class="fas fa-check"></i></a>
-        <a @onclick="CancelEditAlias"><i class="fas fa-times"></i></a>
-        <p class="clan-name-error">@clanError</p>
-      }
+      <h1>
+        @if (!editingClanName)
+        {
+          @clan.Name
+          if (canChangeClanName)
+          {
+            <a class="change-identifier" @onclick="EditClanName"><span class="fa fa-pen"></span></a>
+            <p class="clan-name-success">@changeNameSuccess</p>
+          }
+          else
+          {
+            <a class="change-identifier" @onclick="EditClanName"><span class="fa fa-pen"></span></a>
+          }
+        }
+        else
+        {
+          <input type="text" placeholder="Enter a new clan name" class="input edit-identifier" @bind-value="clan.Name" />
+          <a @onclick="UpdateAlias" class="margin-right-10"><i class="fas fa-check"></i></a>
+          <a @onclick="CancelEditAlias"><i class="fas fa-times"></i></a>
+          if (nameChangeCount < 2)
+          {
+            <p class="change-left">You have <b>@(2-nameChangeCount)</b> free name changes left.</p>
+          }
+          <p class="clan-name-error">@clanError</p>
+        }
+      </h1>
+
     </div>
 
     <div class="clan-view-tabs">
@@ -81,87 +95,131 @@ else
         </div>
       }
     </div>
+
+    if (showGetMoreNameChanges)
+    {
+<div class="name-change-info">
+  <h2>Name change unavailable</h2>
+  <p>You have used up all your free name changes. To change your clan name contact the Ravenfall staff on discord.</p>
+  <RavenButton OnClick="CloseNameChangeInfo">Close</RavenButton>
+</div>
+    }
   }
 }
 
 @code {
-  private const string ClanAlreadyExists = "A clan with the same name already exists.";
+    private const string ClanAlreadyExists = "A clan with the same name already exists.";
+    private bool canChangeClanName;
+    private RavenNest.Sessions.SessionInfo session;
+    private RavenNest.Models.Clan clan;
+    private string oldClanName;
+    private int nameChangeCount;
+    private bool canManageMembers;
+    private bool editingClanName;
+    private bool showRanks;
+    private bool showGetMoreNameChanges;
+    private string clanError;
+    private string changeNameSuccess;
 
-  private RavenNest.Sessions.SessionInfo session;
-  private RavenNest.Models.Clan clan;
-  private string oldClanName;
-  private bool canManageMembers;
-  private bool editingClanName;
-  private bool showRanks;
-  private string clanError;
-  private string changeNameSuccess;
+    private CreateClanModel createClan = new CreateClanModel();
 
-  private CreateClanModel createClan = new CreateClanModel();
-
-  private void EditClanName()
-  {
-    oldClanName = clan.Name;
-    editingClanName = true;
-  }
-  private void CancelEditAlias()
-  {
-    clan.Name = oldClanName;
-    editingClanName = false;
-  }
-
-  private void UpdateAlias()
-  {
-    changeNameSuccess = "";
-    clanError = "";
-    if (ClanService.UpdateClanName(clan.Id, clan.Name))
+    private void CloseNameChangeInfo()
     {
-      editingClanName = false;
-      changeNameSuccess = "The name is not updated automatically, you may need to !leave !join ingame for it to take effect.";
+      showGetMoreNameChanges = false;
+      InvokeAsync(StateHasChanged);
     }
-    else
-    {
-      clanError = ClanAlreadyExists;
-    }
-    InvokeAsync(StateHasChanged);
-  }
 
-  private void ShowMembers()
-  {
-    showRanks = false;
-  }
-  private void ShowRanks()
-  {
-    showRanks = true;
-  }
-
-  protected override void OnInitialized()
-  {
-    showRanks = NavigationManager.Uri.ToString().IndexOf("ranks", StringComparison.OrdinalIgnoreCase) > 0;
-    session = AuthService.GetSession();
-    clan = ClanService.GetClan();
-    if (clan != null)
+    private void EditClanName()
     {
-      canManageMembers = clan.Owner == session.UserId;
+      if (!canChangeClanName)
+      {
+        showGetMoreNameChanges = true;
+        return;
+      }
+
       oldClanName = clan.Name;
+      editingClanName = true;
     }
-  }
 
-  private void HandleCreateClan()
-  {
-    clan = ClanService.CreateClan(createClan);
-    if (clan == null)
+    private void CancelEditAlias()
     {
-      clanError = ClanAlreadyExists;
-      return;
-    }
-    canManageMembers = true;
-  }
+      if (!canChangeClanName)
+        return;
 
-  protected override void OnAfterRender(bool firstRender)
-  {
-    if (session.UserId == null)
-    {
-      NavigationManager.NavigateTo("/login");
+      clan.Name = oldClanName;
+      editingClanName = false;
     }
-  }
+
+    private void UpdateAlias()
+    {
+      if (!canChangeClanName)
+        return;
+
+      changeNameSuccess = "";
+      clanError = "";
+
+      if (string.IsNullOrEmpty(clan.Name))
+      {
+        clanError = "Clan name cannot be empty";
+        return;
+      }
+
+      if (ClanService.UpdateClanName(clan.Id, clan.Name))
+      {
+        editingClanName = false;
+        changeNameSuccess = "Name updated. you may need to !leave !join ingame for it to take effect.";
+        canChangeClanName = ClanService.CanChangeClanName(clan.Id);
+        nameChangeCount = ClanService.GetNameChangeCount(clan.Id);
+      }
+      else
+      {
+        clanError = ClanAlreadyExists;
+      }
+      InvokeAsync(StateHasChanged);
+    }
+
+    private void ShowMembers()
+    {
+      showRanks = false;
+    }
+    private void ShowRanks()
+    {
+      showRanks = true;
+    }
+
+    protected override void OnInitialized()
+    {
+      showRanks = NavigationManager.Uri.ToString().IndexOf("ranks", StringComparison.OrdinalIgnoreCase) > 0;
+      session = AuthService.GetSession();
+      if (session != null)
+      {
+        canChangeClanName = session.CanChangeClanName;
+      }
+      clan = ClanService.GetClan();
+      if (clan != null)
+      {
+        canManageMembers = clan.Owner == session.UserId;
+        nameChangeCount = ClanService.GetNameChangeCount(clan.Id);
+        oldClanName = clan.Name;
+      }
+    }
+
+    private void HandleCreateClan()
+    {
+      clan = ClanService.CreateClan(createClan);
+      if (clan == null)
+      {
+        clanError = ClanAlreadyExists;
+        return;
+      }
+      canManageMembers = true;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+      if (session.UserId == null)
+      {
+        NavigationManager.NavigateTo("/login");
+      }
+    }
 }
