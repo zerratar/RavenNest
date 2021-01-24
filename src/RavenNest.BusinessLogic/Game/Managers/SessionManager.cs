@@ -21,7 +21,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             //0, 10, 15, 20
             //0, 15, 30, 50
-            200, 200, 200, 200, 200, 200, 200, 200, 200
+            200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200
         };
 
         public SessionManager(
@@ -222,22 +222,29 @@ namespace RavenNest.BusinessLogic.Game
         {
             var currentSession = gameData.GetSession(token.SessionId);
             if (currentSession == null)
+            {
+                logger.LogError($"Unable to do a streamer raid. No active session for {token.TwitchUserName}.");
                 return false;
+            }
 
             var sessionUser = gameData.GetUser(currentSession.UserId);
             var user = gameData.FindUser(userIdOrUsername);
             if (user == null)
+            {
+                logger.LogError($"Unable to do a streamer raid. No user found for {userIdOrUsername}.");
                 return false;
+            }
 
             var targetSession = gameData.GetUserSession(user.Id);
             if (targetSession == null)
+            {
+                logger.LogError($"Unable to do a streamer raid. Target user {userIdOrUsername} does not have an active session.");
                 return false;
+            }
 
             var characters = gameData.GetSessionCharacters(currentSession);
 
-            var state = gameData.GetSessionState(token.SessionId);
-            //Version.TryParse(state.ClientVersion, out var clientVersion);
-            //var characterIdClientVersion = new Version("0.7.1");
+            //var state = gameData.GetSessionState(token.SessionId);
             var ge = gameData.CreateSessionEvent(
                 isWarRaid ? GameEventType.WarRaid : GameEventType.Raid,
 
@@ -331,17 +338,17 @@ namespace RavenNest.BusinessLogic.Game
 
         public void RecordTimeMismatch(SessionToken sessionToken, TimeSyncUpdate update)
         {
-            var session = gameData.GetSession(sessionToken.SessionId);
-            if (session == null) return;
-            var owner = gameData.GetUser(session.UserId);
-            if (owner == null) return;
+            //var session = gameData.GetSession(sessionToken.SessionId);
+            //if (session == null) return;
+            //var owner = gameData.GetUser(session.UserId);
+            //if (owner == null) return;
 
-            logger.LogError("Session by " + owner.UserName + " has a time mismatch of " + update.Delta.TotalSeconds + " seconds. Server Time: " + update.ServerTime + ", Local Time: " + update.LocalTime);
-            if (update.Delta.TotalSeconds >= 3600)
-            {
-                logger.LogError("Session by " + owner.UserName + " Terminated due to high time mismatch. Potential speedhack");
-                EndSession(sessionToken);
-            }
+            //logger.LogError("Session by " + owner.UserName + " has a time mismatch of " + update.Delta.TotalSeconds + " seconds. Server Time: " + update.ServerTime + ", Local Time: " + update.LocalTime);
+            //if (update.Delta.TotalSeconds >= 3600)
+            //{
+            //    logger.LogError("Session by " + owner.UserName + " Terminated due to high time mismatch. Potential speedhack");
+            //    EndSession(sessionToken);
+            //}
         }
     }
 }

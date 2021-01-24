@@ -87,7 +87,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
             PushExpMultiplier();
 
-            PushServerTime();
+            //PushServerTime();
 
             await PushGameEventsAsync(cts);
 

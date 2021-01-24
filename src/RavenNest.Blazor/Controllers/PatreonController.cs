@@ -105,10 +105,15 @@ namespace RavenNest.Controllers
                 .OrderByDescending(x => x.Attributes.Amount)
                 .FirstOrDefault();
 
+            var tier = data.Included
+                .Where(x => x.Type == TypeEnum.Tier)
+                .OrderByDescending(x => x.Attributes?.Amount)
+                .FirstOrDefault();
+
             var isActive = status == "active_patreon" && reward != null;
             var social = userData.Attributes.SocialConnections;
             var twitchUserId = "";
-            var rewardTitle = reward?.Attributes?.Title;
+            var rewardTitle = reward?.Attributes?.Title ?? tier?.Attributes?.Title;
             int rewardTier = GetRewardTier(rewardTitle);
             if (social != null && social.Twitch != null)
             {
@@ -152,17 +157,18 @@ namespace RavenNest.Controllers
 
         private async Task<PatreonWebhook> GetPatreonData([CallerMemberName] string caller = null)
         {
+            string patreonJson = "";
             try
             {
                 using (var sr = new StreamReader(HttpContext.Request.Body))
                 {
-                    var data = await sr.ReadToEndAsync();
-                    return JsonConvert.DeserializeObject<PatreonWebhook>(data);
+                    patreonJson = await sr.ReadToEndAsync();
+                    return JsonConvert.DeserializeObject<PatreonWebhook>(patreonJson);
                 }
             }
             catch (Exception exc)
             {
-                logger.LogError(exc.ToString());
+                logger.LogError(exc.ToString() + "\r\n\r\n" + patreonJson);
                 return null;
             }
         }
