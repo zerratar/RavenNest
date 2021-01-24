@@ -263,6 +263,9 @@ namespace RavenNest.BusinessLogic.Game
 
         public Clan CreateClan(Guid ownerUserId, string name, string logoImageFile)
         {
+            if (string.IsNullOrEmpty(name))
+                return null;
+
             // already have a clan
             var clan = gameData.GetClanByUser(ownerUserId);
             if (clan != null)
@@ -271,6 +274,10 @@ namespace RavenNest.BusinessLogic.Game
             // no such user
             var user = gameData.GetUser(ownerUserId);
             if (user == null)
+                return null;
+
+            var clans = gameData.GetClans();
+            if (clans.FirstOrDefault(x => x.Name?.Trim().Equals(name.Trim(), StringComparison.OrdinalIgnoreCase) ?? false) != null)
                 return null;
 
             clan = new DataModels.Clan()

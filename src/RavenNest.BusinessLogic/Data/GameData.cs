@@ -602,6 +602,9 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<User> GetUsers() => users.Entities.ToList();
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<Clan> GetClans() => clans.Entities.ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public InventoryItem GetEquippedItem(Guid characterId, Guid itemId) =>
