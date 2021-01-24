@@ -15,6 +15,14 @@
     border-bottom: 1px solid #f3f3f3;
 }
 
+.training-skill {
+    margin-bottom: 10px;
+    padding: 5px;
+    background-color: #f6f6f6;
+    border: 2px solid #ebebeb;
+    text-align: center;
+}
+
 .current-health {
 
 }

@@ -2,9 +2,14 @@
 
 <div class="player-skills">
 
+  @if (!string.IsNullOrEmpty(trainingSkill))
+  {
+    <div class="training-skill">You're currently training <b>@trainingSkill</b> with this character.</div>
+  }
+
   @foreach (var skill in Player.Skills.AsList())
   {
-    var isActive = skill.Name == trainingSkill;
+    var isActive = !string.IsNullOrEmpty(trainingSkill) && skill.Name.Equals(trainingSkill, StringComparison.OrdinalIgnoreCase);
     <div class="stats-row@(isActive ? " active" : "")" title="@(isActive?"You're currently training this skill." : "")">
       <div class="stats-label">@skill.Name</div>
       <div class="stats-progress" title="@ExpDisplay(skill.Experience)">
