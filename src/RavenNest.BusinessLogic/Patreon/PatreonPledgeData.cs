@@ -10,5 +10,6 @@
         public string Email { get; set; }
         public string RewardTitle { get; set; }
         public int Tier { get; set; }
+        public string Status { get; set; }
     }
 }
