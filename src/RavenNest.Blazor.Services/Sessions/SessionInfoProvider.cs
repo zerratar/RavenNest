@@ -124,6 +124,14 @@ namespace RavenNest.Sessions
                 si.Moderator = user.IsModerator.GetValueOrDefault();
                 si.UserId = user.UserId;
                 si.UserName = user.UserName;
+
+
+                var clan = gameData.GetClanByUser(user.Id);
+                if (clan != null)
+                {
+                    si.CanChangeClanName = clan.CanChangeName || clan.NameChangeCount < 2;
+                }
+
                 si.RequiresPasswordChange = string.IsNullOrEmpty(user.PasswordHash);
                 si.Tier = user.PatreonTier ?? 0;
 

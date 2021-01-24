@@ -300,6 +300,7 @@ namespace RavenNest.BusinessLogic.Data
                 kernel.Start();
                 InitializedSuccessful = true;
                 CreateBackup();
+                ScheduleNextSave();
             }
             catch (Exception exc)
             {
@@ -602,7 +603,7 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<User> GetUsers() => users.Entities.ToList();
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<Clan> GetClans() => clans.Entities.ToList();
 

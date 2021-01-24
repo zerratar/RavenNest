@@ -13,6 +13,7 @@ namespace RavenNest.Sessions
         public bool Moderator { get; set; }
         public bool Administrator { get; set; }
         public bool RequiresPasswordChange { get; set; }
+        public bool CanChangeClanName { get; set; }
         public int Tier { get; set; }
         public List<CharacterGameSession> PlaySessions { get; set; }
         public Guid? ActiveCharacterId { get; set; }
