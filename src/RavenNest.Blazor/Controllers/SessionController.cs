@@ -78,6 +78,23 @@ namespace RavenNest.Controllers
             return this.sessionManager.EndSessionAndRaid(session, username, war.Value);
         }
 
+
+        [HttpPost("raid/{username}")]
+        public bool PostEndSessionAndRaid(string username, Single<bool> war)
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            return this.sessionManager.EndSessionAndRaid(session, username, war.Value);
+        }
+
+        [HttpPost]
+        public void PostEndSession()
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            this.sessionManager.EndSession(session);
+        }
+
         [HttpDelete]
         public void EndSession()
         {
