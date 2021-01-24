@@ -4,31 +4,58 @@
 
   @foreach (var skill in Player.Skills.AsList())
   {
-    <div class="stats-row">
+    var isActive = skill.Name == trainingSkill;
+    <div class="stats-row@(isActive ? " active" : "")" title="@(isActive?"You're currently training this skill." : "")">
       <div class="stats-label">@skill.Name</div>
       <div class="stats-progress" title="@ExpDisplay(skill.Experience)">
         <div class="stats-progress-value" style="@StyleWidth((int)(skill.Percent*120))"></div>
         <div class="stats-progress-percent">@Math.Round(skill.Percent * 100, 2)%</div>
       </div>
-      <div class="stats-value">@skill.Level</div>
+
+      @if (skill.Name == "Health")
+      {
+        <div class="stats-value"><span class="current-health" title="Current Health">@currentHealth</span> / <span class="max-health">@skill.Level</span></div>
+      }
+      else
+      {
+        <div class="stats-value">@skill.Level</div>
+      }
     </div>
   }
 </div>
 
 @code {
-    [Parameter]
-    public WebsitePlayer Player { get; set; }
+  [Parameter]
+  public WebsitePlayer Player { get; set; }
 
-    [Parameter]
-    public bool CanManage { get; set; }
+  [Parameter]
+  public bool CanManage { get; set; }
+  private string trainingSkill;
+  private int currentHealth;
 
-    private string ExpDisplay(decimal value)
+  protected override void OnParametersSet()
+  {
+    if (Player == null)
+      return;
+
+    if (Player.State != null)
     {
-      return value + " exp";
+      trainingSkill = Player.State.TaskArgument ?? Player.State.Task;
+      currentHealth = Player.State.Health;
     }
-
-    private string StyleWidth(int value)
+    else
     {
-      return $"width: {value}px";
+      currentHealth = Player.Skills.HealthLevel;
     }
+  }
+
+  private string ExpDisplay(decimal value)
+  {
+    return value + " exp";
+  }
+
+  private string StyleWidth(int value)
+  {
+    return $"width: {value}px";
+  }
 }
