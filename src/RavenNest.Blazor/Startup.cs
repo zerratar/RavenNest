@@ -49,6 +49,12 @@ namespace RavenNest.Blazor
                 loggingBuilder.AddProvider(new RavenfallDbLoggerProvider(loggingDbContext));
             });
 
+            services.Configure<CookiePolicyOptions>(options =>
+            {
+                options.CheckConsentNeeded = context => true;
+                options.MinimumSameSitePolicy = SameSiteMode.None;
+            });
+
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowAllOrigins", builder => builder.AllowAnyOrigin());
@@ -58,13 +64,12 @@ namespace RavenNest.Blazor
 
             services.AddSession(options =>
             {
-                options.IdleTimeout = TimeSpan.FromHours(1);
+                options.IdleTimeout = TimeSpan.FromHours(24);
                 options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
                 options.Cookie.SameSite = SameSiteMode.Strict;
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
             });
-
 
             services.AddRazorPages();
             services.AddServerSideBlazor();
@@ -90,6 +95,7 @@ namespace RavenNest.Blazor
             applicationLifetime.ApplicationStopping.Register(
                 () => app.ApplicationServices.GetService<IGameData>().Flush());
 
+            app.UseCookiePolicy();
             app.AddRequestTiming();
             app.AddSessionCookies();
 
@@ -189,6 +195,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<UserService>();
             services.AddSingleton<ServerService>();
             services.AddSingleton<LoyaltyService>();
+            services.AddSingleton<CookieService>();
 
             services.AddSingleton<IKernel, Kernel>();
             services.AddSingleton<IMemoryCache, MemoryCache>();

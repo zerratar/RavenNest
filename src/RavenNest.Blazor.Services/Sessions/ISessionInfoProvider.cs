@@ -18,5 +18,6 @@ namespace RavenNest.Sessions
         Task<SessionInfo> SetAuthTokenAsync(string sessionId, AuthToken token);
         Task<SessionInfo> StoreAsync(string sessionId);
         void SetActiveCharacter(SessionInfo session, Guid id);
+        void SetCookieDisclaimer(SessionInfo session, bool accepted);
     }
 }

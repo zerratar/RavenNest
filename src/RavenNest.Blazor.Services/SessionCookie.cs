@@ -7,7 +7,10 @@ namespace RavenNest
 {
     public class SessionCookie
     {
-        const string sessionCookie = "__ravenSession";
+        private const string sessionCookie = "__ravenSession";
+
+        public static readonly TimeSpan SessionTimeout = TimeSpan.FromDays(7);
+
         public static string GetSessionId(HttpContext context)
         {
             context.Request.Cookies.TryGetValue(sessionCookie, out var id);
@@ -18,7 +21,11 @@ namespace RavenNest
         {
             if (!context.Request.Cookies.ContainsKey(sessionCookie))
             {
-                context.Response.Cookies.Append(sessionCookie, Guid.NewGuid().ToString());
+                context.Response.Cookies.Append(sessionCookie, Guid.NewGuid().ToString(), new CookieOptions
+                {
+                    Expires = DateTime.UtcNow.Add(SessionTimeout),
+                    MaxAge = SessionTimeout
+                });
             }
 
             await next.Invoke();

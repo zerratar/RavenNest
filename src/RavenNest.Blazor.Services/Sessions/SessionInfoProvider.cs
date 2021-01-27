@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -15,7 +16,7 @@ namespace RavenNest.Sessions
 {
     public class SessionInfoProvider : ISessionInfoProvider
     {
-        private const double SessionTimeoutMinutes = 30;
+        private const string CookieDisclaimer = "cookie_disclaimer";
         private const string TwitchAccessToken = "twitch_access_token";
         private const string TwitchUser = "twitch_user";
         private const string AuthState = "auth_state";
@@ -25,15 +26,14 @@ namespace RavenNest.Sessions
         private readonly IGameData gameData;
         private readonly AppSettings settings;
 
-        // work around for blazor... we have to store all session data to disk. Y U LITTLE. Using the
+        // work around for blazor... we have to store all session data to memory. Y U LITTLE. Using the
         // actual distributed session does not work.
-        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, SessionData> sessions
-            = new System.Collections.Concurrent.ConcurrentDictionary<string, SessionData>();
+        private readonly ConcurrentDictionary<string, SessionData> sessions
+            = new ConcurrentDictionary<string, SessionData>();
 
         public SessionInfoProvider(
 
             ILogger<SessionInfoProvider> logger,
-            IRavenfallDbContextProvider dbProvider,
             IOptions<AppSettings> settings,
             IGameData gameData)
         {
@@ -69,6 +69,13 @@ namespace RavenNest.Sessions
         public void SetActiveCharacter(SessionInfo session, Guid id)
         {
             session.ActiveCharacterId = id;
+            var sessionState = JSON.Stringify(session);
+            SetString(session.SessionId, AuthState, sessionState);
+        }
+
+        public void SetCookieDisclaimer(SessionInfo session, bool accepted)
+        {
+            session.AcceptedCookiesDisclaimer = accepted;
             var sessionState = JSON.Stringify(session);
             SetString(session.SessionId, AuthState, sessionState);
         }
@@ -124,7 +131,6 @@ namespace RavenNest.Sessions
                 si.Moderator = user.IsModerator.GetValueOrDefault();
                 si.UserId = user.UserId;
                 si.UserName = user.UserName;
-
 
                 var clan = gameData.GetClanByUser(user.Id);
                 if (clan != null)
@@ -277,7 +283,7 @@ namespace RavenNest.Sessions
             {
                 // Check if session timed out, if so. clear it. Even if we use the same session cookie id
                 var idleTime = DateTime.UtcNow - data.LastAccessed;
-                if (idleTime >= TimeSpan.FromMinutes(SessionTimeoutMinutes))
+                if (idleTime >= SessionCookie.SessionTimeout)
                 {
                     data = new SessionData();
                     sessions[sessionId] = data;

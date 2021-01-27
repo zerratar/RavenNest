@@ -38,6 +38,13 @@
   <script src="https://embed.twitch.tv/embed/v1.js"></script>
 
   <script>
+
+    window.cookies = {
+      acceptMessage: function (cookieString) {
+        document.cookie = cookieString;
+      }
+    };
+
     window.scrollToElementId = (elementId, offset) => {
       var element = document.getElementById(elementId);
       if (!element) {
