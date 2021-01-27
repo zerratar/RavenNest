@@ -707,7 +707,7 @@ namespace RavenNest.BusinessLogic.Game
             return results.ToArray();
         }
 
-        public AddItemResult CraftItem(SessionToken token, string userId, Guid itemId)
+        public AddItemResult CraftItem(SessionToken token, string userId, Guid itemId, int amount = 1)
         {
             var item = gameData.GetItem(itemId);
             if (item == null) return AddItemResult.Failed;
@@ -725,7 +725,7 @@ namespace RavenNest.BusinessLogic.Game
             if (skills == null) return AddItemResult.Failed;
 
             var craftingLevel = skills.CraftingLevel;
-            if (item.WoodCost > resources.Wood || item.OreCost > resources.Ore || item.RequiredCraftingLevel > craftingLevel)
+            if (!CanCraftItems(item, resources, craftingLevel, amount))
                 return AddItemResult.Failed;
 
             var craftingRequirements = gameData.GetCraftingRequirements(itemId);
@@ -733,7 +733,7 @@ namespace RavenNest.BusinessLogic.Game
             foreach (var req in craftingRequirements)
             {
                 var invItem = inventory.GetUnequippedItem(req.ResourceItemId);
-                if (invItem.IsNull() || invItem.Amount < req.Amount)
+                if (invItem.IsNull() || invItem.Amount < req.Amount * amount)
                 {
                     return AddItemResult.Failed;
                 }
@@ -742,13 +742,25 @@ namespace RavenNest.BusinessLogic.Game
             foreach (var req in craftingRequirements)
             {
                 var resx = inventory.GetUnequippedItem(req.ResourceItemId);
-                inventory.RemoveItem(resx, req.Amount);
+                inventory.RemoveItem(resx, req.Amount * amount);
             }
 
-            resources.Wood -= item.WoodCost;
-            resources.Ore -= item.OreCost;
+            resources.Wood -= item.WoodCost * amount;
+            resources.Ore -= item.OreCost * amount;
 
-            return AddItem(token, userId, itemId);
+            for (var i = 0; i < amount; ++i)
+            {
+                AddItem(token, userId, itemId);
+            }
+
+            return AddItemResult.Added;
+        }
+
+        private static bool CanCraftItems(Item item, Resources resources, int craftingLevel, int amount)
+        {
+            return item.WoodCost * amount <= resources.Wood &&
+                   item.OreCost * amount <= resources.Ore &&
+                   item.RequiredCraftingLevel <= craftingLevel;
         }
 
         public void AddItem(Guid characterId, Guid itemId, int amount = 1)
