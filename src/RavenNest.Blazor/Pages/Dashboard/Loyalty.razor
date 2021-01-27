@@ -83,6 +83,7 @@ else
                     <th>Gifted subs</th>
                     <th>Cheered bits</th>
                     <th>Play time</th>
+                    <th>Points</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -104,6 +105,7 @@ else
                       <td class='item'>@item.GiftedSubs</td>
                       <td class='item'>@item.CheeredBits</td>
                       <td class='item'>@FormatTime(item.TotalPlayTime)</td>
+                      <td class='item'>@item.Points</td>
                     </tr>
                   }
                 </tbody>
@@ -171,6 +173,7 @@ else
                   <th>Gifted subs</th>
                   <th>Cheered bits</th>
                   <th>Play time</th>
+                  <th>Points</th>
                 </tr>
               </thead>
               <tbody>
@@ -185,6 +188,7 @@ else
                     <td class='item'>@item.GiftedSubs</td>
                     <td class='item'>@item.CheeredBits</td>
                     <td class='item'>@FormatTime(item.TotalPlayTime)</td>
+                    <td class='item'>@item.Points</td>
                   </tr>
                 }
               </tbody>
@@ -225,140 +229,140 @@ else
 }
 
 @code {
-    private RavenNest.Sessions.SessionInfo session;
-    private LoyaltyViewState viewState = LoyaltyViewState.MyStream;
-    private Services.StreamerLoyaltyData loyaltyData;
-    private Services.UserLoyaltyData userLoyaltyData;
-    private Services.StreamerLoyalty selectedStreamer;
-    private IReadOnlyList<RavenNest.DataModels.UserLoyaltyReward> pointRewards;
-    private IReadOnlyList<RavenNest.BusinessLogic.Extended.WebsitePlayer> myPlayers;
+  private RavenNest.Sessions.SessionInfo session;
+  private LoyaltyViewState viewState = LoyaltyViewState.MyStream;
+  private Services.StreamerLoyaltyData loyaltyData;
+  private Services.UserLoyaltyData userLoyaltyData;
+  private Services.StreamerLoyalty selectedStreamer;
+  private IReadOnlyList<RavenNest.DataModels.UserLoyaltyReward> pointRewards;
+  private IReadOnlyList<RavenNest.BusinessLogic.Extended.WebsitePlayer> myPlayers;
 
-    private RavenNest.DataModels.UserLoyaltyReward selectedReward;
-    private Models.Item selectedItem;
-    private Guid? selectedPlayerId;
-    private bool rewardConfirmationDialogVisible;
-    private bool isStreamer;
+  private RavenNest.DataModels.UserLoyaltyReward selectedReward;
+  private Models.Item selectedItem;
+  private Guid? selectedPlayerId;
+  private bool rewardConfirmationDialogVisible;
+  private bool isStreamer;
 
-    protected override async Task OnInitializedAsync()
+  protected override async Task OnInitializedAsync()
+  {
+    session = AuthService.GetSession();
+    if (session == null || session.UserId == null)
     {
-      session = AuthService.GetSession();
-      if (session == null || session.UserId == null) 
-      {
-        NavigationManager.NavigateTo("/login");
-        return;
-      }
-
-      isStreamer = await LoyaltyService.IsStreamerAsync();
-      if (isStreamer)
-      {
-        await ViewMyStream();
-      }
-      else
-      {
-        await ViewStreamers();
-      }
+      NavigationManager.NavigateTo("/login");
+      return;
     }
 
-    private void SelectedPlayerChanged(ChangeEventArgs e)
+    isStreamer = await LoyaltyService.IsStreamerAsync();
+    if (isStreamer)
     {
-      var id = e.Value?.ToString();
-      if (Guid.TryParse(id, out var playerId))
-        selectedPlayerId = playerId;
+      await ViewMyStream();
+    }
+    else
+    {
+      await ViewStreamers();
+    }
+  }
+
+  private void SelectedPlayerChanged(ChangeEventArgs e)
+  {
+    var id = e.Value?.ToString();
+    if (Guid.TryParse(id, out var playerId))
+      selectedPlayerId = playerId;
+  }
+
+  public async void RedeemReward()
+  {
+    if (selectedPlayerId == null)
+      return;
+
+    if (await LoyaltyService.RedeemRewardAsync(selectedStreamer.StreamerUserId, selectedPlayerId.Value, selectedReward))
+    {
+      await ViewStreamers();
+      CancelRedeem();
+    }
+  }
+
+  public void CancelRedeem()
+  {
+    rewardConfirmationDialogVisible = false;
+    selectedReward = null;
+    selectedItem = null;
+    InvokeAsync(StateHasChanged);
+  }
+
+  public void ConfirmRewardRedeem(RavenNest.DataModels.UserLoyaltyReward reward, Models.Item item)
+  {
+    if (myPlayers == null)
+      return;
+
+    if (reward.Points > selectedStreamer.Points)
+      return;
+
+    if (selectedPlayerId == null)
+    {
+      selectedPlayerId = myPlayers.First().Id;
     }
 
-    public async void RedeemReward()
+    rewardConfirmationDialogVisible = true;
+    selectedReward = reward;
+    selectedItem = item;
+  }
+
+  public void SelectStreamer(Services.StreamerLoyalty streamer)
+  {
+    selectedStreamer = streamer;
+  }
+
+  private Models.Item GetRewardItem(RavenNest.DataModels.UserLoyaltyReward reward)
+  {
+    if (!Guid.TryParse(reward.RewardData, out var itemId))
+      return null;
+    return ItemService.GetItem(itemId);
+  }
+
+  private string FormatTime(TimeSpan time)
+  {
+    if (time.TotalSeconds < 60) return "<1 minute";
+    if (time.TotalMinutes < 60)
+      return (int)Math.Floor(time.TotalMinutes) + " minutes";
+    if (time.TotalHours < 24)
+      return Math.Round(time.TotalHours, 2) + " hours";
+    return $"{time.Days} days, {time.Hours} hours, {time.Minutes} minutes";
+  }
+
+  private async Task ViewMyStream()
+  {
+    viewState = LoyaltyViewState.MyStream;
+    loyaltyData = await LoyaltyService.GetStreamerLoyaltyDataAsync(session.UserId);
+    pointRewards = await LoyaltyService.GetLoyaltyRewardsAsync();
+    await InvokeAsync(StateHasChanged);
+  }
+
+  private async Task ViewStreamers()
+  {
+    viewState = LoyaltyViewState.OtherStream;
+    userLoyaltyData = await LoyaltyService.GetUserLoyaltyDataAsync(session.UserId);
+    if (selectedStreamer == null)
+      selectedStreamer = userLoyaltyData.Loyalties.FirstOrDefault();
+    else
+      selectedStreamer = userLoyaltyData.Loyalties.FirstOrDefault(x => x.StreamerUserId == selectedStreamer.StreamerUserId);
+
+    myPlayers = await PlayerService.GetMyPlayersAsync();
+    pointRewards = await LoyaltyService.GetLoyaltyRewardsAsync();
+    await InvokeAsync(StateHasChanged);
+  }
+
+  protected override void OnAfterRender(bool firstRender)
+  {
+    if (session.UserId == null)
     {
-      if (selectedPlayerId == null)
-        return;
-
-      if (await LoyaltyService.RedeemRewardAsync(selectedStreamer.StreamerUserId, selectedPlayerId.Value, selectedReward))
-      {
-        await ViewStreamers();
-        CancelRedeem();
-      }
+      NavigationManager.NavigateTo("/login");
     }
+  }
 
-    public void CancelRedeem()
-    {
-      rewardConfirmationDialogVisible = false;
-      selectedReward = null;
-      selectedItem = null;
-      InvokeAsync(StateHasChanged);
-    }
-
-    public void ConfirmRewardRedeem(RavenNest.DataModels.UserLoyaltyReward reward, Models.Item item)
-    {
-      if (myPlayers == null)
-        return;
-
-      if (reward.Points > selectedStreamer.Points)
-        return;
-
-      if (selectedPlayerId == null)
-      {
-        selectedPlayerId = myPlayers.First().Id;
-      }
-
-      rewardConfirmationDialogVisible = true;
-      selectedReward = reward;
-      selectedItem = item;
-    }
-
-    public void SelectStreamer(Services.StreamerLoyalty streamer)
-    {
-      selectedStreamer = streamer;
-    }
-
-    private Models.Item GetRewardItem(RavenNest.DataModels.UserLoyaltyReward reward)
-    {
-      if (!Guid.TryParse(reward.RewardData, out var itemId))
-        return null;
-      return ItemService.GetItem(itemId);
-    }
-
-    private string FormatTime(TimeSpan time)
-    {
-      if (time.TotalSeconds < 60) return "<1 minute";
-      if (time.TotalMinutes < 60)
-        return (int)Math.Floor(time.TotalMinutes) + " minutes";
-      if (time.TotalHours < 24)
-        return Math.Round(time.TotalHours, 2) + " hours";
-      return $"{time.Days} days, {time.Hours} hours, {time.Minutes} minutes";
-    }
-
-    private async Task ViewMyStream()
-    {
-      viewState = LoyaltyViewState.MyStream;
-      loyaltyData = await LoyaltyService.GetStreamerLoyaltyDataAsync(session.UserId);
-      pointRewards = await LoyaltyService.GetLoyaltyRewardsAsync();
-      await InvokeAsync(StateHasChanged);
-    }
-
-    private async Task ViewStreamers()
-    {
-      viewState = LoyaltyViewState.OtherStream;
-      userLoyaltyData = await LoyaltyService.GetUserLoyaltyDataAsync(session.UserId);
-      if (selectedStreamer == null)
-        selectedStreamer = userLoyaltyData.Loyalties.FirstOrDefault();
-      else
-        selectedStreamer = userLoyaltyData.Loyalties.FirstOrDefault(x => x.StreamerUserId == selectedStreamer.StreamerUserId);
-
-      myPlayers = await PlayerService.GetMyPlayersAsync();
-
-      await InvokeAsync(StateHasChanged);
-    }
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-      if (session.UserId == null)
-      {
-        NavigationManager.NavigateTo("/login");
-      }
-    }
-
-    public enum LoyaltyViewState
-    {
-      MyStream,
-      OtherStream
-    }
+  public enum LoyaltyViewState
+  {
+    MyStream,
+    OtherStream
+  }
 }

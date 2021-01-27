@@ -1291,7 +1291,7 @@ namespace RavenNest.BusinessLogic.Game
                     }
 
 
-                    skills.SetLevel(skillIndex, sl, experience[skillIndex]);
+                    skills.Set(skillIndex, sl, experience[skillIndex]);
                 }
 
                 if (savedSkillsCount != experience.Length)

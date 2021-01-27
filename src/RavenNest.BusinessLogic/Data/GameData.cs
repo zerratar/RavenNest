@@ -484,6 +484,18 @@ namespace RavenNest.BusinessLogic.Data
         public IReadOnlyList<DataModels.GameSession> FindSessions(Func<DataModels.GameSession, bool> predicate) =>
             gameSessions.Entities.Where(predicate).ToList();
 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public GameSession GetSessionByCharacterId(Guid characterId)
+        {
+            var character = characters.Entities.FirstOrDefault(x => x.Id == characterId);
+            if (character == null || character.UserIdLock == null) return null;
+            var sessionOwner = GetUser(character.UserIdLock.Value);
+            if (sessionOwner == null) return null;
+            return GetActiveSessions().FirstOrDefault(x => x.UserId == sessionOwner.Id);
+        }
+
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public GameSession GetSessionByUserId(string userId)
         {

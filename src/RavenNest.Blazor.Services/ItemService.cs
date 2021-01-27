@@ -2,6 +2,7 @@
 using RavenNest.Models;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -33,7 +34,6 @@ namespace RavenNest.Blazor.Services
                 return items.Where(x => x.Name.Contains(search, StringComparison.OrdinalIgnoreCase));
             });
         }
-
         public async Task<ItemCollection> GetItemsAsync()
         {
             return await Task.Run(() => itemManager.GetAllItems());

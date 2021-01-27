@@ -1,5 +1,8 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 
 namespace RavenNest.Models
 {
@@ -7,11 +10,19 @@ namespace RavenNest.Models
     {
         private readonly List<Item> items = new List<Item>();
 
+        public ItemCollection()
+        {
+        }
+
+        public ItemCollection(IEnumerable<Item> items)
+        {
+            this.items = items.ToList();
+        }
+
         public IEnumerator<Item> GetEnumerator()
         {
             return items.GetEnumerator();
         }
-
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
