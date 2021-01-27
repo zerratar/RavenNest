@@ -13,7 +13,7 @@
           with this character at
           <b>@Player.State.Island</b>
 
-          @if (Player.SessionInfo != null)
+          @if (Player.SessionInfo != null && !string.IsNullOrEmpty(Player.SessionInfo.OwnerUserName))
           {
             <span> on </span>
             <b>@Player.SessionInfo.OwnerUserName</b>
@@ -26,7 +26,7 @@
           You're currently training
           <b>@GetTrainingSkillName()</b>
           with this character
-          @if (Player.SessionInfo != null)
+          @if (Player.SessionInfo != null && !string.IsNullOrEmpty(Player.SessionInfo.OwnerUserName))
           {
             <span> on </span>
             <b>@Player.SessionInfo.OwnerUserName</b>
@@ -114,6 +114,9 @@
     }
 
     if (skill.Name.ToLower() == "attack" && trainingSkill.ToLower() == "atk")
+      return true;
+
+    if (trainingSkill.ToLower() == "mine" && skill.Name.Equals("mining", StringComparison.OrdinalIgnoreCase))
       return true;
 
     return false;

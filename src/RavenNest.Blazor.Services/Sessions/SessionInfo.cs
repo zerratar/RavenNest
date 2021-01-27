@@ -17,6 +17,7 @@ namespace RavenNest.Sessions
         public int Tier { get; set; }
         public List<CharacterGameSession> PlaySessions { get; set; }
         public Guid? ActiveCharacterId { get; set; }
+        public bool AcceptedCookiesDisclaimer { get; set; }
     }
 
     public class CharacterGameSession

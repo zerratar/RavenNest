@@ -108,7 +108,7 @@ namespace RavenNest.Blazor.Services
                 foreach (var d in data)
                 {
                     var u = gameData.GetUser(d.UserId);
-                    if (u == null)
+                    if (u == null || string.IsNullOrEmpty(u.UserName))
                         continue;
 
                     totalSubsGifted += d.GiftedSubs;
