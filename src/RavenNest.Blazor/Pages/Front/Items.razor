@@ -1,7 +1,5 @@
 ﻿@page "/items"
 @page "/items/{Id}"
-@using RavenNest.Blazor.Services.Models
-@using Microsoft.AspNetCore.WebUtilities
 @using RavenNest.Blazor.Services
 @inject NavigationManager NavigationManager
 @inject AuthService AuthService
@@ -146,7 +144,7 @@
   }
   private async void LoadItems()
   {
-    items = await ItemService.GetItemsAsync();
+    items = new Models.ItemCollection((await ItemService.GetItemsAsync()).OrderBy(x => x.Name));
     StateHasChanged();
   }
   private async void ScrollToElementId(string elementId)

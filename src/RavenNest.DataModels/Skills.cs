@@ -93,7 +93,7 @@ namespace RavenNest.DataModels
             return (int)lvlProp.GetValue(this);
         }
 
-        public void SetLevel(int skillIndex, int level, decimal exp)
+        public void Set(int skillIndex, int level, decimal exp)
         {
             var name = skillNames[skillIndex];
             if (!expProperties.TryGetValue(name, out var expProp))

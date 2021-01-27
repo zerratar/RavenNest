@@ -7,11 +7,31 @@
     <div class="training-skill">
       @if (Player.State != null && !string.IsNullOrEmpty(Player.State.Island))
       {
-        <span>You're currently training <b>@GetTrainingSkillName()</b> with this character at <b>@Player.State.Island</b>.</span>
+        <span>
+          You're currently training
+          <b>@GetTrainingSkillName()</b>
+          with this character at
+          <b>@Player.State.Island</b>
+
+          @if (Player.SessionInfo != null)
+          {
+            <span> on </span>
+            <b>@Player.SessionInfo.OwnerUserName</b>
+          }.
+        </span>
       }
       else
       {
-        <span>You're currently training <b>@GetTrainingSkillName()</b> with this character.</span>
+        <span>
+          You're currently training
+          <b>@GetTrainingSkillName()</b>
+          with this character
+          @if (Player.SessionInfo != null)
+          {
+            <span> on </span>
+            <b>@Player.SessionInfo.OwnerUserName</b>
+          }.
+        </span>
       }
     </div>
   }

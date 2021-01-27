@@ -294,6 +294,8 @@ namespace RavenNest.BusinessLogic.Extensions
             var clan = clanMembership != null ? Map(gameData, gameData.GetClan(clanMembership.ClanId)) : null;
             var clanRole = clanMembership != null ? Map(gameData.GetClanRole(clanMembership.ClanRoleId), clanMembership) : null;
 
+            var sessionInfo = GetCharacterSessionInfo(gameData, character);
+
             return new WebsitePlayer
             {
                 Id = character.Id,
@@ -313,8 +315,32 @@ namespace RavenNest.BusinessLogic.Extensions
                 ClanRole = clanRole,
                 Identifier = character.Identifier,
                 OriginUserId = character.OriginUserId,
+                SessionInfo = sessionInfo,
                 Revision = character.Revision.GetValueOrDefault()
             };
+        }
+
+        private static CharacterSessionInfo GetCharacterSessionInfo(IGameData gameData, Character character)
+        {
+            var sessionInfo = new CharacterSessionInfo();
+            var session = gameData.GetSessionByCharacterId(character.Id);
+            if (session != null)
+            {
+                sessionInfo.Started = session.Started;
+                var sessionOwner = gameData.GetUser(session.UserId);
+                if (sessionOwner != null)
+                {
+                    sessionInfo.OwnerDisplayName = sessionOwner.DisplayName;
+                    sessionInfo.OwnerUserName = sessionOwner.UserName;
+                }
+                //var css = gameData.GetCharacterSessionState(session.Id, character.Id);
+                //if (css != null)
+                //{
+                //    css.
+                //}
+            }
+
+            return sessionInfo;
         }
     }
 }

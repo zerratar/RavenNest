@@ -13,7 +13,7 @@ namespace RavenNest.Tools
         private int LogoLabelWidth = 54;
 
         private TextBlock ToolStatus;
-        private MenuItem ExpBump;
+        private MenuItem ExpBump, BuildUpdatePackage;
         //private Shinobytes.Console.Forms.Image Logo;
 
         public void InitializeComponents()
@@ -78,7 +78,14 @@ namespace RavenNest.Tools
             var editMenu = new MenuItem("&Tools");
             {
                 editMenu.MinWidth = 15;
+
+                BuildUpdatePackage = new MenuItem("Build Update Package");
+                BuildUpdatePackage.Invoke += BuildUpdatePackage_Invoke;
+                editMenu.SubItems.Add(BuildUpdatePackage);
+
                 ExpBump = new MenuItem("Fix Exp Bump");
+                ExpBump.Invoke += ExpBump_Invoke;
+                ExpBump.IsEnabled = false;
                 editMenu.SubItems.Add(ExpBump);
                 menuStrip.Controls.Add(editMenu);
             }
@@ -87,6 +94,10 @@ namespace RavenNest.Tools
 
             statusStrip = new StatusStrip();
             statusStrip.Controls.Add(new TextBlock("F1=Fix Exp Bump")
+            {
+                ForegroundColor = ConsoleColor.Black
+            });
+            statusStrip.Controls.Add(new TextBlock("F2=Build Update Package")
             {
                 ForegroundColor = ConsoleColor.Black
             });
