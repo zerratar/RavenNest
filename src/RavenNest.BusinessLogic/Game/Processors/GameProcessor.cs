@@ -180,6 +180,10 @@ namespace RavenNest.BusinessLogic.Game.Processors
             if (session == null)
                 return;
 
+            // force keep a session alive if we are connected here
+            session.Stopped = null;
+            session.Status = (int)SessionStatus.Active;
+
             villageProcessor.Handle(integrityChecker, gameData, inventoryProvider, session, null, null);
 
             foreach (var character in characters)

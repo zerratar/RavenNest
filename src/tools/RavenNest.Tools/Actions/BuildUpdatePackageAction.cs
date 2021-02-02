@@ -164,9 +164,11 @@ namespace RavenNest.Tools.Actions
             ToolProgress.MaxValue = 100;
             ToolProgress.Value = e.PercentDone;
         }
+
         private string[] GetFiles()
         {
             var files = System.IO.Directory.GetFiles(UnityBuildFolder, "*", System.IO.SearchOption.AllDirectories);
+            //var filesToRename = files.Where(x => x.Contains("Ravenfall Legacy")).ToList();
             return files.Where(FilterFiles).ToArray();
         }
 
