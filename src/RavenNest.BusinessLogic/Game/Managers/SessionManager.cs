@@ -228,6 +228,12 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var sessionUser = gameData.GetUser(currentSession.UserId);
+            if (userIdOrUsername.StartsWith("war ", StringComparison.OrdinalIgnoreCase))
+            {
+                userIdOrUsername = userIdOrUsername.Replace("war ", "", StringComparison.OrdinalIgnoreCase);
+                isWarRaid = true;
+            }
+
             var user = gameData.FindUser(userIdOrUsername);
             if (user == null)
             {

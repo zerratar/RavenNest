@@ -20,6 +20,15 @@ namespace RavenNest.BusinessLogic
         {
             try
             {
+                // fugly hack, ignore circuit host errors
+                // and exceptionahandlemiddlerware. these are just spamming the db with no interesting information.
+                if (categoryName.Contains("Microsoft.AspNetCore.Components.Server.Circuits.CircuitHost", StringComparison.OrdinalIgnoreCase) ||
+                    categoryName.Contains("Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware", StringComparison.OrdinalIgnoreCase))
+                {
+                    await Console.Error.WriteLineAsync(msg + " [" + categoryName + "]");
+                    return;
+                }
+
                 using (var db = dbProvider.Get())
                 {
                     db.ServerLogs.Add(new ServerLogs

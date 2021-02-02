@@ -182,6 +182,9 @@ namespace RavenNest.BusinessLogic.Net
                 try
                 {
                     if (request == null) return default;
+                    if (!CanSendData())
+                        return default;
+
                     var packet = CreatePacket(id, request);
                     var taskSource = new TaskCompletionSource<object>();
                     messageLookup[packet.CorrelationId] = taskSource;
@@ -199,9 +202,12 @@ namespace RavenNest.BusinessLogic.Net
 
             public async Task<bool> PushAsync(string id, object request, CancellationToken cancellationToken)
             {
-                var packet = CreatePacket(id, request);
                 try
                 {
+                    if (!CanSendData())
+                        return false;
+
+                    var packet = CreatePacket(id, request);
                     var bytes = packetSerializer.Serialize(packet);
                     var data = new ArraySegment<byte>(bytes);
                     await ws.SendAsync(data, WebSocketMessageType.Binary, true, cancellationToken);
@@ -227,11 +233,13 @@ namespace RavenNest.BusinessLogic.Net
 
             public Task ReplyAsync(Guid correlationId, string id, object request, CancellationToken cancellationToken)
             {
-                var packet = CreatePacket(id, request);
-                packet.CorrelationId = correlationId;
 
                 try
                 {
+                    if (!CanSendData())
+                        return Task.CompletedTask;
+
+                    var packet = CreatePacket(id, request, correlationId);
                     var bytes = packetSerializer.Serialize(packet);
                     return ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, cancellationToken);
                 }
@@ -302,7 +310,7 @@ namespace RavenNest.BusinessLogic.Net
 
                         try
                         {
-                            await gameProcessor.ProcessAsync(cts);
+                            await gameProcessor.ProcessAsync(cts).ConfigureAwait(false);
                         }
                         catch (Exception exc)
                         {
@@ -329,7 +337,6 @@ namespace RavenNest.BusinessLogic.Net
                         }
 
                         await ReceivePacketsAsync(cts.Token);
-
                         await Task.Delay(15);
                     }
                 }
@@ -343,7 +350,7 @@ namespace RavenNest.BusinessLogic.Net
                 {
                     var buffer = new byte[4096];
                     var receiveBuffer = new ArraySegment<byte>(buffer);
-                    var result = await ws.ReceiveAsync(receiveBuffer, cancellationToken);
+                    var result = await ws.ReceiveAsync(receiveBuffer, cancellationToken).ConfigureAwait(false);
 
                     if (result.CloseStatus != null)
                     {
@@ -411,26 +418,37 @@ namespace RavenNest.BusinessLogic.Net
                 }
             }
 
+            private bool CanSendData()
+            {
+                if (ws == null) return false;
+                if (ws.State != WebSocketState.Open && ws.State != WebSocketState.CloseReceived)
+                {
+                    this.logger.LogInformation("Session with ID " + this.SessionId + ", websocket connection closed.");
+                    return false;
+                }
+
+                return true;
+            }
 
             private async Task HandleGamePacketAsync(GamePacket packet)
             {
                 if (packetManager.TryGetPacketHandler(packet.Id, out var packetHandler))
                 {
-                    await packetHandler.HandleAsync(this, packet);
+                    await packetHandler.HandleAsync(this, packet).ConfigureAwait(false);
                 }
                 else
                 {
-                    await packetManager.Default.HandleAsync(this, packet);
+                    await packetManager.Default.HandleAsync(this, packet).ConfigureAwait(false);
                 }
             }
 
-            private GamePacket CreatePacket(string id, object request)
+            private GamePacket CreatePacket(string id, object request, Guid? correlationId = null)
             {
                 return new GamePacket
                 {
                     Id = id,
                     Type = request.GetType().Name,
-                    CorrelationId = Guid.NewGuid(),
+                    CorrelationId = correlationId ?? Guid.NewGuid(),
                     Data = request
                 };
             }
