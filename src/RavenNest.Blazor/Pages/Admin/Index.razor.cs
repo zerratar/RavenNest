@@ -111,10 +111,11 @@ namespace RavenNest.Blazor.Pages.Admin
 
             var userData = await UserService.GetUsersByCreatedAsync(start, now);
             var outputData = GetChartData(userData, start, labels.Count, tf, avgUserPerHour);
+            var total = outputData.Length > 0 ? outputData.Sum() : 0;
 
-            ChartJs.Blazor.LineChart.LineDataset<int> dataset = new ChartJs.Blazor.LineChart.LineDataset<int>(outputData)
+            LineDataset<int> dataset = new ChartJs.Blazor.LineChart.LineDataset<int>(outputData)
             {
-                Label = "New users",
+                Label = "New users (" + total + ")",
             };
             config.Data.Datasets.Clear();
             config.Data.Datasets.Add(dataset);
@@ -124,7 +125,6 @@ namespace RavenNest.Blazor.Pages.Admin
                 var title = config.Options.Title.Text;
                 if (outputData.Length > 0 && title != null)
                 {
-                    var total = outputData.Sum();
                     config.Options.Title.Text = title.SingleValue + " - Total " + total;
                 }
             }
@@ -133,7 +133,7 @@ namespace RavenNest.Blazor.Pages.Admin
         }
 
         public int[] GetChartData(
-          IReadOnlyList<Models.WebsiteAdminUser> data,
+          IReadOnlyList<Models.WebsiteAdminUser> source,
           DateTime start,
           int steps,
           ChartTimeFrame tf,
@@ -145,15 +145,15 @@ namespace RavenNest.Blazor.Pages.Admin
 
             if (avgUserPerHour)
             {
-                var d = data
+                var data = source
                      .GroupBy(x => x.Created.Hour)
                      .OrderBy(x => x.Key)
                      .ToArray();
 
                 for (var i = 0; i < outputData.Length; ++i)
                 {
-                    var d0 = d.FirstOrDefault(x => x.Key == i);
-                    outputData[d0.Key] = d0?.Count() ?? 0;
+                    var record = data.FirstOrDefault(x => x.Key == i);
+                    outputData[record.Key] = record?.Count() ?? 0;
                 }
                 return outputData;
             }
@@ -177,24 +177,24 @@ namespace RavenNest.Blazor.Pages.Admin
                 case ChartTimeFrame.LastSixMonths:
                 case ChartTimeFrame.LastThreeMonths:
                 {
-                    var d = data
+                    var records = source
                         .GroupBy(x => new DateTime(x.Created.Date.Year, x.Created.Date.Month, 1))
                         .OrderBy(x => x.Key)
                         .ToArray();
                     for (var i = 0; i < outputData.Length; ++i)
                     {
                         var t = start.AddMonths(i);
-                        outputData[i] = d.FirstOrDefault(x => x.Key == t)?.Count() ?? 0;
+                        outputData[i] = records.FirstOrDefault(x => x.Key == t)?.Count() ?? 0;
                     }
                 }
                 break;
                 case ChartTimeFrame.LastMonth:
                 case ChartTimeFrame.ThisMonth:
                 {
-                    var gr = data.GroupBy(x => x.Created.Date).ToArray();
+                    var records = source.GroupBy(x => x.Created.Date).ToArray();
                     for (var i = 0; i < outputData.Length; ++i)
                     {
-                        outputData[i] = gr.FirstOrDefault(x => x.Key.Day == i + 1)?.Count() ?? 0;
+                        outputData[i] = records.FirstOrDefault(x => x.Key.Day == i + 1)?.Count() ?? 0;
                     }
                 }
                 break;
@@ -206,7 +206,7 @@ namespace RavenNest.Blazor.Pages.Admin
 
                 case ChartTimeFrame.Today:
                 {
-                    var gr = data.GroupBy(x =>
+                    var records = source.GroupBy(x =>
                     {
                         var d = x.Created.Date;
                         var h = x.Created.TimeOfDay.Hours;
@@ -214,7 +214,7 @@ namespace RavenNest.Blazor.Pages.Admin
                     });
                     for (var i = 0; i < outputData.Length; ++i)
                     {
-                        outputData[i] = gr.FirstOrDefault(x => x.Key.Hour == i)?.Count() ?? 0;
+                        outputData[i] = records.FirstOrDefault(x => x.Key.Hour == i)?.Count() ?? 0;
                     }
                 }
                 break;
