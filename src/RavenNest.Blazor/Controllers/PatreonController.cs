@@ -195,8 +195,8 @@ namespace RavenNest.Controllers
                 default:
                     return 0;
                 case "mithril":
+                    return 1;
                 case "adamantite":
-                    return 2;
                 case "rune":
                     return 2;
                 case "dragon":
