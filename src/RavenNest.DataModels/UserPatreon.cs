@@ -18,6 +18,5 @@ namespace RavenNest.DataModels
         private long? pledgeAmount; public long? PledgeAmount { get => pledgeAmount; set => Set(ref pledgeAmount, value); }
         private string email; public string Email { get => email; set => Set(ref email, value); }
         private int? tier; public int? Tier { get => tier; set => Set(ref tier, value); }
-
     }
 }

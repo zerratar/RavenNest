@@ -188,6 +188,12 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
             foreach (var character in characters)
             {
+                //if (character.CharacterIndex == 0)
+                //{
+                //    var inventory = inventoryProvider.Get(character.Id);
+                //    inventory.AddPatreonTierRewards();
+                //}
+
                 var state = gameData.GetCharacterState(character.StateId);
                 if (state == null)
                 {

@@ -21,7 +21,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             //0, 10, 15, 20
             //0, 15, 30, 50
-            200, 200, 200, 200, 200, 200, 200, 200, 200, 200, 200
+            999, 999, 999, 999, 999, 999, 999, 999, 999, 999, 999
         };
 
         public SessionManager(
@@ -203,6 +203,7 @@ namespace RavenNest.BusinessLogic.Game
                 subscriptionTier = 3;
                 expMultiplierLimit = 50000000;
             }
+
             var permissionEvent = gameData.CreateSessionEvent(
                 GameEventType.PermissionChange,
                 gameSession,

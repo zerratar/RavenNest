@@ -14,12 +14,14 @@ namespace RavenNest.BusinessLogic.Providers
         private readonly object mutex = new object();
         private List<InventoryItem> items;
 
+        private static readonly TimeSpan PatreonRewardFrequency = TimeSpan.FromDays(1);
         private static readonly Random random = new Random();
         public PlayerInventory(IGameData gameData, Guid characterId)
         {
             this.gameData = gameData;
             this.characterId = characterId;
             items = GetInventoryItems(characterId);
+            //AddPatreonTierRewards();
             //MergeItems(this.items.ToList());
         }
 
@@ -97,6 +99,55 @@ namespace RavenNest.BusinessLogic.Providers
                         EquipItem(itemToEquip);
                     }
                 }
+            }
+        }
+
+        internal void AddPatreonTierRewards(int? tierReward = null)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null || character.CharacterIndex > 0) return;
+            var user = gameData.GetUser(character.UserId);
+            if (user == null) return;
+
+            var lastReward = user.LastReward.GetValueOrDefault();
+            var elapsedSinceLastReward = DateTime.UtcNow - lastReward;
+            // in case you update your tier, we also give you the reward right away.
+            if (elapsedSinceLastReward < PatreonRewardFrequency && tierReward <= user.PatreonTier)
+                return;
+
+            var tier = tierReward ?? user.PatreonTier ?? 0;
+            if (tier >= 3)
+            {
+                var expScroll = Guid.Parse("DA0179BE-2EF0-412D-8E18-D0EE5A9510C7");
+                // tier 3 (dragon)  = 2 exp scroll per day
+                // tier 4 (abraxas) = 4 exp scrolls per day
+                // tier 5 (phantom) = 6 exp scrolls per day
+                var scrollAmount = (tier - 2) * 2;
+                AddItem(expScroll, scrollAmount, soulbound: true);
+            }
+
+            if (tier >= 2)
+            {
+                var dungeonScroll = Guid.Parse("C95AC1D6-108E-4B2F-9DB2-2EF00C092BFE");
+                // tier 2 (rune)    = 2 dungeon scrolls per day
+                // tier 3 (dragon)  = 4 dungeon scrolls per day
+                // tier 4 (abraxas) = 6 dungeon scrolls per day
+                // tier 5 (phantom) = 8 dungeon scrolls per day
+                var scrollAmount = 2 + ((tier - 2) * 2);
+                AddItem(dungeonScroll, scrollAmount, soulbound: true);
+            }
+
+            if (tier >= 1)
+            {
+                var raidScroll = Guid.Parse("061BAA06-5B73-4BBB-A9E1-AEA4907CD309");
+                // tier 1 (mithril) = 2 raid scrolls per day
+                // tier 2 (rune)    = 4 raid scrolls per day
+                // tier 3 (dragon)  = 6 raid scrolls per day
+                // tier 4 (abraxas) = 8 raid scrolls per day
+                // tier 5 (phantom) = 10 raid scrolls per day
+                var scrollAmount = tier * 2;
+                AddItem(raidScroll, scrollAmount, soulbound: true);
+                user.LastReward = DateTime.UtcNow;
             }
         }
 

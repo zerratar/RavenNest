@@ -70,7 +70,7 @@ namespace RavenNest.BusinessLogic.Data
         DataModels.InventoryItem GetInventoryItem(Guid characterId, Guid itemId);
         DataModels.InventoryItem GetEquippedItem(Guid characterId, Guid itemId);
         Character GetCharacter(Guid characterId);
-        Character GetCharacterByUserId(Guid userId, string identifier);
+        Character GetCharacterByUserId(Guid userId, string identifier = "0");
         Character GetCharacterByUserId(string twitchUserId, string identifier);
         Character GetCharacterBySession(Guid sessionId, string userId);
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(Guid itemId, string tag = null);

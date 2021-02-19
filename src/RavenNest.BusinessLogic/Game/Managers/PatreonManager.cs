@@ -1,5 +1,6 @@
 ﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Patreon;
+using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
 using System;
 using System.Linq;
@@ -9,17 +10,29 @@ namespace RavenNest.BusinessLogic.Game
     public class PatreonManager : IPatreonManager
     {
         private readonly IGameData gameData;
+        private readonly IPlayerInventoryProvider playerInventory;
 
-        public PatreonManager(IGameData gameData)
+        public PatreonManager(
+            IGameData gameData,
+            IPlayerInventoryProvider playerInventory)
         {
             this.gameData = gameData;
+            this.playerInventory = playerInventory;
         }
 
         public void AddPledge(IPatreonData data)
         {
             var user = GetUser(data, out var patreon, true);
             if (user != null)
+            {
+                //var main = gameData.GetCharacterByUserId(user.Id);
+                //if (main != null)
+                //{
+                //    var inventory = playerInventory.Get(main.Id);
+                //    inventory.AddPatreonTierRewards(data.Tier);
+                //}
                 user.PatreonTier = patreon.Tier;
+            }
         }
 
         public void RemovePledge(IPatreonData data)
@@ -34,7 +47,15 @@ namespace RavenNest.BusinessLogic.Game
         {
             var user = GetUser(data, out var patreon, true);
             if (user != null)
+            {
+                //var main = gameData.GetCharacterByUserId(user.Id);
+                //if (main != null)
+                //{
+                //    var inventory = playerInventory.Get(main.Id);
+                //    inventory.AddPatreonTierRewards(data.Tier);
+                //}
                 user.PatreonTier = patreon.Tier;
+            }
         }
 
         private User GetUser(IPatreonData data, out UserPatreon patreon, bool createPatreonIfNotExists = false)

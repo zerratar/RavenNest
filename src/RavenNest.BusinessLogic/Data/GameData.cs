@@ -557,7 +557,7 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Character GetCharacterByUserId(Guid userId, string identifier)
+        public Character GetCharacterByUserId(Guid userId, string identifier = "0")
         {
             var chars = characters[nameof(User), userId];
             return GetCharacterByIdentifier(chars, identifier);
