@@ -184,6 +184,7 @@ namespace RavenNest.Controllers
             data.Tier = GetRewardTier(data.RewardTitle);
             return data;
         }
+
         private int GetRewardTier(string rewardTitle)
         {
             if (string.IsNullOrEmpty(rewardTitle))
@@ -200,9 +201,11 @@ namespace RavenNest.Controllers
                 case "rune":
                     return 2;
                 case "dragon":
-                case "abraxas":
-                case "phantom":
                     return 3;
+                case "abraxas":
+                    return 4;
+                case "phantom":
+                    return 5;
             }
         }
 
