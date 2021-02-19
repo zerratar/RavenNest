@@ -55,11 +55,6 @@ namespace RavenNest.BusinessLogic
             return 1.0d;
         }
 
-        public static int CombatExperience(int combatLevel)
-        {
-            return (int)((combatLevel * 10 + 10) * 1.5D);
-        }
-
         public static decimal ExperienceForLevel(int level)
         {
             return (decimal)(level - 2 < 0 ? 0 : ExperienceArray[level - 2]);

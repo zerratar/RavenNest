@@ -171,7 +171,7 @@ namespace RavenNest.Sessions
         public int GetCombatLevel(DataModels.Skills skills)
         {
             return (int)(((skills.AttackLevel + skills.DefenseLevel + skills.HealthLevel + skills.StrengthLevel) / 4f) +
-                   ((skills.RangedLevel + skills.MagicLevel) / 8f));
+                   ((skills.RangedLevel + skills.MagicLevel + skills.HealingLevel) / 8f));
         }
 
         public bool TryGet(string sessionId, out SessionInfo sessionInfo)
