@@ -29,7 +29,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
         private readonly TimeSpan ServerTimePushInterval = TimeSpan.FromSeconds(3);
         private readonly TimeSpan ExpMultiplierPushInterval = TimeSpan.FromSeconds(3);
-        private readonly TimeSpan villageInfoPushInterval = TimeSpan.FromSeconds(5);
+        private readonly TimeSpan villageInfoPushInterval = TimeSpan.FromSeconds(2);
         private readonly TimeSpan permissionInfoPushInterval = TimeSpan.FromSeconds(60);
 
         private DateTime lastVillageInfoPush;
