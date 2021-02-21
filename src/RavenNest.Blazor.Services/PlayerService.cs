@@ -45,13 +45,13 @@ namespace RavenNest.Blazor.Services
         public int GetCombatLevel(WebsitePlayer player)
         {
             return (int)(((player.Skills.AttackLevel + player.Skills.DefenseLevel + player.Skills.HealthLevel + player.Skills.StrengthLevel) / 4f) +
-                   ((player.Skills.RangedLevel + player.Skills.MagicLevel) / 8f));
+                   ((player.Skills.RangedLevel + player.Skills.MagicLevel + player.Skills.HealingLevel) / 8f));
         }
 
         public int GetCombatLevel(Player player)
         {
             return (int)(((player.Skills.AttackLevel + player.Skills.DefenseLevel + player.Skills.HealthLevel + player.Skills.StrengthLevel) / 4f) +
-                   ((player.Skills.RangedLevel + player.Skills.MagicLevel) / 8f));
+                   ((player.Skills.RangedLevel + player.Skills.MagicLevel + player.Skills.HealingLevel) / 8f));
         }
 
         public WebsitePlayer AddItem(Guid characterId, Item item)
