@@ -293,6 +293,7 @@ namespace RavenNest.BusinessLogic.Data
                 }
 
                 UpgradeSkillLevels(characterSkills);
+                RemoveBadUsers(users);
 
                 stopWatch.Stop();
                 logger.LogDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
@@ -308,6 +309,23 @@ namespace RavenNest.BusinessLogic.Data
                 System.IO.File.WriteAllText("ravenfall-error.log", exc.ToString());
             }
 
+        }
+
+        private void RemoveBadUsers(EntitySet<User, Guid> users)
+        {
+            var toRemove = new List<User>();
+            foreach (var user in users.Entities)
+            {
+                if (string.IsNullOrEmpty(user.UserName) || Guid.TryParse(user.UserId, out var guid))
+                {
+                    toRemove.Add(user);
+                }
+            }
+
+            foreach (var badUser in toRemove)
+            {
+                Remove(badUser);
+            }
         }
 
         private void UpgradeSkillLevels(EntitySet<Skills, Guid> skills)

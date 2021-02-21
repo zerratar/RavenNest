@@ -102,12 +102,24 @@ namespace RavenNest.BusinessLogic.Game
                 return result;
             }
 
-            if (playerData.CharacterId != Guid.Empty)
+            // in case a reload did something wonkers. ?
+            var characterId = playerData.CharacterId;
+            if (characterId != Guid.Empty || Guid.TryParse(playerData.UserId ?? "", out characterId))
             {
-                var c = gameData.GetCharacter(playerData.CharacterId);
-                if (c == null) return result;
+                var c = gameData.GetCharacter(characterId);
+                if (c == null)
+                {
+                    result.ErrorMessage = $"No character found using id '{characterId}'";
+                    return result;
+                }
+
                 var u = gameData.GetUser(c.UserId);
-                if (u == null) return result;
+                if (u == null)
+                {
+                    result.ErrorMessage = $"No user found with id '{c.UserId}'";
+                    return result;
+                }
+
                 result.Player = AddPlayerToSession(session, u, c);
                 result.Success = true;
                 return result;
@@ -120,8 +132,8 @@ namespace RavenNest.BusinessLogic.Game
             var user = gameData.GetUser(userId);
             if (user == null)
             {
-                result.Success = true;
                 result.Player = CreateUserAndPlayer(session, playerData);
+                result.Success = result.Player != null;
                 return result;
             }
 
@@ -436,13 +448,26 @@ namespace RavenNest.BusinessLogic.Game
 
         public Player GetPlayer(string userId, string identifier)
         {
-            var user = gameData.GetUser(userId);
-            if (user == null)
+            if (Guid.TryParse(userId, out var characterId))
             {
+                var character = gameData.GetCharacter(characterId);
+                if (character != null)
+                {
+                    var user = gameData.GetUser(character.UserId);
+                    if (user == null) return null;
+                    return character.Map(gameData, user);
+                }
                 return null;
             }
-
-            return GetPlayerByUser(user, identifier);
+            else
+            {
+                var user = gameData.GetUser(userId);
+                if (user == null)
+                {
+                    return null;
+                }
+                return GetPlayerByUser(user, identifier);
+            }
         }
 
         public Player GetPlayer(SessionToken sessionToken)
@@ -475,6 +500,14 @@ namespace RavenNest.BusinessLogic.Game
             if (session == null)
                 return;
 
+
+            var user = gameData.GetUser(update.UserId);
+            if (user == null)
+            {
+                //user = CreateUser(session, playerData);
+                return;
+            }
+
             var playerData = new PlayerJoinData
             {
                 Vip = update.IsVip,
@@ -483,12 +516,6 @@ namespace RavenNest.BusinessLogic.Game
                 Moderator = update.IsModerator,
                 Subscriber = update.IsSubscriber
             };
-
-            var user = gameData.GetUser(update.UserId);
-            if (user == null)
-            {
-                user = CreateUser(session, playerData);
-            }
 
             var loyalty = gameData.GetUserLoyalty(user.Id, session.UserId);
             if (loyalty == null)
@@ -1381,25 +1408,23 @@ namespace RavenNest.BusinessLogic.Game
             gameData.Add(gameEvent);
         }
 
-        private User CreateUser(DataModels.GameSession session, PlayerJoinData playerData)
-        {
-            var user = gameData.GetUser(playerData.UserId);
-            if (user == null)
-            {
-                user = new User
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = playerData.UserId,
-                    UserName = playerData.UserName,
-                    Created = DateTime.UtcNow
-                };
-                gameData.Add(user);
-            }
-
-            CreateUserLoyalty(session, user, playerData);
-
-            return user;
-        }
+        //private User CreateUser(DataModels.GameSession session, PlayerJoinData playerData)
+        //{
+        //    var user = gameData.GetUser(playerData.UserId);
+        //    if (user == null)
+        //    {
+        //        user = new User
+        //        {
+        //            Id = Guid.NewGuid(),
+        //            UserId = playerData.UserId,
+        //            UserName = playerData.UserName,
+        //            Created = DateTime.UtcNow
+        //        };
+        //        gameData.Add(user);
+        //    }
+        //    CreateUserLoyalty(session, user, playerData);
+        //    return user;
+        //}
 
         private Player CreateUserAndPlayer(
             DataModels.GameSession session,
@@ -1408,6 +1433,11 @@ namespace RavenNest.BusinessLogic.Game
             var user = gameData.GetUser(playerData.UserId);
             if (user == null)
             {
+                if (Guid.TryParse(playerData.UserId, out var characterId) && gameData.GetCharacter(characterId) != null)
+                {
+                    return null;
+                }
+
                 user = new User
                 {
                     Id = Guid.NewGuid(),
