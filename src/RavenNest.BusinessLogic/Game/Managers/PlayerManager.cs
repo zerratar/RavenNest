@@ -577,13 +577,20 @@ namespace RavenNest.BusinessLogic.Game
         {
             try
             {
-                var player = update.CharacterId != null
-                ? gameData.GetCharacter(update.CharacterId)
-                : GetCharacter(sessionToken, update.UserId);
+                var player = gameData.GetCharacter(update.CharacterId);//update.CharacterId != null
+                //? gameData.GetCharacter(update.CharacterId)
+                //: GetCharacter(sessionToken, update.UserId);
 
                 if (player == null)
                 {
                     return false;
+                }
+
+                var session = gameData.GetSession(sessionToken.SessionId);
+                if (session != null && player.UserIdLock == null)
+                {
+                    player.UserIdLock = session.UserId;
+                    player.LastUsed = DateTime.UtcNow;
                 }
 
                 if (player.StateId == null)
