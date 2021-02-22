@@ -164,7 +164,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
                     eventList.Events = allEvents.Skip(batchSize * i).Take(batchSize).ToList();
                     await ws.PushAsync("game_event", eventList, cts.Token);
                     i += allEvents.Count < batchSize ? allEvents.Count : batchSize;
-                    await Task.Delay(100);
+                    await Task.Delay(50);
                 }
             }
         }
@@ -208,7 +208,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
                 clanProcessor.Handle(integrityChecker, gameData, inventoryProvider, session, character, state);
                 loyaltyProcessor.Handle(integrityChecker, gameData, inventoryProvider, session, character, state);
 
-                if (string.IsNullOrEmpty(state.Task) || state.InArena || state.InRaid || state.Island == "War" || !string.IsNullOrEmpty(state.DuelOpponent))
+                if (string.IsNullOrEmpty(state.Task) || (state.InDungeon ?? false) || state.InArena || state.InRaid || state.Island == "War" || !string.IsNullOrEmpty(state.DuelOpponent))
                 {
                     continue;
                 }

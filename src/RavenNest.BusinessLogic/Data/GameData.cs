@@ -718,14 +718,20 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<Character> GetSessionCharacters(GameSession currentSession)
+        public IReadOnlyList<Character> GetSessionCharacters(GameSession currentSession, bool activeSessionOnly = true)
         {
             if (currentSession == null) return null;
-            return characters[nameof(GameSession), currentSession.UserId]
-                .Where(x => x.LastUsed >= currentSession.Started)
-                .OrderByDescending(x => x.LastUsed)
-                .Where(x => GetUser(x.UserId) != null)
-                .ToList();
+            if (activeSessionOnly)
+                return characters[nameof(GameSession), currentSession.UserId]
+                    .Where(x => x.LastUsed >= currentSession.Started)
+                    .OrderByDescending(x => x.LastUsed)
+                    .Where(x => GetUser(x.UserId) != null)
+                    .ToList();
+
+            // in case we need to know all characters that has been locked to this user (based on sessionId).
+            // so we can clear those users out if necessary.
+            // note(zerratar): should be a separate method. Not part of this As we want to ensure we only get the real active players.
+            return characters[nameof(GameSession), currentSession.UserId].OrderByDescending(x => x.LastUsed).Where(x => GetUser(x.UserId) != null).ToList();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
