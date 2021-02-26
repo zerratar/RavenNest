@@ -257,6 +257,17 @@ namespace RavenNest.BusinessLogic.Game
             character.UserIdLock = session.UserId;
             character.LastUsed = DateTime.UtcNow;
 
+            if (character.StateId != null)
+            {
+                var state = gameData.GetCharacterState(character.StateId);
+                if (state != null && state.Island == "war")
+                {
+                    state.Island = null;
+                    state.X = null;
+                    state.Y = null;
+                    state.Z = null;
+                }
+            }
             return character.Map(gameData, user, rejoin, true);
         }
 
@@ -608,6 +619,7 @@ namespace RavenNest.BusinessLogic.Game
                     state.InDungeon = update.InDungeon;
                     state.InRaid = update.InRaid;
                     state.Island = update.Island;
+                    //state.InOnsen = update.InOnsen;
                     state.Task = update.Task;
                     state.TaskArgument = update.TaskArgument;
                     state.X = (decimal)update.X;
@@ -1604,6 +1616,7 @@ namespace RavenNest.BusinessLogic.Game
                 InArena = update.InArena,
                 InRaid = update.InRaid,
                 InDungeon = update.InDungeon,
+                //InOnsen = update.InOnsen,
                 Island = update.Island,
                 Task = update.Task,
                 TaskArgument = update.TaskArgument

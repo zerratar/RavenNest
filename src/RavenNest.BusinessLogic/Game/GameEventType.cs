@@ -34,5 +34,6 @@
         ClanLevelChanged = 29,
         ClanSkillLevelChanged = 30,
         ServerTime = 31,
+        PlayerRestedUpdate = 32,
     }
 }
