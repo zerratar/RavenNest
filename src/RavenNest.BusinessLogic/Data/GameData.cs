@@ -294,6 +294,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 UpgradeSkillLevels(characterSkills);
                 RemoveBadUsers(users);
+                EnsureClanLevels(clans);
 
                 stopWatch.Stop();
                 logger.LogDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
@@ -309,6 +310,15 @@ namespace RavenNest.BusinessLogic.Data
                 System.IO.File.WriteAllText("ravenfall-error.log", exc.ToString());
             }
 
+        }
+
+        private void EnsureClanLevels(EntitySet<Clan, Guid> clans)
+        {
+            foreach (var clan in clans.Entities)
+            {
+                if (clan.Level == 0)
+                    clan.Level = 1;
+            }
         }
 
         private void RemoveBadUsers(EntitySet<User, Guid> users)

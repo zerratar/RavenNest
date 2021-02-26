@@ -305,6 +305,7 @@ namespace RavenNest.BusinessLogic.Game
                 Id = Guid.NewGuid(),
                 CanChangeName = true,
                 Logo = logoImageFile,
+                Level = 1,
                 Name = name,
                 UserId = ownerUserId,
                 Created = DateTime.UtcNow
