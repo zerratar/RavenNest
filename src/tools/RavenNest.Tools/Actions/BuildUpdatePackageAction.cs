@@ -167,7 +167,34 @@ namespace RavenNest.Tools.Actions
 
         private string[] GetFiles()
         {
+            var legacyDataDir = System.IO.Path.Combine(UnityBuildFolder, "Ravenfall Legacy_Data");
+            var targetDataDir = System.IO.Path.Combine(UnityBuildFolder, "Ravenfall_Data");
+            var legacyExe = System.IO.Path.Combine(UnityBuildFolder, "Ravenfall Legacy.exe");
+            var targetExe = System.IO.Path.Combine(UnityBuildFolder, "Ravenfall.exe");
+
+            if (System.IO.Directory.Exists(legacyDataDir))
+            {
+                if (System.IO.Directory.Exists(targetDataDir))
+                {
+                    System.IO.Directory.Delete(targetDataDir, true);
+                }
+
+                System.IO.Directory.Move(legacyDataDir, targetDataDir);
+            }
+
+            if (System.IO.File.Exists(legacyExe))
+            {
+                if (System.IO.File.Exists(targetExe))
+                {
+                    System.IO.File.Delete(targetExe);
+                }
+
+                System.IO.File.Move(legacyExe, targetExe, true);
+            }
+
+
             var files = System.IO.Directory.GetFiles(UnityBuildFolder, "*", System.IO.SearchOption.AllDirectories);
+
             //var filesToRename = files.Where(x => x.Contains("Ravenfall Legacy")).ToList();
             return files.Where(FilterFiles).ToArray();
         }
