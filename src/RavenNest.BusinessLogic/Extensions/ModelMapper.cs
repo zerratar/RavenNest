@@ -58,7 +58,11 @@ namespace RavenNest.BusinessLogic.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.CharacterState Map(DataModels.CharacterState data)
         {
-            return DataMapper.Map<Models.CharacterState, DataModels.CharacterState>(data);
+            var state = DataMapper.Map<Models.CharacterState, DataModels.CharacterState>(data);
+            state.InDungeon = data.InDungeon.GetValueOrDefault();
+            state.InOnsen = data.InOnsen.GetValueOrDefault();
+            state.RestedTime = data.RestedTime.GetValueOrDefault();
+            return state;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

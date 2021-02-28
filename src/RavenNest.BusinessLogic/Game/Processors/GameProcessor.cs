@@ -16,6 +16,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private const string VillageProcessorName = "Village";
         private const string LoyaltyProcessorName = "loyalty";
         private const string ClanProcessorName = "Clan";
+        private const string RestedProcessorName = "Rested";
 
         private readonly ConcurrentDictionary<string, ITaskProcessor> taskProcessors = new ConcurrentDictionary<string, ITaskProcessor>();
 
@@ -57,6 +58,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             RegisterPlayerTask<ClanProcessor>(ClanProcessorName);
             RegisterPlayerTask<VillageProcessor>(VillageProcessorName);
             RegisterPlayerTask<LoyaltyProcessor>(LoyaltyProcessorName);
+            RegisterPlayerTask<RestedProcessor>(RestedProcessorName);
             RegisterPlayerTask<FightingTaskProcessor>("Fighting");
             RegisterPlayerTask<MiningTaskProcessor>("Mining");
             RegisterPlayerTask<FishingTaskProcessor>("Fishing");
@@ -173,9 +175,10 @@ namespace RavenNest.BusinessLogic.Game.Processors
         {
             var session = gameData.GetSession(sessionToken.SessionId);
             var characters = gameData.GetSessionCharacters(session);
-            var villageProcessor = GetTaskProcessor(VillageProcessorName);
-            var loyaltyProcessor = GetTaskProcessor(LoyaltyProcessorName);
-            var clanProcessor = GetTaskProcessor(ClanProcessorName);
+            var village = GetTaskProcessor(VillageProcessorName);
+            var loyalty = GetTaskProcessor(LoyaltyProcessorName);
+            var clan = GetTaskProcessor(ClanProcessorName);
+            var rested = GetTaskProcessor(RestedProcessorName);
 
             if (session == null)
                 return;
@@ -184,7 +187,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             session.Stopped = null;
             session.Status = (int)SessionStatus.Active;
 
-            villageProcessor.Handle(integrityChecker, gameData, inventoryProvider, session, null, null);
+            village.Process(integrityChecker, gameData, inventoryProvider, session, null, null);
 
             foreach (var character in characters)
             {
@@ -205,17 +208,18 @@ namespace RavenNest.BusinessLogic.Game.Processors
                     character.StateId = state.Id;
                 }
 
-                clanProcessor.Handle(integrityChecker, gameData, inventoryProvider, session, character, state);
-                loyaltyProcessor.Handle(integrityChecker, gameData, inventoryProvider, session, character, state);
+                rested.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
+                clan.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
+                loyalty.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
 
-                if (string.IsNullOrEmpty(state.Task) || (state.InDungeon ?? false) || state.InArena || state.InRaid || state.Island == "War" || !string.IsNullOrEmpty(state.DuelOpponent))
+                if (string.IsNullOrEmpty(state.Task) || (state.InOnsen ?? false) || (state.InDungeon ?? false) || state.InArena || state.InRaid || state.Island == "War" || !string.IsNullOrEmpty(state.DuelOpponent))
                 {
                     continue;
                 }
 
-                ITaskProcessor taskProcessor = GetTaskProcessor(state.Task);
-                if (taskProcessor != null)
-                    taskProcessor.Handle(integrityChecker, gameData, inventoryProvider, session, character, state);
+                var task = GetTaskProcessor(state.Task);
+                if (task != null)
+                    task.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
             }
         }
         private ITaskProcessor GetTaskProcessor(string task)

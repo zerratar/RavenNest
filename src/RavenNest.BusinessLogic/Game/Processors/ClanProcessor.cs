@@ -21,8 +21,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
         private readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(2);
 
-        private static readonly Version ClientVersion_ClanLevel = new Version(0, 7, 1);
-        public override void Handle(
+        //private static readonly Version ClientVersion_ClanLevel = new Version(0, 7, 1);
+        public override void Process(
              IIntegrityChecker integrityChecker,
              IGameData gameData,
              IPlayerInventoryProvider inventoryProvider,
@@ -30,10 +30,12 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
              Character character,
              CharacterState state)
         {
-            if (character.ClanId == null)
+
+            var membership = gameData.GetClanMembership(character.Id);
+            if (membership == null)
                 return;
 
-            var clan = gameData.GetClan(character.ClanId.Value);
+            var clan = gameData.GetClan(membership.ClanId);
             if (clan == null)
                 return;
 
@@ -102,18 +104,14 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             if (now - lastAnnouncement > UpdateInterval)
             {
-                var sessionState = gameData.GetSessionState(session.Id);
-                //if (Version.TryParse(sessionState.ClientVersion, out var clientVersion) && clientVersion >= ClientVersion_ClanLevel)
+                gameData.Add(gameData.CreateSessionEvent(GameEventType.ClanLevelChanged, session, new ClanSkillLevelChanged
                 {
-                    gameData.Add(gameData.CreateSessionEvent(GameEventType.ClanLevelChanged, session, new ClanSkillLevelChanged
-                    {
-                        ClanId = clan.Id,
-                        SkillId = trainingSkill.Id,
-                        Experience = (long)ts.Skill.Experience,
-                        Level = ts.Skill.Level,
-                        LevelDelta = gainedLevels,
-                    }));
-                }
+                    ClanId = clan.Id,
+                    SkillId = trainingSkill.Id,
+                    Experience = (long)ts.Skill.Experience,
+                    Level = ts.Skill.Level,
+                    LevelDelta = gainedLevels,
+                }));
                 clanSkillAnnouncement[dictKey] = now;
             }
         }
@@ -124,6 +122,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             if (clanExpUpdate.TryGetValue(clan.Id, out var lastUpdate))
                 elapsed = now - lastUpdate;
+
+            if (clan.Level == 0)
+                clan.Level = 1;
 
             clan.Experience += (decimal)elapsed.TotalSeconds;
 
@@ -146,17 +147,13 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             if (now - lastAnnouncement > UpdateInterval)
             {
-                var sessionState = gameData.GetSessionState(session.Id);
-                //if (Version.TryParse(sessionState.ClientVersion, out var clientVersion) && clientVersion >= ClientVersion_ClanLevel)
+                gameData.Add(gameData.CreateSessionEvent(GameEventType.ClanLevelChanged, session, new ClanLevelChanged
                 {
-                    gameData.Add(gameData.CreateSessionEvent(GameEventType.ClanLevelChanged, session, new ClanLevelChanged
-                    {
-                        ClanId = clan.Id,
-                        Experience = (long)clan.Experience,
-                        Level = clan.Level,
-                        LevelDelta = clan.Level - oldLevel,
-                    }));
-                }
+                    ClanId = clan.Id,
+                    Experience = (long)clan.Experience,
+                    Level = clan.Level,
+                    LevelDelta = clan.Level - oldLevel,
+                }));
                 clanExpAnnouncement[announcementKey] = now;
             }
         }
