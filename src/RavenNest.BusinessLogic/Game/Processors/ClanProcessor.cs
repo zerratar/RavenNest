@@ -161,7 +161,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         {
             foreach (var s in gameData.GetSkills().Where(x => x.RequiredClanLevel <= clan.Level))
             {
-                if (!clanSkills.Any(x => x.Id == s.Id))
+                if (!clanSkills.Any(x => x.SkillId == s.Id))
                 {
                     var newSkill = new ClanSkill
                     {

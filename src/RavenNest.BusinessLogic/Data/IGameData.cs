@@ -61,6 +61,7 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<DataModels.GameEvent> GetSessionEvents(DataModels.GameSession gameSession);
         IReadOnlyList<DataModels.GameEvent> GetUserEvents(Guid userId);
         IReadOnlyList<DataModels.ClanSkill> GetClanSkills(Guid id);
+        IReadOnlyList<DataModels.ClanSkill> GetClanSkills();
         IReadOnlyList<DataModels.Item> GetItems();
         DataModels.Item GetItem(Guid id);
         DataModels.Skill GetSkill(Guid skillId);

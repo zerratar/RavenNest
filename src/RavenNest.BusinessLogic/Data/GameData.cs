@@ -888,7 +888,8 @@ namespace RavenNest.BusinessLogic.Data
         public Skill GetSkill(Guid skillId) => skills[skillId];
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<ClanSkill> GetClanSkills(Guid clanId) => clanSkills[nameof(Clan), clanId];
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<ClanSkill> GetClanSkills() => clanSkills.Entities.ToList();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Clan GetClan(Guid clanId) => clans[clanId];
 

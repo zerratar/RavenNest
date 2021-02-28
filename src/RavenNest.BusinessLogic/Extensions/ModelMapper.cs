@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using RavenNest.BusinessLogic.Data;
@@ -222,6 +223,19 @@ namespace RavenNest.BusinessLogic.Extensions
             var clan = clanMembership != null ? Map(gameData, gameData.GetClan(clanMembership.ClanId)) : null;
             var clanRole = clanMembership != null ? Map(gameData.GetClanRole(clanMembership.ClanRoleId), clanMembership) : null;
 
+
+            var characterState = gameData.GetCharacterState(character.StateId);
+
+            if (character.StateId == null || characterState == null)
+            {
+                characterState = new DataModels.CharacterState()
+                {
+                    Id = Guid.NewGuid()
+                };
+                character.StateId = characterState.Id;
+                gameData.Add(characterState);
+            }
+
             return new Player
             {
                 Id = character.Id,
@@ -234,7 +248,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 Appearance = Map(gameData.GetAppearance(character.SyntyAppearanceId)),
                 Resources = Map(gameData.GetResources(character.ResourcesId)),
                 Skills = Map(gameData.GetCharacterSkills(character.SkillsId)),
-                State = Map(gameData.GetCharacterState(character.StateId)),
+                State = Map(characterState),
                 InventoryItems = invItems,
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
                 Clan = clan,
