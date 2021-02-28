@@ -13,7 +13,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         private DateTime lastUpdate = DateTime.MinValue;
         private DateTime lastExpSend = DateTime.MinValue;
 
-        public override void Handle(
+        public override void Process(
             IIntegrityChecker integrityChecker,
             IGameData gameData,
             IPlayerInventoryProvider inventoryProvider,

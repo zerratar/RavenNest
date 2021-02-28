@@ -6,7 +6,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
     public interface ITaskProcessor
     {
-        void Handle(
+        void Process(
             IIntegrityChecker integrityChecker, 
             IGameData gameData,
             IPlayerInventoryProvider inventoryProvider,

@@ -6,7 +6,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
     public class FarmingTaskProcessor : ResourceTaskProcessor
     {
-        public override void Handle(
+        public override void Process(
             IIntegrityChecker integrityChecker, 
             IGameData gameData,
             IPlayerInventoryProvider inventoryProvider,
