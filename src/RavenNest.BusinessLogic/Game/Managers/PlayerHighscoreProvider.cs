@@ -1,4 +1,5 @@
-﻿using RavenNest.BusinessLogic.Providers;
+﻿using Microsoft.Extensions.Logging;
+using RavenNest.BusinessLogic.Providers;
 using RavenNest.Models;
 using System;
 using System.Collections.Generic;
@@ -9,10 +10,14 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class PlayerHighscoreProvider : IPlayerHighscoreProvider
     {
+        private readonly ILogger<PlayerHighscoreProvider> logger;
         private readonly IPropertyProvider propertyProvider;
 
-        public PlayerHighscoreProvider(IPropertyProvider propertyProvider)
+        public PlayerHighscoreProvider(
+            ILogger<PlayerHighscoreProvider> logger,
+            IPropertyProvider propertyProvider)
         {
+            this.logger = logger;
             this.propertyProvider = propertyProvider;
         }
 
@@ -24,26 +29,34 @@ namespace RavenNest.BusinessLogic.Game
 
         public HighScoreCollection GetSkillHighScore(IReadOnlyList<Player> players, string skill, int skip = 0, int take = 100)
         {
-            if (skill == "All")
-                skill = null;
-
-            //var players = playerManager.GetPlayers().Where(x => !x.IsAdmin && x.CharacterIndex == 0).ToList();
-            var items =
-                players
-                    .OrderByDescending(x => OrderByLevel(skill, x))
-                    .ThenByDescending(x => OrderByExp(skill, x))
-                .Skip(skip)
-                .Take(take)
-                .Select((x, y) => Map(y + 1, skill, x))
-                .ToList();
-
-            return new HighScoreCollection
+            try
             {
-                Players = items,
-                Skill = skill,
-                Offset = skip,
-                Total = players.Count
-            };
+                if (skill == "All")
+                    skill = null;
+
+                //var players = playerManager.GetPlayers().Where(x => !x.IsAdmin && x.CharacterIndex == 0).ToList();
+                var items =
+                    players
+                        .OrderByDescending(x => OrderByLevel(skill, x))
+                        .ThenByDescending(x => OrderByExp(skill, x))
+                    .Skip(skip)
+                    .Take(take)
+                    .Select((x, y) => Map(y + 1, skill, x))
+                    .ToList();
+
+                return new HighScoreCollection
+                {
+                    Players = items,
+                    Skill = skill,
+                    Offset = skip,
+                    Total = players.Count
+                };
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Unable to load highscore: " + exc.ToString());
+                return new HighScoreCollection();
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
