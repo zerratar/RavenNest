@@ -174,6 +174,7 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         IReadOnlyList<DataModels.GameSession> GetActiveSessions();
+        IReadOnlyList<DataModels.GameSession> GetSessions();
         IReadOnlyList<DataModels.ItemCraftingRequirement> GetCraftingRequirements(Guid itemId);
         CharacterSessionState GetCharacterSessionState(Guid sessionId, Guid characterId);
         SessionState GetSessionState(Guid sessionId);

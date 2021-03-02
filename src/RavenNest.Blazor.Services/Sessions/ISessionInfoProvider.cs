@@ -17,6 +17,7 @@ namespace RavenNest.Sessions
         Task<SessionInfo> SetTwitchTokenAsync(string sessionId, string token);
         Task<SessionInfo> SetAuthTokenAsync(string sessionId, AuthToken token);
         Task<SessionInfo> StoreAsync(string sessionId);
+        Task<SessionInfo> CreateTwitchUserSessionAsync(string sessionId, string broadcasterId, string twitchUserId);
         void SetActiveCharacter(SessionInfo session, Guid id);
         void SetCookieDisclaimer(SessionInfo session, bool accepted);
     }

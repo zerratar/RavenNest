@@ -13,7 +13,14 @@ namespace RavenNest
 
         public static string GetSessionId(HttpContext context)
         {
-            context.Request.Cookies.TryGetValue(sessionCookie, out var id);
+            if (!context.Request.Cookies.TryGetValue(sessionCookie, out var id))
+            {
+                try
+                {
+                    return AppendSessionToken(context);
+                }
+                catch { }
+            }
             return id;
         }
 
@@ -21,14 +28,21 @@ namespace RavenNest
         {
             if (!context.Request.Cookies.ContainsKey(sessionCookie))
             {
-                context.Response.Cookies.Append(sessionCookie, Guid.NewGuid().ToString(), new CookieOptions
-                {
-                    Expires = DateTime.UtcNow.Add(SessionTimeout),
-                    MaxAge = SessionTimeout
-                });
+                AppendSessionToken(context);
             }
 
             await next.Invoke();
+        }
+
+        private static string AppendSessionToken(HttpContext context)
+        {
+            var id = Guid.NewGuid().ToString();
+            context.Response.Cookies.Append(sessionCookie, id, new CookieOptions
+            {
+                Expires = DateTime.UtcNow.Add(SessionTimeout),
+                MaxAge = SessionTimeout
+            });
+            return id;
         }
     }
 

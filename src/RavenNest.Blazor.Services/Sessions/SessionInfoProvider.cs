@@ -80,6 +80,46 @@ namespace RavenNest.Sessions
             SetString(session.SessionId, AuthState, sessionState);
         }
 
+        /// <summary>
+        /// Only used with the twitch extension
+        /// </summary>
+        /// <param name="twitchUserId"></param>
+        /// <returns></returns>
+        public async Task<SessionInfo> CreateTwitchUserSessionAsync(string sessionId, string broadcasterId, string twitchUserId)
+        {
+            var si = new SessionInfo();
+
+            if (string.IsNullOrEmpty(twitchUserId) || string.IsNullOrEmpty(broadcasterId))
+                return si;
+
+            if (twitchUserId.StartsWith("u", StringComparison.OrdinalIgnoreCase))
+                twitchUserId = twitchUserId.Substring(1); // remove starting U
+
+            var broadcaster = gameData.GetUser(broadcasterId);
+            if (broadcaster == null)
+                return new SessionInfo();
+
+            var user = gameData.GetUser(twitchUserId);
+            if (user == null)
+                return new SessionInfo();
+
+            //var activeSession = gameData.GetActiveSessions().FirstOrDefault(x => x.UserId == broadcaster.Id);
+            var activeSession = gameData.GetSessions().FirstOrDefault(x => x.UserId == broadcaster.Id);
+            if (activeSession == null)
+                return new SessionInfo();
+
+            var activeCharacter = gameData.GetCharacterBySession(activeSession.Id, twitchUserId);
+            if (activeCharacter != null)
+                si.ActiveCharacterId = activeCharacter.Id;
+
+            si.SessionId = sessionId;
+            UpdateSessionInfoData(si, user);
+
+            var sessionState = JSON.Stringify(si);
+            SetString(sessionId, AuthState, sessionState);
+            return si;
+        }
+
         public async Task<SessionInfo> StoreAsync(string sessionId)
         {
             var si = new SessionInfo();

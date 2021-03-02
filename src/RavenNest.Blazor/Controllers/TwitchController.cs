@@ -105,7 +105,7 @@ namespace RavenNest.Controllers
             catch { return NotFound(); }
         }
 
-        [HttpGet("session")]
+        [HttpGet("session/{token}")]
         [MethodDescriptor(Name = "Set Twitch Access Token", Description = "Updates current session with the set Twitch access token, used as an user identifier throughout the website.")]
         public async Task<SessionInfo> SetAccessToken(string token)
         {
@@ -116,6 +116,41 @@ namespace RavenNest.Controllers
             {
                 playerManager.CreatePlayerIfNotExists(user.Id, user.Login, "1");
             }
+            return result;
+        }
+
+        [HttpGet("extension/new/{broadcasterId}/{userId}/{username}/{displayName}")]
+        public Task<SessionInfo> CreateUserAsync(string broadcasterId, string userId, string username, string displayName)
+        {
+            if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(username))
+                playerManager.CreatePlayerIfNotExists(userId, username, "1");
+
+            return SetExtensionViewer(broadcasterId, userId);
+        }
+
+        [HttpGet("extension/{broadcasterId}")]
+        public StreamerInfo GetStreamerInfo(string broadcasterId)
+        {
+            var streamer = gameData.GetUser(broadcasterId);
+            var result = new StreamerInfo();
+            if (streamer != null)
+            {
+                result.StreamerUserId = broadcasterId;
+                result.StreamerUserName = streamer.UserName;
+
+                var gameSession = gameData.GetActiveSessions().FirstOrDefault(x => x.UserId == streamer.Id);
+                result.IsRavenfallRunning = gameSession != null;
+                result.StreamerSessionId = gameSession?.Id;
+            }
+
+            return result;
+        }
+
+        [HttpGet("extension/{broadcasterId}/{viewerId}")]
+        public async Task<SessionInfo> SetExtensionViewer(string broadcasterId, string viewerId)
+        {
+            var session = this.HttpContext.GetSessionId();
+            var result = await sessionInfoProvider.CreateTwitchUserSessionAsync(session, broadcasterId, viewerId);
             return result;
         }
 
