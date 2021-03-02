@@ -95,111 +95,126 @@ namespace RavenNest.BusinessLogic.Game
             PlayerJoinData playerData)
         {
             var result = new PlayerJoinResult();
-            var session = gameData.GetSession(token.SessionId);
-            if (session == null || session.Status != (int)SessionStatus.Active)
+            try
             {
-                result.ErrorMessage = "Session is unavailable";
-                return result;
-            }
-
-            // in case a reload did something wonkers. ?
-            var characterId = playerData.CharacterId;
-            if (characterId != Guid.Empty || Guid.TryParse(playerData.UserId ?? "", out characterId))
-            {
-                var c = gameData.GetCharacter(characterId);
-                if (c == null)
+                var session = gameData.GetSession(token.SessionId);
+                if (session == null || session.Status != (int)SessionStatus.Active)
                 {
-                    result.ErrorMessage = $"No character found using id '{characterId}'";
+                    result.ErrorMessage = "Session is unavailable";
                     return result;
                 }
 
-                var u = gameData.GetUser(c.UserId);
-                if (u == null)
+                // in case a reload did something wonkers. ?
+                var characterId = playerData.CharacterId;
+                if (characterId != Guid.Empty || Guid.TryParse(playerData.UserId ?? "", out characterId))
                 {
-                    result.ErrorMessage = $"No user found with id '{c.UserId}'";
-                    return result;
-                }
+                    var c = gameData.GetCharacter(characterId);
+                    if (c == null)
+                    {
+                        result.ErrorMessage = $"No character found using id '{characterId}'";
+                        return result;
+                    }
 
-                result.Player = AddPlayerToSession(session, u, c);
-                result.Success = true;
-                return result;
-            }
+                    var u = gameData.GetUser(c.UserId);
+                    if (u == null)
+                    {
+                        result.ErrorMessage = $"No user found with id '{c.UserId}'";
+                        return result;
+                    }
 
-            var userId = playerData.UserId;
-            var userName = playerData.UserName;
-            var identifier = playerData.Identifier;
-
-            var user = gameData.GetUser(userId);
-            if (user == null)
-            {
-                result.Player = CreateUserAndPlayer(session, playerData);
-                result.Success = result.Player != null;
-                return result;
-            }
-
-            if (string.IsNullOrEmpty(user.UserName))
-            {
-                user.UserName = userName;
-                user.DisplayName = userName;
-            }
-
-            if (user.Status.GetValueOrDefault() == (int)AccountStatus.TemporarilySuspended)
-            {
-                result.Success = false;
-                result.ErrorMessage = "You have been temporarily suspended from playing. Contact the staff for more information.";
-                return result;
-            }
-
-            if (user.Status.GetValueOrDefault() == (int)AccountStatus.PermanentlySuspended)
-            {
-                result.Success = false;
-                result.ErrorMessage = "You have been permanently suspended from playing. Contact the staff for more information.";
-                return result;
-            }
-
-            var loyalty = gameData.GetUserLoyalty(user.Id, session.UserId);
-            if (loyalty == null)
-            {
-                CreateUserLoyalty(session, user, playerData);
-            }
-            else
-            {
-                loyalty.IsModerator = playerData.Moderator;
-                loyalty.IsSubscriber = playerData.Subscriber;
-                loyalty.IsVip = playerData.Vip;
-            }
-
-            var character = gameData.GetCharacterByUserId(user.Id, identifier);
-            if (character == null)
-            {
-                var player = CreatePlayer(session, user, playerData);
-                if (player != null)
-                {
+                    result.Player = AddPlayerToSession(session, u, c);
                     result.Success = true;
-                    result.Player = player;
+                    return result;
+                }
+
+                var userId = playerData.UserId;
+                var userName = playerData.UserName;
+                var identifier = playerData.Identifier;
+
+                var user = gameData.GetUser(userId);
+                if (user == null)
+                {
+                    result.Player = CreateUserAndPlayer(session, playerData);
+                    result.Success = result.Player != null;
+                    return result;
+                }
+
+                if (string.IsNullOrEmpty(user.UserName))
+                {
+                    user.UserName = userName;
+                    user.DisplayName = userName;
+                }
+
+                if (user.Status.GetValueOrDefault() == (int)AccountStatus.TemporarilySuspended)
+                {
+                    result.Success = false;
+                    result.ErrorMessage = "You have been temporarily suspended from playing. Contact the staff for more information.";
+                    return result;
+                }
+
+                if (user.Status.GetValueOrDefault() == (int)AccountStatus.PermanentlySuspended)
+                {
+                    result.Success = false;
+                    result.ErrorMessage = "You have been permanently suspended from playing. Contact the staff for more information.";
+                    return result;
+                }
+
+                var loyalty = gameData.GetUserLoyalty(user.Id, session.UserId);
+                if (loyalty == null)
+                {
+                    CreateUserLoyalty(session, user, playerData);
                 }
                 else
                 {
-                    result.ErrorMessage = "Maximum character count of " + MaxCharacterCount + " exceeded.";
+                    loyalty.IsModerator = playerData.Moderator;
+                    loyalty.IsSubscriber = playerData.Subscriber;
+                    loyalty.IsVip = playerData.Vip;
                 }
+
+                var character = gameData.GetCharacterByUserId(user.Id, identifier);
+                if (character == null)
+                {
+                    var player = CreatePlayer(session, user, playerData);
+                    if (player != null)
+                    {
+                        result.Success = true;
+                        result.Player = player;
+                    }
+                    else
+                    {
+                        result.ErrorMessage = "Maximum character count of " + MaxCharacterCount + " exceeded.";
+                    }
+                    return result;
+                }
+
+                if (gameData.GetCharacterSkills(character.SkillsId) == null)
+                {
+                    var skills = GenerateSkills();
+                    character.SkillsId = skills.Id;
+                    gameData.Add(skills);
+                }
+
+                if (string.IsNullOrEmpty(character.Name) || (!string.IsNullOrEmpty(userName) && character.Name != userName))
+                {
+                    character.Name = userName;
+                }
+
+                result.Player = AddPlayerToSession(session, user, character);
+                result.Success = true;
                 return result;
             }
-
-            if (gameData.GetCharacterSkills(character.SkillsId) == null)
+            catch (Exception exc)
             {
-                var skills = GenerateSkills();
-                character.SkillsId = skills.Id;
-                gameData.Add(skills);
+                logger.LogError($"Unable to add player ({playerData?.UserId}, {playerData?.UserName}, {playerData?.Identifier}): " + exc.ToString());
+                return result;
             }
-
-            if (string.IsNullOrEmpty(character.Name) || (!string.IsNullOrEmpty(userName) && character.Name != userName))
+            finally
             {
-                character.Name = userName;
+                if (!result.Success)
+                {
+                    logger.LogError("---- " + result.ErrorMessage);
+                }
             }
-
-            result.Player = AddPlayerToSession(session, user, character);
-            result.Success = true;
-            return result;
         }
 
         public Player AddPlayer(SessionToken token, Guid characterId)
@@ -874,39 +889,47 @@ namespace RavenNest.BusinessLogic.Game
             Guid itemId,
             int amount)
         {
-            var player = GetCharacter(token, userId);
-            if (player == null) return 0;
-
-            if (!integrityChecker.VerifyPlayer(token.SessionId, player.Id, 0))
-                return 0;
-
-            var item = gameData.GetItem(itemId);
-            if (item == null || item.Category == (int)DataModels.ItemCategory.StreamerToken)
-                return 0;
-
-            var inventory = inventoryProvider.Get(player.Id);
-
-            var itemToVendor = inventory.GetUnequippedItem(itemId);
-            if (itemToVendor.IsNull()) return 0;
-
-            var resources = gameData.GetResources(player.ResourcesId);
-            if (resources == null) return 0;
-
-            var session = gameData.GetSession(token.SessionId);
-
-            if (amount <= itemToVendor.Amount)
+            try
             {
-                inventory.RemoveItem(itemToVendor, amount);
-                resources.Coins += item.ShopSellPrice * amount;
+                var player = GetCharacter(token, userId);
+                if (player == null) return 0;
+
+                if (!integrityChecker.VerifyPlayer(token.SessionId, player.Id, 0))
+                    return 0;
+
+                var item = gameData.GetItem(itemId);
+                if (item == null || item.Category == (int)DataModels.ItemCategory.StreamerToken)
+                    return 0;
+
+                var inventory = inventoryProvider.Get(player.Id);
+
+                var itemToVendor = inventory.GetUnequippedItem(itemId);
+                if (itemToVendor.IsNull()) return 0;
+
+                var resources = gameData.GetResources(player.ResourcesId);
+                if (resources == null) return 0;
+
+                var session = gameData.GetSession(token.SessionId);
+
+                if (amount <= itemToVendor.Amount)
+                {
+                    inventory.RemoveItem(itemToVendor, amount);
+                    resources.Coins += item.ShopSellPrice * amount;
+                    UpdateResources(gameData, session, player, resources);
+                    return amount;
+                }
+
+                inventory.RemoveStack(itemToVendor);
+
+                resources.Coins += itemToVendor.Amount * item.ShopSellPrice;
                 UpdateResources(gameData, session, player, resources);
-                return amount;
+                return (int)itemToVendor.Amount;
             }
-
-            inventory.RemoveStack(itemToVendor);
-
-            resources.Coins += itemToVendor.Amount * item.ShopSellPrice;
-            UpdateResources(gameData, session, player, resources);
-            return (int)itemToVendor.Amount;
+            catch (Exception exc)
+            {
+                logger.LogError($"Unable to vendor item (u {userId}, i {itemId}, a x{amount}): " + exc);
+                return 0;
+            }
         }
 
         public int GiftItem(
@@ -916,57 +939,65 @@ namespace RavenNest.BusinessLogic.Game
             Guid itemId,
             int amount)
         {
-            var gifter = GetCharacter(token, gifterUserId);
-            if (gifter == null) return 0;
-
-            if (!integrityChecker.VerifyPlayer(token.SessionId, gifter.Id, 0))
-                return 0;
-
-            var receiver = GetCharacter(token, receiverUserId);
-            if (receiver == null) return 0;
-
-            var item = gameData.GetItem(itemId);
-            if (item == null || item.Soulbound.GetValueOrDefault())
-                return 0;
-
-            var session = gameData.GetSession(token.SessionId);
-            var sessionOwner = gameData.GetUser(session.UserId);
-
-            string itemTag = null;
-            if (item.Category == (int)DataModels.ItemCategory.StreamerToken)
-                itemTag = sessionOwner.UserId;
-
-            var inventory = inventoryProvider.Get(gifter.Id);
-
-            var gift = inventory.GetUnequippedItem(itemId, tag: itemTag);
-            if (gift.IsNull()) return 0;
-
-            if (gift.Soulbound || gift.Attributes != null && gift.Attributes.Count > 0)
-                return 0;
-
-            var giftedItemCount = amount;
-            if (gift.Amount >= amount)
+            try
             {
-                inventory.RemoveItem(gift, amount);
+                var gifter = GetCharacter(token, gifterUserId);
+                if (gifter == null) return 0;
+
+                if (!integrityChecker.VerifyPlayer(token.SessionId, gifter.Id, 0))
+                    return 0;
+
+                var receiver = GetCharacter(token, receiverUserId);
+                if (receiver == null) return 0;
+
+                var item = gameData.GetItem(itemId);
+                if (item == null || item.Soulbound.GetValueOrDefault())
+                    return 0;
+
+                var session = gameData.GetSession(token.SessionId);
+                var sessionOwner = gameData.GetUser(session.UserId);
+
+                string itemTag = null;
+                if (item.Category == (int)DataModels.ItemCategory.StreamerToken)
+                    itemTag = sessionOwner.UserId;
+
+                var inventory = inventoryProvider.Get(gifter.Id);
+
+                var gift = inventory.GetUnequippedItem(itemId, tag: itemTag);
+                if (gift.IsNull()) return 0;
+
+                if (gift.Soulbound || gift.Attributes != null && gift.Attributes.Count > 0)
+                    return 0;
+
+                var giftedItemCount = amount;
+                if (gift.Amount >= amount)
+                {
+                    inventory.RemoveItem(gift, amount);
+                }
+                else
+                {
+                    giftedItemCount = (int)gift.Amount;
+                    inventory.RemoveStack(gift);
+                }
+
+                var recvInventory = inventoryProvider.Get(receiver.Id);
+                recvInventory.AddItem(itemId, giftedItemCount, tag: gift.Tag);
+                //recvInventory.EquipBestItems();
+
+                //gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, gameData.GetSession(token.SessionId), new ItemAdd
+                //{
+                //    UserId = receiverUserId,
+                //    Amount = giftedItemCount,
+                //    ItemId = itemId
+                //}));
+
+                return giftedItemCount;
             }
-            else
+            catch (Exception exc)
             {
-                giftedItemCount = (int)gift.Amount;
-                inventory.RemoveStack(gift);
+                logger.LogError($"Unable to gift item (g {gifterUserId}, r {receiverUserId}, i {itemId}, a x{amount}): " + exc);
+                return 0;
             }
-
-            var recvInventory = inventoryProvider.Get(receiver.Id);
-            recvInventory.AddItem(itemId, giftedItemCount, tag: gift.Tag);
-            //recvInventory.EquipBestItems();
-
-            //gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, gameData.GetSession(token.SessionId), new ItemAdd
-            //{
-            //    UserId = receiverUserId,
-            //    Amount = giftedItemCount,
-            //    ItemId = itemId
-            //}));
-
-            return giftedItemCount;
         }
 
         public bool EquipItem(SessionToken token, string userId, Guid itemId)

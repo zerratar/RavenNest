@@ -283,11 +283,11 @@ namespace RavenNest.BusinessLogic.Data
                     entitySets = new IEntitySet[]
                     {
                         patreons, loyalty, loyaltyRewards, loyaltyRanks, claimedLoyaltyRewards,
-                        expMultiplierEvents, //notifications,
+                        expMultiplierEvents, notifications,
                         appearances, syntyAppearances, characters, characterStates,
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems, inventoryItemAttributes,
                         resources, statistics, characterSkills, clanSkills, users, villages, villageHouses,
-                        clans, clanRoles, clanMemberships, //clanInvites,
+                        clans, clanRoles, clanMemberships, clanInvites,
                         npcs, npcSpawns, npcItemDrops, itemCraftingRequirements, characterSessionActivities
                     };
                 }
@@ -934,6 +934,9 @@ namespace RavenNest.BusinessLogic.Data
         public IReadOnlyList<GameSession> GetActiveSessions() => gameSessions.Entities
                     .OrderByDescending(x => x.Started)
                     .Where(x => x.Stopped == null && DateTime.UtcNow - x.Updated <= TimeSpan.FromMinutes(30)).ToList();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<GameSession> GetSessions() => gameSessions.Entities.OrderByDescending(x => x.Started).ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public InventoryItem GetEquippedItem(Guid characterId, ItemCategory category)
