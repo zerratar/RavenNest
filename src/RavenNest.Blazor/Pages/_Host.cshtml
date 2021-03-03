@@ -53,7 +53,7 @@
       return null;
     }
 
-    window.updateGameClientLoginStateAsync = () => {
+    window.updateGameClientLoginStateAsync = async () => {
       const token = window.getQueryParam('token');
       const state = window.getQueryParam('state');
       const user = window.getQueryParam('user');
