@@ -18,69 +18,76 @@ namespace RavenNest.Blazor.Services.RSS
 
         public async Task<List<NewsItem>> GetNewsAsync()
         {
-            using var reader = XmlReader.Create(this.feedUrl, new XmlReaderSettings
-            {
-                Async = true
-            });
             var output = new List<NewsItem>();
 
-            NewsItem currentItem = null;
-            while (await reader.ReadAsync())
+            try
             {
-                if (reader.Name == "item")
+                using var reader = XmlReader.Create(this.feedUrl, new XmlReaderSettings
                 {
-                    if (reader.NodeType == XmlNodeType.EndElement)
+                    Async = true
+                });
+                NewsItem currentItem = null;
+                while (await reader.ReadAsync())
+                {
+                    if (reader.Name == "item")
+                    {
+                        if (reader.NodeType == XmlNodeType.EndElement)
+                            continue;
+
+                        currentItem = new NewsItem();
+                        output.Add(currentItem);
                         continue;
+                    }
 
-                    currentItem = new NewsItem();
-                    output.Add(currentItem);
-                    continue;
+                    if (currentItem == null)
+                    {
+                        continue;
+                    }
+
+                    if (reader.Name == "title")
+                    {
+                        currentItem.Title = await reader.ReadElementContentAsStringAsync();
+                        continue;
+                    }
+
+                    if (reader.Name == "link")
+                    {
+                        currentItem.NewsSource = await reader.ReadElementContentAsStringAsync();
+                        continue;
+                    }
+
+                    if (reader.Name == "category")
+                    {
+                        currentItem.Categories.Add(await reader.ReadElementContentAsStringAsync());
+                        continue;
+                    }
+
+                    if (reader.Name == "dc:creator")
+                    {
+                        currentItem.Publisher = await reader.ReadElementContentAsStringAsync();
+                        continue;
+                    }
+
+                    if (reader.Name == "pubDate")
+                    {
+                        if (DateTime.TryParse(await reader.ReadElementContentAsStringAsync(), out var dt))
+                            currentItem.Published = dt;
+                        continue;
+                    }
+
+                    if (reader.Name == "content:encoded")
+                    {
+                        var content = await reader.ReadElementContentAsStringAsync();
+                        currentItem.ShortDescription = content.Split(new string[] { "<h4>", "</h4>" }, StringSplitOptions.None)[1];
+                        currentItem.ImageSource = content.Substring(content.IndexOf("https://cdn-images-")).Split('"')[0];
+
+                        continue;
+                    }
                 }
+            }
+            catch (Exception exc)
+            {
 
-                if (currentItem == null)
-                {
-                    continue;
-                }
-
-                if (reader.Name == "title")
-                {
-                    currentItem.Title = await reader.ReadElementContentAsStringAsync();
-                    continue;
-                }
-
-                if (reader.Name == "link")
-                {
-                    currentItem.NewsSource = await reader.ReadElementContentAsStringAsync();
-                    continue;
-                }
-
-                if (reader.Name == "category")
-                {
-                    currentItem.Categories.Add(await reader.ReadElementContentAsStringAsync());
-                    continue;
-                }
-
-                if (reader.Name == "dc:creator")
-                {
-                    currentItem.Publisher = await reader.ReadElementContentAsStringAsync();
-                    continue;
-                }
-
-                if (reader.Name == "pubDate")
-                {
-                    if (DateTime.TryParse(await reader.ReadElementContentAsStringAsync(), out var dt))
-                        currentItem.Published = dt;
-                    continue;
-                }
-
-                if (reader.Name == "content:encoded")
-                {
-                    var content = await reader.ReadElementContentAsStringAsync();
-                    currentItem.ShortDescription = content.Split(new string[] { "<h4>", "</h4>" }, StringSplitOptions.None)[1];
-                    currentItem.ImageSource = content.Substring(content.IndexOf("https://cdn-images-")).Split('"')[0];
-
-                    continue;
-                }
             }
             return output;
         }
