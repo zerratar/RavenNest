@@ -44,6 +44,42 @@
         document.cookie = cookieString;
       }
     };
+    
+    window.getQueryParam = (name) => {      
+      let regex = (new RegExp('[?&]' + encodeURIComponent(name) + '=([^&]*)')).exec(location.search);
+      if (regex) {
+          return decodeURIComponent(regex[1]);
+      }
+      return null;
+    }
+
+    window.updateGameClientLoginStateAsync = () => {
+      const token = window.getQueryParam('token');
+      const state = window.getQueryParam('state');
+      const user = window.getQueryParam('user');
+      const id = window.getQueryParam('id');
+      if (token != null && token.length > 0) {
+        try {
+          let requestUrl = 'http://localhost:8182/?token=' + token + '&state=' + state;
+          if (id != null && id.length > 0) {
+            requestUrl += '&id=' + id;
+          }
+          if (user != null && user.length > 0) {
+            requestUrl += '&user=' + user;
+          }
+          const response = await fetch(requestUrl, {
+            method: 'GET',
+          });
+        } catch (err) {
+          // ignore the error here,
+          // it will most likely just be because we are doing a cross domain call
+          // but the client will still receive the message nontheless.
+        }
+        try {
+          window.close();
+        } catch{}
+      }
+    }
 
     window.scrollToElementId = (elementId, offset) => {
       var element = document.getElementById(elementId);
@@ -54,6 +90,7 @@
       window.scroll({ top: (element.offsetTop - offset), left: 0, behavior: 'smooth' });
       return true;
     }
+
     window.toast = (option) => {
       $('.toast').toast(option);
     };
