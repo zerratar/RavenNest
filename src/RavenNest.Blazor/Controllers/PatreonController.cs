@@ -56,9 +56,9 @@ namespace RavenNest.Controllers
         [HttpPost("create")]
         public async Task Add()
         {
-            var sign = HttpContext.Request.Headers["x-signature"];
-            if (settings.PatreonCreatePledge != sign)
-                return;
+            //var sign = HttpContext.Request.Headers["x-signature"];
+            //if (settings.PatreonCreatePledge != sign)
+            //    return;
 
             var data = await GetPatreonDataAsync();
             if (data == null)
@@ -70,9 +70,9 @@ namespace RavenNest.Controllers
         [HttpPost("update")]
         public async Task Update()
         {
-            var sign = HttpContext.Request.Headers["x-signature"];
-            if (settings.PatreonUpdatePledge != sign)
-                return;
+            //var sign = HttpContext.Request.Headers["x-signature"];
+            //if (settings.PatreonUpdatePledge != sign)
+            //    return;
 
             var data = await GetPatreonDataAsync();
             if (data == null)
@@ -84,9 +84,9 @@ namespace RavenNest.Controllers
         [HttpPost("delete")]
         public async Task Remove()
         {
-            var sign = HttpContext.Request.Headers["x-signature"];
-            if (settings.PatreonDeletePledge != sign)
-                return;
+            //var sign = HttpContext.Request.Headers["x-signature"];
+            //if (settings.PatreonDeletePledge != sign)
+            //    return;
 
             var data = await GetPatreonDataAsync();
             if (data == null)
