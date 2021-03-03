@@ -90,7 +90,7 @@ namespace RavenNest.BusinessLogic.Game
             return null;
         }
 
-        private AuthToken GenerateAuthToken(User user)
+        public AuthToken GenerateAuthToken(User user)
         {
             var userId = user.Id;
             var expires = DateTime.UtcNow + TimeSpan.FromDays(180);

@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using RavenNest.DataModels;
 using RavenNest.Models;
 
 namespace RavenNest.BusinessLogic.Game
@@ -7,6 +8,7 @@ namespace RavenNest.BusinessLogic.Game
     {
         AuthToken Authenticate(string username, string password);
         AuthToken Get(string authToken);
+        AuthToken GenerateAuthToken(User user);
         void SignUp(string userId, string userLogin, string userDisplayName, string userEmail, string password);
         bool IsAdmin(AuthToken authToken);
     }
