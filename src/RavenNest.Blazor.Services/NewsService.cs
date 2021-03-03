@@ -17,14 +17,21 @@ namespace RavenNest.Blazor.Services
 
         public async Task<IReadOnlyList<NewsItem>> GetNewsFeedAsync(int take)
         {
-            if (newsCache.TryGetValue<IReadOnlyList<NewsItem>>("news_feed", out var news))
-                return news.Take(take).ToList();
+            try
+            {
+                if (newsCache.TryGetValue<IReadOnlyList<NewsItem>>("news_feed", out var news))
+                    return news.Take(take).ToList();
 
-            var newsReader = new NewsReader("https://medium.com/feed/ravenfall");
-            news = await newsReader.GetNewsAsync();
-            return newsCache.Set("news_feed", news, TimeSpan.FromMinutes(30))
-                .Take(take)
-                .ToList();
+                var newsReader = new NewsReader("https://medium.com/feed/ravenfall");
+                news = await newsReader.GetNewsAsync();
+                return newsCache.Set("news_feed", news, TimeSpan.FromMinutes(30))
+                    .Take(take)
+                    .ToList();
+            }
+            catch
+            {
+                return new List<NewsItem>();
+            }
         }
     }
 
