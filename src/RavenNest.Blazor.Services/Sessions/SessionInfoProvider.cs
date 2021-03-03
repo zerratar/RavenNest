@@ -11,6 +11,7 @@ using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Twitch;
+using RavenNest.BusinessLogic.Game;
 
 namespace RavenNest.Sessions
 {
@@ -24,6 +25,7 @@ namespace RavenNest.Sessions
 
         private readonly ILogger logger;
         private readonly IGameData gameData;
+        private readonly IAuthManager authManager;
         private readonly AppSettings settings;
 
         // work around for blazor... we have to store all session data to memory. Y U LITTLE. Using the
@@ -32,13 +34,14 @@ namespace RavenNest.Sessions
             = new ConcurrentDictionary<string, SessionData>();
 
         public SessionInfoProvider(
-
             ILogger<SessionInfoProvider> logger,
             IOptions<AppSettings> settings,
-            IGameData gameData)
+            IGameData gameData,
+            IAuthManager authManager)
         {
             this.logger = logger;
             this.gameData = gameData;
+            this.authManager = authManager;
             this.settings = settings.Value;
         }
 
@@ -167,6 +170,7 @@ namespace RavenNest.Sessions
             {
                 si.Id = user.Id;
                 si.Authenticated = true;
+                si.AuthToken = authManager.GenerateAuthToken(user);
                 si.Administrator = user.IsAdmin.GetValueOrDefault();
                 si.Moderator = user.IsModerator.GetValueOrDefault();
                 si.UserId = user.UserId;

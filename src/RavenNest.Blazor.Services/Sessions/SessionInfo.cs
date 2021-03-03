@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RavenNest.Models;
+using System;
 using System.Collections.Generic;
 
 namespace RavenNest.Sessions
@@ -18,6 +19,7 @@ namespace RavenNest.Sessions
         public List<CharacterGameSession> PlaySessions { get; set; }
         public Guid? ActiveCharacterId { get; set; }
         public bool AcceptedCookiesDisclaimer { get; set; }
+        public AuthToken AuthToken { get; set; }
     }
 
     public class CharacterGameSession
