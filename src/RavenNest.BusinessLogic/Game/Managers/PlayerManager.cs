@@ -229,23 +229,18 @@ namespace RavenNest.BusinessLogic.Game
             return AddPlayerToSession(session, user, character);
         }
 
-        public Player AddPlayer(DataModels.GameSession session, Guid characterId)
-        {
-            var character = gameData.GetCharacter(characterId);
-            var user = gameData.GetUser(character.UserId);
-            return AddPlayerToSession(session, user, character);
-        }
-
         private Player AddPlayerToSession(DataModels.GameSession session, User user, Character character)
         {
             // check if we need to remove the player from
             // their active session.
             var sessionChars = gameData.GetSessionCharacters(session);
-            var charactersInSession = sessionChars.Where(x => x.UserId == user.Id).ToList();
-
-            foreach (var cs in charactersInSession)
+            if (sessionChars != null && sessionChars.Count > 0)
             {
-                cs.UserIdLock = null;
+                var charactersInSession = sessionChars.Where(x => x.UserId == user.Id).ToList();
+                foreach (var cs in charactersInSession)
+                {
+                    cs.UserIdLock = null;
+                }
             }
 
             if (character.UserIdLock != null)
