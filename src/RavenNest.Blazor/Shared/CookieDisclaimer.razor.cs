@@ -13,18 +13,31 @@ namespace RavenNest.Blazor.Shared
 
         protected override void OnInitialized()
         {
-            consentFeature = CookieService.Context.Features.Get<ITrackingConsentFeature>();
-            visible = !consentFeature?.CanTrack ?? false;
-            cookieString = consentFeature?.CreateConsentCookie();
+            try
+            {
+                consentFeature = CookieService.Context.Features.Get<ITrackingConsentFeature>();
+                visible = !consentFeature?.CanTrack ?? false;
+                cookieString = consentFeature?.CreateConsentCookie();
+            }
+            catch (Exception exc)
+            {
+                visible = false;
+            }
         }
 
         private void ReadMore()
         {
+            if (!visible)
+                return;
+
             NavigationManager.NavigateTo("/cookies");
         }
 
         private void CloseAndAcceptCookies()
         {
+            if (!visible)
+                return;
+
             visible = false;
             CookieService.AcceptDisclaimer();
             JSRuntime.InvokeVoidAsync(
