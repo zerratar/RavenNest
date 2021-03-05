@@ -249,6 +249,16 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var app = gameData.GetAppearance(character.SyntyAppearanceId);
+
+            if (app == null)
+            {
+                // player not properly initialized.
+
+                app = GenerateRandomSyntyAppearance();
+                character.SyntyAppearanceId = app.Id;
+                gameData.Add(app);
+            }
+
             var clanMembership = gameData.GetClanMembership(character.Id);
             if (clanMembership != null)
             {
@@ -258,7 +268,7 @@ namespace RavenNest.BusinessLogic.Game
                     app.Cape = role.Cape;
                 }
             }
-            else
+            else if (app != null)
             {
                 app.Cape = -1;
             }

@@ -164,6 +164,7 @@ namespace RavenNest.BusinessLogic.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.SyntyAppearance Map(DataModels.SyntyAppearance appearance)
         {
+            if (appearance == null) return new Models.SyntyAppearance();
             return DataMapper.Map<Models.SyntyAppearance, DataModels.SyntyAppearance>(appearance);
         }
 
@@ -222,7 +223,6 @@ namespace RavenNest.BusinessLogic.Extensions
             var clanMembership = gameData.GetClanMembership(character.Id);
             var clan = clanMembership != null ? Map(gameData, gameData.GetClan(clanMembership.ClanId)) : null;
             var clanRole = clanMembership != null ? Map(gameData.GetClanRole(clanMembership.ClanRoleId), clanMembership) : null;
-
 
             var characterState = gameData.GetCharacterState(character.StateId);
 
