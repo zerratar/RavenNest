@@ -131,6 +131,13 @@ namespace RavenNest.BusinessLogic.Game
                 var userName = playerData.UserName;
                 var identifier = playerData.Identifier;
 
+                if (string.IsNullOrEmpty(userId))
+                {
+                    result.Success = false;
+                    result.ErrorMessage = "Something went wrong. Unable to verify user.";
+                    return result;
+                }
+
                 var user = gameData.GetUser(userId);
                 if (user == null)
                 {
@@ -1489,6 +1496,11 @@ namespace RavenNest.BusinessLogic.Game
             if (user == null)
             {
                 if (Guid.TryParse(playerData.UserId, out var characterId) && gameData.GetCharacter(characterId) != null)
+                {
+                    return null;
+                }
+
+                if (string.IsNullOrEmpty(playerData.UserId))
                 {
                     return null;
                 }
