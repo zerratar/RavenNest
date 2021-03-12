@@ -185,6 +185,18 @@ namespace RavenNest.BusinessLogic.Game
 
         public void SendPermissionData(DataModels.GameSession gameSession, DataModels.User user = null)
         {
+            if (gameData == null)
+            {
+                logger.LogError(nameof(gameData) + " is null. unable to send permission data.");
+                return;
+            }
+
+            if (gameSession == null)
+            {
+                logger.LogError(nameof(gameSession) + " is null. Unable to send permission data.");
+                return;
+            }
+
             user = user ?? gameData.GetUser(gameSession.UserId);
             var isAdmin = user.IsAdmin.GetValueOrDefault();
             var isModerator = user.IsModerator.GetValueOrDefault();

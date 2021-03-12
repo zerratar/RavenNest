@@ -487,7 +487,10 @@ namespace RavenNest.BusinessLogic.Game
             var sessions = gameData.GetActiveSessions();
             foreach (var session in sessions)
             {
-                sessionManager.SendPermissionData(session);
+                if (session != null)
+                {
+                    sessionManager.SendPermissionData(session);
+                }
             }
             return true;
         }
