@@ -119,6 +119,8 @@
       session = await AuthService.TwitchLoginAsync(token);
       userInitiatedLogin = false;
       loginFailed = !IsAuthenticated;
+
+      NavigateToHomeIfAuthenticated();
     }
 
     private async void HandleValidSubmit()
