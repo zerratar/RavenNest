@@ -17,15 +17,16 @@ namespace RavenNest.Blazor.Components
         protected override void OnInitialized()
         {
             session = AuthService.GetSession();
-            if (session.UserId == null)
-            {
-                NavigationManager.NavigateTo("/login");
-                return;
-            }
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
+            if (session == null || session.UserId == null)
+            {
+                NavigationManager.NavigateTo("/login");
+                return;
+            }
+
             if (session != null && session.UserId != null)
             {
                 await JS.InvokeAsync<object>("showCharacterCustomization", new object[] { });

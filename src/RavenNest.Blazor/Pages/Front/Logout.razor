@@ -12,6 +12,11 @@
     {
       AuthService.Logout();
       MainLayout.Instance.UpdateSession();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+      base.OnAfterRender(firstRender);
       NavigationManager.NavigateTo("/");
     }
 }

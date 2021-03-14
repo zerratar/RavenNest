@@ -46,6 +46,6 @@
       session = AuthService.GetSession();
     }
 
-    private bool IsAdministrator => IsAuthenticated && session.Administrator;
     private bool IsAuthenticated => session != null && session.UserId != null;
+    private bool IsAdministrator => IsAuthenticated && session.Administrator;
 }

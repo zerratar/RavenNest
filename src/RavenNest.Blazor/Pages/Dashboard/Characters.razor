@@ -70,7 +70,7 @@ else
 
   protected override void OnAfterRender(bool firstRender)
   {
-    if (session.UserId == null && selectedPlayer == null)
+    if (session == null || session.UserId == null && selectedPlayer == null)
     {
       NavigationManager.NavigateTo("/login");
     }
@@ -80,5 +80,4 @@ else
   {
     selectedPlayer = player;
   }
-
 }
