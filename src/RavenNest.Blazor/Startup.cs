@@ -75,8 +75,7 @@ namespace RavenNest.Blazor
             services.AddServerSideBlazor();
             services.AddHttpContextAccessor();
 
-            RegisterServices(services);
-
+            RegisterServices(services);            
 
             services.Configure<GzipCompressionProviderOptions>(options =>
               options.Level = System.IO.Compression.CompressionLevel.Optimal);
@@ -93,7 +92,7 @@ namespace RavenNest.Blazor
         public void Configure(IApplicationBuilder app, IHostApplicationLifetime applicationLifetime, IWebHostEnvironment env)
         {
             applicationLifetime.ApplicationStopping.Register(
-                () => app.ApplicationServices.GetService<IGameData>().Flush());
+                () => app.ApplicationServices.GetService<IGameData>().Flush());            
 
             //app.UseCookiePolicy();
             app.AddRequestTiming();
