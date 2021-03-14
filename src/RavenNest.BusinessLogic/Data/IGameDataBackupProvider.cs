@@ -20,10 +20,10 @@ namespace RavenNest.BusinessLogic.Data
 
     public class GameDataBackupProvider : IGameDataBackupProvider
     {
-#if DEBUG
-        private const string RestorePointFolder = @"C:\git\RavenNest\src\RavenNest.Blazor\restorepoints";
-#else
+#if RELEASE || Linux
         private const string RestorePointFolder = @"restorepoints";
+#else
+        private const string RestorePointFolder = @"C:\git\RavenNest\src\RavenNest.Blazor\restorepoints";
 #endif
         private const string BackupFolder = "backups";
         private const string FileTypeExt = ".json";
