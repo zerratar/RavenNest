@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Features;
+﻿using Microsoft.AspNetCore.Http.Features;
 using Microsoft.JSInterop;
 using System;
 
@@ -13,6 +12,12 @@ namespace RavenNest.Blazor.Shared
 
         protected override void OnInitialized()
         {
+            if (CookieService == null || CookieService.Context == null)
+            {
+                visible = false;
+                return;
+            }
+
             try
             {
                 consentFeature = CookieService.Context.Features.Get<ITrackingConsentFeature>();

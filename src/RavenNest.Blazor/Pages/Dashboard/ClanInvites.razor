@@ -50,31 +50,36 @@ else
 }
 
 @code {
-    private RavenNest.Sessions.SessionInfo session;
-    private IReadOnlyList<ClanInvite> invites;
-    protected override async Task OnInitializedAsync()
+  private RavenNest.Sessions.SessionInfo session;
+  private IReadOnlyList<ClanInvite> invites;
+  protected override async Task OnInitializedAsync()
+  {
+    session = AuthService.GetSession();
+    if (session == null || session.UserId == null)
     {
-      session = AuthService.GetSession();
-      invites = await ClanService.GetClanInvitesAsync();
+      return;
     }
 
-    public async void AcceptInvite(Guid inviteId)
-    {
-      this.invites = await ClanService.AcceptClanInviteAsync(inviteId);
-      InvokeAsync(this.StateHasChanged);
-    }
+    invites = await ClanService.GetClanInvitesAsync();
+  }
 
-    public async void DeclineInvite(Guid inviteId)
-    {
-      this.invites = await ClanService.DeclineClanInviteAsync(inviteId);
-      InvokeAsync(this.StateHasChanged);
-    }
+  public async void AcceptInvite(Guid inviteId)
+  {
+    this.invites = await ClanService.AcceptClanInviteAsync(inviteId);
+    InvokeAsync(this.StateHasChanged);
+  }
 
-    protected override void OnAfterRender(bool firstRender)
+  public async void DeclineInvite(Guid inviteId)
+  {
+    this.invites = await ClanService.DeclineClanInviteAsync(inviteId);
+    InvokeAsync(this.StateHasChanged);
+  }
+
+  protected override void OnAfterRender(bool firstRender)
+  {
+    if (session == null || session.UserId == null)
     {
-      if (session.UserId == null)
-      {
-        NavigationManager.NavigateTo("/login");
-      }
+      NavigationManager.NavigateTo("/login");
     }
+  }
 }

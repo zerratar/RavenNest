@@ -19,14 +19,23 @@ namespace RavenNest.Blazor.Components
         protected override async Task OnInitializedAsync()
         {
             session = AuthService.GetSession();
+            if (session.UserId != null)
+            {
+                clan = Player.Clan;
+                clanRole = Player.ClanRole;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+        protected override void OnAfterRender(bool firstRender)
+        {
+            base.OnAfterRender(firstRender);
+
             if (session.UserId == null)
             {
                 NavigationManager.NavigateTo("/login");
                 return;
             }
-            clan = Player.Clan;
-            clanRole = Player.ClanRole;
-            await InvokeAsync(StateHasChanged);
         }
 
         protected override void OnParametersSet()

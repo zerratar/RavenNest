@@ -18,12 +18,11 @@ else
   protected override void OnInitialized()
   {
     session = AuthService.GetSession();
-
   }
 
   protected override void OnAfterRender(bool firstRender)
   {
-    if (session.UserId == null)
+    if (session == null || session.UserId == null)
     {
       NavigationManager.NavigateTo("/login");
     }
