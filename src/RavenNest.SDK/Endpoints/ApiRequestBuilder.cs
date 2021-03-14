@@ -4,28 +4,25 @@ namespace RavenNest.SDK.Endpoints
 {
     public class WebApiRequestBuilderProvider : IApiRequestBuilderProvider
     {
+        private readonly ILogger logger;
         private readonly IAppSettings settings;
-        private SessionToken sessionToken;
-        private AuthToken authToken;
+        private readonly ITokenProvider tokenProvider;
 
-        public WebApiRequestBuilderProvider(IAppSettings settings)
+        public WebApiRequestBuilderProvider(
+            ILogger logger,
+            IAppSettings settings,
+            ITokenProvider tokenProvider)
         {
+            this.logger = logger;
             this.settings = settings;
-        }
-
-        public void SetAuthToken(AuthToken currentAuthToken)
-        {
-            this.authToken = currentAuthToken;
-        }
-
-        public void SetSessionToken(SessionToken currentSessionToken)
-        {
-            this.sessionToken = currentSessionToken;
+            this.tokenProvider = tokenProvider;
         }
 
         public IApiRequestBuilder Create()
         {
-            return new WebApiRequestBuilder(settings, authToken, sessionToken);
+            return new WebApiRequestBuilder(settings, logger,
+                tokenProvider.GetAuthToken(),
+                tokenProvider.GetSessionToken());
         }
     }
 
