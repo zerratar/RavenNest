@@ -5,6 +5,7 @@ using System.Text;
 
 namespace RavenNest.SDK
 {
+
     public class ConsoleLogger : ILogger
     {
         private readonly object writelock = new object();
