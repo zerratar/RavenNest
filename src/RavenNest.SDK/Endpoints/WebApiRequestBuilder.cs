@@ -10,23 +10,24 @@ namespace RavenNest.SDK.Endpoints
         private readonly CookieContainer sharedCookieContainer = new CookieContainer();
         private readonly List<IRequestParameter> parameters = new List<IRequestParameter>();
         private readonly IAppSettings appSettings;
-
+        private readonly ILogger logger;
         private readonly SessionToken sessionToken;
         private readonly AuthToken authToken;
 
         private string identifier;
         private string method;
 
-        public WebApiRequestBuilder(IAppSettings appSettings, AuthToken authToken, SessionToken sessionToken)
+        public WebApiRequestBuilder(IAppSettings appSettings, ILogger logger, AuthToken authToken, SessionToken sessionToken)
         {
             this.appSettings = appSettings;
+            this.logger = logger;
             this.authToken = authToken;
             this.sessionToken = sessionToken;
         }
 
         public IApiRequestBuilder Identifier(string value)
         {
-            this.identifier = value;
+            identifier = value;
             return this;
         }
 
@@ -38,13 +39,13 @@ namespace RavenNest.SDK.Endpoints
 
         public IApiRequestBuilder AddParameter(string key, object value)
         {
-            parameters.Add(new WebApiRequestParameter(key, JSON.Stringify(value)));
+            parameters.Add(new WebApiRequestParameter(key, JsonConvert.SerializeObject(value)));
             return this;
         }
 
         public IApiRequestBuilder Method(string item)
         {
-            this.method = item;
+            method = item;
             return this;
         }
 
@@ -54,6 +55,7 @@ namespace RavenNest.SDK.Endpoints
                 sharedCookieContainer,
                 authToken,
                 sessionToken,
+                logger,
                 appSettings,
                 identifier,
                 method,

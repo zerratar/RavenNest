@@ -14,8 +14,5 @@ namespace RavenNest.SDK.Endpoints
     public interface IApiRequestBuilderProvider
     {
         IApiRequestBuilder Create();
-
-        void SetAuthToken(AuthToken currentAuthToken);
-        void SetSessionToken(SessionToken currentSessionToken);
     }
 }

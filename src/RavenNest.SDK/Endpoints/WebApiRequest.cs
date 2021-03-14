@@ -19,11 +19,13 @@ namespace RavenNest.SDK.Endpoints
         private readonly CookieContainer cookieContainer;
         private readonly AuthToken authToken;
         private readonly SessionToken sessionToken;
+        private readonly ILogger logger;
 
         public WebApiRequest(
             CookieContainer cookieContainer,
             AuthToken authToken,
             SessionToken sessionToken,
+            ILogger logger,
             IAppSettings settings,
             string identifier,
             string method,
@@ -36,6 +38,7 @@ namespace RavenNest.SDK.Endpoints
             this.cookieContainer = cookieContainer;
             this.authToken = authToken;
             this.sessionToken = sessionToken;
+            this.logger = logger;
         }
 
         public Task<TResult> SendAsync<TResult>(ApiRequestTarget reqTarget, ApiRequestType type)
@@ -54,23 +57,31 @@ namespace RavenNest.SDK.Endpoints
             var target = GetTargetUrl(reqTarget);
             var request = (HttpWebRequest)WebRequest.CreateDefault(new Uri(target, UriKind.Absolute));
             var requestData = "";
+            //request.Accept = "application/json";
+
+            if (reqTarget == ApiRequestTarget.Game || reqTarget == ApiRequestTarget.Players)
+            {
+                request.Timeout = 25000;
+            }
+
+            request.UserAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.90 Safari/537.36";
             request.Method = GetMethod(type);
             request.CookieContainer = cookieContainer;
             request.ServerCertificateValidationCallback += (sender, certificate, chain, errors) => true;
 
             if (authToken != null)
             {
-                request.Headers["auth-token"] = Base64Encode(JSON.Stringify(authToken));
+                request.Headers["auth-token"] = JsonConvert.SerializeObject(authToken).Base64Encode();
             }
 
             if (sessionToken != null)
             {
-                request.Headers["session-token"] = Base64Encode(JSON.Stringify(sessionToken));
+                request.Headers["session-token"] = JsonConvert.SerializeObject(sessionToken).Base64Encode();
             }
 
             if (parameters != null)
             {
-                var named = this.parameters.Where(x => !string.IsNullOrEmpty(x.Key)).ToList();
+                var named = parameters.Where(x => !string.IsNullOrEmpty(x.Key)).ToList();
                 if (model != null)
                 {
                     foreach (var param in named)
@@ -86,8 +97,9 @@ namespace RavenNest.SDK.Endpoints
 
             if (model != null)
             {
-                requestData = JSON.Stringify(model);
+                requestData = JsonConvert.SerializeObject(model);
             }
+
 
             if (!string.IsNullOrEmpty(requestData))
             {
@@ -101,17 +113,34 @@ namespace RavenNest.SDK.Endpoints
                 }
             }
 
-            using (var response = await request.GetResponseAsync())
-            using (var resStream = response.GetResponseStream())
-            using (var reader = new StreamReader(resStream))
+            try
             {
-                if (typeof(TResult) == typeof(object))
+                using (var response = await request.GetResponseAsync())
+                using (var resStream = response.GetResponseStream())
+                using (var reader = new StreamReader(resStream))
                 {
-                    return default(TResult);
-                }
+                    if (((HttpWebResponse)response).StatusCode == HttpStatusCode.Forbidden)
+                    {
+                        return default(TResult);
+                    }
 
-                var responseData = await reader.ReadToEndAsync();
-                return JSON.Parse<TResult>(responseData);
+                    if (typeof(TResult) == typeof(object))
+                    {
+                        return default(TResult);
+                    }
+
+                    var responseData = await reader.ReadToEndAsync();
+                    return JsonConvert.DeserializeObject<TResult>(responseData);
+                }
+            }
+            catch (Exception exc)
+            {
+                try
+                {
+                    logger.Error(exc.ToString());
+                }
+                catch { }
+                return default(TResult);
             }
         }
 
@@ -128,19 +157,21 @@ namespace RavenNest.SDK.Endpoints
 
         private string GetTargetUrl(ApiRequestTarget reqTarget)
         {
-            // http(s)://server:1111/api/
-            var url = settings.ApiEndpoint;
+            var url = reqTarget == ApiRequestTarget.Auth ? settings.ApiAuthEndpoint : settings.ApiEndpoint;
             if (!url.EndsWith("/")) url += "/";
             url += reqTarget + "/";
             if (!string.IsNullOrEmpty(identifier)) url += $"{identifier}/";
             if (!string.IsNullOrEmpty(method)) url += $"{method}/";
             if (parameters == null) return url;
-            var parameterString = string.Join("/", parameters.Where(x => string.IsNullOrEmpty(x.Key)));
-            if (!string.IsNullOrEmpty(parameterString)) url += $"/{parameterString}";
+            var parameterString = string.Join("/", parameters.Where(x => string.IsNullOrEmpty(x.Key)).Select(x => x.Value));
+            if (!string.IsNullOrEmpty(parameterString)) url += $"{parameterString}";
             return url;
         }
+    }
 
-        private static string Base64Encode(string plainText)
+    public static class StringExtensions
+    {
+        public static string Base64Encode(this string plainText)
         {
             var plainTextBytes = Encoding.UTF8.GetBytes(plainText);
             return System.Convert.ToBase64String(plainTextBytes);
