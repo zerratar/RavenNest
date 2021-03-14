@@ -78,7 +78,19 @@ namespace RavenNest.Blazor.Services.RSS
                     if (reader.Name == "content:encoded")
                     {
                         var content = await reader.ReadElementContentAsStringAsync();
-                        currentItem.ShortDescription = content.Split(new string[] { "<h4>", "</h4>" }, StringSplitOptions.None)[1];
+
+                        if (content.Contains("<h4>"))
+                        {
+                            currentItem.ShortDescription = content.Split(new string[] { "<h4>", "</h4>" }, StringSplitOptions.None)[1];
+                        }
+                        else if (content.Contains("<ul>"))
+                        {
+                            currentItem.ShortDescription = content
+                                .Split(new string[] { "<ul>", "</ul>" }, StringSplitOptions.None)[1]
+                                .Replace("</li><li>", "<br/>")
+                                .Replace("<li>", "");
+                        }
+
                         currentItem.ImageSource = content.Substring(content.IndexOf("https://cdn-images-")).Split('"')[0];
 
                         continue;
