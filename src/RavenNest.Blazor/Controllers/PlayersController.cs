@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -54,6 +55,12 @@ namespace RavenNest.Controllers
         public Task<Player> Get()
         {
             return GetPlayerAsync();
+        }
+
+        [HttpGet("all")]
+        public Task<IReadOnlyList<WebsitePlayer>> GetAllMyPlayers()
+        {
+            return GetPlayersAsync();
         }
 
         [HttpGet("user")] // due to a misspelling in the customization tool. god darnit :P
@@ -306,6 +313,19 @@ namespace RavenNest.Controllers
                 throw new Exception("Session has expired.");
             }
         }
+
+        private async Task<System.Collections.Generic.IReadOnlyList<WebsitePlayer>> GetPlayersAsync()
+        {
+            var sessionId = HttpContext.GetSessionId();
+
+            if (sessionInfoProvider.TryGet(sessionId, out var si))
+            {
+                return playerManager.GetWebsitePlayers(si.UserId);
+            }
+
+            return new System.Collections.Generic.List<WebsitePlayer>();
+        }
+
         private async Task<Player> GetPlayerAsync()
         {
             var sessionId = HttpContext.GetSessionId();

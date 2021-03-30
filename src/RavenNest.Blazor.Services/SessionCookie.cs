@@ -14,6 +14,13 @@ namespace RavenNest
         public static string GetSessionId(HttpContext context)
         {
             if (context == null) return Guid.NewGuid().ToString();
+            if (context.Request.Headers.ContainsKey(sessionCookie) &&
+                context.Request.Headers.TryGetValue(sessionCookie, out var sid) &&
+                !string.IsNullOrEmpty(sid))
+            {
+                return sid;
+            }
+
             if (!context.Request.Cookies.TryGetValue(sessionCookie, out var id))
             {
                 try

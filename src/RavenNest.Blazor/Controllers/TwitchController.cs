@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
@@ -118,6 +120,73 @@ namespace RavenNest.Controllers
             }
             return result;
         }
+
+        [HttpGet("extension/leave/{broadcasterId}")]
+        public bool PlayerLeave(string broadcasterId)
+        {
+            if (string.IsNullOrEmpty(broadcasterId))
+            {
+                return false;
+            }
+
+            var session = this.HttpContext.GetSessionId();
+            if (!sessionInfoProvider.TryGet(session, out var sessionInfo))
+            {
+                return false;
+            }
+
+            var activeSession = gameData.GetSessionByUserId(broadcasterId);
+            if (activeSession == null)
+            {
+                return false;
+            }
+
+            var playSession = sessionInfo.PlaySessions.FirstOrDefault(x => x.SessionTwitchUserId == broadcasterId);
+            if (playSession == null)
+            {
+                return false;
+            }
+
+            return playerManager.RemovePlayerFromActiveSession(activeSession, playSession.CharacterId);
+        }
+
+        [HttpGet("extension/join/{broadcasterId}/{characterId}")]
+        public PlayerJoinResult PlayerJoin(string broadcasterId, Guid characterId)
+        {
+            if (string.IsNullOrEmpty(broadcasterId) || characterId == Guid.Empty)
+            {
+                return null;
+            }
+
+            var activeSession = gameData.GetSessionByUserId(broadcasterId);
+            if (activeSession == null)
+            {
+                return null;
+            }
+
+            var session = this.HttpContext.GetSessionId();
+            if (sessionInfoProvider.TryGet(session, out var sessionInfo))
+            {
+                var c = gameData.GetCharacter(characterId);
+                if (c == null)
+                {
+                    return null;
+                }
+
+                var myUser = gameData.GetUser(c.UserId);
+                if (myUser == null || myUser.UserId != sessionInfo.UserId)
+                {
+                    return null;
+                }
+            }
+            else
+            {
+                return null;
+            }
+
+            return playerManager.AddPlayerByCharacterId(activeSession, characterId);
+        }
+
 
         [HttpGet("extension/new/{broadcasterId}/{userId}/{username}/{displayName}")]
         public Task<SessionInfo> CreateUserAsync(string broadcasterId, string userId, string username, string displayName)

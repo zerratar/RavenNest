@@ -90,41 +90,16 @@ namespace RavenNest.BusinessLogic.Game
             });
         }
 
-        public PlayerJoinResult AddPlayer(
-            SessionToken token,
-            PlayerJoinData playerData)
+        public PlayerJoinResult AddPlayer(DataModels.GameSession session, PlayerJoinData playerData)
         {
             var result = new PlayerJoinResult();
             try
             {
-                var session = gameData.GetSession(token.SessionId);
-                if (session == null || session.Status != (int)SessionStatus.Active)
-                {
-                    result.ErrorMessage = "Session is unavailable";
-                    return result;
-                }
-
                 // in case a reload did something wonkers. ?
                 var characterId = playerData.CharacterId;
                 if (characterId != Guid.Empty || Guid.TryParse(playerData.UserId ?? "", out characterId))
                 {
-                    var c = gameData.GetCharacter(characterId);
-                    if (c == null)
-                    {
-                        result.ErrorMessage = $"No character found using id '{characterId}'";
-                        return result;
-                    }
-
-                    var u = gameData.GetUser(c.UserId);
-                    if (u == null)
-                    {
-                        result.ErrorMessage = $"No user found with id '{c.UserId}'";
-                        return result;
-                    }
-
-                    result.Player = AddPlayerToSession(session, u, c);
-                    result.Success = true;
-                    return result;
+                    return AddPlayerByCharacterId(session, characterId);
                 }
 
                 var userId = playerData.UserId;
@@ -223,6 +198,43 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
         }
+        public PlayerJoinResult AddPlayerByCharacterId(DataModels.GameSession session, Guid characterId)
+        {
+            var result = new PlayerJoinResult();
+            var c = gameData.GetCharacter(characterId);
+            if (c == null)
+            {
+                result.ErrorMessage = $"No character found using id '{characterId}'";
+                return result;
+            }
+
+            var u = gameData.GetUser(c.UserId);
+            if (u == null)
+            {
+                result.ErrorMessage = $"No user found with id '{c.UserId}'";
+                return result;
+            }
+
+            result.Player = AddPlayerToSession(session, u, c);
+            result.Success = true;
+            return result;
+        }
+
+        public PlayerJoinResult AddPlayer(
+            SessionToken token,
+            PlayerJoinData playerData)
+        {
+            var result = new PlayerJoinResult();
+            var session = gameData.GetSession(token.SessionId);
+            if (session == null || session.Status != (int)SessionStatus.Active)
+            {
+                result.ErrorMessage = "Session is unavailable";
+                return result;
+            }
+
+            return AddPlayer(session, playerData);
+
+        }
 
         public Player AddPlayer(SessionToken token, Guid characterId)
         {
@@ -300,12 +312,17 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool RemovePlayerFromActiveSession(SessionToken token, Guid characterId)
         {
+            var session = gameData.GetSession(token.SessionId);
+            return RemovePlayerFromActiveSession(session, characterId);
+        }
+
+        public bool RemovePlayerFromActiveSession(DataModels.GameSession session, Guid characterId)
+        {
+            if (session == null) return false;
             var character = gameData.GetCharacter(characterId);
             if (character == null) return false;
             var user = gameData.GetUser(character.UserId);
             if (user == null) return false;
-            var session = gameData.GetSession(token.SessionId);
-            if (session == null) return false;
             var sessionOwner = gameData.GetUser(session.UserId);
             if (sessionOwner == null) return false;
             if (sessionOwner.Id != character.UserIdLock)

@@ -11,9 +11,11 @@ namespace RavenNest.BusinessLogic.Game
         Player CreatePlayerIfNotExists(string userId, string userName, string identifier);
         Player CreatePlayer(string userId, string userName, string identifier);
         bool RemovePlayerFromActiveSession(SessionToken token, Guid characterId);
+        bool RemovePlayerFromActiveSession(DataModels.GameSession session, Guid characterId);
+        Player AddPlayer(SessionToken token, Guid characterId);
         PlayerJoinResult AddPlayer(SessionToken token, PlayerJoinData playerJoinData);
         PlayerJoinResult AddPlayer(SessionToken token, string userId, string userName, string identifier = null);
-        Player AddPlayer(SessionToken token, Guid characterId);
+        PlayerJoinResult AddPlayerByCharacterId(DataModels.GameSession session, Guid characterId);
         Player GetPlayer(SessionToken sessionToken, string userId);
         Player GetPlayer(SessionToken sessionToken);
         Player GetPlayer(Guid characterId);
