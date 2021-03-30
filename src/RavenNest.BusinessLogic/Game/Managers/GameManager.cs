@@ -47,6 +47,9 @@ namespace RavenNest.BusinessLogic.Game
             var isExpScroll = scroll.Item.Name.Contains("exp", StringComparison.OrdinalIgnoreCase);
             if (isExpScroll)
             {
+                if (!serverManager.CanIncreaseGlobalExpMultiplier())
+                    return ScrollUseResult.Error;
+
                 var user = gameData.GetUser(character.UserId);
                 if (serverManager.IncreaseGlobalExpMultiplier(user) && inventory.RemoveItem(scroll, 1))
                     return ScrollUseResult.Success;

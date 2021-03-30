@@ -295,6 +295,7 @@ namespace RavenNest.BusinessLogic.Data
                 UpgradeSkillLevels(characterSkills);
                 RemoveBadUsers(users);
                 EnsureClanLevels(clans);
+                EnsureExpMultipliersWithinBounds(expMultiplierEvents);
 
                 stopWatch.Stop();
                 logger.LogDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
@@ -310,6 +311,27 @@ namespace RavenNest.BusinessLogic.Data
                 System.IO.File.WriteAllText("ravenfall-error.log", exc.ToString());
             }
 
+        }
+
+        private void EnsureExpMultipliersWithinBounds(EntitySet<ExpMultiplierEvent, Guid> expMultiplierEvents)
+        {
+            foreach (var multi in expMultiplierEvents.Entities)
+            {
+                if (multi.StartedByPlayer)
+                {
+                    if (multi.Multiplier > ServerManager.MaxExpMultiplier)
+                    {
+                        multi.Multiplier = ServerManager.MaxExpMultiplier;
+                    }
+
+                    var runTime = multi.EndTime - multi.StartTime;
+                    var maxRunTime = TimeSpan.FromMinutes(ServerManager.ExpMultiplierStartTimeMinutes + (ServerManager.MaxExpMultiplier * ServerManager.ExpMultiplierMinutesPerScroll));
+                    if (runTime > maxRunTime)
+                    {
+                        multi.EndTime = multi.StartTime.Add(runTime);
+                    }
+                }
+            }
         }
 
         private void EnsureClanLevels(EntitySet<Clan, Guid> clans)
