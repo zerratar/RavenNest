@@ -1166,7 +1166,7 @@ namespace RavenNest.BusinessLogic.Game
                 User = gameData.GetUser(x.UserId),
                 Character = x
             })
-            .Where(x => x.Character != null && x.User != null)
+            .Where(x => x.Character != null && x.User != null && (x.User.Status == null || x.User.Status == 0))
             .Select(x => x.User.Map(gameData, x.Character))
             .ToList();
         }
