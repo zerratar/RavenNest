@@ -68,6 +68,7 @@ namespace RavenNest.BusinessLogic.Game
             else
                 user = gameData.GetUser(patreon.UserId.GetValueOrDefault());
 
+            var now = DateTime.UtcNow;
             if (createPatreonIfNotExists && patreon == null)
             {
                 patreon = new UserPatreon()
@@ -81,9 +82,15 @@ namespace RavenNest.BusinessLogic.Game
                     PledgeTitle = data.RewardTitle,
                     Tier = data.Tier,
                     TwitchUserId = data.TwitchUserId ?? user?.UserId,
-                    UserId = user?.Id
+                    UserId = user?.Id,
+                    Updated = now,
+                    Created = now,
                 };
                 gameData.Add(patreon);
+            }
+            else if (patreon != null)
+            {
+                patreon.Updated = now;
             }
 
             return user;

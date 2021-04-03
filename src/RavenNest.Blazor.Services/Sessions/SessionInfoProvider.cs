@@ -111,7 +111,7 @@ namespace RavenNest.Sessions
             if (activeSession == null)
                 return new SessionInfo();
 
-            var activeCharacter = gameData.GetCharacterBySession(activeSession.Id, twitchUserId);
+            var activeCharacter = gameData.GetCharacterBySession(activeSession.Id, twitchUserId, false);
             if (activeCharacter != null)
                 si.ActiveCharacterId = activeCharacter.Id;
 
@@ -193,7 +193,7 @@ namespace RavenNest.Sessions
                     {
                         var skills = gameData.GetCharacterSkills(myChar.SkillsId);
                         var owner = gameData.GetUser(myChar.UserIdLock.Value);
-                        var session = gameData.GetSessionByUserId(owner.UserId);
+                        var session = gameData.GetJoinedSessionByUserId(owner.UserId);
                         if (session != null)
                         {
                             playSessions.Add(new CharacterGameSession

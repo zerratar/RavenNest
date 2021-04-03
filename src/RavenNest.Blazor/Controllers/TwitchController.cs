@@ -13,6 +13,8 @@ using Newtonsoft.Json;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Docs.Attributes;
+using RavenNest.BusinessLogic.Extended;
+using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
 using RavenNest.Sessions;
@@ -121,8 +123,8 @@ namespace RavenNest.Controllers
             return result;
         }
 
-        [HttpGet("extension/leave/{broadcasterId}")]
-        public bool PlayerLeave(string broadcasterId)
+        [HttpGet("extension/leave/{broadcasterId}/{characterId}")]
+        public bool PlayerLeave(string broadcasterId, Guid characterId)
         {
             if (string.IsNullOrEmpty(broadcasterId))
             {
@@ -135,33 +137,44 @@ namespace RavenNest.Controllers
                 return false;
             }
 
-            var activeSession = gameData.GetSessionByUserId(broadcasterId);
+            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId);
             if (activeSession == null)
             {
                 return false;
             }
 
-            var playSession = sessionInfo.PlaySessions.FirstOrDefault(x => x.SessionTwitchUserId == broadcasterId);
-            if (playSession == null)
+            var user = gameData.GetUser(sessionInfo.UserId);
+            if (user == null)
             {
                 return false;
             }
 
-            return playerManager.RemovePlayerFromActiveSession(activeSession, playSession.CharacterId);
+            var myCharacters = gameData.GetCharacters(c => c.UserId == user.Id && c.Id == characterId);
+            var character = myCharacters.FirstOrDefault();
+            if (character == null)
+            {
+                return false;
+            }
+
+            playerManager.SendRemovePlayerFromSessionToGame(character);
+            return playerManager.RemovePlayerFromActiveSession(activeSession, characterId);
         }
 
         [HttpGet("extension/join/{broadcasterId}/{characterId}")]
-        public PlayerJoinResult PlayerJoin(string broadcasterId, Guid characterId)
+        public ExtensionPlayerJoinResult PlayerJoin(string broadcasterId, Guid characterId)
         {
+            var result = new ExtensionPlayerJoinResult();
             if (string.IsNullOrEmpty(broadcasterId) || characterId == Guid.Empty)
             {
-                return null;
+                result.ErrorMessage = "Invalid broadcaster or bad character id";
+                return result;
             }
 
-            var activeSession = gameData.GetSessionByUserId(broadcasterId);
+            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId);
             if (activeSession == null)
             {
-                return null;
+                result.ErrorMessage = "Broadcaster does not have an active game session";
+                return result;
             }
 
             var session = this.HttpContext.GetSessionId();
@@ -170,21 +183,48 @@ namespace RavenNest.Controllers
                 var c = gameData.GetCharacter(characterId);
                 if (c == null)
                 {
-                    return null;
+                    result.ErrorMessage = "No such character.";
+                    return result;
                 }
 
                 var myUser = gameData.GetUser(c.UserId);
                 if (myUser == null || myUser.UserId != sessionInfo.UserId)
                 {
-                    return null;
+                    result.ErrorMessage = "No such user.";
+                    return result;
                 }
+
+                if (c.UserId != myUser.Id)
+                {
+                    result.ErrorMessage = "Well, that is not your character.";
+                    return result;
+                }
+
+                // We are just going to assume that it was successeful
+                // since, if it "fails" as the character is already in game. well. Then what harm done?
+                result.Success = true;
+                result.Player = c.MapForWebsite(gameData, myUser);
+
+                var gameEvent = gameData.CreateSessionEvent(
+                    GameEventType.PlayerAdd,
+                    activeSession,
+                    new PlayerAdd()
+                    {
+                        CharacterId = characterId,
+                        Identifier = c.Identifier,
+                        UserId = sessionInfo.UserId,
+                        UserName = sessionInfo.UserName
+                    });
+
+                gameData.Add(gameEvent);
             }
             else
             {
-                return null;
+                result.ErrorMessage = "You don't seem to be authenticated.";
+                return result;
             }
 
-            return playerManager.AddPlayerByCharacterId(activeSession, characterId);
+            return result;
         }
 
 
@@ -207,7 +247,7 @@ namespace RavenNest.Controllers
                 result.StreamerUserId = broadcasterId;
                 result.StreamerUserName = streamer.UserName;
 
-                var gameSession = gameData.GetActiveSessions().FirstOrDefault(x => x.UserId == streamer.Id);
+                var gameSession = gameData.GetOwnedSessionByUserId(streamer.UserId);
                 result.IsRavenfallRunning = gameSession != null;
                 result.StreamerSessionId = gameSession?.Id;
             }

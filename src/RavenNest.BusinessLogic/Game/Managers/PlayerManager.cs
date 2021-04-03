@@ -93,6 +93,7 @@ namespace RavenNest.BusinessLogic.Game
         public PlayerJoinResult AddPlayer(DataModels.GameSession session, PlayerJoinData playerData)
         {
             var result = new PlayerJoinResult();
+            var internalErrorMessage = "";
             try
             {
                 // in case a reload did something wonkers. ?
@@ -118,6 +119,10 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     result.Player = CreateUserAndPlayer(session, playerData);
                     result.Success = result.Player != null;
+                    if (!result.Success)
+                    {
+                        internalErrorMessage = "Unable to create a user. " + JSON.Stringify(playerData);
+                    }
                     return result;
                 }
 
@@ -194,7 +199,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 if (!result.Success)
                 {
-                    logger.LogError("---- " + result.ErrorMessage);
+                    logger.LogError("---- " + result.ErrorMessage + internalErrorMessage);
                 }
             }
         }
@@ -264,7 +269,7 @@ namespace RavenNest.BusinessLogic.Game
 
             if (character.UserIdLock != null)
             {
-                TryRemovePlayerFromPreviousSession(character, session);
+                SendRemovePlayerFromSessionToGame(character, session);
             }
 
             var app = gameData.GetAppearance(character.SyntyAppearanceId);
@@ -307,6 +312,7 @@ namespace RavenNest.BusinessLogic.Game
                     state.Z = null;
                 }
             }
+
             return character.Map(gameData, user, rejoin, true);
         }
 
@@ -331,28 +337,37 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
-        private void TryRemovePlayerFromPreviousSession(Character character, DataModels.GameSession joiningSession)
+        public void SendRemovePlayerFromSessionToGame(Character character, DataModels.GameSession joiningSession = null)
         {
             var userToRemove = gameData.GetUser(character.UserId);
             if (userToRemove == null)
                 return;
 
             var currentSession = gameData.GetUserSession(character.UserIdLock.GetValueOrDefault());
-            if (currentSession == null || currentSession.Id == joiningSession.Id || currentSession.UserId == joiningSession.UserId)
+            if (currentSession == null)
                 return;
 
-            var targetSessionUser = gameData.GetUser(joiningSession.UserId);
+            if (joiningSession != null && (currentSession.Id == joiningSession.Id || currentSession.UserId == joiningSession.UserId))
+                return;
+
+            var reason = "";
+            if (joiningSession != null)
+            {
+                var targetSessionUser = gameData.GetUser(joiningSession.UserId);
+                reason = $"{character.Name} joined {targetSessionUser.UserName}'s stream";
+            }
+            else
+            {
+                reason = "Left the game using the extension.";
+            }
+
             var characterUser = gameData.GetUser(character.UserId);
             var gameEvent = gameData.CreateSessionEvent(
                 GameEventType.PlayerRemove,
                 currentSession,
                 new PlayerRemove()
                 {
-                    Reason =
-                    targetSessionUser != null
-                        ? $"{character.Name} joined {targetSessionUser.UserName}'s stream"
-                        : $"{character.Name} joined another session.",
-
+                    Reason = reason,
                     UserId = characterUser.UserId,
                     CharacterId = character.Id
                 });

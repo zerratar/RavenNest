@@ -544,10 +544,19 @@ namespace RavenNest.BusinessLogic.Data
             if (sessionOwner == null) return null;
             return GetActiveSessions().FirstOrDefault(x => x.UserId == sessionOwner.Id);
         }
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public GameSession GetOwnedSessionByUserId(string userId)
+        {
+            var user = users.Entities.FirstOrDefault(x => x.UserId == userId);
+            if (user == null) return null;
+
+            return GetActiveSessions().FirstOrDefault(x => x.UserId == user.Id);
+        }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GameSession GetSessionByUserId(string userId)
+        public GameSession GetJoinedSessionByUserId(string userId)
         {
             var user = users.Entities.FirstOrDefault(x => x.UserId == userId);
             if (user == null) return null;
@@ -622,9 +631,9 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Character GetCharacterBySession(Guid sessionId, string userId)
+        public Character GetCharacterBySession(Guid sessionId, string userId, bool updateSession = true)
         {
-            var session = GetSession(sessionId);
+            var session = GetSession(sessionId, updateSession);
             var characters = GetSessionCharacters(session);
             return characters.FirstOrDefault(x => GetUser(x.UserId)?.UserId == userId);
         }
@@ -955,7 +964,7 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<GameSession> GetActiveSessions() => gameSessions.Entities
                     .OrderByDescending(x => x.Started)
-                    .Where(x => x.Stopped == null && DateTime.UtcNow - x.Updated <= TimeSpan.FromMinutes(30)).ToList();
+                    .Where(x => x.Stopped == null && DateTime.UtcNow - x.Updated <= TimeSpan.FromMinutes(15)).ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<GameSession> GetSessions() => gameSessions.Entities.OrderByDescending(x => x.Started).ToList();

@@ -1,5 +1,4 @@
 ﻿using RavenNest.Models;
-using System;
 
 namespace RavenNest.BusinessLogic.Extended
 {
@@ -18,12 +17,5 @@ namespace RavenNest.BusinessLogic.Extended
                 return (int)(((Skills.AttackLevel + Skills.DefenseLevel + Skills.HealthLevel + Skills.StrengthLevel) / 4f) + ((Skills.RangedLevel + Skills.MagicLevel + Skills.HealingLevel) / 8f));
             }
         }
-    }
-
-    public class CharacterSessionInfo
-    {
-        public DateTime Started { get; internal set; }
-        public string OwnerDisplayName { get; internal set; }
-        public string OwnerUserName { get; internal set; }
     }
 }
