@@ -35,7 +35,8 @@ namespace RavenNest.BusinessLogic.Data
         UserNotification GetNotification(Guid notificationId);
         UserPatreon GetPatreonUser(Guid userId);
         IReadOnlyList<Skill> GetSkills();
-        DataModels.GameSession GetSessionByUserId(string userId);
+        DataModels.GameSession GetJoinedSessionByUserId(string userId);
+        DataModels.GameSession GetOwnedSessionByUserId(string userId);
         DataModels.GameSession GetSessionByCharacterId(Guid characterId);
         CharacterClanInvite GetClanInvite(Guid inviteId);
         IReadOnlyList<CharacterClanInvite> GetClanInvitesByCharacter(Guid characterId);
@@ -73,7 +74,7 @@ namespace RavenNest.BusinessLogic.Data
         Character GetCharacter(Guid characterId);
         Character GetCharacterByUserId(Guid userId, string identifier = "0");
         Character GetCharacterByUserId(string twitchUserId, string identifier);
-        Character GetCharacterBySession(Guid sessionId, string userId);
+        Character GetCharacterBySession(Guid sessionId, string userId, bool updateSession = true);
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(Guid itemId, string tag = null);
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(int skip, int take);
         IReadOnlyList<DataModels.GameEvent> GetSessionEvents(Guid sessionId);
