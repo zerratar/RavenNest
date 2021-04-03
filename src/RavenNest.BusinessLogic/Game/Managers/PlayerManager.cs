@@ -220,6 +220,20 @@ namespace RavenNest.BusinessLogic.Game
                 return result;
             }
 
+            if (u.Status.GetValueOrDefault() == (int)AccountStatus.TemporarilySuspended)
+            {
+                result.Success = false;
+                result.ErrorMessage = "You have been temporarily suspended from playing. Contact the staff for more information.";
+                return result;
+            }
+
+            if (u.Status.GetValueOrDefault() == (int)AccountStatus.PermanentlySuspended)
+            {
+                result.Success = false;
+                result.ErrorMessage = "You have been permanently suspended from playing. Contact the staff for more information.";
+                return result;
+            }
+
             result.Player = AddPlayerToSession(session, u, c);
             result.Success = true;
             return result;
@@ -255,6 +269,16 @@ namespace RavenNest.BusinessLogic.Game
 
         private Player AddPlayerToSession(DataModels.GameSession session, User user, Character character)
         {
+            if (user.Status.GetValueOrDefault() == (int)AccountStatus.TemporarilySuspended)
+            {
+                return null;
+            }
+
+            if (user.Status.GetValueOrDefault() == (int)AccountStatus.PermanentlySuspended)
+            {
+                return null;
+            }
+
             // check if we need to remove the player from
             // their active session.
             var sessionChars = gameData.GetSessionCharacters(session);
