@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RavenNest.DataModels
 {
@@ -18,5 +14,7 @@ namespace RavenNest.DataModels
         private long? pledgeAmount; public long? PledgeAmount { get => pledgeAmount; set => Set(ref pledgeAmount, value); }
         private string email; public string Email { get => email; set => Set(ref email, value); }
         private int? tier; public int? Tier { get => tier; set => Set(ref tier, value); }
+        private DateTime? updated; public DateTime? Updated { get => updated; set => Set(ref updated, value); }
+        private DateTime? created; public DateTime? Created { get => created; set => Set(ref created, value); }
     }
 }
