@@ -76,6 +76,27 @@ namespace RavenNest.BusinessLogic.Game
             });
         }
 
+        public void SendPlayerTaskToGame(
+            DataModels.GameSession activeSession,
+            Character character,
+            string task,
+            string taskArgument)
+        {
+            var uid = character.UserId;
+            var user = gameData.GetUser(uid);
+            if (user == null)
+            {
+                return;
+            }
+            
+            gameData.Add(gameData.CreateSessionEvent(GameEventType.PlayerTask, activeSession, new PlayerTask
+            {
+                Task = task,
+                TaskArgument = taskArgument,
+                UserId = user.UserId
+            }));
+        }
+
         public PlayerJoinResult AddPlayer(
             SessionToken token,
             string userId,
@@ -1894,6 +1915,5 @@ namespace RavenNest.BusinessLogic.Game
         {
             return Math.Max(currentExp, newExp) - currentExp;
         }
-
     }
 }

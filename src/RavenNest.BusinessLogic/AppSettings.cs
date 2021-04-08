@@ -15,7 +15,7 @@
         public string TwitchClientId { get; set; }
         public string TwitchClientSecret { get; set; }
         public string OriginBroadcasterId { get; set; }
-
+        public string DevelopmentServer { get; set; }
         public string PatreonDeleteMember { get; set; }
         public string PatreonUpdateMember { get; set; }
         public string PatreonCreateMember { get; set; }
