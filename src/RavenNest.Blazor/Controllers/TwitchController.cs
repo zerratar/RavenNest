@@ -123,6 +123,48 @@ namespace RavenNest.Controllers
             return result;
         }
 
+        [HttpGet("extension/set-task/{broadcasterId}/{characterId}/{task}")]
+        public void SetTask(string broadcasterId, Guid characterId, string task)
+        {
+            SetTask(broadcasterId, characterId, task, null);
+        }
+
+        [HttpGet("extension/set-task/{broadcasterId}/{characterId}/{task}/{taskArgument}")]
+        public void SetTask(string broadcasterId, Guid characterId, string task, string taskArgument)
+        {
+            if (string.IsNullOrEmpty(broadcasterId))
+            {
+                return;
+            }
+
+            var session = this.HttpContext.GetSessionId();
+            if (!sessionInfoProvider.TryGet(session, out var sessionInfo))
+            {
+                return;
+            }
+
+            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId);
+            if (activeSession == null)
+            {
+                return;
+            }
+
+            var user = gameData.GetUser(sessionInfo.UserId);
+            if (user == null)
+            {
+                return;
+            }
+
+            var myCharacters = gameData.GetCharacters(c => c.UserId == user.Id && c.Id == characterId);
+            var character = myCharacters.FirstOrDefault();
+            if (character == null)
+            {
+                return;
+            }
+
+            playerManager.SendPlayerTaskToGame(activeSession, character, task, taskArgument);
+        }
+
         [HttpGet("extension/leave/{broadcasterId}/{characterId}")]
         public bool PlayerLeave(string broadcasterId, Guid characterId)
         {

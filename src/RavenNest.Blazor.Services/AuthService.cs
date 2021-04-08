@@ -54,15 +54,18 @@ namespace RavenNest.Blazor.Services
 
         public string GetTwitchLoginUrl()
         {
-#if DEBUG
-            return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
-            + $"https://{Context.Request.Host}/login/twitch"
-            + "&response_type=token&scope=user:read:email";
-#else
-            return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
-            + "https://www.ravenfall.stream/login/twitch"
-            + "&response_type=token&scope=user:read:email";
-#endif
+            if (!string.IsNullOrEmpty(settings.DevelopmentServer))
+            {
+                return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
+                + $"https://{Context.Request.Host}/login/twitch"
+                + "&response_type=token&scope=user:read:email";
+            }
+            else
+            {
+                return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
+                + "https://www.ravenfall.stream/login/twitch"
+                + "&response_type=token&scope=user:read:email";
+            }
         }
     }
 }
