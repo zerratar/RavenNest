@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Net;
+using RavenNest.DataModels;
 using RavenNest.Models;
 
 namespace RavenNest.BusinessLogic.Game
@@ -66,5 +67,6 @@ namespace RavenNest.BusinessLogic.Game
         bool AddTokens(SessionToken sessionToken, string userId, int amount);
         int RedeemTokens(SessionToken sessionToken, string userId, int amount, bool exact);
         int GetHighscore(SessionToken sessionToken, Guid characterId, string skillName);
+        void SendPlayerTaskToGame(DataModels.GameSession activeSession, Character character, string task, string taskArgument);
     }
 }
