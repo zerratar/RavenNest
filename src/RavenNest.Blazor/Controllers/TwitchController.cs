@@ -309,15 +309,23 @@ namespace RavenNest.Controllers
         [MethodDescriptor(Name = "Get Access Token Request URL", Description = "Gets a Twitch access token request url with the scope user:read:email.")]
         public string GetAccessTokenRequestUrl()
         {
-#if DEBUG
             return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
             + $"https://{HttpContext.Request.Host}/login/twitch"
             + "&response_type=token&scope=user:read:email";
-#else
-            return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
-            + "https://www.ravenfall.stream/login/twitch"
-            + "&response_type=token&scope=user:read:email";
-#endif
+
+            //    if (!string.IsNullOrEmpty(settings.DevelopmentServer))
+            //    {
+            //        return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
+            //        + $"https://{HttpContext.Request.Host}/login/twitch"
+            //        + "&response_type=token&scope=user:read:email";
+            //    }
+            //    else
+            //    {
+            //        return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
+            //        + "https://www.ravenfall.stream/login/twitch"
+            //        + "&response_type=token&scope=user:read:email";
+            //    }
+            //}
         }
 
         [HttpGet("user")]
