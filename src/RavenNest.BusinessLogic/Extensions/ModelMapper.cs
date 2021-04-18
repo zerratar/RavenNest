@@ -30,6 +30,13 @@ namespace RavenNest.BusinessLogic.Extensions
             if (user == null)
                 return null;
 
+            var state = gameData.GetSessionState(session.Id);
+            if (state != null)
+            {
+                session.ClientVersion = state.ClientVersion;
+                session.SyncTime = state.SyncTime;
+            }
+
             session.TwitchUserId = user.UserId;
             session.UserName = user.UserName;
             session.AdminPrivileges = user.IsAdmin.GetValueOrDefault();
@@ -60,9 +67,31 @@ namespace RavenNest.BusinessLogic.Extensions
         public static Models.CharacterState Map(DataModels.CharacterState data)
         {
             var state = DataMapper.Map<Models.CharacterState, DataModels.CharacterState>(data);
-            state.InDungeon = data.InDungeon.GetValueOrDefault();
-            state.InOnsen = data.InOnsen.GetValueOrDefault();
-            state.RestedTime = data.RestedTime.GetValueOrDefault();
+            if (state == null)
+            {
+                state = new Models.CharacterState();
+                if (data != null)
+                {
+                    state.Id = data.Id;
+                    state.Task = data.Task;
+                    state.TaskArgument = data.TaskArgument;
+                    state.InRaid = data.InRaid;
+                    state.Island = data.Island;
+                    state.DuelOpponent = data.DuelOpponent;
+                    state.RestedTime = data.RestedTime ?? 0m;
+                    state.X = data.X;
+                    state.Y = data.Y;
+                    state.Z = data.Z;
+                }
+            }
+
+            if (data != null)
+            {
+                state.InDungeon = data.InDungeon.GetValueOrDefault();
+                state.InOnsen = data.InOnsen.GetValueOrDefault();
+                state.RestedTime = data.RestedTime.GetValueOrDefault();
+            }
+
             return state;
         }
 
