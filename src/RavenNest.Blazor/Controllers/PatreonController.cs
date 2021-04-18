@@ -95,85 +95,6 @@ namespace RavenNest.Controllers
             patreonManager.RemovePledge(data);
         }
 
-        //[HttpPost("update-pledge")]
-        //public async Task UpdatePledge()
-        //{
-        //    AssertValidSignature(settings.PatreonUpdatePledge);
-        //    var data = ConvertPledgeData(await GetRequestData<PatreonWebhook>());
-        //    if (data == null) return;
-        //    patreonManager.UpdatePledge(data);
-        //}
-
-        //[HttpPost("delete-pledge")]
-        //public async Task DeletePledge()
-        //{
-        //    AssertValidSignature(settings.PatreonDeletePledge);
-        //    var data = ConvertPledgeData(await GetRequestData<PatreonWebhook>());
-        //    if (data == null) return;
-        //    patreonManager.RemovePledge(data);
-        //}
-
-        //[HttpPost("create-pledge")]
-        //public async Task CreatePledge()
-        //{
-        //    AssertValidSignature(settings.PatreonCreatePledge);
-        //    var data = ConvertPledgeData(await GetRequestData<PatreonWebhook>());
-        //    if (data == null) return;
-        //    patreonManager.AddPledge(data);
-        //}
-
-        //private void AssertValidSignature(string secret)
-        //{
-        //    // X-Patreon-Event : to get the trigger, example: pledges:create, 
-        //    // not used here, as we have separate endpoints for each.
-        //    var signature = HttpContext.Request.Headers["X-Patreon-Signature"];
-        //    // signature is the HEX digest of the message body HMAC signed (with MD5) using your webhook's secret
-        //    // uh..
-        //}
-
-        //private PatreonPledgeData ConvertPledgeData(PatreonWebhook data)
-        //{
-        //    if (data == null)
-        //        return null;
-
-        //    var fullName = data.Data.Attributes.FullName;
-        //    var pledgeAmountCents = data.Data.Attributes.PledgeAmountCents;
-        //    var status = data.Data.Attributes.PatronStatus;
-
-        //    var userData = data.Included.FirstOrDefault(x => x.Type == TypeEnum.User);
-
-        //    var reward = data.Included
-        //        .Where(x => x.Type == TypeEnum.Reward)
-        //        .OrderByDescending(x => x.Attributes.Amount)
-        //        .FirstOrDefault();
-
-        //    var tier = data.Included
-        //        .Where(x => x.Type == TypeEnum.Tier)
-        //        .OrderByDescending(x => x.Attributes?.Amount)
-        //        .FirstOrDefault();
-
-        //    var isActive = status == "active_patreon" && reward != null;
-        //    var social = userData.Attributes.SocialConnections;
-        //    var twitchUserId = "";
-        //    var rewardTitle = reward?.Attributes?.Title ?? tier?.Attributes?.Title;
-        //    int rewardTier = GetRewardTier(rewardTitle);
-        //    if (social != null && social.Twitch != null)
-        //    {
-        //        twitchUserId = social.Twitch.UserId;
-        //    }
-
-        //    return new PatreonPledgeData
-        //    {
-        //        PatreonId = userData.Id,
-        //        Email = userData.Attributes.Email,
-        //        FirstName = userData.Attributes.FirstName,
-        //        FullName = userData.Attributes.FullName,
-        //        TwitchUserId = twitchUserId,
-        //        PledgeAmountCents = pledgeAmountCents,
-        //        RewardTitle = rewardTitle,
-        //        Tier = rewardTier,
-        //    };
-        //}
 
         private async Task<IPatreonData> GetPatreonDataAsync()
         {
@@ -217,6 +138,7 @@ namespace RavenNest.Controllers
                 using (var sr = new StreamReader(HttpContext.Request.Body))
                 {
                     patreonJson = await sr.ReadToEndAsync();
+                    logger.LogWarning("Incoming Patreon Data: " + patreonJson);
                     return JsonConvert.DeserializeObject<T>(patreonJson);
                 }
             }
