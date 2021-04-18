@@ -1,0 +1,162 @@
+﻿.player-list-modal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    max-width: 100%;
+    transform: translate(-50%,-50%);
+    max-width: 100%;
+    background-color: white;
+    border: 1px solid #ccc;
+    padding: 5px;
+    display: flex;
+    flex-flow: column;
+    box-shadow: 0 0 10px rgb(0 0 0 / 20%);
+}
+.btn-close {
+    cursor: pointer;
+    font-size: 24pt;
+}
+.player-list-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+}
+
+.player-character-index {
+    margin-left: 5px;
+    display: inline-block;
+    color: #a2a2a2;
+    font-size: 9pt;
+}
+
+input.table-edit {
+    padding: 3px;
+    margin: 2px;
+}
+
+button.link-button {
+    background-color: #0e0e0f;
+    color: #fff;
+    border: 0;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin: 2px;
+}
+
+input.search-input {
+    padding: 10px 15px;
+    border-radius: 10px;
+    border: 1px solid #d5d5d5;
+    width: 500px;
+    max-width: 100%;
+    box-sizing: border-box;
+    outline: none;
+    font-size: 13pt;
+}
+
+.pagenation {
+    display: flex;
+    flex-flow: row;
+    justify-content: space-between;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    margin-left: 25px;
+    margin-right: 25px;
+}
+
+.page-navigation {
+    display: flex;
+    flex-flow: row;
+    align-items: flex-end;
+    height: 35px;
+}
+
+.pages {
+    display: flex;
+    line-height: 17px;
+    margin: 5px;
+}
+
+table.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    cursor: pointer;
+    user-select: none;
+}
+
+th,
+td {
+    text-align: right;
+    padding: 10px 15px;
+    border: 1px solid #eeeeee;
+}
+
+table.table tr {
+    border: none;
+}
+
+table.table th:nth-of-type(2),
+table.table td:nth-of-type(2) {
+    text-align: left;
+}
+
+table.table tr:nth-of-type(even) {
+    background-color: #f6f6f6;
+}
+
+.stats-row {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    padding: 10px 25px;
+    -webkit-box-pack: space-evenly;
+    -ms-flex-pack: space-evenly;
+    justify-content: space-evenly;
+    max-width: 100%;
+    width: 800px;
+    box-sizing: border-box;
+    margin-left: auto;
+    margin-right: auto;
+    border-bottom: 1px solid #f3f3f3;
+}
+
+.stats-combat-level {
+    font-size: 14pt;
+    margin-bottom: 10px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #e6e6e6;
+    display: block;
+    width: 100%;
+}
+
+.stats-row:nth-of-type(2n+2) {
+    background-color: #fafafa;
+}
+
+.stats-label {
+    width: 190px;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.stats-progress {
+    text-align: right;
+    min-width: 120px;
+    text-align: center;
+    background-color: #f4f4f4;
+}
+
+.stats-value {
+    width: 190px;
+    text-align: right;
+}
+
+.stats-progress-value {
+    height: 23px;
+    position: absolute;
+    background-color: #81a1f829;
+}

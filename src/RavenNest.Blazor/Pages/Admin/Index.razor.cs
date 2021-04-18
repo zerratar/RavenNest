@@ -123,7 +123,7 @@ namespace RavenNest.Blazor.Pages.Admin
             try
             {
                 var title = config.Options.Title.Text;
-                if (outputData.Length > 0 && title != null)
+                if (outputData != null && outputData.Length > 0 && title != null)
                 {
                     config.Options.Title.Text = title.SingleValue + " - Total " + total;
                 }

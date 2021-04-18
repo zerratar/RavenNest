@@ -182,6 +182,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<WeatherForecastService>();
 
             services.AddSingleton<AuthService>();
+            services.AddSingleton<SessionService>();
             services.AddSingleton<HighscoreService>();
             services.AddSingleton<ItemService>();
             services.AddSingleton<ClanService>();
