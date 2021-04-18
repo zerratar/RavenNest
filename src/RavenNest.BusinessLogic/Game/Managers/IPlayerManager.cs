@@ -48,8 +48,8 @@ namespace RavenNest.BusinessLogic.Game
         AddItemResult AddItem(SessionToken token, string userId, Guid itemId);
         AddItemResult CraftItem(SessionToken token, string userId, Guid itemId, int amount = 1);
 
-        int GiftItem(SessionToken token, string gifterUserId, string receiverUserId, Guid itemId, int amount);
-        int VendorItem(SessionToken token, string userId, Guid itemId, int amount);
+        long GiftItem(SessionToken token, string gifterUserId, string receiverUserId, Guid itemId, long amount);
+        long VendorItem(SessionToken token, string userId, Guid itemId, long amount);
 
         bool EquipItem(SessionToken token, string userId, Guid itemId);
         bool UnequipItem(SessionToken token, string userId, Guid itemId);
