@@ -1,5 +1,4 @@
 ﻿using System;
-using TwitchLib.Api.Helix.Models.Videos;
 
 namespace RavenNest.BusinessLogic.Game
 {

@@ -200,13 +200,13 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("{userId}/gift/{receiverUserId}/{itemId}/{amount}")]
-        public int GiftItem(string userId, string receiverUserId, Guid itemId, int amount)
+        public long GiftItem(string userId, string receiverUserId, Guid itemId, long amount)
         {
             return playerManager.GiftItem(AssertGetSessionToken(), userId, receiverUserId, itemId, amount);
         }
 
         [HttpGet("{userId}/vendor/{item}/{amount}")]
-        public int VendorItem(string userId, Guid item, int amount)
+        public long VendorItem(string userId, Guid item, long amount)
         {
             return playerManager.VendorItem(AssertGetSessionToken(), userId, item, amount);
         }

@@ -88,7 +88,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 return;
             }
-            
+
             gameData.Add(gameData.CreateSessionEvent(GameEventType.PlayerTask, activeSession, new PlayerTask
             {
                 Task = task,
@@ -972,11 +972,11 @@ namespace RavenNest.BusinessLogic.Game
                 : AddItemResult.Added;
         }
 
-        public int VendorItem(
+        public long VendorItem(
             SessionToken token,
             string userId,
             Guid itemId,
-            int amount)
+            long amount)
         {
             try
             {
@@ -1021,12 +1021,12 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        public int GiftItem(
+        public long GiftItem(
             SessionToken token,
             string gifterUserId,
             string receiverUserId,
             Guid itemId,
-            int amount)
+            long amount)
         {
             try
             {
