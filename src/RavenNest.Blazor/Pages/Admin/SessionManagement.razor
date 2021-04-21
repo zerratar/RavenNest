@@ -5,29 +5,31 @@
 
 @if (isAdmin)
 {
-  <h1>Game Sessions</h1>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>Id</th>
-        <th>Owner</th>
-        <th>Status</th>
-        <th>Started</th>
-        <th>Last Update</th>
-        <th>Uptime</th>
-        <th>Admin</th>
-        <th>Mod</th>
-        <th>Client Version</th>
-        <th>Players</th>
-      </tr>
-    </thead>
-    <tbody>
-      @if (gameSessions == null || loading)
-      {
-        <LoadIndicator></LoadIndicator>
-      }
-      else
-      {
+
+  @if (gameSessions == null || loading)
+  {
+    <h1>Game Sessions</h1>
+    <LoadIndicator></LoadIndicator>
+  }
+  else
+  {
+    <h1>Game Sessions (@gameSessions.Count)</h1>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Id</th>
+          <th>Owner</th>
+          <th>Status</th>
+          <th>Started</th>
+          <th>Last Update</th>
+          <th>Uptime</th>
+          <th>Admin</th>
+          <th>Mod</th>
+          <th>Client Version</th>
+          <th>Players (@gameSessions.Sum(x => x.Players.Count))</th>
+        </tr>
+      </thead>
+      <tbody>
         @foreach (var session in gameSessions)
         {
           <tr class="table-row">
@@ -43,9 +45,10 @@
             <td @onclick="()=>ShowPlayerList(session)">@session.Players.Count</td>
           </tr>
         }
-      }
-    </tbody>
-  </table>
+
+      </tbody>
+    </table>
+  }
   @if (playerListVisible)
   {
     <div class="player-list-modal">

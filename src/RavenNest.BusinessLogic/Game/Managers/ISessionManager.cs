@@ -17,6 +17,7 @@ namespace RavenNest.BusinessLogic.Game
         SessionToken Get(string sessionToken);
         void SendVillageInfo(DataModels.GameSession newGameSession);
         void SendPermissionData(DataModels.GameSession gameSession, DataModels.User user = null);
+        void UpdateSessionState(SessionToken sessionToken, ClientSyncUpdate update);
         void EndSession(SessionToken token);
         void RecordTimeMismatch(SessionToken sessionToken, TimeSyncUpdate update);
         bool EndSessionAndRaid(SessionToken token, string userIdOrUsername, bool isWarRaid);
