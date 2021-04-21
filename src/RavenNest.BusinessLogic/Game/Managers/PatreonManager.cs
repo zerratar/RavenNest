@@ -71,6 +71,24 @@ namespace RavenNest.BusinessLogic.Game
             var now = DateTime.UtcNow;
             if (createPatreonIfNotExists && patreon == null)
             {
+                long pledgeAmount = 0;
+                if (!string.IsNullOrEmpty(data.PledgeAmountCents))
+                {
+                    var value = data.PledgeAmountCents;
+                    if (data.PledgeAmountCents.Contains(','))
+                    {
+                        value = data.PledgeAmountCents.Split(',')[1];
+                    }
+
+                    long.TryParse(value, out pledgeAmount);
+                }
+
+                string title = data.RewardTitle;
+                if (!string.IsNullOrEmpty(title) && title.Contains(','))
+                {
+                    title = title.Split(',')[1];
+                }
+
                 patreon = new UserPatreon()
                 {
                     Id = Guid.NewGuid(),
@@ -78,8 +96,8 @@ namespace RavenNest.BusinessLogic.Game
                     FirstName = firstName,
                     FullName = data.FullName,
                     PatreonId = data.PatreonId,
-                    PledgeAmount = data.PledgeAmountCents,
-                    PledgeTitle = data.RewardTitle,
+                    PledgeAmount = pledgeAmount,
+                    PledgeTitle = title,
                     Tier = data.Tier,
                     TwitchUserId = data.TwitchUserId ?? user?.UserId,
                     UserId = user?.Id,

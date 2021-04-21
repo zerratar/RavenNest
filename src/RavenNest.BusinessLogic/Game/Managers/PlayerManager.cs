@@ -121,7 +121,8 @@ namespace RavenNest.BusinessLogic.Game
                 var characterId = playerData.CharacterId;
                 if (characterId != Guid.Empty || Guid.TryParse(playerData.UserId ?? "", out characterId))
                 {
-                    return AddPlayerByCharacterId(session, characterId);
+                    result = AddPlayerByCharacterId(session, characterId);
+                    return result;
                 }
 
                 var userId = playerData.UserId;
@@ -220,7 +221,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 if (!result.Success)
                 {
-                    logger.LogError("---- " + result.ErrorMessage + internalErrorMessage);
+                    logger.LogError("Add Player Failed for " + playerData.UserId + ", " + playerData.UserName + ", session-user-id: " + (session?.UserId) + result.ErrorMessage + internalErrorMessage);
                 }
             }
         }

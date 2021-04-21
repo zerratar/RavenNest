@@ -102,7 +102,14 @@ namespace RavenNest.Controllers
             if (data == null)
                 return null;
 
-            data.Tier = GetRewardTier(data.RewardTitle);
+            string title = data.RewardTitle;
+            if (!string.IsNullOrEmpty(title) && title.Contains(','))
+            {
+                title = title.Split(',')[1];
+                data.RewardTitle = title;
+            }
+
+            data.Tier = GetRewardTier(title);
             return data;
         }
 

@@ -72,16 +72,13 @@ namespace RavenNest.BusinessLogic.Game
             var activeSession = gameData.GetUserSession(userId);
             // x => x.UserId == userId && x.Status == (int)SessionStatus.Active
 
-            //if (activeSession != null &&
-            //    DateTime.UtcNow - activeSession.Updated.GetValueOrDefault() >= TimeSpan.FromMinutes(30))
-            //{
-            //    activeSession.Status = (int)SessionStatus.Inactive;
-            //    activeSession.Stopped = DateTime.UtcNow;
-            //    foreach(var c in gameData.GetSessionCharacters(activeSession))
-            //    {
-            //        c.UserIdLock = null;
-            //    }
-            //}
+            if (activeSession != null &&
+                DateTime.UtcNow - activeSession.Updated.GetValueOrDefault() >= TimeSpan.FromMinutes(30))
+            {
+                activeSession.Status = (int)SessionStatus.Inactive;
+                activeSession.Stopped = DateTime.UtcNow;
+                activeSession = null;
+            }
 
             var newGameSession = activeSession ?? gameData.CreateSession(userId);
             if (activeSession == null)
@@ -360,6 +357,20 @@ namespace RavenNest.BusinessLogic.Game
                 }
             );
             gameData.Add(serverTime);
+        }
+
+        public void UpdateSessionState(SessionToken sessionToken, ClientSyncUpdate update)
+        {
+            var session = gameData.GetSession(sessionToken.SessionId);
+            if (session == null) return;
+            var owner = gameData.GetUser(session.UserId);
+            if (owner == null) return;
+
+            var sessionState = gameData.GetSessionState(session.Id);
+            if (sessionState != null)
+            {
+                sessionState.ClientVersion = update.ClientVersion;
+            }
         }
 
         public void RecordTimeMismatch(SessionToken sessionToken, TimeSyncUpdate update)
