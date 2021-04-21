@@ -16,6 +16,8 @@ namespace RavenNest.BusinessLogic.Net
             this.logger = logger;
             this.playerManager = playerManager;
             Default = new UnsupportedPacketHandler(logger);
+
+            packetHandlers["sync_client"] = new SyncClientPacketHandler(sessionManager);
             packetHandlers["sync_time"] = new SyncTimePacketHandler(sessionManager);
             packetHandlers["update_character_state"] = new UpdateCharacterStatePacketHandler(playerManager);
             packetHandlers["update_character_skills"] = new UpdateCharacterSkillPacketHandler(playerManager);

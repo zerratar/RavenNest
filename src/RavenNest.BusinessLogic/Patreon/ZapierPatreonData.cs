@@ -15,7 +15,7 @@ namespace RavenNest.BusinessLogic.Patreon
         [JsonProperty("patreonId")]
         public long PatreonId { get; set; }
         [JsonProperty("pledgeAmount")]
-        public long PledgeAmountCents { get; set; }
+        public string PledgeAmountCents { get; set; }
         [JsonProperty("status")]
         public string Status { get; set; }
 
