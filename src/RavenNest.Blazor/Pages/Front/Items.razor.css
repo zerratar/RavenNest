@@ -48,6 +48,11 @@ th, td {
     border: 1px solid #eeeeee;
 }
 
+.items-list th {
+    cursor:pointer;
+    user-select:none;
+}
+
 table.items-list tr {
     border: none;
 }
