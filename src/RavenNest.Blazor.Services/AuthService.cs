@@ -54,22 +54,16 @@ namespace RavenNest.Blazor.Services
 
         public string GetTwitchLoginUrl()
         {
-            return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
-+ $"https://{Context.Request.Host}/login/twitch"
-+ "&response_type=token&scope=user:read:email";
+            if (Context == null || Context.Request == null || Context.Request.Host == null)
+            {
+                return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
+                    + "https://www.ravenfall.stream/login/twitch"
+                    + "&response_type=token&scope=user:read:email";
+            }
 
-            //if (!string.IsNullOrEmpty(settings.DevelopmentServer))
-            //{
-            //    return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
-            //    + $"https://{Context.Request.Host}/login/twitch"
-            //    + "&response_type=token&scope=user:read:email";
-            //}
-            //else
-            //{
-            //    return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
-            //    + "https://www.ravenfall.stream/login/twitch"
-            //    + "&response_type=token&scope=user:read:email";
-            //}
+            return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
+                   + $"https://{Context.Request.Host}/login/twitch"
+                   + "&response_type=token&scope=user:read:email";
         }
     }
 }

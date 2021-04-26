@@ -20,8 +20,10 @@ namespace RavenNest.Blazor
                     .UseStartup<Startup>()
                     .UseKestrel(options =>
                     {
-                        options.Limits.MinRequestBodyDataRate = new MinDataRate(bytesPerSecond: 50, gracePeriod: TimeSpan.FromSeconds(10));
-                        options.Limits.MinResponseDataRate = new MinDataRate(bytesPerSecond: 50, gracePeriod: TimeSpan.FromSeconds(10));
+                        options.Limits.MaxConcurrentConnections = long.MaxValue;
+                        options.Limits.MaxConcurrentUpgradedConnections = long.MaxValue;
+                        options.Limits.MinRequestBodyDataRate = new MinDataRate(bytesPerSecond: 10, gracePeriod: TimeSpan.FromSeconds(10));
+                        options.Limits.MinResponseDataRate = new MinDataRate(bytesPerSecond: 10, gracePeriod: TimeSpan.FromSeconds(10));
                     });
                 });
     }
