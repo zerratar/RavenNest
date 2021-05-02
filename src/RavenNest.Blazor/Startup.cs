@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.Rewrite;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -118,6 +119,12 @@ namespace RavenNest.Blazor
             app.UseResponseCompression();
             app.UseSession();
             app.UseHttpsRedirection();
+
+            app.UseRewriter(new RewriteOptions()
+               .AddRedirectToWww()
+               .AddRedirectToHttps()
+            );
+
             app.UseStaticFiles();
             app.Map("/download/latest", builder =>
             {
