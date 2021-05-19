@@ -8,6 +8,9 @@ namespace RavenNest.BusinessLogic.Data
 {
     public interface IGameData
     {
+
+        System.IO.Stream GetCompressedEntityStream();
+
         GameClient Client { get; }
 
         #region Find

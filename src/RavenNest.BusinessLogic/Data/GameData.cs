@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
@@ -544,7 +545,7 @@ namespace RavenNest.BusinessLogic.Data
             if (sessionOwner == null) return null;
             return GetActiveSessions().FirstOrDefault(x => x.UserId == sessionOwner.Id);
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public GameSession GetOwnedSessionByUserId(string userId)
         {
@@ -1149,6 +1150,19 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
+        public Stream GetCompressedEntityStream()
+        {
+            try
+            {
+                return backupProvider.GetCompressedEntityStream(entitySets);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Failed to get entity data stream: " + exc);
+                return null;
+            }
+        }
+
         private void SaveChanges()
         {
             kernel.ClearTimeout(scheduleHandler);
@@ -1300,6 +1314,7 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ICollection<EntityChangeSet> JoinChangeSets(params ICollection<EntityChangeSet>[] changesets) =>
             changesets.SelectMany(x => x).OrderBy(x => x.LastModified).ToList();
+
     }
 
     public class DataSaveError

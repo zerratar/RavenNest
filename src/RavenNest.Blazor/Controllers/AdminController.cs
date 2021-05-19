@@ -61,6 +61,20 @@ namespace RavenNest.Controllers
             return adminManager.SetCraftingRequirements(itemQuery, requirementQuery);
         }
 
+        [HttpGet("backup/download")]
+        public async Task<ActionResult> DownloadGameState()
+        {
+            try
+            {
+                await AssertAdminAccessAsync();
+                return File(gameData.GetCompressedEntityStream(), "application/zip", "data-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + ".zip");
+            }
+            catch
+            {
+                return NotFound();
+            }
+        }
+
         //[HttpGet("fix-exp/{characterId}")]
         //public async Task<bool> FixExp(Guid characterId)
         //{
