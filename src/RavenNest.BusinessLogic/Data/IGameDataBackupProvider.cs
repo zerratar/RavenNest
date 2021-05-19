@@ -1,9 +1,13 @@
 ﻿using Newtonsoft.Json;
 using RavenNest.DataModels;
+using SharpCompress.Archives.Zip;
+using SharpCompress.Common;
+using SharpCompress.Writers;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -14,6 +18,9 @@ namespace RavenNest.BusinessLogic.Data
         void CreateRestorePoint(IEntitySet[] entitySets);
         void CreateBackup(IEntitySet[] entitySets);
         void ClearRestorePoint();
+
+        System.IO.Stream GetCompressedEntityStream(IEntitySet[] entitySets);
+
         IEntityRestorePoint GetRestorePoint(params Type[] types);
         IEntityRestorePoint GetRestorePoint(string path, params Type[] types);
     }
@@ -106,6 +113,36 @@ namespace RavenNest.BusinessLogic.Data
             StoreData(entitySets, RestorePointFolder);
         }
 
+        public System.IO.Stream GetCompressedEntityStream(IEntitySet[] entitySets)
+        {
+            var memoryStream = new MemoryStream();
+            using (var archive = ZipArchive.Create())
+            {
+                foreach (var entitySet in entitySets)
+                {
+                    var type = entitySet.GetEntityType();
+                    var entities = entitySet.GetEntities();
+                    var key = type.FullName + ".json";
+                    var data = JsonConvert.SerializeObject(entities);
+                    using (var s = new MemoryStream())
+                    using (var sw = new StreamWriter(s))
+                    {
+                        sw.Write(data);
+                        archive.AddEntry(key, s);
+                    }
+                }
+
+                archive.SaveTo(memoryStream, new WriterOptions(CompressionType.Deflate)
+                {
+                    LeaveStreamOpen = true
+                });
+            }
+
+            //reset memoryStream to be usable now
+            memoryStream.Position = 0;
+            return memoryStream;
+        }
+
         private void StoreData(IEntitySet[] entitySets, string dataFolder)
         {
             foreach (var entitySet in entitySets)
@@ -113,6 +150,15 @@ namespace RavenNest.BusinessLogic.Data
                 var type = entitySet.GetEntityType();
                 var entities = entitySet.GetEntities();
                 StoreEntities(type, entities, dataFolder);
+            }
+        }
+        private void StoreEntities(Type type, IReadOnlyList<IEntity> entities, string dataFolder)
+        {
+            lock (ioMutex)
+            {
+                var file = GetEntityFilePath(type, dataFolder);
+                var data = JsonConvert.SerializeObject(entities);
+                System.IO.File.WriteAllText(file, data);
             }
         }
 
@@ -180,15 +226,7 @@ namespace RavenNest.BusinessLogic.Data
             return backupFolder;
         }
 
-        private void StoreEntities(Type type, IReadOnlyList<IEntity> entities, string dataFolder)
-        {
-            lock (ioMutex)
-            {
-                var file = GetEntityFilePath(type, dataFolder);
-                var data = JsonConvert.SerializeObject(entities);
-                System.IO.File.WriteAllText(file, data);
-            }
-        }
+
 
         private IReadOnlyList<IEntity> LoadEntities(Type type, string repositoryFolder)
         {
