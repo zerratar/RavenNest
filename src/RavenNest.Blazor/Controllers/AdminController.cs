@@ -67,11 +67,19 @@ namespace RavenNest.Controllers
             try
             {
                 await AssertAdminAccessAsync();
-                return File(gameData.GetCompressedEntityStream(), "application/zip", "data-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + ".zip");
             }
             catch
             {
                 return NotFound();
+            }
+
+            try
+            {
+                return File(gameData.GetCompressedEntityStream(), "application/zip", "data-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + ".zip");
+            }
+            catch (Exception exc)
+            {
+                return Content(exc.ToString());
             }
         }
 
