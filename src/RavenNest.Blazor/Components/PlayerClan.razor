@@ -4,32 +4,33 @@
 
 @if (session == null && clan == null)
 {
-  <LoadIndicator></LoadIndicator>
+	<LoadIndicator></LoadIndicator>
 }
 else
 {
-  if (clan == null)
-  {
-    <h2>This character is not part of a clan. Join a clan to get more information here!</h2>
-  }
-  else
-  {
-    <div class="clan-header">
-      @if (!string.IsNullOrEmpty(clan.Logo))
-      {
-        <img src="@clan.Logo" class="clan-logo" />
-      }
-      else
-      {
-        <img src="/api/twitch/logo/@clan.Owner" class="clan-logo" />
-      }
-      <h1>@clan.Name</h1>
-    </div>
+	if (clan == null)
+	{
+		<h2>This character is not part of a clan. Join a clan to get more information here!</h2>
+	}
+	else
+	{
+		<div class="clan-header">
+			@if (!string.IsNullOrEmpty(clan.Logo))
+			{
+			 <img src="@clan.Logo" class="clan-logo" />
+			}
+			else
+			{
+			 <img src="/api/twitch/logo/@clan.Owner" class="clan-logo" />
+			}
+		 <h1>@clan.Name</h1>
+		 <p class="clan-level"><span>Level</span>&nbsp;<span>@clan.Level</span></p>
+		</div>
 
-    if (CanManage)
-    {
-      <button class="btn btn-danger" @onclick="(async () => await LeaveClanAsync())">Leave Clan</button>
-    }
-    <p>More coming soon.</p>
-  }
+		if (CanManage)
+		{
+			<button class="btn btn-danger" @onclick="(async () => await LeaveClanAsync())">Leave Clan</button>
+		}
+		<p>More coming soon.</p>
+	}
 }
