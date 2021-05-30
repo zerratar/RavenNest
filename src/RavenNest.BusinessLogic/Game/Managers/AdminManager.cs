@@ -110,10 +110,15 @@ namespace RavenNest.BusinessLogic.Game
                     var loyalties = gameData.GetUserLoyalties(user.Id);
                     foreach (var loyalty in loyalties)
                     {
-                        for (var i = 1; i < loyalty.Level; ++i)
+                        //for (var i = 1; i < loyalty.Level; ++i)
+                        //{
+                        //    var addedPoints = UserLoyalty.GetLoyaltyPoints(i) - 100;
+                        //    loyalty.Points += addedPoints;
+                        //}
+
+                        if (loyalty.Points < 0)
                         {
-                            var addedPoints = UserLoyalty.GetLoyaltyPoints(i) - 100;
-                            loyalty.Points += addedPoints;
+                            loyalty.Points += 100;
                         }
                     }
                 }

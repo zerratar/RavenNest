@@ -47,13 +47,11 @@ namespace RavenNest.Blazor.Services
                 playerManager.CreatePlayerIfNotExists(user.Id, user.Login, "1");
 
                 var u = gameData.GetUser(user.Id);
-                if (u != null && u.UserName.Equals(user.Login, System.StringComparison.OrdinalIgnoreCase))
+                if (u != null && !u.UserName.Equals(user.Login, System.StringComparison.OrdinalIgnoreCase))
                 {
                     u.UserName = user.Login;
                     result.UserName = user.Login;
                     result.UserNameChanged = true;
-
-
                 }
             }
             return result;
