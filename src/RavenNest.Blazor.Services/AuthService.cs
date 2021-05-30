@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Options;
 using RavenNest.Blazor.Services.Models;
 using RavenNest.BusinessLogic;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Sessions;
 using System.Threading.Tasks;
@@ -10,18 +11,21 @@ namespace RavenNest.Blazor.Services
 {
     public class AuthService : RavenNestService
     {
+        private readonly IGameData gameData;
         private readonly IAuthManager authManager;
         private readonly IPlayerManager playerManager;
         private readonly AppSettings settings;
 
         public AuthService(
             IOptions<AppSettings> settings,
+            IGameData gameData,
             IAuthManager authManager,
             IPlayerManager playerManager,
             IHttpContextAccessor accessor,
             ISessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
+            this.gameData = gameData;
             this.authManager = authManager;
             this.playerManager = playerManager;
             this.settings = settings.Value;
@@ -41,6 +45,16 @@ namespace RavenNest.Blazor.Services
             if (user != null)
             {
                 playerManager.CreatePlayerIfNotExists(user.Id, user.Login, "1");
+
+                var u = gameData.GetUser(user.Id);
+                if (u != null && u.UserName.Equals(user.Login, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    u.UserName = user.Login;
+                    result.UserName = user.Login;
+                    result.UserNameChanged = true;
+
+
+                }
             }
             return result;
         }

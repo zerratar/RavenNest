@@ -1,0 +1,58 @@
+﻿@layout MainLayout
+@page "/username-changed"
+@using RavenNest.Blazor.Services.Models
+@inject RavenNest.Blazor.Services.AccountService AccountService
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject NavigationManager NavigationManager
+
+<div class="top-section">
+	<div class="hero-text">
+	</div>
+</div>
+
+<div class="white-section-break"></div>
+<div class="page-content">
+	<div class="section">
+		@if (session == null)
+		{
+	  <LoadIndicator></LoadIndicator>
+		}
+		else
+		{
+	  <div class="password">
+
+	   <h1>Your username has changed</h1>
+	   <p class="hero-text">
+		It seem like you have changed your Twitch username since you last logged in.
+		We have updated your new username to <b>@session.UserName</b>, this is the username you will have to use
+		when logging in to the Ravenfall client from now on.
+
+		<br />
+		If you're currently running Ravenfall and your username has updated. 
+		You will need to reload the game so the game can connect to the centralized bot again.
+	   </p>
+
+
+	   <RavenButton CssClass="twitch" NavigateTo="/characters">Continue</RavenButton>
+
+	  </div>
+		}
+ </div>
+</div>
+
+@code {
+	private RavenNest.Sessions.SessionInfo session;
+
+	protected override void OnInitialized()
+	{
+		session = AuthService.GetSession();
+	}
+
+	protected override void OnAfterRender(bool firstRender)
+	{
+		if (session == null || session.UserId == null)
+		{
+			NavigationManager.NavigateTo("/login");
+		}
+	}
+}
