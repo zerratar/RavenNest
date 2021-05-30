@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Game;
@@ -21,6 +23,26 @@ namespace RavenNest.Controllers
         {
             this.authManager = authManager;
             this.sessionInfoProvider = sessionInfoProvider;
+        }
+
+        [HttpGet("activate-pubsub")]
+        public ActionResult PubsubRedirect()
+        {
+            const string TwitchClientID = "757vrtjoawg2rtquprnfb35nqah1w4";
+            const string TwitchRedirectUri = "https://id.twitch.tv/oauth2/authorize";
+            var random = new Random();
+
+            string GenerateValidationToken()
+            {
+                return Convert.ToBase64String(Enumerable.Range(0, 20).Select(x =>
+                (byte)((byte)(random.NextDouble() * ((byte)'z' - (byte)'a')) + (byte)'a')).ToArray());
+            }
+
+            return Redirect(TwitchRedirectUri + "?response_type=token" +
+                $"&client_id={TwitchClientID}" +
+                $"&redirect_uri=https://www.ravenfall.stream/login/twitch" +
+                $"&scope=user:read:email+bits:read+chat:read+chat:edit+channel:read:subscriptions+channel:read:redemptions+channel:read:predictions" +
+                $"&state=pubsub{GenerateValidationToken()}&force_verify=true");
         }
 
         [HttpGet]
