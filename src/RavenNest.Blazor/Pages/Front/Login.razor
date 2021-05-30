@@ -180,6 +180,8 @@
 			MainLayout.Instance.UpdateSession();
 			if (!string.IsNullOrEmpty(RedirectUrl))
 				NavigationManager.NavigateTo(RedirectUrl);
+			else if (session.UserNameChanged)
+				NavigationManager.NavigateTo("/username-changed");
 			else if (session.RequiresPasswordChange)
 				NavigationManager.NavigateTo("/password");
 			else
