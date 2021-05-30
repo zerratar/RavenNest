@@ -77,9 +77,10 @@
         }
         try {
           window.close();
-        } catch{}
+        } catch{}		
+		return true;
       }
-      return true;
+	  return false;
     }
 
     window.scrollToElementId = (elementId, offset) => {
