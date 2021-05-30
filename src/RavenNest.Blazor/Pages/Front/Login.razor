@@ -95,18 +95,23 @@
 	{
 		if (await JS.InvokeAsync<bool>("updateGameClientLoginStateAsync", new object[] { }))
 		{
-			try
-			{
-				JS.InvokeVoidAsync("window.close");
-			}
-			catch { }
-			try
-			{
-				tokenGenerationComplete = true;
-				this.StateHasChanged();
-			}
-			catch { }
+			await CloseWindow();
 		}
+	}
+
+	private async Task CloseWindow()
+	{
+		try
+		{
+			await JS.InvokeVoidAsync("window.close");
+		}
+		catch { }
+		try
+		{
+			tokenGenerationComplete = true;
+			this.StateHasChanged();
+		}
+		catch { }
 	}
 
 	private bool IsTwitchGameClientLogin()
@@ -126,7 +131,10 @@
 		var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
 		var atn = "access_token";
 		userInitiatedLogin = true;
-		if (!uri.ToString().Contains(atn + "="))
+
+		var url = uri.ToString();
+
+		if (!url.Contains(atn + "="))
 		{
 			session = AuthService.GetSession();
 			userInitiatedLogin = false;
@@ -134,9 +142,17 @@
 		}
 		loginFailed = false;
 
-		var token = uri.ToString()
+		var token = url
 			.Split(new string[] { "=" }, StringSplitOptions.RemoveEmptyEntries)[1]
 			.Split('&')[0];
+
+		if (url.Contains("pubsub"))
+		{
+			await AuthService.GrantPubSubAccessAsync(token);
+			CloseWindow();
+			return;
+		}
+
 		session = await AuthService.TwitchLoginAsync(token);
 		userInitiatedLogin = false;
 		loginFailed = !IsAuthenticated;
