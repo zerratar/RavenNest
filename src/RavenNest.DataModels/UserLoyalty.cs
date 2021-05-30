@@ -52,10 +52,11 @@ namespace RavenNest.DataModels
             {
                 this.Experience -= expForLevel;
                 this.Level++;
-                this.Points += PointsPerLevel;
+                this.Points += GetLoyaltyPoints(this.Level);
                 expForLevel = GetExperienceForNextLevel();
             }
         }
+
 
         public void AddPlayTime(TimeSpan time)
         {
@@ -64,6 +65,19 @@ namespace RavenNest.DataModels
 
             totalPlayTime += time;
             Playtime = totalPlayTime.ToString();
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+
+        public static int GetLoyaltyPoints(long level)
+        {
+            if (level <= 1)
+            {
+                return PointsPerLevel;
+            }
+
+            var percent = GetExpForLevel(level) / (decimal)MinExpForLevel;
+            return (int)Math.Floor(50 + ((percent * PointsPerLevel) * 0.2m));
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]

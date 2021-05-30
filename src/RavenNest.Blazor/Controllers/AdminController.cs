@@ -53,6 +53,12 @@ namespace RavenNest.Controllers
             return adminManager.FixCharacterIndices(userId);
         }
 
+        [HttpGet("fix-loyalties")]
+        public async Task<bool> FixLoyaltyPoints()
+        {
+            await AssertAdminAccessAsync();
+            return adminManager.FixLoyaltyPoints();
+        }
 
         [HttpGet("crafting-req/{itemQuery}/{requirementQuery}")]
         public async Task<bool> SetCraftingRequirement(string itemQuery, string requirementQuery)
