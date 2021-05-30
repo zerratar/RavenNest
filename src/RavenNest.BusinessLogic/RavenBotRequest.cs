@@ -37,9 +37,11 @@ namespace RavenNest.BusinessLogic
                     writer.Write(typeData);
 
                     var bytes = args.Select(UTF8Encoding.UTF8.GetBytes).ToArray();
-                    var bodySize = (short)bytes.Sum(x => x.Length);
 
-                    writer.Write(bodySize);
+                    var stringSize = (short)bytes.Sum(x => x.Length);
+                    var shortSize = (args.Length * sizeof(short));
+
+                    writer.Write((short)(stringSize + shortSize));
 
                     for (var i = 0; i < args.Length; ++i)
                     {
