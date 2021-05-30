@@ -99,6 +99,32 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+
+        public bool FixLoyaltyPoints()
+        {
+            try
+            {
+                var allUsers = gameData.GetUsers();
+                foreach (var user in allUsers)
+                {
+                    var loyalties = gameData.GetUserLoyalties(user.Id);
+                    foreach (var loyalty in loyalties)
+                    {
+                        for (var i = 1; i < loyalty.Level; ++i)
+                        {
+                            var addedPoints = UserLoyalty.GetLoyaltyPoints(i) - 100;
+                            loyalty.Points += addedPoints;
+                        }
+                    }
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
         public bool KickPlayer(Guid characterId)
         {
             var character = gameData.GetCharacter(characterId);
@@ -494,5 +520,6 @@ namespace RavenNest.BusinessLogic.Game
             }
             return true;
         }
+
     }
 }
