@@ -5,6 +5,12 @@ using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Sessions;
+using System;
+using System.IO;
+using System.Linq;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RavenNest.Blazor.Services
@@ -37,6 +43,29 @@ namespace RavenNest.Blazor.Services
             sessionInfoProvider.Clear(session);
         }
 
+        public async Task GrantPubSubAccessAsync(string accessToken)
+        {
+            var session = Context.GetSessionId();
+            var result = await sessionInfoProvider.SetTwitchTokenAsync(session, accessToken);
+            var user = await sessionInfoProvider.GetTwitchUserAsync(session, accessToken);
+            if (user != null)
+            {
+                playerManager.CreatePlayerIfNotExists(user.Id, user.Login, "1");
+                var u = gameData.GetUser(user.Id);
+                if (u != null)
+                {
+                    try
+                    {
+                        using (var req = RavenBotRequest.Create("ravenbot.ravenfall.stream:6767/pubsub"))
+                        {
+                            await req.SendAsync(user.Id, user.Login, accessToken);
+                        }
+                    }
+                    catch { }
+                }
+            }
+        }
+
         public async Task<SessionInfo> TwitchLoginAsync(string accessToken)
         {
             var session = Context.GetSessionId();
@@ -47,11 +76,19 @@ namespace RavenNest.Blazor.Services
                 playerManager.CreatePlayerIfNotExists(user.Id, user.Login, "1");
 
                 var u = gameData.GetUser(user.Id);
-                if (u != null && !u.UserName.Equals(user.Login, System.StringComparison.OrdinalIgnoreCase))
+                if (u != null)
                 {
-                    u.UserName = user.Login;
-                    result.UserName = user.Login;
-                    result.UserNameChanged = true;
+                    // store token that has access to reading channel point reward redeems?
+                    // so we can tell the chat bot to use that when listening for rewards.
+
+                    // u.Token = accessToken;
+
+                    if (!u.UserName.Equals(user.Login, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        u.UserName = user.Login;
+                        result.UserName = user.Login;
+                        result.UserNameChanged = true;
+                    }
                 }
             }
             return result;
@@ -78,4 +115,7 @@ namespace RavenNest.Blazor.Services
                    + "&response_type=token&scope=user:read:email";
         }
     }
+
+  
+
 }
