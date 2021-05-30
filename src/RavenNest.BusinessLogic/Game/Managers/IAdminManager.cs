@@ -20,6 +20,7 @@ namespace RavenNest.BusinessLogic.Game
         bool NerfItems();
         bool RefreshVillageInfo();
         bool RefreshPermissions();
+        bool FixLoyaltyPoints();
         //bool FixCharacterExpGain(Guid characterId);
     }
 }
