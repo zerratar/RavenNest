@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using RavenNest.Blazor.Services;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Docs.Attributes;
@@ -31,8 +32,8 @@ namespace RavenNest.Controllers
         private readonly IPlayerManager playerManager;
         private readonly IGameData gameData;
         private readonly ISessionInfoProvider sessionInfoProvider;
-        private readonly IMemoryCache memoryCache;
         private readonly IAuthManager authManager;
+        private readonly LogoService logoService;
         private readonly AppSettings settings;
 
         public TwitchController(
@@ -40,14 +41,14 @@ namespace RavenNest.Controllers
             IPlayerManager playerManager,
             IGameData gameData,
             ISessionInfoProvider sessionInfoProvider,
-            IMemoryCache memoryCache,
-            IAuthManager authManager)
+            IAuthManager authManager,
+            LogoService logoService)
         {
             this.playerManager = playerManager;
             this.gameData = gameData;
             this.sessionInfoProvider = sessionInfoProvider;
-            this.memoryCache = memoryCache;
             this.authManager = authManager;
+            this.logoService = logoService;
             this.settings = settings.Value;
         }
 
@@ -89,24 +90,29 @@ namespace RavenNest.Controllers
         {
             try
             {
-                if (memoryCache != null && memoryCache.TryGetValue("logo_" + userId, out var logoData) && logoData is byte[] data)
+                var imageData = await logoService.GetChannelPictureAsync(userId);
+                if (imageData != null)
                 {
-                    return File(data, "image/png");
+                    return File(imageData, "image/png");
                 }
-
-                var twitch = new TwitchRequests(clientId: settings.TwitchClientId, clientSecret: settings.TwitchClientSecret);
-                var profile = await twitch.GetUserAsync(userId);
-                if (profile != null)
-                {
-                    using (var wc = new WebClient())
-                    {
-                        var binaryData = await wc.DownloadDataTaskAsync(new Uri(profile.logo));
-                        return File(memoryCache.Set("logo_" + userId, binaryData), "image/png");
-                    }
-                }
-                return NotFound();
             }
-            catch { return NotFound(); }
+            catch { }
+            return NotFound();
+        }
+
+        [HttpGet("clan-logo/{userId}")]
+        public async Task<ActionResult> GetClanLogoAsync(string userId)
+        {
+            try
+            {
+                var imageData = await logoService.GetClanLogoAsync(userId);
+                if (imageData != null)
+                {
+                    return File(imageData, "image/png");
+                }
+            }
+            catch { }
+            return NotFound();
         }
 
         [HttpGet("session/{token}")]

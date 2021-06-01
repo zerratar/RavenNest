@@ -1,4 +1,14 @@
-﻿button.tab-link {
+﻿a.refresh-logo {
+    position: absolute;
+    margin-top: 53px;
+    background-color: black;
+    color: white !important;
+    padding: 0 5px 0 5px;
+    margin-left: 50px;
+    cursor: pointer;
+}
+
+button.tab-link {
     border: 0;
     padding: 10px;
     outline: 0;
