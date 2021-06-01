@@ -5,6 +5,7 @@
 @using RavenNest.Blazor.Services
 @inject RavenNest.Blazor.Services.ClanService ClanService
 @inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.Blazor.Services.LogoService LogoService
 @inject NavigationManager NavigationManager
 
 @if (session.UserId == null)
@@ -43,6 +44,9 @@ else
 			else
 			{
 			 <img src="/api/twitch/logo/@session.UserId" class="clan-logo" />
+			}
+			@if (!reloadingClanLogo) {
+			  <a class="refresh-logo" @onclick="ReloadClanLogo"><i class="fas fa-sync"></i></a>
 			}
 		 <h1>
 				@if (!editingClanName)
@@ -116,6 +120,7 @@ else
 	private RavenNest.Models.Clan clan;
 	private string oldClanName;
 	private int nameChangeCount;
+	private bool reloadingClanLogo;
 	private bool canManageMembers;
 	private bool editingClanName;
 	private bool showRanks;
@@ -150,6 +155,20 @@ else
 
 		clan.Name = oldClanName;
 		editingClanName = false;
+	}
+
+	private async void ReloadClanLogo()
+	{
+		reloadingClanLogo = true;
+		await InvokeAsync(StateHasChanged);
+
+		if (this.clan != null)
+		{
+			await LogoService.UpdateClanLogoAsync(this.clan.Owner);
+
+			reloadingClanLogo = false;
+			await InvokeAsync(StateHasChanged);
+		}
 	}
 
 	private void UpdateAlias()

@@ -520,7 +520,7 @@ namespace RavenNest.BusinessLogic.Game
             clan.Logo = logoImageFile;
             return true;
         }
-
+   
         public bool UpdateClanName(Guid clanId, string newName)
         {
             if (string.IsNullOrWhiteSpace(newName))
