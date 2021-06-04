@@ -441,21 +441,35 @@ namespace RavenNest.BusinessLogic.Data
 
                     if (resType == null || ingot == null) continue;
 
-                    Add(new ItemCraftingRequirement()
+                    // special case for bronze, we use ingots only.
+                    if (ingotCount == 0 && resCount > 0)
                     {
-                        Id = Guid.NewGuid(),
-                        Amount = resCount,
-                        ItemId = item.Id,
-                        ResourceItemId = resType.Id
-                    });
+                        Add(new ItemCraftingRequirement()
+                        {
+                            Id = Guid.NewGuid(),
+                            Amount = resCount,
+                            ItemId = item.Id,
+                            ResourceItemId = ingot.Id
+                        });
+                    }
+                    else
+                    {
+                        Add(new ItemCraftingRequirement()
+                        {
+                            Id = Guid.NewGuid(),
+                            Amount = resCount,
+                            ItemId = item.Id,
+                            ResourceItemId = resType.Id
+                        });
 
-                    Add(new ItemCraftingRequirement()
-                    {
-                        Id = Guid.NewGuid(),
-                        Amount = ingotCount,
-                        ItemId = item.Id,
-                        ResourceItemId = ingot.Id
-                    });
+                        Add(new ItemCraftingRequirement()
+                        {
+                            Id = Guid.NewGuid(),
+                            Amount = ingotCount,
+                            ItemId = item.Id,
+                            ResourceItemId = ingot.Id
+                        });
+                    }
                 }
             }
         }
