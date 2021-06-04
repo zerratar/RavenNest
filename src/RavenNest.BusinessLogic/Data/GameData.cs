@@ -297,6 +297,7 @@ namespace RavenNest.BusinessLogic.Data
                 RemoveBadUsers(users);
                 EnsureClanLevels(clans);
                 EnsureExpMultipliersWithinBounds(expMultiplierEvents);
+                EnsureCraftingRequirements(items);
 
                 stopWatch.Stop();
                 logger.LogDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
@@ -312,6 +313,151 @@ namespace RavenNest.BusinessLogic.Data
                 System.IO.File.WriteAllText("ravenfall-error.log", exc.ToString());
             }
 
+        }
+
+        private void EnsureCraftingRequirements(EntitySet<Item, Guid> items)
+        {
+
+            Item GetItemByCategory(ItemCategory category, string containsName)
+            {
+                return items.Entities.FirstOrDefault(x => (ItemCategory)x.Category == ItemCategory.Resource && x.Name.Contains(containsName, StringComparison.OrdinalIgnoreCase));
+            }
+
+            var ingot = GetItemByCategory(ItemCategory.Resource, "ore ingot");
+
+            foreach (var item in items.Entities)
+            {
+                if (item.RequiredCraftingLevel < 1000)
+                {
+                    var requirements = GetCraftingRequirements(item.Id);
+                    if (requirements != null && requirements.Count > 0 || item.WoodCost > 0 || item.OreCost > 0)
+                    {
+                        continue;
+                    }
+
+                    var nl = item.Name.ToLower();
+                    Item resType = null;
+                    var ingotCount = 0;
+
+                    var type = (ItemType)item.Type;
+                    var resCount = 0;
+
+                    if (nl.Contains("emerald"))
+                    {
+                        resType = GetItemByCategory(ItemCategory.Resource, "emerald");
+                        ingotCount = 5;
+                    }
+                    if (nl.Contains("ruby"))
+                    {
+                        resType = GetItemByCategory(ItemCategory.Resource, "ruby");
+                        ingotCount = 5;
+                    }
+                    if (nl.Contains("iron"))
+                    {
+                        resType = GetItemByCategory(ItemCategory.Resource, "iron nugget");
+                        ingotCount = 5;
+                    }
+                    if (nl.Contains("steel"))
+                    {
+                        resType = GetItemByCategory(ItemCategory.Resource, "steel nugget");
+                        ingotCount = 5;
+                    }
+                    if (nl.Contains("mithril"))
+                    {
+                        resType = GetItemByCategory(ItemCategory.Resource, "mithril nugget");
+                        ingotCount = 10;
+                    }
+                    if (nl.Contains("adamantite"))
+                    {
+                        resType = GetItemByCategory(ItemCategory.Resource, "adamantite nugget");
+                        ingotCount = 15;
+                    }
+                    if (nl.Contains("rune"))
+                    {
+                        resType = GetItemByCategory(ItemCategory.Resource, "rune nugget");
+                        ingotCount = 25;
+                    }
+                    if (nl.Contains("dragon"))
+                    {
+                        resType = GetItemByCategory(ItemCategory.Resource, "dragon scale");
+                        ingotCount = 35;
+                    }
+                    if (nl.Contains("abraxas"))
+                    {
+                        resType = GetItemByCategory(ItemCategory.Resource, "abraxas spirit");
+                        ingotCount = 60;
+                    }
+                    if (nl.Contains("phantom"))
+                    {
+                        resType = GetItemByCategory(ItemCategory.Resource, "phantom core");
+                        ingotCount = 75;
+                    }
+
+                    switch (type)
+                    {
+                        case ItemType.Amulet:
+                            resCount = 3;
+                            break;
+
+                        case ItemType.Ring:
+                            resCount = 3;
+                            break;
+
+                        case ItemType.OneHandedSword:
+                            resCount = 3;
+                            break;
+
+                        case ItemType.TwoHandedAxe:
+                            resCount = 4;
+                            break;
+                        case ItemType.TwoHandedSword:
+                            resCount = 5;
+                            break;
+
+                        case ItemType.TwoHandedBow:
+                            resCount = 4;
+                            break;
+
+                        case ItemType.TwoHandedStaff:
+                            resCount = 4;
+                            break;
+
+                        case ItemType.Helm:
+                            resCount = 3;
+                            break;
+                        case ItemType.Chest:
+                            resCount = 5;
+                            break;
+                        case ItemType.Leggings:
+                            resCount = 4;
+                            break;
+                        case ItemType.Boots:
+                            resCount = 3;
+                            break;
+                        case ItemType.Shield:
+                            resCount = 4;
+                            break;
+                    }
+
+                    if (resType == null || ingot == null) continue;
+
+                    Add(new ItemCraftingRequirement()
+                    {
+                        Id = Guid.NewGuid(),
+                        Amount = resCount,
+                        ItemId = item.Id,
+                        ResourceItemId = resType.Id
+                    });
+
+                    Add(new ItemCraftingRequirement()
+                    {
+                        Id = Guid.NewGuid(),
+                        Amount = ingotCount,
+                        ItemId = item.Id,
+                        ResourceItemId = ingot.Id
+                    });
+                }
+            }
         }
 
         private void EnsureExpMultipliersWithinBounds(EntitySet<ExpMultiplierEvent, Guid> expMultiplierEvents)
