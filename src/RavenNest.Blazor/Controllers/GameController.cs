@@ -150,6 +150,15 @@ namespace RavenNest.Controllers
             }
         }
 
+        [HttpGet("get-scrolls/{characterId}")]
+        public ScrollInfoCollection GetScrolls(Guid characterId)
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            return gameManager.GetScrolls(session, characterId);
+        }
+
+
         [HttpGet("use-scroll/{characterId}/{scrollType}")]
         public ScrollUseResult UseScroll(Guid characterId, string scrollType)
         {
