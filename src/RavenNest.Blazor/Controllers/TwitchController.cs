@@ -115,6 +115,28 @@ namespace RavenNest.Controllers
             return NotFound();
         }
 
+        [HttpGet("clear-logo/{userId}")]
+        public bool ClearClanLogoAsync(string userId)
+        {
+            try
+            {
+                var session = this.HttpContext.GetSessionId();
+                if (!sessionInfoProvider.TryGet(session, out var sessionInfo))
+                {
+                    return false;
+                }
+
+                if (sessionInfo.UserId != userId)
+                {
+                    return false;
+                }
+
+                return logoService.ClearLogos(userId);
+            }
+            catch { }
+            return false;
+        }
+
         [HttpGet("session/{token}")]
         [MethodDescriptor(Name = "Set Twitch Access Token", Description = "Updates current session with the set Twitch access token, used as an user identifier throughout the website.")]
         public async Task<SessionInfo> SetAccessToken(string token)

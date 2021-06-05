@@ -35,6 +35,26 @@ namespace RavenNest.Blazor.Services
             await GetChannelPictureAsync("_" + userId);
         }
 
+        public bool ClearLogos(string userId)
+        {
+            var success = false;
+            try
+            {
+                memoryCache.Remove("logo_" + userId);
+                success = true;
+            }
+            catch { }
+
+            try
+            {
+                memoryCache.Remove("clan_logo_" + userId);
+                success = true;
+            }
+            catch { }
+
+            return success;
+        }
+
         public async Task<byte[]> GetChannelPictureAsync(string userId)
         {
             try
@@ -121,5 +141,6 @@ namespace RavenNest.Blazor.Services
             catch { }
             return null;
         }
+
     }
 }
