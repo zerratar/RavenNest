@@ -249,6 +249,17 @@ namespace RavenNest.BusinessLogic.Game
             var inventory = inventoryProvider.Get(character.Id);
             //inventory.EquipBestItems();
 
+
+            if (boughtItemCount.Count > 1)
+            {
+
+
+            }
+            else
+            {
+
+            }
+
             return new ItemBuyResult(
                 ItemTradeState.Success,
                 boughtItemCount.ToArray(),
@@ -284,12 +295,25 @@ namespace RavenNest.BusinessLogic.Game
             var inventory = inventoryProvider.Get(character.Id);
             inventory.AddItem(itemId, buyAmount, tag: marketItem.Tag);
 
+            gameData.Add(
+                new MarketItemTransaction
+                {
+                    Id = Guid.NewGuid(),
+                    Amount = buyAmount,
+                    BuyerCharacterId = character.Id,
+                    SellerCharacterId = sellerCharacter.Id,
+                    ItemId = itemId,
+                    PricePerItem = (cost / buyAmount),
+                    TotalPrice = cost,
+                    Created = DateTime.UtcNow
+                });
+
             var model = new ItemTradeUpdate
             {
                 SellerId = seller?.UserId,
                 BuyerId = buyer?.UserId,
                 ItemId = itemId,
-                Amount = amount,
+                Amount = buyAmount,//amount,
                 Cost = cost
             };
 

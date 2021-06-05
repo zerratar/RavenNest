@@ -42,6 +42,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<Clan, Guid> clans;
         private readonly EntitySet<ClanRole, Guid> clanRoles;
         private readonly EntitySet<ClanSkill, Guid> clanSkills;
+        private readonly EntitySet<MarketItemTransaction, Guid> marketTransactions;
         private readonly EntitySet<CharacterClanMembership, Guid> clanMemberships;
 
         private readonly EntitySet<UserPatreon, Guid> patreons;
@@ -118,6 +119,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(InventoryItemAttribute),
                         typeof(User),
                         //typeof(UserNotification),
+                        typeof(MarketItemTransaction),
                         typeof(GameSession),
                         typeof(Village),
                         typeof(VillageHouse),
@@ -235,8 +237,6 @@ namespace RavenNest.BusinessLogic.Data
                         restorePoint?.Get<ClanRole>() ?? ctx.ClanRole.ToList(), i => i.Id);
                     clanRoles.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
 
-
-
                     clanMemberships = new EntitySet<CharacterClanMembership, Guid>(
                         restorePoint?.Get<CharacterClanMembership>() ?? ctx.CharacterClanMembership.ToList(), i => i.Id);
                     clanMemberships.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
@@ -270,6 +270,14 @@ namespace RavenNest.BusinessLogic.Data
                         ctx.ClanSkill.ToList(), i => i.Id);
                     clanSkills.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
 
+                    marketTransactions = new EntitySet<MarketItemTransaction, Guid>(
+                        restorePoint?.Get<MarketItemTransaction>() ??
+                        ctx.MarketItemTransaction.ToList(), i => i.Id);
+                    marketTransactions.RegisterLookupGroup(nameof(Item), x => x.ItemId);
+                    marketTransactions.RegisterLookupGroup(nameof(Character) + "Seller", x => x.SellerCharacterId);
+                    marketTransactions.RegisterLookupGroup(nameof(Character) + "Buyer", x => x.BuyerCharacterId);
+
+
                     skills = new EntitySet<Skill, Guid>(
                         ctx.Skill.ToList(), i => i.Id);
 
@@ -286,7 +294,7 @@ namespace RavenNest.BusinessLogic.Data
                         patreons, loyalty, loyaltyRewards, loyaltyRanks, claimedLoyaltyRewards,
                         expMultiplierEvents, notifications,
                         appearances, syntyAppearances, characters, characterStates,
-                        gameSessions, /*gameEvents, */ inventoryItems, marketItems, inventoryItemAttributes,
+                        gameSessions, /*gameEvents, */ inventoryItems, marketItems, marketTransactions, inventoryItemAttributes,
                         resources, statistics, characterSkills, clanSkills, users, villages, villageHouses,
                         clans, clanRoles, clanMemberships, clanInvites,
                         npcs, npcSpawns, npcItemDrops, itemCraftingRequirements, characterSessionActivities
@@ -564,6 +572,9 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(ClanSkill entity) => Update(() => clanSkills.Add(entity));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(MarketItemTransaction entity) => Update(() => marketTransactions.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(CharacterClanInvite entity) => Update(() => this.clanInvites.Add(entity));
@@ -875,6 +886,21 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<ItemAttribute> GetItemAttributes() => itemAttributes.Entities.ToList();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactions() => marketTransactions.Entities.ToList();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactions(DateTime start, DateTime end) => marketTransactions.Entities.Where(x => x.Created >= start && x.Created <= end).ToList();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactions(Guid itemId, DateTime start, DateTime end) => marketTransactions[nameof(Item), itemId].Where(x => x.Created >= start && x.Created <= end).ToList();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactionsBySeller(Guid seller, DateTime start, DateTime end) => marketTransactions[nameof(Character) + "Seller", seller].Where(x => x.Created >= start && x.Created <= end).ToList();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactionsByBuyer(Guid buyer, DateTime start, DateTime end) => marketTransactions[nameof(Character) + "Buyer", buyer].Where(x => x.Created >= start && x.Created <= end).ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetMarketItemCount() => marketItems.Entities.Count;

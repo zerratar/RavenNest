@@ -78,6 +78,12 @@ namespace RavenNest.BusinessLogic.Data
         Character GetCharacterByUserId(Guid userId, string identifier = "0");
         Character GetCharacterByUserId(string twitchUserId, string identifier);
         Character GetCharacterBySession(Guid sessionId, string userId, bool updateSession = true);
+
+        IReadOnlyList<MarketItemTransaction> GetMarketItemTransactions();
+        IReadOnlyList<MarketItemTransaction> GetMarketItemTransactions(DateTime start, DateTime end);
+        IReadOnlyList<MarketItemTransaction> GetMarketItemTransactions(Guid itemId, DateTime start, DateTime end);
+        IReadOnlyList<MarketItemTransaction> GetMarketItemTransactionsBySeller(Guid seller, DateTime start, DateTime end);
+        IReadOnlyList<MarketItemTransaction> GetMarketItemTransactionsByBuyer(Guid buyer, DateTime start, DateTime end);
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(Guid itemId, string tag = null);
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(int skip, int take);
         IReadOnlyList<DataModels.GameEvent> GetSessionEvents(Guid sessionId);
@@ -108,6 +114,7 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Add
         void Add(ClanSkill entity);
+        void Add(MarketItemTransaction transaction);
         void Add(UserNotification ev);
         void Add(CharacterClanMembership ev);
         void Add(CharacterClanInvite ev);
