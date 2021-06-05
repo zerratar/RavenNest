@@ -95,6 +95,29 @@ namespace RavenNest.BusinessLogic.Game
             return eventCollection;
         }
 
+        public ScrollInfoCollection GetScrolls(SessionToken session, Guid characterId)
+        {
+            var gameSession = gameData.GetSession(session.SessionId);
+            if (gameSession == null)
+            {
+                return new ScrollInfoCollection();
+            }
+
+            var inventory = inventoryProvider.Get(characterId);
+            if (inventory == null)
+            {
+                return new ScrollInfoCollection();
+            }
+
+            var scrolls = inventory.GetUnequippedItems(DataModels.ItemCategory.Scroll);
+            if (scrolls.Count == 0)
+            {
+                return new ScrollInfoCollection();
+            }
+
+            return new ScrollInfoCollection(scrolls.Select(x => new ScrollInfo(x.ItemId, x.Item?.Name, x.Amount)));
+        }
+
         //public bool WalkTo(string userId, int x, int y, int z)
         //{
         //    var targetSession = gameData.GetSessionByUserId(userId);
