@@ -332,7 +332,7 @@ namespace RavenNest.BusinessLogic.Data
             }
 
             var ingot = GetItemByCategory(ItemCategory.Resource, "ore ingot");
-
+            var gold = GetItemByCategory(ItemCategory.Resource, "gold");
             foreach (var item in items.Entities)
             {
                 if (item.RequiredCraftingLevel < 1000)
@@ -346,7 +346,7 @@ namespace RavenNest.BusinessLogic.Data
                     var nl = item.Name.ToLower();
                     Item resType = null;
                     var ingotCount = 0;
-
+                    var goldCount = 0;
                     var type = (ItemType)item.Type;
                     var resCount = 0;
 
@@ -404,11 +404,13 @@ namespace RavenNest.BusinessLogic.Data
                     switch (type)
                     {
                         case ItemType.Amulet:
-                            resCount = 3;
+                            resCount = 1;
+                            goldCount = 10;
                             break;
 
                         case ItemType.Ring:
-                            resCount = 3;
+                            resCount = 1;
+                            goldCount = 5;
                             break;
 
                         case ItemType.OneHandedSword:
@@ -469,6 +471,17 @@ namespace RavenNest.BusinessLogic.Data
                             ItemId = item.Id,
                             ResourceItemId = resType.Id
                         });
+
+                        if (goldCount > 0 && gold != null)
+                        {
+                            Add(new ItemCraftingRequirement()
+                            {
+                                Id = Guid.NewGuid(),
+                                Amount = goldCount,
+                                ItemId = item.Id,
+                                ResourceItemId = gold.Id
+                            });
+                        }
 
                         Add(new ItemCraftingRequirement()
                         {
