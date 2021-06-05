@@ -34,6 +34,8 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<Clan> Clan { get; set; }
         public virtual DbSet<ClanRole> ClanRole { get; set; }
         public virtual DbSet<ClanSkill> ClanSkill { get; set; }
+        public virtual DbSet<MarketItemTransaction> MarketItemTransaction { get; set; }
+
         public virtual DbSet<CharacterClanMembership> CharacterClanMembership { get; set; }
         public virtual DbSet<CharacterClanInvite> CharacterClanInvite { get; set; }
         public virtual DbSet<CharacterSessionActivity> CharacterSessionActivity { get; set; }
@@ -105,7 +107,10 @@ namespace RavenNest.BusinessLogic.Data
 
             modelBuilder.Entity<Clan>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<ClanRole>(e => e.Property(x => x.Id).ValueGeneratedNever());
-            modelBuilder.Entity<ClanSkill>(e => e.Property(x => x.Id).ValueGeneratedNever());            
+            modelBuilder.Entity<ClanSkill>(e => e.Property(x => x.Id).ValueGeneratedNever());
+            
+            modelBuilder.Entity<MarketItemTransaction>(e => e.Property(x => x.Id).ValueGeneratedNever());
+            
             modelBuilder.Entity<CharacterClanMembership>(e => e.Property(x => x.Id).ValueGeneratedNever());
             modelBuilder.Entity<CharacterClanInvite>(e => e.Property(x => x.Id).ValueGeneratedNever());
 
