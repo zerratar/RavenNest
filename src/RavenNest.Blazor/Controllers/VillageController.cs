@@ -34,6 +34,14 @@ namespace RavenNest.Controllers
             return villageManager.AssignPlayerToHouse(sessionToken.SessionId, slot, userId);
         }
 
+        [HttpGet("{slot}/assign-character/{characterId}")]
+        public bool AssignPlayerByCharacterAsync(int slot, Guid characterId)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return villageManager.AssignPlayerToHouse(sessionToken.SessionId, slot, characterId);
+        }
+
         [HttpGet("{slot}/build/{type}")]
         public bool BuildHouseAsync(int slot, int type)
         {
