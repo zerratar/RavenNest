@@ -360,6 +360,10 @@ namespace RavenNest.BusinessLogic.Data
                         resType = GetItemByCategory(ItemCategory.Resource, "ruby");
                         ingotCount = 5;
                     }
+                    if (nl.Contains("bronze"))
+                    {
+                        resType = ingot;
+                    }
                     if (nl.Contains("iron"))
                     {
                         resType = GetItemByCategory(ItemCategory.Resource, "iron nugget");
