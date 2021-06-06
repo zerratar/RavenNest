@@ -340,6 +340,17 @@ namespace RavenNest.BusinessLogic.Data
                     var requirements = GetCraftingRequirements(item.Id);
                     if (requirements != null && requirements.Count > 0 || item.WoodCost > 0 || item.OreCost > 0)
                     {
+                        if (requirements != null && requirements.Count > 0)
+                        {
+                            foreach (var req in requirements)
+                            {
+                                if (req.Amount == 0)
+                                {
+                                    req.Amount = 3;
+                                }
+                            }
+                        }
+
                         continue;
                     }
 
@@ -445,6 +456,7 @@ namespace RavenNest.BusinessLogic.Data
                         case ItemType.Leggings:
                             resCount = 4;
                             break;
+                        case ItemType.Gloves:
                         case ItemType.Boots:
                             resCount = 3;
                             break;
