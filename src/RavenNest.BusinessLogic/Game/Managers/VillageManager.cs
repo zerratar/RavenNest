@@ -12,6 +12,28 @@ namespace RavenNest.BusinessLogic.Game
             this.gameData = gameData;
         }
 
+        public bool AssignPlayerToHouse(Guid sessionId, int slot, Guid characterId)
+        {
+            var session = gameData.GetSession(sessionId);
+            var village = gameData.GetOrCreateVillageBySession(session);
+            var houses = gameData.GetOrCreateVillageHouses(village);
+
+            var targetHouse = houses.FirstOrDefault(x => x.Slot == slot);
+            if (targetHouse == null)
+                return false;
+
+            var player = gameData.GetCharacter(characterId);
+            if (player == null)
+                return false;
+
+            var existingHouse = houses.FirstOrDefault(x => x.UserId == player.UserId);
+            if (existingHouse != null)
+                existingHouse.UserId = null;
+
+            targetHouse.UserId = player.UserId;
+            return true;
+        }
+
         public bool AssignPlayerToHouse(Guid sessionId, int slot, string userId)
         {
             var session = gameData.GetSession(sessionId);
