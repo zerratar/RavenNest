@@ -117,20 +117,40 @@ namespace RavenNest.SDK.Endpoints
             {
                 using (var response = await request.GetResponseAsync())
                 using (var resStream = response.GetResponseStream())
-                using (var reader = new StreamReader(resStream))
                 {
-                    if (((HttpWebResponse)response).StatusCode == HttpStatusCode.Forbidden)
+                    if (typeof(TResult) == typeof(byte[]))
                     {
-                        return default(TResult);
-                    }
+                        using (var br = new BinaryReader(resStream))
+                        using (var ms = new MemoryStream())
+                        {
+                            var readSize = 0;
+                            byte[] buffer = new byte[4096];
+                            while ((readSize = br.Read(buffer, 0, buffer.Length)) > 0)
+                            {
+                                ms.Write(buffer, 0, readSize);
+                            }
 
-                    if (typeof(TResult) == typeof(object))
+                            return (TResult)(object)ms.ToArray();
+                        }
+                    }
+                    else
                     {
-                        return default(TResult);
-                    }
+                        using (var reader = new StreamReader(resStream))
+                        {
+                            if (((HttpWebResponse)response).StatusCode == HttpStatusCode.Forbidden)
+                            {
+                                return default(TResult);
+                            }
 
-                    var responseData = await reader.ReadToEndAsync();
-                    return JsonConvert.DeserializeObject<TResult>(responseData);
+                            if (typeof(TResult) == typeof(object))
+                            {
+                                return default(TResult);
+                            }
+
+                            var responseData = await reader.ReadToEndAsync();
+                            return JsonConvert.DeserializeObject<TResult>(responseData);
+                        }
+                    }
                 }
             }
             catch (Exception exc)

@@ -50,9 +50,11 @@ namespace RavenNest.SDK
             Players = new WebBasedPlayersEndpoint(this, logger, request);
             Marketplace = new WebBasedMarketplaceEndpoint(this, logger, request);
             Village = new WebBasedVillageEndpoint(this, logger, request);
+            Admin = new WebBasedAdminEndpoint(this, logger, request);
         }
 
         public IWebSocketEndpoint Stream { get; }
+        public IAdminEndpoint Admin { get; }
         public IAuthEndpoint Auth { get; }
         public IGameEndpoint Game { get; }
         public IItemEndpoint Items { get; }
