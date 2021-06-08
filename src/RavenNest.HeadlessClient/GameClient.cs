@@ -85,8 +85,8 @@ namespace RavenNest.HeadlessClient
                 {
                     System.IO.Directory.CreateDirectory(targetFolder);
                 }
-
-                var outputFile = System.IO.Path.Combine(targetFolder, DateTime.Now.ToString("yyyy-MM-dd_hhmmss") + ".zip");
+                
+                var outputFile = System.IO.Path.Combine(targetFolder, "data-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + ".zip");
                 await System.IO.File.WriteAllBytesAsync(outputFile, bytes);
             }
             catch (Exception exc)
