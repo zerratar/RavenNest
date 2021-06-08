@@ -1,8 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿using Ionic.Zip;
+using Newtonsoft.Json;
 using RavenNest.DataModels;
-using SharpCompress.Archives.Zip;
-using SharpCompress.Common;
-using SharpCompress.Writers;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
@@ -18,8 +16,7 @@ namespace RavenNest.BusinessLogic.Data
         void CreateRestorePoint(IEntitySet[] entitySets);
         void CreateBackup(IEntitySet[] entitySets);
         void ClearRestorePoint();
-
-        System.IO.Stream GetCompressedEntityStream(IEntitySet[] entitySets);
+        byte[] GetCompressedEntityStream(IEntitySet[] entitySets);
 
         IEntityRestorePoint GetRestorePoint(params Type[] types);
         IEntityRestorePoint GetRestorePoint(string path, params Type[] types);
@@ -113,10 +110,10 @@ namespace RavenNest.BusinessLogic.Data
             StoreData(entitySets, RestorePointFolder);
         }
 
-        public System.IO.Stream GetCompressedEntityStream(IEntitySet[] entitySets)
+        public byte[] GetCompressedEntityStream(IEntitySet[] entitySets)
         {
-            var memoryStream = new MemoryStream();
-            using (var archive = ZipArchive.Create())
+            using (var memoryStream = new MemoryStream())
+            using (ZipFile zip = new ZipFile())
             {
                 foreach (var entitySet in entitySets)
                 {
@@ -124,23 +121,12 @@ namespace RavenNest.BusinessLogic.Data
                     var entities = entitySet.GetEntities();
                     var key = type.FullName + ".json";
                     var data = JsonConvert.SerializeObject(entities);
-                    using (var s = new MemoryStream())
-                    using (var sw = new StreamWriter(s))
-                    {
-                        sw.Write(data);
-                        archive.AddEntry(key, s);
-                    }
+                    zip.AddEntry(key, data);
                 }
 
-                archive.SaveTo(memoryStream, new WriterOptions(CompressionType.Deflate)
-                {
-                    LeaveStreamOpen = true
-                });
+                zip.Save(memoryStream);
+                return memoryStream.ToArray();
             }
-
-            //reset memoryStream to be usable now
-            memoryStream.Position = 0;
-            return memoryStream;
         }
 
         private void StoreData(IEntitySet[] entitySets, string dataFolder)
