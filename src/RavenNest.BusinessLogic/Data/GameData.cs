@@ -1365,7 +1365,7 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
-        public Stream GetCompressedEntityStream()
+        public byte[] GetCompressedEntities()
         {
             try
             {

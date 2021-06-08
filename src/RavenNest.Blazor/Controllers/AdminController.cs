@@ -81,7 +81,7 @@ namespace RavenNest.Controllers
 
             try
             {
-                return File(gameData.GetCompressedEntityStream(), "application/zip", "data-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + ".zip");
+                return File(gameData.GetCompressedEntities(), "application/zip", "data-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss") + ".zip");
             }
             catch (Exception exc)
             {

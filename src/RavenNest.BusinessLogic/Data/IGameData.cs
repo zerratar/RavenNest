@@ -8,8 +8,7 @@ namespace RavenNest.BusinessLogic.Data
 {
     public interface IGameData
     {
-
-        System.IO.Stream GetCompressedEntityStream();
+        byte[] GetCompressedEntities();
 
         GameClient Client { get; }
 
