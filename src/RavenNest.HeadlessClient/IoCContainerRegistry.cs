@@ -34,7 +34,7 @@ namespace RavenNest.HeadlessClient
             }
             else
             {
-                ioc.RegisterCustomShared<AppSettings>(() => new AppSettings(null, null, null, null));
+                ioc.RegisterCustomShared<AppSettings>(() => new AppSettings(null, null, null, null, null));
             }
 
             switch (targetEnvironment)
