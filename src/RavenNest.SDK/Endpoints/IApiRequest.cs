@@ -24,6 +24,7 @@ namespace RavenNest.SDK.Endpoints
         Players,
         Auth,
         Marketplace,
-        Village
+        Village,
+        Admin
     }
 }

@@ -65,6 +65,36 @@ namespace RavenNest.HeadlessClient
             return loginResult;
         }
 
+        public async Task DownloadBackupAsync()
+        {
+            try
+            {
+                logger.Write("Downloading backup from server... ");
+
+                var targetFolder = settings.BackupFolder ?? "backups";
+                var bytes = await ravennest.Admin.DownloadBackupAsync();
+                if (bytes == null || bytes.Length == 0)
+                {
+                    logger.WriteLine("Failed.");
+                    return;
+                }
+
+                logger.WriteLine("Completed.");
+
+                if (!System.IO.Directory.Exists(targetFolder))
+                {
+                    System.IO.Directory.CreateDirectory(targetFolder);
+                }
+
+                var outputFile = System.IO.Path.Combine(targetFolder, DateTime.Now.ToString("yyyy-MM-dd_hhmmss.zip"));
+                await System.IO.File.WriteAllBytesAsync(outputFile, bytes);
+            }
+            catch (Exception exc)
+            {
+                logger.Error("ERR: " + exc);
+            }
+        }
+
         public void Dispose()
         {
             if (this.ravennest.SessionStarted)
@@ -103,5 +133,6 @@ namespace RavenNest.HeadlessClient
 
             return true;
         }
+
     }
 }

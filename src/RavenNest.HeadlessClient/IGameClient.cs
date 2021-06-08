@@ -8,5 +8,6 @@ namespace RavenNest.HeadlessClient
         Task<bool> AuthenticateAsync();
         Task<bool> BeginGameSessionAsync();
         Task<bool> WaitForGameEventsAsync(int eventCount, TimeSpan timeout);
+        Task DownloadBackupAsync();
     }
 }

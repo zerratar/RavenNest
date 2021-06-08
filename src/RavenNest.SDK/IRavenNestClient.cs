@@ -14,6 +14,7 @@ namespace RavenNest.SDK
         IMarketplaceEndpoint Marketplace { get; }
         IWebSocketEndpoint Stream { get; }
         IVillageEndpoint Village { get; }
+        IAdminEndpoint Admin { get; }
 
         //GameEvent PollGameEvent();
         Task UpdateAsync();
