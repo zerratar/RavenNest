@@ -20,8 +20,8 @@ namespace RavenNest.SDK.Endpoints
         public Task<byte[]> DownloadBackupAsync()
         {
             return request.Create()
-                .Identifier("download")
-                .Method("backup")
+                .Identifier("backup")
+                .Method("download")
                 .Build()
                 .SendAsync<byte[]>(ApiRequestTarget.Admin, ApiRequestType.Get);
         }
