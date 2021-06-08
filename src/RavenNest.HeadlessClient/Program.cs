@@ -10,7 +10,7 @@ namespace RavenNest.HeadlessClient
     {
         static async Task<int> Main(string[] args)
         {
-            var lastUpdate = DateTime.Now;
+            var lastUpdate = DateTime.MinValue;
 
             var ioc = new IoC();
             using (new IoCContainerRegistry(ioc, TargetEnvironment.Production))
