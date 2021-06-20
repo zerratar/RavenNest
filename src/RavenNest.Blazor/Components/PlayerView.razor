@@ -15,39 +15,27 @@
   </h1>
   @if (CanManage)
   {
-    @if (SelectedPlayer.Identifier != null)
-    {
-      <p>
-        You can use
-        <b>
-          !join
-          @if (SelectedPlayer.CharacterIndex > 0)
-          {
-            @(SelectedPlayer.CharacterIndex+1)
-          }
-        </b> or <b>!join @SelectedPlayer.Identifier</b> to play with this character on stream.
-        @if (!editingAlias)
+    <p>
+      You can use
+      <b>
+        !join
+        @if (SelectedPlayer.CharacterIndex > 0)
         {
-          <a class="change-identifier" @onclick="EditAlias">Change Alias</a>
+          @(SelectedPlayer.CharacterIndex+1)
         }
-      </p>
-    }
-    else
-    {
-      <p>
-        You can use <b>
-          !join
-          @if (SelectedPlayer.CharacterIndex > 0)
-          {
-            @(SelectedPlayer.CharacterIndex+1)
-          }
-        </b> to play with this character on stream.
-        @if (!editingAlias)
-        {
-          <a class="change-identifier" @onclick="EditAlias">Change Alias</a>
-        }
-      </p>
-    }
+	  </b>
+
+	  @if (SelectedPlayer.Identifier != null && (SelectedPlayer.CharacterIndex+1).ToString() != SelectedPlayer.Identifier) 
+	  {
+		  <span> or <b>!join @SelectedPlayer.Identifier</b></span>
+	  }
+
+	  <span> to play with this character on stream.</span>
+      @if (!editingAlias)
+      {
+        <a class="change-identifier" @onclick="EditAlias">Change Alias</a>
+      }
+    </p>
 
     @if (editingAlias)
     {
