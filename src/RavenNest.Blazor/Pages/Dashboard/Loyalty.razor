@@ -8,361 +8,370 @@
 @inject NavigationManager NavigationManager
 
 <div class="tab-view">
-  <button @onclick="ViewMyStream" class="tab-link @(viewState == LoyaltyViewState.MyStream ? "active":"")">My Stream (Loyalty towards me)</button>
-  <button @onclick="ViewStreamers" class="tab-link @(viewState == LoyaltyViewState.OtherStream ? "active":"")">Loyalty towards other streamers</button>
+	<button @onclick="ViewMyStream" class="tab-link @(viewState == LoyaltyViewState.MyStream ? "active":"")">My Stream (Loyalty towards me)</button>
+	<button @onclick="ViewStreamers" class="tab-link @(viewState == LoyaltyViewState.OtherStream ? "active":"")">Loyalty towards other streamers</button>
 </div>
 
 @if (session == null)
 {
-  <LoadIndicator></LoadIndicator>
+	<LoadIndicator></LoadIndicator>
 }
 else
 {
-  @switch (viewState)
-  {
-    case LoyaltyViewState.MyStream:
-      {
-        if (!isStreamer)
-        {
-          <h1>No data recorded</h1>
-          <p>Once you start streaming Ravenfall, you will be able to track user/viewer loyalty towards you in here.</p>
-        }
-        else
-        {
-          <h1>Viewer Loyalty</h1>
-          <h4>Here you can keep track on your viewers to see who has been playing on your stream and for how long.</h4>
-          if (loyaltyData == null)
-          {
-            <LoadIndicator></LoadIndicator>
-          }
-          else
-          {
-            <div class="loyalty-stats">
-              <h3>Stats</h3>
+	@switch (viewState)
+	{
+		case LoyaltyViewState.MyStream:
+			{
+				if (!isStreamer)
+				{
+					<h1>No data recorded</h1>
+					<p>Once you start streaming Ravenfall, you will be able to track user/viewer loyalty towards you in here.</p>
+				}
+				else
+				{
+					<h1>Viewer Loyalty</h1>
+					<h4>Here you can keep track on your viewers to see who has been playing on your stream and for how long.</h4>
+					if (loyaltyData == null)
+					{
+						<LoadIndicator></LoadIndicator>
+					}
+					else
+					{
+						<div class="loyalty-stats">
+						 <h3>Stats</h3>
 
-              <div class="loyalty-stats-rows">
-                <div class="stats-row">
-                  <label class="stats-label">Earliest known Stream</label>
-                  <span class="stats-value">@loyaltyData.FirstStream</span>
-                </div>
-                <div class="stats-row">
-                  <label class="stats-label">New game sessions&nbsp;<span class="fas fa-help" alt="Not all your game sessions as some sessions are re-used."></span></label>
-                  <span class="stats-value">@loyaltyData.SessionCount</span>
-                </div>
-                <div class="stats-row">
-                  <label class="stats-label">Total bits cheered</label>
-                  <span class="stats-value">@loyaltyData.TotalBitsCheered</span>
-                </div>
-                <div class="stats-row">
-                  <label class="stats-label">Total subs gifted</label>
-                  <span class="stats-value">@loyaltyData.TotalSubsGifted</span>
-                </div>
-                <div class="stats-row">
-                  <label class="stats-label">Subscribers playing</label>
-                  <span class="stats-value">@loyaltyData.TotalSubscribers</span>
-                </div>
-                <div class="stats-row">
-                  <label class="stats-label">Total time with active game session</label>
-                  <span class="stats-value">@FormatTime(loyaltyData.TotalStreamTime)</span>
-                </div>
-                <div class="stats-row">
-                  <label class="stats-label">Total time players been playing</label>
-                  <span class="stats-value">@FormatTime(loyaltyData.TotalPlayerTime)</span>
-                </div>
-              </div>
-            </div>
+						 <div class="loyalty-stats-rows">
+						  <div class="stats-row">
+						   <label class="stats-label">Earliest known Stream</label>
+						   <span class="stats-value">@loyaltyData.FirstStream</span>
+						  </div>
+						  <div class="stats-row">
+						   <label class="stats-label">New game sessions&nbsp;<span class="fas fa-help" alt="Not all your game sessions as some sessions are re-used."></span></label>
+						   <span class="stats-value">@loyaltyData.SessionCount</span>
+						  </div>
+						  <div class="stats-row">
+						   <label class="stats-label">Total bits cheered</label>
+						   <span class="stats-value">@loyaltyData.TotalBitsCheered</span>
+						  </div>
+						  <div class="stats-row">
+						   <label class="stats-label">Total subs gifted</label>
+						   <span class="stats-value">@loyaltyData.TotalSubsGifted</span>
+						  </div>
+						  <div class="stats-row">
+						   <label class="stats-label">Subscribers playing</label>
+						   <span class="stats-value">@loyaltyData.TotalSubscribers</span>
+						  </div>
+						  <div class="stats-row">
+						   <label class="stats-label">Total time with active game session</label>
+						   <span class="stats-value">@FormatTime(loyaltyData.TotalStreamTime)</span>
+						  </div>
+						  <div class="stats-row">
+						   <label class="stats-label">Total time players been playing</label>
+						   <span class="stats-value">@FormatTime(loyaltyData.TotalPlayerTime)</span>
+						  </div>
+						 </div>
+						</div>
 
-            <div class="loyalty-users">
-              <h3>Players</h3>
-              <table class="items-list">
-                <thead>
-                  <tr>
-                    <th></th>
-                    <th>Name</th>
-                    <th>Level</th>
-                    <th>Gifted subs</th>
-                    <th>Cheered bits</th>
-                    <th>Play time</th>
-                    <th>Points</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @foreach (var item in loyaltyData.UserLoyalties)
-                  {
-                    <tr id="@item.TwitchUserId" class="item-row">
-                      <td><img src="/api/twitch/logo/@(item.TwitchUserId)" style="width: 40px" /></td>
-                      <td class='item'>
-                        @if (!string.IsNullOrEmpty(item.DisplayName))
-                        {
-                          @item.DisplayName
-                        }
-                        else
-                        {
-                          @(item.UserName)
-                        }
-                      </td>
-                      <td class='item'>@item.Level</td>
-                      <td class='item'>@item.GiftedSubs</td>
-                      <td class='item'>@item.CheeredBits</td>
-                      <td class='item'>@FormatTime(item.TotalPlayTime)</td>
-                      <td class='item'>@item.Points</td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        }
-      }
-      break;
-    case LoyaltyViewState.OtherStream:
-      {
-        <h1>Streamer Loyalty</h1>
-        if (userLoyaltyData == null)
-        {
-          <LoadIndicator></LoadIndicator>
-        }
-        else
-        {
-          if (selectedStreamer != null)
-          {
-            <div class="loyalty-streamer-details">
-              <h2>@selectedStreamer.Name</h2>
-              <div class="loyalty-stats-rows">
-                <div class="stats-row points">
-                  <div class="stats-label">Loyalty Points</div>
-                  <div class="stats-value">@selectedStreamer.Points</div>
-                </div>
-                <div class="stats-row level">
-                  <div class="stats-label">Loyalty Level</div>
-                  <div class="stats-value">@selectedStreamer.Level</div>
-                </div>
-                <div class="stats-row exp">
-                  <div class="stats-label">EXP</div>
-                  <div class="stats-value">@selectedStreamer.Experience / @LoyaltyService.GetExperienceForLevel(selectedStreamer.Level + 1)</div>
-                </div>
-              </div>
+						<div class="loyalty-users">
+						 <h3>Players</h3>
+						 <table class="items-list">
+						  <thead>
+						   <tr>
+							<th></th>
+							<th>Name</th>
+							<th>Level</th>
+							<th>Gifted subs</th>
+							<th>Cheered bits</th>
+							<th>Play time</th>
+							<th>Points</th>
+						   </tr>
+						  </thead>
+						  <tbody>
+									@foreach (var item in loyaltyData.UserLoyalties)
+									{
+							   <tr id="@item.TwitchUserId" class="item-row">
+								<td><img src="/api/twitch/logo/@(item.TwitchUserId)" style="width: 40px" /></td>
+								<td class='item'>
+												@if (!string.IsNullOrEmpty(item.DisplayName))
+												{
+													@item.DisplayName
+												}
+												else
+												{
+													@(item.UserName)
+												}
+								</td>
+								<td class='item'>@item.Level</td>
+								<td class='item'>@item.GiftedSubs</td>
+								<td class='item'>@item.CheeredBits</td>
+								<td class='item'>@FormatTime(item.TotalPlayTime)</td>
+								<td class='item'>@item.Points</td>
+							   </tr>
+									}
+						  </tbody>
+						 </table>
+						</div>
+					}
+				}
+			}
+			break;
+		case LoyaltyViewState.OtherStream:
+			{
+				<h1>Streamer Loyalty</h1>
+				if (userLoyaltyData == null)
+				{
+					<LoadIndicator></LoadIndicator>
+				}
+				else
+				{
+					if (selectedStreamer != null)
+					{
+						<div class="loyalty-streamer-details">
+						 <h2>@selectedStreamer.Name</h2>
+						 <div class="loyalty-stats-rows">
+						  <div class="stats-row points">
+						   <div class="stats-label">Loyalty Points</div>
+						   <div class="stats-value">@selectedStreamer.Points</div>
+						  </div>
+						  <div class="stats-row level">
+						   <div class="stats-label">Loyalty Level</div>
+						   <div class="stats-value">@selectedStreamer.Level</div>
+						  </div>
+						  <div class="stats-row exp">
+						   <div class="stats-label">EXP</div>
+						   <div class="stats-value">@selectedStreamer.Experience / @LoyaltyService.GetExperienceForLevel(selectedStreamer.Level + 1)</div>
+						  </div>
+						 </div>
 
-              @if (pointRewards != null && pointRewards.Count > 0)
-              {
-                <h3>Items you can redeem using points</h3>
-                <div class="loyalty-reward-list">
-                  @foreach (var reward in pointRewards.OrderBy(x => x.Points))
-                  {
-                    var item = GetRewardItem(reward);
-                    <div class="reward-item @(reward.Points > selectedStreamer.Points ? "locked" : "")" @onclick="(()=>ConfirmRewardRedeem(reward, item))">
-                      <div class="reward-item-icon"><img src="/imgs/items/@(item.Id).png" /></div>
-                      <div class="reward-item-details">
-                        <div class="reward-item-name">@item.Name</div>
-                        <div class="reward-item-price">Costs @reward.Points</div>
-                      </div>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-          }
-          <div class="loyalty-users">
-            <h3>Streamers</h3>
-            <table class="items-list">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>Name</th>
-                  <th>Level</th>
-                  <th>Gifted subs</th>
-                  <th>Cheered bits</th>
-                  <th>Play time</th>
-                  <th>Points</th>
-                </tr>
-              </thead>
-              <tbody>
-                @foreach (var item in userLoyaltyData.Loyalties)
-                {
-                  <tr id="@item.StreamerTwitchUserId" class="item-row streamer" @onclick="(()=>SelectStreamer(item))">
-                    <td><img src="/api/twitch/logo/@(item.StreamerTwitchUserId)" style="width: 40px" /></td>
-                    <td class='item'>
-                      @item.Name
-                    </td>
-                    <td class='item'>@item.Level</td>
-                    <td class='item'>@item.GiftedSubs</td>
-                    <td class='item'>@item.CheeredBits</td>
-                    <td class='item'>@FormatTime(item.TotalPlayTime)</td>
-                    <td class='item'>@item.Points</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        }
+							@if (pointRewards != null && pointRewards.Count > 0)
+							{
+							 <h3>Items you can redeem using points</h3>
+							 <div class="loyalty-reward-list">
+									@foreach (var reward in pointRewards.OrderBy(x => x.Points))
+									{
+										var item = GetRewardItem(reward);
+								  <div class="reward-item @(reward.Points > selectedStreamer.Points ? "locked" : "")" @onclick="(()=>ConfirmRewardRedeem(reward, item))">
+								   <div class="reward-item-icon"><img src="/imgs/items/@(item.Id).png" /></div>
+								   <div class="reward-item-details">
+									<div class="reward-item-name">@item.Name</div>
+									<div class="reward-item-price">Costs @reward.Points</div>
+								   </div>
+								  </div>
+									}
+							 </div>
+							}
+						</div>
+					}
+					<div class="loyalty-users">
+					 <h3>Streamers</h3>
+					 <table class="items-list">
+					  <thead>
+					   <tr>
+						<th></th>
+						<th>Name</th>
+						<th>Level</th>
+						<th>Gifted subs</th>
+						<th>Cheered bits</th>
+						<th>Play time</th>
+						<th>Points</th>
+					   </tr>
+					  </thead>
+					  <tbody>
+								@foreach (var item in userLoyaltyData.Loyalties)
+								{
+						   <tr id="@item.StreamerTwitchUserId" class="item-row streamer" @onclick="(()=>SelectStreamer(item))">
+							<td><img src="/api/twitch/logo/@(item.StreamerTwitchUserId)" style="width: 40px" /></td>
+							<td class='item'>
+											@item.Name
+							</td>
+							<td class='item'>@item.Level</td>
+							<td class='item'>@item.GiftedSubs</td>
+							<td class='item'>@item.CheeredBits</td>
+							<td class='item'>@FormatTime(item.TotalPlayTime)</td>
+							<td class='item'>@item.Points</td>
+						   </tr>
+								}
+					  </tbody>
+					 </table>
+					</div>
+				}
 
-        @if (rewardConfirmationDialogVisible)
-        {
-          <div class="reward-redeem-confirmation">
-            <div class="confirm-header">
-              <h3>Use @selectedReward.Points to redeem @selectedItem.Name?</h3>
-              <button class="close" @onclick="CancelRedeem">&times;</button>
-            </div>
-            <div class="confirm-body">
-              <h3>Select character to add the item to</h3>
-              <select @onchange="SelectedPlayerChanged">
-                @foreach (var c in myPlayers)
-                {
-                  if (c.Id == selectedPlayerId)
-                  {
-                    <option value="@c.Id" selected>@c.Name @(c.Identifier != null ? "(" + c.Identifier + ")" : "") #@c.CharacterIndex</option>
-                  }
-                  else
-                  {
-                    <option value="@c.Id">@c.Name @(c.Identifier != null ? "(" + c.Identifier + ")" : "") #@c.CharacterIndex</option>
-                  }
-                }
-              </select>
-              <button class="btn btn-primary" @onclick="RedeemReward">Redeem</button>
-              <button class="btn btn-danger" @onclick="CancelRedeem">Cancel</button>
-            </div>
-          </div>
-        }
-      }
-      break;
-  }
+				@if (rewardConfirmationDialogVisible)
+				{
+					<div class="reward-redeem-confirmation">
+					 <div class="confirm-header">
+					  <h3>Use @(selectedReward.Points * redeemAmount) to redeem @(redeemAmount > 1 ? (redeemAmount + "x ") : "") @selectedItem.Name?</h3>
+					  <button class="close" @onclick="CancelRedeem">&times;</button>
+					 </div>
+					 <div class="confirm-body">
+					  <h3>Select character to add the item to</h3>
+					  <select @onchange="SelectedPlayerChanged">
+								@foreach (var c in myPlayers)
+								{
+									if (c.Id == selectedPlayerId)
+									{
+							   <option value="@c.Id" selected>@c.Name @(c.Identifier != null ? "(" + c.Identifier + ")" : "") #@c.CharacterIndex</option>
+									}
+									else
+									{
+							   <option value="@c.Id">@c.Name @(c.Identifier != null ? "(" + c.Identifier + ")" : "") #@c.CharacterIndex</option>
+									}
+								}
+					  </select>
+					  <h3>Select Amount to redeem</h3>
+					  <input @bind-value="redeemAmount" type="number" min="1" />
+					  @if (CanBuyRewards)
+					  {
+						<button class="btn btn-primary" @onclick="RedeemReward">Redeem</button>
+					  }
+					  <button class="btn btn-danger" @onclick="CancelRedeem">Cancel</button>
+					 </div>
+					</div>
+				}
+			}
+			break;
+	}
 }
 
 @code {
-    private RavenNest.Sessions.SessionInfo session;
-    private LoyaltyViewState viewState = LoyaltyViewState.MyStream;
-    private Services.StreamerLoyaltyData loyaltyData;
-    private Services.UserLoyaltyData userLoyaltyData;
-    private Services.StreamerLoyalty selectedStreamer;
-    private IReadOnlyList<RavenNest.DataModels.UserLoyaltyReward> pointRewards;
-    private IReadOnlyList<RavenNest.BusinessLogic.Extended.WebsitePlayer> myPlayers;
+	private RavenNest.Sessions.SessionInfo session;
+	private LoyaltyViewState viewState = LoyaltyViewState.MyStream;
+	private Services.StreamerLoyaltyData loyaltyData;
+	private Services.UserLoyaltyData userLoyaltyData;
+	private Services.StreamerLoyalty selectedStreamer;
+	private IReadOnlyList<RavenNest.DataModels.UserLoyaltyReward> pointRewards;
+	private IReadOnlyList<RavenNest.BusinessLogic.Extended.WebsitePlayer> myPlayers;
 
-    private RavenNest.DataModels.UserLoyaltyReward selectedReward;
-    private Models.Item selectedItem;
-    private Guid? selectedPlayerId;
-    private bool rewardConfirmationDialogVisible;
-    private bool isStreamer;
+	private RavenNest.DataModels.UserLoyaltyReward selectedReward;
+	private Models.Item selectedItem;
+	private int redeemAmount = 1;
 
-    protected override async Task OnInitializedAsync()
-    {
-      session = AuthService.GetSession();
+	private Guid? selectedPlayerId;
+	private bool rewardConfirmationDialogVisible;
+	private bool isStreamer;
 
-      if (session == null || session.UserId == null)
-      {
-        return;
-      }
+	protected override async Task OnInitializedAsync()
+	{
+		session = AuthService.GetSession();
 
-      isStreamer = await LoyaltyService.IsStreamerAsync();
-      if (isStreamer)
-      {
-        await ViewMyStream();
-      }
-      else
-      {
-        await ViewStreamers();
-      }
-    }
+		if (session == null || session.UserId == null)
+		{
+			return;
+		}
 
-    private void SelectedPlayerChanged(ChangeEventArgs e)
-    {
-      var id = e.Value?.ToString();
-      if (Guid.TryParse(id, out var playerId))
-        selectedPlayerId = playerId;
-    }
+		isStreamer = await LoyaltyService.IsStreamerAsync();
+		if (isStreamer)
+		{
+			await ViewMyStream();
+		}
+		else
+		{
+			await ViewStreamers();
+		}
+	}
 
-    public async void RedeemReward()
-    {
-      if (selectedPlayerId == null)
-        return;
+	private void SelectedPlayerChanged(ChangeEventArgs e)
+	{
+		var id = e.Value?.ToString();
+		if (Guid.TryParse(id, out var playerId))
+			selectedPlayerId = playerId;
+	}
 
-      if (await LoyaltyService.RedeemRewardAsync(selectedStreamer.StreamerUserId, selectedPlayerId.Value, selectedReward))
-      {
-        await ViewStreamers();
-        CancelRedeem();
-      }
-    }
+	public bool CanBuyRewards => selectedReward?.Points * redeemAmount <= selectedStreamer?.Points;
 
-    public void CancelRedeem()
-    {
-      rewardConfirmationDialogVisible = false;
-      selectedReward = null;
-      selectedItem = null;
-      InvokeAsync(StateHasChanged);
-    }
+	public async void RedeemReward()
+	{
+		if (selectedPlayerId == null || redeemAmount <= 0 || !CanBuyRewards)
+			return;
 
-    public void ConfirmRewardRedeem(RavenNest.DataModels.UserLoyaltyReward reward, Models.Item item)
-    {
-      if (myPlayers == null)
-        return;
+		if (await LoyaltyService.RedeemRewardAsync(selectedStreamer.StreamerUserId, selectedPlayerId.Value, selectedReward, redeemAmount))
+		{
+			await ViewStreamers();
+			CancelRedeem();
+		}
+	}
 
-      if (reward.Points > selectedStreamer.Points)
-        return;
+	public void CancelRedeem()
+	{
+		rewardConfirmationDialogVisible = false;
+		selectedReward = null;
+		selectedItem = null;
+		InvokeAsync(StateHasChanged);
+	}
 
-      if (selectedPlayerId == null)
-      {
-        selectedPlayerId = myPlayers.First().Id;
-      }
+	public void ConfirmRewardRedeem(RavenNest.DataModels.UserLoyaltyReward reward, Models.Item item)
+	{
+		if (myPlayers == null)
+			return;
 
-      rewardConfirmationDialogVisible = true;
-      selectedReward = reward;
-      selectedItem = item;
-    }
+		if (reward.Points > selectedStreamer.Points)
+			return;
 
-    public void SelectStreamer(Services.StreamerLoyalty streamer)
-    {
-      selectedStreamer = streamer;
-    }
+		if (selectedPlayerId == null)
+		{
+			selectedPlayerId = myPlayers.First().Id;
+		}
 
-    private Models.Item GetRewardItem(RavenNest.DataModels.UserLoyaltyReward reward)
-    {
-      if (!Guid.TryParse(reward.RewardData, out var itemId))
-        return null;
-      return ItemService.GetItem(itemId);
-    }
+		rewardConfirmationDialogVisible = true;
+		selectedReward = reward;
+		selectedItem = item;
+	}
 
-    private string FormatTime(TimeSpan time)
-    {
-      if (time.TotalSeconds < 60) return "<1 minute";
-      if (time.TotalMinutes < 60)
-        return (int)Math.Floor(time.TotalMinutes) + " minutes";
-      if (time.TotalHours < 24)
-        return Math.Round(time.TotalHours, 2) + " hours";
-      return $"{time.Days} days, {time.Hours} hours, {time.Minutes} minutes";
-    }
+	public void SelectStreamer(Services.StreamerLoyalty streamer)
+	{
+		selectedStreamer = streamer;
+	}
 
-    private async Task ViewMyStream()
-    {
-      viewState = LoyaltyViewState.MyStream;
-      loyaltyData = await LoyaltyService.GetStreamerLoyaltyDataAsync(session.UserId);
-      pointRewards = await LoyaltyService.GetLoyaltyRewardsAsync();
-      await InvokeAsync(StateHasChanged);
-    }
+	private Models.Item GetRewardItem(RavenNest.DataModels.UserLoyaltyReward reward)
+	{
+		if (!Guid.TryParse(reward.RewardData, out var itemId))
+			return null;
+		return ItemService.GetItem(itemId);
+	}
 
-    private async Task ViewStreamers()
-    {
-      viewState = LoyaltyViewState.OtherStream;
-      userLoyaltyData = await LoyaltyService.GetUserLoyaltyDataAsync(session.UserId);
-      if (selectedStreamer == null)
-        selectedStreamer = userLoyaltyData.Loyalties.FirstOrDefault();
-      else
-        selectedStreamer = userLoyaltyData.Loyalties.FirstOrDefault(x => x.StreamerUserId == selectedStreamer.StreamerUserId);
+	private string FormatTime(TimeSpan time)
+	{
+		if (time.TotalSeconds < 60) return "<1 minute";
+		if (time.TotalMinutes < 60)
+			return (int)Math.Floor(time.TotalMinutes) + " minutes";
+		if (time.TotalHours < 24)
+			return Math.Round(time.TotalHours, 2) + " hours";
+		return $"{time.Days} days, {time.Hours} hours, {time.Minutes} minutes";
+	}
 
-      myPlayers = await PlayerService.GetMyPlayersAsync();
-      pointRewards = await LoyaltyService.GetLoyaltyRewardsAsync();
-      await InvokeAsync(StateHasChanged);
-    }
+	private async Task ViewMyStream()
+	{
+		viewState = LoyaltyViewState.MyStream;
+		loyaltyData = await LoyaltyService.GetStreamerLoyaltyDataAsync(session.UserId);
+		pointRewards = await LoyaltyService.GetLoyaltyRewardsAsync();
+		await InvokeAsync(StateHasChanged);
+	}
 
-    protected override void OnAfterRender(bool firstRender)
-    {
-      if (session == null || session.UserId == null)
-      {
-        NavigationManager.NavigateTo("/login");
-      }
-    }
+	private async Task ViewStreamers()
+	{
+		viewState = LoyaltyViewState.OtherStream;
+		userLoyaltyData = await LoyaltyService.GetUserLoyaltyDataAsync(session.UserId);
+		if (selectedStreamer == null)
+			selectedStreamer = userLoyaltyData.Loyalties.FirstOrDefault();
+		else
+			selectedStreamer = userLoyaltyData.Loyalties.FirstOrDefault(x => x.StreamerUserId == selectedStreamer.StreamerUserId);
 
-    public enum LoyaltyViewState
-    {
-      MyStream,
-      OtherStream
-    }
+		myPlayers = await PlayerService.GetMyPlayersAsync();
+		pointRewards = await LoyaltyService.GetLoyaltyRewardsAsync();
+		await InvokeAsync(StateHasChanged);
+	}
+
+	protected override void OnAfterRender(bool firstRender)
+	{
+		if (session == null || session.UserId == null)
+		{
+			NavigationManager.NavigateTo("/login");
+		}
+	}
+
+	public enum LoyaltyViewState
+	{
+		MyStream,
+		OtherStream
+	}
 }
