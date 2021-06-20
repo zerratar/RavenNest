@@ -218,8 +218,12 @@ else
 									}
 								}
 					  </select>
+
 					  <h3>Select Amount to redeem</h3>
 					  <input @bind-value="redeemAmount" type="number" min="1" />
+					  
+					  <br />
+
 					  @if (CanBuyRewards)
 					  {
 						<button class="btn btn-primary" @onclick="RedeemReward">Redeem</button>

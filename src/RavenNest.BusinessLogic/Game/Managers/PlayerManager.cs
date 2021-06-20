@@ -921,7 +921,7 @@ namespace RavenNest.BusinessLogic.Game
                 return;
 
             var inventory = inventoryProvider.Get(characterId);
-            inventory.AddItem(itemId);
+            inventory.AddItem(itemId, amount);
 
             var sessionUserId = character.UserIdLock;
             if (sessionUserId == null)

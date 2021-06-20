@@ -37,7 +37,7 @@ namespace RavenNest.Blazor.Services
             Guid streamerUserId,
             Guid characterId,
             DataModels.UserLoyaltyReward reward,
-            int amount = 1)
+            int amount)
         {
             return Task.Run(() =>
             {
@@ -54,6 +54,8 @@ namespace RavenNest.Blazor.Services
                 var user = gameData.GetUser(character.UserId);
                 if (user == null) return false;
 
+                if (amount < 1)
+                    return false;
 
                 var cost = reward.Points * amount;
                 var loyalty = gameData.GetUserLoyalty(user.Id, streamerUserId);
