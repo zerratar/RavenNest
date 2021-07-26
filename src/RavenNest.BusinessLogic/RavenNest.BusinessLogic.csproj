@@ -13,7 +13,7 @@
 	<PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="5.0.8" />
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
 	<PackageReference Include="System.Data.SqlClient" Version="4.8.2" />
-	<PackageReference Include="TwitchLib.Api" Version="3.2.3" />
+	<PackageReference Include="TwitchLib.Api" Version="3.2.4" />
 	<PackageReference Include="TwitchLib.Api.Helix" Version="3.2.4" />
   </ItemGroup>
 
