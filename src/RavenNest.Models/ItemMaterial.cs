@@ -14,5 +14,7 @@
         Ultima,
         Phantom,
         Lionsbane,
+        Ether,
+        Ancient
     }
 }

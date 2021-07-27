@@ -12,6 +12,9 @@
         Rune,
         Dragon,
         Ultima,
-        Lionsbane
+        Phantom,
+        Lionsbane,
+        Ether,
+        Ancient
     }
 }
