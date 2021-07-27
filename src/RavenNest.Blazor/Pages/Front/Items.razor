@@ -148,13 +148,20 @@
   {
     LoadItems();
   }
+  
+  private async void LoadItems()
+  {
+    items = new Models.ItemCollection((await ItemService.GetItemsAsync()).OrderBy(x => x.Name));
+    StateHasChanged();
+  }
+
+
   protected override void OnAfterRender(bool firstRender)
   {
     base.OnAfterRender(firstRender);
     if (!string.IsNullOrEmpty(Id))
       ScrollToElementId(Id);
   }
-
 
   private MarkupString GetIndicator(string value)
   {
@@ -248,13 +255,6 @@
     }
     sort = value;
   }
-
-  private async void LoadItems()
-  {
-    items = new Models.ItemCollection((await ItemService.GetItemsAsync()).OrderBy(x => x.Name));
-    StateHasChanged();
-  }
-
   private async void ScrollToElementId(string elementId)
   {
     await JS.InvokeAsync<bool>("scrollToElementId", new object[] { elementId, 5 });

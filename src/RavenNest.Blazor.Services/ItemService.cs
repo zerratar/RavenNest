@@ -1,5 +1,7 @@
-﻿using RavenNest.BusinessLogic.Game;
+﻿using Microsoft.AspNetCore.Http;
+using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
+using RavenNest.Sessions;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -8,10 +10,11 @@ using System.Threading.Tasks;
 
 namespace RavenNest.Blazor.Services
 {
-    public class ItemService
+    public class ItemService : RavenNestService
     {
         private readonly IItemManager itemManager;
-        public ItemService(IItemManager itemManager)
+        public ItemService(IItemManager itemManager, IHttpContextAccessor accessor, ISessionInfoProvider sessionInfoProvider)
+            : base(accessor, sessionInfoProvider)
         {
             this.itemManager = itemManager;
         }
@@ -37,6 +40,24 @@ namespace RavenNest.Blazor.Services
         public async Task<ItemCollection> GetItemsAsync()
         {
             return await Task.Run(() => itemManager.GetAllItems());
+        }
+
+        public async Task<bool> AddOrUpdateItemAsync(Item item)
+        {
+            return await Task.Run(() =>
+            {
+                var session = GetSession();
+                if (!session.Authenticated || !session.Administrator)
+                    return false;
+
+                var existing = itemManager.GetItem(item.Id);
+                if (existing != null)
+                {
+                    return itemManager.UpdateItem(item);
+                }
+
+                return itemManager.AddItem(item);
+            }).ConfigureAwait(false);
         }
     }
 }
