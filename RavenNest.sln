@@ -28,7 +28,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RavenNest.Blazor", "src\Rav
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RavenNest.Blazor.Services", "src\RavenNest.Blazor.Services\RavenNest.Blazor.Services.csproj", "{F82556D9-E183-45B6-ADD2-4621E37B69A4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RavenNest.HeadlessClient", "src\RavenNest.HeadlessClient\RavenNest.HeadlessClient.csproj", "{D39CFBB9-6152-4C23-BF39-3FD07063CC76}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RavenNest.HeadlessClient", "src\RavenNest.HeadlessClient\RavenNest.HeadlessClient.csproj", "{D39CFBB9-6152-4C23-BF39-3FD07063CC76}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Libs", "Libs", "{FF1E1C79-7C4E-40D4-AB60-A79AB55ABAF1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RavenNest.PatreonAPI", "src\RavenNest.PatreonAPI\RavenNest.PatreonAPI.csproj", "{7BC2BAB7-BD0D-436C-95C8-424AF7522842}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -72,12 +76,21 @@ Global
 		{D39CFBB9-6152-4C23-BF39-3FD07063CC76}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D39CFBB9-6152-4C23-BF39-3FD07063CC76}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D39CFBB9-6152-4C23-BF39-3FD07063CC76}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7BC2BAB7-BD0D-436C-95C8-424AF7522842}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7BC2BAB7-BD0D-436C-95C8-424AF7522842}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7BC2BAB7-BD0D-436C-95C8-424AF7522842}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7BC2BAB7-BD0D-436C-95C8-424AF7522842}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{22E78F81-4144-4960-AB2A-EBE0B1229BB3} = {FF1E1C79-7C4E-40D4-AB60-A79AB55ABAF1}
+		{326220C7-74C2-4340-A298-113BD9F4992C} = {FF1E1C79-7C4E-40D4-AB60-A79AB55ABAF1}
+		{49562A61-681C-469A-9224-9A40953A30AE} = {FF1E1C79-7C4E-40D4-AB60-A79AB55ABAF1}
+		{969CB15B-D358-4EB3-8800-7950F18825F8} = {FF1E1C79-7C4E-40D4-AB60-A79AB55ABAF1}
 		{58297EFA-7E78-47DB-988B-3E8F02D8A282} = {4B6B7254-0011-4E8D-B51D-24AE557028D2}
+		{7BC2BAB7-BD0D-436C-95C8-424AF7522842} = {FF1E1C79-7C4E-40D4-AB60-A79AB55ABAF1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1D18B908-6D56-49FE-B09D-0DE940AE5265}

@@ -416,6 +416,12 @@ namespace RavenNest.BusinessLogic.Data
                         ingotCount = 75;
                     }
 
+                    if (nl.Contains("lionsbane"))
+                    {
+                        //resType = GetItemByCategory(ItemCategory.Resource, "lion spirit");
+                        //ingotCount = 90;
+                    }
+
                     switch (type)
                     {
                         case ItemType.Amulet:
