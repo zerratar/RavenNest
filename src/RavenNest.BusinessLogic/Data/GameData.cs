@@ -117,6 +117,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(CharacterState),
                         typeof(InventoryItem),
                         typeof(InventoryItemAttribute),
+                        typeof(Item),
                         typeof(User),
                         //typeof(UserNotification),
                         typeof(MarketItemTransaction),
@@ -215,7 +216,7 @@ namespace RavenNest.BusinessLogic.Data
                     marketItems = new EntitySet<MarketItem, Guid>(restorePoint?.Get<MarketItem>() ?? ctx.MarketItem.ToList(), i => i.Id);
                     marketItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
-                    items = new EntitySet<Item, Guid>(ctx.Item.ToList(), i => i.Id);
+                    items = new EntitySet<Item, Guid>(restorePoint?.Get<Item>() ?? ctx.Item.ToList(), i => i.Id);
 
                     npcs = new EntitySet<NPC, Guid>(ctx.NPC.ToList(), i => i.Id);
                     npcSpawns = new EntitySet<NPCSpawn, Guid>(ctx.NPCSpawn.ToList(), i => i.Id);
@@ -294,6 +295,7 @@ namespace RavenNest.BusinessLogic.Data
                         patreons, loyalty, loyaltyRewards, loyaltyRanks, claimedLoyaltyRewards,
                         expMultiplierEvents, notifications,
                         appearances, syntyAppearances, characters, characterStates,
+                        items, // so we can update items
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems, marketTransactions, inventoryItemAttributes,
                         resources, statistics, characterSkills, clanSkills, users, villages, villageHouses,
                         clans, clanRoles, clanMemberships, clanInvites,
