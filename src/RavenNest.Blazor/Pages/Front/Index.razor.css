@@ -82,7 +82,7 @@
 }
 
 .top-section {
-    background-image: url('/imgs/TopImage.png');
+    background-image: url('/imgs/TopImage.jpg');
     width: 100vw;
     height: 720px;
     background-position: center;
@@ -142,7 +142,7 @@
 
 .section.patreon {
     background-color: white;
-    background-image: url(/imgs/PatreonBackground.png);
+    background-image: url(/imgs/PatreonBackground.jpg);
     background-size: cover;
     background-position: center;
     color: white;
