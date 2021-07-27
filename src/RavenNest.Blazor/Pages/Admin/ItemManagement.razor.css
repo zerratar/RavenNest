@@ -1,4 +1,23 @@
 ﻿
+.item-create {
+    display: flex;
+    flex-flow: column;
+    padding: 20px;
+}
+
+.item-create #name {
+    /* width: 100%; */
+    flex-grow: 1;
+}
+
+.item-create form {
+    flex-flow: row;
+}
+
+.item-create button {
+    margin-left: 15px;
+}
+
 table.items-list {
     width: 100%;
     border-collapse: collapse;
