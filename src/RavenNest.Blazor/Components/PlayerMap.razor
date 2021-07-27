@@ -1,0 +1,14 @@
+﻿@inject RavenNest.Blazor.Services.ClanService ClanService
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+@if (session != null && session.UserId != null)
+{
+  <img src="/imgs/Marker.png" id="img-map-marker" style="display:none;" />
+  <img src="/imgs/world_x0y850z0.jpg" id="img-map" style="display:none;" />
+
+  <div class="game-map-container">
+    <canvas id="game-map-canvas" style="width: 100%; height: 100%;"></canvas>
+  </div>
+}

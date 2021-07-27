@@ -195,7 +195,7 @@ namespace RavenNest.BusinessLogic.Net
                 }
                 catch (Exception exc)
                 {
-                    this.logger.LogError(exc.ToString());
+                    this.logger.LogError("[" + SessionToken.TwitchUserName + "] (" + sessionToken.SessionId + ") " + exc.ToString());
                 }
                 return default;
             }
@@ -215,7 +215,7 @@ namespace RavenNest.BusinessLogic.Net
                 }
                 catch (Exception exc)
                 {
-                    this.logger.LogError(exc.ToString());
+                    this.logger.LogError("[" + SessionToken.TwitchUserName + "] (" + sessionToken.SessionId + ") " + exc.ToString());
                 }
 
                 return false;
@@ -245,7 +245,7 @@ namespace RavenNest.BusinessLogic.Net
                 }
                 catch (Exception exc)
                 {
-                    this.logger.LogError(exc.ToString());
+                    this.logger.LogError("[" + SessionToken.TwitchUserName + "] (" + sessionToken.SessionId + ") " + exc.ToString());
                 }
 
                 return Task.CompletedTask;
@@ -266,7 +266,7 @@ namespace RavenNest.BusinessLogic.Net
                 this.gameLoop.Join();
                 this.ws.Dispose();
 
-                logger.LogWarning("Session websocket disposed (" + sessionToken.SessionId + ")");
+                logger.LogWarning("[" + SessionToken.TwitchUserName + "] Session websocket disposed (" + sessionToken.SessionId + ")");
             }
 
             private void TryCloseConnection()
@@ -292,7 +292,7 @@ namespace RavenNest.BusinessLogic.Net
                 }
                 catch (Exception exc)
                 {
-                    logger.LogInformation("Unable to close socket connection: " + exc);
+                    logger.LogInformation("[" + SessionToken.TwitchUserName + "] Unable to close socket connection: " + exc);
                 }
             }
 
@@ -314,13 +314,13 @@ namespace RavenNest.BusinessLogic.Net
                         }
                         catch (Exception exc)
                         {
-                            logger.LogError("Error processing game update: " + exc.ToString());
+                            logger.LogError("[" + SessionToken.TwitchUserName + "] Error processing game update: " + exc.ToString());
                         }
 
                         await Task.Delay(250);
                     }
 
-                    logger.LogWarning("Session terminated game loop (" + sessionToken.SessionId + ")");
+                    logger.LogWarning("[" + SessionToken.TwitchUserName + "] Session terminated game loop (" + sessionToken.SessionId + ")");
                 }
             }
 
@@ -341,7 +341,7 @@ namespace RavenNest.BusinessLogic.Net
                     }
                 }
 
-                logger.LogWarning("Session terminated websocket receive loop (" + sessionToken.SessionId + ")");
+                logger.LogWarning("[" + SessionToken.TwitchUserName + "] Session terminated websocket receive loop (" + sessionToken.SessionId + ")");
             }
 
             private async Task ReceivePacketsAsync(CancellationToken cancellationToken)
@@ -354,14 +354,14 @@ namespace RavenNest.BusinessLogic.Net
 
                     if (result.CloseStatus != null)
                     {
-                        logger.LogWarning("Session terminated close status: " + result.CloseStatus + " - " + result.CloseStatusDescription + "(" + sessionToken.SessionId + ")");
+                        logger.LogWarning("[" + SessionToken.TwitchUserName + "] Session terminated close status: " + result.CloseStatus + " - " + result.CloseStatusDescription + "(" + sessionToken.SessionId + ")");
                         this.Dispose();
                         return;
                     }
 
                     if (result.MessageType == WebSocketMessageType.Close)
                     {
-                        logger.LogWarning("Session terminated close status: " + result.CloseStatusDescription + "(" + sessionToken.SessionId + ")");
+                        logger.LogWarning("[" + SessionToken.TwitchUserName + "] Session terminated close status: " + result.CloseStatusDescription + "(" + sessionToken.SessionId + ")");
                         this.Dispose();
                         return;
                     }
@@ -377,7 +377,7 @@ namespace RavenNest.BusinessLogic.Net
                 }
                 catch (Exception exc)
                 {
-                    this.logger.LogError(exc.ToString());
+                    this.logger.LogError("[" + SessionToken.TwitchUserName + "] (" + SessionToken.SessionId + ") " + exc.ToString());
                     this.Dispose();
                 }
             }

@@ -11,6 +11,7 @@
         Adamantite,
         Rune,
         Dragon,
-        Ultima
+        Ultima,
+        Lionsbane
     }
 }
