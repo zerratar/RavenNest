@@ -47,7 +47,13 @@
         <tr class="player-row">
           <td><img src="/api/twitch/logo/@(user.UserId)" class="profile-picture" /></td>
           <td>@user.UserId</td>
-          <td>@user.UserName</td>
+					<td>
+					<span>@user.UserName</span>
+					@if (user.Status >= 1)
+					{
+						<span style="color: white; background-color:red;font-size:9pt;">&nbsp;BANNED</span>
+					}
+			</td>
           <td>
             @user.Email
           </td>
@@ -94,6 +100,14 @@
           <td>@user.IsModerator</td>
           <td>
             <button class="link-button" @onclick="(()=> EditPatreon(user))">Patreon</button>
+						@if(user.Status >= 1)
+						{
+							<button class="link-button" @onclick="(()=> UnbanUser(user.Id))">Unban</button>
+						}
+						else
+						{
+							<button class="link-button" @onclick="(()=> UnbanUser(user.Id))">Ban</button>
+						}
           </td>
         </tr>
       }
@@ -102,7 +116,7 @@
 </table>
 
 @code {
-  private bool loading = false;
+	private bool loading = false;
   private PlayerSearchModel searchModel = new PlayerSearchModel();
   private RavenNest.Sessions.SessionInfo session;
   private IReadOnlyList<Models.WebsiteAdminUser> users;
@@ -194,6 +208,16 @@
     pageCount = (int)Math.Floor((double)this.totalCount / this.pageSize) + 1;
     loading = false;
     await InvokeAsync(StateHasChanged);
+  }
+
+  private async Task BanUser(Guid userId) {		
+	  await UserService.SetUserStatusAsync(userId, BusinessLogic.Data.AccountStatus.PermanentlySuspended);
+	  await InvokeAsync(StateHasChanged);
+  }
+
+  private async Task UnbanUser(Guid userId) {
+	  await UserService.SetUserStatusAsync(userId, BusinessLogic.Data.AccountStatus.OK);
+	  await InvokeAsync(StateHasChanged);
   }
 
   public class PlayerSearchModel
