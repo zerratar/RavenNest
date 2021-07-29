@@ -74,6 +74,32 @@ namespace RavenNest.Blazor.Services
             });
         }
 
+        public async Task SetUserStatusAsync(Guid userId, AccountStatus status)
+        {
+            await Task.Run(() =>
+            {
+                var session = GetSession();
+                if (!session.Authenticated || !session.Administrator)
+                {
+                    return;
+                }
+
+                var user = gameData.GetUser(userId);
+                if (user == null)
+                {
+                    return;
+                }
+
+                user.Status = (int)status;
+                if (status != AccountStatus.OK)
+                {
+                    playerManager.RemoveUserFromSessions(user);
+                }
+            });
+        }
+
+
+
         private List<WebsiteAdminUser> GetUsers(IEnumerable<WebsiteAdminPlayer> players)
         {
             var output = new Dictionary<string, WebsiteAdminUser>();
@@ -112,7 +138,8 @@ namespace RavenNest.Blazor.Services
                 UserName = userData.UserName,
                 Email = userData.Email,
                 IsAdmin = userData.IsAdmin.GetValueOrDefault(),
-                IsModerator = userData.IsModerator.GetValueOrDefault()
+                IsModerator = userData.IsModerator.GetValueOrDefault(),
+                Status = userData.Status ?? 0
             };
         }
     }

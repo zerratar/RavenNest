@@ -840,12 +840,20 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<Character> GetCharactersByUserId(Guid userId)
+        {
+            var user = GetUser(userId);
+            return user == null ? null : characters[nameof(User), user.Id];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Character GetCharacterBySession(Guid sessionId, string userId, bool updateSession = true)
         {
             var session = GetSession(sessionId, updateSession);
             var characters = GetSessionCharacters(session);
             return characters.FirstOrDefault(x => GetUser(x.UserId)?.UserId == userId);
         }
+
 
         private Character GetCharacterByIdentifier(IReadOnlyList<Character> chars, string identifier)
         {
