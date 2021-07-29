@@ -383,6 +383,44 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
+        public void RemoveUserFromSessions(User user)
+        {
+            if (user == null)
+            {
+                return;
+            }
+
+            var characters = gameData.GetCharactersByUserId(user.Id);
+            if (characters == null || characters.Count == 0)
+            {
+                return;
+            }
+
+            var reason = "Forcibly removed from the game.";
+            foreach (var character in characters)
+            {
+                if (character.UserIdLock == null)
+                    continue;
+
+                var currentSession = gameData.GetUserSession(character.UserIdLock.GetValueOrDefault());
+                if (currentSession == null)
+                    continue;
+
+                character.UserIdLock = null;
+                var gameEvent = gameData.CreateSessionEvent(
+                 GameEventType.PlayerRemove,
+                 currentSession,
+                 new PlayerRemove()
+                 {
+                     Reason = reason,
+                     UserId = user.UserId,
+                     CharacterId = character.Id
+                 });
+
+                gameData.Add(gameEvent);
+            }
+        }
+
         public void SendRemovePlayerFromSessionToGame(Character character, DataModels.GameSession joiningSession = null)
         {
             var userToRemove = gameData.GetUser(character.UserId);

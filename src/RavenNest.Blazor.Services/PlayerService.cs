@@ -98,7 +98,7 @@ namespace RavenNest.Blazor.Services
         {
             return SearchForPlayersAsync(searchText, false);
         }
-
+    
         public async Task<IReadOnlyList<WebsiteAdminPlayer>> SearchForPlayersAsync(string searchText, bool ignoreClanInvitedPlayers = true, bool allOnEmptySearch = false)
         {
             return await Task.Run(() =>

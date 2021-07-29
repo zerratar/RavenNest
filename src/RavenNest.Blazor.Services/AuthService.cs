@@ -5,12 +5,6 @@ using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Sessions;
-using System;
-using System.IO;
-using System.Linq;
-using System.Net.Sockets;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace RavenNest.Blazor.Services
@@ -54,6 +48,11 @@ namespace RavenNest.Blazor.Services
                 var u = gameData.GetUser(user.Id);
                 if (u != null)
                 {
+                    if (u.Status >= 1)
+                    {
+                        return;
+                    }
+
                     try
                     {
                         using (var req = RavenBotRequest.Create("ravenbot.ravenfall.stream:6767/pubsub"))
@@ -82,6 +81,12 @@ namespace RavenNest.Blazor.Services
                     // so we can tell the chat bot to use that when listening for rewards.
 
                     // u.Token = accessToken;
+                    if (u.Status >= 1)
+                    {
+                        result.Authenticated = false;
+                        result.AuthToken = null;
+                        return result;
+                    }
 
                     if (!u.UserName.Equals(user.Login, System.StringComparison.OrdinalIgnoreCase))
                     {
@@ -98,6 +103,12 @@ namespace RavenNest.Blazor.Services
         {
             var id = SessionCookie.GetSessionId(Context);
             var auth = authManager.Authenticate(model.Username, model.Password);
+            var user = gameData.GetUser(auth.UserId);
+            if (user != null && user.Status >= 1)
+            {
+                return Task.FromResult(new SessionInfo() { Authenticated = false });
+            }
+
             return sessionInfoProvider.SetAuthTokenAsync(id, auth);
         }
 
@@ -116,6 +127,6 @@ namespace RavenNest.Blazor.Services
         }
     }
 
-  
+
 
 }
