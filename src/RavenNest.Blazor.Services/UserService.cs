@@ -74,20 +74,20 @@ namespace RavenNest.Blazor.Services
             });
         }
 
-        public async Task SetUserStatusAsync(Guid userId, AccountStatus status)
+        public async Task<bool> SetUserStatusAsync(Guid userId, AccountStatus status)
         {
-            await Task.Run(() =>
+            return await Task.Run(() =>
             {
                 var session = GetSession();
                 if (!session.Authenticated || !session.Administrator)
                 {
-                    return;
+                    return false;
                 }
 
                 var user = gameData.GetUser(userId);
                 if (user == null)
                 {
-                    return;
+                    return false;
                 }
 
                 user.Status = (int)status;
@@ -102,6 +102,8 @@ namespace RavenNest.Blazor.Services
                         ownedSession.Stopped = DateTime.UtcNow;
                     }
                 }
+
+                return true;
             });
         }
 
