@@ -53,7 +53,7 @@ namespace RavenNest.Controllers
             string userId,
             Guid itemId,
             long amount,
-            decimal pricePerItem)
+            double pricePerItem)
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
@@ -71,7 +71,7 @@ namespace RavenNest.Controllers
             string userId,
             Guid itemId,
             long amount,
-            decimal maxPricePerItem)
+            double maxPricePerItem)
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);

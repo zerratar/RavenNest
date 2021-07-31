@@ -6,8 +6,8 @@ namespace RavenNest.BusinessLogic.Game
 {
     public interface IMarketplaceManager
     {
-        ItemSellResult SellItem(SessionToken token, string userId, Guid itemId, long amount, decimal pricePerItem);
-        ItemBuyResult BuyItem(SessionToken token, string userId, Guid itemId, long amount, decimal maxPricePerItem);
+        ItemSellResult SellItem(SessionToken token, string userId, Guid itemId, long amount, double pricePerItem);
+        ItemBuyResult BuyItem(SessionToken token, string userId, Guid itemId, long amount, double maxPricePerItem);
         MarketItemCollection GetItems(int offset, int size);
     }
 }

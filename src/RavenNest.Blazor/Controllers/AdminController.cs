@@ -191,7 +191,7 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("updateplayerskill/{characterId}/{skill}/{experience}")]
-        public async Task<bool> UpdatePlayerSkill(Guid characterId, string skill, decimal experience)
+        public async Task<bool> UpdatePlayerSkill(Guid characterId, string skill, double experience)
         {
             await AssertAdminAccessAsync();
             return adminManager.UpdatePlayerSkill(characterId, skill, experience);

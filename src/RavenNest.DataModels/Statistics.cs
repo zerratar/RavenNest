@@ -25,10 +25,10 @@ namespace RavenNest.DataModels
         private long totalDamageTaken; public long TotalDamageTaken { get => totalDamageTaken; set => Set(ref totalDamageTaken, value); }
         private int deathCount; public int DeathCount { get => deathCount; set => Set(ref deathCount, value); }
 
-        private decimal totalWoodCollected; public decimal TotalWoodCollected { get => totalWoodCollected; set => Set(ref totalWoodCollected, value); }
-        private decimal totalOreCollected; public decimal TotalOreCollected { get => totalOreCollected; set => Set(ref totalOreCollected, value); }
-        private decimal totalFishCollected; public decimal TotalFishCollected { get => totalFishCollected; set => Set(ref totalFishCollected, value); }
-        private decimal totalWheatCollected; public decimal TotalWheatCollected { get => totalWheatCollected; set => Set(ref totalWheatCollected, value); }
+        private double totalWoodCollected; public double TotalWoodCollected { get => totalWoodCollected; set => Set(ref totalWoodCollected, value); }
+        private double totalOreCollected; public double TotalOreCollected { get => totalOreCollected; set => Set(ref totalOreCollected, value); }
+        private double totalFishCollected; public double TotalFishCollected { get => totalFishCollected; set => Set(ref totalFishCollected, value); }
+        private double totalWheatCollected; public double TotalWheatCollected { get => totalWheatCollected; set => Set(ref totalWheatCollected, value); }
 
         private int craftedWeapons; public int CraftedWeapons { get => craftedWeapons; set => Set(ref craftedWeapons, value); }
         private int craftedArmors; public int CraftedArmors { get => craftedArmors; set => Set(ref craftedArmors, value); }

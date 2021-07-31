@@ -3,10 +3,10 @@
     public class ResourceUpdate
     {
         public string UserId { get; set; }
-        public decimal WoodAmount { get; set; }
-        public decimal OreAmount { get; set; }
-        public decimal WheatAmount { get; set; }
-        public decimal FishAmount { get; set; }
-        public decimal CoinsAmount { get; set; }
+        public double WoodAmount { get; set; }
+        public double OreAmount { get; set; }
+        public double WheatAmount { get; set; }
+        public double FishAmount { get; set; }
+        public double CoinsAmount { get; set; }
     }
 }

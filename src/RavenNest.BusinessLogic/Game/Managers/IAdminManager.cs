@@ -12,7 +12,7 @@ namespace RavenNest.BusinessLogic.Game
         bool MergePlayerAccounts(string userId);
         bool FixCharacterIndices(string userId);
         bool UpdatePlayerName(Guid characterId, string name);
-        bool UpdatePlayerSkill(Guid characterId, string skill, decimal experience);
+        bool UpdatePlayerSkill(Guid characterId, string skill, double experience);
         bool KickPlayer(Guid characterId);
         bool SuspendPlayer(string userId);
         bool ResetUserPassword(string userid);

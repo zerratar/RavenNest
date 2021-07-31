@@ -101,9 +101,9 @@ namespace RavenNest.Tools.Actions
                             if (sb.Level == 0)
                             {
                                 ++zeroSkills;
-                                level = GameMath.OLD_ExperienceToLevel(sb.Experience);
+                                level = GameMath.OLD_ExperienceToLevel((decimal)sb.Experience);
                                 totalExp = sb.Experience;
-                                exp = totalExp - GameMath.OLD_LevelToExperience(level);
+                                exp = totalExp - (double)GameMath.OLD_LevelToExperience(level);
                             }
 
                             if (level == 1 && exp == 0)
@@ -112,7 +112,7 @@ namespace RavenNest.Tools.Actions
                             }
 
                             var levelDelta = sa.Level - level;
-                            var expDelta = 0M;
+                            var expDelta = 0d;
 
                             if (sa.Level > 0 && levelDelta > 0)
                             {
@@ -128,7 +128,7 @@ namespace RavenNest.Tools.Actions
                             {
                                 if (levelDelta != 0)
                                     ++skillDeltaCount;
-                                if (expDelta >= totalExp * 0.95m)
+                                if (expDelta >= totalExp * 0.95d)
                                 {
                                     skillsUpdated = true;
                                     Ravenfall.RavenNest.ReduceSkillExp(i, curSkills, totalExp);

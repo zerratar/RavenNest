@@ -101,7 +101,7 @@ namespace RavenNest.DataModels
 
             return (decimal)expProp.GetValue(this);
         }
-        public void Set(int skillIndex, int level, decimal exp)
+        public void Set(int skillIndex, int level, double exp)
         {
             var name = skillNames[skillIndex];
             if (!expProperties.TryGetValue(name, out var expProp))
@@ -110,7 +110,7 @@ namespace RavenNest.DataModels
             levelProperties.TryGetValue(name, out var lvlProp);
 
             var curLevel = (int)lvlProp.GetValue(this);
-            var curExp = (decimal)expProp.GetValue(this);
+            var curExp = (double)expProp.GetValue(this);
             if (level > curLevel)
             {
                 lvlProp.SetValue(this, level);
@@ -185,9 +185,9 @@ namespace RavenNest.DataModels
             set => lvlProp.SetValue(source, value);
         }
 
-        public decimal Experience
+        public double Experience
         {
-            get => (decimal)expProp.GetValue(source);
+            get => (double)expProp.GetValue(source);
             set => expProp.SetValue(source, value);
         }
     }
