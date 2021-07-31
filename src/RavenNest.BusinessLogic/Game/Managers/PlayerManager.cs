@@ -1456,12 +1456,14 @@ namespace RavenNest.BusinessLogic.Game
                 var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
                 if (characterSessionState.Compromised)
                 {
+                    logger.LogError("Trying to update a compromised player: " + character.Name + " (" + character.Id + ")");
                     return false;
                 }
 
                 var sessionOwner = gameData.GetUser(gameSession.UserId);
                 if (sessionOwner.Status >= 1)
                 {
+                    logger.LogError("The user session from " + sessionOwner.UserName + " trying to save players, but the owner has been banned.");
                     return false;
                 }
 
@@ -1486,10 +1488,8 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (level != null && level.Length > 0 && level.Any(x => x >= GameMath.MaxLevel))
                 {
-                    characterSessionState.Compromised = true;
-                    sessionOwner.Status = 2;
-                    gameSession.Status = (int)SessionStatus.Inactive;
-                    gameSession.Stopped = DateTime.UtcNow;
+                    logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Tried to set level above max.");
+                    BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
                     return false;
                 }
 
@@ -1537,6 +1537,7 @@ namespace RavenNest.BusinessLogic.Game
                     {
                         if (timeSinceLastSkillUpdate <= TimeSpan.FromSeconds(10))
                         {
+                            logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Level changed from " + existingLevel + " to " + skillLevel);
                             BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
                             return false;
                         }
@@ -1546,6 +1547,7 @@ namespace RavenNest.BusinessLogic.Game
                     // and we didnt detect when they did change their level.. Hehehe
                     if (existingLevel > skillLevel * 1.05m)
                     {
+                        logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Reduced the level by more than 5%. This should not be possible");
                         BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
                         return false;
                     }
@@ -1584,7 +1586,7 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        private static void BanUserAndCloseSession(DataModels.GameSession gameSession, CharacterSessionState characterSessionState, User sessionOwner)
+        private void BanUserAndCloseSession(DataModels.GameSession gameSession, CharacterSessionState characterSessionState, User sessionOwner)
         {
             characterSessionState.Compromised = true;
             sessionOwner.Status = 2;
