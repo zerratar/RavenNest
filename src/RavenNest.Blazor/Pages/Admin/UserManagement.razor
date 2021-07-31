@@ -102,11 +102,11 @@
 			<button class="link-button" @onclick="(()=> EditPatreon(user))">Patreon</button>
 						@if (user.Status >= 1)
 						{
-				<button class="link-button" @onclick="(()=> UnbanUser(user.Id))">Unban</button>
+				<button class="link-button" @onclick="(()=> UnbanUser(user))">Unban</button>
 						}
 						else
 						{
-				<button class="link-button" @onclick="(()=> UnbanUser(user.Id))">Ban</button>
+				<button class="link-button" @onclick="(()=> UnbanUser(user))">Ban</button>
 						}
 		   </td>
 		  </tr>
@@ -210,17 +210,19 @@
 		await InvokeAsync(StateHasChanged);
 	}
 
-	private async Task BanUser(Guid userId)
+	private async Task BanUser(Models.WebsiteAdminUser user)
 	{
-		if (await UserService.SetUserStatusAsync(userId, BusinessLogic.Data.AccountStatus.PermanentlySuspended)) {
-		  await InvokeAsync(StateHasChanged);
+		if (await UserService.SetUserStatusAsync(user.Id, BusinessLogic.Data.AccountStatus.PermanentlySuspended)) {
+			user.Status = 2;
+			await InvokeAsync(StateHasChanged);
 		}
 	}
 
-	private async Task UnbanUser(Guid userId)
+	private async Task UnbanUser(Models.WebsiteAdminUser user)
 	{
-		if (await UserService.SetUserStatusAsync(userId, BusinessLogic.Data.AccountStatus.OK))
+		if (await UserService.SetUserStatusAsync(user.Id, BusinessLogic.Data.AccountStatus.OK))
 		{
+			user.Status = 0;
 			await InvokeAsync(StateHasChanged);
 		}
 	}
