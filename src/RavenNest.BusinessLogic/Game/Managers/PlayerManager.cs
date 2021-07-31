@@ -995,7 +995,7 @@ namespace RavenNest.BusinessLogic.Game
                 return AddItemResult.Failed;
 
             var sessionOwner = gameData.GetUser(session.UserId);
-            if (sessionOwner == null || sessionOwner.Status >= 2)
+            if (sessionOwner == null || sessionOwner.Status >= 1)
                 return AddItemResult.Failed;
 
             string tag = null;
