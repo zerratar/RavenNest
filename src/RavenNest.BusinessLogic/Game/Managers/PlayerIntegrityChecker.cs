@@ -28,16 +28,21 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
+
+
 #warning player integrity check disabled
+
+            //var sessionState = gameData.GetSessionState(sessionId);
+            var playerSessionState = gameData.GetCharacterSessionState(sessionId, characterId);
+            if (playerSessionState.Compromised)
+            {
+                return false;
+            }
+
             return true;
 
             // TODO(Zerratar): enable again in the future
-            //var sessionState = gameData.GetSessionState(sessionId);
-            //var playerSessionState = gameData.GetCharacterSessionState(sessionId, characterId);
-            //if (playerSessionState.Compromised)
-            //{
-            //    return false;
-            //}
+
 
             //var syncDelta = syncTime - sessionState.SyncTime;
             //var clientTime = gameSession.Started.AddSeconds(syncDelta);

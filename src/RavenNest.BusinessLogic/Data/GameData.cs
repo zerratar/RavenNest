@@ -580,6 +580,17 @@ namespace RavenNest.BusinessLogic.Data
                 foreach (var s in data)
                 {
                     var lv = s.Level;
+
+                    if (lv > GameMath.MaxLevel)
+                    {
+                        Update(() =>
+                        {
+                            s.Level = GameMath.MaxLevel;
+                            //s.Experience = 0;
+                        });
+                        continue;
+                    }
+
                     if (lv > 0)
                         continue;
 

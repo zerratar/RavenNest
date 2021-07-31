@@ -15,12 +15,15 @@ namespace RavenNest.DataModels
         public int Z { get; set; }
         public int Health { get; set; }
         public bool Compromised { get; set; }
+
+        //Default to now, as it will be used as "first grab" 10s "ago"
+        public DateTime LastSkillUpdate { get; set; } = DateTime.UtcNow.AddSeconds(-10);
     }
 
     public class SessionState
     {
         public float SyncTime { get; set; }
-        public string ClientVersion {get;set;}
+        public string ClientVersion { get; set; }
         public ConcurrentDictionary<Guid, NPCState> NPCStates { get; set; } = new ConcurrentDictionary<Guid, NPCState>();
     }
 
@@ -50,6 +53,7 @@ namespace RavenNest.DataModels
         public ExpGain Magic { get; set; } = new ExpGain();
         public ExpGain Ranged { get; set; } = new ExpGain();
         public ExpGain Sailing { get; set; } = new ExpGain();
+        public ExpGain Healing { get; set; } = new ExpGain();
     }
 
     public class ExpGain

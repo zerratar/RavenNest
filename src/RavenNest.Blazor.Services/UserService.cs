@@ -94,6 +94,13 @@ namespace RavenNest.Blazor.Services
                 if (status != AccountStatus.OK)
                 {
                     playerManager.RemoveUserFromSessions(user);
+
+                    var ownedSession = gameData.GetOwnedSessionByUserId(user.UserId);
+                    if (ownedSession != null)
+                    {
+                        ownedSession.Status = (int)SessionStatus.Inactive;
+                        ownedSession.Stopped = DateTime.UtcNow;
+                    }
                 }
             });
         }
