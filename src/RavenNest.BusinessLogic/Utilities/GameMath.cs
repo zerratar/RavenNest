@@ -54,31 +54,28 @@ namespace RavenNest.BusinessLogic
             return 1.0d;
         }
 
-        public static decimal ExperienceForLevel(int level)
+        public static double ExperienceForLevel(int level)
         {
             var value = 0d;
 
             try
             {
-                unchecked
+                if (ExperienceArray.Length <= (level - 2) || level > MaxLevel)
                 {
-                    if (ExperienceArray.Length <= (level - 2) || level > MaxLevel)
-                    {
-                        value = ExperienceArray[ExperienceArray.Length - 1];
-                    }
-                    else if (level - 2 < 0)
-                    {
-                        value = 0d;
-                    }
-                    else if (level > 2)
-                    {
-                        value = ExperienceArray[level - 2];
-                    }
+                    value = ExperienceArray[ExperienceArray.Length - 1];
+                }
+                else if (level - 2 < 0)
+                {
+                    value = 0d;
+                }
+                else if (level > 2)
+                {
+                    value = ExperienceArray[level - 2];
+                }
 
-                    if (value < 0)
-                    {
-                        value = 0;
-                    }
+                if (value < 0)
+                {
+                    value = 0;
                 }
             }
             catch (Exception exc)
@@ -86,7 +83,7 @@ namespace RavenNest.BusinessLogic
                 // uh oh.
             }
 
-            return (decimal)value;
+            return value;
         }
 
         [Obsolete]

@@ -61,7 +61,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         public ItemSellResult SellItem(
-            SessionToken token, string userId, Guid itemId, long amount, decimal pricePerItem)
+            SessionToken token, string userId, Guid itemId, long amount, double pricePerItem)
         {
             //if (i != null && i.Category == (int)DataModels.ItemCategory.StreamerToken)
             //{
@@ -132,24 +132,24 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         public ItemBuyResult BuyItem(
-            SessionToken token, string userId, Guid itemId, long amount, decimal maxPricePerItem)
+            SessionToken token, string userId, Guid itemId, long amount, double maxPricePerItem)
         {
-            var boughtPricePerItem = new List<decimal>();
+            var boughtPricePerItem = new List<double>();
             var boughtItemCount = new List<long>();
-            var boughtTotalCost = 0m;
+            var boughtTotalCost = 0d;
             var boughtTotalAmount = 0L;
 
             if (amount <= 0 || maxPricePerItem <= 0)
             {
-                return new ItemBuyResult(ItemTradeState.RequestToLow, new long[0], new decimal[0], 0, 0);
+                return new ItemBuyResult(ItemTradeState.RequestToLow, new long[0], new double[0], 0, 0);
             }
 
             var character = GetCharacterAsync(token, userId);
-            if (character == null) return new ItemBuyResult(ItemTradeState.Failed, new long[0], new decimal[0], 0, 0);
+            if (character == null) return new ItemBuyResult(ItemTradeState.Failed, new long[0], new double[0], 0, 0);
 
             if (!playerManager.AcquiredUserLock(token, character))
             {
-                return new ItemBuyResult(ItemTradeState.Failed, new long[0], new decimal[0], 0, 0);
+                return new ItemBuyResult(ItemTradeState.Failed, new long[0], new double[0], 0, 0);
             }
 
             var session = gameData.GetSession(token.SessionId);
@@ -274,7 +274,7 @@ namespace RavenNest.BusinessLogic.Game
             Character character,
             DataModels.MarketItem marketItem,
             long amount,
-            decimal cost)
+            double cost)
         {
             var buyAmount = marketItem.Amount >= amount ? amount : marketItem.Amount;
             if (marketItem.Amount == buyAmount)

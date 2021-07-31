@@ -246,7 +246,7 @@ namespace RavenNest.Controllers
         }
 
         [HttpPost("{userId}/statistics")]
-        public bool UpdateStatistics(string userId, Many<decimal> statistics)
+        public bool UpdateStatistics(string userId, Many<double> statistics)
         {
             return playerManager.UpdateStatistics(AssertGetSessionToken(), userId, statistics.Values);
         }

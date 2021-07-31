@@ -10,7 +10,7 @@ namespace RavenNest.Tools.Ravenfall
 {
     public static class RavenNest
     {
-        public static void ReduceSkillExp(int skillIndex, Skills curSkills, decimal expToRemove)
+        public static void ReduceSkillExp(int skillIndex, Skills curSkills, double expToRemove)
         {
             var cs = curSkills.GetSkills();
             var skill = cs[skillIndex];

@@ -28,10 +28,10 @@ namespace RavenNest.Models
         public long TotalDamageTaken { get; set; }
         public int DeathCount { get; set; }
 
-        public decimal TotalWoodCollected { get; set; }
-        public decimal TotalOreCollected { get; set; }
-        public decimal TotalFishCollected { get; set; }
-        public decimal TotalWheatCollected { get; set; }
+        public double TotalWoodCollected { get; set; }
+        public double TotalOreCollected { get; set; }
+        public double TotalFishCollected { get; set; }
+        public double TotalWheatCollected { get; set; }
 
         public int CraftedWeapons { get; set; }
         public int CraftedArmors { get; set; }
