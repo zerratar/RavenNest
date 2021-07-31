@@ -20,21 +20,21 @@ namespace RavenNest.DataModels
         private static ConcurrentDictionary<string, PropertyInfo> levelProperties = new ConcurrentDictionary<string, PropertyInfo>();
 
         private Guid id;
-        private decimal attack;
-        private decimal defense;
-        private decimal strength;
-        private decimal health;
-        private decimal magic;
-        private decimal ranged;
-        private decimal woodcutting;
-        private decimal fishing;
-        private decimal mining;
-        private decimal crafting;
-        private decimal cooking;
-        private decimal farming;
-        private decimal slayer;
-        private decimal sailing;
-        private decimal healing;
+        private double attack;
+        private double defense;
+        private double strength;
+        private double health;
+        private double magic;
+        private double ranged;
+        private double woodcutting;
+        private double fishing;
+        private double mining;
+        private double crafting;
+        private double cooking;
+        private double farming;
+        private double slayer;
+        private double sailing;
+        private double healing;
         private int attackLevel;
         private int defenseLevel;
         private int strengthLevel;
@@ -52,21 +52,21 @@ namespace RavenNest.DataModels
         private int healingLevel;
 
         public Guid Id { get => id; set => Set(ref id, value); }
-        public decimal Attack { get => attack; set => Set(ref attack, value); }
-        public decimal Defense { get => defense; set => Set(ref defense, value); }
-        public decimal Strength { get => strength; set => Set(ref strength, value); }
-        public decimal Health { get => health; set => Set(ref health, value); }
-        public decimal Woodcutting { get => woodcutting; set => Set(ref woodcutting, value); }
-        public decimal Fishing { get => fishing; set => Set(ref fishing, value); }
-        public decimal Mining { get => mining; set => Set(ref mining, value); }
-        public decimal Crafting { get => crafting; set => Set(ref crafting, value); }
-        public decimal Cooking { get => cooking; set => Set(ref cooking, value); }
-        public decimal Farming { get => farming; set => Set(ref farming, value); }
-        public decimal Slayer { get => slayer; set => Set(ref slayer, value); }
-        public decimal Magic { get => magic; set => Set(ref magic, value); }
-        public decimal Ranged { get => ranged; set => Set(ref ranged, value); }
-        public decimal Sailing { get => sailing; set => Set(ref sailing, value); }
-        public decimal Healing { get => healing; set => Set(ref healing, value); }
+        public double Attack { get => attack; set => Set(ref attack, value); }
+        public double Defense { get => defense; set => Set(ref defense, value); }
+        public double Strength { get => strength; set => Set(ref strength, value); }
+        public double Health { get => health; set => Set(ref health, value); }
+        public double Woodcutting { get => woodcutting; set => Set(ref woodcutting, value); }
+        public double Fishing { get => fishing; set => Set(ref fishing, value); }
+        public double Mining { get => mining; set => Set(ref mining, value); }
+        public double Crafting { get => crafting; set => Set(ref crafting, value); }
+        public double Cooking { get => cooking; set => Set(ref cooking, value); }
+        public double Farming { get => farming; set => Set(ref farming, value); }
+        public double Slayer { get => slayer; set => Set(ref slayer, value); }
+        public double Magic { get => magic; set => Set(ref magic, value); }
+        public double Ranged { get => ranged; set => Set(ref ranged, value); }
+        public double Sailing { get => sailing; set => Set(ref sailing, value); }
+        public double Healing { get => healing; set => Set(ref healing, value); }
         public int AttackLevel { get => attackLevel; set => Set(ref attackLevel, value); }
         public int DefenseLevel { get => defenseLevel; set => Set(ref defenseLevel, value); }
         public int StrengthLevel { get => strengthLevel; set => Set(ref strengthLevel, value); }
@@ -93,13 +93,13 @@ namespace RavenNest.DataModels
             return (int)lvlProp.GetValue(this);
         }
 
-        public decimal GetExperience(int skillIndex)
+        public double GetExperience(int skillIndex)
         {
             var name = skillNames[skillIndex];
             if (!expProperties.TryGetValue(name, out var expProp))
                 expProp = EnsureDictionaries(name);
 
-            return (decimal)expProp.GetValue(this);
+            return (double)expProp.GetValue(this);
         }
         public void Set(int skillIndex, int level, double exp)
         {

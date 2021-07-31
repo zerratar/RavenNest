@@ -10,6 +10,6 @@ namespace RavenNest.DataModels
         private int x; public int X { get => x; set => Set(ref x, value); }
         private int y; public int Y { get => y; set => Set(ref y, value); }
         private int z; public int Z { get => z; set => Set(ref z, value); }
-        private decimal respawnInterval; public decimal RespawnInterval { get => respawnInterval; set => Set(ref respawnInterval, value); }
+        private double respawnInterval; public double RespawnInterval { get => respawnInterval; set => Set(ref respawnInterval, value); }
     }
 }

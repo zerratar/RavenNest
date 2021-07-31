@@ -28,7 +28,7 @@ namespace RavenNest.Blazor.Services
             this.playerManager = playerManager;
         }
 
-        public decimal GetExperienceForLevel(long level)
+        public double GetExperienceForLevel(long level)
         {
             return RavenNest.DataModels.UserLoyalty.GetExpForLevel(level);
         }
@@ -238,7 +238,7 @@ namespace RavenNest.Blazor.Services
         public string DisplayName { get; set; }
         public Guid? RankId { get; set; }
         public long Level { get; set; }
-        public decimal Experience { get; set; }
+        public double Experience { get; set; }
         public long GiftedSubs { get; set; }
         public long CheeredBits { get; set; }
         public long Points { get; set; }
@@ -273,7 +273,7 @@ namespace RavenNest.Blazor.Services
 
         public Guid? RankId { get; set; }
         public long Level { get; set; }
-        public decimal Experience { get; set; }
+        public double Experience { get; set; }
         public long GiftedSubs { get; set; }
         public long CheeredBits { get; set; }
         public long Points { get; set; }

@@ -59,7 +59,7 @@ namespace RavenNest
             }
         }
 
-        public decimal ExpOverTime = 1;
+        public double ExpOverTime = 1;
 
         [JsonIgnore] public int WeaponPower = 0;
         [JsonIgnore] public int WeaponAim = 0;

@@ -765,9 +765,9 @@ namespace RavenNest.BusinessLogic.Game
                     state.InOnsen = update.InOnsen;
                     state.Task = update.Task;
                     state.TaskArgument = update.TaskArgument;
-                    state.X = (decimal)update.X;
-                    state.Y = (decimal)update.Y;
-                    state.Z = (decimal)update.Z;
+                    state.X = (double)update.X;
+                    state.Y = (double)update.Y;
+                    state.Z = (double)update.Z;
                 }
                 return true;
             }
@@ -1978,7 +1978,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static decimal GetDelta(decimal expMultiplierLimit, ExpGain expGain, decimal currentExp, decimal newExp)
+        private static double GetDelta(double expMultiplierLimit, ExpGain expGain, double currentExp, double newExp)
         {
             var delta = GetDelta(currentExp, newExp);
             expGain.AddExperience(delta);
@@ -1997,7 +1997,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static decimal GetDelta(decimal currentExp, decimal newExp)
+        private static double GetDelta(double currentExp, double newExp)
         {
             return Math.Max(currentExp, newExp) - currentExp;
         }

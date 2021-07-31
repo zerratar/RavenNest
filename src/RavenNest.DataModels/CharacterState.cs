@@ -15,9 +15,9 @@ namespace RavenNest.DataModels
         private string task; public string Task { get => task; set => Set(ref task, value); }
         private string taskArgument; public string TaskArgument { get => taskArgument; set => Set(ref taskArgument, value); }
         private string island; public string Island { get => island; set => Set(ref island, value); }
-        private decimal? x; public decimal? X { get => x; set => Set(ref x, value); }
-        private decimal? y; public decimal? Y { get => y; set => Set(ref y, value); }
-        private decimal? z; public decimal? Z { get => z; set => Set(ref z, value); }
-        private decimal? restedTime; public decimal? RestedTime { get => restedTime; set => Set(ref restedTime, value); }
+        private double? x; public double? X { get => x; set => Set(ref x, value); }
+        private double? y; public double? Y { get => y; set => Set(ref y, value); }
+        private double? z; public double? Z { get => z; set => Set(ref z, value); }
+        private double? restedTime; public double? RestedTime { get => restedTime; set => Set(ref restedTime, value); }
     }
 }

@@ -87,14 +87,14 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
         private void RemoveRestTime(CharacterState state, TimeSpan elapsed)
         {
-            var restedTime = state.RestedTime ?? 0m;
-            state.RestedTime = Math.Max(0, restedTime - (decimal)(elapsed.TotalSeconds * RestedDrainFactor));
+            var restedTime = state.RestedTime ?? 0d;
+            state.RestedTime = Math.Max(0, restedTime - (double)(elapsed.TotalSeconds * RestedDrainFactor));
         }
 
         private void AddRestTime(CharacterState state, TimeSpan elapsed)
         {
-            var restedTime = state.RestedTime ?? 0m;
-            state.RestedTime = Math.Min((decimal)MaxRestTime.TotalSeconds, restedTime + (decimal)(elapsed.TotalSeconds * RestedGainFactor));
+            var restedTime = state.RestedTime ?? 0d;
+            state.RestedTime = Math.Min((double)MaxRestTime.TotalSeconds, restedTime + (double)(elapsed.TotalSeconds * RestedGainFactor));
         }
     }
 }

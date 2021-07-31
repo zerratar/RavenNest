@@ -112,27 +112,27 @@ namespace RavenNest.BusinessLogic
             }
         }
 
-        public static decimal GetFishingExperience(int level)
+        public static double GetFishingExperience(int level)
         {
             if (level < 15) return 25;
-            if (level < 30) return 37.5m;
+            if (level < 30) return 37.5;
             if (level < 45) return 100;
             if (level < 60) return 175;
             if (level < 75) return 250;
 
             return 10;
         }
-        public static decimal GetFarmingExperience(int level)
+        public static double GetFarmingExperience(int level)
         {
             if (level < 15) return 25;
-            if (level < 30) return 37.5m;
+            if (level < 30) return 37.5;
             if (level < 45) return 100;
             if (level < 60) return 175;
             if (level < 75) return 250;
 
             return 10;
         }
-        public static decimal GetWoodcuttingExperience(int level)
+        public static double GetWoodcuttingExperience(int level)
         {
             /*
                 Item   | Lv Req | Exp | Fatigue
@@ -145,7 +145,7 @@ namespace RavenNest.BusinessLogic
             */
 
             if (level < 15) return 25;
-            if (level < 30) return 37.5m;
+            if (level < 30) return 37.5;
             if (level < 45) return 100;
             if (level < 60) return 175;
             if (level < 75) return 250;

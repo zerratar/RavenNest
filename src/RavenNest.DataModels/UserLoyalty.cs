@@ -4,11 +4,11 @@ namespace RavenNest.DataModels
 {
     public class UserLoyalty : Entity<UserLoyalty>
     {
-        public const decimal MinExpForLevel = 1000;
-        public const decimal ExpPerBit = 5;
-        public const decimal ExpPerSubscription = 500;
-        public const decimal ExpPerSecond = 0.045m; // 2h ish for first level.
-        public const decimal ActivityMultiplier = 10m;
+        public const double MinExpForLevel = 1000;
+        public const double ExpPerBit = 5;
+        public const double ExpPerSubscription = 500;
+        public const double ExpPerSecond = 0.045d; // 2h ish for first level.
+        public const double ActivityMultiplier = 10d;
 
         public const int PointsPerCheeredBit = 1;
         public const int PointsPerGiftedSub = 200;
@@ -19,7 +19,7 @@ namespace RavenNest.DataModels
         private Guid streamerUserId; public Guid StreamerUserId { get => streamerUserId; set => Set(ref streamerUserId, value); }
         private Guid? rankId; public Guid? RankId { get => rankId; set => Set(ref rankId, value); }
         private long level; public long Level { get => level; set => Set(ref level, value); }
-        private decimal experience; public decimal Experience { get => experience; set => Set(ref experience, value); }
+        private double experience; public double Experience { get => experience; set => Set(ref experience, value); }
         private long giftedSubs; public long GiftedSubs { get => giftedSubs; set => Set(ref giftedSubs, value); }
         private long cheeredBits; public long CheeredBits { get => cheeredBits; set => Set(ref cheeredBits, value); }
         private long points; public long Points { get => points; set => Set(ref points, value); }
@@ -44,7 +44,7 @@ namespace RavenNest.DataModels
             this.AddExperience(newCheeredBits * ExpPerBit);
         }
 
-        public void AddExperience(decimal amount)
+        public void AddExperience(double amount)
         {
             this.Experience += amount;
             var expForLevel = GetExperienceForNextLevel();
@@ -76,20 +76,20 @@ namespace RavenNest.DataModels
                 return PointsPerLevel;
             }
 
-            var percent = GetExpForLevel(level) / (decimal)MinExpForLevel;
-            return (int)Math.Floor(50 + ((percent * PointsPerLevel) * 0.2m));
+            var percent = GetExpForLevel(level) / (double)MinExpForLevel;
+            return (int)Math.Floor(50 + ((percent * PointsPerLevel) * 0.2d));
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-        private decimal GetExperienceForNextLevel()
+        private double GetExperienceForNextLevel()
         {
             return GetExpForLevel(level);
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
-        public static decimal GetExpForLevel(long level)
+        public static double GetExpForLevel(long level)
         {
-            return (MinExpForLevel + ((level - 1) * 1.25M * (MinExpForLevel / 4M)));
+            return (MinExpForLevel + ((level - 1) * 1.25d * (MinExpForLevel / 4d)));
         }
     }
 }

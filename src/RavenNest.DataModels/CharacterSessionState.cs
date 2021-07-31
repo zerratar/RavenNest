@@ -58,20 +58,20 @@ namespace RavenNest.DataModels
 
     public class ExpGain
     {
-        public decimal Amount { get; set; }
+        public double Amount { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime LastUpdate { get; set; }
 
-        public decimal ExpPerHour
+        public double ExpPerHour
         {
             get
             {
                 var elapsed = DateTime.UtcNow - StartTime;
-                return Amount / (decimal)elapsed.TotalHours;
+                return Amount / elapsed.TotalHours;
             }
         }
 
-        public void AddExperience(decimal amount)
+        public void AddExperience(double amount)
         {
             if (StartTime == DateTime.MinValue)
                 StartTime = DateTime.UtcNow;

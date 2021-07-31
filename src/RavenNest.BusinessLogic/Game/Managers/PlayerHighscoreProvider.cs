@@ -66,7 +66,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private decimal OrderByExp(string skill, Player x)
+        private double OrderByExp(string skill, Player x)
         {
             return TryGetSkillExperience(skill, x.Skills, out var exp, out _) ? exp : 0;
         }
@@ -93,9 +93,9 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryGetSkillExperience(string skill, Skills skills, out decimal exp, out int level)
+        private bool TryGetSkillExperience(string skill, Skills skills, out double exp, out int level)
         {
-            var expProps = propertyProvider.GetProperties<Skills, decimal>();
+            var expProps = propertyProvider.GetProperties<Skills, double>();
             var lvlProps = propertyProvider.GetProperties<Skills, int>();
 
             exp = 0;
@@ -105,7 +105,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 foreach (var prop in expProps)
                 {
-                    exp += (decimal)prop.GetValue(skills);
+                    exp += (double)prop.GetValue(skills);
                 }
                 foreach (var prop in lvlProps)
                 {
@@ -123,7 +123,7 @@ namespace RavenNest.BusinessLogic.Game
             if (lvlProp == null)
                 return false;
 
-            exp = Math.Floor((decimal)expProp.GetValue(skills));
+            exp = Math.Floor((double)expProp.GetValue(skills));
             level = (int)lvlProp.GetValue(skills);
             return true;
         }
