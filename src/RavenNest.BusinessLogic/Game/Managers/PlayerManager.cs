@@ -995,7 +995,7 @@ namespace RavenNest.BusinessLogic.Game
                 return AddItemResult.Failed;
 
             var sessionOwner = gameData.GetUser(session.UserId);
-            if (sessionOwner == null)
+            if (sessionOwner == null || sessionOwner.Status >= 2)
                 return AddItemResult.Failed;
 
             string tag = null;
@@ -1452,10 +1452,23 @@ namespace RavenNest.BusinessLogic.Game
                 if (character == null)
                     throw new Exception("Unable to save exp. Character for user ID " + userId + " could not be found.");
 
-                var removeFromSession = !AcquiredUserLock(token, character) && character.UserIdLock != null;
+                var sessionState = gameData.GetSessionState(gameSession.Id);
+                var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
+                if (characterSessionState.Compromised)
+                {
+                    return false;
+                }
+
                 var sessionOwner = gameData.GetUser(gameSession.UserId);
+                if (sessionOwner.Status >= 1)
+                {
+                    return false;
+                }
+
                 var expLimit = sessionOwner.IsAdmin.GetValueOrDefault() ? 5000 : 50;
 
+
+                var removeFromSession = !AcquiredUserLock(token, character) && character.UserIdLock != null;
                 var skills = gameData.GetCharacterSkills(character.SkillsId);
 
                 if (skills == null)
@@ -1465,56 +1478,90 @@ namespace RavenNest.BusinessLogic.Game
                     gameData.Add(skills);
                 }
 
-                var sessionState = gameData.GetSessionState(gameSession.Id);
-
-
                 if (experience == null)
                     return false; // no skills was updated. Ignore
                                   // throw new Exception($"Unable to save exp. Client didnt supply experience, or experience was null. Character with name {character.Name} game session: " + gameSession.Id + ".");
 
-                var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
                 var gains = characterSessionState.ExpGain;
-                var savedSkillsCount = 0;
+
+                if (level != null && level.Length > 0 && level.Any(x => x >= GameMath.MaxLevel))
+                {
+                    characterSessionState.Compromised = true;
+                    sessionOwner.Status = 2;
+                    gameSession.Status = (int)SessionStatus.Inactive;
+                    gameSession.Stopped = DateTime.UtcNow;
+                    return false;
+                }
+
+                var updated = false;
+                var timeSinceLastSkillUpdate = DateTime.UtcNow - characterSessionState.LastSkillUpdate;
+                var user = gameData.GetUser(character.UserId);
+
+                //var savedSkillsCount = 0;
                 for (var skillIndex = 0; skillIndex < experience.Length; ++skillIndex)
                 {
-                    var sl = level != null ? level[skillIndex] : 0;
+                    var skillLevel = level != null ? level[skillIndex] : 0;
                     var xp = experience[skillIndex];
 
-                    if (sl == 0)
-                    {
-                        if (skills == null) continue;
+                    //// Backward compability
+                    //if (skillLevel == 0)
+                    //{
+                    //    if (skills == null) continue;
 
-                        var maxXP = GameMath.OLD_LevelToExperience(170);
-                        var curLevel = skills.GetLevel(skillIndex);
-                        var minXP = GameMath.OLD_LevelToExperience(curLevel);
-                        if (xp > minXP && xp < maxXP && curLevel <= 170)
+                    //    var maxXP = GameMath.OLD_LevelToExperience(170);
+                    //    var curLevel = skills.GetLevel(skillIndex);
+                    //    var minXP = GameMath.OLD_LevelToExperience(curLevel);
+                    //    if (xp > minXP && xp < maxXP && curLevel <= 170)
+                    //    {
+                    //        skillLevel = GameMath.OLD_ExperienceToLevel(xp);
+                    //        xp -= GameMath.OLD_LevelToExperience(skillLevel);
+                    //        logger.LogWarning(character.Name + ". (Skill Index: " + skillIndex + ") Client did not provide level data. Saving using old way of saving. Session: " + sessionOwner?.UserName + " (" + gameSession.Id + "), Client Version: " + sessionState.ClientVersion);
+                    //    }
+                    //}
+                    //if (level == null && skillLevel == 0)
+                    //    continue;
+                    //// throw new Exception("Unable to save exp for " + character.Name + ". Client did not provide level data. Session: " + sessionOwner?.UserName + " (" + gameSession.Id + "), Client Version: " + sessionState.ClientVersion);
+
+                    //++savedSkillsCount;
+                    //if (skillLevel <= 170 &&
+                    //    experience[skillIndex] >= GameMath.ExperienceForLevel(skillLevel))
+                    //{
+                    //    xp -= GameMath.OLD_LevelToExperience(skillLevel);
+                    //    if (xp < 0) xp = 0;
+                    //}
+
+
+                    var existingLevel = skills.GetLevel(skillIndex);
+
+                    if (skillLevel > 100 && existingLevel < skillLevel * 0.5)
+                    {
+                        if (timeSinceLastSkillUpdate <= TimeSpan.FromSeconds(10))
                         {
-                            sl = GameMath.OLD_ExperienceToLevel(xp);
-                            xp -= GameMath.OLD_LevelToExperience(sl);
-                            logger.LogWarning(character.Name + ". (Skill Index: " + skillIndex + ") Client did not provide level data. Saving using old way of saving. Session: " + sessionOwner?.UserName + " (" + gameSession.Id + "), Client Version: " + sessionState.ClientVersion);
+                            characterSessionState.Compromised = true;
+                            sessionOwner.Status = 2;
+                            gameSession.Status = (int)SessionStatus.Inactive;
+                            gameSession.Stopped = DateTime.UtcNow;
+                            return false;
                         }
+
                     }
 
-                    if (level == null && sl == 0)
-                        continue;
-                    // throw new Exception("Unable to save exp for " + character.Name + ". Client did not provide level data. Session: " + sessionOwner?.UserName + " (" + gameSession.Id + "), Client Version: " + sessionState.ClientVersion);
-
-                    ++savedSkillsCount;
-                    if (sl <= 170 &&
-                        experience[skillIndex] >= GameMath.ExperienceForLevel(sl))
-                    {
-                        xp -= GameMath.OLD_LevelToExperience(sl);
-                        if (xp < 0) xp = 0;
-                    }
+                    //var existingExp = skills.GetExperience(skillIndex);
 
 
-                    skills.Set(skillIndex, sl, experience[skillIndex]);
+
+                    skills.Set(skillIndex, skillLevel, experience[skillIndex]);
+                    updated = true;
                 }
 
-                if (savedSkillsCount != experience.Length)
+                if (updated)
                 {
-                    logger.LogError(character.Name + " could only save " + savedSkillsCount + " out of " + experience.Length + " skills. Client did not provide level data. Saving using old way of saving. Session: " + sessionOwner?.UserName + " (" + gameSession.Id + "), Client Version: " + sessionState.ClientVersion);
+                    characterSessionState.LastSkillUpdate = DateTime.UtcNow;
                 }
+                //if (savedSkillsCount != experience.Length)
+                //{
+                //    logger.LogError(character.Name + " could only save " + savedSkillsCount + " out of " + experience.Length + " skills. Client did not provide level data. Saving using old way of saving. Session: " + sessionOwner?.UserName + " (" + gameSession.Id + "), Client Version: " + sessionState.ClientVersion);
+                //}
 
                 if (removeFromSession)
                 {

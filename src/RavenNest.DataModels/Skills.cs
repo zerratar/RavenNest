@@ -93,6 +93,14 @@ namespace RavenNest.DataModels
             return (int)lvlProp.GetValue(this);
         }
 
+        public decimal GetExperience(int skillIndex)
+        {
+            var name = skillNames[skillIndex];
+            if (!expProperties.TryGetValue(name, out var expProp))
+                expProp = EnsureDictionaries(name);
+
+            return (decimal)expProp.GetValue(this);
+        }
         public void Set(int skillIndex, int level, decimal exp)
         {
             var name = skillNames[skillIndex];

@@ -251,17 +251,17 @@ namespace RavenNest.Controllers
             return playerManager.UpdateStatistics(AssertGetSessionToken(), userId, statistics.Values);
         }
 
-        [HttpPost("{userId}/resources")]
-        public bool UpdateResources(string userId, Many<decimal> resources)
-        {
-            return playerManager.UpdateResources(AssertGetSessionToken(), userId, resources.Values);
-        }
+        //[HttpPost("{userId}/resources")]
+        //public bool UpdateResources(string userId, Many<decimal> resources)
+        //{
+        //    return playerManager.UpdateResources(AssertGetSessionToken(), userId, resources.Values);
+        //}
 
-        [HttpPost("update")]
-        public bool[] UpdateMany(Many<PlayerState> states)
-        {
-            return playerManager.UpdateMany(AssertGetSessionToken(), states.Values);
-        }
+        //[HttpPost("update")]
+        //public bool[] UpdateMany(Many<PlayerState> states)
+        //{
+        //    return playerManager.UpdateMany(AssertGetSessionToken(), states.Values);
+        //}
 
         [HttpGet("extended/{identifier}")]
         public async Task<WebsitePlayer> GetPlayerExtendedAsync(string identifier)

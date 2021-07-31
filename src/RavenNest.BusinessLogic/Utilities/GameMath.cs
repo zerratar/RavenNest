@@ -56,22 +56,37 @@ namespace RavenNest.BusinessLogic
 
         public static decimal ExperienceForLevel(int level)
         {
-            if (level > MaxLevel)
+            var value = 0d;
+
+            try
             {
-                return (decimal)ExperienceArray[ExperienceArray.Length - 1];
+                unchecked
+                {
+                    if (ExperienceArray.Length <= (level - 2) || level > MaxLevel)
+                    {
+                        value = ExperienceArray[ExperienceArray.Length - 1];
+                    }
+                    else if (level - 2 < 0)
+                    {
+                        value = 0d;
+                    }
+                    else if (level > 2)
+                    {
+                        value = ExperienceArray[level - 2];
+                    }
+
+                    if (value < 0)
+                    {
+                        value = 0;
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                // uh oh.
             }
 
-            if (level - 2 < 0)
-            {
-                return 0m;
-            }
-
-            if (ExperienceArray.Length <= (level - 2))
-            {
-                return (decimal)ExperienceArray[ExperienceArray.Length - 1];//[^1];
-            }
-
-            return (decimal)ExperienceArray[level - 2];
+            return (decimal)value;
         }
 
         [Obsolete]
