@@ -357,29 +357,29 @@ namespace RavenNest.BusinessLogic.Providers
             var minValue = GetValue(attr.MinValue, out var minAttrValType);
             var maxValue = GetValue(attr.MinValue, out var maxAttrValType);
             var ran = random.NextDouble();
-            var value = Math.Max(minValue, (decimal)ran * maxValue);
+            var value = Math.Max(minValue, (double)ran * maxValue);
             return maxAttrValType == AttributeValueType.Percent ? $"{value}%" : value.ToString();
         }
 
-        private decimal GetValue(string val, out AttributeValueType valueType)
+        private double GetValue(string val, out AttributeValueType valueType)
         {
             valueType = AttributeValueType.Number;
             if (string.IsNullOrEmpty(val))
             {
-                return 0m;
+                return 0d;
             }
             else
             {
                 if (val.EndsWith("%"))
                 {
-                    if (decimal.TryParse(val.Replace("%", ""), out var value))
+                    if (double.TryParse(val.Replace("%", ""), out var value))
                     {
                         valueType = AttributeValueType.Percent;
-                        return value / 100m;
+                        return value / 100d;
                     }
                 }
 
-                decimal.TryParse(val, out var number);
+                double.TryParse(val, out var number);
                 return number;
             }
         }

@@ -207,7 +207,7 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<bool>(ApiRequestTarget.Players, ApiRequestType.Post);
         }
 
-        public Task<bool> UpdateStatisticsAsync(string userId, decimal[] statistics)
+        public Task<bool> UpdateStatisticsAsync(string userId, double[] statistics)
         {
             if (client.Desynchronized) return null;
             return request.Create()
@@ -218,7 +218,7 @@ namespace RavenNest.SDK.Endpoints
                 .SendAsync<bool>(ApiRequestTarget.Players, ApiRequestType.Post);
         }
 
-        public Task<bool> UpdateResourcesAsync(string userId, decimal[] resources)
+        public Task<bool> UpdateResourcesAsync(string userId, double[] resources)
         {
             if (client.Desynchronized) return null;
             return request.Create()
