@@ -1543,14 +1543,14 @@ namespace RavenNest.BusinessLogic.Game
                         }
                     }
 
-                    // if the existing level is higher than the new one. In case a player tries to hide that they changed their level
-                    // and we didnt detect when they did change their level.. Hehehe
-                    if (existingLevel > skillLevel * 1.05m)
-                    {
-                        logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Reduced the level by more than 5%. This should not be possible");
-                        BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
-                        return false;
-                    }
+                    //// if the existing level is higher than the new one. In case a player tries to hide that they changed their level
+                    //// and we didnt detect when they did change their level.. Hehehe
+                    //if (existingLevel > skillLevel * 1.05m)
+                    //{
+                    //    logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Reduced the level by more than 5%. This should not be possible");
+                    //    BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
+                    //    return false;
+                    //}
 
                     //var existingExp = skills.GetExperience(skillIndex);
 
