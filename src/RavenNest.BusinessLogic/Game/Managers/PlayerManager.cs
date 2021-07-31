@@ -1537,18 +1537,20 @@ namespace RavenNest.BusinessLogic.Game
                     {
                         if (timeSinceLastSkillUpdate <= TimeSpan.FromSeconds(10))
                         {
-                            characterSessionState.Compromised = true;
-                            sessionOwner.Status = 2;
-                            gameSession.Status = (int)SessionStatus.Inactive;
-                            gameSession.Stopped = DateTime.UtcNow;
+                            BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
                             return false;
                         }
+                    }
 
+                    // if the existing level is higher than the new one. In case a player tries to hide that they changed their level
+                    // and we didnt detect when they did change their level.. Hehehe
+                    if (existingLevel > skillLevel * 1.05m)
+                    {
+                        BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
+                        return false;
                     }
 
                     //var existingExp = skills.GetExperience(skillIndex);
-
-
 
                     skills.Set(skillIndex, skillLevel, experience[skillIndex]);
                     updated = true;
@@ -1580,6 +1582,14 @@ namespace RavenNest.BusinessLogic.Game
                 logger.LogError(exc.ToString());
                 return false;
             }
+        }
+
+        private static void BanUserAndCloseSession(DataModels.GameSession gameSession, CharacterSessionState characterSessionState, User sessionOwner)
+        {
+            characterSessionState.Compromised = true;
+            sessionOwner.Status = 2;
+            gameSession.Status = (int)SessionStatus.Inactive;
+            gameSession.Stopped = DateTime.UtcNow;
         }
 
         public void EquipBestItems(Character character)
