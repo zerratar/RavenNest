@@ -6,21 +6,21 @@ namespace RavenNest.Models
     public class Skills
     {
         public Guid Id { get; set; }
-        public decimal Attack { get; set; }
-        public decimal Defense { get; set; }
-        public decimal Strength { get; set; }
-        public decimal Health { get; set; }
-        public decimal Magic { get; set; }
-        public decimal Ranged { get; set; }
-        public decimal Woodcutting { get; set; }
-        public decimal Fishing { get; set; }
-        public decimal Mining { get; set; }
-        public decimal Crafting { get; set; }
-        public decimal Cooking { get; set; }
-        public decimal Farming { get; set; }
-        public decimal Slayer { get; set; }
-        public decimal Sailing { get; set; }
-        public decimal Healing { get; set; }
+        public double Attack { get; set; }
+        public double Defense { get; set; }
+        public double Strength { get; set; }
+        public double Health { get; set; }
+        public double Magic { get; set; }
+        public double Ranged { get; set; }
+        public double Woodcutting { get; set; }
+        public double Fishing { get; set; }
+        public double Mining { get; set; }
+        public double Crafting { get; set; }
+        public double Cooking { get; set; }
+        public double Farming { get; set; }
+        public double Slayer { get; set; }
+        public double Sailing { get; set; }
+        public double Healing { get; set; }
         public int AttackLevel { get; set; }
         public int DefenseLevel { get; set; }
         public int StrengthLevel { get; set; }

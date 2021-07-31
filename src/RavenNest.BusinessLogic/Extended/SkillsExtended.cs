@@ -25,7 +25,7 @@ namespace RavenNest.BusinessLogic.Extended
         public float HealingProcent => GetPercentForNextLevel(HealingLevel, Healing);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float GetPercentForNextLevel(int level, decimal exp)
+        private static float GetPercentForNextLevel(int level, double exp)
         {
             var nextLevel = GameMath.ExperienceForLevel(level + 1);
             var thisLevel = exp;
@@ -45,7 +45,7 @@ namespace RavenNest.BusinessLogic.Extended
             foreach (var name in names)
             {
                 var n = name;
-                var experience = (decimal)props[n].GetValue(this);
+                var experience = (double)props[n].GetValue(this);
                 var level = (int)props[n + "Level"].GetValue(this);
                 var percent = (float)props[n + "Procent"].GetValue(this);
                 skills.Add(new PlayerSkill
@@ -65,7 +65,7 @@ namespace RavenNest.BusinessLogic.Extended
     {
         public string Name { get; set; }
         public int Level { get; set; }
-        public decimal Experience { get; set; }
+        public double Experience { get; set; }
         public float Percent { get; set; }
     }
 }

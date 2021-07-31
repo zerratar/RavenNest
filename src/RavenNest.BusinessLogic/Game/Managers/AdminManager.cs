@@ -362,7 +362,7 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        public bool UpdatePlayerSkill(Guid characterId, string skill, decimal experience)
+        public bool UpdatePlayerSkill(Guid characterId, string skill, double experience)
         {
             var character = this.gameData.GetCharacter(characterId);
             if (character == null) return false;

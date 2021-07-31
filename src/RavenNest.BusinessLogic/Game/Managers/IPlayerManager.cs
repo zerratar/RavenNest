@@ -31,7 +31,7 @@ namespace RavenNest.BusinessLogic.Game
         void UpdatePlayerActivity(SessionToken sessionToken, PlayerSessionActivity update);
         bool UpdatePlayerState(SessionToken sessionToken, CharacterStateUpdate update);
 
-        bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics, Guid? characterId = null);
+        bool UpdateStatistics(SessionToken token, string userId, double[] statistics, Guid? characterId = null);
 
         bool UpdateAppearance(SessionToken token, string userId, Models.SyntyAppearance appearance);
         bool UpdateAppearance(Guid characterId, Models.SyntyAppearance appearance);
@@ -39,8 +39,8 @@ namespace RavenNest.BusinessLogic.Game
 
         bool UpdateAppearance(AuthToken token, string userId, string identifier, Models.SyntyAppearance appearance);
 
-        bool UpdateExperience(SessionToken token, string userId, int[] level, decimal[] experience, Guid? characterId = null);
-        bool UpdateResources(SessionToken token, string userId, decimal[] resources);
+        bool UpdateExperience(SessionToken token, string userId, int[] level, double[] experience, Guid? characterId = null);
+        bool UpdateResources(SessionToken token, string userId, double[] resources);
 
         bool[] UpdateMany(SessionToken token, PlayerState[] states);
 

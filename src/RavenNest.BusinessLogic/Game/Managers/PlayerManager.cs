@@ -1255,7 +1255,7 @@ namespace RavenNest.BusinessLogic.Game
             .ToList();
         }
 
-        public bool UpdateStatistics(SessionToken token, string userId, decimal[] statistics, Guid? characterId = null)
+        public bool UpdateStatistics(SessionToken token, string userId, double[] statistics, Guid? characterId = null)
         {
             var character = characterId != null
                 ? gameData.GetCharacter(characterId.Value)
@@ -1442,7 +1442,7 @@ namespace RavenNest.BusinessLogic.Game
             SessionToken token,
             string userId,
             int[] level,
-            decimal[] experience,
+            double[] experience,
             Guid? characterId = null)
         {
             try
@@ -1590,7 +1590,7 @@ namespace RavenNest.BusinessLogic.Game
         public bool UpdateResources(
             SessionToken token,
             string userId,
-            decimal[] resources)
+            double[] resources)
         {
             try
             {

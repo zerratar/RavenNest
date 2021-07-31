@@ -5,9 +5,9 @@
         public ItemBuyResult(
             ItemTradeState state,
             long[] amountBought,
-            decimal[] costPerItem,
+            double[] costPerItem,
             long totalAmount,
-            decimal totalCost)
+            double totalCost)
         {
             State = state;
             AmountBought = amountBought;
@@ -18,9 +18,9 @@
 
         public ItemTradeState State { get; }
         public long[] AmountBought { get; }
-        public decimal[] CostPerItem { get; }
+        public double[] CostPerItem { get; }
         public long TotalAmount { get; }
-        public decimal TotalCost { get; }
+        public double TotalCost { get; }
 
     }
 

@@ -8,6 +8,6 @@ namespace RavenNest.Models
         public string BuyerId { get; set; }
         public Guid ItemId { get; set; }
         public long Amount { get; set; }
-        public decimal Cost { get; set; }
+        public double Cost { get; set; }
     }
 }
