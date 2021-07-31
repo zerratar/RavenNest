@@ -14,9 +14,9 @@ namespace RavenNest.Models
         public string Task { get; set; }
         public string TaskArgument { get; set; }
         public string Island { get; set; }
-        public decimal? X { get; set; }
-        public decimal? Y { get; set; }
-        public decimal? Z { get; set; }
-        public decimal RestedTime { get; set; }
+        public double? X { get; set; }
+        public double? Y { get; set; }
+        public double? Z { get; set; }
+        public double RestedTime { get; set; }
     }
 }

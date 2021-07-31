@@ -29,9 +29,9 @@ namespace RavenNest.SDK.Endpoints
         Task<bool> UpdateAppearanceAsync(string userId, int[] appearance);
         //Task<bool> UpdateExperienceAsync(string userId, decimal[] experience);
 
-        Task<bool> UpdateStatisticsAsync(string userId, decimal[] statistics);
+        Task<bool> UpdateStatisticsAsync(string userId, double[] statistics);
 
-        Task<bool> UpdateResourcesAsync(string userId, decimal[] resources);
+        Task<bool> UpdateResourcesAsync(string userId, double[] resources);
 
         Task<int> GiftItemAsync(string userId, string receiverUserId, Guid itemId, int amount);
         Task<int> VendorItemAsync(string userId, Guid itemId, int amount);

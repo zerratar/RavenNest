@@ -9,13 +9,13 @@ namespace RavenNest
         public string Name;
         public int CurrentValue;
         public int Level;
-        public decimal Experience;
+        public double Experience;
 
-        public bool AddExp(decimal exp, out int newLevels)
+        public bool AddExp(double exp, out int newLevels)
         {
             newLevels = 0;
             this.Experience += exp;
-            var newLevel = GameMath.OLD_ExperienceToLevel(Experience);
+            var newLevel = GameMath.OLD_ExperienceToLevel((decimal)Experience);
             var levelDiff = newLevel - Level;
             if (levelDiff > 0)
             {

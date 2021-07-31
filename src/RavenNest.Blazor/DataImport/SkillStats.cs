@@ -55,6 +55,6 @@ namespace RavenNest
             Level = 1
         };
 
-        public decimal ExpOverTime = 1;
+        public double ExpOverTime = 1;
     }
 }

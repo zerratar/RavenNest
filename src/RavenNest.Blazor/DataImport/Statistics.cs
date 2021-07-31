@@ -23,10 +23,10 @@ namespace RavenNest
         public long TotalDamageTaken;
         public int DeathCount;
 
-        public decimal TotalWoodCollected;
-        public decimal TotalOreCollected;
-        public decimal TotalFishCollected;
-        public decimal TotalWheatCollected;
+        public double TotalWoodCollected;
+        public double TotalOreCollected;
+        public double TotalFishCollected;
+        public double TotalWheatCollected;
 
         public int CraftedWeapons;
         public int CraftedArmors;

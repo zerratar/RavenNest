@@ -70,7 +70,7 @@ namespace RavenNest.SDK.Endpoints
             this.request = request;
         }
 
-        public Task<ItemSellResult> SellItemAsync(string userId, Guid itemId, decimal amount, decimal pricePerItem)
+        public Task<ItemSellResult> SellItemAsync(string userId, Guid itemId, double amount, double pricePerItem)
         {
             return request.Create()
                 .Identifier(userId)
@@ -84,7 +84,7 @@ namespace RavenNest.SDK.Endpoints
                     ApiRequestType.Get);
         }
 
-        public Task<ItemBuyResult> BuyItemAsync(string userId, Guid itemId, decimal amount, decimal maxPricePerItem)
+        public Task<ItemBuyResult> BuyItemAsync(string userId, Guid itemId, double amount, double maxPricePerItem)
         {
             return request.Create()
                 .Identifier(userId)

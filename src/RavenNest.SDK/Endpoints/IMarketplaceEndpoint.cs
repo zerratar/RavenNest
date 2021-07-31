@@ -5,7 +5,7 @@ namespace RavenNest.SDK.Endpoints
 {
     public interface IMarketplaceEndpoint
     {
-        Task<RavenNest.Models.ItemSellResult> SellItemAsync(string userId, Guid itemId, decimal amount, decimal pricePerItem);
-        Task<RavenNest.Models.ItemBuyResult> BuyItemAsync(string userId, Guid itemId, decimal amount, decimal maxPricePerItem);
+        Task<RavenNest.Models.ItemSellResult> SellItemAsync(string userId, Guid itemId, double amount, double pricePerItem);
+        Task<RavenNest.Models.ItemBuyResult> BuyItemAsync(string userId, Guid itemId, double amount, double maxPricePerItem);
     }
 }

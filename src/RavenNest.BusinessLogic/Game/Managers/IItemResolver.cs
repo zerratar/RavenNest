@@ -124,7 +124,7 @@ namespace RavenNest.BusinessLogic.Game
                 return true;
             }
 
-            var values = new Dictionary<string, decimal>
+            var values = new Dictionary<string, double>
             {
                 { "k", 1000 },
                 { "m", 1000_000 },
@@ -136,7 +136,7 @@ namespace RavenNest.BusinessLogic.Game
                 var lastChar = token.Value[token.Value.Length - 1];
                 if (values.TryGetValue(char.ToLower(lastChar).ToString(), out var m))
                 {
-                    if (decimal.TryParse(token.Value.Remove(token.Value.Length - 1).Substring(1), NumberStyles.Any, new NumberFormatInfo(), out var p))
+                    if (double.TryParse(token.Value.Remove(token.Value.Length - 1).Substring(1), NumberStyles.Any, new NumberFormatInfo(), out var p))
                     {
                         amount = (long)(p * m);
                         return true;
@@ -223,19 +223,19 @@ namespace RavenNest.BusinessLogic.Game
     }
     public class ItemStack
     {
-        public ItemStack(Item item, decimal amount)
+        public ItemStack(Item item, double amount)
         {
             Item = item;
             Amount = amount;
         }
 
         public Item Item { get; }
-        public decimal Amount { get; }
+        public double Amount { get; }
     }
 
     public class PlayerItemStack : ItemStack
     {
-        public PlayerItemStack(Character character, Item item, decimal amount)
+        public PlayerItemStack(Character character, Item item, double amount)
             : base(item, amount)
         {
             Character = character;
