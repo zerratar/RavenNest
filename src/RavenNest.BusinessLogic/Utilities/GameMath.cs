@@ -25,7 +25,6 @@ namespace RavenNest.BusinessLogic
                 OLD_TotalExperienceArray[i1] = (decimal)((l & 0xffffffffc) / 4d);
             }
 
-
             for (var levelIndex = 0; levelIndex < MaxLevel; levelIndex++)
             {
                 var level = levelIndex + 1M;
@@ -57,7 +56,22 @@ namespace RavenNest.BusinessLogic
 
         public static decimal ExperienceForLevel(int level)
         {
-            return (decimal)(level - 2 < 0 ? 0 : ExperienceArray[level - 2]);
+            if (level > MaxLevel)
+            {
+                return (decimal)ExperienceArray[ExperienceArray.Length - 1];
+            }
+
+            if (level - 2 < 0)
+            {
+                return 0m;
+            }
+
+            if (ExperienceArray.Length <= (level - 2))
+            {
+                return (decimal)ExperienceArray[ExperienceArray.Length - 1];//[^1];
+            }
+
+            return (decimal)ExperienceArray[level - 2];
         }
 
         [Obsolete]
@@ -75,7 +89,15 @@ namespace RavenNest.BusinessLogic
         [Obsolete]
         public static decimal OLD_LevelToExperience(int level)
         {
-            return level - 2 < 0 ? 0 : OLD_TotalExperienceArray[level - 2];
+            try
+            {
+                return level - 2 < 0 ? 0 : OLD_TotalExperienceArray[level - 2];
+            }
+            catch (Exception exc)
+            {
+                // not good, someone been naughty.
+                return OLD_TotalExperienceArray[OLD_TotalExperienceArray.Length - 1];
+            }
         }
 
         public static decimal GetFishingExperience(int level)
