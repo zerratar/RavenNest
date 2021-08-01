@@ -42,7 +42,7 @@ namespace RavenNest.BusinessLogic.Game
         bool UpdateExperience(SessionToken token, string userId, int[] level, double[] experience, Guid? characterId = null);
         bool UpdateResources(SessionToken token, string userId, double[] resources);
 
-        bool[] UpdateMany(SessionToken token, PlayerState[] states);
+        //bool[] UpdateMany(SessionToken token, PlayerState[] states);
 
         void AddItem(Guid characterId, Guid itemId, int amount = 1);
         AddItemResult AddItem(SessionToken token, string userId, Guid itemId);

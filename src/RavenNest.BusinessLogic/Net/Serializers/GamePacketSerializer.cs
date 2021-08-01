@@ -57,7 +57,7 @@ namespace RavenNest.BusinessLogic.Net
                     var hoverOverMe = GenerateDebugCode(length, data, dataSize, payload, targetType);
                     try
                     {
-                        System.IO.File.WriteAllText(@"C:\Ravenfall\deserialize_" + targetType + ".cs", hoverOverMe);
+                        System.IO.File.WriteAllText(@"deserialize_" + targetType + ".cs", hoverOverMe);
                     }
                     catch
                     {
