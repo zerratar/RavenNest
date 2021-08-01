@@ -64,9 +64,9 @@ namespace RavenNest.BusinessLogic
                 {
                     value = ExperienceArray[ExperienceArray.Length - 1];
                 }
-                else if (level - 2 < 0)
+                else if (level - 2 <= 0)
                 {
-                    value = 0d;
+                    value = ExperienceArray[0];
                 }
                 else if (level > 2)
                 {
