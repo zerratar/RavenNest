@@ -1457,14 +1457,14 @@ namespace RavenNest.BusinessLogic.Game
                 if (characterSessionState.Compromised)
                 {
                     logger.LogError("Trying to update a compromised player: " + character.Name + " (" + character.Id + ")");
-                    return false;
+                    return true;
                 }
 
                 var sessionOwner = gameData.GetUser(gameSession.UserId);
                 if (sessionOwner.Status >= 1)
                 {
                     logger.LogError("The user session from " + sessionOwner.UserName + " trying to save players, but the owner has been banned.");
-                    return false;
+                    return true;
                 }
 
                 var expLimit = sessionOwner.IsAdmin.GetValueOrDefault() ? 5000 : 50;
@@ -1481,7 +1481,7 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 if (experience == null)
-                    return false; // no skills was updated. Ignore
+                    return true; // no skills was updated. Ignore
                                   // throw new Exception($"Unable to save exp. Client didnt supply experience, or experience was null. Character with name {character.Name} game session: " + gameSession.Id + ".");
 
                 var gains = characterSessionState.ExpGain;
@@ -1490,7 +1490,7 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Tried to set level above max.");
                     BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
-                    return false;
+                    return true;
                 }
 
                 var updated = false;
@@ -1539,7 +1539,7 @@ namespace RavenNest.BusinessLogic.Game
                         {
                             logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Level changed from " + existingLevel + " to " + skillLevel);
                             BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
-                            return false;
+                            return true;
                         }
                     }
 
