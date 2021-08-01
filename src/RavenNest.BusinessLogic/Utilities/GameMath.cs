@@ -58,29 +58,22 @@ namespace RavenNest.BusinessLogic
         {
             var value = 0d;
 
-            try
+            if (ExperienceArray.Length <= (level - 2) || level > MaxLevel)
             {
-                if (ExperienceArray.Length <= (level - 2) || level > MaxLevel)
-                {
-                    value = ExperienceArray[ExperienceArray.Length - 1];
-                }
-                else if (level - 2 <= 0)
-                {
-                    value = ExperienceArray[0];
-                }
-                else if (level > 2)
-                {
-                    value = ExperienceArray[level - 2];
-                }
-
-                if (value < 0)
-                {
-                    value = 0;
-                }
+                value = ExperienceArray[ExperienceArray.Length - 1];
             }
-            catch (Exception exc)
+            else if (level - 2 <= 0)
             {
-                // uh oh.
+                value = ExperienceArray[0];
+            }
+            else if (level > 2)
+            {
+                value = ExperienceArray[level - 2];
+            }
+
+            if (value < 0)
+            {
+                value = 0;
             }
 
             return value;

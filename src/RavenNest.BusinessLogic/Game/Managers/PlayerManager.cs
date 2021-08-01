@@ -832,69 +832,69 @@ namespace RavenNest.BusinessLogic.Game
             return UpdateAppearance(userId, identifier, appearance);
         }
 
-        public bool[] UpdateMany(SessionToken token, PlayerState[] states)
-        {
-            var results = new List<bool>();
-            var gameSession = gameData.GetSession(token.SessionId);
-            if (gameSession == null)
-            {
-                return Enumerable.Range(0, states.Length).Select(x => false).ToArray();
-            }
+        //public bool[] UpdateMany(SessionToken token, PlayerState[] states)
+        //{
+        //    var results = new List<bool>();
+        //    var gameSession = gameData.GetSession(token.SessionId);
+        //    if (gameSession == null)
+        //    {
+        //        return Enumerable.Range(0, states.Length).Select(x => false).ToArray();
+        //    }
 
-            //var sessionPlayers = gameData.GetSessionCharacters(gameSession);
-            foreach (var state in states)
-            {
-                var user = gameData.GetUser(state.UserId);
-                if (user == null)
-                {
-                    logger.LogError($"Saving failed for player with userId {state.UserId}, no user was found matching the id.");
-                    results.Add(false);
-                    continue;
-                }
+        //    //var sessionPlayers = gameData.GetSessionCharacters(gameSession);
+        //    foreach (var state in states)
+        //    {
+        //        var user = gameData.GetUser(state.UserId);
+        //        if (user == null)
+        //        {
+        //            logger.LogError($"Saving failed for player with userId {state.UserId}, no user was found matching the id.");
+        //            results.Add(false);
+        //            continue;
+        //        }
 
-                var character = gameData.GetCharacter(state.CharacterId);//sessionPlayers.FirstOrDefault(x => x.UserId == user.Id);
-                                                                         //var character = gameData.GetCharacterByUserId(user.Id);
-                if (character == null)
-                {
-                    logger.LogError($"Saving failed for player with userId {state.UserId}, no character was found matching the id in the session.");
-                    results.Add(false);
-                    continue;
-                }
+        //        var character = gameData.GetCharacter(state.CharacterId);//sessionPlayers.FirstOrDefault(x => x.UserId == user.Id);
+        //                                                                 //var character = gameData.GetCharacterByUserId(user.Id);
+        //        if (character == null)
+        //        {
+        //            logger.LogError($"Saving failed for player with userId {state.UserId}, no character was found matching the id in the session.");
+        //            results.Add(false);
+        //            continue;
+        //        }
 
-                if (!integrityChecker.VerifyPlayer(gameSession.Id, character.Id, state.SyncTime))
-                {
-                    logger.LogError($"Saving failed for player with userId {state.UserId}, INTEGRITY CHECK!!.");
-                    results.Add(false);
-                    continue;
-                }
+        //        if (!integrityChecker.VerifyPlayer(gameSession.Id, character.Id, state.SyncTime))
+        //        {
+        //            logger.LogError($"Saving failed for player with userId {state.UserId}, INTEGRITY CHECK!!.");
+        //            results.Add(false);
+        //            continue;
+        //        }
 
-                try
-                {
-                    if (state.Experience != null && state.Experience.Length > 0)
-                    {
-                        UpdateExperience(token, state.UserId, state.Level, state.Experience, state.CharacterId);
-                    }
+        //        try
+        //        {
+        //            if (state.Experience != null && state.Experience.Length > 0)
+        //            {
+        //                UpdateExperience(token, state.UserId, state.Level, state.Experience, state.CharacterId);
+        //            }
 
-                    if (state.Statistics != null && state.Statistics.Length > 0)
-                    {
-                        UpdateStatistics(token, state.UserId, state.Statistics, state.CharacterId);
-                    }
+        //            if (state.Statistics != null && state.Statistics.Length > 0)
+        //            {
+        //                UpdateStatistics(token, state.UserId, state.Statistics, state.CharacterId);
+        //            }
 
-                    EquipBestItems(character);
+        //            EquipBestItems(character);
 
-                    character.Revision = character.Revision.GetValueOrDefault() + 1;
+        //            character.Revision = character.Revision.GetValueOrDefault() + 1;
 
-                    results.Add(true);
-                }
-                catch (Exception exc)
-                {
-                    logger.LogError("Failed updating many: " + exc);
-                    results.Add(false);
-                }
-            }
+        //            results.Add(true);
+        //        }
+        //        catch (Exception exc)
+        //        {
+        //            logger.LogError("Failed updating many: " + exc);
+        //            results.Add(false);
+        //        }
+        //    }
 
-            return results.ToArray();
-        }
+        //    return results.ToArray();
+        //}
 
         public AddItemResult CraftItem(SessionToken token, string userId, Guid itemId, int amount = 1)
         {
