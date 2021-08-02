@@ -128,6 +128,10 @@ namespace RavenNest.BusinessLogic.Game
                 var userId = playerData.UserId;
                 var userName = playerData.UserName;
                 var identifier = playerData.Identifier;
+                if (string.IsNullOrEmpty(identifier))
+                {
+                    identifier = "0";
+                }
 
                 if (string.IsNullOrEmpty(userId))
                 {
