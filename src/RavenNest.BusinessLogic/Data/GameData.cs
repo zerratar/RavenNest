@@ -868,6 +868,12 @@ namespace RavenNest.BusinessLogic.Data
 
         private Character GetCharacterByIdentifier(IReadOnlyList<Character> chars, string identifier)
         {
+            if (identifier != null && identifier.Length > 0)
+            {
+                var allowedCharacters = "_=qwertyuiopåasdfghjklöäzxcvbnm1234567890".ToArray();
+                identifier = string.Join("", identifier.ToArray().Where(x => allowedCharacters.Contains(Char.ToLower(x))));
+            }
+
             var hasIndex = int.TryParse(identifier, out var index);
             index = index > 0 ? index - 1 : 0;
 
