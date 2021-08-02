@@ -872,7 +872,13 @@ namespace RavenNest.BusinessLogic.Data
             {
                 var allowedCharacters = "_=qwertyuiopåasdfghjklöäzxcvbnm1234567890".ToArray();
                 identifier = string.Join("", identifier.ToArray().Where(x => allowedCharacters.Contains(Char.ToLower(x))));
+
+                if (string.IsNullOrEmpty(identifier))
+                {
+                    identifier = "0";
+                }
             }
+
 
             var hasIndex = int.TryParse(identifier, out var index);
             index = index > 0 ? index - 1 : 0;
