@@ -765,9 +765,9 @@ namespace RavenNest.BusinessLogic.Game
                     state.InOnsen = update.InOnsen;
                     state.Task = update.Task;
                     state.TaskArgument = update.TaskArgument;
-                    state.X = (double)update.X;
-                    state.Y = (double)update.Y;
-                    state.Z = (double)update.Z;
+                    state.X = update.X;
+                    state.Y = update.Y;
+                    state.Z = update.Z;
                 }
                 return true;
             }
@@ -1482,11 +1482,11 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (experience == null)
                     return true; // no skills was updated. Ignore
-                                  // throw new Exception($"Unable to save exp. Client didnt supply experience, or experience was null. Character with name {character.Name} game session: " + gameSession.Id + ".");
+                                 // throw new Exception($"Unable to save exp. Client didnt supply experience, or experience was null. Character with name {character.Name} game session: " + gameSession.Id + ".");
 
                 var gains = characterSessionState.ExpGain;
 
-                if (level != null && level.Length > 0 && level.Any(x => x >= GameMath.MaxLevel))
+                if (level != null && level.Length > 0 && level.Any(x => x > GameMath.MaxLevel))
                 {
                     logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Tried to set level above max.");
                     BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
