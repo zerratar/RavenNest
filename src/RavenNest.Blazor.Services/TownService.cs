@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TwitchLib.Api.Core.Extensions.System;
-
 namespace RavenNest.Blazor.Services
 {
     public class TownService
