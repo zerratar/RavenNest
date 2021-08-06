@@ -44,7 +44,7 @@
 			 <thead>
 			  <tr>
 			   <th>Owner</th>
-			   <th>Name</th>
+			   @*<th>Name</th>*@
 			   <th>Bonus</th>
 			   <th>Level</th>
 			   <th>Slots</th>
@@ -55,7 +55,7 @@
 								{
 				  <tr class="town-item">
 				   <td class='town-owner'><a href="@("https://www.twitch.tv/" + item.Owner.UserName)" target="_blank">@item.Owner.UserName</a></td>
-				   <td class='town-name'>@item.Name</td>
+				   @*<td class='town-name'>@item.Name</td>*@
 				   <td class='town-bonus'>@(item.GetActiveBonus(group))%</td>
 				   <td class='town-level'>@item.Level</td>
 				   <td class='town-slots' title="The slot/hut info for this town. Active Count / Used Count / Total Count"><span class="town-slot-active">@item.ActiveSlotCount</span>/<span class="town-slot-used">@item.UsedSlotCount</span>/<span class="town-slot-total">@item.TotalSlotCount</span></td>
