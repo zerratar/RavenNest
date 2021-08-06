@@ -336,8 +336,17 @@ namespace RavenNest.BusinessLogic.Net
                             return;
                         }
 
-                        await ReceivePacketsAsync(cts.Token);
+                        try
+                        {
+
+                            await ReceivePacketsAsync(cts.Token);
+                        }
+                        catch (Exception exc)
+                        {
+                            logger.LogError("[" + SessionToken.TwitchUserName + "] (" + sessionToken.SessionId + ") Error Receiving Packet: " + exc);
+                        }
                         await Task.Delay(15);
+
                     }
                 }
 
@@ -373,6 +382,8 @@ namespace RavenNest.BusinessLogic.Net
                     // ignore websocket exceptions. those are most likely premature disconnections
                     // happens when server restarts/shutsdown or client just lost connection.
                     // nothing important to record really. 
+
+                    this.logger.LogError("[" + SessionToken.TwitchUserName + "] (" + SessionToken.SessionId + ") " + exc.ToString());
                     this.Dispose();
                 }
                 catch (Exception exc)

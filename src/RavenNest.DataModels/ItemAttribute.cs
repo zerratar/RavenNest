@@ -11,5 +11,6 @@ namespace RavenNest.DataModels
         private int type; public int Type { get => type; set => Set(ref this.type, value); }
         private string maxValue; public string MaxValue { get => maxValue; set => Set(ref this.maxValue, value); }
         private string minValue; public string MinValue { get => minValue; set => Set(ref this.minValue, value); }
+        private string defaultValue; public string DefaultValue { get => defaultValue; set => Set(ref this.defaultValue, value); }
     }
 }

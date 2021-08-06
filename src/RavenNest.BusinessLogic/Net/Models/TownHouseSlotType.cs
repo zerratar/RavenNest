@@ -2,6 +2,7 @@
 {
     public enum TownHouseSlotType
     {
+        Undefined = -1,
         NoSkill = 0,
         Woodcutting = 1,
         Magic = 2,
@@ -12,6 +13,8 @@
         Farming = 7,
         Mining = 8,
         Sailing = 9,
-        Slayer = 10
+        Slayer = 10,
+        Fishing = 11,
+        Healing = 12
     }
 }
