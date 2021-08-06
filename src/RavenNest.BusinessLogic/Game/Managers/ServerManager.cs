@@ -9,6 +9,7 @@ namespace RavenNest.BusinessLogic.Game
     {
         public const int MaxExpMultiplier = 100;
         public const int ExpMultiplierStartTimeMinutes = 15;
+        public const int ExpMultiplierLastTimeMinutes = 50;
         public const int ExpMultiplierMinutesPerScroll = 5;
 
         private readonly IGameData gameData;
@@ -70,7 +71,7 @@ namespace RavenNest.BusinessLogic.Game
             else
             {
                 activeEvent.Multiplier++;
-                activeEvent.EndTime = activeEvent.EndTime.AddMinutes(ExpMultiplierMinutesPerScroll);
+                activeEvent.EndTime = activeEvent.EndTime.AddMinutes(activeEvent.Multiplier >= MaxExpMultiplier ? ExpMultiplierLastTimeMinutes : ExpMultiplierMinutesPerScroll);
             }
 
             activeEvent.EventName = user.UserName;
