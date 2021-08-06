@@ -725,7 +725,7 @@ namespace RavenNest.BusinessLogic.Providers
                    item.Category != (int)ItemCategory.StreamerToken &&
                    item.Category != (int)ItemCategory.Scroll &&
                    item.RequiredSlayerLevel <= skills.SlayerLevel &&
-                   item.RequiredMagicLevel <= skills.MagicLevel &&
+                   (item.RequiredMagicLevel <= skills.MagicLevel || item.RequiredMagicLevel <= skills.HealingLevel) &&
                    item.RequiredRangedLevel <= skills.RangedLevel &&
                    item.RequiredDefenseLevel <= skills.DefenseLevel && //GameMath.ExperienceToLevel(skills.Defense) &&
                    item.RequiredAttackLevel <= skills.AttackLevel; //GameMath.ExperienceToLevel(skills.Attack);
