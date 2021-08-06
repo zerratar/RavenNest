@@ -383,7 +383,7 @@ namespace RavenNest.BusinessLogic.Net
                     // happens when server restarts/shutsdown or client just lost connection.
                     // nothing important to record really. 
 
-                    this.logger.LogError("[" + SessionToken.TwitchUserName + "] (" + SessionToken.SessionId + ") " + exc.ToString());
+                    this.logger.LogError("[" + SessionToken.TwitchUserName + "] (" + SessionToken.SessionId + ") " + s.ToString());
                     this.Dispose();
                 }
                 catch (Exception exc)
