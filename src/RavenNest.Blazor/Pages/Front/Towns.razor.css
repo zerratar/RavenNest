@@ -1,4 +1,14 @@
-﻿h1 {
+﻿.type-group-name {
+    font-size: 14pt;
+    padding: 10px;
+    background: black;
+    color: white;
+}
+th, td {
+    max-width: 20%;
+    width: 20%;
+}
+h1 {
     color: white;
     text-shadow: 4px 4px 10px rgba(0,0,0,0.5);
 }
@@ -9,9 +19,11 @@ h1:after {
 }
 
 .section {
-    padding: 30px 100px 50px 100px;
+    padding: 30px 100px 200px 100px;
 }
-
+table.type-group-town-list {
+    width: 100%;
+}
 .top-section {
     background-image: url('/imgs/TopImage.jpg');
     width: 100vw;
@@ -38,11 +50,11 @@ h1:after {
     font-size: 9pt;
 }
 
-.highscore-item {
+.town-item {
     cursor: pointer;
 }
 
-.highscore-item:hover {
+.town-item:hover {
     background-color: beige !important;
 }
 
@@ -111,7 +123,7 @@ a.active::after,
     animation-fill-mode: forwards;
 }
 
-table.highscore-list {
+table.town-list {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 160px;
@@ -124,20 +136,20 @@ td {
     border: 1px solid #eeeeee;
 }
 
-table.highscore-list tr {
+table.town-list tr {
     border: none;
 }
 
-table.highscore-list th:nth-of-type(2),
-table.highscore-list td:nth-of-type(2) {
+table.town-list th:nth-of-type(2),
+table.town-list td:nth-of-type(2) {
     text-align: left;
 }
 
-table.highscore-list tr:nth-of-type(even) {
+table.town-list tr:nth-of-type(even) {
     background-color: #f6f6f6;
 }
 
-table.highscore-list tr.isMe {
+table.town-list tr.isMe {
     background-color: #6acc91;
     color: white;
 }
@@ -146,13 +158,13 @@ table.highscore-list tr.isMe {
     Loading CSS
 */
 
-.highscore {
+.town {
     margin-top: 140px;
     flex-grow: 1;
 }
 
 @media screen and (max-width: 800px) {
     .section {
-        padding: 20px 30px 50px 20px;
+        padding: 20px 30px 200px 20px;
     }
 }

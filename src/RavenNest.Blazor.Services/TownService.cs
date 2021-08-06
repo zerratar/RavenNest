@@ -27,6 +27,10 @@ namespace RavenNest.Blazor.Services
                 List<TownData> result = new List<TownData>();
                 var activeSessions = this.gameData.GetActiveSessions();
 
+                //var vilages = this.gameData.GetVillages();
+                //foreach (var village in vilages)
+                //{
+
                 foreach (var sess in activeSessions)
                 {
                     var village = gameData.GetVillageByUserId(sess.UserId);
@@ -67,27 +71,31 @@ namespace RavenNest.Blazor.Services
                         var bestHouseSkill = new SkillStat();
                         var chars = gameData.GetCharactersByUserId(house.UserId.GetValueOrDefault());
                         var isActive = false;
-                        foreach (var c in chars)
+                        if (chars != null && chars.Count > 0)
                         {
-                            var cs = gameData.GetCharacterSkills(c.SkillsId);
-                            var houseSkill = GetSkillByHouseType(cs, h.Type);
-
-                            if (c.UserIdLock == town.Owner.Id)
+                            foreach (var c in chars)
                             {
-                                isActive = true;
-                                bestHouseSkill = houseSkill;
-                                h.AssignedCharacterId = c.Id;
-                                break;
+                                var cs = gameData.GetCharacterSkills(c.SkillsId);
+                                var houseSkill = GetSkillByHouseType(cs, h.Type);
+
+                                if (c.UserIdLock == town.Owner.Id)
+                                {
+                                    isActive = true;
+                                    bestHouseSkill = houseSkill;
+                                    h.AssignedCharacterId = c.Id;
+                                    break;
+                                }
+
+                                if (houseSkill.Level > bestHouseSkill.Level)
+                                {
+                                    bestHouseSkill = houseSkill;
+                                    h.AssignedCharacterId = c.Id;
+                                }
                             }
 
-                            if (houseSkill.Level > bestHouseSkill.Level)
-                            {
-                                bestHouseSkill = houseSkill;
-                                h.AssignedCharacterId = c.Id;
-                            }
+                            h.Bonus = CalculateHouseExpBonus(bestHouseSkill);
                         }
 
-                        h.Bonus = CalculateHouseExpBonus(bestHouseSkill);
                         h.IsActive = isActive;
                         tHouses.Add(h);
                     }
@@ -95,6 +103,7 @@ namespace RavenNest.Blazor.Services
                     town.UsedSlotCount = tHouses.Count;
                     town.ActiveSlotCount = tHouses.Count(x => x.IsActive);
                     town.TownHouses = tHouses;
+                    result.Add(town);
                 }
 
                 return result;

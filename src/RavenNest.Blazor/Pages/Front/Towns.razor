@@ -29,12 +29,15 @@
 	  <!-- Then order by the streamer with highest % -->
 
 	  <div class="type-groups">
-				@foreach (var group in data.Keys)
+				@foreach (var group in data.Keys.OrderBy(x => x))
 				{
 					var towns = data[group];
+					if (towns.Count == 0)
+					{
+						continue;
+					}
 
-		   <div>
-			class="type-group">
+		   <div class="type-group">
 			<div class="type-group-name">@group</div>
 
 			<table class="type-group-town-list">
@@ -51,7 +54,7 @@
 								@foreach (var item in towns)
 								{
 				  <tr class="town-item">
-				   <td class='town-owner'>@item.Owner.UserName</td>
+				   <td class='town-owner'><a href="@("https://www.twitch.tv/" + item.Owner.UserName)" target="_blank">@item.Owner.UserName</a></td>
 				   <td class='town-name'>@item.Name</td>
 				   <td class='town-bonus'>@item.GetActiveBonus(group)</td>
 				   <td class='town-level'>@item.Level</td>
@@ -75,7 +78,7 @@
 
 	protected override void OnInitialized()
 	{
-		slotTypes = Enum.GetValues(typeof(TownHouseSlotType)).Cast<TownHouseSlotType>().ToList();
+		slotTypes = Enum.GetValues(typeof(TownHouseSlotType)).Cast<TownHouseSlotType>().Where(x => x != TownHouseSlotType.Undefined && x != TownHouseSlotType.NoSkill).ToList();
 		LoadTownDataAsync();
 	}
 
