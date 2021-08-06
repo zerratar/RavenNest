@@ -1,0 +1,158 @@
+﻿h1 {
+    color: white;
+    text-shadow: 4px 4px 10px rgba(0,0,0,0.5);
+}
+
+h1:after {
+    background-image: url(/imgs/LineBreakWhite.png);
+    height: 28px;
+}
+
+.section {
+    padding: 30px 100px 50px 100px;
+}
+
+.top-section {
+    background-image: url('/imgs/TopImage.jpg');
+    width: 100vw;
+    height: 435px;
+    background-position: center;
+    background-size: cover;
+    margin-top: -95px;
+    z-index: 0;
+    padding: 150px 50px;
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+}
+
+.content {
+    margin-top: -95px;
+    min-height: 400px;
+}
+
+.player-character-index {
+    margin-left: 5px;
+    display: inline-block;
+    color: #a2a2a2;
+    font-size: 9pt;
+}
+
+.highscore-item {
+    cursor: pointer;
+}
+
+.highscore-item:hover {
+    background-color: beige !important;
+}
+
+button.btn.active {
+    background-color: black;
+    border-radius: 0;
+    color: white;
+}
+
+.skill-selector a {
+    padding: 5px 15px;
+    margin-bottom: 15px;
+    display: inline-block;
+    text-decoration: none;
+    cursor: pointer;
+    color: #333;
+    transition: all 150ms ease-in-out;
+    border-bottom: 1px solid white;
+}
+
+.skill-selector a:hover {
+    color: #3498db;
+}
+
+.skill-selector a::after {
+    content: "";
+    height: 1px;
+    width: 0%;
+    border-bottom: 1px solid white;
+    position: relative;
+    display: block;
+    line-height: 2px;
+    color: white;
+    font-size: 0pt;
+    top: 0px;
+}
+
+.skill-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    flex-flow: wrap;
+    justify-items: center;
+    align-content: center;
+}
+
+.skill-selector a.active {
+    background-color: #0e0e0f;
+    color: white;
+}
+
+a.active::after,
+.skill-selector a:hover::after {
+    content: "";
+    height: 1px;
+    width: 0%;
+    border-bottom: 1px solid #333;
+    position: relative;
+    display: block;
+    line-height: 2px;
+    color: white;
+    font-size: 0pt;
+    top: 0px;
+    animation: selection linear 0.125s;
+    animation-fill-mode: forwards;
+}
+
+table.highscore-list {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 160px;
+}
+
+th,
+td {
+    text-align: right;
+    padding: 10px 15px;
+    border: 1px solid #eeeeee;
+}
+
+table.highscore-list tr {
+    border: none;
+}
+
+table.highscore-list th:nth-of-type(2),
+table.highscore-list td:nth-of-type(2) {
+    text-align: left;
+}
+
+table.highscore-list tr:nth-of-type(even) {
+    background-color: #f6f6f6;
+}
+
+table.highscore-list tr.isMe {
+    background-color: #6acc91;
+    color: white;
+}
+
+/*
+    Loading CSS
+*/
+
+.highscore {
+    margin-top: 140px;
+    flex-grow: 1;
+}
+
+@media screen and (max-width: 800px) {
+    .section {
+        padding: 20px 30px 50px 20px;
+    }
+}

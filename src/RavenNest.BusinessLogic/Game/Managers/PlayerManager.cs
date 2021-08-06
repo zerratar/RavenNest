@@ -27,6 +27,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly ILogger logger;
         private readonly IPlayerHighscoreProvider highscoreProvider;
         private readonly IPlayerInventoryProvider inventoryProvider;
+        private readonly IEnchantmentManager enchantmentManager;
         private readonly IGameData gameData;
         private readonly IIntegrityChecker integrityChecker;
 
@@ -34,12 +35,14 @@ namespace RavenNest.BusinessLogic.Game
             ILogger<PlayerManager> logger,
             IPlayerHighscoreProvider highscoreProvider,
             IPlayerInventoryProvider inventoryProvider,
+            IEnchantmentManager enchantmentManager,
             IGameData gameData,
             IIntegrityChecker integrityChecker)
         {
             this.logger = logger;
             this.highscoreProvider = highscoreProvider;
             this.inventoryProvider = inventoryProvider;
+            this.enchantmentManager = enchantmentManager;
             this.gameData = gameData;
             this.integrityChecker = integrityChecker;
         }
@@ -899,6 +902,39 @@ namespace RavenNest.BusinessLogic.Game
 
         //    return results.ToArray();
         //}
+
+        public ItemEnchantmentResult EnchantItem(SessionToken token, string userId, Guid inventoryItemId)
+        {
+
+            var character = GetCharacter(token, userId);
+            var enchantingSkill = gameData.GetSkills().FirstOrDefault(x => x.Name == "Enchanting");
+            if (character == null || enchantingSkill == null)
+                return ItemEnchantmentResult.Failed;
+
+            if (!integrityChecker.VerifyPlayer(token.SessionId, character.Id, 0))
+                return ItemEnchantmentResult.Failed;
+
+            var resources = gameData.GetResources(character.ResourcesId);
+            if (resources == null)
+                return ItemEnchantmentResult.Failed;
+
+            var clanMembership = gameData.GetClanMembership(character.Id);
+            if (clanMembership == null)
+                return ItemEnchantmentResult.Failed;
+
+            var skills = gameData.GetClanSkills(clanMembership.ClanId);
+            if (skills == null || skills.Count == 0)
+                return ItemEnchantmentResult.Failed;
+
+            var inventory = inventoryProvider.Get(character.Id);
+            var clanSkill = skills.FirstOrDefault(x => x.SkillId == enchantingSkill.Id);
+            var item = inventory.Get(inventoryItemId);
+
+            if (clanSkill == null)
+                return ItemEnchantmentResult.Failed;
+
+            return enchantmentManager.EnchantItem(clanSkill, character, inventory, item, resources);
+        }
 
         public AddItemResult CraftItem(SessionToken token, string userId, Guid itemId, int amount = 1)
         {

@@ -25,6 +25,28 @@ namespace RavenNest.BusinessLogic.Providers
             //MergeItems(this.items.ToList());
         }
 
+        internal ReadOnlyInventoryItem RemoveAttributes(ReadOnlyInventoryItem item)
+        {
+            if (item.Attributes == null || item.Attributes.Count == 0)
+            {
+                return item;
+            }
+
+            var invItem = Get(item);
+            if (invItem == null)
+            {
+                return item;
+            }
+
+            var attributes = gameData.GetInventoryItemAttributes(invItem.Id);
+            foreach (var attr in attributes)
+            {
+                gameData.Remove(attr);
+            }
+
+            return invItem.AsReadOnly(gameData);
+        }
+
         private List<InventoryItem> GetInventoryItems(Guid characterId)
         {
             var output = new List<InventoryItem>();
@@ -263,6 +285,38 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
+        public void SetAttributes(InventoryItem item, IReadOnlyList<InventoryItemAttribute> attributes)
+        {
+
+        }
+
+
+        public IReadOnlyList<ReadOnlyInventoryItem> AddItem(
+            Guid itemId,
+            long amount,
+            bool soulbound,
+            IReadOnlyList<InventoryItemAttribute> magicAttributes)
+        {
+            var added = new List<ReadOnlyInventoryItem>();
+            lock (mutex)
+            {
+                for (var i = 0; i < amount; ++i)
+                {
+                    var s = CreateInventoryItem(itemId, 1, false, null, soulbound);
+                    foreach (var att in magicAttributes)
+                    {
+                        att.InventoryItemId = s.Id;
+                        gameData.Add(att);
+                    }
+
+                    items.Add(s);
+                    gameData.Add(s);
+                    added.Add(s.AsReadOnly(gameData));
+                }
+            }
+            return added;
+        }
+
         public void AddItem(
             Guid itemId,
             long amount = 1,
@@ -274,12 +328,12 @@ namespace RavenNest.BusinessLogic.Providers
         {
             lock (mutex)
             {
-                var willBeSoulbound = magicAttributes != null || randomMagicAttributes;
-                if (willBeSoulbound)
+                var hasMagicAttributes = magicAttributes != null || randomMagicAttributes;
+                if (hasMagicAttributes)
                 {
                     for (var i = 0; i < amount; ++i)
                     {
-                        var s = CreateInventoryItem(itemId, amount, equipped, tag, willBeSoulbound);
+                        var s = CreateInventoryItem(itemId, 1, equipped, tag, hasMagicAttributes);
                         var attributes = new List<InventoryItemAttribute>();
                         if (magicAttributes != null)
                         {
@@ -318,11 +372,8 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
-        private List<InventoryItemAttribute> CreateRandomAttributes(InventoryItem s)
+        public List<InventoryItemAttribute> CreateRandomAttributes(ReadOnlyInventoryItem invItem, int attributeCount)
         {
-            var item = gameData.GetItem(s.ItemId);
-            var totReq = item.RequiredAttackLevel + item.RequiredDefenseLevel + item.RequiredMagicLevel + item.RequiredRangedLevel + item.RequiredSlayerLevel;
-            var attrCount = (int)Math.Floor(Math.Floor(totReq / 10f) / 5);
             var availableAttributes = gameData.GetItemAttributes();
             var addedAttrId = new HashSet<Guid>();
 
@@ -330,26 +381,47 @@ namespace RavenNest.BusinessLogic.Providers
                 return new List<InventoryItemAttribute>();
 
             var output = new List<InventoryItemAttribute>();
-
+            var maxAttempts = availableAttributes.Count * 10;
             // make sure we dont get stuck in an infinite loop.
-            attrCount = Math.Min(attrCount, availableAttributes.Count);
-            for (var i = 0; i < attrCount; ++i)
+            attributeCount = Math.Min(attributeCount, availableAttributes.Count);
+            for (var i = 0; i < attributeCount; ++i)
             {
                 ItemAttribute attr = null;
-                do attr = availableAttributes[random.Next(0, availableAttributes.Count)];
-                while (addedAttrId.Contains(attr.Id));
+
+                var attempt = 0;
+                do
+                {
+                    attr = availableAttributes[random.Next(0, availableAttributes.Count)];
+                    ++attempt;
+                }
+                while (addedAttrId.Contains(attr.Id) && attempt < maxAttempts);
+
+                if (attempt >= maxAttempts)
+                {
+                    // we failed to add this attribute.  Maybe we dont have enough attributes available.
+                    continue;
+                }
+
                 if (addedAttrId.Add(attr.Id))
                 {
                     output.Add(new InventoryItemAttribute
                     {
                         AttributeId = attr.Id,
                         Id = Guid.NewGuid(),
-                        InventoryItemId = s.Id,
+                        InventoryItemId = invItem.Id,
                         Value = GenerateRandomAttributeValue(attr)
                     });
                 }
             }
             return output;
+        }
+
+        public List<InventoryItemAttribute> CreateRandomAttributes(InventoryItem s)
+        {
+            var item = gameData.GetItem(s.ItemId);
+            var totReq = item.RequiredAttackLevel + item.RequiredDefenseLevel + item.RequiredMagicLevel + item.RequiredRangedLevel + item.RequiredSlayerLevel;
+            var attrCount = (int)Math.Floor(Math.Floor(totReq / 10f) / 5);
+            return CreateRandomAttributes(s.AsReadOnly(gameData), attrCount);
         }
 
         private string GenerateRandomAttributeValue(ItemAttribute attr)
@@ -511,7 +583,16 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
-        private InventoryItem Get(Guid itemId, bool equipped = false, string tag = null)
+        //public 
+        public ReadOnlyInventoryItem Get(Guid inventoryItemId)
+        {
+            lock (mutex)
+            {
+                return items.FirstOrDefault(x => x.Id == inventoryItemId)?.AsReadOnly(gameData) ?? default;
+            }
+        }
+
+        private InventoryItem Get(Guid itemId, bool equipped, string tag)
         {
             lock (mutex)
             {
@@ -545,6 +626,7 @@ namespace RavenNest.BusinessLogic.Providers
                 return items.Where(x => x.Equipped).Select(x => x.AsReadOnly(gameData)).ToList();
             }
         }
+
         public IReadOnlyList<ReadOnlyInventoryItem> GetEquippedItems(int category, int itemType)
         {
             lock (mutex)
@@ -642,6 +724,7 @@ namespace RavenNest.BusinessLogic.Providers
             return item.Category != (int)ItemCategory.Resource &&
                    item.Category != (int)ItemCategory.StreamerToken &&
                    item.Category != (int)ItemCategory.Scroll &&
+                   item.RequiredSlayerLevel <= skills.SlayerLevel &&
                    item.RequiredMagicLevel <= skills.MagicLevel &&
                    item.RequiredRangedLevel <= skills.RangedLevel &&
                    item.RequiredDefenseLevel <= skills.DefenseLevel && //GameMath.ExperienceToLevel(skills.Defense) &&

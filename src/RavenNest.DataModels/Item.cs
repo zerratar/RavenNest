@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace RavenNest.DataModels
 {
@@ -31,10 +30,20 @@ namespace RavenNest.DataModels
         private bool? isGenericModel; public bool? IsGenericModel { get => isGenericModel; set => Set(ref isGenericModel, value); }
         private bool? craftable; public bool? Craftable { get => craftable; set => Set(ref craftable, value); }
         private int requiredCraftingLevel; public int RequiredCraftingLevel { get => requiredCraftingLevel; set => Set(ref requiredCraftingLevel, value); }
+        
+        // Todo: remove
         private long woodCost; public long WoodCost { get => woodCost; set => Set(ref woodCost, value); }
+
+        // Todo: remove
         private long oreCost; public long OreCost { get => oreCost; set => Set(ref oreCost, value); }
+        
+        // Todo: remove
         private long shopBuyPrice; public long ShopBuyPrice { get => shopBuyPrice; set => Set(ref shopBuyPrice, value); }
+
+        // Todo: remove
         private long shopSellPrice; public long ShopSellPrice { get => shopSellPrice; set => Set(ref shopSellPrice, value); }
         private bool? soulbound; public bool? Soulbound { get => soulbound; set => Set(ref soulbound, value); }
+
+        // private bool stackable; public bool Stackable { get => stackable; set => Set(ref stackable, value); }
     }
 }
