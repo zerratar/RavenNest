@@ -29,7 +29,7 @@
 	  <!-- Then order by the streamer with highest % -->
 
 	  <div class="type-groups">
-				@foreach (var group in data.Keys.OrderBy(x => x))
+				@foreach (var group in data.Keys.OrderBy(x => x.ToString()))
 				{
 					var towns = data[group];
 					if (towns.Count == 0)
