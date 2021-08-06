@@ -204,6 +204,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<ServerService>();
             services.AddSingleton<LoyaltyService>();
             services.AddSingleton<CookieService>();
+            services.AddSingleton<TownService>();
 
             services.AddSingleton<IKernel, Kernel>();
             services.AddSingleton<IMemoryCache, MemoryCache>();
@@ -236,6 +237,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<IGameDataMigration, GameDataMigration>();
             services.AddSingleton<IGameDataBackupProvider, GameDataBackupProvider>();
 
+            services.AddSingleton<IEnchantmentManager, EnchantmentManager>();
             services.AddSingleton<IPlayerInventoryProvider, PlayerInventoryProvider>();
             services.AddSingleton<IPlayerHighscoreProvider, PlayerHighscoreProvider>();
             services.AddSingleton<IRavenfallDbContextProvider, RavenfallDbContextProvider>();

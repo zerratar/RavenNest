@@ -1236,8 +1236,12 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Village GetVillageBySession(GameSession session)
-            => villages[nameof(User), session.UserId].FirstOrDefault();
+        public Village GetVillageBySession(GameSession session) => villages[nameof(User), session.UserId].FirstOrDefault();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Village GetVillageByUserId(Guid userId) => villages[nameof(User), userId].FirstOrDefault();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Village GetVillage(Guid villageId) => villages[villageId];
+        public IReadOnlyList<Village> GetVillages() => villages.Entities.ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Village GetOrCreateVillageBySession(GameSession session)
@@ -1273,6 +1277,12 @@ namespace RavenNest.BusinessLogic.Data
             }
 
             return village;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<VillageHouse> GetVillageHouses(Village village)
+        {
+            return villageHouses[nameof(Village), village.Id];
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

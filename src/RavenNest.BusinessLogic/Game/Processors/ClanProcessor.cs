@@ -85,6 +85,12 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             var exp = GetExperience(trainingSkill.Level, elapsed.TotalSeconds);
 
+            var multi = gameData.GetActiveExpMultiplierEvent();
+            if (multi != null)
+            {
+                exp *= multi.Multiplier;
+            }
+
             ts.Skill.Experience += exp;
             var gainedLevels = 0;
             var nextLevel = GameMath.ExperienceForLevel(trainingSkill.Level + 1);
@@ -126,7 +132,14 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             if (clan.Level == 0)
                 clan.Level = 1;
 
-            clan.Experience += elapsed.TotalSeconds;
+            var exp = elapsed.TotalSeconds;
+            //var multi = gameData.GetActiveExpMultiplierEvent();
+            //if (multi != null)
+            //{
+            //    exp *= multi.Multiplier;
+            //}
+
+            clan.Experience += exp;
 
             var nextLevel = GameMath.ExperienceForLevel(clan.Level + 1);
             var oldLevel = clan.Level;
@@ -201,7 +214,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         }
         private double GetExperience(int skillLevel, double seconds)
         {
-            return (seconds * (((1d + (skillLevel / 100d) + (skillLevel / 75d)) * (double)Math.Pow(2, (double)(skillLevel / 20d)) / 20d) + 1d)) + (seconds * 8.3d);
+           return (seconds * (((1d + (skillLevel / 100d) + (skillLevel / 75d)) * (double)Math.Pow(2, (double)(skillLevel / 20d)) / 20d) + 1d)) + (seconds * 8.3d);
         }
     }
 

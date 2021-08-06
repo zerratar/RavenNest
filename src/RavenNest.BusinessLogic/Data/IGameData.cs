@@ -18,9 +18,13 @@ namespace RavenNest.BusinessLogic.Data
         DataModels.GameSession FindSession(Func<DataModels.GameSession, bool> predicate);
         IReadOnlyList<DataModels.GameSession> FindSessions(Func<DataModels.GameSession, bool> predicate);
         User FindUser(string userIdOrUsername);
+        DataModels.Village GetVillage(Guid villageId);
+        DataModels.Village GetVillageByUserId(Guid userId);
         DataModels.Village GetVillageBySession(DataModels.GameSession session);
         DataModels.Village GetOrCreateVillageBySession(DataModels.GameSession session);
+        IReadOnlyList<DataModels.Village> GetVillages();
         IReadOnlyList<DataModels.VillageHouse> GetOrCreateVillageHouses(DataModels.Village village);
+        IReadOnlyList<DataModels.VillageHouse> GetVillageHouses(DataModels.Village village);
 
         Character GetCharacterByName(string username, string identifier);
         IReadOnlyList<UserLoyaltyReward> GetLoyaltyRewards();

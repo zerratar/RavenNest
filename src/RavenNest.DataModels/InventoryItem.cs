@@ -2,6 +2,8 @@
 
 namespace RavenNest.DataModels
 {
+
+    // Want to rename this to ItemInstance
     public partial class InventoryItem : Entity<InventoryItem>
     {
         private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
@@ -11,5 +13,9 @@ namespace RavenNest.DataModels
         private bool equipped; public bool Equipped { get => equipped; set => Set(ref equipped, value); }
         private string tag; public string Tag { get => tag; set => Set(ref tag, value); }
         private bool? soulbound; public bool? Soulbound { get => soulbound; set => Set(ref soulbound, value); }
+
+        // private Guid? creatorId; public Guid? CreatorId { get => creatorId; set => Set(ref creatorId, value); }
+        // private Guid? transmogrificationId; public Guid? TransmogrificationId { get => transmogrificationId; set => Set(ref transmogrificationId, value); }
+        // private int? flags; public int? Flags { get => flags; set => Set(ref flags, value); }
     }
 }
