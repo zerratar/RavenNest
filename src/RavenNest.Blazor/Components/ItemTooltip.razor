@@ -20,14 +20,25 @@
 }
 
 @code {
-  [Parameter]
+	[Parameter]
   public RavenNest.Models.InventoryItem Item { get; set; }
 
   [Parameter]
   public bool Visible { get; set; }
 
+	protected override Task OnParametersSetAsync()
+	{
 
-  public IReadOnlyList<ItemStat> GetItemStats()
+		return base.OnParametersSetAsync();
+	}
+
+	protected override Task OnAfterRenderAsync(bool firstRender)
+	{
+
+		return base.OnAfterRenderAsync(firstRender);
+	}
+
+	public IReadOnlyList<ItemStat> GetItemStats()
   {
     var stats = new List<ItemStat>();
     var i = ItemService.GetItem(Item.ItemId);
