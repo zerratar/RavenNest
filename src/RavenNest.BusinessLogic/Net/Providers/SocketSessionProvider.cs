@@ -19,6 +19,7 @@ namespace RavenNest.BusinessLogic.Net
     public class WebSocketConnectionProvider : IWebSocketConnectionProvider
     {
         private readonly ILogger logger;
+        private readonly IRavenBotApiClient ravenBotApi;
         private readonly IIntegrityChecker integrityChecker;
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly IGameData gameData;
@@ -31,6 +32,7 @@ namespace RavenNest.BusinessLogic.Net
 
         public WebSocketConnectionProvider(
             ILogger<WebSocketConnectionProvider> logger,
+            IRavenBotApiClient ravenBotApi,
             IIntegrityChecker integrityChecker,
             IPlayerInventoryProvider inventoryProvider,
             IGameData gameData,
@@ -40,6 +42,7 @@ namespace RavenNest.BusinessLogic.Net
             ISessionManager sessionManager)
         {
             this.logger = logger;
+            this.ravenBotApi = ravenBotApi;
             this.integrityChecker = integrityChecker;
             this.inventoryProvider = inventoryProvider;
             this.gameData = gameData;
@@ -66,6 +69,7 @@ namespace RavenNest.BusinessLogic.Net
 
             var session = new WebSocketConnection(
                 logger,
+                ravenBotApi,
                 integrityChecker,
                 inventoryProvider,
                 gameData,
@@ -142,6 +146,7 @@ namespace RavenNest.BusinessLogic.Net
 
             public WebSocketConnection(
                 ILogger logger,
+                IRavenBotApiClient ravenBotApi,
                 IIntegrityChecker integrityChecker,
                 IPlayerInventoryProvider inventoryProvider,
                 IGameData gameData,
@@ -164,7 +169,8 @@ namespace RavenNest.BusinessLogic.Net
                 this.ws = ws;
 
                 this.killTask = new TaskCompletionSource<object>();
-                this.gameProcessor = new GameProcessor(integrityChecker, this, sessionManager, inventoryProvider, gameData, gameManager, sessionToken);
+                this.gameProcessor = new GameProcessor(
+                    ravenBotApi, integrityChecker, this, sessionManager, inventoryProvider, gameData, gameManager, sessionToken);
             }
 
             internal Guid SessionId => this.sessionToken.SessionId;
