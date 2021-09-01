@@ -24,5 +24,6 @@ namespace RavenNest.BusinessLogic.Game
         bool AttachPlayersToSession(SessionToken session, Guid[] characterIds);
         void SendExpMultiplier(DataModels.GameSession session);
         void SendServerTime(DataModels.GameSession session);
+        void SendPubSubToken(DataModels.GameSession session, string accessToken);
     }
 }
