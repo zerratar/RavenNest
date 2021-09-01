@@ -343,7 +343,7 @@ namespace RavenNest.BusinessLogic.Game
             };
         }
 
-        public void SendServerTime(DataModels.GameSession session, string pubsubAccessToken)
+        public void SendPubSubToken(DataModels.GameSession session, string pubsubAccessToken)
         {
             var serverTime = gameData.CreateSessionEvent(
                 GameEventType.PubSubToken,
@@ -396,5 +396,6 @@ namespace RavenNest.BusinessLogic.Game
             //    EndSession(sessionToken);
             //}
         }
+
     }
 }
