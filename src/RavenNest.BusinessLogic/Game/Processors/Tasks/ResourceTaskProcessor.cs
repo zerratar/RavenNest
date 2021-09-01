@@ -24,8 +24,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         {
             DroppableResources = new List<ResourceDrop>()
             {
-                new ResourceDrop(Guid.Parse("CD91B5E4-C3C7-47D9-92FD-7CBDD470BD33"), "Ethereum", 0.0075, 300),
-                new ResourceDrop(Guid.Parse("BA6ED0AD-2FE6-46BF-9A99-5528657FF40E"), "Lionite", 0.015, 250),
+                new ResourceDrop(Guid.Parse("CD91B5E4-C3C7-47D9-92FD-7CBDD470BD33"), "Ethereum", 0.0075, 340),
+                new ResourceDrop(Guid.Parse("BA6ED0AD-2FE6-46BF-9A99-5528657FF40E"), "Lionite", 0.015, 280),
                 new ResourceDrop(Guid.Parse("17c3f9b1-57d6-4219-bbc7-9e929757babf"), "Phantom Core", 0.03, 200),
                 new ResourceDrop(Guid.Parse("f9b7e6a3-4e4a-4e4a-b79d-42a3cf2a16c8"), "Abraxas Spirit", 0.05, 170),
                 new ResourceDrop(Guid.Parse("0dc620c2-b726-4928-9f1c-fcf61aaa2542"), "Dragon Scale", 0.075, 130),
