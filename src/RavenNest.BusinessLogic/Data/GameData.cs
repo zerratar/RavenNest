@@ -32,6 +32,7 @@ namespace RavenNest.BusinessLogic.Data
 
 
         private readonly EntitySet<UserLoyalty, Guid> loyalty;
+        private readonly EntitySet<UserProperty, Guid> userProperties;
         private readonly EntitySet<UserLoyaltyRank, Guid> loyaltyRanks;
         private readonly EntitySet<UserLoyaltyReward, Guid> loyaltyRewards;
         private readonly EntitySet<UserClaimedLoyaltyReward, Guid> claimedLoyaltyRewards;
@@ -111,6 +112,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(ClanSkill),
                         typeof(UserClaimedLoyaltyReward),
                         typeof(UserPatreon),
+                        typeof(UserProperty),
                         typeof(Appearance),
                         typeof(SyntyAppearance),
                         typeof(Character),
@@ -143,6 +145,9 @@ namespace RavenNest.BusinessLogic.Data
                     loyalty = new EntitySet<UserLoyalty, Guid>(restorePoint?.Get<UserLoyalty>() ?? ctx.UserLoyalty.ToList(), i => i.Id);
                     loyalty.RegisterLookupGroup(nameof(User), x => x.UserId);
                     loyalty.RegisterLookupGroup("Streamer", x => x.StreamerUserId);
+
+                    userProperties = new EntitySet<UserProperty, Guid>(restorePoint?.Get<UserProperty>() ?? ctx.UserProperty.ToList(), i => i.Id);
+                    userProperties.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     loyaltyRanks = new EntitySet<UserLoyaltyRank, Guid>(ctx.UserLoyaltyRank.ToList(), i => i.Id);
 
@@ -295,6 +300,7 @@ namespace RavenNest.BusinessLogic.Data
                         patreons, loyalty, loyaltyRewards, loyaltyRanks, claimedLoyaltyRewards,
                         expMultiplierEvents, notifications,
                         appearances, syntyAppearances, characters, characterStates,
+                        userProperties,
                         items, // so we can update items
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems, marketTransactions, inventoryItemAttributes,
                         resources, statistics, characterSkills, clanSkills, users, villages, villageHouses,
@@ -1031,6 +1037,43 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetUserProperty(Guid userId, string propertyKey, string propertyValue)
+        {
+            Update(() =>
+            {
+                var prop = this.userProperties[nameof(User), userId].FirstOrDefault(x => x.Key.Equals(propertyKey, StringComparison.InvariantCultureIgnoreCase));
+                if (prop == null)
+                {
+                    prop = new UserProperty();
+                    prop.Id = Guid.NewGuid();
+                    prop.Key = propertyKey;
+                    prop.Value = propertyValue;
+                    prop.Created = DateTime.UtcNow;
+                    prop.Updated = DateTime.UtcNow;
+                    userProperties.Add(prop);
+                    return;
+                }
+
+                prop.Value = propertyValue;
+                prop.Updated = DateTime.UtcNow;
+            });
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public string GetUserProperty(Guid userId, string propertyKey, string defaultPropertyValue = null)
+        {
+            var prop = this.userProperties[nameof(User), userId].FirstOrDefault(x => x.Key.Equals(propertyKey, StringComparison.InvariantCultureIgnoreCase));
+            if (prop != null)
+            {
+                return prop.Value;
+            }
+
+            SetUserProperty(userId, propertyKey, defaultPropertyValue);
+            return defaultPropertyValue;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ExpMultiplierEvent GetActiveExpMultiplierEvent() =>
             this.expMultiplierEvents?.Entities?
             .Where(x => x.StartTime <= DateTime.UtcNow && x.EndTime >= DateTime.UtcNow)
@@ -1093,7 +1136,6 @@ namespace RavenNest.BusinessLogic.Data
             if (updateSession && session != null) session.Updated = DateTime.UtcNow;
             return session;
         }
-
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CharacterSessionActivity GetSessionActivity(Guid sessionId, Guid characterId)

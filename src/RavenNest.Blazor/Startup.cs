@@ -206,6 +206,8 @@ namespace RavenNest.Blazor
             services.AddSingleton<CookieService>();
             services.AddSingleton<TownService>();
 
+            services.AddSingleton<IRavenBotApiClient, RavenBotApiClient>();
+
             services.AddSingleton<IKernel, Kernel>();
             services.AddSingleton<IMemoryCache, MemoryCache>();
             services.AddSingleton<ISecureHasher, SecureHasher>();

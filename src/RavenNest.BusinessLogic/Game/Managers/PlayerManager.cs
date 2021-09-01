@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extended;
@@ -25,6 +26,7 @@ namespace RavenNest.BusinessLogic.Game
     {
         private const int MaxCharacterCount = 3;
         private readonly ILogger logger;
+        private readonly IRavenBotApiClient ravenbotApi;
         private readonly IPlayerHighscoreProvider highscoreProvider;
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly IEnchantmentManager enchantmentManager;
@@ -33,6 +35,7 @@ namespace RavenNest.BusinessLogic.Game
 
         public PlayerManager(
             ILogger<PlayerManager> logger,
+            IRavenBotApiClient ravenbotApi,
             IPlayerHighscoreProvider highscoreProvider,
             IPlayerInventoryProvider inventoryProvider,
             IEnchantmentManager enchantmentManager,
@@ -40,6 +43,7 @@ namespace RavenNest.BusinessLogic.Game
             IIntegrityChecker integrityChecker)
         {
             this.logger = logger;
+            this.ravenbotApi = ravenbotApi;
             this.highscoreProvider = highscoreProvider;
             this.inventoryProvider = inventoryProvider;
             this.enchantmentManager = enchantmentManager;
@@ -232,6 +236,27 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
         }
+
+        private async Task SendUserRoleToRavenBotAsync(User user)
+        {
+            if (user == null || (!user.IsModerator.GetValueOrDefault() && !user.IsAdmin.GetValueOrDefault()))
+            {
+                return;
+            }
+
+            if (user.IsAdmin ?? false)
+            {
+                await ravenbotApi.SendUserRoleAsync(user.UserId, user.UserName, "admin");
+                return;
+            }
+
+            if (user.IsModerator ?? false)
+            {
+                await ravenbotApi.SendUserRoleAsync(user.UserId, user.UserName, "mod");
+                return;
+            }
+        }
+
         public PlayerJoinResult AddPlayerByCharacterId(DataModels.GameSession session, Guid characterId)
         {
             var result = new PlayerJoinResult();
@@ -366,6 +391,7 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
 
+            SendUserRoleToRavenBotAsync(user);
             return character.Map(gameData, user, rejoin, true);
         }
 

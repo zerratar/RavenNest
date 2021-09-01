@@ -280,9 +280,6 @@ namespace RavenNest.BusinessLogic.Game
                         var u = gameData.GetUser(x.UserId);
                         return new UserCharacter { CharacterId = x.Id, UserId = u?.UserId, Username = u?.UserName };
                     }).ToList()
-                    //clientVersion != null && clientVersion >= characterIdClientVersion
-                    //? characters.Select(x => x.Id.ToString()).ToArray()
-                    //: characters.Select(x => gameData.GetUser(x.UserId).UserId).ToArray()
                 });
 
             gameData.Add(ge);
