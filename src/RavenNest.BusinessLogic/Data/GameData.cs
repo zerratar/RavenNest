@@ -1058,6 +1058,11 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetUserProperty(Guid userId, string propertyKey, string propertyValue)
         {
+            if (userId == Guid.Empty)
+            {
+                return;
+            }
+
             Update(() =>
             {
                 var prop = this.userProperties[nameof(User), userId].FirstOrDefault(x => x.PropertyKey.Equals(propertyKey, StringComparison.InvariantCultureIgnoreCase));
@@ -1065,6 +1070,7 @@ namespace RavenNest.BusinessLogic.Data
                 {
                     prop = new UserProperty();
                     prop.Id = Guid.NewGuid();
+                    prop.UserId = userId;
                     prop.PropertyKey = propertyKey;
                     prop.Value = propertyValue;
                     prop.Created = DateTime.UtcNow;
@@ -1082,13 +1088,16 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string GetUserProperty(Guid userId, string propertyKey, string defaultPropertyValue = null)
         {
+            if (userId == Guid.Empty)
+            {
+                return defaultPropertyValue;
+            }
+
             var prop = this.userProperties[nameof(User), userId].FirstOrDefault(x => x.PropertyKey.Equals(propertyKey, StringComparison.InvariantCultureIgnoreCase));
             if (prop != null)
             {
                 return prop.Value;
             }
-
-            SetUserProperty(userId, propertyKey, defaultPropertyValue);
             return defaultPropertyValue;
         }
 
