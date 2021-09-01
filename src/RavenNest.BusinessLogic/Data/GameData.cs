@@ -1041,12 +1041,12 @@ namespace RavenNest.BusinessLogic.Data
         {
             Update(() =>
             {
-                var prop = this.userProperties[nameof(User), userId].FirstOrDefault(x => x.Key.Equals(propertyKey, StringComparison.InvariantCultureIgnoreCase));
+                var prop = this.userProperties[nameof(User), userId].FirstOrDefault(x => x.PropertyKey.Equals(propertyKey, StringComparison.InvariantCultureIgnoreCase));
                 if (prop == null)
                 {
                     prop = new UserProperty();
                     prop.Id = Guid.NewGuid();
-                    prop.Key = propertyKey;
+                    prop.PropertyKey = propertyKey;
                     prop.Value = propertyValue;
                     prop.Created = DateTime.UtcNow;
                     prop.Updated = DateTime.UtcNow;
@@ -1063,7 +1063,7 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public string GetUserProperty(Guid userId, string propertyKey, string defaultPropertyValue = null)
         {
-            var prop = this.userProperties[nameof(User), userId].FirstOrDefault(x => x.Key.Equals(propertyKey, StringComparison.InvariantCultureIgnoreCase));
+            var prop = this.userProperties[nameof(User), userId].FirstOrDefault(x => x.PropertyKey.Equals(propertyKey, StringComparison.InvariantCultureIgnoreCase));
             if (prop != null)
             {
                 return prop.Value;
