@@ -343,6 +343,18 @@ namespace RavenNest.BusinessLogic.Game
             };
         }
 
+        public void SendServerTime(DataModels.GameSession session, string pubsubAccessToken)
+        {
+            var serverTime = gameData.CreateSessionEvent(
+                GameEventType.PubSubToken,
+                session,
+                new PubSubToken
+                {
+                    Token = pubsubAccessToken
+                }
+            );
+            gameData.Add(serverTime);
+        }
         public void SendServerTime(DataModels.GameSession session)
         {
             var serverTime = gameData.CreateSessionEvent(

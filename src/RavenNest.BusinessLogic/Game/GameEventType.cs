@@ -35,5 +35,6 @@
         ClanSkillLevelChanged = 30,
         ServerTime = 31,
         PlayerRestedUpdate = 32,
+        PubSubToken = 33,
     }
 }

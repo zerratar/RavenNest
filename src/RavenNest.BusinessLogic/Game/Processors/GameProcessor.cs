@@ -101,10 +101,10 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
             PushPermissionDataInfo();
 
-            await UpdateRavenBotWithPubSubAsync();
+            await PushPubSubDetailsAsync();
         }
 
-        private async Task UpdateRavenBotWithPubSubAsync()
+        private async Task PushPubSubDetailsAsync()
         {
             var session = gameData.GetSession(sessionToken.SessionId);
             if (session != null)
@@ -117,6 +117,8 @@ namespace RavenNest.BusinessLogic.Game.Processors
                     if (!string.IsNullOrEmpty(accessToken))
                     {
                         await ravenbotApi.SendPubSubAccessTokenAsync(user.UserId, user.UserName, accessToken);
+
+                        sessionManager.SendPubSubToken(session, accessToken);
                     }
                     lastPubsubPush = DateTime.UtcNow;
                 }
