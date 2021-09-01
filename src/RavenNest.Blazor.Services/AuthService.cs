@@ -11,6 +11,7 @@ namespace RavenNest.Blazor.Services
 {
     public class AuthService : RavenNestService
     {
+        private readonly IRavenBotApiClient ravenbotApi;
         private readonly IGameData gameData;
         private readonly IAuthManager authManager;
         private readonly IPlayerManager playerManager;
@@ -18,6 +19,7 @@ namespace RavenNest.Blazor.Services
 
         public AuthService(
             IOptions<AppSettings> settings,
+            IRavenBotApiClient ravenbotApi,
             IGameData gameData,
             IAuthManager authManager,
             IPlayerManager playerManager,
@@ -25,6 +27,7 @@ namespace RavenNest.Blazor.Services
             ISessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
+            this.ravenbotApi = ravenbotApi;
             this.gameData = gameData;
             this.authManager = authManager;
             this.playerManager = playerManager;
@@ -53,14 +56,8 @@ namespace RavenNest.Blazor.Services
                         return;
                     }
 
-                    try
-                    {
-                        using (var req = RavenBotRequest.Create("ravenbot.ravenfall.stream:6767/pubsub"))
-                        {
-                            await req.SendAsync(user.Id, user.Login, accessToken);
-                        }
-                    }
-                    catch { }
+                    gameData.SetUserProperty(u.Id, UserProperties.Twitch_PubSub, accessToken);
+                    await ravenbotApi.SendPubSubAccessTokenAsync(user.Id, user.Login, accessToken);
                 }
             }
         }

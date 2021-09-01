@@ -6,6 +6,7 @@ using RavenNest.Models;
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,6 +23,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
         private readonly IGameData gameData;
         private readonly IGameManager gameManager;
+        private readonly IRavenBotApiClient ravenbotApi;
         private readonly IIntegrityChecker integrityChecker;
         private readonly IWebSocketConnection ws;
         private readonly ISessionManager sessionManager;
@@ -31,14 +33,17 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private readonly TimeSpan ServerTimePushInterval = TimeSpan.FromSeconds(3);
         private readonly TimeSpan ExpMultiplierPushInterval = TimeSpan.FromSeconds(3);
         private readonly TimeSpan villageInfoPushInterval = TimeSpan.FromSeconds(2);
+        private readonly TimeSpan pubsubPushInterval = TimeSpan.FromSeconds(10);
         private readonly TimeSpan permissionInfoPushInterval = TimeSpan.FromSeconds(60);
 
         private DateTime lastVillageInfoPush;
         private DateTime lastPermissionInfoPush;
         private DateTime lastExpMultiPush;
         private DateTime lastServerTimePush;
+        private DateTime lastPubsubPush;
 
         public GameProcessor(
+            IRavenBotApiClient ravenbotApi,
             IIntegrityChecker integrityChecker,
             IWebSocketConnection ws,
             ISessionManager sessionManager,
@@ -49,6 +54,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         {
             this.gameData = gameData;
             this.gameManager = gameManager;
+            this.ravenbotApi = ravenbotApi;
             this.integrityChecker = integrityChecker;
             this.ws = ws;
             this.sessionManager = sessionManager;
@@ -94,6 +100,27 @@ namespace RavenNest.BusinessLogic.Game.Processors
             await PushGameEventsAsync(cts);
 
             PushPermissionDataInfo();
+
+            await UpdateRavenBotWithPubSubAsync();
+        }
+
+        private async Task UpdateRavenBotWithPubSubAsync()
+        {
+            var session = gameData.GetSession(sessionToken.SessionId);
+            if (session != null)
+            {
+                var user = gameData.GetUser(session.UserId);
+                var elapsed = DateTime.UtcNow - lastPubsubPush;
+                if (elapsed >= pubsubPushInterval && user != null)
+                {
+                    var accessToken = gameData.GetUserProperty(session.UserId, UserProperties.Twitch_PubSub);
+                    if (!string.IsNullOrEmpty(accessToken))
+                    {
+                        await ravenbotApi.SendPubSubAccessTokenAsync(user.UserId, user.UserName, accessToken);
+                    }
+                    lastPubsubPush = DateTime.UtcNow;
+                }
+            }
         }
 
         private void PushVillageInfo()
