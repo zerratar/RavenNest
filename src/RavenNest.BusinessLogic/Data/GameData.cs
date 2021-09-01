@@ -343,6 +343,20 @@ namespace RavenNest.BusinessLogic.Data
             var gold = GetItemByCategory(ItemCategory.Resource, "gold");
             foreach (var item in items.Entities)
             {
+
+                // Make lionsbane craftable
+
+                var nl = item.Name.ToLower();
+                if (nl.Contains("lionsbane"))
+                {
+                    item.RequiredCraftingLevel = 250;
+                }
+
+                if (nl.StartsWith("ether "))
+                {
+                    item.RequiredCraftingLevel = 300;
+                }
+
                 if (item.RequiredCraftingLevel < 1000)
                 {
                     var requirements = GetCraftingRequirements(item.Id);
@@ -362,7 +376,6 @@ namespace RavenNest.BusinessLogic.Data
                         continue;
                     }
 
-                    var nl = item.Name.ToLower();
                     Item resType = null;
                     var ingotCount = 0;
                     var goldCount = 0;
@@ -418,6 +431,7 @@ namespace RavenNest.BusinessLogic.Data
                         resType = GetItemByCategory(ItemCategory.Resource, "abraxas spirit");
                         ingotCount = 60;
                     }
+
                     if (nl.Contains("phantom"))
                     {
                         resType = GetItemByCategory(ItemCategory.Resource, "phantom core");
@@ -426,10 +440,15 @@ namespace RavenNest.BusinessLogic.Data
 
                     if (nl.Contains("lionsbane"))
                     {
-                        //resType = GetItemByCategory(ItemCategory.Resource, "lion spirit");
-                        //ingotCount = 90;
+                        resType = GetItemByCategory(ItemCategory.Resource, "lionite");
+                        ingotCount = 90;
                     }
 
+                    if (nl.StartsWith("ether "))
+                    {
+                        resType = GetItemByCategory(ItemCategory.Resource, "ethereum");
+                        ingotCount = 120;
+                    }
                     switch (type)
                     {
                         case ItemType.Amulet:
