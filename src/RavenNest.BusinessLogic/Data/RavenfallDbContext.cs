@@ -19,6 +19,7 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<ExpMultiplierEvent> ExpMultiplierEvent { get; set; }
         public virtual DbSet<UserPatreon> UserPatreon { get; set; }
         public virtual DbSet<UserNotification> UserNotification { get; set; }
+        public virtual DbSet<UserProperty> UserProperty { get; set; }
         public virtual DbSet<UserLoyalty> UserLoyalty { get; set; }
         public virtual DbSet<UserLoyaltyRank> UserLoyaltyRank { get; set; }
         public virtual DbSet<UserLoyaltyReward> UserLoyaltyReward { get; set; }
@@ -73,6 +74,7 @@ namespace RavenNest.BusinessLogic.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<UserProperty>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserClaimedLoyaltyReward>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserLoyalty>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserLoyaltyRank>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
@@ -108,9 +110,9 @@ namespace RavenNest.BusinessLogic.Data
             modelBuilder.Entity<Clan>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<ClanRole>(e => e.Property(x => x.Id).ValueGeneratedNever());
             modelBuilder.Entity<ClanSkill>(e => e.Property(x => x.Id).ValueGeneratedNever());
-            
+
             modelBuilder.Entity<MarketItemTransaction>(e => e.Property(x => x.Id).ValueGeneratedNever());
-            
+
             modelBuilder.Entity<CharacterClanMembership>(e => e.Property(x => x.Id).ValueGeneratedNever());
             modelBuilder.Entity<CharacterClanInvite>(e => e.Property(x => x.Id).ValueGeneratedNever());
 

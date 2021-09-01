@@ -42,6 +42,10 @@ namespace RavenNest.BusinessLogic.Data
         UserPatreon GetPatreonUser(Guid userId);
         IReadOnlyList<Skill> GetSkills();
         DataModels.GameSession GetJoinedSessionByUserId(string userId);
+
+        void SetUserProperty(Guid userId, string propertyKey, string propertyValue);
+        string GetUserProperty(Guid userId, string propertyKey, string defaultPropertyValue = null);
+
         DataModels.GameSession GetOwnedSessionByUserId(string userId);
         DataModels.GameSession GetSessionByCharacterId(Guid characterId);
         CharacterClanInvite GetClanInvite(Guid inviteId);
