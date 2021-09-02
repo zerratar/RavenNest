@@ -349,12 +349,12 @@ namespace RavenNest.BusinessLogic.Data
                 var nl = item.Name.ToLower();
                 if (nl.Contains("lionsbane"))
                 {
-                    item.RequiredCraftingLevel = 250;
+                    item.RequiredCraftingLevel = 280;
                 }
 
                 if (nl.StartsWith("ether "))
                 {
-                    item.RequiredCraftingLevel = 300;
+                    item.RequiredCraftingLevel = 330;
                 }
 
                 if (item.RequiredCraftingLevel < 1000)
@@ -442,59 +442,61 @@ namespace RavenNest.BusinessLogic.Data
                     {
                         resType = GetItemByCategory(ItemCategory.Resource, "lionite");
                         ingotCount = 90;
+                        resCount = 3;
                     }
 
                     if (nl.StartsWith("ether "))
                     {
                         resType = GetItemByCategory(ItemCategory.Resource, "ethereum");
                         ingotCount = 120;
+                        resCount = 5;
                     }
                     switch (type)
                     {
                         case ItemType.Amulet:
-                            resCount = 1;
+                            resCount += 1;
                             goldCount = 10;
                             break;
 
                         case ItemType.Ring:
-                            resCount = 1;
+                            resCount += 1;
                             goldCount = 5;
                             break;
 
                         case ItemType.OneHandedSword:
-                            resCount = 3;
+                            resCount += 3;
                             break;
 
                         case ItemType.TwoHandedAxe:
-                            resCount = 4;
+                            resCount += 4;
                             break;
                         case ItemType.TwoHandedSword:
-                            resCount = 5;
+                            resCount += 5;
                             break;
 
                         case ItemType.TwoHandedBow:
-                            resCount = 4;
+                            resCount += 4;
                             break;
 
                         case ItemType.TwoHandedStaff:
-                            resCount = 4;
+                            resCount += 4;
                             break;
 
                         case ItemType.Helm:
-                            resCount = 3;
+                            resCount += 3;
                             break;
                         case ItemType.Chest:
-                            resCount = 5;
+                            resCount += 5;
                             break;
                         case ItemType.Leggings:
-                            resCount = 4;
+                            resCount += 4;
                             break;
                         case ItemType.Gloves:
                         case ItemType.Boots:
-                            resCount = 3;
+                            resCount += 3;
                             break;
                         case ItemType.Shield:
-                            resCount = 4;
+                            resCount += 4;
                             break;
                     }
 
