@@ -11,7 +11,7 @@ namespace RavenNest.Tools.Actions
     public class BuildUpdatePackageAction
     {
         private const string RavenBotFolder = @"C:\git\RavenBot";
-        private const string UnityBuildFolder = @"C:\git\Ravenfall-Legacy\Build";
+        private const string UnityBuildFolder = @"C:\git\Ravenfall-Legacy-New\Build";
         private BuildState buildState = BuildState.Full;
 
         public BuildUpdatePackageAction(
@@ -202,7 +202,7 @@ namespace RavenNest.Tools.Actions
         private bool FilterFiles(string x)
         {
             var lower = x.ToLower();
-            var test = NotContains(lower, ".7z", "settings.json", "autologin.conf", "tmpautologin.conf", "state-data.json");
+            var test = NotContains(lower, ".7z", "settings.json", "autologin.conf", "tmpautologin.conf", "pubsub-tokens.json", "state-data.json");
             if (buildState == BuildState.Update)
             {
                 test &= NotContains(lower, "\\data\\", "/data/", "fonts\\", "fonts/", "RavenWeave");

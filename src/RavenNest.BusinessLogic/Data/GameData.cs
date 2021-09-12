@@ -482,7 +482,7 @@ namespace RavenNest.BusinessLogic.Data
                             resCount += 4;
                             break;
 
-                        case ItemType.Helm:
+                        case ItemType.Helmet:
                             resCount += 3;
                             break;
                         case ItemType.Chest:

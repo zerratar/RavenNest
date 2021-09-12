@@ -43,7 +43,7 @@ namespace RavenNest.BusinessLogic.Game
         bool UpdateResources(SessionToken token, string userId, double[] resources);
 
         //bool[] UpdateMany(SessionToken token, PlayerState[] states);
-
+         bool LoyaltyGift(string gifterTwitchUserIdOrName, string streamerTwitchUserIdOrName, int bitsAmount, int subsAmount);
         void AddItem(Guid characterId, Guid itemId, int amount = 1);
         AddItemResult AddItem(SessionToken token, string userId, Guid itemId);
         AddItemResult CraftItem(SessionToken token, string userId, Guid itemId, int amount = 1);

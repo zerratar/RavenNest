@@ -20,6 +20,7 @@ namespace RavenNest.Controllers
         private readonly IWebSocketConnectionProvider socketProvider;
         private readonly IGameData gameData;
         private readonly ISessionInfoProvider sessionInfoProvider;
+        private readonly IPlayerManager playerManager;
         private readonly IAdminManager adminManager;
         private readonly IAuthManager authManager;
 
@@ -28,6 +29,7 @@ namespace RavenNest.Controllers
             IWebSocketConnectionProvider socketProvider,
             IGameData gameData,
             ISessionInfoProvider sessionInfoProvider,
+            IPlayerManager playerManager,
             IAdminManager adminManager,
             IAuthManager authManager)
         {
@@ -35,6 +37,7 @@ namespace RavenNest.Controllers
             this.socketProvider = socketProvider;
             this.gameData = gameData;
             this.sessionInfoProvider = sessionInfoProvider;
+            this.playerManager = playerManager;
             this.adminManager = adminManager;
             this.authManager = authManager;
         }
@@ -139,6 +142,37 @@ namespace RavenNest.Controllers
                 throw;
             }
         }
+
+        [HttpGet("subs/{from}/{to}/{amount}")]
+        public async Task<bool> LoyaltySubs(string from, string to, int amount)
+        {
+            try
+            {
+                await AssertAdminAccessAsync();
+                return playerManager.LoyaltyGift(from, to, 0, amount);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                throw;
+            }
+        }
+
+        [HttpGet("cheer/{from}/{to}/{amount}")]
+        public async Task<bool> LoyaltyCheerBits(string from, string to, int amount)
+        {
+            try
+            {
+                await AssertAdminAccessAsync();
+                return playerManager.LoyaltyGift(from, to, amount, 0);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                throw;
+            }
+        }
+
 
         [HttpGet("kill-sockets")]
         public async Task KillConnections()
