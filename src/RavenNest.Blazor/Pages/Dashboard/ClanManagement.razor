@@ -45,8 +45,9 @@ else
 			{
 			 <img src="/api/twitch/logo/@session.UserId" class="clan-logo" />
 			}
-			@if (!reloadingClanLogo) {
-			  <a class="refresh-logo" @onclick="ReloadClanLogo"><i class="fas fa-sync"></i></a>
+			@if (!reloadingClanLogo)
+			{
+			 <a class="refresh-logo" @onclick="ReloadClanLogo"><i class="fas fa-sync"></i></a>
 			}
 		 <h1>
 				@if (!editingClanName)
@@ -182,6 +183,12 @@ else
 		if (string.IsNullOrEmpty(clan.Name))
 		{
 			clanError = "Clan name cannot be empty";
+			return;
+		}
+
+		if (clan.Name.Length > 40)
+		{
+			clanError = "Clan name is too long. It cannot exceed 40 characters.";
 			return;
 		}
 

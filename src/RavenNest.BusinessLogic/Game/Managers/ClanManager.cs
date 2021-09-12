@@ -520,13 +520,16 @@ namespace RavenNest.BusinessLogic.Game
             clan.Logo = logoImageFile;
             return true;
         }
-   
+
         public bool UpdateClanName(Guid clanId, string newName)
         {
             if (string.IsNullOrWhiteSpace(newName))
                 return false;
 
             newName = newName.Trim();
+            if (newName.Length > 40)
+                return false;
+
             // clan does not exist
             var clan = gameData.GetClan(clanId);
             if (clan == null)

@@ -29,8 +29,6 @@ namespace RavenNest.BusinessLogic.Game
             ReadOnlyInventoryItem item,
             DataModels.Resources resources)
         {
-            item = inventory.RemoveAttributes(item);
-
             var i = item.Item;
             var enchantable =
                 // i.Type == (int)DataModels.ItemCategory.Pet || // in the future. :)
@@ -44,10 +42,10 @@ namespace RavenNest.BusinessLogic.Game
                 return ItemEnchantmentResult.Failed;
             }
 
+            item = inventory.RemoveAttributes(item);
+
             var itemLvReq = (i.RequiredAttackLevel + i.RequiredDefenseLevel + i.RequiredMagicLevel + i.RequiredRangedLevel + i.RequiredSlayerLevel);
             var isStack = item.Amount > 1;
-
-
 
             var itemPercent = itemLvReq / (float)GameMath.MaxLevel;
             var itemMaxAttrCount = Math.Max(1, (int)Math.Floor(Math.Floor(itemLvReq / 10f) / 5));

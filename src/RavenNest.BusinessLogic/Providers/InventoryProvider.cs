@@ -828,7 +828,10 @@ namespace RavenNest.BusinessLogic.Providers
                 case ItemType.Amulet: return EquipmentSlot.Amulet;
                 case ItemType.Ring: return EquipmentSlot.Ring;
                 case ItemType.Shield: return EquipmentSlot.Shield;
-                case ItemType.Helm: return EquipmentSlot.Head;
+                case ItemType.Hat: return EquipmentSlot.Head;
+                case ItemType.Mask: return EquipmentSlot.Head;
+                case ItemType.Helmet: return EquipmentSlot.Head;
+                case ItemType.HeadCovering: return EquipmentSlot.Head;
                 case ItemType.Chest: return EquipmentSlot.Chest;
                 case ItemType.Gloves: return EquipmentSlot.Gloves;
                 case ItemType.Leggings: return EquipmentSlot.Leggings;
