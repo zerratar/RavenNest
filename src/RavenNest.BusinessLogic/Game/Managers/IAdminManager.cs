@@ -21,6 +21,7 @@ namespace RavenNest.BusinessLogic.Game
         bool RefreshVillageInfo();
         bool RefreshPermissions();
         bool FixLoyaltyPoints();
+        bool SetSkillLevel(string twitchUserId, string identifier, string skill, int level, double experience = 0);
         //bool FixCharacterExpGain(Guid characterId);
     }
 }
