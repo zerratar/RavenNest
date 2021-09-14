@@ -128,6 +128,36 @@ namespace RavenNest.Controllers
             }
         }
 
+        [HttpGet("set-skill/{character}/{identifier}/{skill}/{level}/{experience}")]
+        public async Task<bool> SetSkillLevel(string character, string identifier, string skill, int level, double experience)
+        {
+            try
+            {
+                await AssertAdminAccessAsync();
+                return adminManager.SetSkillLevel(character, identifier, skill, level, experience);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                throw;
+            }
+        }
+
+        [HttpGet("set-skill/{character}/{identifier}/{skill}/{level}")]
+        public async Task<bool> SetSkillLevel(string character, string identifier, string skill, int level)
+        {
+            try
+            {
+                await AssertAdminAccessAsync();
+                return adminManager.SetSkillLevel(character, identifier, skill, level);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                throw;
+            }
+        }
+
         [HttpGet("item-recovery/{identifier}/{query}")]
         public async Task<bool> ItemRecoveryAsync(string identifier, string query)
         {
