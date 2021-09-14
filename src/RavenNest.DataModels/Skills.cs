@@ -134,7 +134,12 @@ namespace RavenNest.DataModels
 
             levelProperties.TryGetValue(name, out var lvlProp);
 
-            return new StatsUpdater(this, expProp, lvlProp);
+            if (expProp == null || lvlProp == null)
+            {
+                return null;
+            }
+
+            return new StatsUpdater(this, name, expProp, lvlProp);
 
             //var currentLevel = (int)lvlProp.GetValue(this);
             //if (currentLevel > 0)
@@ -172,12 +177,15 @@ namespace RavenNest.DataModels
         private readonly PropertyInfo expProp;
         private readonly PropertyInfo lvlProp;
 
-        public StatsUpdater(Skills source, PropertyInfo expProp, PropertyInfo lvlProp)
+        public StatsUpdater(Skills source, string name, PropertyInfo expProp, PropertyInfo lvlProp)
         {
+            this.Name = name;
             this.source = source;
             this.expProp = expProp;
             this.lvlProp = lvlProp;
         }
+
+        public string Name { get; }
 
         public int Level
         {

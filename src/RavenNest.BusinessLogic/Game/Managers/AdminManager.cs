@@ -174,6 +174,48 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
+        public bool SetSkillLevel(string twitchUserId, string identifier, string skill, int level, double experience = 0)
+        {
+            var user = gameData.FindUser(twitchUserId);
+            if (user == null)
+            {
+                return false;
+            }
+
+            if (level < 1 || level > GameMath.MaxLevel)
+            {
+                return false;
+            }
+
+            var character = gameData.GetCharacterByUserId(user.Id, identifier);
+            if (character == null)
+            {
+                return false;
+            }
+
+            var skills = gameData.GetCharacterSkills(character.SkillsId);
+            if (skills == null)
+            {
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(skill))
+            {
+                return false;
+            }
+
+            var allSkills = skills.GetSkills();
+            var targetSkill = allSkills.FirstOrDefault(x => x.Name.Equals(skill.Trim(), StringComparison.CurrentCultureIgnoreCase));
+            if (targetSkill == null)
+            {
+                return false;
+            }
+
+            targetSkill.Level = level;
+            targetSkill.Experience = experience;
+            return true;
+        }
+
         public bool FixCharacterIndices(string userId)
         {
             if (string.IsNullOrEmpty(userId))
