@@ -50,13 +50,16 @@ namespace RavenNest.Blazor.Services
                 if (!session.Authenticated || !session.Administrator)
                     return false;
 
-                var existing = itemManager.GetItem(item.Id);
-                if (existing != null)
-                {
-                    return itemManager.UpdateItem(item);
-                }
 
-                return itemManager.AddItem(item);
+                return itemManager.Upsert(item);
+
+                //var existing = itemManager.GetItem(item.Id);
+                //if (existing != null)
+                //{
+                //    return itemManager.TryUpdateItem(item);
+                //}
+                //return itemManager.TryAddItem(item);
+
             }).ConfigureAwait(false);
         }
     }

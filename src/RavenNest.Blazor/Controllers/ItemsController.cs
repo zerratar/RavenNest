@@ -62,7 +62,7 @@ namespace RavenNest.Controllers
         {
             var authToken = GetAuthToken();
             AssertAdminAuthToken(authToken);
-            return this.itemManager.AddItem(item);
+            return this.itemManager.TryAddItem(item);
         }
 
         [HttpDelete("{itemId}")]
@@ -92,7 +92,7 @@ namespace RavenNest.Controllers
         {
             var authToken = GetAuthToken();
             AssertAdminAuthToken(authToken);
-            return this.itemManager.UpdateItem(item);
+            return this.itemManager.TryUpdateItem(item);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
