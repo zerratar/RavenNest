@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.Extensions.Caching.Memory;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
@@ -8,10 +9,11 @@ namespace RavenNest.BusinessLogic.Game
 {
     public interface IItemManager
     {
+        bool Upsert(Item item);
         ItemCollection GetAllItems();
         Item GetItem(Guid itemId);
-        bool AddItem(Item item);
-        bool UpdateItem(Item item);
+        bool TryAddItem(Item item);
+        bool TryUpdateItem(Item item);
         bool RemoveItem(Guid itemId);
     }
 
@@ -46,28 +48,59 @@ namespace RavenNest.BusinessLogic.Game
             return ModelMapper.Map(gameData, dataItem);
         }
 
-        public bool AddItem(Item item)
+        public bool Upsert(Item item)
+        {
+            try
+            {
+                DataModels.Item dataItem = GetItem(item);
+                if (dataItem == null)
+                {
+                    AddItem(item);
+                    return true;
+                }
+
+                UpdateItem(item, dataItem);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public bool TryAddItem(Item item)
         {
             var dataItem = gameData.GetItem(item.Id);
             if (dataItem == null)
             {
-                var entity = ModelMapper.Map(item);
-                gameData.Add(entity);
-                InvalidateCache();
+                AddItem(item);
                 return true;
             }
 
             return false;
         }
 
-        public bool UpdateItem(Item item)
+        private void AddItem(Item item)
         {
-            var dataItem = gameData.GetItem(item.Id);
+            var entity = ModelMapper.Map(item);
+            gameData.Add(entity);
+            InvalidateCache();
+        }
+
+        public bool TryUpdateItem(Item item)
+        {
+            DataModels.Item dataItem = GetItem(item);
             if (dataItem == null)
             {
                 return false;
             }
 
+            UpdateItem(item, dataItem);
+            return true;
+        }
+
+        private void UpdateItem(Item item, DataModels.Item dataItem)
+        {
             dataItem.Level = item.Level;
             dataItem.ArmorPower = item.ArmorPower;
             dataItem.Category = (int)item.Category;
@@ -96,10 +129,22 @@ namespace RavenNest.BusinessLogic.Game
             dataItem.WeaponPower = item.WeaponPower;
             dataItem.WoodCost = item.WoodCost;
 
-
             InvalidateCache();
+        }
 
-            return true;
+        private DataModels.Item GetItem(Item item)
+        {
+            DataModels.Item dataItem = null;
+            if (item.Id == Guid.Empty)
+            {
+                dataItem = gameData.GetItems().FirstOrDefault(x => x.Name.Equals(item.Name, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                dataItem = gameData.GetItem(item.Id);
+            }
+
+            return dataItem;
         }
 
         public bool RemoveItem(Guid itemId)
