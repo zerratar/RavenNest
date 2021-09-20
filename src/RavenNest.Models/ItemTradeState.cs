@@ -7,6 +7,7 @@
         InsufficientCoins,
         RequestToLow,
         Success,
-        Failed
+        Failed,
+        Untradable
     }
 }

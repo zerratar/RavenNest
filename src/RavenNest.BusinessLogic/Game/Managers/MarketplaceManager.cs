@@ -93,7 +93,7 @@ namespace RavenNest.BusinessLogic.Game
             string itemTag = null;
 
             if (item.Soulbound.GetValueOrDefault())
-                return new ItemSellResult(ItemTradeState.Failed);
+                return new ItemSellResult(ItemTradeState.Untradable);
 
             if (item.Category == (int)DataModels.ItemCategory.StreamerToken)
                 itemTag = sessionOwner.UserId;
@@ -134,6 +134,19 @@ namespace RavenNest.BusinessLogic.Game
         public ItemBuyResult BuyItem(
             SessionToken token, string userId, Guid itemId, long amount, double maxPricePerItem)
         {
+            // todo(zerratar): Rewrite this!! This is horrible
+            // The idea behind the following logic:
+            //  Player should be able to buy items from multiple sellers
+            //  as long as its satisfies their max price per item, trying to buy the
+            //  order by the cheapest items. 
+            // <<< This is stupid >>>
+
+            // What it should do: (other than being cleaner..)
+            // Get the cheapest items that it can, if it can fullfill the amount then great!
+            // If it can't fulfill the amount, make sure we take items from other stacks even if
+            // they goes beyond the maxPricePerItem, but as long as the AVERAGE price does
+            // not exceed the maxPricePer item, it is fine to pick those items too.
+
             var boughtPricePerItem = new List<double>();
             var boughtItemCount = new List<long>();
             var boughtTotalCost = 0d;
@@ -158,7 +171,6 @@ namespace RavenNest.BusinessLogic.Game
             string itemTag = null;
             if (item.Category == (int)DataModels.ItemCategory.StreamerToken)
                 itemTag = sessionOwner.UserId;
-
 
             var possibleMarketItems = gameData.GetMarketItems(itemId, itemTag);
             var requestAmount = amount;
@@ -224,13 +236,14 @@ namespace RavenNest.BusinessLogic.Game
                     continue;
                 }
 
+                var ba = BuyMarketItemAsync(token, itemId, character, marketItem, buyAmount, marketItem.PricePerItem);
+                requestAmount -= ba;
+
                 boughtPricePerItem.Add(marketItem.PricePerItem);
-                boughtItemCount.Add(buyAmount);
+                boughtItemCount.Add(ba);
 
-                boughtTotalCost += cost;
-                boughtTotalAmount += buyAmount;
-
-                requestAmount -= BuyMarketItemAsync(token, itemId, character, marketItem, buyAmount, cost);
+                boughtTotalCost += (ba * marketItem.PricePerItem);
+                boughtTotalAmount += ba;
             }
 
             if (boughtTotalAmount <= 0 || boughtTotalCost <= 0)
@@ -245,20 +258,8 @@ namespace RavenNest.BusinessLogic.Game
                     boughtPricePerItem.ToArray(), 0, 0);
             }
 
-
             var inventory = inventoryProvider.Get(character.Id);
             //inventory.EquipBestItems();
-
-
-            if (boughtItemCount.Count > 1)
-            {
-
-
-            }
-            else
-            {
-
-            }
 
             return new ItemBuyResult(
                 ItemTradeState.Success,
@@ -274,23 +275,30 @@ namespace RavenNest.BusinessLogic.Game
             Character character,
             DataModels.MarketItem marketItem,
             long amount,
-            double cost)
+            double pricePerItem)
         {
+            // todo(zerratar): Rewrite this!! This is horrible
+
             var buyAmount = marketItem.Amount >= amount ? amount : marketItem.Amount;
+            var buyerResources = gameData.GetResourcesByCharacterId(character.Id);
+            var totalCost = buyAmount * pricePerItem;
+            if (totalCost > buyerResources.Coins)
+            {
+                return 0;
+            }
+
             if (marketItem.Amount == buyAmount)
                 gameData.Remove(marketItem);
             else
                 marketItem.Amount -= buyAmount;
 
             var sellerResources = gameData.GetResourcesByCharacterId(marketItem.SellerCharacterId);
-            var buyerResources = gameData.GetResourcesByCharacterId(character.Id);
-            sellerResources.Coins += cost;
-            buyerResources.Coins -= cost;
+            sellerResources.Coins += totalCost;
+            buyerResources.Coins -= totalCost;
 
             var sellerCharacter = gameData.GetCharacter(marketItem.SellerCharacterId);
             var seller = gameData.GetUser(sellerCharacter.UserId);
             var buyer = gameData.GetUser(character.UserId);
-
 
             var inventory = inventoryProvider.Get(character.Id);
             inventory.AddItem(itemId, buyAmount, tag: marketItem.Tag);
@@ -303,8 +311,8 @@ namespace RavenNest.BusinessLogic.Game
                     BuyerCharacterId = character.Id,
                     SellerCharacterId = sellerCharacter.Id,
                     ItemId = itemId,
-                    PricePerItem = (cost / buyAmount),
-                    TotalPrice = cost,
+                    PricePerItem = (totalCost / buyAmount),
+                    TotalPrice = totalCost,
                     Created = DateTime.UtcNow
                 });
 
@@ -314,7 +322,7 @@ namespace RavenNest.BusinessLogic.Game
                 BuyerId = buyer?.UserId,
                 ItemId = itemId,
                 Amount = buyAmount,//amount,
-                Cost = cost
+                Cost = totalCost
             };
 
             var sellerSession = gameData.GetUserSession(
