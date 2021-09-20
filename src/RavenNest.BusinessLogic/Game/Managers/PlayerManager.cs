@@ -983,6 +983,8 @@ namespace RavenNest.BusinessLogic.Game
 
         public AddItemResult CraftItem(SessionToken token, string userId, Guid itemId, int amount = 1)
         {
+            amount = Math.Min(50_000_000, amount);
+
             var item = gameData.GetItem(itemId);
             if (item == null) return AddItemResult.Failed;
 

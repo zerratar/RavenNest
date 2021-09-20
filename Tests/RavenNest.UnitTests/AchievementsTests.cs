@@ -9,6 +9,7 @@ using System.Linq;
 
 namespace RavenNest.UnitTests
 {
+
     [TestClass]
     public class AchievementsTests
     {
@@ -97,7 +98,6 @@ namespace RavenNest.UnitTests
         private UserAchievement userAchievement;
         public AchievementManager()
         {
-
             userAchievement = new UserAchievement();
             userAchievement.Progress = new List<UserAchievementProgress>();
 
