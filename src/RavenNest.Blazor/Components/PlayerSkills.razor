@@ -9,56 +9,44 @@
 
 				@if (!string.IsNullOrEmpty(trainingSkill))
 				{	   
-				  <span>You're currently training&nbsp;</span>
-				  <b>@GetTrainingSkillName()</b>
-				  <span>.&nbsp;</span>
+				  <span>You're currently training&nbsp;</span><b>@GetTrainingSkillName()</b><span>&nbsp;</span>
+				}
+				else
+				{
+					<span>You're currently </span>
 				}
 
 				 @if (Player.State != null)
-				 {
-					var sailing = false;
+				 {					
 					if (Player.State.InDungeon)
 					{
-						<span>You're currently in the dungeon</span>
+						<span>in the dungeon</span>
 					}
 					else if (Player.State.InArena)
 					{
-						<span>You're currently in the Arena</span>
+						<span>in the Arena</span>
 					}
 					else if (Player.State.InRaid)
 					{
-						<span>You're currently in a Raid</span>
+						<span>in a Raid</span>
 					}
 					else if (!string.IsNullOrEmpty(Player.State.DuelOpponent))
 					{
-						<span>You're currently in a duel with&nbsp;</span>
-						<b>Player.State.DuelOpponent</b>
-						<span>.&nbsp;</span>
+						<span>in a duel with&nbsp;</span><b>Player.State.DuelOpponent</b><span>.&nbsp;</span>
 					}
 					else if (!string.IsNullOrEmpty(Player.State?.Island))
 					{
-			   			   <span>You're currently at &nbsp;</span>
-						   <b>@Player.State.Island</b>
-						   <span>.&nbsp;</span>
+			   			   <span>at&nbsp;</span><b>@Player.State.Island</b><span>.&nbsp;</span>
 					}
 					else
 					{
-							<span>You're currently sailing.&nbsp;</span>
-							sailing = true;
-					}
-					if (!sailing)
-					{
-						   <span>Training&nbsp;</span>
-						   <b>@GetTrainingSkillName()</b>
-						   <span>.&nbsp;</span>
+							<span>sailing.&nbsp;</span>
 					}
 				 }
 
 				@if (!string.IsNullOrEmpty(Player.SessionInfo.OwnerUserName))
 				  {
-					  <span>on&nbsp;</span>
-					  <b>@Player.SessionInfo.OwnerUserName</b>
-					  <span>'s stream.</span>
+					  <span>on&nbsp;</span><b>@Player.SessionInfo.OwnerUserName</b><span>'s stream.</span>
 				  }
 	  </span>
 	 </div>
