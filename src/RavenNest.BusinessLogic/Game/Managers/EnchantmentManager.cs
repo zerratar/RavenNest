@@ -110,6 +110,11 @@ namespace RavenNest.BusinessLogic.Game
             // TODO: Add exp
             // TODO: Return inventory item
 
+            // Set a time limit on how often/frequently a player can use enchanting after they have enchanted an item.
+            // Success: add n Hours based on what type of item
+            // Fail: Add 10% of n Hours based on what type of item
+
+
             return new ItemEnchantmentResult()
             {
                 //InventoryItem = invItem
