@@ -311,9 +311,11 @@ namespace RavenNest.BusinessLogic.Data
 
                 UpgradeSkillLevels(characterSkills);
                 RemoveBadUsers(users);
+
                 EnsureClanLevels(clans);
                 EnsureExpMultipliersWithinBounds(expMultiplierEvents);
                 EnsureCraftingRequirements(items);
+                MergeLoyaltyData(loyalty);
 
                 stopWatch.Stop();
                 logger.LogDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
@@ -546,6 +548,8 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
+
+
         private void EnsureExpMultipliersWithinBounds(EntitySet<ExpMultiplierEvent, Guid> expMultiplierEvents)
         {
             foreach (var multi in expMultiplierEvents.Entities)
@@ -573,6 +577,81 @@ namespace RavenNest.BusinessLogic.Data
             {
                 if (clan.Level == 0)
                     clan.Level = 1;
+            }
+        }
+
+
+        private void MergeLoyaltyData(EntitySet<UserLoyalty, Guid> loyalty)
+        {
+            var toRemove = new List<UserLoyalty>();
+            foreach (var u in users.Entities)
+            {
+                try
+                {
+                    var userLoyalties = loyalty[nameof(User), u.Id].GroupBy(x => x.StreamerUserId).ToList();
+                    foreach (var l in userLoyalties)
+                    {
+                        if (l.Count() > 1)
+                        {
+                            var highestLevel = l.OrderByDescending(x => x.Level).FirstOrDefault();
+                            if (highestLevel == null)
+                            {
+                                continue; // shouldnt happen..
+                            }
+
+                            if (!TimeSpan.TryParse(highestLevel.Playtime, out var highestPlayTime))
+                            {
+                                highestPlayTime = TimeSpan.MinValue;
+                            }
+
+                            foreach (var lu in l)
+                            {
+                                if (lu.Id == highestLevel.Id)
+                                {
+                                    continue;
+                                }
+
+                                if (TimeSpan.TryParse(lu.Playtime, out var playTime) && playTime > highestPlayTime)
+                                {
+                                    highestLevel.Playtime = lu.Playtime;
+                                }
+
+                                if (lu.Points > 0)
+                                {
+                                    highestLevel.Points += lu.Points;
+                                }
+                                if (lu.CheeredBits > 0)
+                                {
+                                    highestLevel.CheeredBits += lu.CheeredBits;
+                                }
+                                if (lu.GiftedSubs > 0)
+                                {
+                                    highestLevel.GiftedSubs += lu.GiftedSubs;
+                                }
+                                if (lu.IsSubscriber)
+                                {
+                                    highestLevel.IsSubscriber = true;
+                                }
+
+                                toRemove.Add(lu);
+                            }
+                        }
+                    }
+                }
+                catch (Exception exc)
+                {
+                    logger.LogError(exc.ToString());
+                }
+            }
+
+            foreach (var tr in toRemove)
+            {
+                Remove(tr);
+            }
+
+            if (toRemove.Count > 0)
+            {
+                logger.LogError("(Not actual error) Merged " + toRemove.Count + " duplicated loyalty record(s).");
             }
         }
 
@@ -1175,6 +1254,9 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(UserNotification entity) => notifications.Remove(entity);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(UserLoyalty entity) => loyalty.Remove(entity);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(InventoryItemAttribute entity) => inventoryItemAttributes.Remove(entity);

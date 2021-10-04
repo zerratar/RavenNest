@@ -8,46 +8,46 @@
 	  <span>
 
 				@if (!string.IsNullOrEmpty(trainingSkill))
-				{	   
-				  <span>You're currently training&nbsp;</span><b>@GetTrainingSkillName()</b><span>&nbsp;</span>
+				{
+		   <span>You're currently training&nbsp;</span><b>@GetTrainingSkillName()</b><span>&nbsp;</span>
 				}
 				else
 				{
-					<span>You're currently </span>
+		   <span>You're currently </span>
 				}
 
-				 @if (Player.State != null)
-				 {					
+				@if (Player.State != null)
+				{
 					if (Player.State.InDungeon)
 					{
-						<span>in the dungeon</span>
+			   <span>in the dungeon </span>
 					}
 					else if (Player.State.InArena)
 					{
-						<span>in the Arena</span>
+			   <span>in the Arena </span>
 					}
 					else if (Player.State.InRaid)
 					{
-						<span>in a Raid</span>
+			   <span>in a Raid </span>
 					}
 					else if (!string.IsNullOrEmpty(Player.State.DuelOpponent))
 					{
-						<span>in a duel with&nbsp;</span><b>Player.State.DuelOpponent</b><span>.&nbsp;</span>
+			   <span>in a duel with&nbsp;</span><b>Player.State.DuelOpponent </b>
 					}
 					else if (!string.IsNullOrEmpty(Player.State?.Island))
 					{
-			   			   <span>at&nbsp;</span><b>@Player.State.Island</b><span>.&nbsp;</span>
+			   <span>at&nbsp;</span><b>@Player.State.Island </b>
 					}
 					else
 					{
-							<span>sailing.&nbsp;</span>
+			   <span>sailing </span>
 					}
-				 }
+				}
 
 				@if (!string.IsNullOrEmpty(Player.SessionInfo.OwnerUserName))
-				  {
-					  <span>on&nbsp;</span><b>@Player.SessionInfo.OwnerUserName</b><span>'s stream.</span>
-				  }
+				{
+		   <span>on&nbsp;</span><b>@Player.SessionInfo.OwnerUserName</b><span>'s stream.</span>
+				}
 	  </span>
 	 </div>
 	}
@@ -107,6 +107,9 @@
 		if (trainingSkill.Equals("all", StringComparison.OrdinalIgnoreCase))
 			return "All";
 
+		if (trainingSkill.Equals("heal", StringComparison.OrdinalIgnoreCase))
+			return "Healing";
+
 		if (Player == null || Player.Skills == null)
 			return null;
 
@@ -122,12 +125,13 @@
 		if (skill.Name.StartsWith(trainingSkill, StringComparison.OrdinalIgnoreCase))
 			return true;
 
+		if (trainingSkill == "heal")
+			return skill.Name.Equals("healing", StringComparison.OrdinalIgnoreCase);
+
 		if (trainingSkill.ToLower() == "all")
-		{
 			return skill.Name.Equals("attack", StringComparison.OrdinalIgnoreCase) ||
 							skill.Name.Equals("defense", StringComparison.OrdinalIgnoreCase) ||
 							skill.Name.Equals("strength", StringComparison.OrdinalIgnoreCase);
-		}
 
 		if (skill.Name.ToLower() == "attack" && trainingSkill.ToLower() == "atk")
 			return true;
