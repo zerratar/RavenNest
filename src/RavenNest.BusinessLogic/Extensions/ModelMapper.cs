@@ -286,6 +286,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 Revision = character.Revision.GetValueOrDefault(),
                 Identifier = character.Identifier,
                 CharacterIndex = character.CharacterIndex,
+                PatreonTier = user.PatreonTier.GetValueOrDefault()
             };
         }
 
@@ -329,6 +330,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 Identifier = character.Identifier,
                 CharacterIndex = character.CharacterIndex,
                 SessionName = sessionName,
+                PatreonTier = user.PatreonTier.GetValueOrDefault()
             };
         }
 

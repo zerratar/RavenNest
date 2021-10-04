@@ -122,6 +122,11 @@ namespace RavenNest.Blazor.Pages.Admin
 
             try
             {
+                if (string.IsNullOrEmpty(config?.Options?.Title?.Text?.SingleValue))
+                {
+                    return config;
+                }
+
                 var title = config.Options.Title.Text;
                 if (outputData != null && outputData.Length > 0 && title != null)
                 {
