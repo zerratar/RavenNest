@@ -55,6 +55,15 @@ namespace RavenNest.BusinessLogic.Game
         {
             if (skillName == "all")
                 skillName = null;
+            var c = gameData.GetCharacter(characterId);
+            if (c == null) return int.MaxValue;
+            var u = gameData.GetUser(c.UserId);
+            if (u == null) return int.MaxValue;
+
+            if (u.IsModerator.GetValueOrDefault() || u.IsAdmin.GetValueOrDefault())
+            {
+                return -2;
+            }
 
             var player = GetPlayer(characterId);
             var item = highscoreProvider.GetSkillHighScore(player, GetPlayers(), skillName);
@@ -1399,7 +1408,11 @@ namespace RavenNest.BusinessLogic.Game
                 User = gameData.GetUser(x.UserId),
                 Character = x
             })
-            .Where(x => x.Character != null && x.User != null && (x.User.Status == null || x.User.Status == 0))
+            .Where(x => x.Character != null
+                    && x.User != null
+                    && (x.User.Status == null || x.User.Status == 0)
+                    && !x.User.IsModerator.GetValueOrDefault()
+                    && !x.User.IsAdmin.GetValueOrDefault())
             .Select(x => x.User.Map(gameData, x.Character))
             .ToList();
         }
