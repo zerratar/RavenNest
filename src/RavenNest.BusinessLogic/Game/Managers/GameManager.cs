@@ -28,6 +28,43 @@ namespace RavenNest.BusinessLogic.Game
             return null;
         }
 
+        public int UseExpScroll(SessionToken sessionToken, Guid characterId, int count)
+        {
+            if (count <= 0)
+                return -1;
+
+            var session = gameData.GetSession(sessionToken.SessionId);
+            if (session == null)
+                return -1;
+
+            var character = gameData.GetCharacter(characterId);
+            var inventory = inventoryProvider.Get(characterId);
+            var scrolls = inventory.GetUnequippedItems(DataModels.ItemCategory.Scroll);
+            var scroll = scrolls.FirstOrDefault(x => x.Item.Name.Contains("exp", StringComparison.OrdinalIgnoreCase));
+            if (scroll.IsNull())
+                return -2;
+
+            var isExpScroll = scroll.Item.Name.Contains("exp", StringComparison.OrdinalIgnoreCase);
+            if (isExpScroll)
+            {
+                int left = serverManager.GetIncreasableGlobalExpAmount();
+                var usageCount = (int)Math.Min(scroll.Amount, left);
+                if (left <= 0)
+                {
+                    return -1;
+                }
+
+                var user = gameData.GetUser(character.UserId);
+                if (serverManager.IncreaseGlobalExpMultiplier(user, usageCount))
+                {
+                    inventory.RemoveItem(scroll, usageCount);
+                    return usageCount;
+                }
+
+                return 0;
+            }
+            return -1;
+        }
         public ScrollUseResult UseScroll(SessionToken sessionToken, Guid characterId, ScrollType scrollType)
         {
             var session = gameData.GetSession(sessionToken.SessionId);
