@@ -311,7 +311,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 UpgradeSkillLevels(characterSkills);
                 RemoveBadUsers(users);
-
+                RemoveBadInventoryItems(inventoryItems);
                 EnsureClanLevels(clans);
                 EnsureExpMultipliersWithinBounds(expMultiplierEvents);
                 EnsureCraftingRequirements(items);
@@ -652,6 +652,20 @@ namespace RavenNest.BusinessLogic.Data
             if (toRemove.Count > 0)
             {
                 logger.LogError("(Not actual error) Merged " + toRemove.Count + " duplicated loyalty record(s).");
+            }
+        }
+
+        private void RemoveBadInventoryItems(EntitySet<InventoryItem, Guid> inventoryItems)
+        {
+            var toRemove = new List<InventoryItem>();
+            foreach (var ii in inventoryItems.Entities)
+            {
+                if (ii.Amount <= 0) toRemove.Add(ii);
+            }
+
+            foreach (var bad in toRemove)
+            {
+                Remove(bad);
             }
         }
 
