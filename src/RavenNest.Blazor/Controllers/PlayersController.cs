@@ -153,15 +153,19 @@ namespace RavenNest.Controllers
         [HttpGet("{userId}/craft/{item}")]
         public AddItemResult CraftItem(string userId, Guid item)
         {
-            return playerManager.CraftItem(AssertGetSessionToken(), userId, item);
+            return playerManager.CraftItem_Old(AssertGetSessionToken(), userId, item);
         }
 
         [HttpGet("{userId}/craft/{item}/{amount}")]
         public AddItemResult CraftItem(string userId, Guid item, int amount)
         {
-            return playerManager.CraftItem(AssertGetSessionToken(), userId, item, amount);
+            return playerManager.CraftItem_Old(AssertGetSessionToken(), userId, item, amount);
         }
-
+        [HttpGet("{userId}/craft-many/{item}/{amount}")]
+        public CraftItemResult CraftItems(string userId, Guid item, int amount)
+        {
+            return playerManager.CraftItems(AssertGetSessionToken(), userId, item, amount);
+        }
         [HttpGet("{userId}/item/{item}")]
         public AddItemResult AddItem(string userId, Guid item)
         {

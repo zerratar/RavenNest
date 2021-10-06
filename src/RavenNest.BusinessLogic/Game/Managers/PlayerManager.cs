@@ -981,7 +981,69 @@ namespace RavenNest.BusinessLogic.Game
             return enchantmentManager.EnchantItem(clanSkill, character, inventory, item, resources);
         }
 
-        public AddItemResult CraftItem(SessionToken token, string userId, Guid itemId, int amount = 1)
+        public CraftItemResult CraftItems(SessionToken token, string userId, Guid itemId, int amount)
+        {
+            if (amount <= 0) amount = 1;
+            amount = Math.Min(50_000_000, amount);
+
+            var item = gameData.GetItem(itemId);
+            if (item == null) return CraftItemResult.NoSuchItem;
+
+            var character = GetCharacter(token, userId);
+            if (character == null || !integrityChecker.VerifyPlayer(token.SessionId, character.Id, 0))
+                return CraftItemResult.Error;
+
+            var resources = gameData.GetResources(character.ResourcesId);
+            var skills = gameData.GetCharacterSkills(character.SkillsId);
+            if (skills == null || resources == null)
+                return CraftItemResult.Error;
+
+            var craftingLevel = skills.CraftingLevel;
+            if (craftingLevel < item.RequiredCraftingLevel)
+                return CraftItemResult.TooLowLevel(item.Id, item.RequiredCraftingLevel);
+
+            if (!CanCraftItems(item, resources, craftingLevel, amount))
+                return CraftItemResult.InsufficientResources;
+
+            var result = new CraftItemResult();
+            var craftingRequirements = gameData.GetCraftingRequirements(itemId);
+            var inventory = inventoryProvider.Get(character.Id);
+
+            var craftableAmount = amount;
+            foreach (var req in craftingRequirements)
+            {
+                var invItem = inventory.GetUnequippedItem(req.ResourceItemId);
+                if (invItem.IsNull())
+                    return CraftItemResult.InsufficientResources;
+
+                var maxCraftable = invItem.Amount / req.Amount;
+                if (craftableAmount > maxCraftable)
+                {
+                    craftableAmount = (int)maxCraftable;
+                }
+            }
+
+            var amountToCraft = Math.Min(craftableAmount, amount);
+
+            foreach (var req in craftingRequirements)
+            {
+                var resx = inventory.GetUnequippedItem(req.ResourceItemId);
+                inventory.RemoveItem(resx, req.Amount * amountToCraft);
+            }
+
+            resources.Wood -= item.WoodCost * amountToCraft;
+            resources.Ore -= item.OreCost * amountToCraft;
+
+            for (var i = 0; i < amountToCraft; ++i)
+            {
+                AddItem(token, userId, itemId);
+            }
+            result.Value = amountToCraft;
+            result.Status = amountToCraft == amount ? CraftItemResultStatus.Success : CraftItemResultStatus.PartialSuccess;
+            return result;
+        }
+
+        public AddItemResult CraftItem_Old(SessionToken token, string userId, Guid itemId, int amount = 1)
         {
             amount = Math.Min(50_000_000, amount);
 
