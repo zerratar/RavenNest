@@ -86,14 +86,9 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (usageCount > 1)
                 {
-                    if (usageCount >= MaxExpMultiplier - 1)
-                    {
-                        endTime = endTime.AddMinutes(ExpMultiplierLastTimeMinutes + ((MaxExpMultiplier - 2) * ExpMultiplierMinutesPerScroll));
-                    }
-                    else
-                    {
-                        endTime = endTime.AddMinutes(usageCount * ExpMultiplierMinutesPerScroll);
-                    }
+                    endTime = usageCount >= MaxExpMultiplier - 1
+                        ? endTime.AddMinutes(ExpMultiplierLastTimeMinutes + ((MaxExpMultiplier - 2) * ExpMultiplierMinutesPerScroll))
+                        : endTime.AddMinutes(usageCount * ExpMultiplierMinutesPerScroll);
                 }
 
                 activeEvent = new ExpMultiplierEvent
@@ -109,8 +104,22 @@ namespace RavenNest.BusinessLogic.Game
             }
             else
             {
+                var endTime = activeEvent.EndTime;
                 activeEvent.Multiplier += usageCount;
-                activeEvent.EndTime = activeEvent.EndTime.AddMinutes(activeEvent.Multiplier >= MaxExpMultiplier ? ExpMultiplierLastTimeMinutes : ExpMultiplierMinutesPerScroll);
+
+                var timeCount = usageCount;
+                if (activeEvent.Multiplier >= MaxExpMultiplier)
+                {
+                    endTime = endTime.AddMinutes(ExpMultiplierLastTimeMinutes);
+                    timeCount--;
+                }
+
+                if (timeCount > 0)
+                {
+                    endTime = endTime.AddMinutes(timeCount * ExpMultiplierMinutesPerScroll);
+                }
+
+                activeEvent.EndTime = endTime;
             }
 
             activeEvent.EventName = user.UserName;
