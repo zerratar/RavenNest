@@ -45,7 +45,7 @@ namespace RavenNest.BusinessLogic.Game
                 return -2;
 
             int left = serverManager.GetIncreasableGlobalExpAmount();
-            var usageCount = (int)Math.Min(scroll.Amount, left);
+            var usageCount = (int)Math.Min(count, Math.Min(scroll.Amount, left));
             if (left <= 0 || usageCount <= 0)
             {
                 return 0;

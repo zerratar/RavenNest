@@ -60,7 +60,7 @@ namespace RavenNest.BusinessLogic.Game
             var activeEvent = gameData.GetActiveExpMultiplierEvent();
             if (activeEvent == null)
             {
-                return MaxExpMultiplier;
+                return MaxExpMultiplier - 1;
             }
 
             if ((activeEvent != null && !activeEvent.StartedByPlayer))
