@@ -36,13 +36,18 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool CanIncreaseGlobalExpMultiplier()
         {
+            return CanIncreaseGlobalExpMultiplier(1);
+        }
+
+        public bool CanIncreaseGlobalExpMultiplier(int count)
+        {
             var activeEvent = gameData.GetActiveExpMultiplierEvent();
             if (activeEvent != null && !activeEvent.StartedByPlayer)
             {
                 return false;
             }
 
-            if (activeEvent != null && activeEvent.Multiplier >= MaxExpMultiplier)
+            if (activeEvent != null && (activeEvent.Multiplier + count) > MaxExpMultiplier)
             {
                 return false;
             }
@@ -50,17 +55,32 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
+        public int GetIncreasableGlobalExpAmount()
+        {
+            var activeEvent = gameData.GetActiveExpMultiplierEvent();
+            if (activeEvent == null || (activeEvent != null && !activeEvent.StartedByPlayer))
+            {
+                return 0;
+            }
+
+            return MaxExpMultiplier - activeEvent.Multiplier;
+        }
+
         public bool IncreaseGlobalExpMultiplier(DataModels.User user)
+        {
+            return IncreaseGlobalExpMultiplier(user, 1);
+        }
+
+        public bool IncreaseGlobalExpMultiplier(User user, int usageCount)
         {
             var activeEvent = gameData.GetActiveExpMultiplierEvent();
             if (activeEvent != null && !activeEvent.StartedByPlayer) return false;
-
             if (activeEvent == null)
             {
                 activeEvent = new ExpMultiplierEvent
                 {
                     Id = Guid.NewGuid(),
-                    Multiplier = 2,
+                    Multiplier = usageCount + 1,
                     StartedByPlayer = true,
                     EventName = user.UserName,
                     StartTime = DateTime.UtcNow,
@@ -70,7 +90,7 @@ namespace RavenNest.BusinessLogic.Game
             }
             else
             {
-                activeEvent.Multiplier++;
+                activeEvent.Multiplier += usageCount;
                 activeEvent.EndTime = activeEvent.EndTime.AddMinutes(activeEvent.Multiplier >= MaxExpMultiplier ? ExpMultiplierLastTimeMinutes : ExpMultiplierMinutesPerScroll);
             }
 
