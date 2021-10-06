@@ -66,7 +66,7 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var player = GetPlayer(characterId);
-            var item = highscoreProvider.GetSkillHighScore(player, GetPlayers(), skillName);
+            var item = highscoreProvider.GetSkillHighScore(player, GetPlayerWithoutAdmins(), skillName);
             if (item != null)
             {
                 return item.Rank;
@@ -1399,8 +1399,7 @@ namespace RavenNest.BusinessLogic.Game
             .Select(x => x.User.MapForAdmin(gameData, x.Character))
             .ToList();
         }
-
-        public IReadOnlyList<Player> GetPlayers()
+        public IReadOnlyList<Player> GetPlayerWithoutAdmins()
         {
             var chars = gameData.GetCharacters();
             return chars.Select(x => new
@@ -1413,6 +1412,20 @@ namespace RavenNest.BusinessLogic.Game
                     && (x.User.Status == null || x.User.Status == 0)
                     && !x.User.IsModerator.GetValueOrDefault()
                     && !x.User.IsAdmin.GetValueOrDefault())
+            .Select(x => x.User.Map(gameData, x.Character))
+            .ToList();
+        }
+        public IReadOnlyList<Player> GetPlayers()
+        {
+            var chars = gameData.GetCharacters();
+            return chars.Select(x => new
+            {
+                User = gameData.GetUser(x.UserId),
+                Character = x
+            })
+            .Where(x => x.Character != null
+                    && x.User != null
+                    && (x.User.Status == null || x.User.Status == 0))
             .Select(x => x.User.Map(gameData, x.Character))
             .ToList();
         }
