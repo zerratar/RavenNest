@@ -6,14 +6,12 @@ using System.Collections.Concurrent;
 
 public class PlayerInventoryProvider : IPlayerInventoryProvider
 {
-    private readonly ILogger logger;
     private readonly IGameData gameData;
     private readonly ConcurrentDictionary<Guid, PlayerInventory> inventories
         = new ConcurrentDictionary<Guid, PlayerInventory>();
 
-    public PlayerInventoryProvider(ILogger logger, IGameData gameData)
+    public PlayerInventoryProvider(IGameData gameData)
     {
-        this.logger = logger;
         this.gameData = gameData;
     }
     public PlayerInventory Get(Guid characterId)
@@ -22,6 +20,6 @@ public class PlayerInventoryProvider : IPlayerInventoryProvider
         {
             return inventory;
         }
-        return inventories[characterId] = new PlayerInventory(logger, gameData, characterId);
+        return inventories[characterId] = new PlayerInventory(gameData, characterId);
     }
 }
