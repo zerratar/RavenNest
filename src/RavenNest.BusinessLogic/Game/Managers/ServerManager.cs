@@ -58,7 +58,12 @@ namespace RavenNest.BusinessLogic.Game
         public int GetIncreasableGlobalExpAmount()
         {
             var activeEvent = gameData.GetActiveExpMultiplierEvent();
-            if (activeEvent == null || (activeEvent != null && !activeEvent.StartedByPlayer))
+            if (activeEvent == null)
+            {
+                return MaxExpMultiplier;
+            }
+
+            if ((activeEvent != null && !activeEvent.StartedByPlayer))
             {
                 return 0;
             }
