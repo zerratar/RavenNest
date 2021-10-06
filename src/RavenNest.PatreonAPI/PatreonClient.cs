@@ -1,17 +1,13 @@
 ﻿
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using System.Net.Http;
-using Newtonsoft.Json.Serialization;
-using JsonApiSerializer;
 using JsonApiSerializer.JsonApi;
 using System.Reflection;
 using RavenNest.PatreonAPI.Models;
-using System.Xml.Linq;
 
 namespace RavenNest.PatreonAPI
 {
@@ -116,19 +112,19 @@ namespace RavenNest.PatreonAPI
 
         public async Task<HttpResponseMessage> GET(string url) => await httpClient.GetAsync(url);
 
-        public async Task<T> GET<T>(string url)
+        public async Task<T> GET<T>(string url, JsonSerializerSettings settings = null)
             where T : class
         {
             try
             {
-                var response = await GET(url);
+                var response = await GET(url.Replace("[", "%5B").Replace("]", "%5D"));
 
                 if (response.IsSuccessStatusCode)
                 {
                     try
                     {
                         var json = await response.Content.ReadAsStringAsync();
-                        var settings = new JsonSerializerSettings();
+                        settings = (settings ?? new JsonSerializerSettings());
                         return JsonConvert.DeserializeObject<T>(json, settings);
                     }
                     catch (Exception ex)
@@ -146,43 +142,44 @@ namespace RavenNest.PatreonAPI
             return null;
         }
 
-        public async Task<Campaign> GetCampaign(string campaignId)
+        //public async Task<Campaign> GetCampaign(string campaignId)
+        //{
+        //    var url = CampaignURL(campaignId);
+
+        //    url = AppendQuery(url, GenerateFieldsAndIncludes(typeof(CampaignRelationships),
+        //        typeof(CampaignAttributes), typeof(UserAttributes), typeof(TierAttributes)));
+        //    var document = await GET<DocumentRoot<Campaign>>(url).ConfigureAwait(false);
+
+        //    return document.Data;
+        //}
+
+        //public async Task<List<Tier>> GetCampaignTiers(string campaignId)
+        //{
+        //    var campaign = await GetCampaign(campaignId).ConfigureAwait(false);
+
+        //    return campaign.Relationships.Tiers;
+        //}
+        public async Task<List<PatreonMembersData>> GetCampaignMembers(string campaignId)
         {
-            var url = CampaignURL(campaignId);
-
-            url = AppendQuery(url, GenerateFieldsAndIncludes(typeof(CampaignRelationships),
-                typeof(CampaignAttributes), typeof(UserAttributes), typeof(TierAttributes)));
-            var document = await GET<DocumentRoot<Campaign>>(url).ConfigureAwait(false);
-
-            return document.Data;
-        }
-
-        public async Task<List<Tier>> GetCampaignTiers(string campaignId)
-        {
-            var campaign = await GetCampaign(campaignId).ConfigureAwait(false);
-
-            return campaign.Relationships.Tiers;
-        }
-
-        public async Task<List<Member>> GetCampaignMembers(string campaignId)
-        {
-            var list = new List<Member>();
-
+            var list = new List<PatreonMembersData>();
             string next = MembersURL(campaignId);
-
             do
             {
                 var url = next;
 
-                url = AppendQuery(url, GenerateFieldsAndIncludes(typeof(MemberRelationships),
-                    typeof(MemberAttributes), typeof(UserAttributes)));
+                url += "?include=currently_entitled_tiers,address&fields[member]=,email,full_name,is_follower,last_charge_date,last_charge_status,lifetime_support_cents,currently_entitled_amount_cents,patron_status&fields[tier]=amount_cents,created_at,description,discord_role_ids,edited_at,patron_count,published,published_at,requires_shipping,title,url&fields[address]=addressee,city,line_1,line_2,phone_number,postal_code,state";
 
-                var document = await GET<DocumentRoot<Member[]>>(url).ConfigureAwait(false);
+                //url = AppendQuery(url, GenerateFieldsAndIncludes(
+                //    typeof(MemberRelationships),
+                //    typeof(MemberAttributes),
+                //    typeof(UserAttributes)
+                //    ));
 
-                list.AddRange(document.Data);
+                var document = await GET<PatreonMembersData>(url, PatreonMembersConverter.Settings).ConfigureAwait(false);
+                list.Add(document);
 
-                if (document.Links != null && document.Links.ContainsKey("next"))
-                    next = document.Links["next"].Href;
+                if (document.Links != null && !string.IsNullOrEmpty(document.Links.Next))
+                    next = document.Links.Next;
                 else
                     next = null;
 
@@ -191,7 +188,7 @@ namespace RavenNest.PatreonAPI
             return list;
         }
 
-        public async Task<User> GetUser(string id) => (await GET<UserData>(UserURL(id)).ConfigureAwait(false))?.User;
+        //public async Task<User> GetUser(string id) => (await GET<UserData>(UserURL(id)).ConfigureAwait(false))?.User;
 
         public void Dispose()
         {
