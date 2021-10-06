@@ -88,11 +88,11 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     if (usageCount >= MaxExpMultiplier - 1)
                     {
-                        endTime.AddMinutes(ExpMultiplierLastTimeMinutes + ((MaxExpMultiplier - 2) * ExpMultiplierMinutesPerScroll));
+                        endTime = endTime.AddMinutes(ExpMultiplierLastTimeMinutes + ((MaxExpMultiplier - 2) * ExpMultiplierMinutesPerScroll));
                     }
                     else
                     {
-                        endTime.AddMinutes(usageCount * ExpMultiplierMinutesPerScroll);
+                        endTime = endTime.AddMinutes(usageCount * ExpMultiplierMinutesPerScroll);
                     }
                 }
 
