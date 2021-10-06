@@ -1,4 +1,5 @@
-﻿using RavenNest.BusinessLogic.Data;
+﻿using Microsoft.Extensions.Logging;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using System;
 using System.Collections.Generic;
@@ -10,14 +11,16 @@ namespace RavenNest.BusinessLogic.Providers
     public class PlayerInventory
     {
         private readonly Guid characterId;
+        private readonly ILogger logger;
         private readonly IGameData gameData;
         private readonly object mutex = new object();
         private List<InventoryItem> items;
 
         private static readonly TimeSpan PatreonRewardFrequency = TimeSpan.FromDays(1);
         private static readonly Random random = new Random();
-        public PlayerInventory(IGameData gameData, Guid characterId)
+        public PlayerInventory(ILogger logger, IGameData gameData, Guid characterId)
         {
+            this.logger = logger;
             this.gameData = gameData;
             this.characterId = characterId;
             items = GetInventoryItems(characterId);
@@ -527,6 +530,12 @@ namespace RavenNest.BusinessLogic.Providers
             magicAttributes = null;
             if (stack == null || stack.Amount < amount)
             {
+                if (stack.Amount <= 0)
+                {
+                    logger.LogError("Removing empty inventory stack. Character: " + this.characterId + ", ItemId: " + stack.ItemId);
+                    RemoveStack(stack, out magicAttributes);
+                }
+
                 return false;
             }
 
