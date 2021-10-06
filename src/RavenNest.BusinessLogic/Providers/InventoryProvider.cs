@@ -11,16 +11,14 @@ namespace RavenNest.BusinessLogic.Providers
     public class PlayerInventory
     {
         private readonly Guid characterId;
-        private readonly ILogger logger;
         private readonly IGameData gameData;
         private readonly object mutex = new object();
         private List<InventoryItem> items;
 
         private static readonly TimeSpan PatreonRewardFrequency = TimeSpan.FromDays(1);
         private static readonly Random random = new Random();
-        public PlayerInventory(ILogger logger, IGameData gameData, Guid characterId)
+        public PlayerInventory(IGameData gameData, Guid characterId)
         {
-            this.logger = logger;
             this.gameData = gameData;
             this.characterId = characterId;
             items = GetInventoryItems(characterId);
@@ -532,7 +530,7 @@ namespace RavenNest.BusinessLogic.Providers
             {
                 if (stack.Amount <= 0)
                 {
-                    logger.LogError("Removing empty inventory stack. Character: " + this.characterId + ", ItemId: " + stack.ItemId);
+                    //logger.LogError("Removing empty inventory stack. Character: " + this.characterId + ", ItemId: " + stack.ItemId);
                     RemoveStack(stack, out magicAttributes);
                 }
 
