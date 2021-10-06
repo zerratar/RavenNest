@@ -82,6 +82,20 @@ namespace RavenNest.BusinessLogic.Game
             if (activeEvent != null && !activeEvent.StartedByPlayer) return false;
             if (activeEvent == null)
             {
+                var endTime = DateTime.UtcNow.AddMinutes(ExpMultiplierStartTimeMinutes);
+
+                if (usageCount > 1)
+                {
+                    if (usageCount >= MaxExpMultiplier - 1)
+                    {
+                        endTime.AddMinutes(ExpMultiplierLastTimeMinutes + ((MaxExpMultiplier - 2) * ExpMultiplierMinutesPerScroll));
+                    }
+                    else
+                    {
+                        endTime.AddMinutes(usageCount * ExpMultiplierMinutesPerScroll);
+                    }
+                }
+
                 activeEvent = new ExpMultiplierEvent
                 {
                     Id = Guid.NewGuid(),
@@ -89,7 +103,7 @@ namespace RavenNest.BusinessLogic.Game
                     StartedByPlayer = true,
                     EventName = user.UserName,
                     StartTime = DateTime.UtcNow,
-                    EndTime = DateTime.UtcNow.AddMinutes(ExpMultiplierStartTimeMinutes)
+                    EndTime = endTime
                 };
                 gameData.Add(activeEvent);
             }
