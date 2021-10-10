@@ -341,22 +341,28 @@ namespace RavenNest.BusinessLogic.Game
             {
                 return null;
             }
-
+            var rejoin = false;
             // check if we need to remove the player from
             // their active session.
-            var sessionChars = gameData.GetSessionCharacters(session);
-            if (sessionChars != null && sessionChars.Count > 0)
+            if (session != null)
             {
-                var charactersInSession = sessionChars.Where(x => x.UserId == user.Id).ToList();
-                foreach (var cs in charactersInSession)
+                var sessionChars = gameData.GetSessionCharacters(session);
+                if (sessionChars != null && sessionChars.Count > 0)
                 {
-                    cs.UserIdLock = null;
+                    var charactersInSession = sessionChars.Where(x => x.UserId == user.Id).ToList();
+                    foreach (var cs in charactersInSession)
+                    {
+                        cs.UserIdLock = null;
+                    }
                 }
-            }
 
-            if (character.UserIdLock != null)
-            {
-                SendRemovePlayerFromSessionToGame(character, session);
+                rejoin = character.UserIdLock == session.UserId;
+                character.UserIdLock = session.UserId;
+
+                if (character.UserIdLock != null)
+                {
+                    SendRemovePlayerFromSessionToGame(character, session);
+                }
             }
 
             var app = gameData.GetAppearance(character.SyntyAppearanceId);
@@ -384,8 +390,6 @@ namespace RavenNest.BusinessLogic.Game
                 app.Cape = -1;
             }
 
-            var rejoin = character.UserIdLock == session.UserId;
-            character.UserIdLock = session.UserId;
             character.LastUsed = DateTime.UtcNow;
 
             if (character.StateId != null)
@@ -401,6 +405,7 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             SendUserRoleToRavenBotAsync(user);
+
             return character.Map(gameData, user, rejoin, true);
         }
 

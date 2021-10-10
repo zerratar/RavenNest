@@ -19,6 +19,8 @@ namespace RavenNest.BusinessLogic.Data
         private const int SaveInterval = 10000;
         private const int SaveMaxBatchSize = 50;
 
+        public const float SessionTimeoutSeconds = 1f;
+
         private readonly IRavenfallDbContextProvider db;
         private readonly ILogger logger;
         private readonly IKernel kernel;
@@ -1387,7 +1389,7 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<GameSession> GetActiveSessions() => gameSessions.Entities
                     .OrderByDescending(x => x.Started)
-                    .Where(x => x.Stopped == null && DateTime.UtcNow - x.Updated <= TimeSpan.FromMinutes(15)).ToList();
+                    .Where(x => x.Stopped == null && DateTime.UtcNow - x.Updated <= TimeSpan.FromSeconds(SessionTimeoutSeconds)).ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<GameSession> GetSessions() => gameSessions.Entities.OrderByDescending(x => x.Started).ToList();

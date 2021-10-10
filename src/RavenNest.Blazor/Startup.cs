@@ -118,12 +118,20 @@ namespace RavenNest.Blazor
 
             app.UseResponseCompression();
             app.UseSession();
+            
+            app.UseWebSockets(new WebSocketOptions()
+            {
+                KeepAliveInterval = TimeSpan.FromSeconds(120),
+            });
+            
             app.UseHttpsRedirection();
 
             app.UseRewriter(new RewriteOptions()
                .AddRedirectToWww()
                .AddRedirectToHttps()
             );
+
+
 
             app.UseStaticFiles();
             app.Map("/download/latest", builder =>
@@ -154,11 +162,6 @@ namespace RavenNest.Blazor
             });
 
 
-            app.UseWebSockets(new WebSocketOptions()
-            {
-                KeepAliveInterval = TimeSpan.FromSeconds(120),
-                ReceiveBufferSize = 4096
-            });
             app.UseRouting();
 
             app.UseEndpoints(endpoints =>
