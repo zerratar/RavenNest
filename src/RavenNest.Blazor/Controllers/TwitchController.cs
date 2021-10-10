@@ -152,45 +152,46 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("extension/set-task/{broadcasterId}/{characterId}/{task}")]
-        public void SetTask(string broadcasterId, Guid characterId, string task)
+        public bool SetTask(string broadcasterId, Guid characterId, string task)
         {
-            SetTask(broadcasterId, characterId, task, null);
+            return SetTask(broadcasterId, characterId, task, null);
         }
 
         [HttpGet("extension/set-task/{broadcasterId}/{characterId}/{task}/{taskArgument}")]
-        public void SetTask(string broadcasterId, Guid characterId, string task, string taskArgument)
+        public bool SetTask(string broadcasterId, Guid characterId, string task, string taskArgument)
         {
             if (string.IsNullOrEmpty(broadcasterId))
             {
-                return;
+                return false;
             }
 
             var session = this.HttpContext.GetSessionId();
             if (!sessionInfoProvider.TryGet(session, out var sessionInfo))
             {
-                return;
+                return false;
             }
 
             var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId);
             if (activeSession == null)
             {
-                return;
+                return false;
             }
 
             var user = gameData.GetUser(sessionInfo.UserId);
             if (user == null)
             {
-                return;
+                return false;
             }
 
             var myCharacters = gameData.GetCharacters(c => c.UserId == user.Id && c.Id == characterId);
             var character = myCharacters.FirstOrDefault();
             if (character == null)
             {
-                return;
+                return false;
             }
 
             playerManager.SendPlayerTaskToGame(activeSession, character, task, taskArgument);
+            return true;
         }
 
         [HttpGet("extension/leave/{broadcasterId}/{characterId}")]
@@ -229,6 +230,83 @@ namespace RavenNest.Controllers
             playerManager.SendRemovePlayerFromSessionToGame(character);
             return playerManager.RemovePlayerFromActiveSession(activeSession, characterId);
         }
+
+        [HttpGet("extension/create-join/{broadcasterId}")]
+        public ExtensionPlayerJoinResult PlayerJoin(string broadcasterId)
+        {
+            var result = new ExtensionPlayerJoinResult();
+            if (string.IsNullOrEmpty(broadcasterId))
+            {
+                result.ErrorMessage = "Invalid broadcaster or bad character id";
+                return result;
+            }
+
+            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId);
+            if (activeSession == null)
+            {
+                result.ErrorMessage = "Broadcaster does not have an active game session";
+                return result;
+            }
+
+            var session = this.HttpContext.GetSessionId();
+            if (sessionInfoProvider.TryGet(session, out var sessionInfo))
+            {
+                var user = gameData.GetUser(sessionInfo.UserId);
+                if (user == null)
+                {
+                    result.ErrorMessage = "No such user.";
+                    return result;
+                }
+
+                var existingCharacters = gameData.GetCharactersByUserId(user.Id);
+                if (existingCharacters.Count >= 3)
+                {
+                    result.ErrorMessage = "You already have 3 characters.";
+                    return result;
+                }
+
+                var index = existingCharacters.Count + 1;
+                var player = playerManager.CreatePlayer(user.UserId, user.UserName, index.ToString());
+                if (player == null)
+                {
+                    result.ErrorMessage = "Failed to create a new character.";
+                    return result;
+                }
+
+                var c = gameData.GetCharacter(player.Id);
+                if (c == null)
+                {
+                    result.ErrorMessage = "Okay. We don't know what went wrong here. Very sorry!";
+                    return result;
+                }
+
+                // We are just going to assume that it was successeful
+                // since, if it "fails" as the character is already in game. well. Then what harm done?
+                result.Success = true;
+                result.Player = c.MapForWebsite(gameData, user);
+
+                var gameEvent = gameData.CreateSessionEvent(
+                    GameEventType.PlayerAdd,
+                    activeSession,
+                    new PlayerAdd()
+                    {
+                        CharacterId = c.Id,
+                        Identifier = c.Identifier,
+                        UserId = sessionInfo.UserId,
+                        UserName = sessionInfo.UserName
+                    });
+
+                gameData.Add(gameEvent);
+            }
+            else
+            {
+                result.ErrorMessage = "You don't seem to be authenticated.";
+                return result;
+            }
+
+            return result;
+        }
+
 
         [HttpGet("extension/join/{broadcasterId}/{characterId}")]
         public ExtensionPlayerJoinResult PlayerJoin(string broadcasterId, Guid characterId)
@@ -302,8 +380,10 @@ namespace RavenNest.Controllers
         public Task<SessionInfo> CreateUserAsync(string broadcasterId, string userId, string username, string displayName)
         {
             if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(username))
+            {
+                if (userId.StartsWith("u")) userId = userId.Substring(1);
                 playerManager.CreatePlayerIfNotExists(userId, username, "1");
-
+            }
             return SetExtensionViewer(broadcasterId, userId);
         }
 
@@ -320,6 +400,22 @@ namespace RavenNest.Controllers
                 var gameSession = gameData.GetOwnedSessionByUserId(streamer.UserId);
                 result.IsRavenfallRunning = gameSession != null;
                 result.StreamerSessionId = gameSession?.Id;
+                if (gameSession != null)
+                {
+                    result.Started = gameSession.Started;
+
+                    var state = gameData.GetSessionState(gameSession.Id);
+                    if (state != null)
+                    {
+                        result.ClientVersion = state.ClientVersion;
+                    }
+
+                    var charactersInSession = gameData.GetSessionCharacters(gameSession);
+                    if (charactersInSession != null)
+                    {
+                        result.PlayerCount = charactersInSession.Count;
+                    }
+                }
             }
 
             return result;

@@ -8,5 +8,8 @@ namespace RavenNest.Sessions
         public string StreamerUserName { get; set; }
         public Guid? StreamerSessionId { get; set; }
         public bool IsRavenfallRunning { get; set; }
+        public int PlayerCount { get; set; }
+        public DateTime? Started { get; set; }
+        public string ClientVersion { get; set; }
     }
 }

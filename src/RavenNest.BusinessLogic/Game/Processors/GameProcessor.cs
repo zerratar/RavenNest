@@ -215,6 +215,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             // force keep a session alive if we are connected here
             session.Stopped = null;
             session.Status = (int)SessionStatus.Active;
+            session.Updated = DateTime.UtcNow;
 
             village.Process(integrityChecker, gameData, inventoryProvider, session, null, null);
 
