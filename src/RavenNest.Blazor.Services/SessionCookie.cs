@@ -25,7 +25,7 @@ namespace RavenNest
             {
                 try
                 {
-                    return AppendSessionToken(context);
+                    return AppendSessionToken(context, sid);
                 }
                 catch { }
             }
@@ -36,15 +36,16 @@ namespace RavenNest
         {
             if (!context.Request.Cookies.ContainsKey(sessionCookie))
             {
-                AppendSessionToken(context);
+                var id = context.GetSessionId();
+                AppendSessionToken(context, id);
             }
 
             await next.Invoke();
         }
 
-        private static string AppendSessionToken(HttpContext context)
+        private static string AppendSessionToken(HttpContext context, string sessionId = null)
         {
-            var id = Guid.NewGuid().ToString();
+            var id = sessionId != null ? sessionId : Guid.NewGuid().ToString();
             if (context != null)
             {
                 context.Response.Cookies.Append(sessionCookie, id, new CookieOptions
