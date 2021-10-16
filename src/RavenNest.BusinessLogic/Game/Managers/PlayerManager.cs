@@ -105,6 +105,13 @@ namespace RavenNest.BusinessLogic.Game
                 return;
             }
 
+            var state = gameData.GetCharacterState(character.StateId);
+            if (state != null)
+            {
+                state.Task = task;
+                state.TaskArgument = taskArgument;
+            }
+
             gameData.Add(gameData.CreateSessionEvent(GameEventType.PlayerTask, activeSession, new PlayerTask
             {
                 Task = task,
@@ -468,18 +475,18 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        public void SendRemovePlayerFromSessionToGame(Character character, DataModels.GameSession joiningSession = null)
+        public bool SendRemovePlayerFromSessionToGame(Character character, DataModels.GameSession joiningSession = null)
         {
             var userToRemove = gameData.GetUser(character.UserId);
             if (userToRemove == null)
-                return;
+                return false;
 
             var currentSession = gameData.GetUserSession(character.UserIdLock.GetValueOrDefault());
             if (currentSession == null)
-                return;
+                return false;
 
             if (joiningSession != null && (currentSession.Id == joiningSession.Id || currentSession.UserId == joiningSession.UserId))
-                return;
+                return false;
 
             var reason = "";
             if (joiningSession != null)
@@ -504,6 +511,7 @@ namespace RavenNest.BusinessLogic.Game
                 });
 
             gameData.Add(gameEvent);
+            return true;
         }
 
         public Player GetPlayer(Guid userId, string identifier)
@@ -1584,7 +1592,7 @@ namespace RavenNest.BusinessLogic.Game
             return GetWebsitePlayer(user, character);
         }
 
-        private WebsitePlayer GetWebsitePlayer(User user, Character character)
+        public WebsitePlayer GetWebsitePlayer(User user, Character character)
         {
             if (character == null) return new WebsitePlayer
             {

@@ -194,6 +194,27 @@ namespace RavenNest.Controllers
             return true;
         }
 
+        [HttpGet("extension/player/{broadcasterId}")]
+        public WebsitePlayer GetActivePlayer(string broadcasterId)
+        {
+            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId);
+            if (activeSession == null)
+            {
+                return null;
+            }
+
+            var sessionId = HttpContext.GetSessionId();
+            if (sessionInfoProvider.TryGet(sessionId, out var si))
+            {
+                var activeCharacter = gameData.GetCharacterBySession(activeSession.Id, si.UserId);
+                var user = gameData.GetUser(si.UserId);
+                return activeCharacter == null || user == null
+                    ? null : playerManager.GetWebsitePlayer(user, activeCharacter);
+            }
+            return null;
+        }
+
+
         [HttpGet("extension/leave/{broadcasterId}/{characterId}")]
         public bool PlayerLeave(string broadcasterId, Guid characterId)
         {
@@ -227,8 +248,13 @@ namespace RavenNest.Controllers
                 return false;
             }
 
-            playerManager.SendRemovePlayerFromSessionToGame(character);
-            return playerManager.RemovePlayerFromActiveSession(activeSession, characterId);
+            if (playerManager.SendRemovePlayerFromSessionToGame(character))
+            {
+                character.UserIdLock = null;
+                return true;
+            }
+            // playerManager.RemovePlayerFromActiveSession(activeSession, characterId)
+            return false;
         }
 
         [HttpGet("extension/create-join/{broadcasterId}")]
@@ -400,6 +426,8 @@ namespace RavenNest.Controllers
                 var gameSession = gameData.GetOwnedSessionByUserId(streamer.UserId);
                 result.IsRavenfallRunning = gameSession != null;
                 result.StreamerSessionId = gameSession?.Id;
+
+
                 if (gameSession != null)
                 {
                     result.Started = gameSession.Started;
@@ -413,6 +441,19 @@ namespace RavenNest.Controllers
                     var charactersInSession = gameData.GetSessionCharacters(gameSession);
                     if (charactersInSession != null)
                     {
+                        var session = this.HttpContext.GetSessionId();
+                        if (sessionInfoProvider.TryGet(session, out var sessionInfo))
+                        {
+                            var u = gameData.GetUser(sessionInfo.UserId);
+                            if (u != null)
+                            {
+                                var c = charactersInSession.FirstOrDefault(x => x.UserId == u.Id);
+                                if (c != null)
+                                {
+                                    result.JoinedCharacterId = c.Id;
+                                }
+                            }
+                        }
                         result.PlayerCount = charactersInSession.Count;
                     }
                 }
