@@ -120,8 +120,7 @@ namespace RavenNest.Controllers
         {
             try
             {
-                var session = this.HttpContext.GetSessionId();
-                if (!sessionInfoProvider.TryGet(session, out var sessionInfo))
+                if (!TryGetSession(out var sessionInfo))
                 {
                     return false;
                 }
@@ -165,8 +164,7 @@ namespace RavenNest.Controllers
                 return false;
             }
 
-            var session = this.HttpContext.GetSessionId();
-            if (!sessionInfoProvider.TryGet(session, out var sessionInfo))
+            if (!TryGetSession(out var sessionInfo))
             {
                 return false;
             }
@@ -203,8 +201,7 @@ namespace RavenNest.Controllers
                 return null;
             }
 
-            var sessionId = HttpContext.GetSessionId();
-            if (sessionInfoProvider.TryGet(sessionId, out var si))
+            if (TryGetSession(out var si))
             {
                 var activeCharacter = gameData.GetCharacterBySession(activeSession.Id, si.UserId);
                 var user = gameData.GetUser(si.UserId);
@@ -223,8 +220,7 @@ namespace RavenNest.Controllers
                 return false;
             }
 
-            var session = this.HttpContext.GetSessionId();
-            if (!sessionInfoProvider.TryGet(session, out var sessionInfo))
+            if (!TryGetSession(out var sessionInfo))
             {
                 return false;
             }
@@ -274,8 +270,7 @@ namespace RavenNest.Controllers
                 return result;
             }
 
-            var session = this.HttpContext.GetSessionId();
-            if (sessionInfoProvider.TryGet(session, out var sessionInfo))
+            if (TryGetSession(out var sessionInfo))
             {
                 var user = gameData.GetUser(sessionInfo.UserId);
                 if (user == null)
@@ -351,8 +346,7 @@ namespace RavenNest.Controllers
                 return result;
             }
 
-            var session = this.HttpContext.GetSessionId();
-            if (sessionInfoProvider.TryGet(session, out var sessionInfo))
+            if (TryGetSession(out var sessionInfo))
             {
                 var c = gameData.GetCharacter(characterId);
                 if (c == null)
@@ -573,6 +567,31 @@ namespace RavenNest.Controllers
 
                 throw;
             }
+        }
+
+        private bool TryGetSession(out SessionInfo sessionInfo)
+        {
+            var twitchToken = GetExtensionToken();
+            if (twitchToken == null)
+            {
+#if !DEBUG
+                sessionInfo = null;
+                return false;
+#endif
+            }
+
+            var sessionId = HttpContext.GetSessionId();
+            sessionInfoProvider.TryGet(sessionId, out sessionInfo);
+            return sessionInfo != null;
+        }
+
+        private string GetExtensionToken()
+        {
+            if (HttpContext.Request.Headers.TryGetValue("rf-twitch-token", out var value))
+            {
+                return value;
+            }
+            return null;
         }
 
         private AuthToken GetAuthToken()
