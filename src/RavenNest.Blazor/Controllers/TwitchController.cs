@@ -571,14 +571,14 @@ namespace RavenNest.Controllers
 
         private bool TryGetSession(out SessionInfo sessionInfo)
         {
-            var twitchToken = GetExtensionToken();
-            if (twitchToken == null)
-            {
-#if !DEBUG
-                sessionInfo = null;
-                return false;
-#endif
-            }
+//            var twitchToken = GetExtensionToken();
+//            if (twitchToken == null)
+//            {
+//#if !DEBUG
+//                sessionInfo = null;
+//                return false;
+//#endif
+//            }
 
             var sessionId = HttpContext.GetSessionId();
             sessionInfoProvider.TryGet(sessionId, out sessionInfo);
