@@ -1626,6 +1626,90 @@ namespace RavenNest.BusinessLogic.Game
             characterAppearance.HairColor = appearance.HairColor;
         }
 
+        public bool UpdateExperience(SessionToken token, int skillIndex, int level, double experience, Guid characterId)
+        {
+            try
+            {
+                var gameSession = gameData.GetSession(token.SessionId);
+                var character = gameData.GetCharacter(characterId);
+                if (character == null)
+                    throw new Exception("Unable to save exp. Character with ID " + characterId + " could not be found.");
+
+                var sessionState = gameData.GetSessionState(gameSession.Id);
+                var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
+                if (characterSessionState.Compromised)
+                {
+                    logger.LogError("Trying to update a compromised player: " + character.Name + " (" + character.Id + ")");
+                    return true;
+                }
+
+                var sessionOwner = gameData.GetUser(gameSession.UserId);
+                if (sessionOwner.Status >= 1)
+                {
+                    logger.LogError("The user session from " + sessionOwner.UserName + " trying to save players, but the owner has been banned.");
+                    return true;
+                }
+
+                var removeFromSession = !AcquiredUserLock(token, character) && character.UserIdLock != null;
+                var skills = gameData.GetCharacterSkills(character.SkillsId);
+
+                if (skills == null)
+                {
+                    skills = GenerateSkills();
+                    character.SkillsId = skills.Id;
+                    gameData.Add(skills);
+                }
+
+                var gains = characterSessionState.ExpGain;
+
+                if (level > GameMath.MaxLevel)
+                {
+                    logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Tried to set level above max.");
+                    BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
+                    return true;
+                }
+
+                var updated = false;
+                var timeSinceLastSkillUpdate = DateTime.UtcNow - characterSessionState.LastSkillUpdate;
+                var user = gameData.GetUser(character.UserId);
+
+                var existingLevel = skills.GetLevel(skillIndex);
+                if (level > 100 && existingLevel < level * 0.5)
+                {
+                    if (timeSinceLastSkillUpdate <= TimeSpan.FromSeconds(10))
+                    {
+                        logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Level changed from " + existingLevel + " to " + level);
+                        BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
+                        return true;
+                    }
+                }
+
+                skills.Set(skillIndex, level, experience);
+                updated = true;
+
+                if (updated)
+                {
+                    characterSessionState.LastSkillUpdate = DateTime.UtcNow;
+                }
+
+                if (removeFromSession)
+                {
+                    var activeSessionOwner = gameData.GetUser(character.UserIdLock.GetValueOrDefault());
+                    if (activeSessionOwner != null)
+                    {
+                        SendRemovePlayerFromSession(character, gameSession);
+                        logger.LogWarning($"{character.Name} was saved from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is part of {activeSessionOwner.UserName}.");
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                return false;
+            }
+        }
         public bool UpdateExperience(
             SessionToken token,
             string userId,

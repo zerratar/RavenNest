@@ -21,6 +21,7 @@ namespace RavenNest.BusinessLogic.Net
             packetHandlers["sync_time"] = new SyncTimePacketHandler(sessionManager);
             packetHandlers["update_character_state"] = new UpdateCharacterStatePacketHandler(logger, playerManager);
             packetHandlers["update_character_skills"] = new UpdateCharacterSkillPacketHandler(logger, playerManager);
+            packetHandlers["update_character_exp"] = new UpdateCharacterExperiencePacketHandler(logger, playerManager);
             packetHandlers["update_user_session_stats"] = new UpdateUserSessionStatsPacketHandler(playerManager);
             packetHandlers["update_user_loyalty"] = new UpdateUserLoyaltyPacketHandler(playerManager);
         }
