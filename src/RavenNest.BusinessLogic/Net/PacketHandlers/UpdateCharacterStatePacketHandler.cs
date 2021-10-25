@@ -15,7 +15,7 @@ namespace RavenNest.BusinessLogic.Net
             this.playerManager = playerManager;
         }
 
-        public async Task HandleAsync(IWebSocketConnection connection, GamePacket packet)
+        public async Task HandleAsync(IGameWebSocketConnection connection, GamePacket packet)
         {
             var result = false;
 

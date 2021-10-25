@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace RavenNest.BusinessLogic.Net
 {
-    public interface IWebSocketConnection : IDisposable
+    public interface IGameWebSocketConnection : IDisposable
     {
         SessionToken SessionToken { get; }
 
