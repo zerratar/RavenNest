@@ -88,7 +88,7 @@
 	private int currentHealth;
 
 
-	private Timer timer;
+	@*private Timer timer;*@
 
 	protected override void OnParametersSet()
 	{
@@ -105,7 +105,7 @@
 			currentHealth = Player.Skills.HealthLevel;
 		}
 	}
-
+@*
 	protected override void OnAfterRender(bool firstRender)
 	{
 		if (firstRender)
@@ -143,6 +143,7 @@
 	{
 		timer?.Dispose();
 	}
+	*@
 
 	private string GetTrainingSkillName()
 	{

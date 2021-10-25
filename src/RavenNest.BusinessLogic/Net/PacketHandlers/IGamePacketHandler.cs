@@ -4,6 +4,6 @@ namespace RavenNest.BusinessLogic.Net
 {
     public interface IGamePacketHandler
     {
-        Task HandleAsync(IWebSocketConnection connection, GamePacket packet);
+        Task HandleAsync(IGameWebSocketConnection connection, GamePacket packet);
     }
 }

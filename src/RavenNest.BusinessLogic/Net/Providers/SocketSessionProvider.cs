@@ -16,7 +16,7 @@ using RavenNest.BusinessLogic.Providers;
 
 namespace RavenNest.BusinessLogic.Net
 {
-    public class WebSocketConnectionProvider : IWebSocketConnectionProvider
+    public class GameWebSocketConnectionProvider : IGameWebSocketConnectionProvider
     {
         private readonly ILogger logger;
         private readonly IRavenBotApiClient ravenBotApi;
@@ -27,11 +27,11 @@ namespace RavenNest.BusinessLogic.Net
         private readonly IGamePacketManager packetManager;
         private readonly IGamePacketSerializer packetSerializer;
         private readonly ISessionManager sessionManager;
-        private readonly ConcurrentDictionary<Guid, IWebSocketConnection> socketSessions
-            = new ConcurrentDictionary<Guid, IWebSocketConnection>();
+        private readonly ConcurrentDictionary<Guid, IGameWebSocketConnection> socketSessions
+            = new ConcurrentDictionary<Guid, IGameWebSocketConnection>();
 
-        public WebSocketConnectionProvider(
-            ILogger<WebSocketConnectionProvider> logger,
+        public GameWebSocketConnectionProvider(
+            ILogger<GameWebSocketConnectionProvider> logger,
             IRavenBotApiClient ravenBotApi,
             IIntegrityChecker integrityChecker,
             IPlayerInventoryProvider inventoryProvider,
@@ -52,7 +52,7 @@ namespace RavenNest.BusinessLogic.Net
             this.sessionManager = sessionManager;
         }
 
-        public IWebSocketConnection Get(WebSocket ws, IReadOnlyDictionary<string, string> requestHeaders)
+        public IGameWebSocketConnection Get(WebSocket ws, IReadOnlyDictionary<string, string> requestHeaders)
         {
             if (!requestHeaders.TryGetValue("session-token", out var token))
             {
@@ -101,12 +101,12 @@ namespace RavenNest.BusinessLogic.Net
             }
         }
 
-        public bool TryGet(Guid sessionId, out IWebSocketConnection session)
+        public bool TryGet(Guid sessionId, out IGameWebSocketConnection session)
         {
             return socketSessions.TryGetValue(sessionId, out session);
         }
 
-        public bool TryGet(SessionToken token, out IWebSocketConnection session)
+        public bool TryGet(SessionToken token, out IGameWebSocketConnection session)
         {
             return socketSessions.TryGetValue(token.SessionId, out session);
         }
@@ -122,14 +122,14 @@ namespace RavenNest.BusinessLogic.Net
             return sessionToken != null && sessionToken.SessionId != Guid.Empty && !sessionToken.Expired;
         }
 
-        private class WebSocketConnection : IWebSocketConnection
+        private class WebSocketConnection : IGameWebSocketConnection
         {
             private readonly ILogger logger;
             private readonly IGameProcessor gameProcessor;
             private readonly IGamePacketManager packetManager;
             private readonly IGamePacketSerializer packetSerializer;
             private readonly ISessionManager sessionManager;
-            private readonly WebSocketConnectionProvider sessionProvider;
+            private readonly GameWebSocketConnectionProvider sessionProvider;
 
             private readonly WebSocket ws;
             private readonly TaskCompletionSource<object> killTask;
@@ -154,7 +154,7 @@ namespace RavenNest.BusinessLogic.Net
                 IGamePacketManager packetManager,
                 IGamePacketSerializer packetSerializer,
                 ISessionManager sessionManager,
-                WebSocketConnectionProvider sessionProvider,
+                GameWebSocketConnectionProvider sessionProvider,
                 WebSocket ws,
                 SessionToken sessionToken)
             {
@@ -176,7 +176,7 @@ namespace RavenNest.BusinessLogic.Net
             internal Guid SessionId => this.sessionToken.SessionId;
             public SessionToken SessionToken => sessionToken;
 
-            internal IWebSocketConnection Start()
+            internal IGameWebSocketConnection Start()
             {
                 this.receiveLoop.Start();
                 this.gameLoop.Start();

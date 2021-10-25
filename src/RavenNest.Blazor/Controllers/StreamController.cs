@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using RavenNest.BusinessLogic.Net;
+using RavenNest.BusinessLogic.Twitch.Extension;
 
 namespace RavenNest.Controllers
 {
@@ -12,17 +13,21 @@ namespace RavenNest.Controllers
     [ApiController]
     public class StreamController : ControllerBase
     {
-        private readonly IWebSocketConnectionProvider wsConnectionProvider;
+        private readonly IGameWebSocketConnectionProvider gameWsConnectionProvider;
+        private readonly IExtensionWebSocketConnectionProvider extensionWsConnectionProvider;
 
-        public StreamController(IWebSocketConnectionProvider wsConnectionProvider)
+        public StreamController(
+            IGameWebSocketConnectionProvider wsConnectionProvider,
+            IExtensionWebSocketConnectionProvider ewsConnectionProvider)
         {
-            this.wsConnectionProvider = wsConnectionProvider;
+            this.gameWsConnectionProvider = wsConnectionProvider;
+            this.extensionWsConnectionProvider = ewsConnectionProvider;
         }
 
         [HttpGet]
         public async Task Get()
         {
-            var socketSessionProvider = wsConnectionProvider;
+            var socketSessionProvider = gameWsConnectionProvider;
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
                 var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
@@ -38,6 +43,35 @@ namespace RavenNest.Controllers
                     return;
                 }
 
+                await socketSession.KeepAlive();
+            }
+            else
+            {
+                HttpContext.Response.StatusCode = 400;
+            }
+        }
+
+
+        [HttpGet("extension")]
+        public async Task GetExtensionWebsocketConnection()
+        {
+            var socketSessionProvider = gameWsConnectionProvider;
+            if (HttpContext.WebSockets.IsWebSocketRequest)
+            {
+                var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+                var socketSession = extensionWsConnectionProvider.Get(
+                    webSocket, HttpContext.Request.Headers.ToDictionary(x => x.Key, y => string.Join(",", y.Value)));
+                
+                if (socketSession == null)
+                {
+                    await webSocket.CloseAsync(
+                        WebSocketCloseStatus.InternalServerError,
+                        "No active session",
+                        CancellationToken.None);
+                    return;
+                }
+
+                await HttpContext.Session.CommitAsync();
                 await socketSession.KeepAlive();
             }
             else

@@ -17,7 +17,7 @@ namespace RavenNest.Controllers
     {
         private const string InsufficientPermissions = "You do not have permissions to call this API";
         private readonly ILogger<AdminController> logger;
-        private readonly IWebSocketConnectionProvider socketProvider;
+        private readonly IGameWebSocketConnectionProvider socketProvider;
         private readonly IGameData gameData;
         private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly IPlayerManager playerManager;
@@ -26,7 +26,7 @@ namespace RavenNest.Controllers
 
         public AdminController(
             ILogger<AdminController> logger,
-            IWebSocketConnectionProvider socketProvider,
+            IGameWebSocketConnectionProvider socketProvider,
             IGameData gameData,
             ISessionInfoProvider sessionInfoProvider,
             IPlayerManager playerManager,

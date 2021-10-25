@@ -25,7 +25,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private readonly IGameManager gameManager;
         private readonly IRavenBotApiClient ravenbotApi;
         private readonly IIntegrityChecker integrityChecker;
-        private readonly IWebSocketConnection ws;
+        private readonly IGameWebSocketConnection ws;
         private readonly ISessionManager sessionManager;
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly SessionToken sessionToken;
@@ -45,7 +45,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         public GameProcessor(
             IRavenBotApiClient ravenbotApi,
             IIntegrityChecker integrityChecker,
-            IWebSocketConnection ws,
+            IGameWebSocketConnection ws,
             ISessionManager sessionManager,
             IPlayerInventoryProvider inventoryProvider,
             IGameData gameData,

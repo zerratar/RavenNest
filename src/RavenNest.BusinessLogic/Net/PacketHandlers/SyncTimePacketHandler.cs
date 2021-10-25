@@ -12,7 +12,7 @@ namespace RavenNest.BusinessLogic.Net
             this.sessionManager = sessionManager;
         }
 
-        public async Task HandleAsync(IWebSocketConnection connection, GamePacket packet)
+        public async Task HandleAsync(IGameWebSocketConnection connection, GamePacket packet)
         {
             if (packet.Data is TimeSyncUpdate update)
             {

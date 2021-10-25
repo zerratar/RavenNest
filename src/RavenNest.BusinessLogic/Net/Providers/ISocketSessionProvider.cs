@@ -7,11 +7,11 @@ using System.Threading.Tasks;
 
 namespace RavenNest.BusinessLogic.Net
 {
-    public interface IWebSocketConnectionProvider
+    public interface IGameWebSocketConnectionProvider
     {
-        bool TryGet(Guid sessionId, out IWebSocketConnection session);
-        bool TryGet(SessionToken token, out IWebSocketConnection session);
-        IWebSocketConnection Get(WebSocket ws, IReadOnlyDictionary<string, string> requestHeaders);
+        bool TryGet(Guid sessionId, out IGameWebSocketConnection session);
+        bool TryGet(SessionToken token, out IGameWebSocketConnection session);
+        IGameWebSocketConnection Get(WebSocket ws, IReadOnlyDictionary<string, string> requestHeaders);
         void KillAllConnections();
     }
 }
