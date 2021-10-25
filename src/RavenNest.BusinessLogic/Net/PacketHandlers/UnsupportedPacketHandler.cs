@@ -13,7 +13,7 @@ namespace RavenNest.BusinessLogic.Net
         }
 
         public Task HandleAsync(
-            IWebSocketConnection connection, 
+            IGameWebSocketConnection connection, 
             GamePacket packet)
         {
             logger.LogError($"Unsupported packet received with id: {packet.Id}. payload type: {packet.Type}");

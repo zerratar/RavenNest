@@ -19,6 +19,7 @@ using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Serializers;
+using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.Health;
 using RavenNest.Sessions;
 using System;
@@ -118,12 +119,12 @@ namespace RavenNest.Blazor
 
             app.UseResponseCompression();
             app.UseSession();
-            
+
             app.UseWebSockets(new WebSocketOptions()
             {
                 KeepAliveInterval = TimeSpan.FromSeconds(120),
             });
-            
+
             app.UseHttpsRedirection();
 
             app.UseRewriter(new RewriteOptions()
@@ -246,9 +247,13 @@ namespace RavenNest.Blazor
             services.AddSingleton<IPlayerInventoryProvider, PlayerInventoryProvider>();
             services.AddSingleton<IPlayerHighscoreProvider, PlayerHighscoreProvider>();
             services.AddSingleton<IRavenfallDbContextProvider, RavenfallDbContextProvider>();
-            services.AddSingleton<IWebSocketConnectionProvider, WebSocketConnectionProvider>();
+            services.AddSingleton<IGameWebSocketConnectionProvider, GameWebSocketConnectionProvider>();
             services.AddSingleton<ISessionInfoProvider, SessionInfoProvider>();
             services.AddSingleton<IPropertyProvider, MemoryCachedPropertyProvider>();
+
+
+            services.AddSingleton<IExtensionWebSocketConnectionProvider, ExtensionConnectionProvider>();
+            services.AddSingleton<IExtensionPacketDataSerializer, JsonPacketDataSerializer>();
         }
     }
 }
