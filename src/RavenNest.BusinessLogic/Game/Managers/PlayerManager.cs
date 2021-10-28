@@ -148,7 +148,7 @@ namespace RavenNest.BusinessLogic.Game
                 var characterId = playerData.CharacterId;
                 if (characterId != Guid.Empty || Guid.TryParse(playerData.UserId ?? "", out characterId))
                 {
-                    result = AddPlayerByCharacterId(session, characterId);
+                    result = AddPlayerByCharacterId(session, characterId, playerData.IsGameRestore);
                     return result;
                 }
 
@@ -239,6 +239,13 @@ namespace RavenNest.BusinessLogic.Game
                     character.Name = userName;
                 }
 
+                if (playerData.IsGameRestore && (character.UserIdLock != null && character.UserIdLock != session.UserId))
+                {
+                    result.ErrorMessage = "Player has left to join another stream.";
+                    result.Success = false;
+                    return result;
+                }
+
                 result.Player = AddPlayerToSession(session, user, character);
                 result.Success = true;
                 return result;
@@ -277,7 +284,7 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        public PlayerJoinResult AddPlayerByCharacterId(DataModels.GameSession session, Guid characterId)
+        public PlayerJoinResult AddPlayerByCharacterId(DataModels.GameSession session, Guid characterId, bool isGameRestore = false)
         {
             var result = new PlayerJoinResult();
             var c = gameData.GetCharacter(characterId);
@@ -305,6 +312,13 @@ namespace RavenNest.BusinessLogic.Game
             {
                 result.Success = false;
                 result.ErrorMessage = "You have been permanently suspended from playing. Contact the staff for more information.";
+                return result;
+            }
+
+            if (isGameRestore && (c.UserIdLock != null && c.UserIdLock != session.UserId))
+            {
+                result.Success = false;
+                result.ErrorMessage = "Player has left to join another stream.";
                 return result;
             }
 
@@ -557,6 +571,72 @@ namespace RavenNest.BusinessLogic.Game
             inventory.AddStreamerTokens(session, amount);
             return true;
         }
+
+        public RedeemItemResult RedeemItem(SessionToken sessionToken, Guid characterId, Guid itemId)
+        {
+            try
+            {
+                var character = GetCharacter(sessionToken, characterId);
+                if (character == null)
+                {
+                    logger.LogError("Unable to redeem item for " + characterId + ". Character not found in session: " + sessionToken.SessionId);
+                    return RedeemItemResult.Error("Player not in session.");
+                }
+
+                var session = gameData.GetSession(sessionToken.SessionId);
+                var inventory = inventoryProvider.Get(character.Id);
+                var redeemable = gameData.GetRedeemableItemByItemId(itemId);
+                var item = gameData.GetItem(itemId);
+                if (redeemable == null)
+                {
+                    if (item != null)
+                    {
+                        return RedeemItemResult.NoSuchItem(item.Name);
+                    }
+
+                    return RedeemItemResult.NoSuchItem();
+                }
+
+                if (!ValidateDateRange(redeemable))
+                {
+                    return RedeemItemResult.NoSuchItem(item.Name);
+                }
+
+                var currencyItem = inventory.GetByItemId(redeemable.CurrencyItemId);
+                if (currencyItem.Amount < redeemable.Cost)
+                {
+                    var insufficient = RedeemItemResult.InsufficientCurrency(currencyItem.Amount, redeemable.Cost, item?.Name);
+                    insufficient.CurrencyItemId = redeemable.CurrencyItemId;
+                    insufficient.RedeemedItemId = redeemable.ItemId;
+                    insufficient.CurrencyLeft = currencyItem.Amount;
+                    insufficient.CurrencyCost = redeemable.Cost;
+                    return insufficient;
+                }
+
+                if (inventory.RemoveItem(currencyItem, redeemable.Cost))
+                {
+                    inventory.AddItem(redeemable.ItemId, Math.Max(1, redeemable.Amount));
+                }
+
+                SendItemRemoveEvent(redeemable.CurrencyItemId, redeemable.Cost, character);
+                SendItemAddEvent(redeemable.ItemId, redeemable.Amount, character);
+
+                return new RedeemItemResult
+                {
+                    Code = RedeemItemResultCode.Success,
+                    RedeemedItemAmount = redeemable.Amount,
+                    RedeemedItemId = redeemable.ItemId,
+                    CurrencyItemId = redeemable.CurrencyItemId,
+                    CurrencyCost = redeemable.Cost,
+                    CurrencyLeft = inventory.GetByItemId(redeemable.CurrencyItemId).Amount,
+                };
+            }
+            catch (Exception exc)
+            {
+                return RedeemItemResult.Error("Unknown Error");
+            }
+        }
+
 
         public int RedeemTokens(SessionToken sessionToken, string userId, int amount, bool exact)
         {
@@ -1153,20 +1233,38 @@ namespace RavenNest.BusinessLogic.Game
             var inventory = inventoryProvider.Get(characterId);
             inventory.AddItem(itemId, amount);
 
+            SendItemAddEvent(itemId, amount, character);
+        }
+
+        private void SendItemAddEvent(Guid itemId, int amount, Character character)
+        {
             var sessionUserId = character.UserIdLock;
             if (sessionUserId == null)
                 return;
 
+            var data = new ItemAdd
+            {
+                UserId = gameData.GetUser(character.UserId).UserId,
+                Amount = amount,
+                ItemId = itemId
+            };
+
             var session = gameData.GetUserSession(sessionUserId.Value);
             if (session != null)
             {
-                gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, session, new ItemAdd
-                {
-                    UserId = gameData.GetUser(character.UserId).UserId,
-                    Amount = amount,
-                    ItemId = itemId
-                }));
+                gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, session, data));
+                TrySendToExtensionAsync(character, data);
             }
+        }
+
+        private async void SendItemRemoveEvent(Guid itemid, int amount, Character character)
+        {
+            await TrySendToExtensionAsync(character, new ItemRemove
+            {
+                ItemId = itemid,
+                UserId = gameData.GetUser(character.UserId).UserId,
+                Amount = amount,
+            });
         }
 
         public AddItemResult AddItem(SessionToken token, string userId, Guid itemId)
@@ -2155,6 +2253,64 @@ namespace RavenNest.BusinessLogic.Game
             };
         }
 
+        private bool ValidateDateRange(DataModels.RedeemableItem redeemable)
+        {
+            if (string.IsNullOrEmpty(redeemable.AvailableDateRange))
+                return true;
+
+            var now = DateTime.UtcNow;
+            if (redeemable.AvailableDateRange.Contains("=>"))
+            {
+                var data = redeemable.AvailableDateRange.Split("=>");
+                var startDate = Parse(data[0]?.Trim());
+                var endDate = Parse(data[1]?.Trim());
+
+                if ((startDate.Year > 0 || endDate.Year > 0) && ((endDate.Year > 0 && now.Year > endDate.Year) || now.Year < startDate.Year))
+                    return false;
+
+                if ((startDate.Month > 0 || endDate.Month > 0) && ((endDate.Month > 0 && now.Month > endDate.Month) || now.Year < startDate.Month))
+                    return false;
+
+                if ((startDate.Day > 0 || endDate.Day > 0) && ((endDate.Day > 0 && now.Day > endDate.Day) || now.Year < startDate.Day))
+                    return false;
+
+                return true;
+            }
+            var date = Parse(redeemable.AvailableDateRange.Trim());
+            if (date.Year > 0 && now.Year > date.Year) return false;
+            if (date.Month > 0 && now.Month > date.Month) return false;
+            if (date.Day > 0 && now.Day > date.Day) return false;
+            return true;
+        }
+
+        private Date Parse(string str)
+        {
+            int year = 0;
+            int month = 0;
+            int day = 0;
+
+            if (!string.IsNullOrEmpty(str))
+            {
+                var strData = str.Split('-');
+                if (strData.Length > 0) int.TryParse(strData[0], out year);
+                if (strData.Length > 1) int.TryParse(strData[1], out month);
+                if (strData.Length > 2) int.TryParse(strData[2], out day);
+            }
+
+            return new Date
+            {
+                Year = year,
+                Month = month,
+                Day = day
+            };
+        }
+
+        private struct Date
+        {
+            public int Year;
+            public int Month;
+            public int Day;
+        }
         private Character GetCharacter(SessionToken token, string userId)
         {
             var session = gameData.GetSession(token.SessionId);
@@ -2165,6 +2321,14 @@ namespace RavenNest.BusinessLogic.Game
 
             var sessionCharacters = gameData.GetSessionCharacters(session);
             return sessionCharacters.FirstOrDefault(x => x.UserId == user.Id);
+        }
+
+        private Character GetCharacter(SessionToken token, Guid characterId)
+        {
+            var session = gameData.GetSession(token.SessionId);
+            if (session == null) return null;
+            var sessionCharacters = gameData.GetSessionCharacters(session);
+            return sessionCharacters.FirstOrDefault(x => x.Id == characterId);
         }
 
         private DataModels.CharacterState CreateCharacterState(CharacterStateUpdate update)

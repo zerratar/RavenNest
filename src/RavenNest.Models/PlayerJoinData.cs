@@ -11,5 +11,6 @@ namespace RavenNest.Models
         public bool Moderator { get; set; }
         public bool Vip { get; set; }
         public Guid CharacterId { get; set; }
+        public bool IsGameRestore { get; set; }
     }
 }

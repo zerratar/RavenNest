@@ -318,7 +318,7 @@ namespace RavenNest.BusinessLogic.Providers
             return added;
         }
 
-        public void AddItem(
+        public List<InventoryItem> AddItem(
             Guid itemId,
             long amount = 1,
             bool equipped = false,
@@ -327,6 +327,7 @@ namespace RavenNest.BusinessLogic.Providers
             bool randomMagicAttributes = false,
             IReadOnlyList<InventoryItemAttribute> magicAttributes = null)
         {
+            var output = new List<InventoryItem>();
             lock (mutex)
             {
                 var hasMagicAttributes = magicAttributes != null || randomMagicAttributes;
@@ -352,24 +353,27 @@ namespace RavenNest.BusinessLogic.Providers
                                 gameData.Add(att);
                             }
                         }
-
+                        output.Add(s);
                         items.Add(s);
                         gameData.Add(s);
                     }
-                    return;
+                    return output;
                 }
 
                 var stack = Get(itemId, false, tag);
                 if (stack != null && !equipped)
                 {
                     stack.Amount += amount;
+                    output.Add(stack);
                 }
                 else
                 {
                     var item = CreateInventoryItem(itemId, amount, equipped, tag, soulbound);
+                    output.Add(item);
                     items.Add(item);
                     gameData.Add(item);
                 }
+                return output;
             }
         }
 
@@ -573,6 +577,14 @@ namespace RavenNest.BusinessLogic.Providers
                 var tokenTag = streamer.UserId;
                 var item = gameData.GetItems().FirstOrDefault(x => x.Category == (int)ItemCategory.StreamerToken);
                 AddItem(item.Id, amount, tag: tokenTag, soulbound: true);
+            }
+        }
+
+        internal ReadOnlyInventoryItem GetByItemId(Guid itemId)
+        {
+            lock (mutex)
+            {
+                return items.FirstOrDefault(x => x.ItemId == itemId)?.AsReadOnly(gameData) ?? default;
             }
         }
 
