@@ -61,6 +61,9 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<DataModels.Character> GetCharacters(Func<Character, bool> predicate);
         IReadOnlyList<DataModels.Character> GetCharacters();
         IReadOnlyList<DataModels.Character> GetSessionCharacters(DataModels.GameSession currentSession, bool activeSessionOnly = true);
+
+        ICollection<DataModels.RedeemableItem> GetRedeemableItems();
+        RedeemableItem GetRedeemableItemByItemId(Guid itemId);
         User GetUser(string twitchUserId);
         UserLoyalty GetUserLoyalty(Guid userId, Guid streamerUserId);
         IReadOnlyList<UserLoyalty> GetUserLoyalties(Guid userId);
@@ -120,6 +123,8 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Add
+
+        void Add(RedeemableItem item);
         void Add(ClanSkill entity);
         void Add(MarketItemTransaction transaction);
         void Add(UserNotification ev);
@@ -160,6 +165,7 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Remove
+        void Remove(RedeemableItem item);
         void Remove(InventoryItemAttribute attr);
         void Remove(UserNotification ev);
         void Remove(CharacterClanMembership ev);

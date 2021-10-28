@@ -143,6 +143,11 @@ namespace RavenNest.Controllers
             return playerManager.RedeemTokens(AssertGetSessionToken(), userId, amount, exact);
         }
 
+        [HttpGet("{characterId}/redeem-item/{itemId}")]
+        public RedeemItemResult RedeemItem(Guid characterId, Guid itemId)
+        {
+            return playerManager.RedeemItem(AssertGetSessionToken(), characterId, itemId);
+        }
 
         [HttpGet("{userId}/add-tokens/{amount}")]
         public bool AddTokens(string userId, int amount)

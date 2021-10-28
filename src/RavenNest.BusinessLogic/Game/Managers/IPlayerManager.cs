@@ -68,6 +68,7 @@ namespace RavenNest.BusinessLogic.Game
         void EquipBestItems(DataModels.Character character);
         bool AcquiredUserLock(SessionToken token, DataModels.Character character);
         bool AddTokens(SessionToken sessionToken, string userId, int amount);
+        RedeemItemResult RedeemItem(SessionToken sessionToken, Guid characterId, Guid itemId);
         int RedeemTokens(SessionToken sessionToken, string userId, int amount, bool exact);
         int GetHighscore(SessionToken sessionToken, Guid characterId, string skillName);
         void SendPlayerTaskToGame(DataModels.GameSession activeSession, Character character, string task, string taskArgument);
