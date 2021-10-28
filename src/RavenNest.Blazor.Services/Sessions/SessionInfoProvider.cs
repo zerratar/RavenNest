@@ -69,9 +69,9 @@ namespace RavenNest.Sessions
             return !string.IsNullOrEmpty(token);
         }
 
-        public void SetActiveCharacter(SessionInfo session, Guid id)
+        public void SetActiveCharacter(SessionInfo session, Guid? characterId)
         {
-            session.ActiveCharacterId = id;
+            session.ActiveCharacterId = characterId;
             var sessionState = JSON.Stringify(session);
             SetString(session.SessionId, AuthState, sessionState);
         }
@@ -113,12 +113,26 @@ namespace RavenNest.Sessions
 
             var activeCharacter = gameData.GetCharacterBySession(activeSession.Id, twitchUserId, false);
             if (activeCharacter != null)
-                si.ActiveCharacterId = activeCharacter.Id;
+            {
+                foreach (var sd in sessions.Values)
+                {
+                    if (sd.SessionInfo != null && sd.SessionInfo.ActiveCharacterId == activeCharacter.Id && sd.SessionInfo.Extension)
+                    {
+                        si = sd.SessionInfo;
+                        RemoveSessionData(si.SessionId);
+                        break;
+                    }
+                }
 
+                si.ActiveCharacterId = activeCharacter.Id;
+            }
+
+            si.Extension = true;
             si.SessionId = sessionId;
             UpdateSessionInfoData(si, user);
 
             var sessionState = JSON.Stringify(si);
+            GetSessionData(sessionId).SessionInfo = si;
             SetString(sessionId, AuthState, sessionState);
             return si;
         }
@@ -155,10 +169,13 @@ namespace RavenNest.Sessions
             }
 
             si.SessionId = sessionId;
+
             UpdateSessionInfoData(si, user);
 
             var sessionState = JSON.Stringify(si);
             //await logger.WriteDebugAsync("SET SESSION STATE (" + session.Id + "): " + sessionState);
+
+            GetSessionData(sessionId).SessionInfo = si;
 
             SetString(sessionId, AuthState, sessionState);
             return si;
@@ -218,6 +235,38 @@ namespace RavenNest.Sessions
                    ((skills.RangedLevel + skills.MagicLevel + skills.HealingLevel) / 8f));
         }
 
+        public bool TryGet(Guid characterId, out SessionInfo sessionInfo)
+        {
+            sessionInfo = null;
+            var allData = GetAllSessionData();
+            foreach (var data in allData)
+            {
+                if (data.SessionInfo != null)
+                {
+                    if (data.SessionInfo.ActiveCharacterId == characterId)
+                    {
+                        sessionInfo = data.SessionInfo;
+                        return true;
+                    }
+                }
+
+                // // This would be the proper way to do it based on how things look like today
+                // // but it is also the worst way of doing it as it would do additional allocations everytime we look things up.
+
+                //var jsonData = data[AuthState];
+                //if (!string.IsNullOrEmpty(jsonData))
+                //{
+                //    var si = JSON.Parse<SessionInfo>(jsonData);
+                //    if (si.ActiveCharacterId == characterId)
+                //    {
+                //        sessionInfo = si;
+                //        return true;
+                //    }
+                //}
+            }
+            return false;
+        }
+
         public bool TryGet(string sessionId, out SessionInfo sessionInfo)
         {
             sessionInfo = new SessionInfo();
@@ -235,6 +284,7 @@ namespace RavenNest.Sessions
                 {
                     var user = gameData.GetUser(sessionInfo.UserId);
                     UpdateSessionInfoData(sessionInfo, user);
+                    GetSessionData(sessionId).SessionInfo = sessionInfo;
                 }
             }
             catch (Exception exc)
@@ -313,6 +363,19 @@ namespace RavenNest.Sessions
             GetSessionData(sessionId).SetString(key, value);
         }
 
+        private ICollection<SessionData> GetAllSessionData()
+        {
+            return this.sessions.Values;
+        }
+
+        private void RemoveSessionData(string sessionId)
+        {
+            if (sessions.TryRemove(sessionId, out var session))
+            {
+                session.Clear();
+            }
+        }
+
         private SessionData GetSessionData(string sessionId)
         {
             if (string.IsNullOrEmpty(sessionId))
@@ -321,7 +384,9 @@ namespace RavenNest.Sessions
             if (!sessions.TryGetValue(sessionId, out var data))
             {
                 data = new SessionData();
+                data.Id = sessionId;
                 sessions[sessionId] = data;
+
             }
             else
             {
@@ -330,6 +395,7 @@ namespace RavenNest.Sessions
                 if (idleTime >= SessionCookie.SessionTimeout)
                 {
                     data = new SessionData();
+                    data.Id = sessionId;
                     sessions[sessionId] = data;
                 }
             }

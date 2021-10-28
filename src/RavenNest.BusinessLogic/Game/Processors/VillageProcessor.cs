@@ -37,14 +37,15 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             if (levelDelta > 0 || DateTime.UtcNow - lastExpSend > updateExpInterval)
             {
-                gameData.Add(gameData.CreateSessionEvent(GameEventType.VillageLevelUp, session, new VillageLevelUp
+                var data = new VillageLevelUp
                 {
                     Experience = village.Experience,
                     Level = village.Level,
                     LevelDelta = levelDelta,
                     HouseSlots = villageHouses.Count
-                }));
+                };
 
+                gameData.Add(gameData.CreateSessionEvent(GameEventType.VillageLevelUp, session, data));
                 lastExpSend = DateTime.UtcNow;
             }
 

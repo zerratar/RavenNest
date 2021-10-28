@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using RavenNest.Sessions;
+using System.Threading.Tasks;
 
 namespace RavenNest.BusinessLogic.Twitch.Extension
 {
@@ -11,5 +12,7 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
         void Close();
         bool Closed { get; }
         Task KeepAlive();
+        SessionInfo Session { get; }
+        string BroadcasterTwitchUserId { get; }
     }
 }

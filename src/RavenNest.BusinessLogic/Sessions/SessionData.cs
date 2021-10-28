@@ -9,6 +9,16 @@ namespace RavenNest.Sessions
         public DateTime Created { get; } = DateTime.UtcNow;
         public DateTime LastModified { get; private set; }
         public DateTime LastAccessed { get; private set; }
+
+        public SessionInfo SessionInfo { get; set; }
+        public string Id { get; set; }
+
+        public string this[string key]
+        {
+            get => GetString(key);
+            set => SetString(key, value);
+        }
+
         public string GetString(string key)
         {
             try
@@ -44,9 +54,10 @@ namespace RavenNest.Sessions
             }
         }
 
-        internal void Clear()
+        public void Clear()
         {
             Data.Clear();
+            SessionInfo = null;
             LastAccessed = DateTime.UtcNow;
             LastModified = DateTime.UtcNow;
         }

@@ -22,7 +22,7 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
             return true;
         }
 
-        public static Task ForEachAsync<T>(this IReadOnlyList<T> source, Func<T, Task> action)
+        public static Task ForEachAsync<T>(this IEnumerable<T> source, Func<T, Task> action)
         {
             return Task.WhenAll(source.Select(action));
         }

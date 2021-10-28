@@ -40,7 +40,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 && string.IsNullOrEmpty(state.DuelOpponent);
 
             var now = DateTime.UtcNow;
-            if(!lastUpdate.TryGetValue(character.Id, out var lastUpdateTime))
+            if (!lastUpdate.TryGetValue(character.Id, out var lastUpdateTime))
             {
                 lastUpdateTime = now;
             }
@@ -67,23 +67,28 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 var restedPercent = restedTime / MaxRestTime.TotalSeconds;
                 var isRested = restedTime > 0;
 
-                var gameEvent = gameData.CreateSessionEvent(
-                    GameEventType.PlayerRestedUpdate,
-                    session,
-                    new Models.PlayerRestedUpdate
-                    {
-                        CharacterId = character.Id,
-                        ExpBoost = isRested ? ExpBoost : 0,
-                        StatsBoost = isRested ? CombatStatsBoost : 0,
-                        RestedTime = restedTime,
-                        RestedPercent = restedPercent
-                    }
-                );
+                var data = new Models.PlayerRestedUpdate
+                {
+                    CharacterId = character.Id,
+                    ExpBoost = isRested ? ExpBoost : 0,
+                    StatsBoost = isRested ? CombatStatsBoost : 0,
+                    RestedTime = restedTime,
+                    RestedPercent = restedPercent
+                };
+
+
+                var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRestedUpdate, session, data);
                 gameData.Add(gameEvent);
                 lastEvent[character.Id] = now;
+
+                if (restedTime > 0)
+                {
+                    TrySendToExtensionAsync(character, data);
+                }
             }
             lastUpdate[character.Id] = now;
         }
+
 
         private void RemoveRestTime(CharacterState state, TimeSpan elapsed)
         {

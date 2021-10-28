@@ -21,6 +21,7 @@ namespace RavenNest.Sessions
         public bool AcceptedCookiesDisclaimer { get; set; }
         public bool UserNameChanged { get; set; }
         public AuthToken AuthToken { get; set; }
+        public bool Extension { get; set; }
     }
 
     public class CharacterGameSession
