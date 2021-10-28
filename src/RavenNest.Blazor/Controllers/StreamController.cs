@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -52,16 +53,19 @@ namespace RavenNest.Controllers
         }
 
 
-        [HttpGet("extension")]
-        public async Task GetExtensionWebsocketConnection()
+        [HttpGet("extension/{broadcasterId}/{sessionId}")]
+        public async Task GetExtensionWebsocketConnection(string broadcasterId, string sessionId)
         {
-            var socketSessionProvider = gameWsConnectionProvider;
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
+                var headers = new Dictionary<string, string>
+                {
+                    { "broadcasterId", broadcasterId },
+                    { SessionCookie.SessionCookieName, sessionId }
+                };
+
                 var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
-                var socketSession = extensionWsConnectionProvider.Get(
-                    webSocket, HttpContext.Request.Headers.ToDictionary(x => x.Key, y => string.Join(",", y.Value)));
-                
+                var socketSession = extensionWsConnectionProvider.Get(webSocket, headers);
                 if (socketSession == null)
                 {
                     await webSocket.CloseAsync(

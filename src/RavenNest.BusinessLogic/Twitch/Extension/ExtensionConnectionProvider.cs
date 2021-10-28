@@ -1,52 +1,52 @@
 ﻿using Microsoft.Extensions.Logging;
-using RavenNest.BusinessLogic.Game;
-using RavenNest.Models;
+using RavenNest.BusinessLogic.Data;
+using RavenNest.Sessions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 
 namespace RavenNest.BusinessLogic.Twitch.Extension
 {
     public class ExtensionConnectionProvider : IExtensionWebSocketConnectionProvider
     {
+        private readonly IGameData gameData;
+        private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly ILogger<ExtensionConnectionProvider> logger;
         private readonly IExtensionPacketDataSerializer packetDataSerializer;
-        private readonly ISessionManager sessionManager;
-        private readonly List<IExtensionConnection> connections = new List<IExtensionConnection>();
+        private readonly Dictionary<string, IExtensionConnection> connections = new Dictionary<string, IExtensionConnection>();
+
         private readonly object mutex = new object();
+
         public ExtensionConnectionProvider(
             ILogger<ExtensionConnectionProvider> logger,
+            IGameData gameData,
             IExtensionPacketDataSerializer packetDataSerializer,
-            ISessionManager sessionManager)
+            ISessionInfoProvider sessionInfoProvider
+        )
         {
             this.logger = logger;
+            this.gameData = gameData;
             this.packetDataSerializer = packetDataSerializer;
-            this.sessionManager = sessionManager;
+            this.sessionInfoProvider = sessionInfoProvider;
         }
 
-        public IReadOnlyList<IExtensionConnection> GetAll()
+        public IEnumerable<IExtensionConnection> GetAll()
         {
             lock (mutex)
             {
-                return connections.ToList();
+                return connections.Values;
             }
         }
 
-        public IExtensionConnection Get(System.Net.WebSockets.WebSocket socket, IReadOnlyDictionary<string, string> requestHeaders)
+        public IExtensionConnection Get(
+            System.Net.WebSockets.WebSocket socket,
+            IReadOnlyDictionary<string, string> requestHeaders)
         {
-            //if (!requestHeaders.TryGetValue("session-token", out var token))
-            //{
-            //    logger.LogWarning("No Session Token when trying to create websocket connection!");
-            //    return null;
-            //}
-
-            //var sessionToken = sessionManager.Get(token);
-            //if (!CheckSessionTokenValidity(sessionToken))
-            //{
-            //    logger.LogWarning("Invalid session token for websocket connection (" + sessionToken.SessionId + ")");
-            //    return null;
-            //}
+            var sessionId = requestHeaders.GetSessionId();
+            if (!sessionInfoProvider.TryGet(sessionId, out var session))
+            {
+                return null;
+            }
 
             if (socket == null)
             {
@@ -55,17 +55,49 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
 
             lock (mutex)
             {
-                var connection = new ExtensionWebSocketConnection(logger, socket, packetDataSerializer);
-                connections.Add(connection);
+                var connection = new ExtensionWebSocketConnection(logger, socket, packetDataSerializer, session, requestHeaders["broadcasterId"]);
+                connections[sessionId] = connection;
                 return connection;
             }
         }
 
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool CheckSessionTokenValidity(SessionToken sessionToken)
+        public bool TryGet(string sessionId, out IExtensionConnection connection)
         {
-            return sessionToken != null && sessionToken.SessionId != Guid.Empty && !sessionToken.Expired;
+            lock (mutex)
+            {
+                return connections.TryGetValue(sessionId, out connection);
+            }
+        }
+
+        public bool TryGetAllByStreamer(Guid streamerUserId, out IReadOnlyList<IExtensionConnection> connections)
+        {
+            lock (mutex)
+            {
+                var streamer = gameData.GetUser(streamerUserId);
+                return (connections = this.connections.Where(x => x.Value.BroadcasterTwitchUserId == streamer.UserId).Select(x => x.Value).ToList()).Count > 0;
+            }
+        }
+
+        public bool TryGetAllByUser(Guid userId, out IReadOnlyList<IExtensionConnection> connections)
+        {
+            lock (mutex)
+            {
+                return (connections = this.connections.Where(x => x.Value.Session.Id == userId).Select(x => x.Value).ToList()).Count > 0;
+            }
+        }
+
+        public bool TryGet(Guid characterId, out IExtensionConnection connection)
+        {
+            lock (mutex)
+            {
+                if (sessionInfoProvider.TryGet(characterId, out var session))
+                {
+                    return TryGet(session.SessionId, out connection);
+                }
+
+                connection = null;
+                return false;
+            }
         }
     }
 }

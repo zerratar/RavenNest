@@ -10,6 +10,7 @@ namespace RavenNest.Sessions
     {
         void Clear(string sessionId);
         bool TryGet(string sessionId, out SessionInfo sessionInfo);
+        bool TryGet(Guid characterId, out SessionInfo sessionInfo);
         bool TryGetTwitchToken(string sessionId, out string token);
         bool TryGetAuthToken(string sessionId, out AuthToken authToken);
         Task<TwitchRequests.TwitchUser> GetTwitchUserAsync(string sessionId, string token = null);
@@ -18,7 +19,7 @@ namespace RavenNest.Sessions
         Task<SessionInfo> SetAuthTokenAsync(string sessionId, AuthToken token);
         Task<SessionInfo> StoreAsync(string sessionId);
         Task<SessionInfo> CreateTwitchUserSessionAsync(string sessionId, string broadcasterId, string twitchUserId);
-        void SetActiveCharacter(SessionInfo session, Guid id);
+        void SetActiveCharacter(SessionInfo session, Guid? id);
         void SetCookieDisclaimer(SessionInfo session, bool accepted);
     }
 }

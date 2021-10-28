@@ -10,6 +10,7 @@ using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
+using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
 
@@ -32,6 +33,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly IEnchantmentManager enchantmentManager;
         private readonly IGameData gameData;
         private readonly IIntegrityChecker integrityChecker;
+        private readonly IExtensionWebSocketConnectionProvider extensionWsConnectionProvider;
 
         public PlayerManager(
             ILogger<PlayerManager> logger,
@@ -40,7 +42,8 @@ namespace RavenNest.BusinessLogic.Game
             IPlayerInventoryProvider inventoryProvider,
             IEnchantmentManager enchantmentManager,
             IGameData gameData,
-            IIntegrityChecker integrityChecker)
+            IIntegrityChecker integrityChecker,
+            IExtensionWebSocketConnectionProvider extensionWsConnectionProvider)
         {
             this.logger = logger;
             this.ravenbotApi = ravenbotApi;
@@ -49,6 +52,7 @@ namespace RavenNest.BusinessLogic.Game
             this.enchantmentManager = enchantmentManager;
             this.gameData = gameData;
             this.integrityChecker = integrityChecker;
+            this.extensionWsConnectionProvider = extensionWsConnectionProvider;
         }
 
         public int GetHighscore(SessionToken sessionToken, Guid characterId, string skillName)
@@ -413,6 +417,14 @@ namespace RavenNest.BusinessLogic.Game
 
             SendUserRoleToRavenBotAsync(user);
 
+            this.TrySendToExtensionAsync(character, new PlayerAdd
+            {
+                Identifier = character.Identifier,
+                UserId = user.UserId,
+                UserName = user.UserName,
+                CharacterId = character.Id
+            });
+
             return character.Map(gameData, user, rejoin, true);
         }
 
@@ -427,13 +439,22 @@ namespace RavenNest.BusinessLogic.Game
             if (session == null) return false;
             var character = gameData.GetCharacter(characterId);
             if (character == null) return false;
+
             var user = gameData.GetUser(character.UserId);
             if (user == null) return false;
             var sessionOwner = gameData.GetUser(session.UserId);
             if (sessionOwner == null) return false;
             if (sessionOwner.Id != character.UserIdLock)
                 return false;
+
+            this.TrySendToExtensionAsync(character, new PlayerRemove
+            {
+                CharacterId = characterId,
+                Reason = "Left Game",
+            });
+
             character.UserIdLock = null;
+
             return true;
         }
 
@@ -1690,6 +1711,13 @@ namespace RavenNest.BusinessLogic.Game
                 if (updated)
                 {
                     characterSessionState.LastSkillUpdate = DateTime.UtcNow;
+                    TrySendToExtensionAsync(character, new CharacterExpUpdate
+                    {
+                        CharacterId = character.Id,
+                        Experience = experience,
+                        Level = level,
+                        SkillIndex = skillIndex
+                    });
                 }
 
                 if (removeFromSession)
@@ -1710,6 +1738,7 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
         }
+
         public bool UpdateExperience(
             SessionToken token,
             string userId,
@@ -1869,6 +1898,24 @@ namespace RavenNest.BusinessLogic.Game
         public void EquipBestItems(Character character)
         {
             inventoryProvider.Get(character.Id).EquipBestItems();
+        }
+
+        internal async Task<bool> TrySendToExtensionAsync<T>(Character character, T data)
+        {
+            if (extensionWsConnectionProvider.TryGet(character.Id, out var connection))
+            {
+                try
+                {
+                    await connection.SendAsync(data);
+                    return true;
+                }
+                catch (Exception exc)
+                {
+                    logger.LogError("Unable to send extension data to " + character?.Name + " of type " + typeof(T).FullName + ": " + exc);
+                }
+            }
+
+            return false;
         }
 
         public bool UpdateResources(

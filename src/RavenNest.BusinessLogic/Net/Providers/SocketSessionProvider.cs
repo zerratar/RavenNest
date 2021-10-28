@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using System.Text;
 using Newtonsoft.Json.Serialization;
 using RavenNest.BusinessLogic.Providers;
+using RavenNest.BusinessLogic.Twitch.Extension;
 
 namespace RavenNest.BusinessLogic.Net
 {
@@ -22,6 +23,7 @@ namespace RavenNest.BusinessLogic.Net
         private readonly IRavenBotApiClient ravenBotApi;
         private readonly IIntegrityChecker integrityChecker;
         private readonly IPlayerInventoryProvider inventoryProvider;
+        private readonly IExtensionWebSocketConnectionProvider extWsProvider;
         private readonly IGameData gameData;
         private readonly IGameManager gameManager;
         private readonly IGamePacketManager packetManager;
@@ -35,6 +37,7 @@ namespace RavenNest.BusinessLogic.Net
             IRavenBotApiClient ravenBotApi,
             IIntegrityChecker integrityChecker,
             IPlayerInventoryProvider inventoryProvider,
+            IExtensionWebSocketConnectionProvider extWsProvider,
             IGameData gameData,
             IGameManager gameManager,
             IGamePacketManager packetManager,
@@ -45,6 +48,7 @@ namespace RavenNest.BusinessLogic.Net
             this.ravenBotApi = ravenBotApi;
             this.integrityChecker = integrityChecker;
             this.inventoryProvider = inventoryProvider;
+            this.extWsProvider = extWsProvider;
             this.gameData = gameData;
             this.gameManager = gameManager;
             this.packetManager = packetManager;
@@ -77,6 +81,7 @@ namespace RavenNest.BusinessLogic.Net
                 packetManager,
                 packetSerializer,
                 sessionManager,
+                extWsProvider,
                 this,
                 ws,
                 sessionToken);
@@ -154,6 +159,7 @@ namespace RavenNest.BusinessLogic.Net
                 IGamePacketManager packetManager,
                 IGamePacketSerializer packetSerializer,
                 ISessionManager sessionManager,
+                IExtensionWebSocketConnectionProvider extWsProvider,
                 GameWebSocketConnectionProvider sessionProvider,
                 WebSocket ws,
                 SessionToken sessionToken)
@@ -170,7 +176,7 @@ namespace RavenNest.BusinessLogic.Net
 
                 this.killTask = new TaskCompletionSource<object>();
                 this.gameProcessor = new GameProcessor(
-                    ravenBotApi, integrityChecker, this, sessionManager, inventoryProvider, gameData, gameManager, sessionToken);
+                    ravenBotApi, integrityChecker, this, extWsProvider, sessionManager, inventoryProvider, gameData, gameManager, sessionToken);
             }
 
             internal Guid SessionId => this.sessionToken.SessionId;

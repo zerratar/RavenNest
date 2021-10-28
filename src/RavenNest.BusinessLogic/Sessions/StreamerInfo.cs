@@ -11,7 +11,6 @@ namespace RavenNest.Sessions
         public int PlayerCount { get; set; }
         public DateTime? Started { get; set; }
         public string ClientVersion { get; set; }
-
         public Guid? JoinedCharacterId { get; set; }
     }
 }

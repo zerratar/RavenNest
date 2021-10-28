@@ -246,6 +246,7 @@ namespace RavenNest.Controllers
 
             if (playerManager.SendRemovePlayerFromSessionToGame(character))
             {
+                sessionInfoProvider.SetActiveCharacter(sessionInfo, null);
                 character.UserIdLock = null;
                 return true;
             }
@@ -305,6 +306,8 @@ namespace RavenNest.Controllers
                 // since, if it "fails" as the character is already in game. well. Then what harm done?
                 result.Success = true;
                 result.Player = c.MapForWebsite(gameData, user);
+
+                sessionInfoProvider.SetActiveCharacter(sessionInfo, c.Id);
 
                 var gameEvent = gameData.CreateSessionEvent(
                     GameEventType.PlayerAdd,
@@ -372,6 +375,9 @@ namespace RavenNest.Controllers
                 // since, if it "fails" as the character is already in game. well. Then what harm done?
                 result.Success = true;
                 result.Player = c.MapForWebsite(gameData, myUser);
+
+
+                sessionInfoProvider.SetActiveCharacter(sessionInfo, characterId);
 
                 var gameEvent = gameData.CreateSessionEvent(
                     GameEventType.PlayerAdd,
@@ -460,6 +466,9 @@ namespace RavenNest.Controllers
         public async Task<SessionInfo> SetExtensionViewer(string broadcasterId, string viewerId)
         {
             var session = this.HttpContext.GetSessionId();
+
+            // We need to clear out previous sessions of the combinations of broadcasterId and viewerId.
+            // we will use the pair to retake existing one
             var result = await sessionInfoProvider.CreateTwitchUserSessionAsync(session, broadcasterId, viewerId);
             return result;
         }
@@ -571,14 +580,14 @@ namespace RavenNest.Controllers
 
         private bool TryGetSession(out SessionInfo sessionInfo)
         {
-//            var twitchToken = GetExtensionToken();
-//            if (twitchToken == null)
-//            {
-//#if !DEBUG
-//                sessionInfo = null;
-//                return false;
-//#endif
-//            }
+            //            var twitchToken = GetExtensionToken();
+            //            if (twitchToken == null)
+            //            {
+            //#if !DEBUG
+            //                sessionInfo = null;
+            //                return false;
+            //#endif
+            //            }
 
             var sessionId = HttpContext.GetSessionId();
             sessionInfoProvider.TryGet(sessionId, out sessionInfo);

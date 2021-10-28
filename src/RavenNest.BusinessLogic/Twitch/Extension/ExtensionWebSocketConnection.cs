@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using RavenNest.Sessions;
 using System;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
@@ -11,21 +12,26 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
     {
         private readonly ILogger logger;
         private readonly System.Net.WebSockets.WebSocket socket;
+        private readonly SessionInfo session;
         private readonly IExtensionPacketDataSerializer packetDataSerializer;
         private readonly byte[] buffer;
         private bool closed;
 
         public ExtensionWebSocketConnection(
             ILogger logger,
-            System.Net.WebSockets.WebSocket socket,
-            IExtensionPacketDataSerializer packetDataSerializer)
+            WebSocket socket,
+            IExtensionPacketDataSerializer serializer,
+            SessionInfo session,
+            string twitchBroadcasterId)
         {
             this.SendQueue = new ConcurrentQueue<Packet>();
             this.logger = logger;
             this.socket = socket;
-            this.packetDataSerializer = packetDataSerializer;
+            this.session = session;
+            this.packetDataSerializer = serializer;
             this.buffer = new byte[4096];
             this.KillTask = new TaskCompletionSource<object>();
+            this.BroadcasterTwitchUserId = twitchBroadcasterId;
         }
 
         public ConcurrentQueue<Packet> SendQueue { get; }
@@ -38,6 +44,11 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
         }
 
         public TaskCompletionSource<object> KillTask { get; set; }
+
+        public SessionInfo Session => session;
+        public string SessionId => session.SessionId;
+
+        public string BroadcasterTwitchUserId { get; }
 
         public async Task<T> ReceiveAsync<T>()
         {
@@ -121,11 +132,6 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
             }
 
             return packetDataSerializer.Deserialize(buffer, 0, result.Count, result.MessageType, result.EndOfMessage);
-        }
-
-        public void Init()
-        {
-
         }
     }
 }

@@ -1,15 +1,18 @@
 ﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Providers;
+using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using System;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
     public abstract class PlayerTaskProcessor : ITaskProcessor
     {
         protected readonly Random Random = new Random();
+        public IExtensionWebSocketConnectionProvider ExtensionConnectionProvider { get; private set; }
 
         protected void IncrementItemStack(
             IGameData gameData,
@@ -41,5 +44,32 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             DataModels.GameSession session,
             Character character,
             DataModels.CharacterState state);
+
+        public void SetExtensionConnectionProvider(IExtensionWebSocketConnectionProvider provider)
+        {
+            this.ExtensionConnectionProvider = provider;
+        }
+
+        internal async Task<bool> TrySendToExtensionAsync<T>(Character character, T data)
+        {
+            if (character == null || data == null)
+            {
+                return false;
+            }
+            if (ExtensionConnectionProvider.TryGet(character.Id, out var connection))
+            {
+                try
+                {
+                    await connection.SendAsync(data);
+                    return true;
+                }
+                catch
+                {
+                }
+            }
+
+            return false;
+        }
+
     }
 }

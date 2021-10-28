@@ -6,7 +6,9 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Net;
+using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.Models;
+using RavenNest.Sessions;
 
 namespace RavenNest.BusinessLogic.Game
 {
@@ -16,7 +18,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly ITwitchClient twitchClient;
         private readonly IGameData gameData;
         private readonly IPlayerManager playerManager;
-
+        private readonly IExtensionWebSocketConnectionProvider extWsConnectionProvider;
         private readonly int[] MaxMultiplier = new int[]
         {
             //0, 10, 15, 20
@@ -28,12 +30,14 @@ namespace RavenNest.BusinessLogic.Game
             ILogger<SessionManager> logger,
             ITwitchClient twitchClient,
             IGameData gameData,
-            IPlayerManager playerManager)
+            IPlayerManager playerManager,
+            IExtensionWebSocketConnectionProvider extWsConnectionProvider)
         {
             this.logger = logger;
             this.twitchClient = twitchClient;
             this.gameData = gameData;
             this.playerManager = playerManager;
+            this.extWsConnectionProvider = extWsConnectionProvider;
         }
 
         public async Task<SessionToken> BeginSessionAsync(
@@ -301,6 +305,28 @@ namespace RavenNest.BusinessLogic.Game
         public void EndSession(DataModels.GameSession session)
         {
             var characters = gameData.GetSessionCharacters(session);
+            var owner = gameData.GetUser(session.UserId);
+
+            var data = new StreamerInfo();
+            data.StreamerUserId = owner.UserId;
+            data.StreamerUserName = owner.UserName;
+            data.IsRavenfallRunning = false;
+            data.StreamerSessionId = null;
+            data.Started = null;
+
+            var state = gameData.GetSessionState(session.Id);
+            if (state != null)
+            {
+                data.ClientVersion = state.ClientVersion;
+            }
+
+            if (extWsConnectionProvider.TryGetAllByStreamer(session.UserId, out var allConnections))
+            {
+                foreach (var connection in allConnections)
+                {
+                    connection.SendAsync(data);
+                }
+            }
 
             foreach (var character in characters)
             {

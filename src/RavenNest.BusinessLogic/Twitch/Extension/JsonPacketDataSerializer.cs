@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Net.WebSockets;
 using System.Text;
@@ -10,10 +11,22 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
     public class JsonPacketDataSerializer : IExtensionPacketDataSerializer
     {
         private readonly ILogger<JsonPacketDataSerializer> logger;
+        private JsonSerializerSettings serializerSettings;
 
         public JsonPacketDataSerializer(ILogger<JsonPacketDataSerializer> logger)
         {
             this.logger = logger;
+
+            DefaultContractResolver contractResolver = new DefaultContractResolver
+            {
+                NamingStrategy = new CamelCaseNamingStrategy()
+            };
+
+            this.serializerSettings = new JsonSerializerSettings
+            {
+                ContractResolver = contractResolver,
+                Formatting = Formatting.Indented
+            };
         }
 
         public T Serialize<T>(Packet data)
@@ -24,8 +37,7 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
 
         public Packet Deserialize<T>(T data)
         {
-            var settings = new JsonSerializerSettings();
-            var json = JsonConvert.SerializeObject(data, settings);
+            var json = JsonConvert.SerializeObject(data, serializerSettings);
             var bytes = System.Text.Encoding.UTF8.GetBytes(json);
             return new Packet(
                 this,
