@@ -2,6 +2,7 @@
 using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
+using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.Models;
 using System;
 using System.Collections.Concurrent;
@@ -26,6 +27,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private readonly IRavenBotApiClient ravenbotApi;
         private readonly IIntegrityChecker integrityChecker;
         private readonly IGameWebSocketConnection ws;
+        private readonly IExtensionWebSocketConnectionProvider extWsProvider;
         private readonly ISessionManager sessionManager;
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly SessionToken sessionToken;
@@ -46,6 +48,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             IRavenBotApiClient ravenbotApi,
             IIntegrityChecker integrityChecker,
             IGameWebSocketConnection ws,
+            IExtensionWebSocketConnectionProvider extWsProvider,
             ISessionManager sessionManager,
             IPlayerInventoryProvider inventoryProvider,
             IGameData gameData,
@@ -57,6 +60,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             this.ravenbotApi = ravenbotApi;
             this.integrityChecker = integrityChecker;
             this.ws = ws;
+            this.extWsProvider = extWsProvider;
             this.sessionManager = sessionManager;
             this.inventoryProvider = inventoryProvider;
             this.sessionToken = sessionToken;
@@ -263,6 +267,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private void RegisterPlayerTask<T>(string taskName) where T : ITaskProcessor, new()
         {
             taskProcessors[taskName] = new T();
+            taskProcessors[taskName].SetExtensionConnectionProvider(extWsProvider);
         }
     }
 }

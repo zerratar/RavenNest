@@ -1,0 +1,44 @@
+{
+  "DetailedErrors": true,
+  "Logging": {
+    "LogLevel": {
+      "Default": "Error",
+      "Microsoft": "Error",
+      "RavenNest.RequestTiming": "Error",
+      "RavenNest.BusinessLogic.Data.GameData": "Error"
+    }
+  },
+    "Kestrel": {
+        "EndPoints": {
+            "Http": {
+                "Url": "http://0.0.0.0:80"
+            },
+            "HttpsInlineCertFile": {
+                "Url": "https://0.0.0.0:443",
+                "Certificate": {
+                    "Path": "/etc/letsencrypt/live/ravennest/cert_pfx.pfx",
+                    "Password": "ravenfall123",
+                    "AllowInvalid": "true"
+                }
+            }
+        }
+    },
+
+  "AllowedHosts": "*",
+  "ConnectionStrings": {
+    "BlobStorage": "DefaultEndpointsProtocol=https;AccountName=ravennestblobstorage;AccountKey=evSuLS2UYfWMhIvrTP+MZdLzjAWnFO2F8r5zhS8W0c93wBUNZQJqnLBynLMeZaOZ6qHxJWoIVhaO+tPjSB934w==;EndpointSuffix=core.windows.net"
+  },
+  "AzureAppSettings": {
+    "ClientId": "5512c8f8-2d25-4537-af2d-de2a304715ed",
+    "ClientSecret": "NtHoMtEOaQ@v044mZ.VNugc9U_:VEnaZ",
+    "KeyIdentifier": "https://ravennestkeyvault.vault.azure.net/keys/DataProtectionKey"
+  },
+  "AppSettings": {
+    "OriginBroadcasterId": "72424639",
+    "DbConnectionString": "Server=host.ravenfall.stream;Initial Catalog=DB_A3551F_ravenfall;User Id=sa;Password=e9Xkhy9Lk3hfKfVEwC79qeRHGYydH2",
+    "TwitchAccessToken": "hsbd1zrdjjqrzxhjek4437as20gn0y",
+    "TwitchRefreshToken": "oxnvm0sqipd3leqvolwqfqhqitrqhlliczg9zjwl1msb3gb4qa",
+    "TwitchClientId": "757vrtjoawg2rtquprnfb35nqah1w4",
+    "TwitchClientSecret": "2fwp77obyisvqoxyy1vv24s1s38t0s"
+  }
+}

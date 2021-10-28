@@ -1,5 +1,6 @@
 ﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Providers;
+using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 
 namespace RavenNest.BusinessLogic.Game.Processors.Tasks
@@ -7,11 +8,15 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     public interface ITaskProcessor
     {
         void Process(
-            IIntegrityChecker integrityChecker, 
+            IIntegrityChecker integrityChecker,
             IGameData gameData,
             IPlayerInventoryProvider inventoryProvider,
-            GameSession session, 
-            Character character, 
+            GameSession session,
+            Character character,
             CharacterState state);
+
+
+        // fugly
+        void SetExtensionConnectionProvider(IExtensionWebSocketConnectionProvider provider);
     }
 }
