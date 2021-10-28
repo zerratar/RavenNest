@@ -3,9 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Game;
@@ -15,11 +13,14 @@ namespace RavenNest.BusinessLogic.Data
 {
     public class GameData : IGameData
     {
+        #region Settings
         private const int BackupInterval = 60 * 60 * 1000; // once per hour
         private const int SaveInterval = 10000;
         private const int SaveMaxBatchSize = 50;
-
         public const float SessionTimeoutSeconds = 1f;
+        #endregion
+
+        #region Private members
 
         private readonly IRavenfallDbContextProvider db;
         private readonly ILogger logger;
@@ -32,13 +33,11 @@ namespace RavenNest.BusinessLogic.Data
         private readonly ConcurrentDictionary<Guid, SessionState> sessionStates
             = new ConcurrentDictionary<Guid, SessionState>();
 
-
         private readonly EntitySet<UserLoyalty, Guid> loyalty;
         private readonly EntitySet<UserProperty, Guid> userProperties;
         private readonly EntitySet<UserLoyaltyRank, Guid> loyaltyRanks;
         private readonly EntitySet<UserLoyaltyReward, Guid> loyaltyRewards;
         private readonly EntitySet<UserClaimedLoyaltyReward, Guid> claimedLoyaltyRewards;
-
         private readonly EntitySet<UserNotification, Guid> notifications;
 
         private readonly EntitySet<CharacterClanInvite, Guid> clanInvites;
@@ -63,6 +62,8 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<ItemAttribute, Guid> itemAttributes;
         private readonly EntitySet<InventoryItemAttribute, Guid> inventoryItemAttributes;
 
+        private readonly EntitySet<RedeemableItem, Guid> redeemableItems;
+
         private readonly EntitySet<MarketItem, Guid> marketItems;
         private readonly EntitySet<Item, Guid> items;
         private readonly EntitySet<NPC, Guid> npcs;
@@ -79,14 +80,21 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<Village, Guid> villages;
         private readonly EntitySet<VillageHouse, Guid> villageHouses;
 
+
         private readonly IEntitySet[] entitySets;
         private readonly IGameDataBackupProvider backupProvider;
         private ITimeoutHandle scheduleHandler;
         private ITimeoutHandle backupHandler;
 
+        #endregion
+
+        #region Public members
+        public GameClient Client { get; private set; }
         public object SyncLock { get; } = new object();
         public bool InitializedSuccessful { get; } = false;
+        #endregion
 
+        #region Game Data Construction
         public GameData(
             IGameDataBackupProvider backupProvider,
             IGameDataMigration dataMigration,
@@ -106,6 +114,7 @@ namespace RavenNest.BusinessLogic.Data
                 var stopWatch = new Stopwatch();
                 stopWatch.Start();
 
+                #region Data Restoration
                 IEntityRestorePoint restorePoint = backupProvider.GetRestorePoint(new[] {
                         typeof(UserLoyalty),
                         typeof(ClanRole),
@@ -123,6 +132,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(InventoryItemAttribute),
                         typeof(Item),
                         typeof(User),
+                        typeof(RedeemableItem),
                         //typeof(UserNotification),
                         typeof(MarketItemTransaction),
                         typeof(GameSession),
@@ -141,12 +151,17 @@ namespace RavenNest.BusinessLogic.Data
                     dataMigration.Migrate(this.db, restorePoint);
                     backupProvider.ClearRestorePoint();
                 }
+                #endregion
 
+                #region Data Load
                 using (var ctx = this.db.Get())
                 {
                     loyalty = new EntitySet<UserLoyalty, Guid>(restorePoint?.Get<UserLoyalty>() ?? ctx.UserLoyalty.ToList(), i => i.Id);
                     loyalty.RegisterLookupGroup(nameof(User), x => x.UserId);
                     loyalty.RegisterLookupGroup("Streamer", x => x.StreamerUserId);
+
+                    redeemableItems = new EntitySet<RedeemableItem, Guid>(restorePoint?.Get<RedeemableItem>() ?? ctx.RedeemableItem.ToList(), i => i.Id);
+                    redeemableItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
                     userProperties = new EntitySet<UserProperty, Guid>(restorePoint?.Get<UserProperty>() ?? ctx.UserProperty.ToList(), i => i.Id);
                     userProperties.RegisterLookupGroup(nameof(User), x => x.UserId);
@@ -299,6 +314,7 @@ namespace RavenNest.BusinessLogic.Data
 
                     entitySets = new IEntitySet[]
                     {
+                        redeemableItems,
                         patreons, loyalty, loyaltyRewards, loyaltyRanks, claimedLoyaltyRewards,
                         expMultiplierEvents, notifications,
                         appearances, syntyAppearances, characters, characterStates,
@@ -310,7 +326,9 @@ namespace RavenNest.BusinessLogic.Data
                         npcs, npcSpawns, npcItemDrops, itemCraftingRequirements, characterSessionActivities
                     };
                 }
+                #endregion
 
+                #region Post Data Load - Transformations
                 UpgradeSkillLevels(characterSkills);
                 RemoveBadUsers(users);
                 RemoveBadInventoryItems(inventoryItems);
@@ -318,6 +336,7 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureExpMultipliersWithinBounds(expMultiplierEvents);
                 EnsureCraftingRequirements(items);
                 MergeLoyaltyData(loyalty);
+                #endregion
 
                 stopWatch.Stop();
                 logger.LogDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
@@ -334,6 +353,9 @@ namespace RavenNest.BusinessLogic.Data
             }
 
         }
+        #endregion
+
+        #region Data Transformations
 
         private void EnsureCraftingRequirements(EntitySet<Item, Guid> items)
         {
@@ -735,7 +757,12 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
-        public GameClient Client { get; private set; }
+        #endregion
+
+        #region Add Methods
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(RedeemableItem item) => Update(() => redeemableItems.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(UserNotification entity) => Update(() => notifications.Add(entity));
@@ -850,6 +877,138 @@ namespace RavenNest.BusinessLogic.Data
             };
             return ev;
         }
+        #endregion
+
+        #region Get Entities
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Village GetOrCreateVillageBySession(GameSession session)
+        {
+            var village = GetVillageBySession(session);
+            if (village == null)
+            {
+                var villageResources = new Resources()
+                {
+                    Id = Guid.NewGuid()
+                };
+
+                Add(villageResources);
+
+
+                var user = GetUser(session.UserId);
+                var villageExp = user.IsAdmin.GetValueOrDefault()
+                    ? GameMath.OLD_LevelToExperience(30)
+                    : 0;
+                var villageLevel = GameMath.OLD_ExperienceToLevel(villageExp);
+
+                village = new Village()
+                {
+                    Id = Guid.NewGuid(),
+                    ResourcesId = villageResources.Id,
+                    Level = villageLevel,
+                    Experience = (long)villageExp,
+                    Name = "Village",
+                    UserId = session.UserId
+                };
+
+                Add(village);
+            }
+
+            return village;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<VillageHouse> GetVillageHouses(Village village)
+        {
+            return villageHouses[nameof(Village), village.Id];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<VillageHouse> GetOrCreateVillageHouses(Village village)
+        {
+            var houses = villageHouses[nameof(Village), village.Id];
+
+            if (village.Level <= 1)
+            {
+                return new VillageHouse[0];
+            }
+
+            var houseCount = village.Level / 10;
+
+            if ((houses == null || houses.Count == 0) && houseCount > 0)
+            {
+                houses = Enumerable.Range(0, houseCount).Select(x => new VillageHouse
+                {
+                    Id = Guid.NewGuid(),
+                    Created = DateTime.UtcNow,
+                    Slot = x,
+                    Type = 0,
+                    VillageId = village.Id
+                }).ToList();
+
+                foreach (var house in houses)
+                {
+                    Add(house);
+                }
+            }
+
+            if (houses.Count < houseCount)
+            {
+                var housesTemp = houses.ToList();
+
+                for (var i = houses.Count; i < houseCount; ++i)
+                {
+                    var house = new VillageHouse
+                    {
+                        Id = Guid.NewGuid(),
+                        Created = DateTime.UtcNow,
+                        Slot = i,
+                        Type = 0,
+                        VillageId = village.Id
+                    };
+
+                    Add(house);
+
+                    housesTemp.Add(house);
+                }
+
+                houses = housesTemp;
+            }
+            return houses;
+        }
+
+        public CharacterSessionState GetCharacterSessionState(Guid sessionId, Guid characterId)
+        {
+            ConcurrentDictionary<Guid, CharacterSessionState> states;
+
+            if (!characterSessionStates.TryGetValue(sessionId, out states))
+            {
+                states = new ConcurrentDictionary<Guid, CharacterSessionState>();
+            }
+
+            CharacterSessionState state;
+            if (!states.TryGetValue(characterId, out state))
+            {
+                state = new CharacterSessionState();
+                states[characterId] = state;
+                characterSessionStates[sessionId] = states;
+            }
+
+            return state;
+        }
+
+        public SessionState GetSessionState(Guid sessionId)
+        {
+            SessionState state;
+            if (!sessionStates.TryGetValue(sessionId, out state))
+            {
+                state = new SessionState();
+                sessionStates[sessionId] = state;
+            }
+
+            return state;
+        }
+
 
         // This is not code, it is a shrimp. Cant you see?
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1152,6 +1311,8 @@ namespace RavenNest.BusinessLogic.Data
             return characters[nameof(GameSession), currentSession.UserId].OrderByDescending(x => x.LastUsed).Where(x => GetUser(x.UserId) != null).ToList();
         }
 
+
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetUserProperty(Guid userId, string propertyKey, string propertyValue)
         {
@@ -1263,62 +1424,18 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ICollection<RedeemableItem> GetRedeemableItems() => redeemableItems.Entities;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RedeemableItem GetRedeemableItemByItemId(Guid itemId) => redeemableItems[nameof(Item), itemId].FirstOrDefault(x => x.ItemId == itemId);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CharacterSessionActivity GetSessionActivity(Guid sessionId, Guid characterId)
         {
             return characterSessionActivities[nameof(Character), characterId].FirstOrDefault(x => x.SessionId == sessionId);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(UserNotification entity) => notifications.Remove(entity);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(UserLoyalty entity) => loyalty.Remove(entity);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(InventoryItemAttribute entity) => inventoryItemAttributes.Remove(entity);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(Clan entity) => this.clans.Remove(entity);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(CharacterClanInvite entity) => this.clanInvites.Remove(entity);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(ClanRole entity) => this.clanRoles.Remove(entity);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(CharacterClanMembership entity) => this.clanMemberships.Remove(entity);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(CharacterSessionActivity ev) => characterSessionActivities.Remove(ev);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(GameEvent ev) => gameEvents.Remove(ev);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(ItemCraftingRequirement entity) => itemCraftingRequirements.Remove(entity);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(User user) => users.Remove(user);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(Skills skill) => characterSkills.Remove(skill);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(Statistics stat) => statistics.Remove(stat);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(Character character) => characters.Remove(character);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(Resources res) => resources.Remove(res);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(MarketItem marketItem) => marketItems.Remove(marketItem);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(InventoryItem invItem) => inventoryItems.Remove(invItem);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RemoveRange(IReadOnlyList<InventoryItem> items) => items.ForEach(Remove);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Resources GetResources(Guid resourcesId) => resources[resourcesId];
@@ -1411,135 +1528,70 @@ namespace RavenNest.BusinessLogic.Data
         public Village GetVillageByUserId(Guid userId) => villages[nameof(User), userId].FirstOrDefault();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Village GetVillage(Guid villageId) => villages[villageId];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<Village> GetVillages() => villages.Entities.ToList();
+        #endregion
+
+        #region Remove Entities
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Village GetOrCreateVillageBySession(GameSession session)
-        {
-            var village = GetVillageBySession(session);
-            if (village == null)
-            {
-                var villageResources = new Resources()
-                {
-                    Id = Guid.NewGuid()
-                };
-
-                Add(villageResources);
-
-
-                var user = GetUser(session.UserId);
-                var villageExp = user.IsAdmin.GetValueOrDefault()
-                    ? GameMath.OLD_LevelToExperience(30)
-                    : 0;
-                var villageLevel = GameMath.OLD_ExperienceToLevel(villageExp);
-
-                village = new Village()
-                {
-                    Id = Guid.NewGuid(),
-                    ResourcesId = villageResources.Id,
-                    Level = villageLevel,
-                    Experience = (long)villageExp,
-                    Name = "Village",
-                    UserId = session.UserId
-                };
-
-                Add(village);
-            }
-
-            return village;
-        }
+        public void Remove(RedeemableItem entity) => redeemableItems.Remove(entity);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<VillageHouse> GetVillageHouses(Village village)
-        {
-            return villageHouses[nameof(Village), village.Id];
-        }
+        public void Remove(UserNotification entity) => notifications.Remove(entity);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<VillageHouse> GetOrCreateVillageHouses(Village village)
-        {
-            var houses = villageHouses[nameof(Village), village.Id];
+        public void Remove(UserLoyalty entity) => loyalty.Remove(entity);
 
-            if (village.Level <= 1)
-            {
-                return new VillageHouse[0];
-            }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(InventoryItemAttribute entity) => inventoryItemAttributes.Remove(entity);
 
-            var houseCount = village.Level / 10;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(Clan entity) => this.clans.Remove(entity);
 
-            if ((houses == null || houses.Count == 0) && houseCount > 0)
-            {
-                houses = Enumerable.Range(0, houseCount).Select(x => new VillageHouse
-                {
-                    Id = Guid.NewGuid(),
-                    Created = DateTime.UtcNow,
-                    Slot = x,
-                    Type = 0,
-                    VillageId = village.Id
-                }).ToList();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(CharacterClanInvite entity) => this.clanInvites.Remove(entity);
 
-                foreach (var house in houses)
-                {
-                    Add(house);
-                }
-            }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(ClanRole entity) => this.clanRoles.Remove(entity);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(CharacterClanMembership entity) => this.clanMemberships.Remove(entity);
 
-            if (houses.Count < houseCount)
-            {
-                var housesTemp = houses.ToList();
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(CharacterSessionActivity ev) => characterSessionActivities.Remove(ev);
 
-                for (var i = houses.Count; i < houseCount; ++i)
-                {
-                    var house = new VillageHouse
-                    {
-                        Id = Guid.NewGuid(),
-                        Created = DateTime.UtcNow,
-                        Slot = i,
-                        Type = 0,
-                        VillageId = village.Id
-                    };
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(GameEvent ev) => gameEvents.Remove(ev);
 
-                    Add(house);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(ItemCraftingRequirement entity) => itemCraftingRequirements.Remove(entity);
 
-                    housesTemp.Add(house);
-                }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(User user) => users.Remove(user);
 
-                houses = housesTemp;
-            }
-            return houses;
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(Skills skill) => characterSkills.Remove(skill);
 
-        public CharacterSessionState GetCharacterSessionState(Guid sessionId, Guid characterId)
-        {
-            ConcurrentDictionary<Guid, CharacterSessionState> states;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(Statistics stat) => statistics.Remove(stat);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(Character character) => characters.Remove(character);
 
-            if (!characterSessionStates.TryGetValue(sessionId, out states))
-            {
-                states = new ConcurrentDictionary<Guid, CharacterSessionState>();
-            }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(Resources res) => resources.Remove(res);
 
-            CharacterSessionState state;
-            if (!states.TryGetValue(characterId, out state))
-            {
-                state = new CharacterSessionState();
-                states[characterId] = state;
-                characterSessionStates[sessionId] = states;
-            }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(MarketItem marketItem) => marketItems.Remove(marketItem);
 
-            return state;
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(InventoryItem invItem) => inventoryItems.Remove(invItem);
 
-        public SessionState GetSessionState(Guid sessionId)
-        {
-            SessionState state;
-            if (!sessionStates.TryGetValue(sessionId, out state))
-            {
-                state = new SessionState();
-                sessionStates[sessionId] = state;
-            }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void RemoveRange(IReadOnlyList<InventoryItem> items) => items.ForEach(Remove);
 
-            return state;
-        }
+        #endregion
+
+        #region Persistence
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void ScheduleNextSave()
@@ -1754,4 +1806,6 @@ namespace RavenNest.BusinessLogic.Data
     public class DataSaveError
     {
     }
+
+    #endregion
 }

@@ -21,6 +21,7 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<UserNotification> UserNotification { get; set; }
         public virtual DbSet<UserProperty> UserProperty { get; set; }
         public virtual DbSet<UserLoyalty> UserLoyalty { get; set; }
+        public virtual DbSet<RedeemableItem> RedeemableItem { get; set; }
         public virtual DbSet<UserLoyaltyRank> UserLoyaltyRank { get; set; }
         public virtual DbSet<UserLoyaltyReward> UserLoyaltyReward { get; set; }
         public virtual DbSet<UserClaimedLoyaltyReward> UserClaimedLoyaltyReward { get; set; }
@@ -76,6 +77,7 @@ namespace RavenNest.BusinessLogic.Data
         {
             modelBuilder.Entity<UserProperty>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserClaimedLoyaltyReward>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<RedeemableItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserLoyalty>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserLoyaltyRank>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserLoyaltyReward>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
