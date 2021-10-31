@@ -43,6 +43,7 @@ namespace RavenNest.DataModels
         // Todo: remove
         private long shopSellPrice; public long ShopSellPrice { get => shopSellPrice; set => Set(ref shopSellPrice, value); }
         private bool? soulbound; public bool? Soulbound { get => soulbound; set => Set(ref soulbound, value); }
+        private bool? hidden; public bool? Hidden { get => hidden; set => Set(ref hidden, value); }
 
         // private bool stackable; public bool Stackable { get => stackable; set => Set(ref stackable, value); }
     }
