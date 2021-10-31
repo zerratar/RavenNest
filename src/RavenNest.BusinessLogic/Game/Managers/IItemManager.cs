@@ -169,6 +169,11 @@ namespace RavenNest.BusinessLogic.Game
             var collection = new ItemCollection();
             foreach (var item in items)
             {
+                if (item.Hidden.GetValueOrDefault())
+                {
+                    continue;
+                }
+
                 collection.Add(ModelMapper.Map(gameData, item));
             }
 
