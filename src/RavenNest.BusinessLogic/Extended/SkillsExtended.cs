@@ -41,13 +41,13 @@ namespace RavenNest.BusinessLogic.Extended
         {
             var props = GetProperties();
             var skills = new List<PlayerSkill>();
-            var names = props.Values.Where(x => x.Name.EndsWith("Level")).Select(x => x.Name.Replace("Level", ""));
+            var names = props.Values.Where(x => x.Property.Name.EndsWith("Level")).OrderBy(x => x.SortIndex).Select(x => x.Property.Name.Replace("Level", ""));
             foreach (var name in names)
             {
                 var n = name;
-                var experience = (double)props[n].GetValue(this);
-                var level = (int)props[n + "Level"].GetValue(this);
-                var percent = (float)props[n + "Procent"].GetValue(this);
+                var experience = (double)props[n].Property.GetValue(this);
+                var level = (int)props[n + "Level"].Property.GetValue(this);
+                var percent = (float)props[n + "Procent"].Property.GetValue(this);
                 skills.Add(new PlayerSkill
                 {
                     Name = n,
@@ -60,18 +60,26 @@ namespace RavenNest.BusinessLogic.Extended
             return skills;
         }
 
-        private static ConcurrentDictionary<string, PropertyInfo> propertyCache = new ConcurrentDictionary<string, PropertyInfo>();
-        private static ConcurrentDictionary<string, PropertyInfo> GetProperties()
+        private static ConcurrentDictionary<string, SkillPropertyInfo> propertyCache = new ConcurrentDictionary<string, SkillPropertyInfo>();
+        private static ConcurrentDictionary<string, SkillPropertyInfo> GetProperties()
         {
             if (propertyCache == null || propertyCache.Count == 0)
             {
-                propertyCache = new ConcurrentDictionary<string, PropertyInfo>(typeof(SkillsExtended)
-                .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
-                .ToDictionary(x => x.Name, x => x));
+                var properties = typeof(SkillsExtended).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+                propertyCache = new ConcurrentDictionary<string, SkillPropertyInfo>(properties.ToDictionary(x => x.Name, x =>
+                    new SkillPropertyInfo { Property = x, SortIndex = Array.IndexOf(properties, x) }
+                ));
             }
 
             return propertyCache;
         }
+    }
+
+    public class SkillPropertyInfo
+    {
+        public int SortIndex;
+        public PropertyInfo Property;
     }
 
     public class PlayerSkill
