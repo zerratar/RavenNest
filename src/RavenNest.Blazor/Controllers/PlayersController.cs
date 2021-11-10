@@ -73,26 +73,26 @@ namespace RavenNest.Controllers
 
         [HttpPost("{userId}")]
         //[MethodDescriptor(Name = "Add Player to Game Session", Description = "Adds the target player to the ongoing session. This will lock the target player to the session and then return the player data.", RequiresSession = true)]
-        public PlayerJoinResult PlayerJoin(string userId, Single<string> username)
+        public Task<PlayerJoinResult> PlayerJoin(string userId, Single<string> username)
         {
             return playerManager.AddPlayer(AssertGetSessionToken(), userId, username.Value);
         }
 
         [HttpPost("{userId}/{identifier}")]
         //[MethodDescriptor(Name = "Add Player to Game Session", Description = "Adds the target player to the ongoing session. This will lock the target player to the session and then return the player data.", RequiresSession = true)]
-        public PlayerJoinResult PlayerJoin(string userId, string identifier, Single<string> username)
+        public Task<PlayerJoinResult> PlayerJoin(string userId, string identifier, Single<string> username)
         {
             return playerManager.AddPlayer(AssertGetSessionToken(), userId, username.Value, identifier);
         }
 
         [HttpPost]
-        public PlayerJoinResult PlayerJoin([FromBody] PlayerJoinData playerData)
+        public Task<PlayerJoinResult> PlayerJoin([FromBody] PlayerJoinData playerData)
         {
             return playerManager.AddPlayer(AssertGetSessionToken(), playerData);
         }
 
         [HttpDelete("{characterId}")]
-        public bool RemovePlayer(Guid characterId)
+        public Task<bool> RemovePlayer(Guid characterId)
         {
             return playerManager.RemovePlayerFromActiveSession(AssertGetSessionToken(), characterId);
         }

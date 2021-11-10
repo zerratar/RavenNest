@@ -32,6 +32,7 @@
 			<th>Characters</th>
 			<th>Admin</th>
 			<th>Mod</th>
+			<th>Hidden in Highscore</th>
 			<th></th>
 		</tr>
 	</thead>
@@ -99,6 +100,9 @@
 		   <td>@user.IsAdmin</td>
 		   <td>@user.IsModerator</td>
 		   <td>
+			<input type="checkbox" value="@user.IsHiddenInHighscore" @onchange="ev => IsHiddenInHighscoreChanged(user, ev.Value)"></input>
+		   </td>
+		   <td>
 			<button class="link-button" @onclick="(()=> EditPatreon(user))">Patreon</button>
 						@if (user.Status >= 1)
 						{
@@ -137,6 +141,13 @@
 		LoadUserPageAsync(pageIndex, pageSize);
 	}
 
+	private void IsHiddenInHighscoreChanged(Models.WebsiteAdminUser user, object? newValue)
+	{
+		var boolValue = newValue != null && newValue is bool b ? b : false;
+		UserService.SetUserHiddenInHighscore(user.Id, boolValue);
+		user.IsHiddenInHighscore = boolValue;
+		InvokeAsync(StateHasChanged);
+	}
 
 	private void SelectedPatreonChanged(ChangeEventArgs e)
 	{
@@ -212,7 +223,8 @@
 
 	private async Task BanUser(Models.WebsiteAdminUser user)
 	{
-		if (await UserService.SetUserStatusAsync(user.Id, BusinessLogic.Data.AccountStatus.PermanentlySuspended)) {
+		if (await UserService.SetUserStatusAsync(user.Id, BusinessLogic.Data.AccountStatus.PermanentlySuspended))
+		{
 			user.Status = 2;
 			await InvokeAsync(StateHasChanged);
 		}

@@ -286,7 +286,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 Revision = character.Revision.GetValueOrDefault(),
                 Identifier = character.Identifier,
                 CharacterIndex = character.CharacterIndex,
-                PatreonTier = user.PatreonTier.GetValueOrDefault()
+                PatreonTier = user.PatreonTier.GetValueOrDefault(),
+                IsHiddenInHighscore = user.IsHiddenInHighscore.GetValueOrDefault()
             };
         }
 
@@ -330,7 +331,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 Identifier = character.Identifier,
                 CharacterIndex = character.CharacterIndex,
                 SessionName = sessionName,
-                PatreonTier = user.PatreonTier.GetValueOrDefault()
+                PatreonTier = user.PatreonTier.GetValueOrDefault(),
+                IsHiddenInHighscore = user.IsHiddenInHighscore.GetValueOrDefault()
             };
         }
 
@@ -365,7 +367,9 @@ namespace RavenNest.BusinessLogic.Extensions
                 Identifier = character.Identifier,
                 OriginUserId = character.OriginUserId,
                 SessionInfo = sessionInfo,
-                Revision = character.Revision.GetValueOrDefault()
+                PatreonTier = user.PatreonTier.GetValueOrDefault(),
+                Revision = character.Revision.GetValueOrDefault(),
+                IsHiddenInHighscore = user.IsHiddenInHighscore.GetValueOrDefault()
             };
         }
 

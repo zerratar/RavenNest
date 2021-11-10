@@ -325,7 +325,7 @@ namespace RavenNest.BusinessLogic.Game
                 Cost = totalCost
             };
 
-            var sellerSession = gameData.GetUserSession(
+            var sellerSession = gameData.GetSessionByUserId(
                 sellerCharacter.UserIdLock.GetValueOrDefault());
 
             if (sellerSession != null)
