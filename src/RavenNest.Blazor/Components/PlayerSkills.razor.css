@@ -145,3 +145,8 @@ button.btn-icon:focus {
 .input-label {
     margin-bottom: 5px;
 }
+
+.last-updated {
+    text-align: center;
+    font-size: 9pt;
+}

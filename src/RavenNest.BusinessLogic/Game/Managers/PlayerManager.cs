@@ -1876,6 +1876,7 @@ namespace RavenNest.BusinessLogic.Game
                 if (characterSessionState != null)
                 {
                     characterSessionState.Compromised = true;
+                    characterSessionState.LastSkillUpdate = DateTime.UtcNow;
                 }
             }
 

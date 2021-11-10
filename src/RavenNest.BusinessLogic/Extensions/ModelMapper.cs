@@ -386,11 +386,11 @@ namespace RavenNest.BusinessLogic.Extensions
                     sessionInfo.OwnerDisplayName = sessionOwner.DisplayName;
                     sessionInfo.OwnerUserName = sessionOwner.UserName;
                 }
-                //var css = gameData.GetCharacterSessionState(session.Id, character.Id);
-                //if (css != null)
-                //{
-                //    css.
-                //}
+                var css = gameData.GetCharacterSessionState(session.Id, character.Id);
+                if (css != null)
+                {
+                    sessionInfo.SkillsUpdated = css.LastSkillUpdate;
+                }
             }
 
             return sessionInfo;
