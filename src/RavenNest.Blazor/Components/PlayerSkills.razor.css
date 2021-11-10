@@ -55,6 +55,7 @@
 }
 
 .stats-progress {
+    height: 23px;
     text-align: right;
     min-width: 120px;
     text-align: center;
@@ -70,4 +71,77 @@
     height: 23px;
     position: absolute;
     background-color: #81a1f829;
+}
+
+.skill-modify-modal {
+    position: fixed;
+    background-color: #ffffff;
+    width: 100%;
+    left: 50%;
+    width: 620px;
+    max-width: 100%;
+    transform: translateX(-50%);
+    padding: 15px;
+    box-shadow: 5px 5px 20px rgba(0,0,0,0.25);
+    display: flex;
+    flex-flow: column;
+    top: 50%;
+}
+
+.skill-modify-modal-controls {
+    display: flex;
+    flex-flow: row;
+    justify-content: flex-end;
+    margin-top: 15px;
+    gap: 0.3em;
+}
+
+.skill-modify-modal-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.skill-modify-modal-header h2 {
+    font-weight: 300;
+    font-size: 18pt;
+    text-align: center;
+    width: 100%;
+    position: relative;
+    top: 5px;
+    margin-bottom: 25px;
+}
+
+.skill-modify-modal-header button.close {
+    margin-top: -20px;
+}
+
+input.blazored-typeahead__input {
+    border-radius: 0;
+}
+
+.blazored-typeahead {
+    border-radius: 0;
+    margin-top: 15px;
+}
+
+button.btn-icon {
+    background-color: transparent;
+    border: 0;
+    color: #333;
+    margin-left: 10px;
+}
+
+
+.stats-row.active button.btn-icon {
+    color: white;
+}
+
+button.btn-icon:active,
+button.btn-icon:focus {
+    outline: 0;
+    background-color: rgba(0,0,0,0.15);
+}
+
+.input-label {
+    margin-bottom: 5px;
 }

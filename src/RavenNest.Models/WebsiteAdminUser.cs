@@ -14,7 +14,7 @@ namespace RavenNest.Models
         public bool IsModerator { get; set; }
         public List<WebsiteAdminPlayer> Characters { get; set; }
         public int Status { get; set; }
-            
+        public bool IsHiddenInHighscore { get; set; }
         public DateTime Created { get; set; }
     }
 }

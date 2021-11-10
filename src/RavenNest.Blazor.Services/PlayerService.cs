@@ -33,6 +33,11 @@ namespace RavenNest.Blazor.Services
             sessionInfoProvider.SetActiveCharacter(session, player.Id);
         }
 
+        public Task<bool> UpdatePlayerSkillAsync(Guid characterId, string skillName, int level, float levelProgress)
+        {
+            return playerManager.UpdatePlayerSkillAsync(characterId, skillName, level, levelProgress);
+        }
+
         public void UpdatePlayerIdentifier(Guid characterId, string identifier)
         {
             var c = gameData.GetCharacter(characterId);
@@ -98,7 +103,7 @@ namespace RavenNest.Blazor.Services
         {
             return SearchForPlayersAsync(searchText, false);
         }
-    
+
         public async Task<IReadOnlyList<WebsiteAdminPlayer>> SearchForPlayersAsync(string searchText, bool ignoreClanInvitedPlayers = true, bool allOnEmptySearch = false)
         {
             return await Task.Run(() =>

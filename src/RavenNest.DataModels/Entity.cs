@@ -27,6 +27,24 @@ namespace RavenNest.DataModels
 
     public static class EnumerableExtensions
     {
+        /// <summary>
+        /// Gets a list of the enumeration with the least allocation possible.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static List<T> AsList<T>(this IEnumerable<T> items)
+        {
+            if (items is List<T> list) return list;
+            return items.ToList();
+        }
+
+        public static IReadOnlyList<T> AsIReadOnlyList<T>(this IEnumerable<T> items)
+        {
+            if (items is IReadOnlyList<T> list) return list;
+            return items.ToList();
+        }
+
         public static void ForEach<T>(this IEnumerable<T> items, Action<T> forEach)
         {
             foreach (var item in items)

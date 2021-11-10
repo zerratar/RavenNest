@@ -32,10 +32,10 @@ namespace RavenNest.Models
         public bool IsRejoin { get; set; }
 
         public Guid OriginUserId { get; set; }
-
         public int Revision { get; set; }
         public string Identifier { get; set; }
         public int CharacterIndex { get; set; }
         public int PatreonTier { get; set; }
+        public bool IsHiddenInHighscore { get; set; }
     }
 }

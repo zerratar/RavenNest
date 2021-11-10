@@ -121,6 +121,7 @@ table.player-table tr:nth-of-type(even) {
 .stats-progress {
     text-align: right;
     min-width: 120px;
+    height:23px;
     text-align: center;
     background-color: #f4f4f4;
 }

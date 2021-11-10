@@ -127,7 +127,7 @@ namespace RavenNest.DataModels
             return skillNames.Select(GetSkill).ToList();
         }
 
-        private StatsUpdater GetSkill(string name)
+        public StatsUpdater GetSkill(string name)
         {
             if (!expProperties.TryGetValue(name, out var expProp))
                 expProp = EnsureDictionaries(name);
@@ -139,7 +139,7 @@ namespace RavenNest.DataModels
                 return null;
             }
 
-            return new StatsUpdater(this, name, expProp, lvlProp);
+            return new StatsUpdater(this, Array.IndexOf(skillNames, name), name, expProp, lvlProp);
 
             //var currentLevel = (int)lvlProp.GetValue(this);
             //if (currentLevel > 0)
@@ -177,16 +177,17 @@ namespace RavenNest.DataModels
         private readonly PropertyInfo expProp;
         private readonly PropertyInfo lvlProp;
 
-        public StatsUpdater(Skills source, string name, PropertyInfo expProp, PropertyInfo lvlProp)
+        public StatsUpdater(Skills source, int skillIndex, string name, PropertyInfo expProp, PropertyInfo lvlProp)
         {
             this.Name = name;
+            this.Index = skillIndex;
             this.source = source;
             this.expProp = expProp;
             this.lvlProp = lvlProp;
         }
 
         public string Name { get; }
-
+        public int Index { get; }
         public int Level
         {
             get => (int)lvlProp.GetValue(source);
