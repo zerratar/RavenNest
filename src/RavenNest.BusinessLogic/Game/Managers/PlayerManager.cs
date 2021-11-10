@@ -611,7 +611,7 @@ namespace RavenNest.BusinessLogic.Game
                 var currencyItem = inventory.GetByItemId(redeemable.CurrencyItemId);
                 if (currencyItem.Amount < redeemable.Cost)
                 {
-                    var insufficient = RedeemItemResult.InsufficientCurrency(currencyItem.Amount, redeemable.Cost, item?.Name);
+                    var insufficient = RedeemItemResult.InsufficientCurrency(currencyItem.Amount, redeemable.Cost, currencyItem.Item.Name);
                     insufficient.CurrencyItemId = redeemable.CurrencyItemId;
                     insufficient.RedeemedItemId = redeemable.ItemId;
                     insufficient.CurrencyLeft = currencyItem.Amount;
