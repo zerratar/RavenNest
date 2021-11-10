@@ -64,7 +64,7 @@ namespace RavenNest.BusinessLogic.Game
             var u = gameData.GetUser(c.UserId);
             if (u == null) return int.MaxValue;
 
-            if (u.IsModerator.GetValueOrDefault() || u.IsAdmin.GetValueOrDefault())
+            if (u.IsModerator.GetValueOrDefault() || u.IsAdmin.GetValueOrDefault() || u.IsHiddenInHighscore.GetValueOrDefault())
             {
                 return -2;
             }
