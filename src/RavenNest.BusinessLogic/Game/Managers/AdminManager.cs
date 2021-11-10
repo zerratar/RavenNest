@@ -138,7 +138,7 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
 
             //var currentSession = gameData.GetSessionByUserId(userId);
-            var currentSession = gameData.GetUserSession(character.UserIdLock.GetValueOrDefault());
+            var currentSession = gameData.GetSessionByUserId(character.UserIdLock.GetValueOrDefault());
             if (currentSession == null)
                 return false;
 
@@ -413,7 +413,7 @@ namespace RavenNest.BusinessLogic.Game
             if (skills == null) return false;
 
             //var playerSession = gameData.GetSessionByUserId(userId);
-            var playerSession = gameData.GetUserSession(character.UserIdLock.GetValueOrDefault());
+            var playerSession = gameData.GetSessionByUserId(character.UserIdLock.GetValueOrDefault());
             if (playerSession == null) return true;
 
             var user = this.gameData.GetUser(character.UserId);
@@ -441,7 +441,7 @@ namespace RavenNest.BusinessLogic.Game
             character.Name = name;
 
 
-            var playerSession = gameData.GetUserSession(character.UserIdLock.GetValueOrDefault());
+            var playerSession = gameData.GetSessionByUserId(character.UserIdLock.GetValueOrDefault());
             //var playerSession = gameData.GetSessionByUserId(userid);
             if (playerSession == null) return true;
 

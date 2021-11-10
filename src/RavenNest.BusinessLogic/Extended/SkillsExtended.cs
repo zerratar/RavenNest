@@ -1,7 +1,9 @@
 ﻿using RavenNest.Models;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 namespace RavenNest.BusinessLogic.Extended
@@ -37,9 +39,7 @@ namespace RavenNest.BusinessLogic.Extended
 
         public IReadOnlyList<PlayerSkill> AsList()
         {
-            var props = typeof(SkillsExtended)
-                .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
-                .ToDictionary(x => x.Name, x => x);
+            var props = GetProperties();
             var skills = new List<PlayerSkill>();
             var names = props.Values.Where(x => x.Name.EndsWith("Level")).Select(x => x.Name.Replace("Level", ""));
             foreach (var name in names)
@@ -58,6 +58,19 @@ namespace RavenNest.BusinessLogic.Extended
             }
 
             return skills;
+        }
+
+        private static ConcurrentDictionary<string, PropertyInfo> propertyCache = new ConcurrentDictionary<string, PropertyInfo>();
+        private static ConcurrentDictionary<string, PropertyInfo> GetProperties()
+        {
+            if (propertyCache == null || propertyCache.Count == 0)
+            {
+                propertyCache = new ConcurrentDictionary<string, PropertyInfo>(typeof(SkillsExtended)
+                .GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance)
+                .ToDictionary(x => x.Name, x => x));
+            }
+
+            return propertyCache;
         }
     }
 

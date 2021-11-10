@@ -79,14 +79,14 @@ namespace RavenNest.BusinessLogic.Game
             return -1;
         }
 
-        public Player CreatePlayerIfNotExists(string userId, string userName, string identifier)
+        public async Task<Player> CreatePlayerIfNotExists(string userId, string userName, string identifier)
         {
             var player = GetPlayer(userId, identifier);
             if (player != null) return player;
-            return CreatePlayer(userId, userName, identifier);
+            return await CreatePlayer(userId, userName, identifier);
         }
 
-        public Player CreatePlayer(string userId, string userName, string identifier)
+        public Task<Player> CreatePlayer(string userId, string userName, string identifier)
         {
             return CreateUserAndPlayer(null, new PlayerJoinData
             {
@@ -124,7 +124,7 @@ namespace RavenNest.BusinessLogic.Game
             }));
         }
 
-        public PlayerJoinResult AddPlayer(
+        public Task<PlayerJoinResult> AddPlayer(
             SessionToken token,
             string userId,
             string userName,
@@ -138,7 +138,7 @@ namespace RavenNest.BusinessLogic.Game
             });
         }
 
-        public PlayerJoinResult AddPlayer(DataModels.GameSession session, PlayerJoinData playerData)
+        public async Task<PlayerJoinResult> AddPlayer(DataModels.GameSession session, PlayerJoinData playerData)
         {
             var result = new PlayerJoinResult();
             var internalErrorMessage = "";
@@ -148,7 +148,7 @@ namespace RavenNest.BusinessLogic.Game
                 var characterId = playerData.CharacterId;
                 if (characterId != Guid.Empty || Guid.TryParse(playerData.UserId ?? "", out characterId))
                 {
-                    result = AddPlayerByCharacterId(session, characterId, playerData.IsGameRestore);
+                    result = await AddPlayerByCharacterId(session, characterId, playerData.IsGameRestore);
                     return result;
                 }
 
@@ -170,7 +170,7 @@ namespace RavenNest.BusinessLogic.Game
                 var user = gameData.GetUser(userId);
                 if (user == null)
                 {
-                    result.Player = CreateUserAndPlayer(session, playerData);
+                    result.Player = await CreateUserAndPlayer(session, playerData);
                     result.Success = result.Player != null;
                     if (!result.Success)
                     {
@@ -214,7 +214,7 @@ namespace RavenNest.BusinessLogic.Game
                 var character = gameData.GetCharacterByUserId(user.Id, identifier);
                 if (character == null)
                 {
-                    var player = CreatePlayer(session, user, playerData);
+                    var player = await CreatePlayer(session, user, playerData);
                     if (player != null)
                     {
                         result.Success = true;
@@ -246,7 +246,7 @@ namespace RavenNest.BusinessLogic.Game
                     return result;
                 }
 
-                result.Player = AddPlayerToSession(session, user, character);
+                result.Player = await AddPlayerToSession(session, user, character);
                 result.Success = true;
                 return result;
             }
@@ -284,7 +284,7 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        public PlayerJoinResult AddPlayerByCharacterId(DataModels.GameSession session, Guid characterId, bool isGameRestore = false)
+        public async Task<PlayerJoinResult> AddPlayerByCharacterId(DataModels.GameSession session, Guid characterId, bool isGameRestore = false)
         {
             var result = new PlayerJoinResult();
             var c = gameData.GetCharacter(characterId);
@@ -322,14 +322,12 @@ namespace RavenNest.BusinessLogic.Game
                 return result;
             }
 
-            result.Player = AddPlayerToSession(session, u, c);
+            result.Player = await AddPlayerToSession(session, u, c);
             result.Success = true;
             return result;
         }
 
-        public PlayerJoinResult AddPlayer(
-            SessionToken token,
-            PlayerJoinData playerData)
+        public async Task<PlayerJoinResult> AddPlayer(SessionToken token, PlayerJoinData playerData)
         {
             var result = new PlayerJoinResult();
             var session = gameData.GetSession(token.SessionId);
@@ -339,11 +337,11 @@ namespace RavenNest.BusinessLogic.Game
                 return result;
             }
 
-            return AddPlayer(session, playerData);
+            return await AddPlayer(session, playerData);
 
         }
 
-        public Player AddPlayer(SessionToken token, Guid characterId)
+        public Task<Player> AddPlayer(SessionToken token, Guid characterId)
         {
             var session = gameData.GetSession(token.SessionId);
             if (session == null || session.Status != (int)SessionStatus.Active)
@@ -355,7 +353,7 @@ namespace RavenNest.BusinessLogic.Game
             return AddPlayerToSession(session, user, character);
         }
 
-        private Player AddPlayerToSession(DataModels.GameSession session, User user, Character character)
+        private async Task<Player> AddPlayerToSession(DataModels.GameSession session, User user, Character character)
         {
             if (user.Status.GetValueOrDefault() == (int)AccountStatus.TemporarilySuspended)
             {
@@ -429,9 +427,9 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
 
-            SendUserRoleToRavenBotAsync(user);
+            await SendUserRoleToRavenBotAsync(user);
 
-            this.TrySendToExtensionAsync(character, new PlayerAdd
+            await this.TrySendToExtensionAsync(character, new PlayerAdd
             {
                 Identifier = character.Identifier,
                 UserId = user.UserId,
@@ -439,16 +437,18 @@ namespace RavenNest.BusinessLogic.Game
                 CharacterId = character.Id
             });
 
+            gameData.ResetCharacterSessionState(session.Id, character.Id);
+
             return character.Map(gameData, user, rejoin, true);
         }
 
-        public bool RemovePlayerFromActiveSession(SessionToken token, Guid characterId)
+        public Task<bool> RemovePlayerFromActiveSession(SessionToken token, Guid characterId)
         {
             var session = gameData.GetSession(token.SessionId);
             return RemovePlayerFromActiveSession(session, characterId);
         }
 
-        public bool RemovePlayerFromActiveSession(DataModels.GameSession session, Guid characterId)
+        public async Task<bool> RemovePlayerFromActiveSession(DataModels.GameSession session, Guid characterId)
         {
             if (session == null) return false;
             var character = gameData.GetCharacter(characterId);
@@ -461,18 +461,18 @@ namespace RavenNest.BusinessLogic.Game
             if (sessionOwner.Id != character.UserIdLock)
                 return false;
 
-            this.TrySendToExtensionAsync(character, new PlayerRemove
+            character.UserIdLock = null;
+
+            await this.TrySendToExtensionAsync(character, new PlayerRemove
             {
                 CharacterId = characterId,
                 Reason = "Left Game",
             });
 
-            character.UserIdLock = null;
-
             return true;
         }
 
-        public void RemoveUserFromSessions(User user)
+        public async void RemoveUserFromSessions(User user)
         {
             if (user == null)
             {
@@ -491,7 +491,7 @@ namespace RavenNest.BusinessLogic.Game
                 if (character.UserIdLock == null)
                     continue;
 
-                var currentSession = gameData.GetUserSession(character.UserIdLock.GetValueOrDefault());
+                var currentSession = gameData.GetSessionByUserId(character.UserIdLock.GetValueOrDefault());
                 if (currentSession == null)
                     continue;
 
@@ -507,6 +507,12 @@ namespace RavenNest.BusinessLogic.Game
                  });
 
                 gameData.Add(gameEvent);
+
+                await this.TrySendToExtensionAsync(character, new PlayerRemove
+                {
+                    CharacterId = character.Id,
+                    Reason = "Removed from game",
+                });
             }
         }
 
@@ -516,7 +522,7 @@ namespace RavenNest.BusinessLogic.Game
             if (userToRemove == null)
                 return false;
 
-            var currentSession = gameData.GetUserSession(character.UserIdLock.GetValueOrDefault());
+            var currentSession = gameData.GetSessionByUserId(character.UserIdLock.GetValueOrDefault());
             if (currentSession == null)
                 return false;
 
@@ -1249,7 +1255,7 @@ namespace RavenNest.BusinessLogic.Game
                 ItemId = itemId
             };
 
-            var session = gameData.GetUserSession(sessionUserId.Value);
+            var session = gameData.GetSessionByUserId(sessionUserId.Value);
             if (session != null)
             {
                 gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, session, data));
@@ -1625,7 +1631,7 @@ namespace RavenNest.BusinessLogic.Game
             UpdateCharacterAppearance(appearance, character);
 
             var sessionOwnerUserId = character.UserIdLock.GetValueOrDefault();
-            var gameSession = gameData.GetUserSession(sessionOwnerUserId);
+            var gameSession = gameData.GetSessionByUserId(sessionOwnerUserId);
 
             if (gameSession != null)
             {
@@ -1657,7 +1663,7 @@ namespace RavenNest.BusinessLogic.Game
                 UpdateCharacterAppearance(appearance, character);
 
                 var sessionOwnerUserId = character.UserIdLock.GetValueOrDefault();
-                var gameSession = gameData.GetUserSession(sessionOwnerUserId);
+                var gameSession = gameData.GetSessionByUserId(sessionOwnerUserId);
 
                 if (gameSession != null)
                 {
@@ -1758,7 +1764,7 @@ namespace RavenNest.BusinessLogic.Game
                 var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
                 if (characterSessionState.Compromised)
                 {
-                    logger.LogError("Trying to update a compromised player: " + character.Name + " (" + character.Id + ")");
+                    logger.LogError("Trying to update an out of sync player: " + character.Name + " (" + character.Id + ")");
                     return true;
                 }
 
@@ -1837,6 +1843,83 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        public async Task<bool> UpdatePlayerSkillAsync(Guid characterId, string skillName, int level, float levelProgress)
+        {
+            if (levelProgress > 1)
+            {
+                levelProgress /= 100f;
+            }
+            if (level <= 0 || level > GameMath.MaxLevel)
+            {
+                return false;
+            }
+
+            var character = gameData.GetCharacter(characterId);
+            if (character == null)
+            {
+                return false;
+            }
+
+            var characterSkills = gameData.GetCharacterSkills(character.SkillsId);
+            var skill = characterSkills.GetSkill(skillName);
+            if (skill == null)
+            {
+                return false;
+            }
+
+
+            var gameSession = gameData.GetSessionByCharacterId(characterId);
+            if (gameSession != null)
+            {
+                //SendRemovePlayerFromSession(character, gameSession);
+                var characterSessionState = gameData.GetCharacterSessionState(gameSession.Id, character.Id);
+                if (characterSessionState != null)
+                {
+                    characterSessionState.Compromised = true;
+                }
+            }
+
+
+            skill.Level = level;
+            skill.Experience = levelProgress * GameMath.ExperienceForLevel(level + 1);
+
+            await TrySendToExtensionAsync(character, new CharacterExpUpdate
+            {
+                CharacterId = character.Id,
+                SkillIndex = skill.Index,
+                Experience = skill.Experience,
+                Level = level,
+            });
+
+
+            if (gameSession != null)
+            {
+                if (await RemovePlayerFromActiveSession(gameSession, characterId))
+                {
+                    SendRemovePlayerFromSession(character, gameSession);
+                    await Task.Delay(100);
+                    SendPlayerAddToSession(character, gameSession);
+                }
+            }
+
+            // Right now: 
+            //  1. Lock future updates untill player leave/join a game.
+            //  2. Update any extension with the new stats
+            //  3. Kick player from any active session.
+
+            // TODO:
+            // 1. get which session this character is in
+            // 2. get the character session state
+            // 3. update the "requested" level and exp for the particular skill
+            // 4. send the "level change" to the game sessions
+            // 5. send the new level to the extension connections
+            // After the #4; stop accepting new exp changes to that skill until the client has sent an update with similar level and exp
+            // if the save still tries to save a higher exp. Then kick the player from their game session and add them back. Repeat until OK
+
+
+            return true;
+        }
+
         public bool UpdateExperience(
             SessionToken token,
             string userId,
@@ -1855,7 +1938,7 @@ namespace RavenNest.BusinessLogic.Game
                 var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
                 if (characterSessionState.Compromised)
                 {
-                    logger.LogError("Trying to update a compromised player: " + character.Name + " (" + character.Id + ")");
+                    logger.LogError("Trying to update an out of sync player: " + character.Name + " (" + character.Id + ")");
                     return true;
                 }
 
@@ -1867,7 +1950,6 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 var expLimit = sessionOwner.IsAdmin.GetValueOrDefault() ? 5000 : 50;
-
 
                 var removeFromSession = !AcquiredUserLock(token, character) && character.UserIdLock != null;
                 var skills = gameData.GetCharacterSkills(character.SkillsId);
@@ -2062,6 +2144,23 @@ namespace RavenNest.BusinessLogic.Game
             gameData.Add(gameEvent);
         }
 
+        private void SendPlayerAddToSession(Character character, DataModels.GameSession gameSession)
+        {
+            var characterUser = gameData.GetUser(character.UserId);
+            var gameEvent = gameData.CreateSessionEvent(
+                GameEventType.PlayerAdd,
+                gameSession,
+                new PlayerAdd()
+                {
+                    Identifier = character.Identifier,
+                    UserName = characterUser.UserName,
+                    UserId = characterUser.UserId,
+                    CharacterId = character.Id
+                });
+
+            gameData.Add(gameEvent);
+        }
+
         //private User CreateUser(DataModels.GameSession session, PlayerJoinData playerData)
         //{
         //    var user = gameData.GetUser(playerData.UserId);
@@ -2080,7 +2179,7 @@ namespace RavenNest.BusinessLogic.Game
         //    return user;
         //}
 
-        private Player CreateUserAndPlayer(
+        private Task<Player> CreateUserAndPlayer(
             DataModels.GameSession session,
             PlayerJoinData playerData)
         {
@@ -2110,7 +2209,7 @@ namespace RavenNest.BusinessLogic.Game
             return CreatePlayer(session, user, playerData);
         }
 
-        private Player CreatePlayer(DataModels.GameSession session, User user, PlayerJoinData playerData)
+        private Task<Player> CreatePlayer(DataModels.GameSession session, User user, PlayerJoinData playerData)
         {
             var userCharacters = gameData.GetCharacters(x => x.UserId == user.Id);
             var index = 0;

@@ -73,7 +73,10 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var userId = token.UserId;
-            var activeSession = gameData.GetUserSession(userId);
+
+            gameData.ClearAllCharacterSessionStates(userId);
+
+            var activeSession = gameData.GetSessionByUserId(userId);
             // x => x.UserId == userId && x.Status == (int)SessionStatus.Active
 
             if (activeSession != null &&
@@ -125,9 +128,11 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var result = false;
-            foreach (var val in characterIds)
+            foreach (var id in characterIds)
             {
-                result = playerManager.AddPlayer(session, val) != null || result;
+                var c = gameData.GetCharacter(id);
+                //if (c == null || (c.UserIdLock != null && c.UserIdLock != session))
+                result = playerManager.AddPlayer(session, id) != null || result;
             }
             return result;
         }
@@ -262,7 +267,7 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
-            var targetSession = gameData.GetUserSession(user.Id);
+            var targetSession = gameData.GetSessionByUserId(user.Id);
             if (targetSession == null)
             {
                 logger.LogError($"Unable to do a streamer raid. Target user {userIdOrUsername} does not have an active session.");
@@ -335,6 +340,10 @@ namespace RavenNest.BusinessLogic.Game
 
             session.Status = (int)SessionStatus.Inactive;
             session.Stopped = DateTime.UtcNow;
+
+
+            gameData.ClearAllCharacterSessionStates(session.UserId);
+            //gameData.ClearCharacterSessionStates(session.Id);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

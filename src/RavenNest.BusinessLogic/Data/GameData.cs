@@ -977,6 +977,29 @@ namespace RavenNest.BusinessLogic.Data
             return houses;
         }
 
+        public void ClearAllCharacterSessionStates(Guid userId)
+        {
+            foreach (var session in this.GetSessionsByUserId(userId))
+            {
+                ClearCharacterSessionStates(session.Id);
+            }
+        }
+
+        public void ClearCharacterSessionStates(Guid sessionId)
+        {
+            this.characterSessionStates.TryRemove(sessionId, out _);
+        }
+
+        public void ResetCharacterSessionState(Guid sessionId, Guid characterId)
+        {
+            ConcurrentDictionary<Guid, CharacterSessionState> states;
+            if (!characterSessionStates.TryGetValue(sessionId, out states))
+            {
+                characterSessionStates[sessionId] = states = new ConcurrentDictionary<Guid, CharacterSessionState>();
+            }
+            states[characterId] = new CharacterSessionState();
+        }
+
         public CharacterSessionState GetCharacterSessionState(Guid sessionId, Guid characterId)
         {
             ConcurrentDictionary<Guid, CharacterSessionState> states;
@@ -1413,8 +1436,16 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public UserNotification GetNotification(Guid id) => notifications[id];
 
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GameSession GetUserSession(Guid userId, bool updateSession = true)
+        public IReadOnlyList<GameSession> GetSessionsByUserId(Guid userId)
+        {
+            return gameSessions[nameof(User), userId]
+                    .OrderByDescending(x => x.Started).ToList();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public GameSession GetSessionByUserId(Guid userId, bool updateSession = true)
         {
             var session = gameSessions[nameof(User), userId]
                     .OrderByDescending(x => x.Started)

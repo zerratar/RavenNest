@@ -26,6 +26,18 @@ namespace RavenNest.Blazor.Services
             this.playerManager = playerManager;
         }
 
+        public Task SetUserHiddenInHighscore(Guid userId, bool newValue)
+        {
+            return Task.Run(() =>
+            {
+                var user = gameData.GetUser(userId);
+                if (user == null)
+                    return;
+
+                user.IsHiddenInHighscore = newValue;
+            });
+        }
+
         public Task UpdateUserPatreonAsync(Guid userId, int patreonTier)
         {
             return Task.Run(() =>

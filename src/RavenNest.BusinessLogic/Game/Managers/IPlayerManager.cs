@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.DataModels;
@@ -9,14 +10,14 @@ namespace RavenNest.BusinessLogic.Game
 {
     public interface IPlayerManager
     {
-        Player CreatePlayerIfNotExists(string userId, string userName, string identifier);
-        Player CreatePlayer(string userId, string userName, string identifier);
-        bool RemovePlayerFromActiveSession(SessionToken token, Guid characterId);
-        bool RemovePlayerFromActiveSession(DataModels.GameSession session, Guid characterId);
-        Player AddPlayer(SessionToken token, Guid characterId);
-        PlayerJoinResult AddPlayer(SessionToken token, PlayerJoinData playerJoinData);
-        PlayerJoinResult AddPlayer(SessionToken token, string userId, string userName, string identifier = null);
-        PlayerJoinResult AddPlayerByCharacterId(DataModels.GameSession session, Guid characterId, bool isGameRestore = false);
+        Task<Player> CreatePlayerIfNotExists(string userId, string userName, string identifier);
+        Task<Player> CreatePlayer(string userId, string userName, string identifier);
+        Task<bool> RemovePlayerFromActiveSession(SessionToken token, Guid characterId);
+        Task<bool> RemovePlayerFromActiveSession(DataModels.GameSession session, Guid characterId);
+        Task<Player> AddPlayer(SessionToken token, Guid characterId);
+        Task<PlayerJoinResult> AddPlayer(SessionToken token, PlayerJoinData playerJoinData);
+        Task<PlayerJoinResult> AddPlayer(SessionToken token, string userId, string userName, string identifier = null);
+        Task<PlayerJoinResult> AddPlayerByCharacterId(DataModels.GameSession session, Guid characterId, bool isGameRestore = false);
         Player GetPlayer(SessionToken sessionToken, string userId);
         Player GetPlayer(SessionToken sessionToken);
         Player GetPlayer(Guid characterId);
@@ -39,7 +40,7 @@ namespace RavenNest.BusinessLogic.Game
         bool UpdateAppearance(string userId, string identifier, Models.SyntyAppearance appearance);
 
         bool UpdateAppearance(AuthToken token, string userId, string identifier, Models.SyntyAppearance appearance);
-
+        Task<bool> UpdatePlayerSkillAsync(Guid characterId, string skillName, int level, float levelProgress);
         bool UpdateExperience(SessionToken token, string userId, int[] level, double[] experience, Guid? characterId = null);
         bool UpdateExperience(SessionToken token, int skillIndex, int level, double experience, Guid characterId);
         bool UpdateResources(SessionToken token, string userId, double[] resources);

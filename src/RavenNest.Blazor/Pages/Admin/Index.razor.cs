@@ -127,10 +127,10 @@ namespace RavenNest.Blazor.Pages.Admin
                     return config;
                 }
 
-                var title = config.Options.Title.Text;
+                var title = config?.Options?.Title?.Text?.SingleValue;
                 if (outputData != null && outputData.Length > 0 && title != null)
                 {
-                    config.Options.Title.Text = title.SingleValue + " - Total " + total;
+                    config.Options.Title.Text = title + " - Total " + total;
                 }
             }
             catch { }

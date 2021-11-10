@@ -53,6 +53,14 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<CharacterClanInvite> GetClanInvitesSent(Guid userId);
         IReadOnlyList<InventoryItemAttribute> GetInventoryItemAttributes(Guid inventoryItemId);
         IReadOnlyList<CharacterClanInvite> GetClanInvites(Guid clanId);
+
+        /// <summary>
+        /// Clears all the character session states available for any previous or current session of this user.
+        /// </summary>
+        /// <param name="userId"></param>
+        void ClearAllCharacterSessionStates(Guid userId);
+        void ClearCharacterSessionStates(Guid sessionId);
+
         #endregion
 
         #region Get
@@ -71,7 +79,7 @@ namespace RavenNest.BusinessLogic.Data
         int GetMarketItemCount();
         int GetNextGameEventRevision(Guid sessionId);
         DataModels.GameSession GetSession(Guid sessionId, bool updateSession = true);
-        DataModels.GameSession GetUserSession(Guid userId, bool updateSession = true);
+        DataModels.GameSession GetSessionByUserId(Guid userId, bool updateSession = true);
         IReadOnlyList<DataModels.GameEvent> GetSessionEvents(DataModels.GameSession gameSession);
         IReadOnlyList<DataModels.GameEvent> GetUserEvents(Guid userId);
         IReadOnlyList<DataModels.ClanSkill> GetClanSkills(Guid id);
@@ -201,6 +209,7 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<DataModels.GameSession> GetSessions();
         IReadOnlyList<DataModels.ItemCraftingRequirement> GetCraftingRequirements(Guid itemId);
         CharacterSessionState GetCharacterSessionState(Guid sessionId, Guid characterId);
+        void ResetCharacterSessionState(Guid sessionId, Guid characterId);
         SessionState GetSessionState(Guid sessionId);
 
         DataModels.InventoryItem GetEquippedItem(Guid id, DataModels.ItemCategory category);

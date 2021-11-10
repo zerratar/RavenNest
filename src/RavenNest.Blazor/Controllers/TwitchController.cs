@@ -255,7 +255,7 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("extension/create-join/{broadcasterId}")]
-        public ExtensionPlayerJoinResult PlayerJoin(string broadcasterId)
+        public async Task<ExtensionPlayerJoinResult> PlayerJoin(string broadcasterId)
         {
             var result = new ExtensionPlayerJoinResult();
             if (string.IsNullOrEmpty(broadcasterId))
@@ -288,7 +288,7 @@ namespace RavenNest.Controllers
                 }
 
                 var index = existingCharacters.Count + 1;
-                var player = playerManager.CreatePlayer(user.UserId, user.UserName, index.ToString());
+                var player = await playerManager.CreatePlayer(user.UserId, user.UserName, index.ToString());
                 if (player == null)
                 {
                     result.ErrorMessage = "Failed to create a new character.";
