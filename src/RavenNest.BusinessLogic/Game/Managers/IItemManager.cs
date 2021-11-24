@@ -15,6 +15,7 @@ namespace RavenNest.BusinessLogic.Game
         bool TryAddItem(Item item);
         bool TryUpdateItem(Item item);
         bool RemoveItem(Guid itemId);
+        RedeemableItemCollection GetRedeemableItems();
     }
 
     public class ItemManager : IItemManager
@@ -30,6 +31,13 @@ namespace RavenNest.BusinessLogic.Game
         {
             this.memoryCache = memoryCache;
             this.gameData = gameData;
+        }
+
+        public RedeemableItemCollection GetRedeemableItems()
+        {
+            return new RedeemableItemCollection(gameData
+                .GetRedeemableItems()
+                .Select(x => DataMapper.Map<Models.RedeemableItem, DataModels.RedeemableItem>(x)));
         }
 
         public ItemCollection GetAllItems()
@@ -179,5 +187,6 @@ namespace RavenNest.BusinessLogic.Game
 
             return memoryCache.Set("GetAllItems", collection, DateTime.UtcNow.AddSeconds(ItemCacheDurationSeconds));
         }
+
     }
 }

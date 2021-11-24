@@ -50,6 +50,24 @@ namespace RavenNest.Controllers
             return itemCollection;
         }
 
+        [HttpGet("redeemable")]
+        [MethodDescriptor(
+            Name = "Get all redeemable items",
+            Description = "This will return the list of all redeemable items in Ravenfall.",
+            RequiresSession = false,
+            RequiresAuth = false)
+        ]
+        public async Task<ActionResult<RedeemableItemCollection>> GetRedeemables()
+        {
+            if (itemManager == null)
+            {
+                return new RedeemableItemCollection();
+            }
+
+            var itemCollection = itemManager.GetRedeemableItems();
+            return itemCollection;
+        }
+
         [HttpPost]
         [MethodDescriptor(
             Name = "Add a new item to the database",

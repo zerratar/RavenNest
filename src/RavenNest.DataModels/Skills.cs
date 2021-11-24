@@ -9,11 +9,21 @@ namespace RavenNest.DataModels
     public partial class Skills : Entity<Skills>
     {
         private static readonly string[] skillNames = new string[] {
-            nameof(Attack), nameof(Defense), nameof(Strength),
-            nameof(Health), nameof(Woodcutting), nameof(Fishing),
-            nameof(Mining), nameof(Crafting), nameof(Cooking),
-            nameof(Farming), nameof(Slayer), nameof(Magic),
-            nameof(Ranged), nameof(Sailing),nameof(Healing),
+            nameof(Attack),
+            nameof(Defense),
+            nameof(Strength),
+            nameof(Health),
+            nameof(Woodcutting),
+            nameof(Fishing),
+            nameof(Mining),
+            nameof(Crafting),
+            nameof(Cooking),
+            nameof(Farming),
+            nameof(Slayer),
+            nameof(Magic),
+            nameof(Ranged),
+            nameof(Sailing),
+            nameof(Healing)
         };
 
         private static ConcurrentDictionary<string, PropertyInfo> expProperties = new ConcurrentDictionary<string, PropertyInfo>();
