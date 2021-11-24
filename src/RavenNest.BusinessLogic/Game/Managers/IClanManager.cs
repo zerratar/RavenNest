@@ -29,6 +29,6 @@ namespace RavenNest.BusinessLogic.Game
         void UpdateMemberRole(Guid clanId, Guid characterId, Guid roleId);
         bool CanChangeClanName(Guid clanId);
         int GetNameChangeCount(Guid clanId);
-        void ResetNameChangeCounter(Guid clanId);
+        bool ResetNameChangeCounter(Guid clanId);
     }
 }

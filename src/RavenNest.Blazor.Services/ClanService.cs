@@ -203,9 +203,9 @@ namespace RavenNest.Blazor.Services
             });
         }
 
-        public void ResetNameChangeCounter(Guid clanId)
+        public bool ResetNameChangeCounter(Guid clanId)
         {
-            this.clanManager.ResetNameChangeCounter(clanId);
+            return this.clanManager.ResetNameChangeCounter(clanId);
         }
 
         public int GetNameChangeCount(Guid clanId)
