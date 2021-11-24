@@ -37,6 +37,20 @@ namespace RavenNest.Blazor.Services
             return this.clanManager.GetClanByUserId(session.UserId);
         }
 
+        public Clan GetClanByUserId(string userId)
+        {
+            var session = GetSession();
+            if (!session.Authenticated)
+                return null;
+
+            if (session.UserId == userId || session.Administrator || session.Moderator)
+            {
+                return this.clanManager.GetClanByUserId(session.UserId);
+            }
+
+            return null;
+        }
+
         public IReadOnlyList<ClanMember> RemoveMember(Guid clanId, Guid characterId)
         {
             var session = GetSession();
@@ -187,6 +201,11 @@ namespace RavenNest.Blazor.Services
 
                 return allInvites;
             });
+        }
+
+        public void ResetNameChangeCounter(Guid clanId)
+        {
+            this.clanManager.ResetNameChangeCounter(clanId);
         }
 
         public int GetNameChangeCount(Guid clanId)
