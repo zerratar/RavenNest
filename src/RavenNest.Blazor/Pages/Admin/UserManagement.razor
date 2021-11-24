@@ -2,245 +2,260 @@
 @page "/admin/users"
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.UserService UserService
+@inject RavenNest.Blazor.Services.ClanService ClanService
 
 <div class="pagenation">
-	<div class="page-navigation">
-		<button class="link-button" @onclick="PreviousPage"><i class="fas fa-chevron-left"></i></button>
-		<div class="pages">
-			<div class="current-page">@(pageIndex+1)</div>&nbsp;/&nbsp;
-			<div class="total-pages">@pageCount</div>
-		</div>
-		<button class="link-button" @onclick="NextPage"><i class="fas fa-chevron-right"></i></button>
-	</div>
-	<div class="search-bar">
-		<EditForm Model="searchModel" OnSubmit="Filter">
-			<InputText class="search-input" placeholder="Search for id, username or name" @bind-Value="searchModel.Query" />
-		</EditForm>
-	</div>
-	<div class="total-players"><span>@totalCount</span> users</div>
+    <div class="page-navigation">
+        <button class="link-button" @onclick="PreviousPage"><i class="fas fa-chevron-left"></i></button>
+        <div class="pages">
+            <div class="current-page">@(pageIndex+1)</div>&nbsp;/&nbsp;
+            <div class="total-pages">@pageCount</div>
+        </div>
+        <button class="link-button" @onclick="NextPage"><i class="fas fa-chevron-right"></i></button>
+    </div>
+    <div class="search-bar">
+        <EditForm Model="searchModel" OnSubmit="Filter">
+            <InputText class="search-input" placeholder="Search for id, username or name" @bind-Value="searchModel.Query" />
+        </EditForm>
+    </div>
+    <div class="total-players"><span>@totalCount</span> users</div>
 </div>
 
 
 <table class="player-table">
-	<thead>
-		<tr>
-			<th></th>
-			<th>UserId</th>
-			<th>UserName</th>
-			<th>Email</th>
-			<th>Patreon</th>
-			<th>Characters</th>
-			<th>Admin</th>
-			<th>Mod</th>
-			<th>Hidden in Highscore</th>
-			<th></th>
-		</tr>
-	</thead>
-	<tbody>
-		@if (users == null || loading)
-		{
-	  <LoadIndicator></LoadIndicator>
-		}
-		else
-		{
-			@foreach (var user in users)
-			{
-		  <tr class="player-row">
-		   <td><img src="/api/twitch/logo/@(user.UserId)" class="profile-picture" /></td>
-		   <td>@user.UserId</td>
-		   <td>
-			<span>@user.UserName</span>
-						@if (user.Status >= 1)
-						{
-				<span style="color: white; background-color:red;font-size:9pt;">&nbsp;BANNED</span>
-						}
-		   </td>
-		   <td>
-						@user.Email
-		   </td>
-		   <td>
-						@if (editingPatreonUserId == user.Id)
-						{
-				<select class="clan-role-selector" @onchange="SelectedPatreonChanged">
-								@for (var i = 0; i < patreonNames.Length; ++i)
-								{
-									if (user.PatreonTier == i)
-									{
-						 <option id="@i" value="@i" selected>
-											@if (i >= patreonNames.Length)
-												@patreonNames[patreonNames.Length - 1]
-											else
-												@patreonNames[i]
-							 </option>
-									}
-									else
-									{
-						 <option id="@i" value="@i">
-											@if (i >= patreonNames.Length)
-												@patreonNames[patreonNames.Length - 1]
-											else
-												@patreonNames[i]
-							 </option>
-									}
-								}
-				</select>
-				<span class="fas fa-check" @onclick="UpdateUserPatreon"></span>
-				<span class="fas fa-times" @onclick="CancelEditUserPatreon"></span>
-						}
-						else
-						{
-							var i = user.PatreonTier ?? 0;
-							if (i >= patreonNames.Length)
-								@patreonNames[patreonNames.Length - 1]
-							else
-								@patreonNames[i]
-						}
-		   </td>
-		   <td>@user.Characters.Count</td>
-		   <td>@user.IsAdmin</td>
-		   <td>@user.IsModerator</td>
-		   <td>
-			<input type="checkbox" value="@user.IsHiddenInHighscore" @onchange="ev => IsHiddenInHighscoreChanged(user, ev.Value)"></input>
-		   </td>
-		   <td>
-			<button class="link-button" @onclick="(()=> EditPatreon(user))">Patreon</button>
-						@if (user.Status >= 1)
-						{
-				<button class="link-button" @onclick="(()=> UnbanUser(user))">Unban</button>
-						}
-						else
-						{
-				<button class="link-button" @onclick="(()=> UnbanUser(user))">Ban</button>
-						}
-		   </td>
-		  </tr>
-			}
-		}
- </tbody>
+    <thead>
+        <tr>
+            <th></th>
+            <th>UserId</th>
+            <th>UserName</th>
+            <th>Email</th>
+            <th>Patreon</th>
+            <th>Characters</th>
+            <th>Admin</th>
+            <th>Mod</th>
+            <th>Hidden in Highscore</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (users == null || loading)
+        {
+            <LoadIndicator></LoadIndicator>
+        }
+        else
+        {
+            @foreach (var user in users)
+            {
+                <tr class="player-row">
+                    <td><img src="/api/twitch/logo/@(user.UserId)" class="profile-picture" /></td>
+                    <td>@user.UserId</td>
+                    <td>
+                        <span>@user.UserName</span>
+                        @if (user.Status >= 1)
+                        {
+                            <span style="color: white; background-color:red;font-size:9pt;">&nbsp;BANNED</span>
+                        }
+                    </td>
+                    <td>
+                        @user.Email
+                    </td>
+                    <td>
+                        @if (editingPatreonUserId == user.Id)
+                        {
+                            <select class="clan-role-selector" @onchange="SelectedPatreonChanged">
+                                @for (var i = 0; i < patreonNames.Length; ++i)
+                                {
+                                    if (user.PatreonTier == i)
+                                    {
+                                        <option id="@i" value="@i" selected>
+                                            @if (i >= patreonNames.Length)
+                                                @patreonNames[patreonNames.Length - 1]
+                                            else
+                                                @patreonNames[i]
+
+
+                                            </option>
+                                    }
+                                    else
+                                    {
+                                        <option id="@i" value="@i">
+                                            @if (i >= patreonNames.Length)
+                                                @patreonNames[patreonNames.Length - 1]
+                                            else
+                                                @patreonNames[i]
+
+
+                                            </option>
+                                    }
+                                }
+                            </select>
+                            <span class="fas fa-check" @onclick="UpdateUserPatreon"></span>
+                            <span class="fas fa-times" @onclick="CancelEditUserPatreon"></span>
+                        }
+                        else
+                        {
+                            var i = user.PatreonTier ?? 0;
+                            if (i >= patreonNames.Length)
+                                @patreonNames[patreonNames.Length - 1]
+                            else
+                                @patreonNames[i]
+                        }
+                    </td>
+                    <td>@user.Characters.Count</td>
+                    <td>@user.IsAdmin</td>
+                    <td>@user.IsModerator</td>
+                    <td>
+                        <input type="checkbox" value="@user.IsHiddenInHighscore" @onchange="ev => IsHiddenInHighscoreChanged(user, ev.Value)"></input>
+                    </td>
+                    <td>
+                        <button class="link-button" @onclick="(() => ResetClanNameChangeCounter(user))">Allow Clan Rename</button>
+                        <button></button>
+                        <button class="link-button" @onclick="(()=> EditPatreon(user))">Patreon</button>
+                        @if (user.Status >= 1)
+                        {
+                            <button class="link-button" @onclick="(()=> UnbanUser(user))">Unban</button>
+                        }
+                        else
+                        {
+                            <button class="link-button" @onclick="(()=> UnbanUser(user))">Ban</button>
+                        }
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
 </table>
 
 @code {
-	private bool loading = false;
-	private PlayerSearchModel searchModel = new PlayerSearchModel();
-	private RavenNest.Sessions.SessionInfo session;
-	private IReadOnlyList<Models.WebsiteAdminUser> users;
-	private int pageIndex = 0;
-	private int pageSize = 50;
-	private int pageCount = 1;
-	private long totalCount = 0;
-	private Guid? editingPatreonUserId;
-	private int? targetPatreonTier;
+    private bool loading = false;
+    private PlayerSearchModel searchModel = new PlayerSearchModel();
+    private RavenNest.Sessions.SessionInfo session;
+    private IReadOnlyList<Models.WebsiteAdminUser> users;
+    private int pageIndex = 0;
+    private int pageSize = 50;
+    private int pageCount = 1;
+    private long totalCount = 0;
+    private Guid? editingPatreonUserId;
+    private int? targetPatreonTier;
 
-	private string[] patreonNames = new string[] {
-	"None", "Mithril", "Rune", "Dragon", "Abraxas", "Phantom", "Above Phantom"
-	};
+    private string[] patreonNames = new string[] {
+    "None", "Mithril", "Rune", "Dragon", "Abraxas", "Phantom", "Above Phantom"
+    };
 
-	protected override void OnInitialized()
-	{
-		session = AuthService.GetSession();
-		LoadUserPageAsync(pageIndex, pageSize);
-	}
+    protected override void OnInitialized()
+    {
+        session = AuthService.GetSession();
+        LoadUserPageAsync(pageIndex, pageSize);
+    }
 
-	private void IsHiddenInHighscoreChanged(Models.WebsiteAdminUser user, object? newValue)
-	{
-		var boolValue = newValue != null && newValue is bool b ? b : false;
-		UserService.SetUserHiddenInHighscore(user.Id, boolValue);
-		user.IsHiddenInHighscore = boolValue;
-		InvokeAsync(StateHasChanged);
-	}
+    private void IsHiddenInHighscoreChanged(Models.WebsiteAdminUser user, object? newValue)
+    {
+        var boolValue = newValue != null && newValue is bool b ? b : false;
+        UserService.SetUserHiddenInHighscore(user.Id, boolValue);
+        user.IsHiddenInHighscore = boolValue;
+        InvokeAsync(StateHasChanged);
+    }
 
-	private void SelectedPatreonChanged(ChangeEventArgs e)
-	{
-		var id = e.Value?.ToString();
-		if (int.TryParse(id, out var tier))
-			targetPatreonTier = tier;
-	}
+    private void SelectedPatreonChanged(ChangeEventArgs e)
+    {
+        var id = e.Value?.ToString();
+        if (int.TryParse(id, out var tier))
+            targetPatreonTier = tier;
+    }
 
+    private void ResetClanNameChangeCounter(Models.WebsiteAdminUser user)
+    {
+        var clan = ClanService.GetClanByUserId(user.UserId);
+        if (clan != null)
+        {
+            ClanService.ResetNameChangeCounter(clan.Id);
+        }
+    }
 
-	private void EditPatreon(Models.WebsiteAdminUser user)
-	{
-		editingPatreonUserId = user.Id;
-		targetPatreonTier = user.PatreonTier ?? 0;
-	}
+    private void EditPatreon(Models.WebsiteAdminUser user)
+    {
+        editingPatreonUserId = user.Id;
+        targetPatreonTier = user.PatreonTier ?? 0;
+    }
 
-	private void CancelEditUserPatreon()
-	{
-		editingPatreonUserId = null;
-	}
+    private void CancelEditUserPatreon()
+    {
+        editingPatreonUserId = null;
+    }
 
-	private async void UpdateUserPatreon()
-	{
-		if (targetPatreonTier == null || editingPatreonUserId == null)
-		{
-			return;
-		}
-		var userId = editingPatreonUserId.Value;
-		var patreonTier = targetPatreonTier.Value;
-		await UserService.UpdateUserPatreonAsync(userId, patreonTier);
-		var user = users.FirstOrDefault(x => x.Id == userId);
-		if (user != null)
-		{
-			user.PatreonTier = patreonTier;
-		}
-		CancelEditUserPatreon();
-		await InvokeAsync(StateHasChanged);
+    private async void UpdateUserPatreon()
+    {
+        if (targetPatreonTier == null || editingPatreonUserId == null)
+        {
+            return;
+        }
+        var userId = editingPatreonUserId.Value;
+        var patreonTier = targetPatreonTier.Value;
+        await UserService.UpdateUserPatreonAsync(userId, patreonTier);
+        var user = users.FirstOrDefault(x => x.Id == userId);
+        if (user != null)
+        {
+            user.PatreonTier = patreonTier;
+        }
+        CancelEditUserPatreon();
+        await InvokeAsync(StateHasChanged);
 
-		//await LoadUserPageAsync(pageIndex, pageSize);
-	}
+        //await LoadUserPageAsync(pageIndex, pageSize);
+    }
 
-	private void Filter()
-	{
-		pageIndex = 0;
-		LoadUserPageAsync(pageIndex, pageSize);
-	}
+    private void Filter()
+    {
+        pageIndex = 0;
+        LoadUserPageAsync(pageIndex, pageSize);
+    }
 
-	private void NextPage()
-	{
-		++pageIndex;
-		LoadUserPageAsync(pageIndex, pageSize);
-	}
+    private void NextPage()
+    {
+        ++pageIndex;
+        LoadUserPageAsync(pageIndex, pageSize);
+    }
 
-	private void PreviousPage()
-	{
-		var oldPage = pageIndex;
-		if (--pageIndex < 0)
-			pageIndex = 0;
-		if (oldPage != pageIndex)
-			LoadUserPageAsync(pageIndex, pageSize);
-	}
+    private void PreviousPage()
+    {
+        var oldPage = pageIndex;
+        if (--pageIndex < 0)
+            pageIndex = 0;
+        if (oldPage != pageIndex)
+            LoadUserPageAsync(pageIndex, pageSize);
+    }
 
-	private async Task LoadUserPageAsync(int index, int take)
-	{
-		loading = true;
-		var filter = searchModel.Query;
-		var result = await UserService.GetUserPageAsync(filter, index, take);
-		users = result.Items;
-		totalCount = result.TotalSize;
-		pageCount = (int)Math.Floor((double)this.totalCount / this.pageSize) + 1;
-		loading = false;
-		await InvokeAsync(StateHasChanged);
-	}
+    private async Task LoadUserPageAsync(int index, int take)
+    {
+        loading = true;
+        var filter = searchModel.Query;
+        var result = await UserService.GetUserPageAsync(filter, index, take);
+        users = result.Items;
+        totalCount = result.TotalSize;
+        pageCount = (int)Math.Floor((double)this.totalCount / this.pageSize) + 1;
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+    }
 
-	private async Task BanUser(Models.WebsiteAdminUser user)
-	{
-		if (await UserService.SetUserStatusAsync(user.Id, BusinessLogic.Data.AccountStatus.PermanentlySuspended))
-		{
-			user.Status = 2;
-			await InvokeAsync(StateHasChanged);
-		}
-	}
+    private async Task BanUser(Models.WebsiteAdminUser user)
+    {
+        if (await UserService.SetUserStatusAsync(user.Id, BusinessLogic.Data.AccountStatus.PermanentlySuspended))
+        {
+            user.Status = 2;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
 
-	private async Task UnbanUser(Models.WebsiteAdminUser user)
-	{
-		if (await UserService.SetUserStatusAsync(user.Id, BusinessLogic.Data.AccountStatus.OK))
-		{
-			user.Status = 0;
-			await InvokeAsync(StateHasChanged);
-		}
-	}
+    private async Task UnbanUser(Models.WebsiteAdminUser user)
+    {
+        if (await UserService.SetUserStatusAsync(user.Id, BusinessLogic.Data.AccountStatus.OK))
+        {
+            user.Status = 0;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
 
-	public class PlayerSearchModel
-	{
-		public string Query { get; set; }
-	}
+    public class PlayerSearchModel
+    {
+        public string Query { get; set; }
+    }
 }

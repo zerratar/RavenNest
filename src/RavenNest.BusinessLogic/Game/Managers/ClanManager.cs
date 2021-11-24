@@ -116,6 +116,16 @@ namespace RavenNest.BusinessLogic.Game
 
             return clan.CanChangeName || clan.NameChangeCount < 2;
         }
+        public void ResetNameChangeCounter(Guid clanId)
+        {
+            var clan = gameData.GetClan(clanId);
+            if (clan == null)
+                return;
+
+            clan.CanChangeName = true;
+            clan.NameChangeCount = 0;
+        }
+
 
         public bool AcceptClanInvite(Guid inviteId)
         {
@@ -551,5 +561,6 @@ namespace RavenNest.BusinessLogic.Game
 
             return false;
         }
+
     }
 }
