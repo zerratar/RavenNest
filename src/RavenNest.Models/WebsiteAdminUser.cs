@@ -16,5 +16,16 @@ namespace RavenNest.Models
         public int Status { get; set; }
         public bool IsHiddenInHighscore { get; set; }
         public DateTime Created { get; set; }
+        public bool HasClan { get; set; }
+        public WebsiteClan Clan { get; set; }
+
+    }
+
+    public class WebsiteClan
+    {
+        public Guid Id { get; set; }
+        public int Level { get; set; }
+        public int NameChangeCount { get; set; }
+        public bool CanChangeName { get; set; }
     }
 }
