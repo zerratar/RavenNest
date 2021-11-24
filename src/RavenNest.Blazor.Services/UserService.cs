@@ -149,6 +149,20 @@ namespace RavenNest.Blazor.Services
 
         private WebsiteAdminUser GetUser(DataModels.User userData)
         {
+            var clan = gameData.GetClanByUser(userData.Id);
+
+            WebsiteClan websiteClan = null;
+            if (clan != null)
+            {
+                websiteClan = new WebsiteClan
+                {
+                    Id = clan.Id,
+                    CanChangeName = clan.CanChangeName,
+                    NameChangeCount = clan.NameChangeCount,
+                    Level = clan.Level,
+                };
+            }
+
             return new WebsiteAdminUser
             {
                 Characters = new List<WebsiteAdminPlayer>(),
@@ -160,7 +174,10 @@ namespace RavenNest.Blazor.Services
                 Email = userData.Email,
                 IsAdmin = userData.IsAdmin.GetValueOrDefault(),
                 IsModerator = userData.IsModerator.GetValueOrDefault(),
-                Status = userData.Status ?? 0
+                Status = userData.Status ?? 0,
+                IsHiddenInHighscore = userData.IsHiddenInHighscore.GetValueOrDefault(),
+                Clan = websiteClan,
+                HasClan = websiteClan != null,
             };
         }
     }
