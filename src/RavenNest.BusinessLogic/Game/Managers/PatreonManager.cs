@@ -37,10 +37,12 @@ namespace RavenNest.BusinessLogic.Game
 
         public void RemovePledge(IPatreonData data)
         {
+            return; // don't remove anything, but we should flag it to expire?
             var user = GetUser(data, out var patreon);
             if (user != null &&
                 (data.Status == null || data.Status.IndexOf("active", StringComparison.OrdinalIgnoreCase) < 0))
                 user.PatreonTier = null;
+            //user.PatreonExpires = ...
         }
 
         public void UpdatePledge(IPatreonData data)
@@ -117,10 +119,19 @@ namespace RavenNest.BusinessLogic.Game
         private User TryGetUser(IPatreonData data)
         {
             var firstName = data.FullName?.Split(' ')?.FirstOrDefault();
+            var twitchUserName = "";
+            if (!string.IsNullOrEmpty(data.TwitchUrl))
+            {
+                twitchUserName = data.TwitchUrl.Split('/').LastOrDefault()?.ToLower();
+            }
+
             return gameData.FindUser(u =>
             {
                 if (u == null)
                     return false;
+
+                if (!string.IsNullOrEmpty(twitchUserName) && u.UserName.ToLower() == twitchUserName)
+                    return true;
 
                 if (!string.IsNullOrEmpty(data.TwitchUserId) && u.UserId == data.TwitchUserId)
                     return true;

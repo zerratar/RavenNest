@@ -19,7 +19,11 @@ namespace RavenNest.BusinessLogic.Patreon
         [JsonProperty("status")]
         public string Status { get; set; }
 
+        [JsonProperty("twitchId")]
         public string TwitchUserId { get; set; }
+        
+        [JsonProperty("twitchUrl")]
+        public string TwitchUrl { get; set; }
         public int Tier { get; set; }
     }
 }
