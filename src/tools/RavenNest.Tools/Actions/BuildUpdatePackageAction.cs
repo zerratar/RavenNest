@@ -11,7 +11,7 @@ namespace RavenNest.Tools.Actions
     public class BuildUpdatePackageAction
     {
         private const string RavenBotFolder = @"C:\git\RavenBot";
-        private const string UnityBuildFolder = @"C:\git\Ravenfall-Legacy-New\Build";
+        private const string UnityBuildFolder = @"C:\git\Ravenfall Legacy\Build";
         private BuildState buildState = BuildState.Full;
 
         public BuildUpdatePackageAction(
