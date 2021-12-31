@@ -11,5 +11,6 @@
 
         string Status { get; set; }
         string TwitchUserId { get; set; }
+        string TwitchUrl { get; set; }
     }
 }
