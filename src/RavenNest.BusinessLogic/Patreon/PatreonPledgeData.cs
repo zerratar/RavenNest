@@ -4,6 +4,7 @@
     {
         public long PatreonId { get; set; }
         public string TwitchUserId { get; set; }
+        public string TwitchUrl { get; set; }
         public string PledgeAmountCents { get; set; }
         public string FullName { get; set; }
         public string FirstName { get; set; }
