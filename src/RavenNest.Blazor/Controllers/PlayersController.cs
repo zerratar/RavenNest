@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
@@ -19,7 +20,7 @@ namespace RavenNest.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [ApiDescriptor(Name = "Players API", Description = "Used for managing player data.")]
-    public class PlayersController : ControllerBase
+    public class PlayersController : GameApiController
     {
         private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly ISessionManager sessionManager;
@@ -30,6 +31,8 @@ namespace RavenNest.Controllers
         private readonly IAuthManager authManager;
 
         public PlayersController(
+            ILogger<PlayersController> logger,
+            IGameData gameData,
             ISessionInfoProvider sessionInfoProvider,
             IPlayerInventoryProvider inventoryProvider,
             ISessionManager sessionManager,
@@ -38,6 +41,7 @@ namespace RavenNest.Controllers
             ISecureHasher secureHasher,
             IAuthManager authManager,
             IOptions<AppSettings> settings)
+            : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
             this.sessionInfoProvider = sessionInfoProvider;
             this.sessionManager = sessionManager;
@@ -372,20 +376,6 @@ namespace RavenNest.Controllers
             return sessionToken;
         }
 
-        private SessionToken GetSessionToken()
-        {
-            return HttpContext.Request.Headers.TryGetValue("session-token", out var value)
-                ? sessionManager.Get(value)
-                : null;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void AssertSessionTokenValidity(SessionToken sessionToken)
-        {
-            if (sessionToken == null) throw new NullReferenceException(nameof(sessionToken));
-            if (string.IsNullOrEmpty(sessionToken.AuthToken)) throw new NullReferenceException(nameof(sessionToken.AuthToken));
-            if (sessionToken.Expired) throw new Exception("Session has expired.");
-        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private string CleanupUserId(string userId)

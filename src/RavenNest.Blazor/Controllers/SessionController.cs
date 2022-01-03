@@ -1,19 +1,18 @@
-﻿using System;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
+using RavenNest.Sessions;
 
 namespace RavenNest.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     //[ApiDescriptor(Name = "Game API", Description = "Used for handling game sessions and polling game events.")]
-    public class SessionController : ControllerBase
+    public class SessionController : GameApiController
     {
         private readonly IGameData gameData;
         private readonly IAuthManager authManager;
@@ -22,11 +21,14 @@ namespace RavenNest.Controllers
         private readonly ISecureHasher secureHasher;
 
         public SessionController(
+            ILogger<SessionController> logger,
             IGameData gameData,
+            ISessionInfoProvider sessionInfoProvider,
             IAuthManager authManager,
             ISessionManager sessionManager,
             IGameManager gameManager,
             ISecureHasher secureHasher)
+            : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
             this.gameData = gameData;
             this.authManager = authManager;
@@ -56,7 +58,7 @@ namespace RavenNest.Controllers
                 param.Value1,
                 param.Value2);
 
-            if (session != null && session.AuthToken == null) 
+            if (session != null && session.AuthToken == null)
             {
                 return null;
             }
@@ -102,45 +104,5 @@ namespace RavenNest.Controllers
             AssertSessionTokenValidity(session);
             this.sessionManager.EndSession(session);
         }
-
-        private SessionToken GetSessionToken()
-        {
-            if (HttpContext.Request.Headers.TryGetValue("session-token", out var value))
-            {
-                return sessionManager.Get(value);
-            }
-            return null;
-        }
-
-        private AuthToken GetAuthToken()
-        {
-            if (HttpContext.Request.Headers.TryGetValue("auth-token", out var value))
-            {
-                return authManager.Get(value);
-            }
-            return null;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void AssertAuthTokenValidity(AuthToken authToken)
-        {
-            if (authToken == null) throw new NullReferenceException(nameof(authToken));
-            if (authToken.UserId == Guid.Empty) throw new NullReferenceException(nameof(authToken.UserId));
-            if (authToken.Expired) throw new Exception("Session has expired.");
-            if (string.IsNullOrEmpty(authToken.Token)) throw new Exception("Session has expired.");
-            if (authToken.Token != secureHasher.Get(authToken))
-            {
-                throw new Exception("Session has expired.");
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void AssertSessionTokenValidity(SessionToken sessionToken)
-        {
-            if (sessionToken == null) throw new NullReferenceException(nameof(sessionToken));
-            if (sessionToken.SessionId == Guid.Empty) throw new NullReferenceException(nameof(sessionToken.SessionId));
-            if (sessionToken.Expired) throw new Exception("Session has expired.");
-        }
     }
-
 }
