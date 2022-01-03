@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -12,10 +10,11 @@ using RavenNest.Sessions;
 
 namespace RavenNest.Controllers
 {
+
     [Route("api/[controller]")]
     [ApiController]
     //[ApiDescriptor(Name = "Game API", Description = "Used for handling game sessions and polling game events.")]
-    public class GameController : ControllerBase
+    public class GameController : GameApiController
     {
         private readonly IGameData gameData;
         private readonly IAuthManager authManager;
@@ -33,6 +32,7 @@ namespace RavenNest.Controllers
             ISessionManager sessionManager,
             IGameManager gameManager,
             ISecureHasher secureHasher)
+            : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
             this.logger = logger;
             this.gameData = gameData;
@@ -397,63 +397,5 @@ namespace RavenNest.Controllers
         //    return gameManager.Travel(GetCurrentUser().UserId, island);
         //}
         //#endregion
-
-        private string SessionId => HttpContext.GetSessionId();
-
-        private SessionToken GetSessionToken()
-        {
-            if (HttpContext.Request.Headers.TryGetValue("session-token", out var value))
-            {
-                return sessionManager.Get(value);
-            }
-            return null;
-        }
-
-        private AuthToken GetAuthToken()
-        {
-            if (HttpContext.Request.Headers.TryGetValue("auth-token", out var value))
-                return authManager.Get(value);
-            if (sessionInfoProvider.TryGetAuthToken(SessionId, out var authToken))
-                return authToken;
-            return null;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private DataModels.User GetCurrentUser()
-        {
-            var authToken = GetAuthToken();
-            AssertAuthTokenValidity(authToken);
-            return gameData.GetUser(authToken.UserId);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void AssertAdminAuthToken(AuthToken authToken)
-        {
-            var user = gameData.GetUser(authToken.UserId);
-            if (!user.IsAdmin.GetValueOrDefault())
-                throw new Exception("You do not have permissions to call this API");
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void AssertAuthTokenValidity(AuthToken authToken)
-        {
-            if (authToken == null) throw new NullReferenceException(nameof(authToken));
-            if (authToken.UserId == Guid.Empty) throw new NullReferenceException(nameof(authToken.UserId));
-            if (authToken.Expired) throw new Exception("Session has expired.");
-            if (string.IsNullOrEmpty(authToken.Token)) throw new Exception("Session has expired.");
-            if (authToken.Token != secureHasher.Get(authToken))
-            {
-                throw new Exception("Session has expired.");
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void AssertSessionTokenValidity(SessionToken sessionToken)
-        {
-            if (sessionToken == null) throw new NullReferenceException(nameof(sessionToken));
-            if (sessionToken.SessionId == Guid.Empty) throw new NullReferenceException(nameof(sessionToken.SessionId));
-            if (sessionToken.Expired) throw new Exception("Session has expired.");
-        }
     }
-
 }
