@@ -109,10 +109,9 @@ namespace RavenNest.BusinessLogic.Game
             sessionState.ClientVersion = clientVersion;
 
             SendPermissionData(newGameSession, user);
-
             SendVillageInfo(newGameSession);
 
-            return GenerateSessionToken(token, user, newGameSession);
+            return GenerateSessionToken(token, user, newGameSession, clientVersion);
         }
 
         public bool AttachPlayersToSession(SessionToken session, Guid[] characterIds)
@@ -364,7 +363,8 @@ namespace RavenNest.BusinessLogic.Game
         private static SessionToken GenerateSessionToken(
             AuthToken token,
             DataModels.User user,
-            DataModels.GameSession session)
+            DataModels.GameSession session,
+            string clientVersion)
         {
             return new SessionToken
             {
@@ -374,7 +374,8 @@ namespace RavenNest.BusinessLogic.Game
                 StartedUtc = session.Started,
                 TwitchDisplayName = user.DisplayName,
                 TwitchUserId = user.UserId,
-                TwitchUserName = user.UserName
+                TwitchUserName = user.UserName,
+                ClientVersion = clientVersion
             };
         }
 

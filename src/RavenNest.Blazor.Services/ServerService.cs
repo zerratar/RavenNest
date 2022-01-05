@@ -1,8 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.DataModels;
 using RavenNest.Sessions;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace RavenNest.Blazor.Services
 {
@@ -31,5 +35,54 @@ namespace RavenNest.Blazor.Services
         {
             serverManager.SendExpMultiplierEventAsync(multiplier, message, startTime, endTime);
         }
+
+        public Task<Agreements> UpdateCodeOfConduct(UpdateCodeOfConduct data)
+        {
+            return Task.Run(() =>
+            {
+                var agreements = gameData.GetAllAgreements();
+                var coc = agreements.FirstOrDefault(x => x.Type.ToLower() == "coc");
+                if (coc != null)
+                {
+                    if (coc.Message != data.Message || coc.Title != data.Title)
+                    {
+                        coc.Message = data.Message;
+                        coc.Title = data.Title;
+                        coc.Revision = coc.Revision + 1;
+                        coc.LastModified = DateTime.UtcNow;
+                    }
+                }
+                else
+                {
+                    coc = new Agreements
+                    {
+                        Id = Guid.NewGuid(),
+                        Type = "coc",
+                        Message = data.Message,
+                        Title = data.Title,
+                        Revision = 1,
+                        ValidFrom = DateTime.UtcNow,
+                        LastModified = DateTime.UtcNow,
+                    };
+                    gameData.Add(coc);
+                }
+                return coc;
+            });
+        }
+
+        public Task<Agreements> GetCodeOfConductAsync()
+        {
+            return Task.Run(() =>
+            {
+                var agreements = gameData.GetAllAgreements();
+                return agreements.FirstOrDefault(x => x.Type.ToLower() == "coc");
+            });
+        }
+    }
+
+    public class UpdateCodeOfConduct
+    {
+        public string Title { get; set; }
+        public string Message { get; set; }
     }
 }

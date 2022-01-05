@@ -33,6 +33,8 @@ namespace RavenNest.BusinessLogic.Data
         private readonly ConcurrentDictionary<Guid, SessionState> sessionStates
             = new ConcurrentDictionary<Guid, SessionState>();
 
+        private readonly EntitySet<Agreements, Guid> agreements;
+
         private readonly EntitySet<UserLoyalty, Guid> loyalty;
         private readonly EntitySet<UserProperty, Guid> userProperties;
         private readonly EntitySet<UserLoyaltyRank, Guid> loyaltyRanks;
@@ -144,6 +146,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(MarketItem),
                         typeof(ItemCraftingRequirement),
                         typeof(CharacterSessionActivity),
+                        typeof(Agreements)
                 });
 
                 if (restorePoint != null)
@@ -156,6 +159,8 @@ namespace RavenNest.BusinessLogic.Data
                 #region Data Load
                 using (var ctx = this.db.Get())
                 {
+                    agreements = new EntitySet<Agreements, Guid>(restorePoint?.Get<Agreements>() ?? ctx.Agreements.ToList(), i => i.Id);
+
                     loyalty = new EntitySet<UserLoyalty, Guid>(restorePoint?.Get<UserLoyalty>() ?? ctx.UserLoyalty.ToList(), i => i.Id);
                     loyalty.RegisterLookupGroup(nameof(User), x => x.UserId);
                     loyalty.RegisterLookupGroup("Streamer", x => x.StreamerUserId);
@@ -322,7 +327,7 @@ namespace RavenNest.BusinessLogic.Data
                         items, // so we can update items
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems, marketTransactions, inventoryItemAttributes,
                         resources, statistics, characterSkills, clanSkills, users, villages, villageHouses,
-                        clans, clanRoles, clanMemberships, clanInvites,
+                        clans, clanRoles, clanMemberships, clanInvites, agreements,
                         npcs, npcSpawns, npcItemDrops, itemCraftingRequirements, characterSessionActivities
                     };
                 }
@@ -762,6 +767,9 @@ namespace RavenNest.BusinessLogic.Data
         #region Add Methods
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(Agreements item) => Update(() => agreements.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(RedeemableItem item) => Update(() => redeemableItems.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1114,6 +1122,9 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<UserLoyaltyReward> GetLoyaltyRewards()
             => loyaltyRewards.Entities.ToList();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<Agreements> GetAllAgreements() => agreements.Entities.ToList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<InventoryItem> GetAllPlayerItems(Guid characterId) =>
@@ -1564,6 +1575,9 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Remove Entities
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(Agreements item) => agreements.Remove(item);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(RedeemableItem entity) => redeemableItems.Remove(entity);

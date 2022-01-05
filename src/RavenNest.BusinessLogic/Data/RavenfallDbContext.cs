@@ -64,6 +64,7 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<User> User { get; set; }
         public virtual DbSet<ServerLogs> ServerLogs { get; set; }
         public virtual DbSet<GameClient> GameClient { get; set; }
+        public virtual DbSet<Agreements> Agreements { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -75,6 +76,7 @@ namespace RavenNest.BusinessLogic.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Agreements>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserProperty>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserClaimedLoyaltyReward>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<RedeemableItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());

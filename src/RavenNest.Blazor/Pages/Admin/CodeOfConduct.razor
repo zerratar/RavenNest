@@ -1,0 +1,82 @@
+﻿@layout AdminLayout
+@page "/admin/coc"
+@using RavenNest.Blazor.Services;
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.Blazor.Services.ServerService ServerService
+
+@if (isAdmin)
+{
+    @if (isLoading)
+    {
+        <LoadIndicator></LoadIndicator>
+    }
+    else
+    {
+        <div class="item-create">
+            <h3>Update / Create a Code of Conduct</h3>
+            <a class="formatting-link" target="_blank" href="https://docs.unity3d.com/Packages/com.unity.ugui@1.0/manual/StyledText.html">See supported formatting</a>
+            <EditForm Model="@updateCodeOfConduct" OnValidSubmit="@HandleUpdateItem">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <p class="input-label">Title</p>
+                <InputText id="header" class="--coc-header" @bind-Value="updateCodeOfConduct.Title" />
+
+                <p class="input-label">Message</p>
+                <InputTextArea rows="10" class="--coc-message" id="name" @bind-Value="updateCodeOfConduct.Message" />
+
+                <button class="raven-btn " type="submit">
+                    <div class="inner">
+                        Update
+                    </div>
+                </button>
+
+            </EditForm>
+            <p class="item-name-error">@updateError</p>
+        </div>
+    }
+}
+
+@code {
+
+    private UpdateCodeOfConduct updateCodeOfConduct = new UpdateCodeOfConduct();
+    private RavenNest.Sessions.SessionInfo session;
+    private string updateError = "";
+    private bool isAdmin;
+    private bool isLoading = true;
+
+    private async void HandleUpdateItem()
+    {
+        if (string.IsNullOrEmpty(updateCodeOfConduct.Message))
+        {
+            updateError = "Message cannot be empty.";
+            return;
+        }
+
+        var result = await ServerService.UpdateCodeOfConduct(updateCodeOfConduct);
+        if (result != null)
+        {
+            updateError = "Last modified: " + result.LastModified + ", revision: " + result.Revision;
+            StateHasChanged();
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        session = AuthService.GetSession();
+        isAdmin = session != null && session.Administrator;
+        LoadCoc();
+    }
+
+    private async void LoadCoc()
+    {
+        var coc = await ServerService.GetCodeOfConductAsync();
+        if (coc != null)
+        {
+            updateCodeOfConduct.Title = coc.Title;
+            updateCodeOfConduct.Message = coc.Message;
+        }
+        isLoading = false;
+        StateHasChanged();
+    }
+}
