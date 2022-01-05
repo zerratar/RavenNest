@@ -12,6 +12,7 @@ namespace RavenNest.Models
         public string TwitchUserId { get; set; }
         public string TwitchUserName { get; set; }
         public string TwitchDisplayName { get; set; }
+        public string ClientVersion { get; set; }
     }
 
     public class RedeemableItem

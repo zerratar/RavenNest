@@ -1,0 +1,199 @@
+﻿
+p.input-label {
+    text-align: left;
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+.--coc-header {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 5px 10px;
+}
+
+
+.--coc-message {
+    width: 100% !important;
+    margin-bottom: 25px;
+    padding: 5px 10px;
+}
+
+.item-create {
+    display: flex;
+    flex-flow: column;
+    padding: 20px;
+}
+
+.item-create #name {
+    /* width: 100%; */
+    flex-grow: 1;
+}
+
+.item-create form {
+    flex-flow: row;
+}
+
+.item-create button {
+    margin-left: 15px;
+}
+
+table.items-list {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 160px;
+}
+
+.item-stat {
+    margin-right: 5px;
+    white-space: nowrap;
+}
+
+th, td {
+    text-align: right;
+    padding: 10px 15px;
+    border: 1px solid #eeeeee;
+}
+
+.items-list th {
+    cursor: pointer;
+    user-select: none;
+}
+
+table.items-list tr {
+    border: none;
+}
+
+table.items-list th:nth-of-type(2),
+table.items-list td:nth-of-type(2) {
+    text-align: left;
+}
+
+table.items-list tr:nth-of-type(even) {
+    background-color: #f6f6f6;
+}
+
+table.items-list tr:nth-of-type(even).selected,
+.item-row.selected {
+    background-color: aquamarine;
+}
+
+table.items-list tr.isMe {
+    background-color: #6acc91;
+    color: white;
+}
+
+.items {
+    margin-top: 140px;
+    flex-grow: 1;
+}
+
+.ravenCoins {
+    margin-bottom: 5.5px;
+    /* height: 100%; */
+    height: 22px;
+    margin-right: 1px;
+}
+
+.raven-btn {
+    font-family: 'Heebo', sans-serif;
+}
+
+.raven-btn:focus,
+.raven-btn:active {
+    outline: none;
+}
+
+/* default colors */
+.raven-btn:active {
+    background-color: #754c07;
+    border-color: #754c07;
+}
+
+.raven-btn:hover, .raven-btn:hover .inner {
+    background-color: #986209;
+    border-color: #986209;
+}
+
+.raven-btn {
+    padding: 5px;
+    border: 1px solid #a66e17;
+    background-color: transparent;
+    box-shadow: 1px 1px 7px 3px rgba(0,0,0,0.1), inset 1px 1px 7px 3px rgba(0,0,0,0.1);
+}
+
+.raven-btn .inner {
+    background-color: #a66e17;
+    padding: 11px 25px;
+    text-transform: uppercase;
+    font-weight: 500;
+    color: white;
+}
+
+.raven-btn .inner i {
+    margin-right: 10px;
+}
+
+/* orange */
+.raven-btn.orange:active {
+    background-color: #e55844;
+    border-color: #e55844;
+}
+
+.raven-btn.orange:hover, .raven-btn.orange:hover .inner {
+    background-color: #ed5e4a;
+    border-color: #ed5e4a;
+}
+
+.raven-btn.orange {
+    border-color: #f96854;
+}
+
+.raven-btn.orange .inner {
+    background-color: #f96854;
+}
+
+/* blue */
+.raven-btn.blue:active {
+    background-color: #005d76;
+    border-color: #005d76;
+}
+
+.raven-btn.blue:hover, .raven-btn.blue:hover .inner {
+    background-color: #006f8e;
+    border-color: #006f8e;
+}
+
+.raven-btn.blue {
+    border-color: #007798;
+}
+
+.raven-btn.blue .inner {
+    background-color: #007798;
+}
+
+/* twitch */
+.raven-btn.twitch:active {
+    background-color: #860aa9;
+    border-color: #860aa9;
+}
+
+.raven-btn.twitch:hover, .raven-btn.twitch:hover .inner {
+    background-color: #8f0eb4;
+    border-color: #8f0eb4;
+}
+
+.raven-btn.twitch {
+    border-color: #940fba;
+}
+
+.raven-btn.twitch .inner {
+    background-color: #940fba;
+}
+
+
+@media screen and (max-width: 800px) {
+    .section {
+        padding: 20px 30px 50px 20px;
+    }
+}

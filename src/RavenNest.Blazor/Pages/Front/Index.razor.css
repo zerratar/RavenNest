@@ -36,7 +36,7 @@
 
 .news-description {
     font-weight: lighter;
-    font-size: 16pt;
+    font-size: 12pt;
 }
 
 .section-buttons {
@@ -70,7 +70,7 @@
 }
 
 .feature-item-text {
-    font-size: 19pt;
+    font-size: 14pt;
     color: #303030;
     text-align: center;
     font-weight: 300;
@@ -161,7 +161,7 @@
 
 
 .hero-text {
-    font-size: 16pt;
+    font-size: 14pt;
     text-align: center;
     margin-bottom: 30px;
     color: white;

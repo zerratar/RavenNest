@@ -33,11 +33,26 @@ namespace RavenNest.Controllers
                 var path = env.WebRootPath + "\\" + fileName.Replace("/", "\\");
                 var downloadLink = clientInfo.DownloadLink ?? (System.IO.File.Exists(path) ? string.Format("https://{0}/{1}", HttpContext.Request.Host, fileName) : null);
 
+                CodeOfConduct codeOfConduct = null;
+
+                var coc = await db.Agreements.FirstOrDefaultAsync(x => x.Type.ToLower() == "coc");
+                if (coc != null)
+                {
+                    codeOfConduct = new CodeOfConduct
+                    {
+                        LastModified = coc.LastModified.GetValueOrDefault(),
+                        Message = coc.Message,
+                        Revision = coc.Revision,
+                        Title = coc.Title,
+                    };
+                }
+
                 return new UpdateData
                 {
                     Version = clientInfo.ClientVersion,
                     DownloadUrl = downloadLink,
-                    Released = DateTime.UtcNow
+                    Released = DateTime.UtcNow,
+                    CodeOfConduct = codeOfConduct
                 };
             }
         }

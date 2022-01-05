@@ -28,6 +28,7 @@ namespace RavenNest.BusinessLogic.Data
 
         Character GetCharacterByName(string username, string identifier);
         IReadOnlyList<UserLoyaltyReward> GetLoyaltyRewards();
+        IReadOnlyList<Agreements> GetAllAgreements();
 
         /// <summary>
         /// Find player items by predicate
@@ -131,7 +132,7 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Add
-
+        void Add(Agreements item);
         void Add(RedeemableItem item);
         void Add(ClanSkill entity);
         void Add(MarketItemTransaction transaction);
@@ -172,7 +173,9 @@ namespace RavenNest.BusinessLogic.Data
 
         #endregion
 
+
         #region Remove
+        void Remove(Agreements item);
         void Remove(RedeemableItem item);
         void Remove(InventoryItemAttribute attr);
         void Remove(UserNotification ev);
