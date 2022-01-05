@@ -2,140 +2,140 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 
 <div class="page front-page">
-  @*<div class="sidebar">
-      <NavMenu Authenticated="IsAuthenticated" Administrator="IsAdministrator"></NavMenu>
-    </div>*@
+    @*<div class="sidebar">
+        <NavMenu Authenticated="IsAuthenticated" Administrator="IsAdministrator"></NavMenu>
+        </div>*@
 
-  <div class="main">
-    <div class="top-nav px-4">
-      <div class="top-row corner">
+    <div class="main">
+        <div class="top-nav px-4">
+            <div class="top-row corner">
+                @if (IsAuthenticated)
+                {
+                    <NotificationIcon UserId="@session.UserId"></NotificationIcon>
+                    <NavLink class="nav-link" href="/logout" Match="NavLinkMatch.All">
+                        <span class="oi oi-account-logout" aria-hidden="true"></span> LOGOUT
+                    </NavLink>
+                }
+                else
+                {
+                    <NavLink class="nav-link" href="/login" Match="NavLinkMatch.All">
+                        <span class="oi oi-account-login" aria-hidden="true"></span> LOGIN
+                    </NavLink>
+                }
+
+                <a class="nav-link" href="https://discord.gg/gtfDts7" target="_blank">
+                    SUPPORT
+                </a>
+
+                <a class="nav-link" href="https://wiki.ravenfall.stream/" target="_blank">
+                    WIKI
+                </a>
+            </div>
+            <div class="top-row stretch">
+                <div class="main-nav">
+                    <NavLink href="/">
+                        <img src="/imgs/RavenfallGray.png" class="logo" />
+                    </NavLink>
+                    <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+                        HOME
+                    </NavLink>
+                    <div class="nav-link dd">
+                        <span>GAME</span>
+                        <div class="dd-content">
+                            <a class="nav-link dd-item" href="https://www.youtube.com/watch?v=lTMs19hsvNc&ab_channel=Zerratar" target="_blank">GAME TRAILER</a>
+                            <NavLink class="nav-link dd-item" href="/leaderboard" Match="NavLinkMatch.All">
+                                LEADERBOARD
+                            </NavLink>
+                            <NavLink class="nav-link dd-item" href="/marketplace" Match="NavLinkMatch.All">
+                                MARKETPLACE
+                            </NavLink>
+                            <NavLink class="nav-link dd-item" href="/items" Match="NavLinkMatch.All">
+                                ITEM LIST
+                            </NavLink>
+                            <NavLink class="nav-link dd-item" href="/streams" Match="NavLinkMatch.All">
+                                STREAMS
+                            </NavLink>
+                            <NavLink class="nav-link dd-item" href="/towns" Match="NavLinkMatch.All">
+                                TOWNS
+                            </NavLink>
+                        </div>
+                    </div>
+                    <a class="nav-link" href="https://www.medium.com/ravenfall" target="_blank">
+                        NEWS
+                    </a>
+                    <a class="nav-link" href="https://discord.gg/gtfDts7" target="_blank">
+                        COMMUNITY
+                    </a>
+
+                    @if (IsAuthenticated)
+                    {
+                        //todo: jump to /dashboard, not /characters
+                        <NavLink class="nav-link dd-item" href="/characters" Match="NavLinkMatch.All">
+                            DASHBOARD
+                        </NavLink>
+                    }
+
+                </div>
+                <div class="top-social">
+                    <a class="nav-link" href="https://www.twitch.tv/zerratar" target="_blank">
+                        <i class="fab fa-twitch"></i>
+                    </a>
+                    <a class="nav-link" href="https://discord.gg/gtfDts7" target="_blank">
+                        <i class="fab fa-discord"></i>
+                    </a>
+                    <a class="nav-link" href="https://www.twitter.com/zerratar" target="_blank">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a class="nav-link" href="https://www.youtube.com/zerratar" target="_blank">
+                        <i class="fab fa-youtube"></i>
+                    </a>
+                    <a class="nav-link" href="https://www.patreon.com/ravenfall" target="_blank">
+                        <i class="fab fa-patreon"></i>
+                    </a>
+                    @*<a class="nav-link" href="#">
+                        <i class="fab fa-reddit"></i>
+                        </a>*@
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            @Body
+        </div>
+
+        <footer>
+            <div class="footer-row top">
+                <img class="footer-logo" src="/imgs/RavenfallGray.png" />
+                <h3>Copyright &copy; @(DateTime.Now.Year) <a href="http://www.shinobytes.com/">shinobytes.com</a>, all rights reserved.<br /></h3>
+                <div class="cookies"><a href="/cookies">Click here if you want to read how we use cookies.</a></div>
+            </div>
+            <div class="footer-row">
+            </div>
+        </footer>
+
         @if (IsAuthenticated)
         {
-          <NotificationIcon UserId="@session.UserId"></NotificationIcon>
-          <NavLink class="nav-link" href="/logout" Match="NavLinkMatch.All">
-            <span class="oi oi-account-logout" aria-hidden="true"></span> LOGOUT
-          </NavLink>
+            <TwitchStreams Session="session"></TwitchStreams>
         }
-        else
-        {
-          <NavLink class="nav-link" href="/login" Match="NavLinkMatch.All">
-            <span class="oi oi-account-login" aria-hidden="true"></span> LOGIN
-          </NavLink>
-        }
-
-        <a class="nav-link" href="https://discord.gg/gtfDts7" target="_blank">
-          SUPPORT
-        </a>
-
-        <a class="nav-link" href="https://wiki.ravenfall.stream/" target="_blank">
-          WIKI
-        </a>
-      </div>
-      <div class="top-row stretch">
-        <div class="main-nav">
-          <NavLink href="/">
-            <img src="/imgs/RavenfallGray.png" class="logo" />
-          </NavLink>
-          <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
-            HOME
-          </NavLink>
-          <div class="nav-link dd">
-            <span>GAME</span>
-            <div class="dd-content">
-              <a class="nav-link dd-item" href="https://www.youtube.com/watch?v=lTMs19hsvNc&ab_channel=Zerratar" target="_blank">GAME TRAILER</a>
-              <NavLink class="nav-link dd-item" href="/leaderboard" Match="NavLinkMatch.All">
-                LEADERBOARD
-              </NavLink>
-              <NavLink class="nav-link dd-item" href="/marketplace" Match="NavLinkMatch.All">
-                MARKETPLACE
-              </NavLink>
-              <NavLink class="nav-link dd-item" href="/items" Match="NavLinkMatch.All">
-                ITEM LIST
-              </NavLink>
-			  <NavLink class="nav-link dd-item" href="/streams" Match="NavLinkMatch.All">
-                STREAMS
-              </NavLink>
-			  <NavLink class="nav-link dd-item" href="/towns" Match="NavLinkMatch.All">
-                TOWNS
-              </NavLink>
-            </div>
-          </div>
-          <a class="nav-link" href="https://www.medium.com/ravenfall" target="_blank">
-            NEWS
-          </a>
-          <a class="nav-link" href="https://discord.gg/gtfDts7" target="_blank">
-            COMMUNITY
-          </a>
-
-          @if (IsAuthenticated)
-          {
-            //todo: jump to /dashboard, not /characters
-            <NavLink class="nav-link dd-item" href="/characters" Match="NavLinkMatch.All">
-              DASHBOARD
-            </NavLink>
-          }
-
-        </div>
-        <div class="top-social">
-          <a class="nav-link" href="https://www.twitch.tv/zerratar" target="_blank">
-            <i class="fab fa-twitch"></i>
-          </a>
-          <a class="nav-link" href="https://discord.gg/gtfDts7" target="_blank">
-            <i class="fab fa-discord"></i>
-          </a>
-          <a class="nav-link" href="https://www.twitter.com/zerratar" target="_blank">
-            <i class="fab fa-twitter"></i>
-          </a>
-          <a class="nav-link" href="https://www.youtube.com/zerratar" target="_blank">
-            <i class="fab fa-youtube"></i>
-          </a>
-          <a class="nav-link" href="https://www.patreon.com/ravenfall" target="_blank">
-            <i class="fab fa-patreon"></i>
-          </a>
-          @*<a class="nav-link" href="#">
-              <i class="fab fa-reddit"></i>
-            </a>*@
-        </div>
-      </div>
     </div>
-
-    <div class="content">
-      @Body
-    </div>
-
-    <footer>
-      <div class="footer-row top">
-        <img class="footer-logo" src="/imgs/RavenfallGray.png" />
-        <h3>Copyright &copy; @(DateTime.Now.Year) <a href="http://www.shinobytes.com/">shinobytes.com</a>, all rights reserved.</h3>
-      </div>
-      <div class="footer-row">
-
-      </div>
-    </footer>
-
-    @if (IsAuthenticated)
-    {
-      <TwitchStreams Session="session"></TwitchStreams>
-    }
-  </div>
 </div>
 
 <CookieDisclaimer></CookieDisclaimer>
 
 @code {
-  public static MainLayout Instance { get; private set; }
-  private RavenNest.Sessions.SessionInfo session;
+    public static MainLayout Instance { get; private set; }
+    private RavenNest.Sessions.SessionInfo session;
 
-  protected override void OnInitialized()
-  {
-    Instance = this;
-    UpdateSession();
-  }
+    protected override void OnInitialized()
+    {
+        Instance = this;
+        UpdateSession();
+    }
 
-  public void UpdateSession()
-  {
-    session = AuthService.GetSession();
-  }
-  private bool IsAdministrator => IsAuthenticated && session.Administrator;
-  private bool IsAuthenticated => session != null && session.UserId != null;
+    public void UpdateSession()
+    {
+        session = AuthService.GetSession();
+    }
+    private bool IsAdministrator => IsAuthenticated && session.Administrator;
+    private bool IsAuthenticated => session != null && session.UserId != null;
 }

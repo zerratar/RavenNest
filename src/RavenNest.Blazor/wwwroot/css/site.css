@@ -5,6 +5,22 @@ html, body {
     background-color: black;
 }
 
+
+.h1, h1 {
+    font-size: 2rem;
+}
+
+.h3, h3 {
+    font-size: 1.35rem;
+}
+
+.nav-link, .top-row a {
+    color: white;
+    font-size: 10pt;
+}
+
+
+
 span.notification-count {
     color: white;
     background-color: red;
@@ -141,10 +157,11 @@ a.nav-link.dd-item {
     outline: none;
     padding: 30px;
     max-width: 100%;
-    width: 417px;
-    height: 77px;
+    width: 324px;
+    height: 45px;
+    
     box-sizing: border-box;
-    font-size: 18pt;
+    font-size: 13pt;
     margin-bottom: 12px;
     color: white;
     background-size: contain;
@@ -215,7 +232,7 @@ a.nav-link.dd-item {
 
 button.raven-btn.blue.login-btn,
 button.raven-btn.twitch.twitch-login-btn {
-    width: 350px;
+    width: 325px;
     margin-bottom: 45px;
     max-width: 100%;
 }
@@ -266,6 +283,10 @@ h1:after {
     margin-bottom: 40px;
 }
 
+/*.cookies {
+    margin-top: 15px;
+}*/
+
 footer, .footer {
     width: 100%;
     background-color: black;
@@ -273,7 +294,7 @@ footer, .footer {
     display: -webkit-box;
     display: -ms-flexbox;
     display: flex;
-    min-height: 160px;
+    min-height: 200px;
     -webkit-box-align: center;
     -ms-flex-align: center;
     align-items: center;
@@ -307,9 +328,9 @@ footer:before {
 }
 
 footer > div > img, .footer-logo {
-    width: 370px;
+    width: 200px;
     margin-bottom: 20px;
-    margin-top: 40px;
+    margin-top: 25px;
 }
 
 footer h3:before {
@@ -334,9 +355,7 @@ footer span {
 
 footer h3 {
     font-weight: 300;
-    font-size: 19pt;
-    font-weight: 300;
-    font-size: 19pt;
+    font-size: 14pt;
     max-width: 100%;
     width: 780px;
     text-align: center;
@@ -390,7 +409,18 @@ footer h3 {
     top: 0.5rem;
 }
 
+.--coc-header {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 5px 10px;
+}
 
+
+.--coc-message {
+    width: 100% !important;
+    margin-bottom: 25px;
+    padding: 5px 10px;
+}
 
 @media (max-width: 640.98px) {
     .section {

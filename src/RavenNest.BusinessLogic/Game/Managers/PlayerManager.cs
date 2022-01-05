@@ -142,10 +142,12 @@ namespace RavenNest.BusinessLogic.Game
         {
             var result = new PlayerJoinResult();
             var internalErrorMessage = "";
+            var hasCharacterId = false;
+            var characterId = Guid.Empty;
             try
             {
                 // in case a reload did something wonkers. ?
-                var characterId = playerData.CharacterId;
+                characterId = playerData.CharacterId;
                 if (characterId != Guid.Empty || Guid.TryParse(playerData.UserId ?? "", out characterId))
                 {
                     result = await AddPlayerByCharacterId(session, characterId, playerData.IsGameRestore);
@@ -227,6 +229,9 @@ namespace RavenNest.BusinessLogic.Game
                     return result;
                 }
 
+                characterId = character.Id;
+                hasCharacterId = true;
+
                 if (gameData.GetCharacterSkills(character.SkillsId) == null)
                 {
                     var skills = GenerateSkills();
@@ -241,7 +246,8 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (playerData.IsGameRestore && (character.UserIdLock != null && character.UserIdLock != session.UserId))
                 {
-                    result.ErrorMessage = "Player has left to join another stream.";
+                    var newOwner = gameData.GetUser(character.UserIdLock.Value);
+                    result.ErrorMessage = "Player has left to join " + newOwner.UserName + "'s stream.";
                     result.Success = false;
                     return result;
                 }
@@ -257,9 +263,11 @@ namespace RavenNest.BusinessLogic.Game
             }
             finally
             {
-                if (!result.Success)
+                if (!result.Success && session != null)
                 {
-                    logger.LogError("Add Player Failed for " + playerData.UserId + ", " + playerData.UserName + ", session-user-id: " + (session?.UserId) + result.ErrorMessage + internalErrorMessage);
+                    var sessionOwner = gameData.GetUser(session.UserId);
+
+                    logger.LogError("Unable to add player " + playerData.UserName + " to " + sessionOwner.UserName + "'s stream. " + result.ErrorMessage + " " + internalErrorMessage);
                 }
             }
         }
