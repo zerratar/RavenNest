@@ -36,6 +36,25 @@ namespace RavenNest.Blazor.Services
             serverManager.SendExpMultiplierEventAsync(multiplier, message, startTime, endTime);
         }
 
+        public Task<bool> DeleteCodeOfConduct()
+        {
+            return Task.Run(() =>
+            {
+                var agreements = gameData.GetAllAgreements();
+                var coc = agreements.FirstOrDefault(x => x.Type.ToLower() == "coc");
+                if (coc != null)
+                {
+                    gameData.Remove(coc);
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            });
+        }
+
+
         public Task<Agreements> UpdateCodeOfConduct(UpdateCodeOfConduct data)
         {
             return Task.Run(() =>

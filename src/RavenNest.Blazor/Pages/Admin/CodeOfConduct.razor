@@ -49,7 +49,15 @@
     {
         if (string.IsNullOrEmpty(updateCodeOfConduct.Message))
         {
-            updateError = "Message cannot be empty.";
+            if (await ServerService.DeleteCodeOfConduct())
+            {
+                updateError = "Code of conduct deleted.";
+            }
+            else
+            {
+                updateError = "Message cannot be null. (We don't have one saved. Leaving it empty later will delete it)";
+            }
+            StateHasChanged();
             return;
         }
 
