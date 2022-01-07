@@ -25,6 +25,10 @@
                 <p class="input-label">Message</p>
                 <InputTextArea rows="10" class="--coc-message" id="name" @bind-Value="updateCodeOfConduct.Message" />
 
+                <p class="input-label"><span>Visible in Client</span>
+                   <InputCheckbox @bind-Value="updateCodeOfConduct.VisibleInClient" class="--coc-visible"/>
+                </p>
+
                 <button class="raven-btn " type="submit">
                     <div class="inner">
                         Update
@@ -44,6 +48,13 @@
     private string updateError = "";
     private bool isAdmin;
     private bool isLoading = true;
+
+    //private void IsVisibleInClientChanged(object? newValue)
+    //{
+    //    var boolValue = newValue != null && newValue is bool b ? b : false;        
+    //    updateCodeOfConduct.VisibleInClient = boolValue;
+    //    InvokeAsync(StateHasChanged);
+    //}
 
     private async void HandleUpdateItem()
     {
@@ -83,6 +94,7 @@
         {
             updateCodeOfConduct.Title = coc.Title;
             updateCodeOfConduct.Message = coc.Message;
+            updateCodeOfConduct.VisibleInClient = coc.VisibleInClient;
         }
         isLoading = false;
         StateHasChanged();

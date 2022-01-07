@@ -18,5 +18,6 @@ namespace RavenNest.Models
         public string Message { get; set; }
         public DateTime LastModified { get; set; }
         public int Revision { get; set; }
+        public bool VisibleInClient { get; set; }
     }
 }

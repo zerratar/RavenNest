@@ -19,6 +19,15 @@ p.input-label {
     padding: 5px 10px;
 }
 
+.--coc-visible {
+    margin-left: 5px;
+    padding: 5px;
+    width: 16px;
+    height: 16px;
+    position: relative;
+    top: 2px;
+}
+
 .item-create {
     display: flex;
     flex-flow: column;

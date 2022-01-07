@@ -63,12 +63,13 @@ namespace RavenNest.Blazor.Services
                 var coc = agreements.FirstOrDefault(x => x.Type.ToLower() == "coc");
                 if (coc != null)
                 {
-                    if (coc.Message != data.Message || coc.Title != data.Title)
+                    if (coc.Message != data.Message || coc.Title != data.Title || coc.VisibleInClient != data.VisibleInClient)
                     {
                         coc.Message = data.Message;
                         coc.Title = data.Title;
                         coc.Revision = coc.Revision + 1;
                         coc.LastModified = DateTime.UtcNow;
+                        coc.VisibleInClient = data.VisibleInClient;
                     }
                 }
                 else
@@ -82,6 +83,7 @@ namespace RavenNest.Blazor.Services
                         Revision = 1,
                         ValidFrom = DateTime.UtcNow,
                         LastModified = DateTime.UtcNow,
+                        VisibleInClient = data.VisibleInClient
                     };
                     gameData.Add(coc);
                 }
@@ -103,5 +105,6 @@ namespace RavenNest.Blazor.Services
     {
         public string Title { get; set; }
         public string Message { get; set; }
+        public bool VisibleInClient { get; set; }
     }
 }
