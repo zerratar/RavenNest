@@ -93,28 +93,30 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
         public async Task ProcessAsync(CancellationTokenSource cts)
         {
-            UpdateSessionTasks();
+            var now = DateTime.UtcNow;
 
-            PushVillageInfo();
+            UpdateSessionTasks(now);
 
-            PushExpMultiplier();
+            PushVillageInfo(now);
+
+            PushExpMultiplier(now);
 
             //PushServerTime();
 
-            await PushGameEventsAsync(cts);
+            await PushGameEventsAsync(now, cts);
 
-            PushPermissionDataInfo();
+            PushPermissionDataInfo(now);
 
-            await PushPubSubDetailsAsync();
+            await PushPubSubDetailsAsync(now);
         }
 
-        private async Task PushPubSubDetailsAsync()
+        private async Task PushPubSubDetailsAsync(DateTime utcNow)
         {
             var session = gameData.GetSession(sessionToken.SessionId);
             if (session != null)
             {
                 var user = gameData.GetUser(session.UserId);
-                var elapsed = DateTime.UtcNow - lastPubsubPush;
+                var elapsed = utcNow - lastPubsubPush;
                 if (elapsed >= pubsubPushInterval && user != null)
                 {
                     var accessToken = gameData.GetUserProperty(session.UserId, UserProperties.Twitch_PubSub);
@@ -124,34 +126,34 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
                         sessionManager.SendPubSubToken(session, accessToken);
                     }
-                    lastPubsubPush = DateTime.UtcNow;
+                    lastPubsubPush = utcNow;
                 }
             }
         }
 
-        private void PushVillageInfo()
+        private void PushVillageInfo(DateTime utcNow)
         {
             var session = gameData.GetSession(sessionToken.SessionId);
             if (session != null)
             {
-                var elapsed = DateTime.UtcNow - lastVillageInfoPush;
+                var elapsed = utcNow - lastVillageInfoPush;
                 if (elapsed >= villageInfoPushInterval)
                 {
-                    lastVillageInfoPush = DateTime.UtcNow;
+                    lastVillageInfoPush = utcNow;
                     sessionManager.SendVillageInfo(session);
                 }
             }
         }
 
-        private void PushExpMultiplier()
+        private void PushExpMultiplier(DateTime utcNow)
         {
             var session = gameData.GetSession(sessionToken.SessionId);
             if (session != null)
             {
-                var elapsed = DateTime.UtcNow - lastExpMultiPush;
+                var elapsed = utcNow - lastExpMultiPush;
                 if (elapsed >= ExpMultiplierPushInterval)
                 {
-                    lastExpMultiPush = DateTime.UtcNow;
+                    lastExpMultiPush = utcNow;
                     sessionManager.SendExpMultiplier(session);
                 }
             }
@@ -171,21 +173,21 @@ namespace RavenNest.BusinessLogic.Game.Processors
             }
         }
 
-        private void PushPermissionDataInfo()
+        private void PushPermissionDataInfo(DateTime utcNow)
         {
             var session = gameData.GetSession(sessionToken.SessionId);
             if (session != null)
             {
-                var elapsed = DateTime.UtcNow - lastPermissionInfoPush;
+                var elapsed = utcNow - lastPermissionInfoPush;
                 if (elapsed >= permissionInfoPushInterval)
                 {
-                    lastPermissionInfoPush = DateTime.UtcNow;
+                    lastPermissionInfoPush = utcNow;
                     sessionManager.SendPermissionData(session);
                 }
             }
         }
 
-        private async Task PushGameEventsAsync(CancellationTokenSource cts)
+        private async Task PushGameEventsAsync(DateTime utcNow, CancellationTokenSource cts)
         {
             var events = gameManager.GetGameEvents(sessionToken);
             if (events.Count > 0)
@@ -204,7 +206,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             }
         }
 
-        private void UpdateSessionTasks()
+        private void UpdateSessionTasks(DateTime utcNow)
         {
             var session = gameData.GetSession(sessionToken.SessionId);
             var characters = gameData.GetSessionCharacters(session);
@@ -219,7 +221,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             // force keep a session alive if we are connected here
             session.Stopped = null;
             session.Status = (int)SessionStatus.Active;
-            session.Updated = DateTime.UtcNow;
+            session.Updated = utcNow;
 
             village.Process(integrityChecker, gameData, inventoryProvider, session, null, null);
 
