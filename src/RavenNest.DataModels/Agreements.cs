@@ -12,5 +12,6 @@ namespace RavenNest.DataModels
         private DateTime? validTo; public DateTime? ValidTo { get => validTo; set => Set(ref validTo, value); }
         private DateTime? lastModified; public DateTime? LastModified { get => lastModified; set => Set(ref lastModified, value); }
         private int revision; public int Revision { get => revision; set => Set(ref revision, value); }
+        private bool visibleInClient; public bool VisibleInClient { get => visibleInClient; set => Set(ref visibleInClient, value); }
     }
 }

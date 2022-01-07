@@ -44,6 +44,7 @@ namespace RavenNest.Controllers
                         Message = coc.Message,
                         Revision = coc.Revision,
                         Title = coc.Title,
+                        VisibleInClient = coc.VisibleInClient
                     };
                 }
 
