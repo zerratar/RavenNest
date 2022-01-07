@@ -28,7 +28,7 @@ namespace RavenNest.BusinessLogic.Net
                 logger.LogError("CharacterStateUpdate package received but the packet data did not contain the proper structure.");
             }
 
-            await connection.ReplyAsync(packet, result);
+            //await connection.ReplyAsync(packet, result);
         }
     }
 }
