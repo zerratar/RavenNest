@@ -39,6 +39,12 @@ namespace RavenNest.Blazor.Pages.Front
             return ItemService.GetItem(itemId);
         }
 
+        private string GetUserName(string twitchUserId)
+        {
+            if (!isAdmin) return null;
+            return UserService.GetUser(twitchUserId)?.UserName;
+        }
+
         private async void CancelListing(Guid id)
         {
             if (!CanCancelItem(id)) return;

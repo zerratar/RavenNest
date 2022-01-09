@@ -60,6 +60,15 @@ namespace RavenNest.Blazor.Services
             });
         }
 
+        public WebsiteAdminUser GetUser(string twitchUserId)
+        {
+            var user = gameData.GetUser(twitchUserId);
+            if (user != null)
+                return GetUser(user);
+
+            return null;
+        }
+
         public async Task<PagedCollection<WebsiteAdminUser>> GetUserPageAsync(string search, int pageIndex, int pageSize)
         {
             var players = await SearchForPlayersAsync(search);

@@ -3,6 +3,7 @@
 @using Microsoft.AspNetCore.WebUtilities
 @using RavenNest.Blazor.Services
 @inject MarketplaceService MarketplaceService
+@inject UserService UserService;
 @inject NavigationManager NavigationManager
 @inject ItemService ItemService
 @inject AuthService AuthService
@@ -27,7 +28,10 @@
                     <tr>
                         <th></th>
                         <th>Name</th>
-                        <!-- <th>Seller</th> -->
+                        @if (isAdmin)
+                        {
+                          <th>Seller</th>
+                        }
                         <th>Stats</th>
                         <th>Requirements</th>
                         <th>Category</th>
@@ -53,6 +57,10 @@
                         <tr>
                             <td><img src="/imgs/items/@(entry.ItemId).png" style="width: 40px" /></td>
                             <td class='marketplace'>@item.Name</td>
+                            @if (isAdmin)
+                            {
+                              <td>@GetUserName(entry.SellerUserId)</td>
+                            }
                             <!-- <td class='marketplace'></td> -->
                     <td class='item'>
                                 @if (item.WeaponAim > 0)
