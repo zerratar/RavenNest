@@ -46,6 +46,8 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<GameSession> GameSession { get; set; }
         public virtual DbSet<GameEvent> GameEvent { get; set; }
         public virtual DbSet<InventoryItem> InventoryItem { get; set; }
+
+        public virtual DbSet<UserBankItem> UserBankItem { get; set; }
         public virtual DbSet<ItemAttribute> ItemAttribute { get; set; }
         public virtual DbSet<InventoryItemAttribute> InventoryItemAttribute { get; set; }
 
@@ -129,6 +131,8 @@ namespace RavenNest.BusinessLogic.Data
 
             modelBuilder.Entity<MarketItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<InventoryItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+
+            modelBuilder.Entity<UserBankItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
             modelBuilder.Entity<InventoryItemAttribute>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<ItemAttribute>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
