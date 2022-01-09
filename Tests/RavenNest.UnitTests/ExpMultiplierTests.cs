@@ -1,7 +1,22 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using RavenNest.BusinessLogic;
 
 namespace RavenNest.UnitTests
 {
+
+    [TestClass]
+    public class DataMapperTests
+    {
+        [TestMethod]
+        public void TestMappingNullableTypes()
+        {
+            var item = new DataModels.MarketItem();
+            item.Flags = 10;
+            var result = DataMapper.Map<RavenNest.Models.MarketItem, RavenNest.DataModels.MarketItem>(item);
+            Assert.AreEqual(item.Flags.Value, result.Flags);
+        }
+    }
+
     [TestClass]
     public class ExpMultiplierTests
     {

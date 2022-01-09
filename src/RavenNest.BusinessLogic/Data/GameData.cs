@@ -58,6 +58,8 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<GameSession, Guid> gameSessions;
         private readonly EntitySet<ExpMultiplierEvent, Guid> expMultiplierEvents;
         private readonly EntitySet<GameEvent, Guid> gameEvents;
+
+        private readonly EntitySet<UserBankItem, Guid> userBankItems;
         private readonly EntitySet<InventoryItem, Guid> inventoryItems;
 
 
@@ -146,7 +148,8 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(MarketItem),
                         typeof(ItemCraftingRequirement),
                         typeof(CharacterSessionActivity),
-                        typeof(Agreements)
+                        typeof(Agreements),
+                        typeof(UserBankItem)
                 });
 
                 if (restorePoint != null)
@@ -230,6 +233,9 @@ namespace RavenNest.BusinessLogic.Data
                     gameEvents = new EntitySet<GameEvent, Guid>(new List<GameEvent>() /*ctx.GameEvent.ToList()*/, i => i.Id);
                     gameEvents.RegisterLookupGroup(nameof(GameSession), x => x.GameSessionId);
                     gameEvents.RegisterLookupGroup(nameof(User), x => x.UserId);
+
+                    userBankItems = new EntitySet<UserBankItem, Guid>(restorePoint?.Get<UserBankItem>() ?? ctx.UserBankItem.ToList(), i => i.Id);
+                    userBankItems.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     inventoryItems = new EntitySet<InventoryItem, Guid>(restorePoint?.Get<InventoryItem>() ?? ctx.InventoryItem.ToList(), i => i.Id);
                     inventoryItems.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
@@ -324,6 +330,7 @@ namespace RavenNest.BusinessLogic.Data
                         expMultiplierEvents, notifications,
                         appearances, syntyAppearances, characters, characterStates,
                         userProperties,
+                        userBankItems,
                         items, // so we can update items
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems, marketTransactions, inventoryItemAttributes,
                         resources, statistics, characterSkills, clanSkills, users, villages, villageHouses,

@@ -794,6 +794,10 @@ namespace RavenNest.BusinessLogic.Providers
     {
         public Guid Id { get; }
         public Guid ItemId { get; }
+        public Guid? TransmogrificationId { get; }
+        public string Name { get; }
+        public string Enchantment { get; }
+        public int Flags { get; }
         public long Amount { get; }
         public bool Equipped { get; }
         public string Tag { get; }
@@ -804,9 +808,13 @@ namespace RavenNest.BusinessLogic.Providers
         private ReadOnlyInventoryItem(
             Guid id,
             Guid itemId,
+            Guid? transmogrificationId,
+            string name,
+            string enchantment,
             long amount,
             bool equipped,
             string tag,
+            int flags,
             bool soulbound,
             Item item,
             EquipmentSlot equipmentSlot,
@@ -814,6 +822,10 @@ namespace RavenNest.BusinessLogic.Providers
         {
             Id = id;
             ItemId = itemId;
+            TransmogrificationId = transmogrificationId;
+            Name = name;
+            Flags = flags;
+            Enchantment = enchantment;
             Amount = amount;
             Equipped = equipped;
             Item = item;
@@ -831,9 +843,13 @@ namespace RavenNest.BusinessLogic.Providers
             return new ReadOnlyInventoryItem(
                 item.Id,
                 item.ItemId,
+                item.TransmogrificationId,
+                item.Name,
+                item.Enchantment,
                 item.Amount ?? 1,
                 item.Equipped,
                 item.Tag,
+                item.Flags.GetValueOrDefault(),
                 item.Soulbound.GetValueOrDefault(),
                 i,
                 GetEquipmentSlot((ItemType)i.Type),

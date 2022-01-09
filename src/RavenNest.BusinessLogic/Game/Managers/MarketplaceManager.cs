@@ -133,7 +133,12 @@ namespace RavenNest.BusinessLogic.Game
                 ItemId = itemId,
                 PricePerItem = pricePerItem,
                 SellerCharacterId = character.Id,
-                Tag = itemToSell.Tag
+                Tag = itemToSell.Tag,
+                Flags = itemToSell.Flags,
+                Enchantment = itemToSell.Enchantment,
+                Name = itemToSell.Name,
+                TransmogrificationId = itemToSell.TransmogrificationId,
+                Expires = DateTime.UtcNow.AddDays(14),
             };
 
             gameData.Add(marketItem);
