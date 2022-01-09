@@ -30,7 +30,7 @@ namespace RavenNest.BusinessLogic.Game
         IReadOnlyList<WebsitePlayer> GetWebsitePlayers(string userId);
         bool SendRemovePlayerFromSessionToGame(DataModels.Character character, DataModels.GameSession joiningSession = null);
         void UpdateUserLoyalty(SessionToken sessionToken, UserLoyaltyUpdate update);
-        void UpdatePlayerActivity(SessionToken sessionToken, PlayerSessionActivity update);
+        void UpdatePlayerActivity(SessionToken sessionToken, PlayerSessionActivity update);        
         bool UpdatePlayerState(SessionToken sessionToken, CharacterStateUpdate update);
 
         bool UpdateStatistics(SessionToken token, string userId, double[] statistics, Guid? characterId = null);
