@@ -24,5 +24,13 @@ namespace RavenNest.Blazor.Services
                 return marketplaceManager.GetItems(0, int.MaxValue);
             });
         }
+
+        public async Task<bool> CancelListingAsync(System.Guid id)
+        {
+            return await Task.Run(() =>
+            {
+                return marketplaceManager.Cancel(id);
+            });
+        }
     }
 }

@@ -104,6 +104,7 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<MarketItemTransaction> GetMarketItemTransactionsBySeller(Guid seller, DateTime start, DateTime end);
         IReadOnlyList<MarketItemTransaction> GetMarketItemTransactionsByBuyer(Guid buyer, DateTime start, DateTime end);
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(Guid itemId, string tag = null);
+        DataModels.MarketItem GetMarketItem(Guid marketItemId);
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(int skip, int take);
         IReadOnlyList<DataModels.GameEvent> GetSessionEvents(Guid sessionId);
         IReadOnlyList<DataModels.UserNotification> GetNotifications(Guid userId);
