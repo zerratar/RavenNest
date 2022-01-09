@@ -1249,6 +1249,28 @@ namespace RavenNest.BusinessLogic.Game
 
             SendItemAddEvent(itemId, amount, character);
         }
+        public bool ReturnMarketplaceItem(DataModels.MarketItem item)
+        {
+            if (item == null) return false;
+            var character = gameData.GetCharacter(item.SellerCharacterId);
+            if (character == null) return false;
+
+            // Add the item back to the inventory
+            var itemId = item.ItemId;
+            var amount = item.Amount;
+            //var enchantment = item.Enchantment;
+            var characterId = character.Id;
+            var inventory = inventoryProvider.Get(characterId);
+            inventory.AddItem(itemId, amount);
+
+            // Remove the item from the marketplace
+            gameData.Remove(item);
+
+            // Send the update to the game client and extensions
+            SendItemAddEvent(itemId, (int)amount, character);
+
+            return true;
+        }
 
         private void SendItemAddEvent(Guid itemId, int amount, Character character)
         {

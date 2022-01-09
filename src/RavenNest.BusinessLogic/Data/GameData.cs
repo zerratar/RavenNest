@@ -1298,6 +1298,12 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public DataModels.MarketItem GetMarketItem(Guid marketItemId)
+        {
+            return marketItems[marketItemId];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<MarketItem> GetMarketItems(int skip, int take) =>
             marketItems.Entities.Skip(skip).Take(take).ToList();
 
