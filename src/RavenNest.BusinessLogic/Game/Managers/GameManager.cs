@@ -30,7 +30,7 @@ namespace RavenNest.BusinessLogic.Game
 
             this.raidScrollId = items.FirstOrDefault(x => x.Name.ToLower() == "raid scroll").Id;
             this.dungeonScrollId = items.FirstOrDefault(x => x.Name.ToLower() == "dungeon scroll").Id;
-            this.expScrollId = items.FirstOrDefault(x => x.Name.ToLower() == "exp scroll").Id;
+            this.expScrollId = items.FirstOrDefault(x => x.Name.ToLower().Contains("exp ") && x.Name.ToLower().Contains(" scroll")).Id;
         }
 
         public GameInfo GetGameInfo(SessionToken session)
