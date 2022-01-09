@@ -7,162 +7,313 @@
 @inject RavenNest.Blazor.Services.ItemService ItemService
 
 <div class="player-inventory">
-  <div>
-    <h2>Equipped</h2>
-    <div class="inventory-items">
-      @foreach (var item in GetEquippedItems())
-      {
-        <div class="inventory-item equipped" @onmouseover="(()=>MouseOverItem(item))" @onmouseout="(()=>MouseExitItem(item))">
-          <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
-          <ItemTooltip Item="item" Visible="@(item.Id == tooltipItem)"></ItemTooltip>
-        </div>
-      }
-    </div>
-  </div>
-
-  <div>
-    <h2>Inventory</h2>
-
-    @if (CanModify)
-    {
-      <div class="inventory-management">
-        <button @onclick="ShowAddItem" class="btn btn-primary">Add item</button>
-      </div>
-    }
-
-    <div class="inventory-items inventory">
-      @foreach (var item in GetInventoryItems())
-      {
-        <div class="inventory-item" @onmouseover="(()=>MouseOverItem(item))" @onmouseout="(()=>MouseExitItem(item))">
-          <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
-          <div class="item-amount">@GetItemAmount(item)</div>
-          <ItemTooltip Item="item" Visible="@(item.Id == tooltipItem)"></ItemTooltip>
-        </div>
-      }
-    </div>
-
-    @if (CanModify)
-    {
-      if (addItemDialogVisible)
-      {
-        <div class="clan-member-invite">
-          <div class="clan-member-invite-header">
-            <h2>Search for item to add</h2>
-            <button class="close" @onclick="HideAddItem">x</button>
-          </div>
-          <BlazoredTypeahead SearchMethod="SearchItem"
-                             @bind-Value="selectedItem">
-            <SelectedTemplate>
-              @context.Name
-            </SelectedTemplate>
-            <ResultTemplate>
-              @context.Name
-            </ResultTemplate>
-          </BlazoredTypeahead>
-
-          <div class="clan-member-invite-controls">
-            @if (selectedItem != null)
+    <div>
+        <h2>Equipped</h2>
+        <div class="inventory-items">
+            @foreach (var item in GetEquippedItems())
             {
-              <button @onclick="AddItem" class="btn btn-primary">Add</button>
+                <div class="inventory-item equipped" @onclick="(()=>ShowItemDetails(item))">
+                    <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
+                </div>
             }
-            <button @onclick="HideAddItem" class="btn btn-secondary">Cancel</button>
-          </div>
         </div>
-      }
-    }
-  </div>
+    </div>
+
+    <div>
+        <h2>Inventory</h2>
+
+        @if (CanModify)
+        {
+            <div class="inventory-management">
+                <button @onclick="ShowAddItem" class="btn btn-primary">Add item</button>
+            </div>
+        }
+
+        <div class="inventory-items inventory">
+            @foreach (var item in GetInventoryItems())
+            {
+                <div class="inventory-item" @onclick="(()=>ShowItemDetails(item))">
+                    <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
+                    <div class="item-amount">@GetItemAmount(item)</div>
+                </div>
+            }
+        </div>
+
+        @if (itemDetailDialogVisible)
+        {
+            <div class="item-details-dialog-back">
+                <div class="item-details-dialog">
+                    <div class="dialog-header">
+                        <div class="item-name" data-tier="@GetItemTier()">@GetItemName()</div>
+                        <button class="close" @onclick="CloseItemDetails">x</button>
+                    </div>
+
+                    <div class="item-details-content">
+                        <div class="item-type">@GetItemType()</div>
+                        <div class="item-image" data-item="@itemDetailsDialogItem.Id"><img src="@GetItemImage(itemDetailsDialogItem.ItemId, itemDetailsDialogItem.Tag)" /></div>
+
+                        @foreach (var stat in GetItemStats())
+                        {
+                            <div class="item-stat">
+                                <div class="item-stat-name">@stat.Name</div>
+                                <div class="item-stat-value">@stat.Value</div>
+                            </div>
+                        }
+                        <div class="item-requirement">
+                            <div class="item-stat-name">@GetItemRequirementSkill()</div>
+                            <div class="item-stat-value">@GetItemRequirementLevel()</div>
+                        </div>
+                    </div>
+                    <div class="item-actions">
+
+                        @if (itemDetailsDialogItem.Equipped)
+                        {
+                            <button @onclick="UnequipItem" class="btn btn-action">Unequip</button>
+                        }
+                        else if (CanBeEquipped())
+                        {
+                            <button @onclick="EquipItem" class="btn btn-action">Equip</button>
+                        }
+
+                        <button @onclick="SendToStash" class="btn btn-action">@("Send " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : "") + "to stash")</button>
+
+                        @if (characters != null)
+                        {
+                            foreach (var plr in characters)
+                            {
+                                if (plr.Id == Player.Id)
+                                {
+                                    continue;
+                                }
+
+                                <button @onclick="()=>SendToCharacter(plr)" class="btn btn-action">@("Send " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : "") + "to " + plr.Alias)</button>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (CanModify)
+        {
+            if (addItemDialogVisible)
+            {
+                <div class="clan-member-invite">
+                    <div class="clan-member-invite-header">
+                        <h2>Search for item to add</h2>
+                        <button class="close" @onclick="HideAddItem">x</button>
+                    </div>
+                    <BlazoredTypeahead SearchMethod="SearchItem"
+                               @bind-Value="selectedItem">
+                        <SelectedTemplate>
+                            @context.Name
+                        </SelectedTemplate>
+                        <ResultTemplate>
+                            @context.Name
+                        </ResultTemplate>
+                    </BlazoredTypeahead>
+
+                    <div class="clan-member-invite-controls">
+                        @if (selectedItem != null)
+                        {
+                            <button @onclick="AddItem" class="btn btn-primary">Add</button>
+                        }
+                        <button @onclick="HideAddItem" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            }
+        }
+    </div>
 </div>
 
 @code {
-  [Parameter]
-  public WebsitePlayer Player { get; set; }
+    [Parameter]
+    public WebsitePlayer Player { get; set; }
 
-  [Parameter]
-  public bool CanManage { get; set; }
+    [Parameter]
+    public bool CanManage { get; set; }
 
-  private Guid tooltipItem;
-  private Sessions.SessionInfo session;
+    private IReadOnlyList<WebsitePlayer> characters { get; set; }
+    private Sessions.SessionInfo session;
 
+    private bool itemDetailDialogVisible;
+    private Models.InventoryItem itemDetailsDialogItem;
+    private long giftOrSendAmount;
 
-  private Item selectedItem;
-  private bool addItemDialogVisible;
-  private bool CanModify => session != null && session.Administrator;
+    private Item selectedItem;
+    private bool addItemDialogVisible;
+    private bool CanModify => session != null && session.Administrator;
 
-  protected override void OnInitialized()
-  {
-    session = AuthService.GetSession();
-  }
-
-  public void AddItem()
-  {
-    if (selectedItem == null)
-      return;
-
-    HideAddItem();
-
-    Player = PlayerService.AddItem(Player.Id, selectedItem);
-    selectedItem = null;
-  }
-
-  public void HideAddItem()
-  {
-    addItemDialogVisible = false;
-  }
-
-  public void ShowAddItem()
-  {
-    addItemDialogVisible = true;
-  }
-
-  public IReadOnlyList<Models.InventoryItem> GetInventoryItems()
-  {
-    return Player.InventoryItems.Where(x => !x.Equipped).ToList();
-  }
-
-  public IReadOnlyList<Models.InventoryItem> GetEquippedItems()
-  {
-    return Player.InventoryItems.Where(x => x.Equipped).ToList();
-  }
-
-  public void MouseOverItem(InventoryItem item)
-  {
-    tooltipItem = item.Id;
-  }
-
-  public void MouseExitItem(InventoryItem item)
-  {
-    tooltipItem = Guid.Empty;
-  }
-
-  public string GetItemImage(Guid itemId, string tag)
-  {
-    if (tag != null)
+    protected override async Task OnInitializedAsync()
     {
-      return $"/api/twitch/logo/{tag}";
-    }
-    return $"/imgs/items/{itemId}.png";
-  }
-
-  public string GetItemAmount(InventoryItem item)
-  {
-    var value = item.Amount;
-    if (value >= 1000_000)
-    {
-      var mils = value / 1000000.0;
-      return Math.Round(mils) + "M";
-    }
-    else if (value > 1000)
-    {
-      var ks = value / 1000m;
-      return Math.Round(ks) + "K";
+        session = AuthService.GetSession();
+        characters = await PlayerService.GetMyPlayersAsync();
     }
 
-    return item.Amount.ToString();
-  }
+
+    public void SendToCharacter(WebsitePlayer targetCharacter)
+    {
+        Player = PlayerService.SendToCharacter(Player.Id, targetCharacter.Id, itemDetailsDialogItem, itemDetailsDialogItem.Amount);
+
+        //if (itemDetailsDialogItem.Amount == 1)
+        //{
+        //    Player = PlayerService.SendToCharacter(Player.Id, targetCharacter.Id, itemDetailsDialogItem, 1);
+        //}
+        //else
+        //{
+        //    // Show Send Item Amount Dialog
+        //}
+
+        CloseItemDetails();
+    }
+
+    public void SendToStash()
+    {
+
+        Player = PlayerService.SendToStash(Player.Id, itemDetailsDialogItem, itemDetailsDialogItem.Amount);
+
+        //if (itemDetailsDialogItem.Amount == 1)
+        //{
+        //    Player = PlayerService.SendToStash(Player.Id, itemDetailsDialogItem, 1);
+        //}
+        //else
+        //{
+        //    // Show Send Item Amount Dialog
+        //}
+
+        CloseItemDetails();
+    }
+
+    public void UnequipItem()
+    {
+        Player = PlayerService.UnequipItem(Player.Id, itemDetailsDialogItem);
+        CloseItemDetails();
+    }
+
+    public void EquipItem()
+    {
+        Player = PlayerService.EquipItem(Player.Id, itemDetailsDialogItem);
+        CloseItemDetails();
+    }
+
+    public bool CanBeEquipped()
+    {
+        if (itemDetailsDialogItem == null)
+            return false;
+
+        var item = ItemService.GetItem(itemDetailsDialogItem.ItemId);
+        if (item == null)
+            return false;
+
+        return RavenNest.BusinessLogic.Providers.PlayerInventory.CanEquipItem(item, Player);
+    }
 
 
-  private async Task<IEnumerable<Item>> SearchItem(string searchText)
-  {
-    return await ItemService.SearchAsync(searchText);
-  }
+    public IReadOnlyList<RavenNest.Blazor.Services.ItemStat> GetItemStats()
+    {
+        return ItemService.GetItemStats(itemDetailsDialogItem);
+    }
+
+    public string GetItemRequirementLevel()
+    {
+        return ItemService.GetItemRequirementLevel(itemDetailsDialogItem);
+    }
+
+    public string GetItemRequirementSkill()
+    {
+        return ItemService.GetItemRequirementSkill(itemDetailsDialogItem);
+    }
+
+    public string GetItemName()
+    {
+        if (itemDetailsDialogItem == null) return null;
+        return ItemService.GetItem(itemDetailsDialogItem.ItemId)?.Name;
+    }
+
+    public string GetItemType()
+    {
+        if (itemDetailsDialogItem == null) return null;
+        return ItemService.GetItem(itemDetailsDialogItem.ItemId)?.Type.ToString();
+    }
+
+    public string GetItemTier()
+    {
+        return ItemService.GetItemTier(itemDetailsDialogItem);
+    }
+
+    public void ShowItemDetails(Models.InventoryItem item)
+    {
+        itemDetailDialogVisible = true;
+        itemDetailsDialogItem = item;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void CloseItemDetails()
+    {
+        itemDetailDialogVisible = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void AddItem()
+    {
+        if (selectedItem == null)
+            return;
+
+        HideAddItem();
+
+        Player = PlayerService.AddItem(Player.Id, selectedItem);
+        selectedItem = null;
+    }
+
+    public void HideAddItem()
+    {
+        addItemDialogVisible = false;
+    }
+
+    public void ShowAddItem()
+    {
+        addItemDialogVisible = true;
+    }
+
+    public IReadOnlyList<Models.InventoryItem> GetInventoryItems()
+    {
+        return Player.InventoryItems.Where(x => !x.Equipped).ToList();
+    }
+
+    public IReadOnlyList<Models.InventoryItem> GetEquippedItems()
+    {
+        return Player.InventoryItems.Where(x => x.Equipped).ToList();
+    }
+
+    public string GetItemImage(Guid itemId, string tag)
+    {
+        if (tag != null)
+        {
+            return $"/api/twitch/logo/{tag}";
+        }
+        return $"/imgs/items/{itemId}.png";
+    }
+
+    public string GetItemAmount(InventoryItem item)
+    {
+        var value = item.Amount;
+        if (value >= 1000_000)
+        {
+            var mils = value / 1000000.0;
+            return Math.Round(mils) + "M";
+        }
+        else if (value > 1000)
+        {
+            var ks = value / 1000m;
+            return Math.Round(ks) + "K";
+        }
+
+        return item.Amount.ToString();
+    }
+
+
+    private async Task<IEnumerable<Item>> SearchItem(string searchText)
+    {
+        return await ItemService.SearchAsync(searchText);
+    }
 }

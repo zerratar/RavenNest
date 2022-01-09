@@ -1,111 +1,68 @@
 ﻿@inject RavenNest.Blazor.Services.ItemService ItemService
 @if (Visible)
 {
-  <div class="item-tooltip" data-item="Item.id">
-    <div class="item-name" data-tier="@GetItemTier()">@GetItemName()</div>
-    <div class="item-type">@GetItemType()</div>
+    <div class="item-tooltip" data-item="Item.id">
+        <div class="item-name" data-tier="@GetItemTier()">@GetItemName()</div>
+        <div class="item-type">@GetItemType()</div>
 
-    @foreach (var stat in GetItemStats())
-    {
-      <div class="item-stat">
-        <div class="item-stat-name">@stat.Name</div>
-        <div class="item-stat-value">@stat.Value</div>
-      </div>
-    }
-    <div class="item-requirement">
-      <div>@GetItemRequirementSkill()</div>
-      <div>@GetItemRequirementLevel()</div>
+        @foreach (var stat in GetItemStats())
+        {
+            <div class="item-stat">
+                <div class="item-stat-name">@stat.Name</div>
+                <div class="item-stat-value">@stat.Value</div>
+            </div>
+        }
+        <div class="item-requirement">
+            <div>@GetItemRequirementSkill()</div>
+            <div>@GetItemRequirementLevel()</div>
+        </div>
     </div>
-  </div>
 }
 
 @code {
-	[Parameter]
-  public RavenNest.Models.InventoryItem Item { get; set; }
+    [Parameter]
+    public RavenNest.Models.InventoryItem Item { get; set; }
 
-  [Parameter]
-  public bool Visible { get; set; }
+    [Parameter]
+    public bool Visible { get; set; }
 
-	protected override Task OnParametersSetAsync()
-	{
-
-		return base.OnParametersSetAsync();
-	}
-
-	protected override Task OnAfterRenderAsync(bool firstRender)
-	{
-
-		return base.OnAfterRenderAsync(firstRender);
-	}
-
-	public IReadOnlyList<ItemStat> GetItemStats()
-  {
-    var stats = new List<ItemStat>();
-    var i = ItemService.GetItem(Item.ItemId);
-    if (i == null) return stats;
-    if (i.WeaponAim > 0) stats.Add(new ItemStat("Weapon Aim", i.WeaponAim));
-    if (i.WeaponPower > 0) stats.Add(new ItemStat("Weapon Power", i.WeaponPower));
-    if (i.RangedAim > 0) stats.Add(new ItemStat("Ranged Aim", i.RangedAim));
-    if (i.RangedPower > 0) stats.Add(new ItemStat("Ranged Power", i.RangedPower));
-    if (i.MagicAim > 0) stats.Add(new ItemStat("Magic Aim", i.MagicAim));
-    if (i.MagicPower > 0) stats.Add(new ItemStat("Magic Power", i.MagicPower));
-    if (i.ArmorPower > 0) stats.Add(new ItemStat("Armor", i.ArmorPower));
-    return stats;
-  }
-
-
-  public string GetItemRequirementLevel()
-  {
-    var i = ItemService.GetItem(Item.ItemId);
-    if (i == null) return "";
-    if (i.RequiredAttackLevel > 0) return i.RequiredAttackLevel.ToString();
-    if (i.RequiredDefenseLevel > 0) return i.RequiredDefenseLevel.ToString();
-    if (i.RequiredRangedLevel > 0) return i.RequiredRangedLevel.ToString();
-    if (i.RequiredMagicLevel > 0) return i.RequiredMagicLevel.ToString();
-    return "";
-  }
-
-  public string GetItemRequirementSkill()
-  {
-    var i = ItemService.GetItem(Item.ItemId);
-    if (i == null) return "";
-    if (i.RequiredAttackLevel > 0) return "Requires Attack Level";
-    if (i.RequiredDefenseLevel > 0) return "Requires Defense Level";
-    if (i.RequiredRangedLevel > 0) return "Requires Ranged Level";
-    if (i.RequiredMagicLevel > 0) return "Requires Magic Level";
-    return "";
-  }
-
-  public string GetItemName()
-  {
-    return ItemService.GetItem(Item.ItemId)?.Name;
-  }
-
-  public string GetItemType()
-  {
-    return ItemService.GetItem(Item.ItemId)?.Type.ToString();
-  }
-
-  public string GetItemTier()
-  {
-    var i = ItemService.GetItem(Item.ItemId);
-    if (i == null)
-      return "Unknown";
-    if (i.Type == Models.ItemType.Pet) return "pet";
-    if (i.RequiredMagicLevel == 100 || i.RequiredRangedLevel == 100 || i.RequiredAttackLevel == 100 || i.RequiredDefenseLevel == 100) return "8";
-    if (i.RequiredMagicLevel >= 120 || i.RequiredRangedLevel >= 120 || i.RequiredAttackLevel >= 120 || i.RequiredDefenseLevel >= 120) return "9";
-    return i.Material.ToString();
-  }
-
-  public class ItemStat
-  {
-    public ItemStat() { }
-    public ItemStat(string name, int value)
+    protected override Task OnParametersSetAsync()
     {
-      this.Name = name;
-      this.Value = value;
+        return base.OnParametersSetAsync();
     }
-    public string Name { get; set; }
-    public int Value { get; set; }
-  }
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        return base.OnAfterRenderAsync(firstRender);
+    }
+
+    public IReadOnlyList<RavenNest.Blazor.Services.ItemStat> GetItemStats()
+    {
+        return ItemService.GetItemStats(Item);
+    }
+
+    public string GetItemRequirementLevel()
+    {
+        return ItemService.GetItemRequirementLevel(Item);
+    }
+
+    public string GetItemRequirementSkill()
+    {
+        return ItemService.GetItemRequirementSkill(Item);
+    }
+
+    public string GetItemName()
+    {
+        return ItemService.GetItem(Item.ItemId)?.Name;
+    }
+
+    public string GetItemType()
+    {
+        return ItemService.GetItem(Item.ItemId)?.Type.ToString();
+    }
+
+    public string GetItemTier()
+    {
+        return ItemService.GetItemTier(Item);
+    }
 }

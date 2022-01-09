@@ -777,6 +777,9 @@ namespace RavenNest.BusinessLogic.Data
         public void Add(Agreements item) => Update(() => agreements.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(UserBankItem item) => Update(() => userBankItems.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(RedeemableItem item) => Update(() => redeemableItems.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1138,6 +1141,18 @@ namespace RavenNest.BusinessLogic.Data
             inventoryItems[nameof(Character), characterId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<UserBankItem> GetUserBankItems(Guid id)
+            => userBankItems[nameof(User), id].ToList();
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public UserBankItem GetUserBankItem(Guid id) => userBankItems[id];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public UserBankItem GetStashItem(Guid userId, Guid itemId) => 
+            userBankItems[nameof(User), userId].FirstOrDefault(x => x.ItemId == itemId);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<InventoryItem> GetInventoryItems(Guid characterId) =>
             inventoryItems[nameof(Character), characterId].Where(x => !x.Equipped).ToList();
 
@@ -1250,6 +1265,9 @@ namespace RavenNest.BusinessLogic.Data
         public InventoryItem GetEquippedItem(Guid characterId, Guid itemId) =>
             inventoryItems[nameof(Character), characterId]
                 .FirstOrDefault(x => x.Equipped && x.ItemId == itemId);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public InventoryItem GetInventoryItem(Guid inventoryItemId) => inventoryItems[inventoryItemId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public InventoryItem GetInventoryItem(Guid characterId, Guid itemId) =>
@@ -1590,6 +1608,9 @@ namespace RavenNest.BusinessLogic.Data
         #region Remove Entities
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(UserBankItem item) => userBankItems.Remove(item);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(Agreements item) => agreements.Remove(item);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1859,6 +1880,26 @@ namespace RavenNest.BusinessLogic.Data
         private ICollection<EntityChangeSet> JoinChangeSets(params ICollection<EntityChangeSet>[] changesets) =>
             changesets.SelectMany(x => x).OrderBy(x => x.LastModified).ToList();
 
+
+
+
+        public bool RemoveFromStash(UserBankItem bankItemScroll, int amount)
+        {
+            if (bankItemScroll == null || bankItemScroll.Amount < amount)
+                return false;
+
+            var left = bankItemScroll.Amount - amount;
+            if (left == 0)
+            {
+                Remove(bankItemScroll);
+            }
+            else
+            {
+                bankItemScroll.Amount -= amount;
+            }
+
+            return true;
+        }
     }
 
     public class DataSaveError

@@ -2,6 +2,7 @@
 
 namespace RavenNest.DataModels
 {
+    [Obsolete("Do not use, replaced by InventoryItem.Enchantment")]
     public partial class InventoryItemAttribute : Entity<InventoryItemAttribute>
     {
         private Guid id; public Guid Id { get => id; set => Set(ref id, value); }

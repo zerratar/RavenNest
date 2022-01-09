@@ -42,7 +42,7 @@ namespace RavenNest.BusinessLogic.Game
                 return ItemEnchantmentResult.Failed;
             }
 
-            item = inventory.RemoveAttributes(item);
+            //item = inventory.RemoveAttributes(item);
 
             var itemLvReq = (i.RequiredAttackLevel + i.RequiredDefenseLevel + i.RequiredMagicLevel + i.RequiredRangedLevel + i.RequiredSlayerLevel);
             var isStack = item.Amount > 1;
@@ -90,7 +90,7 @@ namespace RavenNest.BusinessLogic.Game
             if (isStack)
             {
                 inventory.RemoveItem(item, 1);
-                invItem = inventory.AddItem(item.ItemId, 1, true, newAttributes).FirstOrDefault();
+                invItem = inventory.AddItem(item.ItemId, 1, true);
             }
             else
             {

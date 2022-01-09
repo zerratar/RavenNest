@@ -91,6 +91,7 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<DataModels.InventoryItem> GetInventoryItems(Guid characterId, Guid itemId);
         IReadOnlyList<DataModels.InventoryItem> GetInventoryItems(Guid characterId);
 
+        DataModels.InventoryItem GetInventoryItem(Guid inventoryItemId);
         DataModels.InventoryItem GetInventoryItem(Guid characterId, Guid itemId);
         DataModels.InventoryItem GetEquippedItem(Guid characterId, Guid itemId);
         Character GetCharacter(Guid characterId);
@@ -105,6 +106,10 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<MarketItemTransaction> GetMarketItemTransactionsByBuyer(Guid buyer, DateTime start, DateTime end);
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(Guid itemId, string tag = null);
         DataModels.MarketItem GetMarketItem(Guid marketItemId);
+
+        bool RemoveFromStash(UserBankItem bankItemScroll, int amount);
+        UserBankItem GetStashItem(Guid userId, Guid itemId);
+        IReadOnlyList<UserBankItem> GetUserBankItems(Guid id);
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(int skip, int take);
         IReadOnlyList<DataModels.GameEvent> GetSessionEvents(Guid sessionId);
         IReadOnlyList<DataModels.UserNotification> GetNotifications(Guid userId);
@@ -133,6 +138,7 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Add
+        void Add(DataModels.UserBankItem item);
         void Add(Agreements item);
         void Add(RedeemableItem item);
         void Add(ClanSkill entity);
@@ -176,6 +182,8 @@ namespace RavenNest.BusinessLogic.Data
 
 
         #region Remove
+
+        void Remove(DataModels.UserBankItem item);
         void Remove(Agreements item);
         void Remove(RedeemableItem item);
         void Remove(InventoryItemAttribute attr);
@@ -224,5 +232,6 @@ namespace RavenNest.BusinessLogic.Data
         CharacterSessionActivity GetSessionActivity(Guid id, Guid characterId);
         IReadOnlyList<ItemAttribute> GetItemAttributes();
         IReadOnlyList<Clan> GetClans();
+        UserBankItem GetUserBankItem(Guid id);
     }
 }

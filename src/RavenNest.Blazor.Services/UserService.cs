@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
@@ -58,6 +59,13 @@ namespace RavenNest.Blazor.Services
                 var users = GetUsers(players);
                 return users.Where(x => x.Created >= start && x.Created <= end).ToList();
             });
+        }
+
+        public WebsiteAdminUser GetCurrentUser()
+        {
+            var session = GetSession();
+            if (session == null) return null;
+            return GetUser(session.UserId);
         }
 
         public WebsiteAdminUser GetUser(string twitchUserId)
@@ -172,6 +180,12 @@ namespace RavenNest.Blazor.Services
                 };
             }
 
+            var bankItems =
+                gameData
+                .GetUserBankItems(userData.Id)
+                .Select(DataMapper.Map<RavenNest.Models.UserBankItem, RavenNest.DataModels.UserBankItem>)
+                .ToList();
+
             return new WebsiteAdminUser
             {
                 Characters = new List<WebsiteAdminPlayer>(),
@@ -187,6 +201,7 @@ namespace RavenNest.Blazor.Services
                 IsHiddenInHighscore = userData.IsHiddenInHighscore.GetValueOrDefault(),
                 Clan = websiteClan,
                 HasClan = websiteClan != null,
+                Stash = bankItems,
             };
         }
     }
