@@ -18,7 +18,7 @@ namespace RavenNest.Models
         public DateTime Created { get; set; }
         public bool HasClan { get; set; }
         public WebsiteClan Clan { get; set; }
-
+        public List<RavenNest.Models.UserBankItem> Stash { get; set; }
     }
 
     public class WebsiteClan

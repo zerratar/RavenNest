@@ -8,6 +8,8 @@ namespace RavenNest.BusinessLogic.Extended
 
         public CharacterSessionInfo SessionInfo { get; set; }
 
+        public string Alias => Identifier ?? "#" + CharacterIndex;
+
         public int CombatLevel
         {
             get

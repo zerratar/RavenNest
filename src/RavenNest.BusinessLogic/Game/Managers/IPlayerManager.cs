@@ -30,13 +30,14 @@ namespace RavenNest.BusinessLogic.Game
         IReadOnlyList<WebsitePlayer> GetWebsitePlayers(string userId);
         bool SendRemovePlayerFromSessionToGame(DataModels.Character character, DataModels.GameSession joiningSession = null);
         void UpdateUserLoyalty(SessionToken sessionToken, UserLoyaltyUpdate update);
-        void UpdatePlayerActivity(SessionToken sessionToken, PlayerSessionActivity update);        
+        void UpdatePlayerActivity(SessionToken sessionToken, PlayerSessionActivity update);
         bool UpdatePlayerState(SessionToken sessionToken, CharacterStateUpdate update);
 
         bool UpdateStatistics(SessionToken token, string userId, double[] statistics, Guid? characterId = null);
 
         bool UpdateAppearance(SessionToken token, string userId, Models.SyntyAppearance appearance);
         bool UpdateAppearance(Guid characterId, Models.SyntyAppearance appearance);
+        bool SendToCharacter(Guid characterId, Models.UserBankItem item, long amount);
         bool UpdateAppearance(string userId, string identifier, Models.SyntyAppearance appearance);
         bool ReturnMarketplaceItem(DataModels.MarketItem item);
         bool UpdateAppearance(AuthToken token, string userId, string identifier, Models.SyntyAppearance appearance);
@@ -52,11 +53,15 @@ namespace RavenNest.BusinessLogic.Game
         AddItemResult CraftItem_Old(SessionToken token, string userId, Guid itemId, int amount = 1);
         CraftItemResult CraftItems(SessionToken token, string userId, Guid itemId, int amount = 1);
 
-        long GiftItem(SessionToken token, string gifterUserId, string receiverUserId, Guid itemId, long amount);
+        long GiftItem(SessionToken token, string gifterUserId, string receiverUserId, Guid itemId, long amount);        
         long VendorItem(SessionToken token, string userId, Guid itemId, long amount);
 
         bool EquipItem(SessionToken token, string userId, Guid itemId);
+        bool EquipItem(Guid characterId, Models.InventoryItem item);
         bool UnequipItem(SessionToken token, string userId, Guid itemId);
+        bool UnequipItem(Guid characterId, Models.InventoryItem item);
+        bool SendToStash(Guid characterId, Models.InventoryItem item, long amount);
+        bool SendToCharacter(Guid characterId, Guid otherCharacterId, Models.InventoryItem item, long amount);
         bool EquipBestItems(SessionToken token, string userId);
         bool UnequipAllItems(SessionToken token, string userId);
 

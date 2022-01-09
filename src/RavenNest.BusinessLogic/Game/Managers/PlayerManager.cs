@@ -616,8 +616,10 @@ namespace RavenNest.BusinessLogic.Game
                     return RedeemItemResult.NoSuchItem(item.Name);
                 }
 
+                var stashCurrencyItem = gameData.GetStashItem(character.UserId, redeemable.CurrencyItemId);
+                var stashCurrencyAmount = stashCurrencyItem != null ? stashCurrencyItem.Amount : 0;
                 var currencyItem = inventory.GetByItemId(redeemable.CurrencyItemId);
-                if (currencyItem.Amount < redeemable.Cost)
+                if ((currencyItem.Amount + stashCurrencyAmount) < redeemable.Cost)
                 {
                     var insufficient = RedeemItemResult.InsufficientCurrency(currencyItem.Amount, redeemable.Cost, currencyItem.Item.Name);
                     insufficient.CurrencyItemId = redeemable.CurrencyItemId;
@@ -627,13 +629,29 @@ namespace RavenNest.BusinessLogic.Game
                     return insufficient;
                 }
 
-                if (inventory.RemoveItem(currencyItem, redeemable.Cost))
+                if (inventory.RemoveItem(currencyItem, redeemable.Cost, out var toRemove))
                 {
+                    if (toRemove > 0)
+                    {
+                        if (stashCurrencyItem != null)
+                        {
+                            gameData.RemoveFromStash(stashCurrencyItem, (int)toRemove);
+                        }
+                        else
+                        {
+                            logger.LogError("Redeem Bug: Unable to remove items from stash (Res Id: " + redeemable.CurrencyItemId + ", Char Id: " + character.UserId + ", Amount: " + toRemove + ")");
+                        }
+                    }
+
                     inventory.AddItem(redeemable.ItemId, Math.Max(1, redeemable.Amount));
                 }
 
-                SendItemRemoveEvent(redeemable.CurrencyItemId, redeemable.Cost, character);
-                SendItemAddEvent(redeemable.ItemId, redeemable.Amount, character);
+                if (currencyItem.Amount > 0)
+                {
+                    SendItemRemoveEvent(new DataModels.InventoryItem { ItemId = redeemable.CurrencyItemId }, redeemable.Cost > currencyItem.Amount ? currencyItem.Amount : redeemable.Cost, character);
+                }
+
+                SendItemAddEvent(new DataModels.InventoryItem { ItemId = redeemable.ItemId }, redeemable.Amount, character);
 
                 return new RedeemItemResult
                 {
@@ -1149,11 +1167,16 @@ namespace RavenNest.BusinessLogic.Game
             var craftableAmount = amount;
             foreach (var req in craftingRequirements)
             {
+                var stashItem = gameData.GetStashItem(character.UserId, req.ResourceItemId);
+                var availableResxAmount = stashItem != null ? stashItem.Amount : 0;
                 var invItem = inventory.GetUnequippedItem(req.ResourceItemId);
-                if (invItem.IsNull())
+                if (invItem.IsNull() && availableResxAmount == 0)
+                {
                     return CraftItemResult.InsufficientResources;
+                }
 
-                var maxCraftable = invItem.Amount / req.Amount;
+                availableResxAmount += invItem.Amount;
+                var maxCraftable = availableResxAmount / req.Amount;
                 if (craftableAmount > maxCraftable)
                 {
                     craftableAmount = (int)maxCraftable;
@@ -1165,7 +1188,36 @@ namespace RavenNest.BusinessLogic.Game
             foreach (var req in craftingRequirements)
             {
                 var resx = inventory.GetUnequippedItem(req.ResourceItemId);
-                inventory.RemoveItem(resx, req.Amount * amountToCraft);
+                var amountToRemove = req.Amount * amountToCraft;
+                if (resx.IsNotNull())
+                {
+                    if (inventory.RemoveItem(resx, amountToRemove, out var leftToRemove))
+                    {
+                        // remove the remainder from the stash.
+                        var stashItem = gameData.GetStashItem(character.UserId, req.ResourceItemId);
+                        if (stashItem != null) // Shouldnt be.
+                        {
+                            gameData.RemoveFromStash(stashItem, (int)leftToRemove);
+                        }
+                        else
+                        {
+                            logger.LogError("Crafting Bug: Unable to remove items from stash (Res Id: " + req.ResourceItemId + ", Char Id: " + character.UserId + ", Amount: " + leftToRemove + ")");
+                        }
+                    }
+                }
+                else
+                {
+                    // use only from stash
+                    var stashItem = gameData.GetStashItem(character.UserId, req.ResourceItemId);
+                    if (stashItem != null) // Shouldnt be.
+                    {
+                        gameData.RemoveFromStash(stashItem, (int)amountToRemove);
+                    }
+                    else
+                    {
+                        logger.LogError("Crafting Bug: Unable to remove items from stash (Res Id: " + req.ResourceItemId + ", Char Id: " + character.UserId + ", Amount: " + amountToRemove + ")");
+                    }
+                }
             }
 
             resources.Wood -= item.WoodCost * amountToCraft;
@@ -1245,9 +1297,8 @@ namespace RavenNest.BusinessLogic.Game
                 return;
 
             var inventory = inventoryProvider.Get(characterId);
-            inventory.AddItem(itemId, amount);
-
-            SendItemAddEvent(itemId, amount, character);
+            var items = inventory.AddItem(itemId, amount);
+            SendItemAddEvent(items[0], amount, character);
         }
         public bool ReturnMarketplaceItem(DataModels.MarketItem item)
         {
@@ -1261,18 +1312,40 @@ namespace RavenNest.BusinessLogic.Game
             //var enchantment = item.Enchantment;
             var characterId = character.Id;
             var inventory = inventoryProvider.Get(characterId);
-            inventory.AddItem(itemId, amount);
+            var inventoryItems = inventory.AddItem(itemId, amount);
 
             // Remove the item from the marketplace
             gameData.Remove(item);
 
             // Send the update to the game client and extensions
-            SendItemAddEvent(itemId, (int)amount, character);
+            SendItemAddEvent(inventoryItems[0], (int)amount, character);
 
             return true;
         }
 
-        private void SendItemAddEvent(Guid itemId, int amount, Character character)
+        private void SendItemEquipEvent(Guid inventoryItemId, bool equipped, Character character)
+        {
+            var sessionUserId = character.UserIdLock;
+            if (sessionUserId == null)
+                return;
+
+            var data = new ItemEquip
+            {
+                UserId = gameData.GetUser(character.UserId).UserId,
+                InventoryItemId = inventoryItemId,
+                IsEquipped = equipped
+            };
+
+            var session = gameData.GetSessionByUserId(sessionUserId.Value);
+            if (session != null)
+            {
+                gameData.Add(gameData.CreateSessionEvent(equipped
+                    ? GameEventType.ItemEquip : GameEventType.ItemUnEquip, session, data));
+                TrySendToExtensionAsync(character, data);
+            }
+        }
+
+        private void SendItemAddEvent(DataModels.InventoryItem item, long amount, Character character)
         {
             var sessionUserId = character.UserIdLock;
             if (sessionUserId == null)
@@ -1282,7 +1355,11 @@ namespace RavenNest.BusinessLogic.Game
             {
                 UserId = gameData.GetUser(character.UserId).UserId,
                 Amount = amount,
-                ItemId = itemId
+                ItemId = item.ItemId,
+                Name = item.Name,
+                Enchantment = item.Enchantment,
+                Flags = item.Flags.GetValueOrDefault(),
+                Tag = item.Tag,
             };
 
             var session = gameData.GetSessionByUserId(sessionUserId.Value);
@@ -1293,14 +1370,30 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        private async void SendItemRemoveEvent(Guid itemid, int amount, Character character)
+        private async void SendItemRemoveEvent(DataModels.InventoryItem item, long amount, Character character, bool sendToGame = false)
         {
-            await TrySendToExtensionAsync(character, new ItemRemove
+            var data = new ItemRemove
             {
-                ItemId = itemid,
                 UserId = gameData.GetUser(character.UserId).UserId,
                 Amount = amount,
-            });
+                ItemId = item.ItemId,
+                InventoryItemId = item.Id
+            };
+
+            if (sendToGame)
+            {
+                var sessionUserId = character.UserIdLock;
+                if (sessionUserId != null)
+                {
+                    var session = gameData.GetSessionByUserId(sessionUserId.Value);
+                    if (session != null)
+                    {
+                        gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, session, data));
+                    }
+                }
+            }
+
+            await TrySendToExtensionAsync(character, data);
         }
 
         public AddItemResult AddItem(SessionToken token, string userId, Guid itemId)
@@ -1420,7 +1513,7 @@ namespace RavenNest.BusinessLogic.Game
                 var gift = inventory.GetUnequippedItem(itemId, tag: itemTag);
                 if (gift.IsNull()) return 0;
 
-                if (gift.Soulbound || gift.Attributes != null && gift.Attributes.Count > 0)
+                if (gift.Soulbound)
                     return 0;
 
                 var giftedItemCount = amount;
@@ -1452,6 +1545,148 @@ namespace RavenNest.BusinessLogic.Game
                 logger.LogError($"Unable to gift item (g {gifterUserId}, r {receiverUserId}, i {itemId}, a x{amount}): " + exc);
                 return 0;
             }
+        }
+
+        public bool EquipItem(Guid characterId, Models.InventoryItem item)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return false;
+
+            var inventoryItem = gameData.GetInventoryItem(item.Id);
+            var inventory = inventoryProvider.Get(character.Id);
+            if (inventory.EquipItem(inventoryItem))
+            {
+                SendItemEquipEvent(inventoryItem.Id, true, character);
+                return true;
+            }
+            return false;
+        }
+
+        public bool UnequipItem(Guid characterId, Models.InventoryItem item)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return false;
+
+            var inventoryItem = gameData.GetInventoryItem(item.Id);
+            var inventory = inventoryProvider.Get(character.Id);
+            if (inventory.UnequipItem(inventoryItem))
+            {
+                SendItemEquipEvent(inventoryItem.Id, false, character);
+                return true;
+            }
+            return false;
+        }
+
+        public bool SendToCharacter(Guid characterId, RavenNest.Models.UserBankItem item, long amount)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return false;
+
+            if (item.Amount < amount)
+            {
+                return false;
+            }
+
+            var bankItem = gameData.GetUserBankItem(item.Id);
+            if (bankItem == null)
+            {
+                return false;
+            }
+
+            var inventory = inventoryProvider.Get(character.Id);
+            var left = bankItem.Amount - amount;
+            if (left == 0)
+            {
+                gameData.Remove(bankItem);
+            }
+            else
+            {
+                bankItem.Amount -= amount;
+            }
+
+            var newStack = inventory.AddItem(bankItem, amount);
+            SendItemAddEvent(newStack, (int)amount, character);
+            return true;
+        }
+
+        public bool SendToCharacter(Guid characterId, Guid otherCharacterId, Models.InventoryItem item, long amount)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return false;
+            var otherCharacter = gameData.GetCharacter(otherCharacterId);
+            if (otherCharacter == null) return false;
+            // only send directly between your own characters. This is not a gift.
+            if (otherCharacter.UserId != character.UserId) return false;
+
+            var inv1 = inventoryProvider.Get(character.Id);
+            var inv2 = inventoryProvider.Get(otherCharacter.Id);
+            var stack = gameData.GetInventoryItem(item.Id);
+            if (inv1.RemoveItem(stack, amount))
+            {
+                SendItemRemoveEvent(stack, (int)amount, character, true);
+
+                var stack2 = inv2.AddItem(stack, amount);
+
+                SendItemAddEvent(stack2, (int)amount, otherCharacter);
+            }
+
+            return false;
+        }
+
+        public bool SendToStash(Guid characterId, Models.InventoryItem item, long amount)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return false;
+            var inventory = inventoryProvider.Get(character.Id);
+
+            var stack = gameData.GetInventoryItem(item.Id);
+            if (inventory.RemoveItem(stack, amount))
+            {
+                // Check whether or not this item can be stacked.
+                //  if item can be stacked, increment existing bank item if one exists.
+                //  otherwise create a new one.
+
+                try
+                {
+                    var canBeStacked = PlayerInventory.CanBeStacked(item);
+                    if (canBeStacked)
+                    {
+                        var bankItems = gameData.GetUserBankItems(character.UserId);
+                        var existing = bankItems.FirstOrDefault(x => x.ItemId == item.ItemId && x.Tag == item.Tag);
+                        if (existing != null)
+                        {
+                            existing.Amount += amount;
+                            return true;
+                        }
+                    }
+
+                    gameData.Add(CreateBankItem(character, item, amount));
+                    return true;
+                }
+                finally
+                {
+                    SendItemRemoveEvent(stack, amount, character, true);
+                }
+            }
+
+            return false;
+        }
+
+        private static DataModels.UserBankItem CreateBankItem(Character character, Models.InventoryItem item, long amount)
+        {
+            return new DataModels.UserBankItem
+            {
+                Id = Guid.NewGuid(),
+                Amount = amount,
+                Enchantment = item.Enchantment,
+                Flags = item.Flags,
+                ItemId = item.ItemId,
+                Name = item.Name,
+                Soulbound = item.Soulbound.GetValueOrDefault(),
+                Tag = item.Tag,
+                TransmogrificationId = item.TransmogrificationId,
+                UserId = character.UserId
+            };
         }
 
         public bool EquipItem(SessionToken token, string userId, Guid itemId)
@@ -2441,6 +2676,7 @@ namespace RavenNest.BusinessLogic.Game
             public int Month;
             public int Day;
         }
+
         private Character GetCharacter(SessionToken token, string userId)
         {
             var session = gameData.GetSession(token.SessionId);
