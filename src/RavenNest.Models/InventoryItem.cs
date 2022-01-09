@@ -22,6 +22,20 @@ namespace RavenNest.Models
         //public InventoryItemAttribute[] Attributes { get; set; }
     }
 
+    public class UserBankItem
+    {
+        public Guid Id { get; set; }
+        public Guid UserId { get; set; }
+        public Guid ItemId { get; set; }
+        public long Amount { get; set; }
+        public string Name { get; set; }
+        public string Enchantment { get; set; }
+        public string Tag { get; set; }
+        public bool Soulbound { get; set; }
+        public Guid? TransmogrificationId { get; set; }
+        public int Flags { get; set; }
+    }
+
     public class InventoryItemAttribute
     {
         public Guid Id { get; set; }

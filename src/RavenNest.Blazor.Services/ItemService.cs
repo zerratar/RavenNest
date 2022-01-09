@@ -62,5 +62,65 @@ namespace RavenNest.Blazor.Services
 
             }).ConfigureAwait(false);
         }
+
+        public string GetItemTier(InventoryItem item)
+        {
+            var i = GetItem(item.ItemId);
+            if (i == null)
+                return "Unknown";
+            if (i.Type == RavenNest.Models.ItemType.Pet) return "pet";
+            if (i.RequiredMagicLevel == 100 || i.RequiredRangedLevel == 100 || i.RequiredAttackLevel == 100 || i.RequiredDefenseLevel == 100) return "8";
+            if (i.RequiredMagicLevel >= 120 || i.RequiredRangedLevel >= 120 || i.RequiredAttackLevel >= 120 || i.RequiredDefenseLevel >= 120) return "9";
+            return i.Material.ToString();
+        }
+
+        public string GetItemRequirementSkill(InventoryItem item)
+        {
+            var i = GetItem(item.ItemId);
+            if (i == null) return "";
+            if (i.RequiredAttackLevel > 0) return "Requires Attack Level";
+            if (i.RequiredDefenseLevel > 0) return "Requires Defense Level";
+            if (i.RequiredRangedLevel > 0) return "Requires Ranged Level";
+            if (i.RequiredMagicLevel > 0) return "Requires Magic Level";
+            return "";
+        }
+
+        public string GetItemRequirementLevel(InventoryItem item)
+        {
+            var i = GetItem(item.ItemId);
+            if (i == null) return "";
+            if (i.RequiredAttackLevel > 0) return i.RequiredAttackLevel.ToString();
+            if (i.RequiredDefenseLevel > 0) return i.RequiredDefenseLevel.ToString();
+            if (i.RequiredRangedLevel > 0) return i.RequiredRangedLevel.ToString();
+            if (i.RequiredMagicLevel > 0) return i.RequiredMagicLevel.ToString();
+            return "";
+        }
+
+        public IReadOnlyList<RavenNest.Blazor.Services.ItemStat> GetItemStats(InventoryItem item)
+        {
+            var stats = new List<RavenNest.Blazor.Services.ItemStat>();
+            var i = GetItem(item.ItemId);
+            if (i == null) return stats;
+            if (i.WeaponAim > 0) stats.Add(new ItemStat("Weapon Aim", i.WeaponAim));
+            if (i.WeaponPower > 0) stats.Add(new ItemStat("Weapon Power", i.WeaponPower));
+            if (i.RangedAim > 0) stats.Add(new ItemStat("Ranged Aim", i.RangedAim));
+            if (i.RangedPower > 0) stats.Add(new ItemStat("Ranged Power", i.RangedPower));
+            if (i.MagicAim > 0) stats.Add(new ItemStat("Magic Aim", i.MagicAim));
+            if (i.MagicPower > 0) stats.Add(new ItemStat("Magic Power", i.MagicPower));
+            if (i.ArmorPower > 0) stats.Add(new ItemStat("Armor", i.ArmorPower));
+            return stats;
+        }
+    }
+
+    public class ItemStat
+    {
+        public ItemStat() { }
+        public ItemStat(string name, int value)
+        {
+            this.Name = name;
+            this.Value = value;
+        }
+        public string Name { get; set; }
+        public int Value { get; set; }
     }
 }

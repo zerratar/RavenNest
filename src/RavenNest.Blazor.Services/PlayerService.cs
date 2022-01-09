@@ -59,6 +59,35 @@ namespace RavenNest.Blazor.Services
                    ((player.Skills.RangedLevel + player.Skills.MagicLevel + player.Skills.HealingLevel) / 8f));
         }
 
+        public bool SendToCharacter(Guid characterId, RavenNest.Models.UserBankItem item)
+        {
+            return playerManager.SendToCharacter(characterId, item, item.Amount);
+        }
+
+        public WebsitePlayer SendToCharacter(Guid characterId, Guid otherCharacterId, RavenNest.Models.InventoryItem item, long amount)
+        {
+            playerManager.SendToCharacter(characterId, otherCharacterId, item, amount);
+            return playerManager.GetWebsitePlayer(characterId);
+        }
+
+        public WebsitePlayer SendToStash(Guid characterId, RavenNest.Models.InventoryItem item, long amount)
+        {
+            playerManager.SendToStash(characterId, item, amount);
+            return playerManager.GetWebsitePlayer(characterId);
+        }
+
+        public WebsitePlayer UnequipItem(Guid characterId, RavenNest.Models.InventoryItem item)
+        {
+            playerManager.UnequipItem(characterId, item);
+            return playerManager.GetWebsitePlayer(characterId);
+        }
+
+        public WebsitePlayer EquipItem(Guid characterId, RavenNest.Models.InventoryItem item)
+        {
+            playerManager.EquipItem(characterId, item);
+            return playerManager.GetWebsitePlayer(characterId);
+        }
+
         public WebsitePlayer AddItem(Guid characterId, Item item)
         {
             playerManager.AddItem(characterId, item.Id);

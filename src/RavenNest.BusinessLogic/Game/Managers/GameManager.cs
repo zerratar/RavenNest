@@ -13,6 +13,10 @@ namespace RavenNest.BusinessLogic.Game
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly IGameData gameData;
 
+        private Guid expScrollId;
+        private Guid dungeonScrollId;
+        private Guid raidScrollId;
+
         public GameManager(
             IServerManager serverManager,
             IPlayerInventoryProvider inventoryProvider,
@@ -21,6 +25,12 @@ namespace RavenNest.BusinessLogic.Game
             this.serverManager = serverManager;
             this.inventoryProvider = inventoryProvider;
             this.gameData = gameData;
+
+            var items = gameData.GetItems();
+
+            this.raidScrollId = items.FirstOrDefault(x => x.Name.ToLower() == "raid scroll").Id;
+            this.dungeonScrollId = items.FirstOrDefault(x => x.Name.ToLower() == "dungeon scroll").Id;
+            this.expScrollId = items.FirstOrDefault(x => x.Name.ToLower() == "exp scroll").Id;
         }
 
         public GameInfo GetGameInfo(SessionToken session)
@@ -39,13 +49,34 @@ namespace RavenNest.BusinessLogic.Game
 
             var character = gameData.GetCharacter(characterId);
             var inventory = inventoryProvider.Get(characterId);
+
+            DataModels.UserBankItem bankItemScroll = null;
+
             var scrolls = inventory.GetUnequippedItems(DataModels.ItemCategory.Scroll);
             var scroll = scrolls.FirstOrDefault(x => x.Item.Name.Contains("exp", StringComparison.OrdinalIgnoreCase));
             if (scroll.IsNull() || scroll.Amount <= 0)
-                return -2;
+            {
+                var bankItems = gameData.GetUserBankItems(character.UserId);
+                bankItemScroll = bankItems.FirstOrDefault(x => IsScrollOfType(x, ScrollType.Experience));
+                if (bankItemScroll == null)
+                {
+                    return -2;
+                }
+            }
 
             int left = serverManager.GetIncreasableGlobalExpAmount();
-            var usageCount = (int)Math.Min(count, Math.Min(scroll.Amount, left));
+            int usageCount = count;
+
+            if (bankItemScroll != null)
+            {
+                usageCount = (int)bankItemScroll.Amount;
+            }
+            else
+            {
+                usageCount = (int)scroll.Amount;
+            }
+
+            usageCount = (int)Math.Min(count, Math.Min(usageCount, left));
             if (left <= 0 || usageCount <= 0)
             {
                 return 0;
@@ -54,12 +85,21 @@ namespace RavenNest.BusinessLogic.Game
             var user = gameData.GetUser(character.UserId);
             if (serverManager.IncreaseGlobalExpMultiplier(user, usageCount))
             {
-                inventory.RemoveItem(scroll, usageCount);
+                if (bankItemScroll != null)
+                {
+                    gameData.RemoveFromStash(bankItemScroll, usageCount);
+                }
+                else
+                {
+                    inventory.RemoveItem(scroll, usageCount);
+                }
+
                 return usageCount;
             }
 
             return 0;
         }
+
         public ScrollUseResult UseScroll(SessionToken sessionToken, Guid characterId, ScrollType scrollType)
         {
             var session = gameData.GetSession(sessionToken.SessionId);
@@ -72,26 +112,82 @@ namespace RavenNest.BusinessLogic.Game
 
             var inventory = inventoryProvider.Get(characterId);
             var scrolls = inventory.GetUnequippedItems(DataModels.ItemCategory.Scroll);
-            var scroll = scrolls.FirstOrDefault(x => x.Item.Name.Contains(scrollType == ScrollType.Experience ? "exp" : scrollType.ToString(), StringComparison.OrdinalIgnoreCase));
-            if (scroll.IsNull())
-                return ScrollUseResult.InsufficientScrolls;
 
-            var isExpScroll = scroll.Item.Name.Contains("exp", StringComparison.OrdinalIgnoreCase);
+
+            DataModels.UserBankItem bankItemScroll = null;
+            var scroll = scrolls.FirstOrDefault(x => IsScrollOfType(x, scrollType));
+            if (scroll.IsNull())
+            {
+                var bankItems = gameData.GetUserBankItems(character.UserId);
+                bankItemScroll = bankItems.FirstOrDefault(x => IsScrollOfType(x, scrollType));
+                if (bankItemScroll == null)
+                {
+                    return ScrollUseResult.InsufficientScrolls;
+                }
+            }
+            var result = ScrollUseResult.Error;
+            var isExpScroll = scrollType == ScrollType.Experience;//scroll.Item.Name.Contains("exp", StringComparison.OrdinalIgnoreCase);
             if (isExpScroll)
             {
                 if (!serverManager.CanIncreaseGlobalExpMultiplier())
                     return ScrollUseResult.Error;
 
                 var user = gameData.GetUser(character.UserId);
-                if (serverManager.IncreaseGlobalExpMultiplier(user) && inventory.RemoveItem(scroll, 1))
+                if (serverManager.IncreaseGlobalExpMultiplier(user))
+                {
+                    if (bankItemScroll != null)
+                    {
+                        // Remove Scroll from Stash
+                        gameData.RemoveFromStash(bankItemScroll, 1);
+                    }
+                    else
+                    {
+                        inventory.RemoveItem(scroll, 1);
+                    }
+
                     return ScrollUseResult.Success;
+                }
             }
-            else if (inventory.RemoveItem(scroll, 1))
+            else
             {
-                return ScrollUseResult.Success;
+                if (bankItemScroll != null)
+                {
+                    // Remove Scroll from Stash
+                    if (gameData.RemoveFromStash(bankItemScroll, 1))
+                    {
+                        return ScrollUseResult.Success;
+                    }
+                }
+                else
+                {
+                    if (inventory.RemoveItem(scroll, 1))
+                    {
+                        return ScrollUseResult.Success;
+                    }
+                }
             }
 
             return ScrollUseResult.Error;
+        }
+
+        private bool IsScrollOfType(DataModels.UserBankItem item, ScrollType scrollType)
+        {
+            if (scrollType == ScrollType.Experience)
+            {
+                return item.ItemId == expScrollId;
+            }
+
+            if (scrollType == ScrollType.Raid)
+            {
+                return item.ItemId == raidScrollId;
+            }
+
+            return item.ItemId == dungeonScrollId;
+        }
+
+        private bool IsScrollOfType(ReadOnlyInventoryItem item, ScrollType scrollType)
+        {
+            return item.Item.Name.Contains(scrollType == ScrollType.Experience ? "exp" : scrollType.ToString(), StringComparison.OrdinalIgnoreCase);
         }
 
         public EventCollection GetGameEvents(SessionToken session)

@@ -25,6 +25,7 @@
         ItemEquip = 8,
         ItemUnEquip = 9,
         ItemAdd = 10,
+        ItemRemove = 34,
         ResourceUpdate = 11,
         ServerMessage = 12,
         PermissionChange = 13,
@@ -36,5 +37,6 @@
         ServerTime = 31,
         PlayerRestedUpdate = 32,
         PubSubToken = 33,
+        // Next = 35, since ItemRemove = 34
     }
 }
