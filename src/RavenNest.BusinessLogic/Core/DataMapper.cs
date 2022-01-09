@@ -34,11 +34,11 @@ namespace RavenNest.BusinessLogic
             }
         }
 
-        public static T Map<T, T2>(T2 data) where T : new()
+        public static TTo Map<TTo, TFrom>(TFrom data) where TTo : new()
         {
-            var output = new T();
-            var props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var prop in typeof(T2).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            var output = new TTo();
+            var props = typeof(TTo).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var prop in typeof(TFrom).GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
                 var p = props.FirstOrDefault(x => x.Name == prop.Name);
                 if (p == null)
@@ -46,7 +46,8 @@ namespace RavenNest.BusinessLogic
 
                 try
                 {
-                    if (data == null) continue;
+                    if (data == null) continue;                    
+
                     var value = prop.GetValue(data);
                     if (prop.PropertyType.IsEnum)
                         p.SetValue(output, Convert.ToInt32(value));

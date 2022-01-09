@@ -10,5 +10,10 @@ namespace RavenNest.Models
         public long Amount { get; set; }
         public double PricePerItem { get; set; }
         public string Tag { get; set; }
+        public DateTime? Expires { get; set; }
+        public string Enchantment { get; set; }
+        public string Name { get; set; }
+        public Guid? TransmogrificationId { get; set; }
+        public int Flags { get; set; }
     }
 }

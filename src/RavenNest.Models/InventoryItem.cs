@@ -13,7 +13,11 @@ namespace RavenNest.Models
         public bool Equipped { get; set; }
         public string Tag { get; set; }
         public bool? Soulbound { get; set; }
-        
+        public string Enchantment { get; set; }
+        public string Name { get; set; }
+        public Guid? TransmogrificationId { get; set; }
+        public int Flags { get; set; }
+
         // TODO: Enable attributes
         //public InventoryItemAttribute[] Attributes { get; set; }
     }

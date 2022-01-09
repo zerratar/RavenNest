@@ -28,16 +28,16 @@
                         <th></th>
                         <th>Name</th>
                         <!-- <th>Seller</th> -->
-                    <th>Stats</th>
+                        <th>Stats</th>
                         <th>Requirements</th>
                         <th>Category</th>
                         <th>Item Type</th>
                         <th>Material Type</th>
                         <th>Available Amount</th>
                         <th>Asking Price</th>
-                        @if (isAdmin)
+                        @if (canCancelItems)
                         {
-                            <th>Admin</th>
+                            <th>Actions</th>
                         }
                     </tr>
                 </thead>
@@ -123,11 +123,15 @@
                             <td class='marketplace'>@item.Type</td>
                             <td class='marketplace'>@item.Material</td>
                             <td class='marketplace'>@entry.Amount</td>
-                            <td class='marketplace'><img class="ravenCoins" src="/favicon.ico" />@entry.PricePerItem</td>                            
-                            @if (isAdmin)
+                            <td class='marketplace'><img class="ravenCoins" src="/favicon.ico" />@entry.PricePerItem</td>
+
+                            @if (canCancelItems)
                             {
                                 <td class='marketplace'>
-                                    <button class="link-button" @onclick="(()=> CancelListing(entry.Id))">Cancel</button>
+                                  @if(isAdmin || CanCancelItem(entry))
+                                  {
+                                      <button class="link-button" @onclick="(()=> CancelListing(entry.Id))">Cancel</button>
+                                  }
                                 </td>
                             }
                         </tr>
