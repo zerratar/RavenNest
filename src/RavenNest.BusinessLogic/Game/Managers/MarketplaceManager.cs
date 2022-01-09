@@ -60,6 +60,16 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+
+        public bool Cancel(Guid id)
+        {
+            var i = gameData.GetMarketItem(id);
+            if (i == null) return false;
+
+            // Add items back to the character.
+            return playerManager.ReturnMarketplaceItem(i);
+        }
+
         public ItemSellResult SellItem(
             SessionToken token, string userId, Guid itemId, long amount, double pricePerItem)
         {
@@ -236,7 +246,7 @@ namespace RavenNest.BusinessLogic.Game
                     continue;
                 }
 
-                var ba = BuyMarketItemAsync(token, itemId, character, marketItem, buyAmount, marketItem.PricePerItem);
+                var ba = BuyMarketItem(token, itemId, character, marketItem, buyAmount, marketItem.PricePerItem);
                 requestAmount -= ba;
 
                 boughtPricePerItem.Add(marketItem.PricePerItem);
@@ -269,7 +279,7 @@ namespace RavenNest.BusinessLogic.Game
                 boughtTotalCost);
         }
 
-        private int BuyMarketItemAsync(
+        private int BuyMarketItem(
             SessionToken token,
             Guid itemId,
             Character character,
@@ -359,5 +369,6 @@ namespace RavenNest.BusinessLogic.Game
             var gameEvent = gameData.CreateSessionEvent(type, session, model);
             gameData.Add(gameEvent);
         }
+
     }
 }
