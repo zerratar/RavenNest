@@ -52,7 +52,6 @@ namespace RavenNest.BusinessLogic.Data
         CharacterClanInvite GetClanInvite(Guid inviteId);
         IReadOnlyList<CharacterClanInvite> GetClanInvitesByCharacter(Guid characterId);
         IReadOnlyList<CharacterClanInvite> GetClanInvitesSent(Guid userId);
-        IReadOnlyList<InventoryItemAttribute> GetInventoryItemAttributes(Guid inventoryItemId);
         IReadOnlyList<CharacterClanInvite> GetClanInvites(Guid clanId);
 
         /// <summary>
@@ -148,7 +147,6 @@ namespace RavenNest.BusinessLogic.Data
         void Add(CharacterClanInvite ev);
         void Add(ClanRole ev);
         void Add(Clan ev);
-        void Add(InventoryItemAttribute attr);
         void Add(UserLoyalty loyalty);
         void Add(UserLoyaltyRank loyaltyRank);
         void Add(UserLoyaltyReward loyaltyRankReward);
@@ -186,7 +184,6 @@ namespace RavenNest.BusinessLogic.Data
         void Remove(DataModels.UserBankItem item);
         void Remove(Agreements item);
         void Remove(RedeemableItem item);
-        void Remove(InventoryItemAttribute attr);
         void Remove(UserNotification ev);
         void Remove(CharacterClanMembership ev);
         void Remove(CharacterClanInvite ev);

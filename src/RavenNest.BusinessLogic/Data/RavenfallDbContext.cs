@@ -49,7 +49,7 @@ namespace RavenNest.BusinessLogic.Data
 
         public virtual DbSet<UserBankItem> UserBankItem { get; set; }
         public virtual DbSet<ItemAttribute> ItemAttribute { get; set; }
-        public virtual DbSet<InventoryItemAttribute> InventoryItemAttribute { get; set; }
+        //public virtual DbSet<MagicItemAttribute> InventoryItemAttribute { get; set; }
 
 
         public virtual DbSet<MarketItem> MarketItem { get; set; }
@@ -134,7 +134,7 @@ namespace RavenNest.BusinessLogic.Data
 
             modelBuilder.Entity<UserBankItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
-            modelBuilder.Entity<InventoryItemAttribute>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            //modelBuilder.Entity<MagicItemAttribute>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<ItemAttribute>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
             modelBuilder.Entity<ItemCraftingRequirement>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
