@@ -7,6 +7,7 @@ namespace RavenNest.BusinessLogic.Game
     public interface IEnchantmentManager
     {
         ItemEnchantmentResult EnchantItem(
+            System.Guid sessionId,
             DataModels.ClanSkill clanSkill,
             DataModels.Character character,
             PlayerInventory inventory,
