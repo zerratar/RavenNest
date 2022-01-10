@@ -496,15 +496,15 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
-        public List<InventoryItemAttribute> CreateRandomAttributes(ReadOnlyInventoryItem invItem, int attributeCount)
+        public List<MagicItemAttribute> CreateRandomAttributes(ReadOnlyInventoryItem invItem, int attributeCount)
         {
             var availableAttributes = gameData.GetItemAttributes();
             var addedAttrId = new HashSet<Guid>();
 
             if (availableAttributes.Count == 0)
-                return new List<InventoryItemAttribute>();
+                return new List<MagicItemAttribute>();
 
-            var output = new List<InventoryItemAttribute>();
+            var output = new List<MagicItemAttribute>();
             var maxAttempts = availableAttributes.Count * 10;
             // make sure we dont get stuck in an infinite loop.
             attributeCount = Math.Min(attributeCount, availableAttributes.Count);
@@ -528,11 +528,9 @@ namespace RavenNest.BusinessLogic.Providers
 
                 if (addedAttrId.Add(attr.Id))
                 {
-                    output.Add(new InventoryItemAttribute
+                    output.Add(new MagicItemAttribute
                     {
-                        AttributeId = attr.Id,
-                        Id = Guid.NewGuid(),
-                        InventoryItemId = invItem.Id,
+                        Attribute = attr,
                         Value = GenerateRandomAttributeValue(attr)
                     });
                 }
@@ -916,6 +914,12 @@ namespace RavenNest.BusinessLogic.Providers
     {
         Number = 0,
         Percent = 1
+    }
+
+    public class MagicItemAttribute
+    {
+        public DataModels.ItemAttribute Attribute { get; set; }
+        public string Value { get; set; }
     }
 
     public static class InventoryItemExtensions
