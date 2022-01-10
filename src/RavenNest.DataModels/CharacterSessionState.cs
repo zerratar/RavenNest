@@ -18,6 +18,8 @@ namespace RavenNest.DataModels
 
         //Default to now, as it will be used as "first grab" 10s "ago"
         public DateTime LastSkillUpdate { get; set; } = DateTime.UtcNow.AddSeconds(-10);
+        public DateTime LastEnchantmentTryAt { get; set; }
+        public DateTime EnchantmentCooldown { get; set; }
     }
 
     public class SessionState

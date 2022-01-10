@@ -175,6 +175,13 @@ namespace RavenNest.Controllers
         {
             return playerManager.CraftItems(AssertGetSessionToken(), userId, item, amount);
         }
+
+        [HttpGet("{userId}/enchant-item/{inventoryItemId}")]
+        public ItemEnchantmentResult EnchantItem(string userId, Guid inventoryItemId)
+        {
+            return playerManager.EnchantItem(AssertGetSessionToken(), userId, inventoryItemId);
+        }
+
         [HttpGet("{userId}/item/{item}")]
         public AddItemResult AddItem(string userId, Guid item)
         {
@@ -193,11 +200,23 @@ namespace RavenNest.Controllers
             return playerManager.UnequipItem(AssertGetSessionToken(), userId, item);
         }
 
+        [HttpGet("{userId}/unequip-instance/{inventoryItemId}")]
+        public bool UnEquipItemInstance(string userId, Guid inventoryItemId)
+        {
+            return playerManager.UnequipItemInstance(AssertGetSessionToken(), userId, inventoryItemId);
+        }
+
 
         [HttpGet("{userId}/unequipall")]
         public bool UnequipAllItems(string userId)
         {
             return playerManager.UnequipAllItems(AssertGetSessionToken(), userId);
+        }
+
+        [HttpGet("{userId}/equip-instance/{item}")]
+        public bool EquipItemInstance(string userId, Guid inventoryItemId)
+        {
+            return playerManager.EquipItemInstance(AssertGetSessionToken(), userId, inventoryItemId);
         }
 
         [HttpGet("{userId}/equip/{item}")]

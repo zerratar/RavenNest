@@ -163,32 +163,9 @@ namespace RavenNest.BusinessLogic.Providers
 
         public bool EquipItem(ReadOnlyInventoryItem invItem)
         {
-            lock (mutex)
-            {
-#warning This EquipItem will Remove Enchantments
-                if (invItem.Equipped)
-                {
-                    return false;
-                }
-
-                var itemId = invItem.ItemId;
-                var item = invItem.Item;
-                if (item != null)
-                {
-                    var eq = GetEquippedItem(invItem.EquipmentSlot);
-                    if (eq.IsNotNull())
-                    {
-                        UnequipItem(eq);
-                    }
-                }
-
-                if (RemoveItem(invItem, 1))
-                {
-                    AddItem(invItem, 1, true);
-                    return true;
-                }
-                return false;
-            }
+            var item = this.Get(invItem);
+            if (item == null) return false;
+            return EquipItem(item);
         }
 
         public bool EquipItem(InventoryItem item)
@@ -245,6 +222,7 @@ namespace RavenNest.BusinessLogic.Providers
                 return true;
             }
         }
+
         public bool UnequipItem(InventoryItem item)
         {
             lock (mutex)
@@ -279,32 +257,16 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
-
         public bool UnequipItem(ReadOnlyInventoryItem item)
         {
             lock (mutex)
             {
                 if (!item.Equipped)
-                {
                     return false;
-                }
 
                 var inventoryItem = Get(item);
-                if (CanBeStacked(inventoryItem))
-                {
-                    var existing = this.items.FirstOrDefault(x => !x.Equipped && x.Id != item.Id && CanBeStacked(inventoryItem, x));
-                    if (existing != null)
-                    {
-                        existing.Amount++;
-                        RemoveStack(inventoryItem);
-                        return true;
-                    }
-                }
-
-                var newStack = Copy(item, 1);
-                this.items.Add(newStack);
-                this.gameData.Add(newStack);
-                return true;
+                if (inventoryItem == null) return false;
+                return UnequipItem(inventoryItem);
             }
         }
 
@@ -405,6 +367,29 @@ namespace RavenNest.BusinessLogic.Providers
             return resultStack;
         }
 
+        public DataModels.InventoryItem AddItem(ReadOnlyInventoryItem itemToCopy, long amount)
+        {
+            if (CanBeStacked(itemToCopy))
+            {
+                var existing = items.FirstOrDefault(x => CanBeStacked(x, itemToCopy));
+                if (existing != null)
+                {
+                    existing.Amount += itemToCopy.Amount;
+                    return existing;
+                }
+            }
+
+            return AddItemStack(itemToCopy, amount);
+        }
+
+        public InventoryItem AddItemStack(ReadOnlyInventoryItem itemToCopy, long amount)
+        {
+            var resultStack = Copy(itemToCopy, amount);
+            this.gameData.Add(resultStack);
+            this.items.Add(resultStack);
+            return resultStack;
+        }
+
         private InventoryItem Copy(UserBankItem itemToCopy, long amount)
         {
             return new InventoryItem
@@ -496,7 +481,7 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
-        public List<MagicItemAttribute> CreateRandomAttributes(ReadOnlyInventoryItem invItem, int attributeCount)
+        public List<MagicItemAttribute> CreateRandomAttributes(int attributeCount)
         {
             var availableAttributes = gameData.GetItemAttributes();
             var addedAttrId = new HashSet<Guid>();
@@ -578,34 +563,35 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
-        public ReadOnlyInventoryItem AddItem(ReadOnlyInventoryItem invItem, long amount = 1, bool? equipped = null)
-        {
-            lock (mutex)
-            {
-                var eq = equipped ?? invItem.Equipped;
-                var stack = Get(invItem) ?? Get(invItem.ItemId, eq, invItem.Tag);
-                var soulbound = invItem.Soulbound;
+        //public ReadOnlyInventoryItem AddItem(ReadOnlyInventoryItem invItem, long amount, bool? equipped)
+        //{
+        //    lock (mutex)
+        //    {
+        //        var eq = equipped ?? invItem.Equipped;
 
-                //if (stack == null && !eq && noMagicAttr)
-                //{
-                //    stack = Get(invItem.ItemId, eq, invItem.Tag);
-                //}
+        //        var stack = Get(invItem) ?? Get(invItem.ItemId, eq, invItem.Tag);
+        //        var soulbound = invItem.Soulbound;
 
-                if (stack != null && !eq)
-                {
-                    stack.Amount += amount;
-                    return stack.AsReadOnly(gameData);
-                }
-                else
-                {
-                    var i = CreateInventoryItem(invItem, amount, eq, soulbound);
-                    items.Add(i);
-                    gameData.Add(i);
-                    stack = i;
-                }
-                return stack.AsReadOnly(gameData);
-            }
-        }
+        //        //if (stack == null && !eq && noMagicAttr)
+        //        //{
+        //        //    stack = Get(invItem.ItemId, eq, invItem.Tag);
+        //        //}
+
+        //        if (stack != null && !eq)
+        //        {
+        //            stack.Amount += amount;
+        //            return stack.AsReadOnly(gameData);
+        //        }
+        //        else
+        //        {
+        //            var i = CreateInventoryItem(invItem, amount, eq, soulbound);
+        //            items.Add(i);
+        //            gameData.Add(i);
+        //            stack = i;
+        //        }
+        //        return stack.AsReadOnly(gameData);
+        //    }
+        //}
 
         private InventoryItem CreateInventoryItem(ReadOnlyInventoryItem invItem, long amount, bool eq, bool soulbound)
         {
@@ -712,7 +698,7 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
-        private InventoryItem Get(Guid itemId, bool equipped, string tag)
+        public InventoryItem Get(Guid itemId, bool equipped, string tag)
         {
             lock (mutex)
             {
@@ -720,7 +706,7 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
-        private InventoryItem Get(ReadOnlyInventoryItem item)
+        public InventoryItem Get(ReadOnlyInventoryItem item)
         {
             lock (mutex)
             {
@@ -798,7 +784,7 @@ namespace RavenNest.BusinessLogic.Providers
         {
             lock (mutex)
             {
-                var equippedItems = GetEquippedItems();
+                var equippedItems = items.Where(x => x.Equipped).ToList();
                 foreach (var equippedItem in equippedItems)
                 {
                     UnequipItem(equippedItem);
@@ -868,23 +854,37 @@ namespace RavenNest.BusinessLogic.Providers
             return item.Level + item.WeaponAim + item.WeaponPower + item.ArmorPower + item.MagicAim + item.MagicPower + item.RangedAim + item.RangedPower;
         }
 
+        public static bool CanBeStacked(DataModels.UserBankItem a, Models.InventoryItem b)
+        {
+            return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
+        }
+
+        public static bool CanBeStacked(DataModels.InventoryItem a, ReadOnlyInventoryItem b)
+        {
+            return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
+        }
         public static bool CanBeStacked(DataModels.InventoryItem a, DataModels.InventoryItem b)
         {
-            if (a == null || b == null) return false;
-            if (!CanBeStacked(a) || !CanBeStacked(b)) return false;
-            return a.Tag == b.Tag && a.ItemId == b.ItemId;
+            return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
         }
 
         public static bool CanBeStacked(DataModels.InventoryItem a, DataModels.UserBankItem b)
         {
-            if (a == null || b == null) return false;
-            if (!CanBeStacked(a) || !CanBeStacked(b)) return false;
-            return a.Tag == b.Tag && a.ItemId == b.ItemId;
+            return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
         }
 
         public static bool CanBeStacked(DataModels.UserBankItem item)
         {
             if (item == null) return false;
+            if (item.TransmogrificationId != null || !string.IsNullOrEmpty(item.Enchantment) || item.Soulbound)
+                return false;
+
+            return true;
+        }
+
+        public static bool CanBeStacked(ReadOnlyInventoryItem item)
+        {
+            if (item.IsNull()) return false;
             if (item.TransmogrificationId != null || !string.IsNullOrEmpty(item.Enchantment) || item.Soulbound)
                 return false;
 

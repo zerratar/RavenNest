@@ -51,13 +51,15 @@ namespace RavenNest.BusinessLogic.Game
         void AddItem(Guid characterId, Guid itemId, int amount = 1);
         AddItemResult AddItem(SessionToken token, string userId, Guid itemId);
         AddItemResult CraftItem_Old(SessionToken token, string userId, Guid itemId, int amount = 1);
+        ItemEnchantmentResult EnchantItem(SessionToken token, string userId, Guid inventoryItemId);
         CraftItemResult CraftItems(SessionToken token, string userId, Guid itemId, int amount = 1);
 
-        long GiftItem(SessionToken token, string gifterUserId, string receiverUserId, Guid itemId, long amount);        
+        long GiftItem(SessionToken token, string gifterUserId, string receiverUserId, Guid itemId, long amount);
         long VendorItem(SessionToken token, string userId, Guid itemId, long amount);
-
+        bool EquipItemInstance(SessionToken token, string userId, Guid inventoryItemId);
         bool EquipItem(SessionToken token, string userId, Guid itemId);
         bool EquipItem(Guid characterId, Models.InventoryItem item);
+        bool UnequipItemInstance(SessionToken token, string userId, Guid inventoryItemId);
         bool UnequipItem(SessionToken token, string userId, Guid itemId);
         bool UnequipItem(Guid characterId, Models.InventoryItem item);
         bool SendToStash(Guid characterId, Models.InventoryItem item, long amount);

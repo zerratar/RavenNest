@@ -4,6 +4,7 @@ using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using System;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -21,13 +22,14 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             Character character, Guid itemId)
         {
             var inventory = inventoryProvider.Get(character.Id);
-            inventory.AddItem(itemId);
+            var items = inventory.AddItem(itemId);
 
             gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, session, new ItemAdd
             {
                 UserId = gameData.GetUser(character.UserId).UserId,
                 Amount = 1,
-                ItemId = itemId
+                ItemId = itemId,
+                InventoryItemId = items.FirstOrDefault().Id,
             }));
         }
 
