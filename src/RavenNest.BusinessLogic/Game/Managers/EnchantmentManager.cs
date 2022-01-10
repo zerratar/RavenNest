@@ -78,7 +78,6 @@ namespace RavenNest.BusinessLogic.Game
 
             targetAttributeCount = Math.Max(0, Math.Min(maxEnchantments, targetAttributeCount));
 
-
             var invItem = inventory.Get(item.Id);
             if (invItem.IsNull())
             {
@@ -94,10 +93,10 @@ namespace RavenNest.BusinessLogic.Game
             }
             else
             {
-                foreach (var attr in newAttributes)
-                {
-                    gameData.Add(attr);
-                }
+                //foreach (var attr in newAttributes)
+                //{
+                //    gameData.Add(attr);
+                //}
             }
 
             var exp = GameMath.GetEnchantingExperience(clanSkill.Level, targetAttributeCount, itemLvReq);

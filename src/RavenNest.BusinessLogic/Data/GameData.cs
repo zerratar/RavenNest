@@ -64,7 +64,6 @@ namespace RavenNest.BusinessLogic.Data
 
 
         private readonly EntitySet<ItemAttribute, Guid> itemAttributes;
-        private readonly EntitySet<InventoryItemAttribute, Guid> inventoryItemAttributes;
 
         private readonly EntitySet<RedeemableItem, Guid> redeemableItems;
 
@@ -132,8 +131,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(SyntyAppearance),
                         typeof(Character),
                         typeof(CharacterState),
-                        typeof(InventoryItem),
-                        typeof(InventoryItemAttribute),
+                        typeof(InventoryItem),                        
                         typeof(Item),
                         typeof(User),
                         typeof(RedeemableItem),
@@ -240,10 +238,6 @@ namespace RavenNest.BusinessLogic.Data
                     inventoryItems = new EntitySet<InventoryItem, Guid>(restorePoint?.Get<InventoryItem>() ?? ctx.InventoryItem.ToList(), i => i.Id);
                     inventoryItems.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
-                    inventoryItemAttributes = new EntitySet<InventoryItemAttribute, Guid>(restorePoint?.Get<InventoryItemAttribute>() ?? ctx.InventoryItemAttribute.ToList(), i => i.Id);
-                    inventoryItemAttributes.RegisterLookupGroup(nameof(InventoryItem), x => x.InventoryItemId);
-                    inventoryItemAttributes.RegisterLookupGroup(nameof(ItemAttribute), x => x.AttributeId);
-
                     itemAttributes = new EntitySet<ItemAttribute, Guid>(restorePoint?.Get<ItemAttribute>() ?? ctx.ItemAttribute.ToList(), i => i.Id);
 
                     marketItems = new EntitySet<MarketItem, Guid>(restorePoint?.Get<MarketItem>() ?? ctx.MarketItem.ToList(), i => i.Id);
@@ -332,7 +326,7 @@ namespace RavenNest.BusinessLogic.Data
                         userProperties,
                         userBankItems,
                         items, // so we can update items
-                        gameSessions, /*gameEvents, */ inventoryItems, marketItems, marketTransactions, inventoryItemAttributes,
+                        gameSessions, /*gameEvents, */ inventoryItems, marketItems, marketTransactions,
                         resources, statistics, characterSkills, clanSkills, users, villages, villageHouses,
                         clans, clanRoles, clanMemberships, clanInvites, agreements,
                         npcs, npcSpawns, npcItemDrops, itemCraftingRequirements, characterSessionActivities
@@ -858,9 +852,6 @@ namespace RavenNest.BusinessLogic.Data
         public void Add(InventoryItem entity) => Update(() => inventoryItems.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(InventoryItemAttribute entity) => Update(() => inventoryItemAttributes.Add(entity));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(GameSession entity) => Update(() => gameSessions.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1155,10 +1146,6 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<InventoryItem> GetInventoryItems(Guid characterId) =>
             inventoryItems[nameof(Character), characterId].Where(x => !x.Equipped).ToList();
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<InventoryItemAttribute> GetInventoryItemAttributes(Guid inventoryItem) =>
-            inventoryItemAttributes[nameof(InventoryItem), inventoryItem];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Character GetCharacter(Guid characterId) =>
@@ -1621,9 +1608,6 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(UserLoyalty entity) => loyalty.Remove(entity);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(InventoryItemAttribute entity) => inventoryItemAttributes.Remove(entity);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(Clan entity) => this.clans.Remove(entity);

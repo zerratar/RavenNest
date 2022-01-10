@@ -1621,13 +1621,13 @@ namespace RavenNest.BusinessLogic.Game
             var inv1 = inventoryProvider.Get(character.Id);
             var inv2 = inventoryProvider.Get(otherCharacter.Id);
             var stack = gameData.GetInventoryItem(item.Id);
-            if (inv1.RemoveItem(stack, amount))
+
+            var stack2 = inv2.AddItem(stack, amount);
+            if (stack2 != null && inv1.RemoveItem(stack, amount))
             {
                 SendItemRemoveEvent(stack, (int)amount, character, true);
-
-                var stack2 = inv2.AddItem(stack, amount);
-
                 SendItemAddEvent(stack2, (int)amount, otherCharacter);
+                return true;
             }
 
             return false;
