@@ -1133,7 +1133,7 @@ namespace RavenNest.BusinessLogic.Game
             if (clanSkill == null)
                 return ItemEnchantmentResult.Failed;
 
-            return enchantmentManager.EnchantItem(clanSkill, character, inventory, item, resources);
+            return enchantmentManager.EnchantItem(token.SessionId, clanSkill, character, inventory, item, resources);
         }
 
         public CraftItemResult CraftItems(SessionToken token, string userId, Guid itemId, int amount)
@@ -1365,10 +1365,13 @@ namespace RavenNest.BusinessLogic.Game
                 UserId = gameData.GetUser(character.UserId).UserId,
                 Amount = amount,
                 ItemId = item.ItemId,
+                InventoryItemId = item.Id,
                 Name = item.Name,
                 Enchantment = item.Enchantment,
+                TransmogrificationId = item.TransmogrificationId,
                 Flags = item.Flags.GetValueOrDefault(),
                 Tag = item.Tag,
+                Soulbound = item.Soulbound.GetValueOrDefault(),
             };
 
             var session = gameData.GetSessionByUserId(sessionUserId.Value);
@@ -1397,7 +1400,7 @@ namespace RavenNest.BusinessLogic.Game
                     var session = gameData.GetSessionByUserId(sessionUserId.Value);
                     if (session != null)
                     {
-                        gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, session, data));
+                        gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemRemove, session, data));
                     }
                 }
             }
@@ -1538,7 +1541,8 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 var recvInventory = inventoryProvider.Get(receiver.Id);
-                recvInventory.AddItem(itemId, giftedItemCount, tag: gift.Tag);
+
+                recvInventory.AddItem(gift, giftedItemCount);
                 //recvInventory.EquipBestItems();
 
                 //gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, gameData.GetSession(token.SessionId), new ItemAdd
@@ -1662,7 +1666,7 @@ namespace RavenNest.BusinessLogic.Game
                     if (canBeStacked)
                     {
                         var bankItems = gameData.GetUserBankItems(character.UserId);
-                        var existing = bankItems.FirstOrDefault(x => x.ItemId == item.ItemId && x.Tag == item.Tag);
+                        var existing = bankItems.FirstOrDefault(x => PlayerInventory.CanBeStacked(x, item));
                         if (existing != null)
                         {
                             existing.Amount += amount;
@@ -1699,6 +1703,21 @@ namespace RavenNest.BusinessLogic.Game
             };
         }
 
+        public bool EquipItemInstance(SessionToken token, string userId, Guid inventoryItemId)
+        {
+            var character = GetCharacter(token, userId);
+            if (character == null) return false;
+
+            var inventory = inventoryProvider.Get(character.Id);
+            var invItem = inventory.Get(inventoryItemId);
+
+            var skills = gameData.GetCharacterSkills(character.SkillsId);
+            if (invItem.IsNull() || !PlayerInventory.CanEquipItem(gameData.GetItem(invItem.ItemId), skills))
+                return false;
+
+            return inventory.EquipItem(invItem);
+        }
+
         public bool EquipItem(SessionToken token, string userId, Guid itemId)
         {
             var character = GetCharacter(token, userId);
@@ -1715,6 +1734,18 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
 
             return inventory.EquipItem(invItem);
+        }
+
+        public bool UnequipItemInstance(SessionToken token, string userId, Guid inventoryItemId)
+        {
+            var character = GetCharacter(token, userId);
+            if (character == null) return false;
+
+            var inventory = inventoryProvider.Get(character.Id);
+            var invItem = inventory.Get(inventoryItemId);
+            if (invItem.IsNull()) return false;
+
+            return inventory.UnequipItem(invItem);
         }
 
         public bool UnequipItem(SessionToken token, string userId, Guid itemId)
