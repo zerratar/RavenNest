@@ -1181,9 +1181,18 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     craftableAmount = (int)maxCraftable;
                 }
+
+                if (craftableAmount == 0)
+                {
+                    return CraftItemResult.InsufficientResources;
+                }
             }
 
             var amountToCraft = Math.Min(craftableAmount, amount);
+            if (amountToCraft == 0)
+            {
+                return CraftItemResult.InsufficientResources;
+            }
 
             foreach (var req in craftingRequirements)
             {
@@ -1422,7 +1431,8 @@ namespace RavenNest.BusinessLogic.Game
                 tag = sessionOwner.UserId;
 
             var inventory = inventoryProvider.Get(character.Id);
-            inventory.AddItem(itemId, tag: tag);
+
+            var addedItems = inventory.AddItem(itemId, tag: tag);
             //inventory.EquipBestItems();
 
             return inventory.GetEquippedItem(itemId).IsNotNull()
