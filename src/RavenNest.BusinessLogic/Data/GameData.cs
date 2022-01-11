@@ -346,6 +346,7 @@ namespace RavenNest.BusinessLogic.Data
                 #endregion
 
                 #region Post Data Load - Transformations
+                EnsureResources();
                 UpgradeSkillLevels(characterSkills);
                 RemoveBadUsers(users);
                 RemoveBadInventoryItems(inventoryItems);
@@ -369,6 +370,23 @@ namespace RavenNest.BusinessLogic.Data
                 System.IO.File.WriteAllText("ravenfall-error.log", exc.ToString());
             }
 
+        }
+
+        private void EnsureResources()
+        {
+            foreach (var character in this.characters.Entities)
+            {
+                var resources = this.GetResourcesByCharacterId(character.Id);
+                if (resources == null)
+                {
+                    resources = new DataModels.Resources
+                    {
+                        Id = Guid.NewGuid(),
+                    };
+                    Add(resources);
+                    character.ResourcesId = resources.Id;
+                }
+            }
         }
         #endregion
 
