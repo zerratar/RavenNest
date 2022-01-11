@@ -173,6 +173,22 @@ namespace RavenNest.Controllers
             }
         }
 
+
+        [HttpGet("add-coins/{identifier}/{query}")]
+        public async Task<bool> AddCoinsAsync(string identifier, string query)
+        {
+            try
+            {
+                await AssertAdminAccessAsync();
+                return adminManager.AddCoins(query, identifier);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                throw;
+            }
+        }
+
         [HttpGet("subs/{from}/{to}/{amount}")]
         public async Task<bool> LoyaltySubs(string from, string to, int amount)
         {

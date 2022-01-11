@@ -20,7 +20,7 @@ namespace RavenNest.BusinessLogic.Game
     {
         private readonly ILogger<AdminManager> logger;
         private readonly IPlayerInventoryProvider inventoryProvider;
-        private readonly IItemResolver itemResolver;
+        private readonly IEntityResolver itemResolver;
         private readonly IPlayerManager playerManager;
         private readonly IGameData gameData;
         private readonly ISessionManager sessionManager;
@@ -28,7 +28,7 @@ namespace RavenNest.BusinessLogic.Game
         public AdminManager(
             ILogger<AdminManager> logger,
             IPlayerInventoryProvider inventoryProvider,
-            IItemResolver itemResolver,
+            IEntityResolver itemResolver,
             IPlayerManager playerManager,
             IGameData gameData,
             ISessionManager sessionManager,
@@ -74,11 +74,26 @@ namespace RavenNest.BusinessLogic.Game
         //    }
         //}
 
+        public bool AddCoins(string query, string identifier)
+        {
+            var character = itemResolver.ResolveCharacter(query, identifier);
+            if (character == null) return false;
+            var amount = query.Split(' ').LastOrDefault();
+            if (long.TryParse(amount, out var amountValue))
+            {
+                var resx = gameData.GetResourcesByCharacterId(character.Id);
+                if (resx == null) return false;
+                resx.Coins += amountValue;
+            }
+
+            return false;
+        }
+
         public bool ProcessItemRecovery(string query, string identifier)
         {
             try
             {
-                var items = itemResolver.Resolve(query, identifier);
+                var items = itemResolver.ResolvePlayerAndItems(query, identifier);
 
                 foreach (var charItems in items.GroupBy(x => x.Character.Id))
                 {
@@ -253,11 +268,11 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool SetCraftingRequirements(string itemQuery, string requirementQuery)
         {
-            var targetItem = itemResolver.Resolve(itemQuery).FirstOrDefault();
+            var targetItem = itemResolver.ResolveItems(itemQuery).FirstOrDefault();
             if (targetItem == null)
                 return false;
 
-            var requirements = itemResolver.Resolve(requirementQuery);
+            var requirements = itemResolver.ResolveItems(requirementQuery);
             if (requirements.Count == 0)
                 return false;
 

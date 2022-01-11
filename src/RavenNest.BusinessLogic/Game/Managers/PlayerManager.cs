@@ -1408,6 +1408,38 @@ namespace RavenNest.BusinessLogic.Game
             await TrySendToExtensionAsync(character, data);
         }
 
+        public Guid AddItemInstance(SessionToken token, string userId, Models.InventoryItem instance)
+        {
+            var item = gameData.GetItem(instance.ItemId);
+            if (item == null)
+                return Guid.Empty;
+
+            var character = GetCharacter(token, userId);
+            if (character == null)
+                return Guid.Empty;
+
+            if (!integrityChecker.VerifyPlayer(token.SessionId, character.Id, 0))
+                return Guid.Empty;
+
+            var session = gameData.GetSession(token.SessionId);
+            if (session == null)
+                return Guid.Empty;
+
+            var sessionOwner = gameData.GetUser(session.UserId);
+            if (sessionOwner == null || sessionOwner.Status >= 1)
+                return Guid.Empty;
+
+            string tag = null;
+            if (item.Category == (int)DataModels.ItemCategory.StreamerToken)
+                tag = sessionOwner.UserId;
+
+            var inventory = inventoryProvider.Get(character.Id);
+
+            var addedItem = inventory.AddItemInstance(instance, 1);
+            //inventory.EquipBestItems();
+
+            return addedItem.Id;
+        }
         public AddItemResult AddItem(SessionToken token, string userId, Guid itemId)
         {
             var item = gameData.GetItem(itemId);
@@ -1494,6 +1526,21 @@ namespace RavenNest.BusinessLogic.Game
                 return 0;
             }
         }
+
+        //private void LogGiftTransaction(Guid characterId, Guid receiverCharacterId, Guid itemId, long amount, double totalPrice)
+        //{
+        //    gameData.Add(
+        //        new GiftTransaction
+        //        {
+        //            Id = Guid.NewGuid(),
+        //            Amount = amount,
+        //            FromCharacterId = characterId,
+        //            ToCharacterId = receiverCharacterId,
+
+        //            ItemId = itemId,
+        //            Created = DateTime.UtcNow
+        //        });
+        //}
 
         private void LogVendorTransaction(Guid characterId, Guid itemId, long amount, double totalPrice)
         {
