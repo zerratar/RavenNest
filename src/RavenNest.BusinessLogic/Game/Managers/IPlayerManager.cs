@@ -49,6 +49,7 @@ namespace RavenNest.BusinessLogic.Game
         //bool[] UpdateMany(SessionToken token, PlayerState[] states);
         bool LoyaltyGift(string gifterTwitchUserIdOrName, string streamerTwitchUserIdOrName, int bitsAmount, int subsAmount);
         void AddItem(Guid characterId, Guid itemId, int amount = 1);
+        Guid AddItemInstance(SessionToken token, string userId, Models.InventoryItem instance);
         AddItemResult AddItem(SessionToken token, string userId, Guid itemId);
         AddItemResult CraftItem_Old(SessionToken token, string userId, Guid itemId, int amount = 1);
         ItemEnchantmentResult EnchantItem(SessionToken token, string userId, Guid inventoryItemId);

@@ -235,7 +235,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<ILoyaltyManager, LoyaltyManager>();
 
             services.AddSingleton<IQueryBuilder, QueryBuilder>();
-            services.AddSingleton<IItemResolver, ItemResolver>();
+            services.AddSingleton<IEntityResolver, EntityResolver>();
             services.AddSingleton<IIntegrityChecker, PlayerIntegrityChecker>();
             services.AddSingleton<ITwitchClient, TwitchClient>();
 

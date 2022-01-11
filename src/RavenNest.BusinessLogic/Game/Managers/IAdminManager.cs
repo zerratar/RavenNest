@@ -17,6 +17,7 @@ namespace RavenNest.BusinessLogic.Game
         bool SuspendPlayer(string userId);
         bool ResetUserPassword(string userid);
         bool ProcessItemRecovery(string query, string identifier);
+        bool AddCoins(string query, string identifier);
         bool NerfItems();
         bool RefreshVillageInfo();
         bool RefreshPermissions();
