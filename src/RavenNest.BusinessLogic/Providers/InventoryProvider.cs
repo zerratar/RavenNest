@@ -335,7 +335,7 @@ namespace RavenNest.BusinessLogic.Providers
                 var existing = items.FirstOrDefault(x => CanBeStacked(x, itemToCopy));
                 if (existing != null)
                 {
-                    existing.Amount += itemToCopy.Amount;
+                    existing.Amount += amount;
                     resultStack = existing;
                     return resultStack;
                 }
@@ -355,7 +355,7 @@ namespace RavenNest.BusinessLogic.Providers
                 var existing = items.FirstOrDefault(x => CanBeStacked(x, itemToCopy));
                 if (existing != null)
                 {
-                    existing.Amount += itemToCopy.Amount;
+                    existing.Amount += amount;
                     resultStack = existing;
                     return resultStack;
                 }
@@ -374,7 +374,7 @@ namespace RavenNest.BusinessLogic.Providers
                 var existing = items.FirstOrDefault(x => CanBeStacked(x, itemToCopy));
                 if (existing != null)
                 {
-                    existing.Amount += itemToCopy.Amount;
+                    existing.Amount += amount;
                     return existing;
                 }
             }
