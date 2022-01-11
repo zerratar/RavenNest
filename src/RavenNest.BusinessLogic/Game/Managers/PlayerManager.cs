@@ -1473,16 +1473,19 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (amount <= itemToVendor.Amount)
                 {
+                    var price = item.ShopSellPrice * amount;
                     inventory.RemoveItem(itemToVendor, amount);
                     resources.Coins += item.ShopSellPrice * amount;
                     UpdateResources(gameData, session, player, resources);
+                    LogVendorTransaction(player.Id, itemToVendor.ItemId, amount, price);
                     return amount;
                 }
 
                 inventory.RemoveStack(itemToVendor);
-
-                resources.Coins += itemToVendor.Amount * item.ShopSellPrice;
+                var totalPrice = itemToVendor.Amount * item.ShopSellPrice;
+                resources.Coins += totalPrice;
                 UpdateResources(gameData, session, player, resources);
+                LogVendorTransaction(player.Id, itemToVendor.ItemId, itemToVendor.Amount, totalPrice);
                 return (int)itemToVendor.Amount;
             }
             catch (Exception exc)
@@ -1490,6 +1493,21 @@ namespace RavenNest.BusinessLogic.Game
                 logger.LogError($"Unable to vendor item (u {userId}, i {itemId}, a x{amount}): " + exc);
                 return 0;
             }
+        }
+
+        private void LogVendorTransaction(Guid characterId, Guid itemId, long amount, double totalPrice)
+        {
+            gameData.Add(
+                new VendorTransaction
+                {
+                    Id = Guid.NewGuid(),
+                    Amount = amount,
+                    SellerCharacterId = characterId,
+                    ItemId = itemId,
+                    PricePerItem = totalPrice / amount,
+                    TotalPrice = totalPrice,
+                    Created = DateTime.UtcNow
+                });
         }
 
         public long GiftItem(
