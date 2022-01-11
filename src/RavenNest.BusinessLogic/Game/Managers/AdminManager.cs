@@ -82,7 +82,18 @@ namespace RavenNest.BusinessLogic.Game
             if (long.TryParse(amount, out var amountValue))
             {
                 var resx = gameData.GetResourcesByCharacterId(character.Id);
-                if (resx == null) return false;
+                if (resx == null)
+                {
+                    resx = new DataModels.Resources
+                    {
+                        Id = Guid.NewGuid(),
+                        Coins = amountValue
+                    };
+                    character.ResourcesId = resx.Id;
+                    gameData.Add(resx);
+                    return true;
+                }
+
                 resx.Coins += amountValue;
             }
 

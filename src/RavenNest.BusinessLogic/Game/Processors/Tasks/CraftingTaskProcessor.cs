@@ -17,6 +17,15 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         {
             var now = DateTime.UtcNow;
             var resources = gameData.GetResources(character.ResourcesId);
+            if (resources == null)
+            {
+                resources = new DataModels.Resources
+                {
+                    Id = Guid.NewGuid(),
+                };
+                gameData.Add(resources);
+                character.ResourcesId = resources.Id;
+            }
             var state = gameData.GetCharacterSessionState(session.Id, character.Id);
             if (now - state.LastTaskUpdate >= TimeSpan.FromSeconds(ResourceGatherInterval))
             {
