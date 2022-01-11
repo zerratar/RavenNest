@@ -327,6 +327,31 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
+        public DataModels.InventoryItem AddItemInstance(Models.InventoryItem itemInstanceToCopy, long amount = 1)
+        {
+            var i = itemInstanceToCopy;
+            // in this case, unless its Id is Empty guid, we even want to use the ID. GIven, there is no such id already present in the game.
+            InventoryItem resultStack = null;
+            if (CanBeStacked(i))
+            {
+                var existing = items.FirstOrDefault(x => CanBeStacked(x, i));
+                if (existing != null)
+                {
+                    existing.Amount += amount;
+                    resultStack = existing;
+                    return resultStack;
+                }
+            }
+            resultStack = Copy(i, amount);
+            if (gameData.GetInventoryItem(i.Id) == null)
+            {
+                resultStack.Id = i.Id;
+            }
+            this.gameData.Add(resultStack);
+            this.items.Add(resultStack);
+            return resultStack;
+        }
+
         public DataModels.InventoryItem AddItem(DataModels.UserBankItem itemToCopy, long amount)
         {
             InventoryItem resultStack = null;
@@ -388,6 +413,23 @@ namespace RavenNest.BusinessLogic.Providers
             this.gameData.Add(resultStack);
             this.items.Add(resultStack);
             return resultStack;
+        }
+
+        private InventoryItem Copy(Models.InventoryItem itemToCopy, long amount)
+        {
+            return new InventoryItem
+            {
+                Id = Guid.NewGuid(),
+                CharacterId = this.characterId,
+                Enchantment = itemToCopy.Enchantment,
+                Flags = itemToCopy.Flags,
+                ItemId = itemToCopy.ItemId,
+                Name = itemToCopy.Name,
+                Amount = amount,
+                Soulbound = itemToCopy.Soulbound,
+                Tag = itemToCopy.Tag,
+                TransmogrificationId = itemToCopy.TransmogrificationId,
+            };
         }
 
         private InventoryItem Copy(UserBankItem itemToCopy, long amount)
@@ -806,6 +848,9 @@ namespace RavenNest.BusinessLogic.Providers
             };
         }
 
+
+        #region Helper Code
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanEquipItem(RavenNest.Models.Item item, WebsitePlayer skills)
         {
@@ -854,60 +899,58 @@ namespace RavenNest.BusinessLogic.Providers
             return item.Level + item.WeaponAim + item.WeaponPower + item.ArmorPower + item.MagicAim + item.MagicPower + item.RangedAim + item.RangedPower;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.UserBankItem a, Models.InventoryItem b)
         {
             return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool CanBeStacked(DataModels.InventoryItem a, Models.InventoryItem b)
+        {
+            return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.InventoryItem a, ReadOnlyInventoryItem b)
         {
             return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.InventoryItem a, DataModels.InventoryItem b)
         {
             return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.InventoryItem a, DataModels.UserBankItem b)
         {
             return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.UserBankItem item)
         {
-            if (item == null) return false;
-            if (item.TransmogrificationId != null || !string.IsNullOrEmpty(item.Enchantment) || item.Soulbound)
-                return false;
-
-            return true;
+            return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment) && !item.Soulbound;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(ReadOnlyInventoryItem item)
         {
-            if (item.IsNull()) return false;
-            if (item.TransmogrificationId != null || !string.IsNullOrEmpty(item.Enchantment) || item.Soulbound)
-                return false;
-
-            return true;
+            return !item.IsNull() && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment) && !item.Soulbound;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.InventoryItem item)
         {
-            if (item == null) return false;
-            if (item.TransmogrificationId != null || !string.IsNullOrEmpty(item.Enchantment) || item.Soulbound.GetValueOrDefault())
-                return false;
-
-            return true;
+            return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment) && !item.Soulbound.GetValueOrDefault();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(Models.InventoryItem item)
         {
-            if (item == null) return false;
-            if (item.TransmogrificationId != null || !string.IsNullOrEmpty(item.Enchantment) || item.Soulbound.GetValueOrDefault())
-                return false;
-
-            return true;
+            return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment) && !item.Soulbound.GetValueOrDefault();
         }
+
+        #endregion
     }
 
     public enum AttributeValueType : int

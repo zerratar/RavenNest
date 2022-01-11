@@ -8,22 +8,23 @@ using System.Linq;
 
 namespace RavenNest.BusinessLogic.Game
 {
-    public interface IItemResolver
+    public interface IEntityResolver
     {
-        IReadOnlyList<PlayerItemStack> Resolve(string query, string charIdentifier);
-        IReadOnlyList<ItemStack> Resolve(string query);
+        IReadOnlyList<PlayerItemStack> ResolvePlayerAndItems(string query, string charIdentifier);
+        IReadOnlyList<ItemStack> ResolveItems(string query);
+        Character ResolveCharacter(string characterNameQuery, string identifier);
     }
 
-    public class ItemResolver : IItemResolver
+    public class EntityResolver : IEntityResolver
     {
         private readonly IGameData gameData;
 
-        public ItemResolver(IGameData gameData)
+        public EntityResolver(IGameData gameData)
         {
             this.gameData = gameData;
         }
 
-        public IReadOnlyList<ItemStack> Resolve(string query)
+        public IReadOnlyList<ItemStack> ResolveItems(string query)
         {
             if (string.IsNullOrEmpty(query)) return new List<ItemStack>();
             query = query.Trim();
@@ -31,11 +32,13 @@ namespace RavenNest.BusinessLogic.Game
             return ResolveStacks(query);
         }
 
-        public IReadOnlyList<PlayerItemStack> Resolve(string query, string charIdentifier)
+        public IReadOnlyList<PlayerItemStack> ResolvePlayerAndItems(string query, string charIdentifier)
         {
             var itemOutput = new List<PlayerItemStack>();
 
-            if (string.IsNullOrEmpty(query)) return itemOutput;
+            if (string.IsNullOrEmpty(query))
+                return itemOutput;
+
             query = query.Trim();
 
             var lines = query.Split('\n');
@@ -45,7 +48,7 @@ namespace RavenNest.BusinessLogic.Game
                     continue;
 
                 var username = line.Split(' ')[0];
-                Character player = gameData.GetCharacterByName(username, charIdentifier);
+                var player = gameData.GetCharacterByName(username, charIdentifier);
                 query = query.Substring(username.Length).Trim();
 
                 if (string.IsNullOrEmpty(query))
@@ -54,6 +57,16 @@ namespace RavenNest.BusinessLogic.Game
                 Resolve(query, itemOutput, player);
             }
             return itemOutput;
+        }
+
+        public Character ResolveCharacter(string characterNameQuery, string identifier)
+        {
+            characterNameQuery = characterNameQuery.Trim();
+            if (string.IsNullOrEmpty(characterNameQuery))
+                return null;
+
+            var username = characterNameQuery.Split(' ')[0];
+            return gameData.GetCharacterByName(username, identifier);
         }
 
         private void Resolve(string query, List<PlayerItemStack> itemOutput, Character player)
