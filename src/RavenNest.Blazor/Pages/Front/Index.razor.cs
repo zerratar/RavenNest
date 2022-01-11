@@ -10,12 +10,12 @@ namespace RavenNest.Blazor.Pages.Front
     public partial class Index
     {
         private IReadOnlyList<TwitchStream> twitchStreams;
-        private IReadOnlyList<NewsItem> news;
+        //private IReadOnlyList<NewsItem> news;
 
         protected override async Task OnInitializedAsync()
         {
             twitchStreams = await GetTwitchStreamsAsync(6);
-            news = await NewsService.GetNewsFeedAsync(6);
+            //news = await NewsService.GetNewsFeedAsync(6);
         }
 
         public async Task<IReadOnlyList<TwitchStream>> GetTwitchStreamsAsync(int take)
