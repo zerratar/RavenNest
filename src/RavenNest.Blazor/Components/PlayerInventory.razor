@@ -64,6 +64,8 @@
                             <div class="item-stat-value">@GetItemRequirementLevel()</div>
                         </div>
                     </div>
+
+                    @if (CanManage) {
                     <div class="item-actions">
 
                         @if (itemDetailsDialogItem.Equipped)
@@ -90,6 +92,7 @@
                             }
                         }
                     </div>
+                    }
                 </div>
             </div>
         }
