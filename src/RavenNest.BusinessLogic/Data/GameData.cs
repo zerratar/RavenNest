@@ -47,6 +47,8 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<ClanRole, Guid> clanRoles;
         private readonly EntitySet<ClanSkill, Guid> clanSkills;
         private readonly EntitySet<MarketItemTransaction, Guid> marketTransactions;
+        private readonly EntitySet<VendorTransaction, Guid> vendorTransaction;
+
         private readonly EntitySet<CharacterClanMembership, Guid> clanMemberships;
 
         private readonly EntitySet<UserPatreon, Guid> patreons;
@@ -131,12 +133,13 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(SyntyAppearance),
                         typeof(Character),
                         typeof(CharacterState),
-                        typeof(InventoryItem),                        
+                        typeof(InventoryItem),
                         typeof(Item),
                         typeof(User),
                         typeof(RedeemableItem),
                         //typeof(UserNotification),
                         typeof(MarketItemTransaction),
+                        typeof(VendorTransaction),
                         typeof(GameSession),
                         typeof(Village),
                         typeof(VillageHouse),
@@ -298,6 +301,14 @@ namespace RavenNest.BusinessLogic.Data
                         ctx.ClanSkill.ToList(), i => i.Id);
                     clanSkills.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
 
+
+
+                    vendorTransaction = new EntitySet<VendorTransaction, Guid>(
+                        restorePoint?.Get<VendorTransaction>() ??
+                        ctx.VendorTransaction.ToList(), i => i.Id);
+                    vendorTransaction.RegisterLookupGroup(nameof(Item), x => x.ItemId);
+                    vendorTransaction.RegisterLookupGroup(nameof(Character) + "Seller", x => x.SellerCharacterId);
+
                     marketTransactions = new EntitySet<MarketItemTransaction, Guid>(
                         restorePoint?.Get<MarketItemTransaction>() ??
                         ctx.MarketItemTransaction.ToList(), i => i.Id);
@@ -323,7 +334,7 @@ namespace RavenNest.BusinessLogic.Data
                         patreons, loyalty, loyaltyRewards, loyaltyRanks, claimedLoyaltyRewards,
                         expMultiplierEvents, notifications,
                         appearances, syntyAppearances, characters, characterStates,
-                        userProperties,
+                        userProperties, vendorTransaction,
                         userBankItems,
                         items, // so we can update items
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems, marketTransactions,
@@ -786,6 +797,8 @@ namespace RavenNest.BusinessLogic.Data
         public void Add(MarketItemTransaction entity) => Update(() => marketTransactions.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(VendorTransaction entity) => Update(() => vendorTransaction.Add(entity));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(CharacterClanInvite entity) => Update(() => this.clanInvites.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1140,7 +1153,7 @@ namespace RavenNest.BusinessLogic.Data
         public UserBankItem GetUserBankItem(Guid id) => userBankItems[id];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public UserBankItem GetStashItem(Guid userId, Guid itemId) => 
+        public UserBankItem GetStashItem(Guid userId, Guid itemId) =>
             userBankItems[nameof(User), userId].FirstOrDefault(x => x.ItemId == itemId);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
