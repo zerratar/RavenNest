@@ -396,6 +396,20 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
 
+            var resx = gameData.GetResourcesByCharacterId(character.Id);
+            if (resx == null)
+            {
+                // uh oh!
+                logger.LogError(character.Name + " does not have any resources saved!! Did this get lost in a recover step?");
+                resx = new Resources
+                {
+                    Id = Guid.NewGuid()
+                };
+
+                character.ResourcesId = resx.Id;
+                gameData.Add(resx);
+            }
+
             var app = gameData.GetAppearance(character.SyntyAppearanceId);
 
             if (app == null)
