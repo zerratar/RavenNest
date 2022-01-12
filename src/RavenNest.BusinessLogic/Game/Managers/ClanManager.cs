@@ -142,7 +142,12 @@ namespace RavenNest.BusinessLogic.Game
 
             var membership = gameData.GetClanMembership(invite.CharacterId);
             if (membership != null)
-                return false;
+            {
+                // check if the clan still exists.
+                var joinedClan = gameData.GetClan(membership.ClanId);
+                if (joinedClan != null && gameData.GetUser(joinedClan.UserId) != null)
+                    return false;
+            }
 
             // clan does not exist
             var clan = gameData.GetClan(invite.ClanId);

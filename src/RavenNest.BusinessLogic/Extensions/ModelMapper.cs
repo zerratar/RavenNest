@@ -206,8 +206,12 @@ namespace RavenNest.BusinessLogic.Extensions
                 Amount = items.Amount.GetValueOrDefault(),
                 Equipped = items.Equipped,
                 ItemId = items.ItemId,
-                Tag = items.Tag
-                //Item = Map(items.Item)
+                Tag = items.Tag,
+                Enchantment = items.Enchantment,
+                Flags = items.Flags ?? 0,
+                Name = items.Name,
+                Soulbound = items.Soulbound,
+                TransmogrificationId = items.TransmogrificationId,
             };
         }
 

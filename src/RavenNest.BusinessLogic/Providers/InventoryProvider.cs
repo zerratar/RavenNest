@@ -576,15 +576,16 @@ namespace RavenNest.BusinessLogic.Providers
         private string GenerateRandomAttributeValue(ItemAttribute attr)
         {
             var minValue = GetValue(attr.MinValue, out var minAttrValType);
-            var maxValue = GetValue(attr.MinValue, out var maxAttrValType);
+            var maxValue = GetValue(attr.MaxValue, out var maxAttrValType);
             var ran = random.NextDouble();
             var value = Math.Max(minValue, (double)ran * maxValue);
-            return maxAttrValType == AttributeValueType.Percent ? $"{value}%" : value.ToString();
+            return maxAttrValType == Models.AttributeValueType.Percent ? $"{value}%" : value.ToString();
         }
 
-        private double GetValue(string val, out AttributeValueType valueType)
+        public static double GetValue(string val, out Models.AttributeValueType valueType)
         {
-            valueType = AttributeValueType.Number;
+            valueType = Models.AttributeValueType.Number;
+            val = val.Replace(',', '.');
             if (string.IsNullOrEmpty(val))
             {
                 return 0d;
@@ -593,16 +594,29 @@ namespace RavenNest.BusinessLogic.Providers
             {
                 if (val.EndsWith("%"))
                 {
-                    if (double.TryParse(val.Replace("%", ""), out var value))
+                    if (TryParse(val.Replace("%", ""), out var value))
                     {
-                        valueType = AttributeValueType.Percent;
-                        return value / 100d;
+                        valueType = Models.AttributeValueType.Percent;
+                        //return value / 100d;
+                        return value;
                     }
                 }
 
-                double.TryParse(val, out var number);
+                TryParse(val, out var number);
                 return number;
             }
+        }
+
+
+        private static bool TryParse(string val, out double value)
+        {
+            if (double.TryParse(val, out value))
+                return true;
+
+            if (double.TryParse(val.Replace(',', '.'), out value))
+                return true;
+
+            return double.TryParse(val.Replace('.', ','), out value);
         }
 
         //public ReadOnlyInventoryItem AddItem(ReadOnlyInventoryItem invItem, long amount, bool? equipped)
@@ -951,12 +965,6 @@ namespace RavenNest.BusinessLogic.Providers
         }
 
         #endregion
-    }
-
-    public enum AttributeValueType : int
-    {
-        Number = 0,
-        Percent = 1
     }
 
     public class MagicItemAttribute

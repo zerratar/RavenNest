@@ -136,6 +136,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(InventoryItem),
                         typeof(Item),
                         typeof(User),
+                        typeof(ItemAttribute),
                         typeof(RedeemableItem),
                         //typeof(UserNotification),
                         typeof(MarketItemTransaction),
@@ -331,6 +332,7 @@ namespace RavenNest.BusinessLogic.Data
                     entitySets = new IEntitySet[]
                     {
                         redeemableItems,
+                        itemAttributes,
                         patreons, loyalty, loyaltyRewards, loyaltyRanks, claimedLoyaltyRewards,
                         expMultiplierEvents, notifications,
                         appearances, syntyAppearances, characters, characterStates,
@@ -346,6 +348,7 @@ namespace RavenNest.BusinessLogic.Data
                 #endregion
 
                 #region Post Data Load - Transformations
+                EnsureMagicAttributes();
                 EnsureResources();
                 UpgradeSkillLevels(characterSkills);
                 RemoveBadUsers(users);
@@ -369,6 +372,69 @@ namespace RavenNest.BusinessLogic.Data
                 InitializedSuccessful = false;
                 System.IO.File.WriteAllText("ravenfall-error.log", exc.ToString());
             }
+
+        }
+
+        private void EnsureMagicAttributes()
+        {
+            if (this.itemAttributes.Entities.Count > 0)
+            {
+                return;
+            }
+
+            for (var i = 0; i < DataModels.Skills.SkillNames.Length; ++i)
+            {
+                var sn = DataModels.Skills.SkillNames[i];
+
+                Add(new ItemAttribute
+                {
+                    Id = Guid.NewGuid(),
+                    Description = "Increases " + sn + " by 25%",
+                    Name = sn.ToUpper(),
+                    AttributeIndex = i,
+                    DefaultValue = "5%",
+                    MaxValue = "25%",
+                    MinValue = "1%",
+                    Type = 1
+                });
+            }
+
+
+            Add(new ItemAttribute
+            {
+                Id = Guid.NewGuid(),
+                Description = "Increases Aim by 20%",
+                Name = "AIM",
+                AttributeIndex = DataModels.Skills.SkillNames.Length + 1,
+                DefaultValue = "5%",
+                MaxValue = "20%",
+                MinValue = "1%",
+                Type = 1
+            });
+
+            Add(new ItemAttribute
+            {
+                Id = Guid.NewGuid(),
+                Description = "Increases Power by 20%",
+                Name = "POWER",
+                AttributeIndex = DataModels.Skills.SkillNames.Length + 2,
+                DefaultValue = "5%",
+                MaxValue = "20%",
+                MinValue = "1%",
+                Type = 1
+            });
+
+            Add(new ItemAttribute
+            {
+                Id = Guid.NewGuid(),
+                Description = "Increases Armour by 20%",
+                Name = "ARMOUR",
+                AttributeIndex = DataModels.Skills.SkillNames.Length + 3,
+                DefaultValue = "5%",
+                MaxValue = "20%",
+                MinValue = "1%",
+                Type = 1
+            });
 
         }
 
@@ -795,6 +861,10 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Add Methods
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(ItemAttribute item) => Update(() => itemAttributes.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(Agreements item) => Update(() => agreements.Add(item));
