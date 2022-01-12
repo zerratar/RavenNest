@@ -215,15 +215,13 @@ namespace RavenNest.DataModels
 
         public void RegisterLookupGroup(string name, Func<TModel, TKey> lookupKey)
         {
-            var grouped = entities.Values.GroupBy(lookupKey).ToList();
-            var values = grouped.ToDictionary(x => x.Key, x =>
-            {
-                var dictionary = x.ToDictionary(y => keySelector(y), y => y);
-                return new ConcurrentDictionary<TKey, TModel>(dictionary);
-            });
-
             this.groupLookup[name] = new EntityLookupGroup<TModel, TKey>(
-                new ConcurrentDictionary<TKey, ConcurrentDictionary<TKey, TModel>>(values),
+                new ConcurrentDictionary<TKey, ConcurrentDictionary<TKey, TModel>>(
+                    entities.Values.GroupBy(lookupKey).ToDictionary(x => x.Key, x =>
+                    {
+                        var dictionary = x.ToDictionary(y => keySelector(y), y => y);
+                        return new ConcurrentDictionary<TKey, TModel>(dictionary);
+                    })),
                 lookupKey,
                 keySelector);
         }

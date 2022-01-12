@@ -97,7 +97,11 @@ namespace RavenNest.Blazor
                 () => app.ApplicationServices.GetService<IGameData>().Flush());
 
             //app.UseCookiePolicy();
+
+#if DEBUG
             app.AddRequestTiming();
+#endif
+
             app.AddSessionCookies();
 
             app.UseCors(builder =>

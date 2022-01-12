@@ -99,7 +99,7 @@ namespace RavenNest.Blazor.Services
                 {
                     userId = userId.Split('_')[1];
 
-                    var user = gameData.GetUser(userId);
+                    var user = gameData.GetUserByTwitchId(userId);
                     if (user != null)
                     {
                         var clan = gameData.GetClanByUser(user.Id);

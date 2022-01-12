@@ -12,6 +12,7 @@ namespace RavenNest.BusinessLogic.Game
         Clan GetClan(Guid clanId);
         Clan GetClanByCharacter(Guid characterId);
         Clan GetClanByUserId(string userId);
+        Clan GetClanByUserId(Guid userId);
         Clan CreateClan(string userId, string name, string logo);
         Clan CreateClan(Guid ownerUserId, string name, string logoImageFile);
         bool AcceptClanInvite(Guid inviteId);

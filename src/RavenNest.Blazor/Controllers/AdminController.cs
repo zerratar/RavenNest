@@ -326,7 +326,7 @@ namespace RavenNest.Controllers
         private void AssertAdminTwitchUser(Twitch.TwitchRequests.TwitchUser twitchUser)
         {
             if (twitchUser == null) throw new Exception(InsufficientPermissions);
-            var user = gameData.GetUser(twitchUser.Id);
+            var user = gameData.GetUserByTwitchId(twitchUser.Id);
             if (!user.IsAdmin.GetValueOrDefault()) throw new Exception(InsufficientPermissions);
         }
     }

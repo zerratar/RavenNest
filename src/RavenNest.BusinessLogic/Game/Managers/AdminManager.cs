@@ -192,7 +192,7 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool ResetUserPassword(string userId)
         {
-            var user = gameData.GetUser(userId);
+            var user = gameData.GetUserByTwitchId(userId);
             if (user == null)
                 return false;
 
@@ -254,7 +254,7 @@ namespace RavenNest.BusinessLogic.Game
                 return true;
             }
 
-            var user = gameData.GetUser(userId);
+            var user = gameData.GetUserByTwitchId(userId);
             if (user == null)
                 return false;
 
@@ -308,7 +308,7 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool MergePlayerAccounts(string userId)
         {
-            var user = gameData.GetUser(userId);
+            var user = gameData.GetUserByTwitchId(userId);
             if (user == null)
                 return false;
 

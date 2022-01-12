@@ -72,7 +72,8 @@ namespace RavenNest.BusinessLogic.Data
 
         ICollection<DataModels.RedeemableItem> GetRedeemableItems();
         RedeemableItem GetRedeemableItemByItemId(Guid itemId);
-        User GetUser(string twitchUserId);
+        User GetUserByTwitchId(string twitchUserId);
+        User GetUserByUsername(string username);
         UserLoyalty GetUserLoyalty(Guid userId, Guid streamerUserId);
         IReadOnlyList<UserLoyalty> GetUserLoyalties(Guid userId);
         IReadOnlyList<UserLoyalty> GetStreamerLoyalties(Guid streamerUserId);

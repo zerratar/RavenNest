@@ -48,7 +48,7 @@ namespace RavenNest.Blazor.Services
             if (user != null)
             {
                 playerManager.CreatePlayerIfNotExists(user.Id, user.Login, "1");
-                var u = gameData.GetUser(user.Id);
+                var u = gameData.GetUserByTwitchId(user.Id);
                 if (u != null)
                 {
                     if (u.Status >= 1)
@@ -71,7 +71,7 @@ namespace RavenNest.Blazor.Services
             {
                 playerManager.CreatePlayerIfNotExists(user.Id, user.Login, "1");
 
-                var u = gameData.GetUser(user.Id);
+                var u = gameData.GetUserByTwitchId(user.Id);
                 if (u != null)
                 {
                     // store token that has access to reading channel point reward redeems?

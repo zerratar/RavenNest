@@ -65,16 +65,17 @@ namespace RavenNest.Blazor.Services
         {
             var session = GetSession();
             if (session == null) return null;
-            return GetUser(session.UserId);
+            return GetUser(session.AccountId);
+        }
+
+        public WebsiteAdminUser GetUser(Guid accountId)
+        {
+            return GetUser(gameData.GetUser(accountId));
         }
 
         public WebsiteAdminUser GetUser(string twitchUserId)
         {
-            var user = gameData.GetUser(twitchUserId);
-            if (user != null)
-                return GetUser(user);
-
-            return null;
+            return GetUser(gameData.GetUserByTwitchId(twitchUserId));
         }
 
         public async Task<PagedCollection<WebsiteAdminUser>> GetUserPageAsync(string search, int pageIndex, int pageSize)
@@ -166,6 +167,7 @@ namespace RavenNest.Blazor.Services
 
         private WebsiteAdminUser GetUser(DataModels.User userData)
         {
+            if (userData == null) return null;
             var clan = gameData.GetClanByUser(userData.Id);
 
             WebsiteClan websiteClan = null;

@@ -169,7 +169,7 @@ namespace RavenNest.BusinessLogic.Game
                     return result;
                 }
 
-                var user = gameData.GetUser(userId);
+                var user = gameData.GetUserByTwitchId(userId);
                 if (user == null)
                 {
                     result.Player = await CreateUserAndPlayer(session, playerData);
@@ -774,19 +774,22 @@ namespace RavenNest.BusinessLogic.Game
 
         public WebsitePlayer GetWebsitePlayer(string userId, string identifier)
         {
-            var user = gameData.GetUser(userId);
-            if (user == null)
-                return null;
+            return GetWebsitePlayer(gameData.GetUserByTwitchId(userId), identifier);
+        }
 
-            return GetWebsitePlayer(user, identifier);
+        public IReadOnlyList<WebsitePlayer> GetWebsitePlayers(Guid userId)
+        {
+            return GetWebsitePlayers(gameData.GetUser(userId));
         }
 
         public IReadOnlyList<WebsitePlayer> GetWebsitePlayers(string userId)
         {
-            var user = gameData.GetUser(userId);
-            if (user == null)
-                return null;
+            return GetWebsitePlayers(gameData.GetUserByTwitchId(userId));
+        }
 
+        private IReadOnlyList<WebsitePlayer> GetWebsitePlayers(User user)
+        {
+            if (user == null) return null;
             var userChars = gameData.GetCharacters(x => x.UserId == user.Id).OrderBy(x => x.CharacterIndex);
             var result = new List<WebsitePlayer>();
             foreach (var c in userChars)
@@ -817,7 +820,7 @@ namespace RavenNest.BusinessLogic.Game
             }
             else
             {
-                var user = gameData.GetUser(userId);
+                var user = gameData.GetUserByTwitchId(userId);
                 if (user == null)
                 {
                     return null;
@@ -850,13 +853,13 @@ namespace RavenNest.BusinessLogic.Game
             return character.Map(gameData, user);
         }
 
-        public bool LoyaltyGift(string gifterTwitchUserIdOrName, string streamerTwitchUserIdOrName, int bitsAmount, int subsAmount)
+        public bool LoyaltyGift(string gifterTwitchUserId, string streamerTwitchUserIdOrName, int bitsAmount, int subsAmount)
         {
-            var cheerer = gameData.GetUser(gifterTwitchUserIdOrName);
+            var cheerer = gameData.GetUserByUsername(gifterTwitchUserId);
             if (cheerer == null || (bitsAmount <= 0 && subsAmount <= 0))
                 return false;
 
-            var streamer = gameData.GetUser(streamerTwitchUserIdOrName);
+            var streamer = gameData.GetUserByUsername(streamerTwitchUserIdOrName);
             if (streamer == null)
                 return false;
 
@@ -877,7 +880,10 @@ namespace RavenNest.BusinessLogic.Game
             if (session == null)
                 return;
 
-            var user = gameData.GetUser(update.UserId);
+            var character = gameData.GetCharacter(update.CharacterId);
+            if (character == null) return;
+
+            var user = gameData.GetUser(character.UserId);
             if (user == null)
             {
                 //user = CreateUser(session, playerData);
@@ -918,7 +924,7 @@ namespace RavenNest.BusinessLogic.Game
             if (character == null)
                 return;
 
-            var user = gameData.GetUser(update.UserId);
+            var user = gameData.GetUser(character.UserId);
             if (user == null)
                 return;
 
@@ -1002,7 +1008,7 @@ namespace RavenNest.BusinessLogic.Game
 
         public Player GetPlayer(SessionToken sessionToken, string twitchUserId)
         {
-            var user = gameData.GetUser(twitchUserId);
+            var user = gameData.GetUserByTwitchId(twitchUserId);
             if (user == null)
             {
                 return null;
@@ -2039,7 +2045,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             try
             {
-                var user = gameData.GetUser(userId);
+                var user = gameData.GetUserByTwitchId(userId);
                 if (user == null) return false;
 
                 var character = gameData.GetCharacterByUserId(user.Id, identifier);
@@ -2098,6 +2104,7 @@ namespace RavenNest.BusinessLogic.Game
 
         private WebsitePlayer GetWebsitePlayer(User user, string identifier)
         {
+            if (user == null) return null;
             var character = gameData.GetCharacterByUserId(user.Id, identifier);
             return GetWebsitePlayer(user, character);
         }
@@ -2569,7 +2576,7 @@ namespace RavenNest.BusinessLogic.Game
             DataModels.GameSession session,
             PlayerJoinData playerData)
         {
-            var user = gameData.GetUser(playerData.UserId);
+            var user = gameData.GetUserByTwitchId(playerData.UserId);
             if (user == null)
             {
                 if (Guid.TryParse(playerData.UserId, out var characterId) && gameData.GetCharacter(characterId) != null)
@@ -2802,7 +2809,7 @@ namespace RavenNest.BusinessLogic.Game
             var session = gameData.GetSession(token.SessionId);
             if (session == null) return null;
 
-            var user = gameData.GetUser(userId);
+            var user = gameData.GetUserByTwitchId(userId);
             if (user == null) return null;
 
             var sessionCharacters = gameData.GetSessionCharacters(session);

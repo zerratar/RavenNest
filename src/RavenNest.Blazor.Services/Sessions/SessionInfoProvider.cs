@@ -98,11 +98,11 @@ namespace RavenNest.Sessions
             if (twitchUserId.StartsWith("u", StringComparison.OrdinalIgnoreCase))
                 twitchUserId = twitchUserId.Substring(1); // remove starting U
 
-            var broadcaster = gameData.GetUser(broadcasterId);
+            var broadcaster = gameData.GetUserByTwitchId(broadcasterId);
             if (broadcaster == null)
                 return new SessionInfo();
 
-            var user = gameData.GetUser(twitchUserId);
+            var user = gameData.GetUserByTwitchId(twitchUserId);
             if (user == null)
                 return new SessionInfo();
 
@@ -147,7 +147,7 @@ namespace RavenNest.Sessions
                 var twitchUser = await GetTwitchUserAsync(sessionId, token);
                 if (twitchUser != null)
                 {
-                    user = gameData.GetUser(twitchUser.Id);
+                    user = gameData.GetUserByTwitchId(twitchUser.Id);
                 }
                 if (user != null)
                 {
@@ -191,6 +191,7 @@ namespace RavenNest.Sessions
                 si.Administrator = user.IsAdmin.GetValueOrDefault();
                 si.Moderator = user.IsModerator.GetValueOrDefault();
                 si.UserId = user.UserId;
+                si.AccountId = user.Id;
                 si.UserName = user.UserName;
 
                 var clan = gameData.GetClanByUser(user.Id);
@@ -282,7 +283,7 @@ namespace RavenNest.Sessions
                 sessionInfo = JSON.Parse<SessionInfo>(json);
                 if (sessionInfo.Authenticated)
                 {
-                    var user = gameData.GetUser(sessionInfo.UserId);
+                    var user = gameData.GetUser(sessionInfo.AccountId);
                     UpdateSessionInfoData(sessionInfo, user);
                     GetSessionData(sessionId).SessionInfo = sessionInfo;
                 }

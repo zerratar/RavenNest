@@ -106,7 +106,7 @@ namespace RavenNest.Blazor.Services
             return await Task.Run(() =>
             {
                 var session = GetSession();
-                var userId = session.UserId;
+                var userId = session.AccountId;
                 return playerManager.GetWebsitePlayer(userId, index.ToString());
             });
         }
@@ -116,7 +116,7 @@ namespace RavenNest.Blazor.Services
             return await Task.Run(() =>
             {
                 var session = GetSession();
-                var userId = session.UserId;
+                var userId = session.AccountId;
                 return playerManager.GetWebsitePlayers(userId);
             });
         }
@@ -141,7 +141,7 @@ namespace RavenNest.Blazor.Services
                 if (ignoreClanInvitedPlayers)
                 {
                     var session = GetSession();
-                    var user = gameData.GetUser(session.UserId);
+                    var user = gameData.GetUser(session.AccountId);
                     if (user == null)
                         return new List<WebsiteAdminPlayer>();
 
