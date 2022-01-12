@@ -1547,7 +1547,7 @@ namespace RavenNest.BusinessLogic.Data
             twitchUserId = twitchUserId?.ToLower()?.Trim();
             if (string.IsNullOrEmpty(twitchUserId)) return null;
             return users.Entities.FirstOrDefault(x => x.UserId != null
-                && x.UserId.IndexOf(twitchUserId, StringComparison.OrdinalIgnoreCase) >= 0);
+                && x.UserId.Equals(twitchUserId, StringComparison.OrdinalIgnoreCase));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1555,7 +1555,7 @@ namespace RavenNest.BusinessLogic.Data
         {
             username = username?.ToLower()?.Trim();
             if (string.IsNullOrEmpty(username)) return null;
-            return users.Entities.FirstOrDefault(x => x.UserName != null && x.UserName.IndexOf(username, StringComparison.OrdinalIgnoreCase) >= 0);
+            return users.Entities.FirstOrDefault(x => x.UserName != null && x.UserName.Equals(username, StringComparison.OrdinalIgnoreCase));
         }
 
         //.OrderBy(x => x.Created)
