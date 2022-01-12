@@ -355,7 +355,7 @@ namespace RavenNest.BusinessLogic.Game
 
         private Character GetCharacterAsync(SessionToken token, string userId)
         {
-            var user = gameData.GetUser(userId);
+            var user = gameData.GetUserByTwitchId(userId);
             if (user == null) return null;
 
             var session = gameData.GetSession(token.SessionId);

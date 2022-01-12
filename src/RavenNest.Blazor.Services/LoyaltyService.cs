@@ -83,7 +83,7 @@ namespace RavenNest.Blazor.Services
                 var session = GetSession();
                 if (session == null) return new StreamerLoyaltyData();
 
-                var user = gameData.GetUser(session.UserId);
+                var user = gameData.GetUser(session.AccountId);
                 if (user == null) return new StreamerLoyaltyData();
 
                 var data = gameData.GetStreamerLoyalties(user.Id);
@@ -170,7 +170,7 @@ namespace RavenNest.Blazor.Services
                 var session = GetSession();
                 if (session == null) return new UserLoyaltyData();
 
-                var user = gameData.GetUser(session.UserId);
+                var user = gameData.GetUser(session.AccountId);
                 if (user == null) return new UserLoyaltyData();
 
                 var loyalties = gameData.GetUserLoyalties(user.Id);
@@ -223,7 +223,7 @@ namespace RavenNest.Blazor.Services
                 var session = GetSession();
                 if (session == null) return false;
 
-                var user = gameData.GetUser(session.UserId);
+                var user = gameData.GetUser(session.AccountId);
                 if (user == null) return false;
 
                 return gameData.FindSession(x => x.UserId == user.Id) != null;

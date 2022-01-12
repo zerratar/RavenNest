@@ -175,7 +175,7 @@ namespace RavenNest.Controllers
                 return false;
             }
 
-            var user = gameData.GetUser(sessionInfo.UserId);
+            var user = gameData.GetUser(sessionInfo.AccountId);
             if (user == null)
             {
                 return false;
@@ -204,7 +204,7 @@ namespace RavenNest.Controllers
             if (TryGetSession(out var si))
             {
                 var activeCharacter = gameData.GetCharacterBySession(activeSession.Id, si.UserId);
-                var user = gameData.GetUser(si.UserId);
+                var user = gameData.GetUser(si.AccountId);
                 return activeCharacter == null || user == null
                     ? null : playerManager.GetWebsitePlayer(user, activeCharacter);
             }
@@ -231,7 +231,7 @@ namespace RavenNest.Controllers
                 return false;
             }
 
-            var user = gameData.GetUser(sessionInfo.UserId);
+            var user = gameData.GetUser(sessionInfo.AccountId);
             if (user == null)
             {
                 return false;
@@ -273,7 +273,7 @@ namespace RavenNest.Controllers
 
             if (TryGetSession(out var sessionInfo))
             {
-                var user = gameData.GetUser(sessionInfo.UserId);
+                var user = gameData.GetUser(sessionInfo.AccountId);
                 if (user == null)
                 {
                     result.ErrorMessage = "No such user.";
@@ -416,7 +416,7 @@ namespace RavenNest.Controllers
         [HttpGet("extension/{broadcasterId}")]
         public StreamerInfo GetStreamerInfo(string broadcasterId)
         {
-            var streamer = gameData.GetUser(broadcasterId);
+            var streamer = gameData.GetUserByTwitchId(broadcasterId);
             var result = new StreamerInfo();
             if (streamer != null)
             {
@@ -444,7 +444,7 @@ namespace RavenNest.Controllers
                         var session = this.HttpContext.GetSessionId();
                         if (sessionInfoProvider.TryGet(session, out var sessionInfo))
                         {
-                            var u = gameData.GetUser(sessionInfo.UserId);
+                            var u = gameData.GetUser(sessionInfo.AccountId);
                             if (u != null)
                             {
                                 var c = charactersInSession.FirstOrDefault(x => x.UserId == u.Id);

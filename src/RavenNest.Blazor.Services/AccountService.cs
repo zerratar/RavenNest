@@ -31,7 +31,7 @@ namespace RavenNest.Blazor.Services
             if (!sessionInfoProvider.TryGet(sessionId, out var session))
                 return false;
 
-            var user = gameData.GetUser(session.UserId);
+            var user = gameData.GetUser(session.AccountId);
             if (user == null)
                 return false;
 

@@ -28,6 +28,7 @@ namespace RavenNest.DataModels
 
         private static ConcurrentDictionary<string, PropertyInfo> expProperties = new ConcurrentDictionary<string, PropertyInfo>();
         private static ConcurrentDictionary<string, PropertyInfo> levelProperties = new ConcurrentDictionary<string, PropertyInfo>();
+        private List<StatsUpdater> skills;
 
         private Guid id;
         private double attack;
@@ -134,7 +135,7 @@ namespace RavenNest.DataModels
 
         public IReadOnlyList<StatsUpdater> GetSkills()
         {
-            return SkillNames.Select(GetSkill).ToList();
+            return (skills ?? (skills = SkillNames.Select(GetSkill).ToList()));
         }
 
         public StatsUpdater GetSkill(string name)

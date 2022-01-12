@@ -321,9 +321,7 @@ namespace RavenNest.BusinessLogic.Data
                     skills = new EntitySet<Skill, Guid>(
                         ctx.Skill.ToList(), i => i.Id);
 
-                    users = new EntitySet<User, Guid>(
-                        restorePoint?.Get<User>() ??
-                        ctx.User.ToList(), i => i.Id);
+                    users = new EntitySet<User, Guid>(restorePoint?.Get<User>() ?? ctx.User.ToList(), i => i.Id);
 
                     gameClients = new EntitySet<GameClient, Guid>(ctx.GameClient.ToList(), i => i.Id);
 
@@ -350,7 +348,9 @@ namespace RavenNest.BusinessLogic.Data
                 #region Post Data Load - Transformations
                 EnsureMagicAttributes();
                 EnsureResources();
-                UpgradeSkillLevels(characterSkills);
+
+                //UpgradeSkillLevels(characterSkills);
+
                 RemoveBadUsers(users);
                 RemoveBadInventoryItems(inventoryItems);
                 EnsureClanLevels(clans);
@@ -819,6 +819,8 @@ namespace RavenNest.BusinessLogic.Data
             // (total) exp required for current level
             // 170: 170totalexp - total exp for current level
             // 
+
+            var skillsChanged = false;
             foreach (var skill in skills.Entities)
             {
                 var data = skill.GetSkills();
@@ -828,33 +830,34 @@ namespace RavenNest.BusinessLogic.Data
 
                     if (lv > GameMath.MaxLevel)
                     {
-                        Update(() =>
-                        {
-                            s.Level = GameMath.MaxLevel;
-                            //s.Experience = 0;
-                        });
+                        s.Level = GameMath.MaxLevel;
+                        //s.Experience = 0;
+                        skillsChanged = true;
                         continue;
                     }
 
                     if (lv > 0)
                         continue;
 
-                    Update(() =>
+                    lv = 1;
+                    var xp = s.Experience;
+                    var expForNextLevel = GameMath.ExperienceForLevel(lv + 1);
+                    while (xp >= expForNextLevel)
                     {
-                        lv = 1;
-                        var xp = s.Experience;
-                        var expForNextLevel = GameMath.ExperienceForLevel(lv + 1);
-                        while (xp >= expForNextLevel)
-                        {
-                            xp -= expForNextLevel;
-                            ++lv;
-                            expForNextLevel = GameMath.ExperienceForLevel(lv + 1);
-                        }
+                        xp -= expForNextLevel;
+                        ++lv;
+                        expForNextLevel = GameMath.ExperienceForLevel(lv + 1);
+                    }
 
-                        s.Experience = xp;
-                        s.Level = lv;
-                    });
+                    s.Experience = xp;
+                    s.Level = lv;
+                    skillsChanged = true;
                 }
+            }
+
+            if (skillsChanged)
+            {
+                ScheduleNextSave();
             }
         }
 
@@ -1270,7 +1273,7 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Character GetCharacterByUserId(string twitchUserId, string identifier)
         {
-            var user = GetUser(twitchUserId);
+            var user = GetUserByTwitchId(twitchUserId);
             var chars = user == null ? null : characters[nameof(User), user.Id];
             return GetCharacterByIdentifier(chars, identifier);
         }
@@ -1539,12 +1542,24 @@ namespace RavenNest.BusinessLogic.Data
         public User GetUser(Guid userId) => users[userId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public User GetUser(string twitchUserId) => users.Entities
-                .Where(x =>
-                    x.UserName?.ToLower()?.Trim() == twitchUserId?.ToLower()?.Trim() ||
-                    x.UserId?.ToLower()?.Trim() == twitchUserId?.ToLower()?.Trim())
-                .OrderBy(x => x.Created)
-                .FirstOrDefault();
+        public User GetUserByTwitchId(string twitchUserId)
+        {
+            twitchUserId = twitchUserId?.ToLower()?.Trim();
+            if (string.IsNullOrEmpty(twitchUserId)) return null;
+            return users.Entities.FirstOrDefault(x => x.UserId != null
+                && x.UserId.IndexOf(twitchUserId, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public User GetUserByUsername(string username)
+        {
+            username = username?.ToLower()?.Trim();
+            if (string.IsNullOrEmpty(username)) return null;
+            return users.Entities.FirstOrDefault(x => x.UserName != null && x.UserName.IndexOf(username, StringComparison.OrdinalIgnoreCase) >= 0);
+        }
+
+        //.OrderBy(x => x.Created)
+        //.FirstOrDefault();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public UserLoyalty GetUserLoyalty(Guid userId, Guid streamerUserId)
