@@ -2322,28 +2322,41 @@ namespace RavenNest.BusinessLogic.Game
         {
             try
             {
+                if (token == null)
+                {
+                    logger.LogError("UpdateExperience: Unable to save experience for " + userId + ", SessionToken is null!");
+                    return false;
+                }
+
                 var gameSession = gameData.GetSession(token.SessionId);
+
+                if (gameSession == null)
+                {
+                    logger.LogError("UpdateExperience: Unable to save experience for " + userId + ", gameSession is null!");
+                    return false;
+                }
+
+
                 var character = (characterId != null ? gameData.GetCharacter(characterId.Value) : GetCharacter(token, userId)) ?? GetCharacter(token, userId);
                 if (character == null)
-                    throw new Exception("Unable to save exp. Character for user ID " + userId + " could not be found.");
+                    throw new Exception("UpdateExperience: Unable to save exp. Character for user ID " + userId + " could not be found.");
 
                 var sessionState = gameData.GetSessionState(gameSession.Id);
                 var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
                 if (characterSessionState.Compromised)
                 {
-                    logger.LogError("Trying to update an out of sync player: " + character.Name + " (" + character.Id + ")");
+                    logger.LogError("UpdateExperience: Trying to update an out of sync player: " + character.Name + " (" + character.Id + ")");
                     return true;
                 }
 
                 var sessionOwner = gameData.GetUser(gameSession.UserId);
                 if (sessionOwner.Status >= 1)
                 {
-                    logger.LogError("The user session from " + sessionOwner.UserName + " trying to save players, but the owner has been banned.");
+                    logger.LogError("UpdateExperience: The user session from " + sessionOwner.UserName + " trying to save players, but the owner has been banned.");
                     return true;
                 }
 
                 var expLimit = sessionOwner.IsAdmin.GetValueOrDefault() ? 5000 : 50;
-
                 var removeFromSession = !AcquiredUserLock(token, character) && character.UserIdLock != null;
                 var skills = gameData.GetCharacterSkills(character.SkillsId);
 
@@ -2362,7 +2375,7 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (level != null && level.Length > 0 && level.Any(x => x > GameMath.MaxLevel))
                 {
-                    logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Tried to set level above max.");
+                    logger.LogError("UpdateExperience: The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Tried to set level above max.");
                     BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
                     return true;
                 }
