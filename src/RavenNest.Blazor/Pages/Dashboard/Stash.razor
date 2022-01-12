@@ -51,7 +51,7 @@ else
 
                     <tr id="@item.Id" class="item-row">
                         <td><img src="/imgs/items/@(item.Id).png" style="width: 40px" /></td>
-                        <td class='item'>@item.Name</td>
+                        <td class='item'>@(entry.Name ?? item.Name)</td>
                         <td class='item'>
                             @if (item.WeaponAim > 0)
                             {
@@ -178,7 +178,7 @@ else
     public void SendToCharacter(RavenNest.Models.UserBankItem item, WebsitePlayer targetCharacter)
     {
         PlayerService.SendToCharacter(targetCharacter.Id, item);
-        
+
         currentUser = UserService.GetCurrentUser();
 
         if (currentUser != null)

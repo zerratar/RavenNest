@@ -1123,29 +1123,29 @@ namespace RavenNest.BusinessLogic.Game
             var character = GetCharacter(token, userId);
             var enchantingSkill = gameData.GetSkills().FirstOrDefault(x => x.Name == "Enchanting");
             if (character == null || enchantingSkill == null)
-                return ItemEnchantmentResult.Failed;
+                return ItemEnchantmentResult.Error();
 
             if (!integrityChecker.VerifyPlayer(token.SessionId, character.Id, 0))
-                return ItemEnchantmentResult.Failed;
+                return ItemEnchantmentResult.Error();
 
             var resources = gameData.GetResources(character.ResourcesId);
             if (resources == null)
-                return ItemEnchantmentResult.Failed;
+                return ItemEnchantmentResult.Error();
 
             var clanMembership = gameData.GetClanMembership(character.Id);
             if (clanMembership == null)
-                return ItemEnchantmentResult.Failed;
+                return ItemEnchantmentResult.Error();
 
             var skills = gameData.GetClanSkills(clanMembership.ClanId);
             if (skills == null || skills.Count == 0)
-                return ItemEnchantmentResult.Failed;
+                return ItemEnchantmentResult.Error();
 
             var inventory = inventoryProvider.Get(character.Id);
             var clanSkill = skills.FirstOrDefault(x => x.SkillId == enchantingSkill.Id);
             var item = inventory.Get(inventoryItemId);
 
             if (clanSkill == null)
-                return ItemEnchantmentResult.Failed;
+                return ItemEnchantmentResult.Error();
 
             return enchantmentManager.EnchantItem(token.SessionId, clanSkill, character, inventory, item, resources);
         }

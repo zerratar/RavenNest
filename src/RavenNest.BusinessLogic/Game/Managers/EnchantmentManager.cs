@@ -31,28 +31,33 @@ namespace RavenNest.BusinessLogic.Game
             ReadOnlyInventoryItem item,
             DataModels.Resources resources)
         {
+            var user = gameData.GetUser(character.UserId);
+
             var invItem = inventory.Get(item);
             if (invItem == null)
             {
                 // No such item in our inventory
-                return ItemEnchantmentResult.Failed;
+                return ItemEnchantmentResult.Error();
             }
 
             var i = item.Item;
             var enchantable =
                 // i.Type == (int)DataModels.ItemCategory.Pet || // in the future. :)
-                i.Type == (int)DataModels.ItemCategory.Weapon ||
-                i.Type == (int)DataModels.ItemCategory.Armor ||
-                i.Type == (int)DataModels.ItemCategory.Ring ||
-                i.Type == (int)DataModels.ItemCategory.Amulet;
+                i.Category == (int)DataModels.ItemCategory.Weapon ||
+                i.Category == (int)DataModels.ItemCategory.Armor ||
+                i.Category == (int)DataModels.ItemCategory.Ring ||
+                i.Category == (int)DataModels.ItemCategory.Amulet;
 
             if (!enchantable)
             {
                 return ItemEnchantmentResult.NotEnchantable;
             }
 
-
             var characterSessionState = gameData.GetCharacterSessionState(sessionId, character.Id);
+            if (characterSessionState.EnchantmentCooldown > DateTime.MinValue && characterSessionState.EnchantmentCooldown > DateTime.UtcNow)
+            {
+                return ItemEnchantmentResult.NotReady(characterSessionState.EnchantmentCooldown);
+            }
 
             try
             {
@@ -89,8 +94,8 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (targetAttributeCount == 0)
                 {
-                    characterSessionState.EnchantmentCooldown = GetCooldown(success, 0.1d);
-                    return ItemEnchantmentResult.Failed;
+                    characterSessionState.EnchantmentCooldown = GetCooldown(user, success, 0.1d);
+                    return ItemEnchantmentResult.Failed(characterSessionState.EnchantmentCooldown);
                 }
 
                 DataModels.InventoryItem enchantedItem = null;
@@ -99,9 +104,18 @@ namespace RavenNest.BusinessLogic.Game
                     inventory.RemoveItem(item, 1);
                     enchantedItem = inventory.AddItemStack(item, 1);
                 }
+                else
+                {
+                    enchantedItem = invItem;
+                }
 
                 enchantedItem.Soulbound = true;
                 enchantedItem.Enchantment = FormatEnchantment(inventory.CreateRandomAttributes(targetAttributeCount));
+
+                var itemName = gameData.GetItem(item.ItemId)?.Name;
+
+                // Really stupid naming right now.
+                enchantedItem.Name = "Enchanted " + itemName;
 
                 var multiplier = gameData.GetActiveExpMultiplierEvent()?.Multiplier ?? 1d;
                 var gainedExp = GameMath.GetEnchantingExperience(clanSkill.Level, targetAttributeCount, itemLvReq) * multiplier;
@@ -122,12 +136,11 @@ namespace RavenNest.BusinessLogic.Game
 
                 // TODO: 2. Send exp update to clients where players in same clan is regarding current state of the clan skill
 
-
                 // Set a time limit on how often/frequently a player can use enchanting after they have enchanted an item.
                 // Success: add n Hours based on what type of item
                 // Fail: Add 10% of n Hours based on what type of item
 
-                characterSessionState.EnchantmentCooldown = GetCooldown(success);
+                characterSessionState.EnchantmentCooldown = GetCooldown(user, success);
 
                 return new ItemEnchantmentResult()
                 {
@@ -136,6 +149,7 @@ namespace RavenNest.BusinessLogic.Game
                     EnchantedItem = DataMapper.Map<Models.InventoryItem, DataModels.InventoryItem>(enchantedItem),
                     OldItemStack = DataMapper.Map<Models.InventoryItem, DataModels.InventoryItem>(invItem),
                     Result = ItemEnchantmentResultValue.Success,
+                    Cooldown = characterSessionState.EnchantmentCooldown
                 };
             }
             finally
@@ -144,14 +158,23 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        private static DateTime GetCooldown(float random, double scale = 1d)
+        private static DateTime GetCooldown(DataModels.User user, float random, double scale = 1d)
         {
+#if DEBUG
+            if (user != null && (user.IsAdmin.GetValueOrDefault() || user.IsModerator.GetValueOrDefault()))
+            {
+                //random *= 0.f;
+                scale *= 0.5f;
+                return DateTime.UtcNow.AddSeconds(Math.Min(random * 60d, 30) * scale);
+            }
+#endif
+
             return DateTime.UtcNow.AddMinutes(Math.Min(random * 60d, 30) * scale);
         }
 
         private static string FormatEnchantment(List<MagicItemAttribute> magicItemAttributes)
         {
-            return String.Join(",", magicItemAttributes.Select(x => x.Attribute.Name + ":" + x.Value));
+            return String.Join(";", magicItemAttributes.Select(x => x.Attribute.Name + ":" + x.Value.ToString().Replace(',', '.')));
         }
     }
 }

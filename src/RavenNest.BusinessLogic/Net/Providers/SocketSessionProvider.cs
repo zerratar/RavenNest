@@ -67,7 +67,7 @@ namespace RavenNest.BusinessLogic.Net
             var sessionToken = sessionManager.Get(token);
             if (!CheckSessionTokenValidity(sessionToken))
             {
-                logger.LogWarning("Invalid session token for websocket connection (" + sessionToken.SessionId + ")");
+                logger.LogWarning("Invalid session token for websocket connection (" + (sessionToken?.SessionId.ToString() ?? "Token Unavailble") + ")");
                 return null;
             }
 

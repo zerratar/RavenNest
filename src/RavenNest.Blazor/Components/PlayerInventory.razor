@@ -34,7 +34,10 @@
             {
                 <div class="inventory-item" @onclick="(()=>ShowItemDetails(item))">
                     <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
-                    <div class="item-amount">@GetItemAmount(item)</div>
+                    @if (item.Amount > 1)
+                    {
+                        <div class="item-amount">@GetItemAmount(item)</div>
+                    }
                 </div>
             }
         </div>
@@ -56,8 +59,25 @@
                         {
                             <div class="item-stat">
                                 <div class="item-stat-name">@stat.Name</div>
-                                <div class="item-stat-value">@stat.Value</div>
+                                <div class="item-stat-value">
+                                    <span>@stat.Value</span>
+                                    @if (stat.Bonus > 0)
+                                    {
+                                        <span class="item-stat-enchantment" title="Enchantment Bonus">+ @stat.Bonus</span>
+                                    }
+                                </div>
                             </div>
+                        }
+                        @if (!string.IsNullOrEmpty(itemDetailsDialogItem.Enchantment))
+                        {
+                            <div class="item-enchantment-header">Enchantments</div>
+                            @foreach (var stat in GetItemEnchantments())
+                            {
+                                <div class="item-stat">
+                                    <div class="item-stat-name">@stat.Name</div>
+                                    <div class="item-stat-value">@stat.Value</div>
+                                </div>
+                            }
                         }
                         <div class="item-requirement">
                             <div class="item-stat-name">@GetItemRequirementSkill()</div>
@@ -65,33 +85,34 @@
                         </div>
                     </div>
 
-                    @if (CanManage) {
-                    <div class="item-actions">
+                    @if (CanManage)
+                    {
+                        <div class="item-actions">
 
-                        @if (itemDetailsDialogItem.Equipped)
-                        {
-                            <button @onclick="UnequipItem" class="btn btn-action">Unequip</button>
-                        }
-                        else if (CanBeEquipped())
-                        {
-                            <button @onclick="EquipItem" class="btn btn-action">Equip</button>
-                        }
-
-                        <button @onclick="SendToStash" class="btn btn-action">@("Send " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : "") + "to stash")</button>
-
-                        @if (characters != null)
-                        {
-                            foreach (var plr in characters)
+                            @if (itemDetailsDialogItem.Equipped)
                             {
-                                if (plr.Id == Player.Id)
-                                {
-                                    continue;
-                                }
-
-                                <button @onclick="()=>SendToCharacter(plr)" class="btn btn-action">@("Send " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : "") + "to " + plr.Alias)</button>
+                                <button @onclick="UnequipItem" class="btn btn-action">Unequip</button>
                             }
-                        }
-                    </div>
+                            else if (CanBeEquipped())
+                            {
+                                <button @onclick="EquipItem" class="btn btn-action">Equip</button>
+                            }
+
+                            <button @onclick="SendToStash" class="btn btn-action">@("Send " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : "") + "to stash")</button>
+
+                            @if (characters != null)
+                            {
+                                foreach (var plr in characters)
+                                {
+                                    if (plr.Id == Player.Id)
+                                    {
+                                        continue;
+                                    }
+
+                                    <button @onclick="()=>SendToCharacter(plr)" class="btn btn-action">@("Send " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : "") + "to " + plr.Alias)</button>
+                                }
+                            }
+                        </div>
                     }
                 </div>
             </div>
@@ -211,6 +232,10 @@
         return RavenNest.BusinessLogic.Providers.PlayerInventory.CanEquipItem(item, Player);
     }
 
+    public IReadOnlyList<RavenNest.Blazor.Services.ItemEnchantment> GetItemEnchantments()
+    {
+        return ItemService.GetItemEnchantments(itemDetailsDialogItem);
+    }
 
     public IReadOnlyList<RavenNest.Blazor.Services.ItemStat> GetItemStats()
     {
@@ -230,7 +255,7 @@
     public string GetItemName()
     {
         if (itemDetailsDialogItem == null) return null;
-        return ItemService.GetItem(itemDetailsDialogItem.ItemId)?.Name;
+        return itemDetailsDialogItem.Name ?? ItemService.GetItem(itemDetailsDialogItem.ItemId)?.Name;
     }
 
     public string GetItemType()

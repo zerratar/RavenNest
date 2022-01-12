@@ -9,7 +9,13 @@
         {
             <div class="item-stat">
                 <div class="item-stat-name">@stat.Name</div>
-                <div class="item-stat-value">@stat.Value</div>
+                <div class="item-stat-value">
+                    <span>@stat.Value</span>
+                    @if (stat.Bonus > 0)
+                    {
+                        <span class="item-stat-enchantment" title="Enchantment Bonus">+ @stat.Bonus</span>
+                    }
+                </div>
             </div>
         }
         <div class="item-requirement">
@@ -53,7 +59,7 @@
 
     public string GetItemName()
     {
-        return ItemService.GetItem(Item.ItemId)?.Name;
+        return Item.Name ?? ItemService.GetItem(Item.ItemId)?.Name;
     }
 
     public string GetItemType()

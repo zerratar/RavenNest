@@ -8,7 +8,7 @@ namespace RavenNest.DataModels
 {
     public partial class Skills : Entity<Skills>
     {
-        private static readonly string[] skillNames = new string[] {
+        public static readonly string[] SkillNames = new string[] {
             nameof(Attack),
             nameof(Defense),
             nameof(Strength),
@@ -95,7 +95,7 @@ namespace RavenNest.DataModels
 
         public int GetLevel(int skillIndex)
         {
-            var name = skillNames[skillIndex];
+            var name = SkillNames[skillIndex];
             if (!expProperties.TryGetValue(name, out var expProp))
                 expProp = EnsureDictionaries(name);
             levelProperties.TryGetValue(name, out var lvlProp);
@@ -105,7 +105,7 @@ namespace RavenNest.DataModels
 
         public double GetExperience(int skillIndex)
         {
-            var name = skillNames[skillIndex];
+            var name = SkillNames[skillIndex];
             if (!expProperties.TryGetValue(name, out var expProp))
                 expProp = EnsureDictionaries(name);
 
@@ -113,7 +113,7 @@ namespace RavenNest.DataModels
         }
         public void Set(int skillIndex, int level, double exp)
         {
-            var name = skillNames[skillIndex];
+            var name = SkillNames[skillIndex];
             if (!expProperties.TryGetValue(name, out var expProp))
                 expProp = EnsureDictionaries(name);
 
@@ -134,7 +134,7 @@ namespace RavenNest.DataModels
 
         public IReadOnlyList<StatsUpdater> GetSkills()
         {
-            return skillNames.Select(GetSkill).ToList();
+            return SkillNames.Select(GetSkill).ToList();
         }
 
         public StatsUpdater GetSkill(string name)
@@ -149,7 +149,7 @@ namespace RavenNest.DataModels
                 return null;
             }
 
-            return new StatsUpdater(this, Array.IndexOf(skillNames, name), name, expProp, lvlProp);
+            return new StatsUpdater(this, Array.IndexOf(SkillNames, name), name, expProp, lvlProp);
 
             //var currentLevel = (int)lvlProp.GetValue(this);
             //if (currentLevel > 0)
