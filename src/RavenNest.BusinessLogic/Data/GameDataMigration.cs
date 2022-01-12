@@ -450,7 +450,7 @@ namespace RavenNest.BusinessLogic.Data
             {
                 var type = entity.GetType();
                 var props = GetProperties(type);
-                var propertyNames = string.Join(", ", props.Select(x => x.Name));
+                var propertyNames = string.Join(", ", props.Select(x => "[" + x.Name + "]"));
                 var values = string.Join(",", GetSqlReadyPropertyValues(entity, props));
 
                 var sb = new StringBuilder();
@@ -471,7 +471,7 @@ namespace RavenNest.BusinessLogic.Data
                 var type = e.GetType();
 
                 var props = GetProperties(type);
-                var propertyNames = string.Join(", ", props.Select(x => x.Name));
+                var propertyNames = string.Join(", ", props.Select(x => "[" + x.Name + "]"));
                 var values = string.Join(",\r\n", entity.Select(x => "(" + string.Join(",", GetSqlReadyPropertyValues(x, props)) + ")"));
 
                 var sb = new StringBuilder();
@@ -484,7 +484,7 @@ namespace RavenNest.BusinessLogic.Data
             {
                 var type = typeof(T);
                 var props = GetProperties(type);
-                var propertyNames = string.Join(", ", props.Select(x => x.Name));
+                var propertyNames = string.Join(", ", props.Select(x => "[" + x.Name + "]"));
                 var values = string.Join(",\r\n", entity.Select(x => "(" + string.Join(",", GetSqlReadyPropertyValues(x, props)) + ")"));
 
                 var sb = new StringBuilder();
@@ -498,7 +498,7 @@ namespace RavenNest.BusinessLogic.Data
             {
                 var type = entity.GetType();
                 var props = GetProperties(type);
-                var propertyNames = string.Join(", ", props.Select(x => x.Name));
+                var propertyNames = string.Join(", ", props.Select(x => "[" + x.Name + "]"));
                 var values = string.Join(",", GetSqlReadyPropertyValues(entity, props));
                 var propertySets = string.Join(",", GetSqlReadyPropertySet(entity, props.Where(x => x.Name != "Id").ToArray()));
 

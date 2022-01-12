@@ -5,8 +5,18 @@ namespace RavenNest.Models
 {
     public class ItemEnchantmentResult
     {
-        public static ItemEnchantmentResult Failed { get; } = new ItemEnchantmentResult();
         public static ItemEnchantmentResult NotEnchantable { get; } = new ItemEnchantmentResult { Result = ItemEnchantmentResultValue.NotEnchantable };
+        public static ItemEnchantmentResult Error() => new ItemEnchantmentResult
+        {
+            Result = ItemEnchantmentResultValue.Error
+        };
+
+        public static ItemEnchantmentResult Failed(DateTime? cooldown = null) => new ItemEnchantmentResult
+        {
+            Result = ItemEnchantmentResultValue.Failed,
+            Cooldown = cooldown ?? DateTime.UtcNow.AddMinutes(30),
+        };
+
         public static ItemEnchantmentResult NotReady(DateTime cooldown) => new ItemEnchantmentResult
         {
             Result = ItemEnchantmentResultValue.NotReady,
@@ -25,9 +35,10 @@ namespace RavenNest.Models
 
     public enum ItemEnchantmentResultValue
     {
-        Success,
-        NotEnchantable,
         Error,
-        NotReady
+        NotEnchantable,
+        NotReady,
+        Failed,
+        Success
     }
 }

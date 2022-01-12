@@ -7,16 +7,27 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
+using RavenNest.BusinessLogic.Providers;
+using RavenNest.BusinessLogic.Data;
 
 namespace RavenNest.Blazor.Services
 {
     public class ItemService : RavenNestService
     {
+        private readonly IGameData gameData;
         private readonly IItemManager itemManager;
-        public ItemService(IItemManager itemManager, IHttpContextAccessor accessor, ISessionInfoProvider sessionInfoProvider)
+        private readonly IReadOnlyList<DataModels.ItemAttribute> availableAttributes;
+
+        public ItemService(
+            IGameData gameData,
+            IItemManager itemManager,
+            IHttpContextAccessor accessor,
+            ISessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
+            this.gameData = gameData;
             this.itemManager = itemManager;
+            this.availableAttributes = this.gameData.GetItemAttributes();
         }
 
         public Item GetItem(Guid itemId)
@@ -96,31 +107,112 @@ namespace RavenNest.Blazor.Services
             return "";
         }
 
+        public IReadOnlyList<RavenNest.Blazor.Services.ItemEnchantment> GetItemEnchantments(InventoryItem item)
+        {
+            var enchantments = new List<RavenNest.Blazor.Services.ItemEnchantment>();
+            if (!string.IsNullOrEmpty(item.Enchantment))
+            {
+                var en = item.Enchantment.Split(';');
+                foreach (var e in en)
+                {
+                    var data = e.Split(':');
+                    var key = data[0];
+                    var value = PlayerInventory.GetValue(data[1], out var type);
+                    var attr = availableAttributes.FirstOrDefault(x => x.Name == key);
+                    var description = "";
+
+                    if (type == AttributeValueType.Percent)
+                    {
+                        if (attr != null)
+                        {
+                            description = attr.Description.Replace(attr.MaxValue, value + "%");
+                        }
+                        value = value / 100d;
+                    }
+                    else
+                    {
+                        if (attr != null)
+                        {
+                            description = attr.Description.Replace(attr.MaxValue, value.ToString());
+                        }
+                    }
+
+                    enchantments.Add(new ItemEnchantment
+                    {
+                        Name = key,
+                        Value = value,
+                        ValueType = type,
+                        Description = description,
+                    });
+                }
+            }
+            return enchantments;
+        }
+
         public IReadOnlyList<RavenNest.Blazor.Services.ItemStat> GetItemStats(InventoryItem item)
         {
             var stats = new List<RavenNest.Blazor.Services.ItemStat>();
             var i = GetItem(item.ItemId);
             if (i == null) return stats;
-            if (i.WeaponAim > 0) stats.Add(new ItemStat("Weapon Aim", i.WeaponAim));
-            if (i.WeaponPower > 0) stats.Add(new ItemStat("Weapon Power", i.WeaponPower));
-            if (i.RangedAim > 0) stats.Add(new ItemStat("Ranged Aim", i.RangedAim));
-            if (i.RangedPower > 0) stats.Add(new ItemStat("Ranged Power", i.RangedPower));
-            if (i.MagicAim > 0) stats.Add(new ItemStat("Magic Aim", i.MagicAim));
-            if (i.MagicPower > 0) stats.Add(new ItemStat("Magic Power", i.MagicPower));
-            if (i.ArmorPower > 0) stats.Add(new ItemStat("Armor", i.ArmorPower));
+
+            int aimBonus = 0;
+            int armorBonus = 0;
+            int powerBonus = 0;
+
+            if (!string.IsNullOrEmpty(item.Enchantment))
+            {
+                var enchantments = item.Enchantment.Split(';');
+                foreach (var e in enchantments)
+                {
+                    var value = PlayerInventory.GetValue(e, out var type);
+                    var key = e.Split(':')[0];
+                    if (type == AttributeValueType.Percent)
+                    {
+                        value = value / 100d;
+                        if (key == "POWER") powerBonus = (int)(i.WeaponPower * value) + (int)(i.MagicPower * value) + (int)(i.RangedPower * value);
+                        if (key == "AIM") aimBonus = (int)(i.WeaponAim * value) + (int)(i.MagicAim * value) + (int)(i.RangedAim * value);
+                        if (key == "ARMOUR" || key == "ARMOR") armorBonus = (int)(i.ArmorPower * value);
+                    }
+                    else
+                    {
+                        if (key == "POWER") powerBonus = (int)value;
+                        if (key == "AIM") aimBonus = (int)value;
+                        if (key == "ARMOUR" || key == "ARMOR") armorBonus = (int)value;
+                    }
+                }
+            }
+
+            if (i.WeaponAim > 0) stats.Add(new ItemStat("Weapon Aim", i.WeaponAim, aimBonus));
+            if (i.WeaponPower > 0) stats.Add(new ItemStat("Weapon Power", i.WeaponPower, powerBonus));
+            if (i.RangedAim > 0) stats.Add(new ItemStat("Ranged Aim", i.RangedAim, aimBonus));
+            if (i.RangedPower > 0) stats.Add(new ItemStat("Ranged Power", i.RangedPower, powerBonus));
+            if (i.MagicAim > 0) stats.Add(new ItemStat("Magic Aim", i.MagicAim, aimBonus));
+            if (i.MagicPower > 0) stats.Add(new ItemStat("Magic Power", i.MagicPower, powerBonus));
+            if (i.ArmorPower > 0) stats.Add(new ItemStat("Armor", i.ArmorPower, armorBonus));
+
             return stats;
         }
+    }
+
+    public class ItemEnchantment
+    {
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public AttributeValueType ValueType { get; set; }
+        public double Value { get; set; }
     }
 
     public class ItemStat
     {
         public ItemStat() { }
-        public ItemStat(string name, int value)
+        public ItemStat(string name, int value, int enchantmentBonus)
         {
             this.Name = name;
             this.Value = value;
+            this.Bonus = enchantmentBonus;
         }
         public string Name { get; set; }
         public int Value { get; set; }
+        public int Bonus { get; set; }
     }
 }

@@ -46,7 +46,7 @@ namespace RavenNest.Models
 
     public class ItemAttribute
     {
-        public int Index { get; set; }
+        public int AttributeIndex { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
         public int Type { get; set; }
