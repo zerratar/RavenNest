@@ -44,7 +44,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             try
             {
-                var user = gameData.GetUser(userId);
+                var user = gameData.GetUserByTwitchId(userId);
                 if (user == null)
                 {
                     return;
@@ -69,7 +69,7 @@ namespace RavenNest.BusinessLogic.Game
 
         public AuthToken Authenticate(string username, string password)
         {
-            var user = gameData.GetUser(username);
+            var user = gameData.GetUserByUsername(username);
             if (user == null)
             {
                 return null;

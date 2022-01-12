@@ -26,7 +26,7 @@ namespace RavenNest.Blazor.Services
 
         public async Task<IReadOnlyList<UserNotification>> DeleteNotificationAsync(string twitchUserId, Guid notificationId)
         {
-            var userId = gameData.GetUser(twitchUserId)?.Id;
+            var userId = gameData.GetUserByTwitchId(twitchUserId)?.Id;
             if (userId == null)
                 return new List<UserNotification>();
 
@@ -39,7 +39,7 @@ namespace RavenNest.Blazor.Services
 
         public async Task<IReadOnlyList<UserNotification>> GetNotificationsAsync(string twitchUserId, int take = int.MaxValue)
         {
-            var userId = gameData.GetUser(twitchUserId)?.Id;
+            var userId = gameData.GetUserByTwitchId(twitchUserId)?.Id;
             if (userId == null)
                 return new List<UserNotification>();
 

@@ -358,7 +358,7 @@ namespace RavenNest.Controllers
 
             if (sessionInfoProvider.TryGet(sessionId, out var si))
             {
-                return playerManager.GetWebsitePlayers(si.UserId);
+                return playerManager.GetWebsitePlayers(si.AccountId);
             }
 
             return new System.Collections.Generic.List<WebsitePlayer>();

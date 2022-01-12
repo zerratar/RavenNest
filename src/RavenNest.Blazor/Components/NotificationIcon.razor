@@ -6,53 +6,53 @@
 @inject RavenNest.BusinessLogic.IKernel Kernel
 
 <div class="notification-icon" @onclick="ToggleVisibility">
-  <i class="fas fa-bell"></i>
-  <span class="notification-count">@UnreadMessageCount</span>
+    <i class="fas fa-bell"></i>
+    <span class="notification-count">@UnreadMessageCount</span>
 </div>
 
 @if (ListVisible)
 {
-  <div class="notification-list">
-    <div class="notification-header">
-      <span>Notifications</span>
-      <button class="close" @onclick="ToggleVisibility"><span class="fas fa-times"></span></button>
-    </div>
-    <ul>
-      @if (notifications.Count == 0)
-      {
-        <li class="notification-item">
-          <div class="--content">
-            <div class="notification-title">You do not have any notifications.</div>
-          </div>
-        </li>
-      }
-      @foreach (var n in notifications)
-      {
-        <li class="notification-item">
-          <div class="--icon" @onclick="(()=>FollowNavigation(n))">
-            @(GetNotificationIcon(n))
-          </div>
-          <div class="--content" @onclick="(()=>FollowNavigation(n))">
-            <div class="notification-title">@n.Title</div>
-            <div class="notification-date">@FormatDate(n.Time)</div>
-          </div>
+    <div class="notification-list">
+        <div class="notification-header">
+            <span>Notifications</span>
+            <button class="close" @onclick="ToggleVisibility"><span class="fas fa-times"></span></button>
+        </div>
+        <ul>
+            @if (notifications.Count == 0)
+            {
+                <li class="notification-item">
+                    <div class="--content">
+                        <div class="notification-title">You do not have any notifications.</div>
+                    </div>
+                </li>
+            }
+            @foreach (var n in notifications)
+            {
+                <li class="notification-item">
+                    <div class="--icon" @onclick="(()=>FollowNavigation(n))">
+                        @(GetNotificationIcon(n))
+                    </div>
+                    <div class="--content" @onclick="(()=>FollowNavigation(n))">
+                        <div class="notification-title">@n.Title</div>
+                        <div class="notification-date">@FormatDate(n.Time)</div>
+                    </div>
 
-          @if (!n.HasRead)
-          {
-            <div class="--status" @onclick="(()=>FollowNavigation(n))">
-              <span class="fas fa-circle"></span>
-            </div>
-          }
-          else
-          {
-            <div class="--status">
-              <button class="remove" @onclick="(async ()=> await DeleteNotificationAsync(n))"><span class="fas fa-times"></span></button>
-            </div>
-          }
-        </li>
-      }
-    </ul>
-  </div>
+                    @if (!n.HasRead)
+                    {
+                        <div class="--status" @onclick="(()=>FollowNavigation(n))">
+                            <span class="fas fa-circle"></span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="--status">
+                            <button class="remove" @onclick="(async ()=> await DeleteNotificationAsync(n))"><span class="fas fa-times"></span></button>
+                        </div>
+                    }
+                </li>
+            }
+        </ul>
+    </div>
 }
 
 @code {
@@ -70,102 +70,104 @@
 
     protected override async Task OnInitializedAsync()
     {
-      //notifications = await NotificationService.GetNotificationsAsync();
-      //UnreadMessageCount = notifications.Count(x => !x.Read);
-      ReloadNotifications();
+        //notifications = await NotificationService.GetNotificationsAsync();
+        //UnreadMessageCount = notifications.Count(x => !x.Read);
+        ReloadNotifications();
     }
 
     private void FollowNavigation(UserNotification n)
     {
-      n.HasRead = true;
-      var url = n.RedirectUrl;
-      if (!string.IsNullOrEmpty(url))
-      {
-        ListVisible = false;
-        NavigationManager.NavigateTo(url);
-      }
+        n.HasRead = true;
+        var url = n.RedirectUrl;
+        if (!string.IsNullOrEmpty(url))
+        {
+            ListVisible = false;
+            NavigationManager.NavigateTo(url);
+        }
     }
 
     private async Task DeleteNotificationAsync(UserNotification n)
     {
-      var data = await NotificationService.DeleteNotificationAsync(UserId, n.Id);
-      notifications = data.Take(5).ToList();
-
-      await InvokeAsync(this.StateHasChanged);
+        var data = await NotificationService.DeleteNotificationAsync(UserId, n.Id);
+        notifications = data.Take(5).ToList();
+        await InvokeAsync(this.StateHasChanged);
     }
 
     private string FormatDate(DateTime dt)
     {
-      var elapsed = DateTime.UtcNow - dt;
-      if (elapsed.TotalSeconds < 60)
-        return (int)Math.Floor(elapsed.TotalSeconds) + " seconds ago.";
-      if (elapsed.TotalMinutes < 60)
-        return (int)Math.Floor(elapsed.TotalMinutes) + " minutes ago.";
-      if (elapsed.TotalHours < 24)
-        return (int)Math.Floor(elapsed.TotalHours) + " hours ago.";
-      if (elapsed.TotalDays < 2)
-        return $"Yesterday at {dt:t}";
-      if (elapsed.TotalDays < 7)
-        return $"{dt.DayOfWeek} at {dt:t}";
-      return $"{dt:f}";
+        var elapsed = DateTime.UtcNow - dt;
+        if (elapsed.TotalSeconds < 60)
+            return (int)Math.Floor(elapsed.TotalSeconds) + " seconds ago.";
+        if (elapsed.TotalMinutes < 60)
+            return (int)Math.Floor(elapsed.TotalMinutes) + " minutes ago.";
+        if (elapsed.TotalHours < 24)
+            return (int)Math.Floor(elapsed.TotalHours) + " hours ago.";
+        if (elapsed.TotalDays < 2)
+            return $"Yesterday at {dt:t}";
+        if (elapsed.TotalDays < 7)
+            return $"{dt.DayOfWeek} at {dt:t}";
+        return $"{dt:f}";
     }
 
     private MarkupString GetNotificationIcon(UserNotification n)
     {
-      if (string.IsNullOrEmpty(n.Icon))
-      {
-        return new MarkupString("<span class=\"fas fa-bell\"></span>");
-      }
-      return new MarkupString($"<img src=\"{n.Icon}\" />");
+        if (string.IsNullOrEmpty(n.Icon))
+        {
+            return new MarkupString("<span class=\"fas fa-bell\"></span>");
+        }
+        return new MarkupString($"<img src=\"{n.Icon}\" />");
     }
 
     private void ToggleVisibility()
     {
-      ListVisible = !ListVisible;
+        ListVisible = !ListVisible;
     }
 
     private async void ReloadNotifications()
     {
-      var data = await NotificationService.GetNotificationsAsync(UserId);
-      notifications = data.Take(5).ToList();
-      var newCount = data.Count(x => !x.HasRead);
-      var newMessages = UnreadMessageCount != newCount;
-      if (newMessages)
-      {
-        UnreadMessageCount = newCount;
-        if (!firstRead)
-        {
-          firstRead = true;
-        }
-        else
-        {
-          alert = notifications.FirstOrDefault(x => !x.HasRead);
-        }
-      }
-      try
-      {
-        if (disposed) return;
-        updateTimer = Kernel.SetTimeout(ReloadNotifications, 500);
-
+        var data = await NotificationService.GetNotificationsAsync(UserId);
+        notifications = data.Take(5).ToList();
+        var newCount = data.Count(x => !x.HasRead);
+        var newMessages = UnreadMessageCount != newCount;
         if (newMessages)
-          InvokeAsync(this.StateHasChanged);
-      }
-      catch
-      {
-        // ignored, most likely the object has been disposed
-      }
+        {
+            UnreadMessageCount = newCount;
+            if (!firstRead)
+            {
+                firstRead = true;
+            }
+            else
+            {
+                alert = notifications.FirstOrDefault(x => !x.HasRead);
+            }
+        }
+        //try
+        //{
+        //  if (disposed) return;
+
+        //  updateTimer = Kernel.SetTimeout(ReloadNotifications, 500);
+
+        //  if (newMessages)
+        //    InvokeAsync(this.StateHasChanged);
+        //}
+        //catch
+        //{
+        //  // ignored, most likely the object has been disposed
+        //}
+
+        InvokeAsync(this.StateHasChanged);
     }
 
     public void HideAlert()
     {
-      alert = null;
+        alert = null;
     }
 
     public void Dispose()
     {
-      if (disposed) return;
-      disposed = true;
-      if (updateTimer != null)
-        Kernel.ClearTimeout(updateTimer);
+        if (disposed) return;
+        disposed = true;
+        if (updateTimer != null)
+            Kernel.ClearTimeout(updateTimer);
     }
 }

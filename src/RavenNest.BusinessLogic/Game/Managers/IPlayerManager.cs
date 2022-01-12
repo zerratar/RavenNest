@@ -28,6 +28,7 @@ namespace RavenNest.BusinessLogic.Game
         WebsitePlayer GetWebsitePlayer(Guid userId, string identifier);
         WebsitePlayer GetWebsitePlayer(User user, Character character);
         IReadOnlyList<WebsitePlayer> GetWebsitePlayers(string userId);
+        IReadOnlyList<WebsitePlayer> GetWebsitePlayers(Guid userId);
         bool SendRemovePlayerFromSessionToGame(DataModels.Character character, DataModels.GameSession joiningSession = null);
         void UpdateUserLoyalty(SessionToken sessionToken, UserLoyaltyUpdate update);
         void UpdatePlayerActivity(SessionToken sessionToken, PlayerSessionActivity update);

@@ -34,7 +34,7 @@ namespace RavenNest.Blazor.Services
             if (!session.Authenticated)
                 return null;
 
-            return this.clanManager.GetClanByUserId(session.UserId);
+            return this.clanManager.GetClanByUserId(session.AccountId);
         }
 
         public Clan GetClanByUserId(string userId)
@@ -45,7 +45,7 @@ namespace RavenNest.Blazor.Services
 
             if (session.UserId == userId || session.Administrator || session.Moderator)
             {
-                return this.clanManager.GetClanByUserId(session.UserId);
+                return this.clanManager.GetClanByUserId(session.AccountId);
             }
 
             return null;
@@ -57,7 +57,7 @@ namespace RavenNest.Blazor.Services
             if (!session.Authenticated)
                 return null;
 
-            var user = gameData.GetUser(session.UserId);
+            var user = gameData.GetUser(session.AccountId);
             if (user == null) return null;
 
             var character = gameData.GetCharacter(characterId);
@@ -96,7 +96,7 @@ namespace RavenNest.Blazor.Services
             var session = GetSession();
             if (!session.Authenticated)
                 return null;
-            var user = gameData.GetUser(session.UserId);
+            var user = gameData.GetUser(session.AccountId);
             this.clanManager.SendPlayerInvite(clanId, characterId, user.Id);
             return GetMembers(clanId);
         }
@@ -141,7 +141,7 @@ namespace RavenNest.Blazor.Services
                 if (!session.Authenticated)
                     return null;
 
-                var user = gameData.GetUser(session.UserId);
+                var user = gameData.GetUser(session.AccountId);
                 if (user == null)
                     return null;
 
@@ -157,7 +157,7 @@ namespace RavenNest.Blazor.Services
                 if (!session.Authenticated)
                     return null;
 
-                var user = gameData.GetUser(session.UserId);
+                var user = gameData.GetUser(session.AccountId);
                 if (user == null)
                     return null;
 
@@ -173,7 +173,7 @@ namespace RavenNest.Blazor.Services
                 var session = GetSession();
                 if (!session.Authenticated)
                     return null;
-                var user = gameData.GetUser(session.UserId);
+                var user = gameData.GetUser(session.AccountId);
                 if (user == null)
                     return null;
 

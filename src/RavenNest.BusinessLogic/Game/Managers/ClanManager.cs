@@ -196,14 +196,18 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
+        public Clan GetClanByUserId(Guid userId)
+        {
+            var clan = gameData.GetClanByUser(userId);
+            if (clan == null) return null;
+            return ModelMapper.Map(gameData, clan);
+        }
         public Clan GetClanByUserId(string userId)
         {
-            var user = gameData.GetUser(userId);
-            if (user == null)
-                return null;
+            var user = gameData.GetUserByTwitchId(userId);
+            if (user == null) return null;
             var clan = gameData.GetClanByUser(user.Id);
-            if (clan == null)
-                return null;
+            if (clan == null) return null;
             return ModelMapper.Map(gameData, clan);
         }
 
@@ -288,7 +292,7 @@ namespace RavenNest.BusinessLogic.Game
 
         public Clan CreateClan(string userId, string name, string logo)
         {
-            var user = gameData.GetUser(userId);
+            var user = gameData.GetUserByTwitchId(userId);
             if (user == null)
                 return null;
 
