@@ -110,7 +110,7 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 enchantedItem.Soulbound = true;
-                enchantedItem.Enchantment = FormatEnchantment(inventory.CreateRandomAttributes(targetAttributeCount));
+                enchantedItem.Enchantment = FormatEnchantment(inventory.CreateRandomAttributes(enchantedItem, targetAttributeCount));
 
                 var itemName = gameData.GetItem(item.ItemId)?.Name;
 

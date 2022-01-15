@@ -963,17 +963,17 @@ namespace RavenNest.BusinessLogic.Game
                 //? gameData.GetCharacter(update.CharacterId)
                 //: GetCharacter(sessionToken, update.UserId);
 
-                if (player == null)
+                var session = gameData.GetSession(sessionToken.SessionId);
+                if (player == null || session == null) return false;
+                if (session != null && (player.UserIdLock == null || player.UserIdLock != session.UserId))
                 {
+                    // player not part of this session.
+                    SendRemovePlayerFromSession(player, session);
                     return false;
                 }
 
-                var session = gameData.GetSession(sessionToken.SessionId);
-                if (session != null && player.UserIdLock == null)
-                {
-                    player.UserIdLock = session.UserId;
-                    player.LastUsed = DateTime.UtcNow;
-                }
+                //player.UserIdLock = session.UserId;
+                //player.LastUsed = DateTime.UtcNow;
 
                 if (player.StateId == null)
                 {
@@ -2191,6 +2191,17 @@ namespace RavenNest.BusinessLogic.Game
                     gameData.Add(skills);
                 }
 
+                if (removeFromSession)
+                {
+                    SendRemovePlayerFromSession(character, gameSession);
+                    var activeSessionOwner = gameData.GetUser(character.UserIdLock.GetValueOrDefault());
+                    if (activeSessionOwner != null)
+                    {
+                        logger.LogWarning($"{character.Name} tried to save from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is part of {activeSessionOwner.UserName}.");
+                    }
+                    return true;
+                }
+
                 var gains = characterSessionState.ExpGain;
 
                 if (level > GameMath.MaxLevel)
@@ -2230,16 +2241,6 @@ namespace RavenNest.BusinessLogic.Game
                     });
                 }
 
-                if (removeFromSession)
-                {
-                    var activeSessionOwner = gameData.GetUser(character.UserIdLock.GetValueOrDefault());
-                    if (activeSessionOwner != null)
-                    {
-                        SendRemovePlayerFromSession(character, gameSession);
-                        logger.LogWarning($"{character.Name} was saved from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is part of {activeSessionOwner.UserName}.");
-                    }
-
-                }
                 return true;
             }
             catch (Exception exc)
@@ -2381,6 +2382,17 @@ namespace RavenNest.BusinessLogic.Game
                     gameData.Add(skills);
                 }
 
+                if (removeFromSession)
+                {
+                    SendRemovePlayerFromSession(character, gameSession);
+                    var activeSessionOwner = gameData.GetUser(character.UserIdLock.GetValueOrDefault());
+                    if (activeSessionOwner != null)
+                    {
+                        logger.LogWarning($"{character.Name} was trying to save from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is part of {activeSessionOwner.UserName}.");
+                    }
+                    return false;
+                }
+
                 if (experience == null)
                     return true; // no skills was updated. Ignore
                                  // throw new Exception($"Unable to save exp. Client didnt supply experience, or experience was null. Character with name {character.Name} game session: " + gameSession.Id + ".");
@@ -2468,15 +2480,6 @@ namespace RavenNest.BusinessLogic.Game
                 //    logger.LogError(character.Name + " could only save " + savedSkillsCount + " out of " + experience.Length + " skills. Client did not provide level data. Saving using old way of saving. Session: " + sessionOwner?.UserName + " (" + gameSession.Id + "), Client Version: " + sessionState.ClientVersion);
                 //}
 
-                if (removeFromSession)
-                {
-                    var activeSessionOwner = gameData.GetUser(character.UserIdLock.GetValueOrDefault());
-                    if (activeSessionOwner != null)
-                    {
-                        SendRemovePlayerFromSession(character, gameSession);
-                        logger.LogWarning($"{character.Name} was saved from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is part of {activeSessionOwner.UserName}.");
-                    }
-                }
 
                 return true;
             }
