@@ -1456,9 +1456,8 @@ namespace RavenNest.BusinessLogic.Data
             if (currentSession == null) return null;
             if (activeSessionOnly)
                 return characters[nameof(GameSession), currentSession.UserId]
-                    .Where(x => x.LastUsed >= currentSession.Started)
+                    .Where(x => GetUser(x.UserId) != null && x.UserIdLock == currentSession.UserId && x.LastUsed >= currentSession.Started)
                     .OrderByDescending(x => x.LastUsed)
-                    .Where(x => GetUser(x.UserId) != null)
                     .ToList();
 
             // in case we need to know all characters that has been locked to this user (based on sessionId).
