@@ -1177,14 +1177,13 @@ namespace RavenNest.BusinessLogic.Game
             if (craftingLevel < item.RequiredCraftingLevel)
                 return CraftItemResult.TooLowLevel(item.Id, item.RequiredCraftingLevel);
 
-            if (!CanCraftItems(item, resources, craftingLevel, amount))
+            if (!CanCraftItems(item, resources, craftingLevel, amount, out var craftableAmount))
                 return CraftItemResult.InsufficientResources;
 
             var result = new CraftItemResult();
             var craftingRequirements = gameData.GetCraftingRequirements(itemId);
             var inventory = inventoryProvider.Get(character.Id);
 
-            var craftableAmount = amount;
             foreach (var req in craftingRequirements)
             {
                 var stashItem = gameData.GetStashItem(character.UserId, req.ResourceItemId);
@@ -1281,8 +1280,11 @@ namespace RavenNest.BusinessLogic.Game
             if (skills == null) return AddItemResult.Failed;
 
             var craftingLevel = skills.CraftingLevel;
-            if (!CanCraftItems(item, resources, craftingLevel, amount))
+            if (!CanCraftItems(item, resources, craftingLevel, amount, out var craftableAmount))
                 return AddItemResult.Failed;
+
+            amount = craftableAmount;
+            if (amount <= 0) return AddItemResult.Failed;
 
             var craftingRequirements = gameData.GetCraftingRequirements(itemId);
             var inventory = inventoryProvider.Get(character.Id);
@@ -1312,11 +1314,23 @@ namespace RavenNest.BusinessLogic.Game
             return AddItemResult.Added;
         }
 
-        private static bool CanCraftItems(Item item, Resources resources, int craftingLevel, int amount)
+        private static bool CanCraftItems(Item item, Resources resources, int craftingLevel, int amount, out int maxAmount)
         {
-            return item.WoodCost * amount <= resources.Wood &&
-                   item.OreCost * amount <= resources.Ore &&
-                   item.RequiredCraftingLevel <= craftingLevel;
+            maxAmount = 0;
+            if (item.RequiredCraftingLevel > craftingLevel)
+                return false;
+
+            if (resources.Wood < item.WoodCost)
+                return false;
+
+            if (resources.Ore < item.OreCost)
+                return false;
+
+            maxAmount = Math.Min(
+                item.WoodCost > 0 ? (int)(resources.Wood / item.WoodCost) : amount,
+                item.OreCost > 0 ? (int)(resources.Ore / item.OreCost) : amount);
+
+            return maxAmount > 0;
         }
 
         public void AddItem(Guid characterId, Guid itemId, int amount = 1)
@@ -2224,8 +2238,8 @@ namespace RavenNest.BusinessLogic.Game
                         SendRemovePlayerFromSession(character, gameSession);
                         logger.LogWarning($"{character.Name} was saved from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is part of {activeSessionOwner.UserName}.");
                     }
-                }
 
+                }
                 return true;
             }
             catch (Exception exc)

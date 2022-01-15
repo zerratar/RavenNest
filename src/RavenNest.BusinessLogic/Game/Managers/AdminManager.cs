@@ -67,9 +67,6 @@ namespace RavenNest.BusinessLogic.Game
         //        {
         //            totalGainedExp += GameMath.ExperienceForLevel(level + i);
         //        }
-
-
-
         //        skill.Experience
         //    }
         //}
@@ -95,6 +92,7 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 resx.Coins += amountValue;
+                return true;
             }
 
             return false;

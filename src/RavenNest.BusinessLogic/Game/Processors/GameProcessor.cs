@@ -26,8 +26,8 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private readonly IGameManager gameManager;
         private readonly IRavenBotApiClient ravenbotApi;
         private readonly IIntegrityChecker integrityChecker;
-        private readonly IGameWebSocketConnection ws;
-        private readonly IExtensionWebSocketConnectionProvider extWsProvider;
+        private readonly IGameWebSocketConnection gameConnection;
+        private readonly IExtensionWebSocketConnectionProvider extensionConnectionProvider;
         private readonly ISessionManager sessionManager;
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly SessionToken sessionToken;
@@ -47,7 +47,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         public GameProcessor(
             IRavenBotApiClient ravenbotApi,
             IIntegrityChecker integrityChecker,
-            IGameWebSocketConnection ws,
+            IGameWebSocketConnection websocket,
             IExtensionWebSocketConnectionProvider extWsProvider,
             ISessionManager sessionManager,
             IPlayerInventoryProvider inventoryProvider,
@@ -59,8 +59,8 @@ namespace RavenNest.BusinessLogic.Game.Processors
             this.gameManager = gameManager;
             this.ravenbotApi = ravenbotApi;
             this.integrityChecker = integrityChecker;
-            this.ws = ws;
-            this.extWsProvider = extWsProvider;
+            this.gameConnection = websocket;
+            this.extensionConnectionProvider = extWsProvider;
             this.sessionManager = sessionManager;
             this.inventoryProvider = inventoryProvider;
             this.sessionToken = sessionToken;
@@ -199,9 +199,9 @@ namespace RavenNest.BusinessLogic.Game.Processors
                     var eventList = new EventList();
                     eventList.Revision = events.Revision;
                     eventList.Events = allEvents.Skip(batchSize * i).Take(batchSize).ToList();
-                    await ws.PushAsync("game_event", eventList, cts.Token);
+                    await gameConnection.PushAsync("game_event", eventList, cts.Token);
                     i += allEvents.Count < batchSize ? allEvents.Count : batchSize;
-                    await Task.Delay(50);
+                    //await Task.Delay(50);
                 }
             }
         }
@@ -269,7 +269,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private void RegisterPlayerTask<T>(string taskName) where T : ITaskProcessor, new()
         {
             taskProcessors[taskName] = new T();
-            taskProcessors[taskName].SetExtensionConnectionProvider(extWsProvider);
+            taskProcessors[taskName].SetExtensionConnectionProvider(extensionConnectionProvider);
         }
     }
 }
