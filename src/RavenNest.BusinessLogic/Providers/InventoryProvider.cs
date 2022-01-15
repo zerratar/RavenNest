@@ -523,7 +523,7 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
-        public List<MagicItemAttribute> CreateRandomAttributes(int attributeCount)
+        public List<MagicItemAttribute> CreateRandomAttributes(DataModels.InventoryItem targetItem, int attributeCount)
         {
             var availableAttributes = gameData.GetItemAttributes();
             var addedAttrId = new HashSet<Guid>();
@@ -535,6 +535,7 @@ namespace RavenNest.BusinessLogic.Providers
             var maxAttempts = availableAttributes.Count * 10;
             // make sure we dont get stuck in an infinite loop.
             attributeCount = Math.Min(attributeCount, availableAttributes.Count);
+            var item = gameData.GetItem(targetItem.ItemId);
             for (var i = 0; i < attributeCount; ++i)
             {
                 ItemAttribute attr = null;
@@ -545,7 +546,7 @@ namespace RavenNest.BusinessLogic.Providers
                     attr = availableAttributes[random.Next(0, availableAttributes.Count)];
                     ++attempt;
                 }
-                while (addedAttrId.Contains(attr.Id) && attempt < maxAttempts);
+                while (BadEnchantment(item, attr) || addedAttrId.Contains(attr.Id) && attempt < maxAttempts);
 
                 if (attempt >= maxAttempts)
                 {
@@ -563,6 +564,13 @@ namespace RavenNest.BusinessLogic.Providers
                 }
             }
             return output;
+        }
+
+        private bool BadEnchantment(Item item, ItemAttribute attr)
+        {
+            return (attr.Name == "ARMOR" && item.ArmorPower == 0) ||
+                   (attr.Name == "POWER" && ((item.MagicPower + item.RangedPower + item.WeaponPower) == 0)) ||
+                   (attr.Name == "AIM" && ((item.MagicAim + item.RangedAim + item.WeaponAim) == 0));
         }
 
         //public List<InventoryItemAttribute> CreateRandomAttributes(InventoryItem s)

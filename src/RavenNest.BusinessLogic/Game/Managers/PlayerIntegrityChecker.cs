@@ -28,9 +28,13 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
-
-
 #warning player integrity check disabled
+
+            var character = gameData.GetCharacter(characterId);
+            if (gameSession.UserId != character.UserIdLock)
+            {
+                return false;
+            }
 
             //var sessionState = gameData.GetSessionState(sessionId);
             var playerSessionState = gameData.GetCharacterSessionState(sessionId, characterId);
