@@ -427,8 +427,8 @@ namespace RavenNest.BusinessLogic.Data
             Add(new ItemAttribute
             {
                 Id = Guid.NewGuid(),
-                Description = "Increases Armour by 20%",
-                Name = "ARMOUR",
+                Description = "Increases Armor by 20%",
+                Name = "ARMOR",
                 AttributeIndex = DataModels.Skills.SkillNames.Length + 3,
                 DefaultValue = "5%",
                 MaxValue = "20%",
