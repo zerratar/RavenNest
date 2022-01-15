@@ -325,8 +325,16 @@ namespace RavenNest.BusinessLogic.Game
 
             if (isGameRestore && (c.UserIdLock != null && c.UserIdLock != session.UserId))
             {
+                var targetUser = gameData.GetUser(c.UserIdLock.GetValueOrDefault());
                 result.Success = false;
-                result.ErrorMessage = "Player has left to join another stream.";
+                if (targetUser != null)
+                {
+                    result.ErrorMessage = "Player has left to join " + targetUser.UserName + "'s stream.";
+                }
+                else
+                {
+                    result.ErrorMessage = "Player has left to join another stream.";
+                }
                 return result;
             }
 

@@ -145,24 +145,23 @@ namespace RavenNest.BusinessLogic.Game
             var userId = session.UserId;
             var user = gameData.GetUser(userId);
             var patreonTier = user.PatreonTier.GetValueOrDefault();
-
             var multiplier = MaxMultiplier[patreonTier];
-            if (multiplier > 0)
-            {
-                var expMulti = Math.Min(multiplier, activeEvent.Multiplier);
-                var expEvent = gameData.CreateSessionEvent(
-                      GameEventType.ExpMultiplier,
-                      session,
-                      new ExpMultiplier
-                      {
-                          EndTime = activeEvent.EndTime,
-                          EventName = activeEvent.EventName,
-                          Multiplier = expMulti,
-                          StartTime = activeEvent.StartTime
-                      }
-                  );
-                gameData.Add(expEvent);
-            }
+            //if (multiplier >= 0)
+            //{
+            var expMulti = Math.Min(multiplier, activeEvent.Multiplier);
+            var expEvent = gameData.CreateSessionEvent(
+                  GameEventType.ExpMultiplier,
+                  session,
+                  new ExpMultiplier
+                  {
+                      EndTime = activeEvent.EndTime,
+                      EventName = activeEvent.EventName,
+                      Multiplier = expMulti,
+                      StartTime = activeEvent.StartTime
+                  }
+              );
+            gameData.Add(expEvent);
+            //}
         }
 
         public void SendVillageInfo(DataModels.GameSession newGameSession)
