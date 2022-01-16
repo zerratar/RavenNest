@@ -1139,6 +1139,12 @@ namespace RavenNest.BusinessLogic.Game
             if (character == null || enchantingSkill == null)
                 return ItemEnchantmentResult.Error();
 
+#warning only administrators can currently enchant items.
+            var user = gameData.GetUser(character.UserId);
+
+            if (user == null || !user.IsAdmin.GetValueOrDefault())
+                return ItemEnchantmentResult.Error();
+
             if (!integrityChecker.VerifyPlayer(token.SessionId, character.Id, 0))
                 return ItemEnchantmentResult.Error();
 
@@ -1160,6 +1166,7 @@ namespace RavenNest.BusinessLogic.Game
 
             if (clanSkill == null)
                 return ItemEnchantmentResult.Error();
+
 
             return enchantmentManager.EnchantItem(token.SessionId, clanSkill, character, inventory, item, resources);
         }
