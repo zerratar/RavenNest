@@ -63,6 +63,7 @@ namespace RavenNest.Controllers
             {
                 EndTime = activeEvent.EndTime,
                 EventName = activeEvent.EventName,
+                StartedByPlayer = activeEvent.StartedByPlayer,
                 Multiplier = activeEvent.Multiplier,
                 StartTime = activeEvent.StartTime
             };
@@ -177,7 +178,7 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("use-exp-scroll/{characterId}/{count}")]
-        public int UseExpScroll(Guid characterId, string scrollType, int count)
+        public int UseExpScroll(Guid characterId, int count)
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
