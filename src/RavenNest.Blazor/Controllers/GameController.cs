@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.BusinessLogic.Net;
 using RavenNest.Models;
 using RavenNest.Sessions;
 
@@ -50,6 +51,23 @@ namespace RavenNest.Controllers
             AssertSessionTokenValidity(session);
             return gameManager.GetGameInfo(session);
         }
+
+        [HttpGet("exp-multiplier")]
+        public ExpMultiplier GetExpMultiplier()
+        {
+            var activeEvent = gameData.GetActiveExpMultiplierEvent();
+            if (activeEvent == null)
+                return new ExpMultiplier();
+
+            return new ExpMultiplier
+            {
+                EndTime = activeEvent.EndTime,
+                EventName = activeEvent.EventName,
+                Multiplier = activeEvent.Multiplier,
+                StartTime = activeEvent.StartTime
+            };
+        }
+
 
         [HttpPost("{clientVersion}/{accessKey}")]
         public async Task<SessionToken> BeginSessionAsync(string clientVersion, string accessKey, Two<bool, float> param)
