@@ -161,7 +161,7 @@ namespace RavenNest.Blazor.Services
 
             if (!string.IsNullOrEmpty(item.Enchantment))
             {
-                var enchantments = item.Enchantment.Split(';');
+                var enchantments = item.Enchantment.ToLower().Split(';');
                 foreach (var e in enchantments)
                 {
                     var value = PlayerInventory.GetValue(e, out var type);
@@ -169,15 +169,15 @@ namespace RavenNest.Blazor.Services
                     if (type == AttributeValueType.Percent)
                     {
                         value = value / 100d;
-                        if (key == "POWER") powerBonus = (int)(i.WeaponPower * value) + (int)(i.MagicPower * value) + (int)(i.RangedPower * value);
-                        if (key == "AIM") aimBonus = (int)(i.WeaponAim * value) + (int)(i.MagicAim * value) + (int)(i.RangedAim * value);
-                        if (key == "ARMOUR" || key == "ARMOR") armorBonus = (int)(i.ArmorPower * value);
+                        if (key == "power") powerBonus = (int)(i.WeaponPower * value) + (int)(i.MagicPower * value) + (int)(i.RangedPower * value);
+                        if (key == "aim") aimBonus = (int)(i.WeaponAim * value) + (int)(i.MagicAim * value) + (int)(i.RangedAim * value);
+                        if (key == "armor" || key == "armour") armorBonus = (int)(i.ArmorPower * value);
                     }
                     else
                     {
-                        if (key == "POWER") powerBonus = (int)value;
-                        if (key == "AIM") aimBonus = (int)value;
-                        if (key == "ARMOUR" || key == "ARMOR") armorBonus = (int)value;
+                        if (key == "power") powerBonus = (int)value;
+                        if (key == "aim") aimBonus = (int)value;
+                        if (key == "armor" || key == "armour") armorBonus = (int)value;
                     }
                 }
             }

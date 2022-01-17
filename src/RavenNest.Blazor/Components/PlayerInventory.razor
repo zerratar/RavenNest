@@ -53,6 +53,10 @@
 
                     <div class="item-details-content">
                         <div class="item-type">@GetItemType()</div>
+                        @if (itemDetailsDialogItem.Soulbound.GetValueOrDefault())
+                        {
+                            <div class="item-soulbound">Soulbound - this item can't be gifted</div>
+                        }
                         <div class="item-image" data-item="@itemDetailsDialogItem.Id"><img src="@GetItemImage(itemDetailsDialogItem.ItemId, itemDetailsDialogItem.Tag)" /></div>
 
                         @foreach (var stat in GetItemStats())
@@ -63,7 +67,7 @@
                                     <span>@stat.Value</span>
                                     @if (stat.Bonus > 0)
                                     {
-                                        <span class="item-stat-enchantment" title="Enchantment Bonus">+ @stat.Bonus</span>
+                                        <span class="item-stat-enchantment" title="Enchantment Bonus">(+@stat.Bonus)</span>
                                     }
                                 </div>
                             </div>
@@ -73,9 +77,9 @@
                             <div class="item-enchantment-header">Enchantments</div>
                             @foreach (var stat in GetItemEnchantments())
                             {
-                                <div class="item-stat">
-                                    <div class="item-stat-name">@stat.Name</div>
-                                    <div class="item-stat-value">@stat.Value</div>
+                                <div class="item-stat enchantment">
+                                    <div class="item-stat-name">@GetEnchantmentName(stat)</div>
+                                    <div class="item-stat-value">+@GetEnchantmentValue(stat)</div>
                                 </div>
                             }
                         }
@@ -230,6 +234,22 @@
             return false;
 
         return RavenNest.BusinessLogic.Providers.PlayerInventory.CanEquipItem(item, Player);
+    }
+
+    public string GetEnchantmentValue(RavenNest.Blazor.Services.ItemEnchantment enchantment)
+    {
+        var value = enchantment.Value;
+        if (enchantment.ValueType == AttributeValueType.Percent)
+        {
+            return ((int)(value * 100)) + "%";
+        }
+
+        return ((int)value).ToString();
+    }
+
+    public string GetEnchantmentName(RavenNest.Blazor.Services.ItemEnchantment enchantment)
+    {
+        return enchantment.Name[0] + enchantment.Name.ToLower().Substring(1);
     }
 
     public IReadOnlyList<RavenNest.Blazor.Services.ItemEnchantment> GetItemEnchantments()
