@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Rewrite;
@@ -25,6 +26,7 @@ using RavenNest.Sessions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace RavenNest.Blazor
@@ -45,6 +47,11 @@ namespace RavenNest.Blazor
             var appSettingsSection = Configuration.GetSection("AppSettings");
             var appSettings = appSettingsSection.Get<AppSettings>();
             services.Configure<AppSettings>(appSettingsSection);
+            services.Configure<JsonOptions>(options =>
+            {
+                options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault | JsonIgnoreCondition.WhenWritingNull;
+            });
+
             services.AddLogging(loggingBuilder =>
             {
                 var loggingDbContext = new RavenfallDbContextProvider(Options.Create(appSettings));
@@ -88,6 +95,8 @@ namespace RavenNest.Blazor
             });
 
             services.AddRavenNestHealthChecks(Configuration.GetSection("AppSettings"));
+
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -592,6 +592,11 @@ namespace RavenNest.BusinessLogic.Providers
 
         public static double GetValue(string val, out Models.AttributeValueType valueType)
         {
+            if (val.Contains(':'))
+            {
+                val = val.Split(':')[1];
+            }
+
             valueType = Models.AttributeValueType.Number;
             val = val.Replace(',', '.');
             if (string.IsNullOrEmpty(val))
