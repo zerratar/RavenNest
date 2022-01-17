@@ -37,6 +37,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 && !state.InDungeon.GetValueOrDefault()
                 && !state.InArena
                 && !state.InRaid
+                && !string.IsNullOrEmpty(state.Island)
                 && string.IsNullOrEmpty(state.DuelOpponent);
 
             var now = DateTime.UtcNow;
@@ -46,60 +47,61 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             }
 
             var elapsed = now - lastUpdateTime;
-            if (isResting)
-            {
-                AddRestTime(state, elapsed);
-            }
-            else
-            {
-                RemoveRestTime(state, elapsed);
-            }
+            var requireUpdate = isResting
+                ? AddRestTime(state, elapsed)
+                : RemoveRestTime(state, elapsed);
 
             if (!lastEvent.TryGetValue(character.Id, out var lastEventUpdate))
             {
                 lastEventUpdate = DateTime.MinValue;
             }
 
-            var sinceLastEvent = now - lastEventUpdate;
-            if (sinceLastEvent >= RestedEventUpdateInterval)
+            if (requireUpdate)
             {
-                var restedTime = (double)(state.RestedTime ?? 0);
-                var restedPercent = restedTime / MaxRestTime.TotalSeconds;
-                var isRested = restedTime > 0;
-
-                var data = new Models.PlayerRestedUpdate
+                var sinceLastEvent = now - lastEventUpdate;
+                if (sinceLastEvent >= RestedEventUpdateInterval)
                 {
-                    CharacterId = character.Id,
-                    ExpBoost = isRested ? ExpBoost : 0,
-                    StatsBoost = isRested ? CombatStatsBoost : 0,
-                    RestedTime = restedTime,
-                    RestedPercent = restedPercent
-                };
+                    var restedTime = (double)(state.RestedTime ?? 0);
+                    var restedPercent = restedTime / MaxRestTime.TotalSeconds;
+                    var isRested = restedTime > 0;
 
+                    var data = new Models.PlayerRestedUpdate
+                    {
+                        CharacterId = character.Id,
+                        ExpBoost = isRested ? ExpBoost : 0,
+                        StatsBoost = isRested ? CombatStatsBoost : 0,
+                        RestedTime = restedTime,
+                        RestedPercent = restedPercent,
+                    };
 
-                var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRestedUpdate, session, data);
-                gameData.Add(gameEvent);
-                lastEvent[character.Id] = now;
+                    var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRestedUpdate, session, data);
+                    gameData.Add(gameEvent);
+                    lastEvent[character.Id] = now;
 
-                if (restedTime > 0)
-                {
-                    TrySendToExtensionAsync(character, data);
+                    if (restedTime > 0)
+                    {
+                        TrySendToExtensionAsync(character, data);
+                    }
                 }
             }
             lastUpdate[character.Id] = now;
         }
 
 
-        private void RemoveRestTime(CharacterState state, TimeSpan elapsed)
+        private bool RemoveRestTime(CharacterState state, TimeSpan elapsed)
         {
+            var before = state.RestedTime;
             var restedTime = state.RestedTime ?? 0d;
             state.RestedTime = Math.Max(0, restedTime - (double)(elapsed.TotalSeconds * RestedDrainFactor));
+            return before > state.RestedTime;
         }
 
-        private void AddRestTime(CharacterState state, TimeSpan elapsed)
+        private bool AddRestTime(CharacterState state, TimeSpan elapsed)
         {
             var restedTime = state.RestedTime ?? 0d;
+            var before = state.RestedTime;
             state.RestedTime = Math.Min((double)MaxRestTime.TotalSeconds, restedTime + (double)(elapsed.TotalSeconds * RestedGainFactor));
+            return state.RestedTime > before;
         }
     }
 }
