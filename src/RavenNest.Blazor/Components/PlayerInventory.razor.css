@@ -2,6 +2,24 @@
     display: flex;
     justify-content: space-between;
 }
+.item-soulbound {
+    color: rgba(0,0,0,0.5);
+    font-style: italic;
+    font-size: 10pt;
+}
+.enchantment .item-stat-name, .enchantment .item-stat-value {
+    color: #27ae60;
+}
+span.item-stat-enchantment {
+    margin-left: 5px;
+    color: #27ae60;
+}
+.item-enchantment-header {
+    font-weight: bold;
+    margin-top: 10px;
+    font-size: 10pt;
+    color: #27ae60;
+}
 
 .item-stat, .item-requirement {
     display: flex;
