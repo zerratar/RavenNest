@@ -1573,12 +1573,13 @@ namespace RavenNest.BusinessLogic.Game
 
             var inventory = inventoryProvider.Get(character.Id);
 
-            var addedItems = inventory.AddItem(itemId, tag: tag);
+            var addedItems = inventory.AddItem(itemId, tag: tag, soulbound: item.Soulbound.GetValueOrDefault());
             //inventory.EquipBestItems();
 
-            return inventory.GetEquippedItem(itemId).IsNotNull()
-                ? AddItemResult.AddedAndEquipped
-                : AddItemResult.Added;
+            return AddItemResult.Added;
+            //return inventory.GetEquippedItem(itemId).IsNotNull()
+            //    ? AddItemResult.AddedAndEquipped
+            //    : AddItemResult.Added;
         }
 
         public long VendorItem(
