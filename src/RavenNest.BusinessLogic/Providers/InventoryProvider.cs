@@ -698,10 +698,10 @@ namespace RavenNest.BusinessLogic.Providers
             stack.Amount -= amount;
             if (stack.Amount <= 0)
             {
+                remainder = Math.Abs(stack.Amount.Value);
                 RemoveStack(stack);
             }
 
-            remainder = Math.Abs(stack.Amount.Value);
             return true;
         }
 
