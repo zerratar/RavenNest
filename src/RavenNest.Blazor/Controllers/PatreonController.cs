@@ -145,7 +145,16 @@ namespace RavenNest.Controllers
                 using (var sr = new StreamReader(HttpContext.Request.Body))
                 {
                     patreonJson = await sr.ReadToEndAsync();
-                    logger.LogWarning("Incoming Patreon Data: " + patreonJson);
+                    logger.LogError("[" + caller + "] Patreon Data Received: " + patreonJson);
+                    var patreonDataFolder = new DirectoryInfo("patreon-data");
+                    if (!System.IO.Directory.Exists("patreon-data"))
+                    {
+                        patreonDataFolder = Directory.CreateDirectory("patreon-data");
+                    }
+
+                    System.IO.File.WriteAllText(Path.Combine(patreonDataFolder.FullName,
+                        caller + "_" + DateTime.UtcNow.ToString("yyyy-MM-dd.hhmmss") + ".json"), patreonJson);
+
                     return JsonConvert.DeserializeObject<T>(patreonJson);
                 }
             }
