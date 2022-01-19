@@ -506,19 +506,45 @@ namespace RavenNest.BusinessLogic.Providers
             var output = new List<InventoryItem>();
             lock (mutex)
             {
-                var stack = Get(itemId, false, tag);
-                if (stack != null && !equipped)
+                var item = gameData.GetItem(itemId);
+
+                // if the added item is to be equipped, then unequip existing item of same slot
+                // then add the new item as equipped.
+
+                if (equipped)
                 {
-                    stack.Amount += amount;
-                    output.Add(stack);
+                    var eqSlot = ReadOnlyInventoryItem.GetEquipmentSlot((ItemType)item.Type);
+                    var equippedItem = GetEquippedItem(eqSlot);
+                    if (equippedItem.IsNotNull())
+                    {
+                        UnequipItem(Get(equippedItem));
+                    }
+
+                    var invItem = CreateInventoryItem(itemId, amount, true, tag, soulbound);
+                    output.Add(invItem);
+                    items.Add(invItem);
+                    gameData.Add(invItem);
                 }
                 else
                 {
-                    var item = CreateInventoryItem(itemId, amount, equipped, tag, soulbound);
-                    output.Add(item);
-                    items.Add(item);
-                    gameData.Add(item);
+                    // if it is not going to be equipped, check if we already have a stack
+                    // fill it += the amount or create a new stack.
+
+                    var stack = GetUnequipped(itemId);//Get(itemId, false, tag);
+                    if (stack != null)
+                    {
+                        stack.Amount += amount;
+                        output.Add(stack);
+                    }
+                    else
+                    {
+                        var invItem = CreateInventoryItem(itemId, amount, false, tag, soulbound);
+                        output.Add(invItem);
+                        items.Add(invItem);
+                        gameData.Add(invItem);
+                    }
                 }
+
                 return output;
             }
         }
@@ -764,6 +790,14 @@ namespace RavenNest.BusinessLogic.Providers
             lock (mutex)
             {
                 return items.FirstOrDefault(x => x.Id == inventoryItemId)?.AsReadOnly(gameData) ?? default;
+            }
+        }
+
+        public InventoryItem GetUnequipped(Guid itemId)
+        {
+            lock (mutex)
+            {
+                return items.FirstOrDefault(x => CanBeStacked(x) && x.ItemId == itemId && !x.Equipped);
             }
         }
 
