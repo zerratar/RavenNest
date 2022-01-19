@@ -107,9 +107,9 @@ namespace RavenNest.Blazor
 
             //app.UseCookiePolicy();
 
-#if DEBUG
-            app.AddRequestTiming();
-#endif
+//#if DEBUG
+//            app.AddRequestTiming();
+//#endif
 
             app.AddSessionCookies();
 
