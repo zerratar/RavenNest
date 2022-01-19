@@ -528,13 +528,31 @@ namespace RavenNest.Controllers
              */
 
 #if DEBUG
-            var parameters = new Dictionary<string, string> {
-                { "client_id", settings.TwitchClientId },
-                { "client_secret", settings.TwitchClientSecret },
-                { "code", code },
-                { "grant_type","authorization_code" },
-                { "redirect_uri", "https://localhost:5001/api/twitch/authorize"}
-            };
+            Dictionary<string, string> parameters = null;
+            if (HttpContext != null && HttpContext.Request != null)
+            {
+                if (HttpContext.Request.Host.Value.ToLower().Contains("localhost"))
+                {
+                    parameters = new Dictionary<string, string> {
+                        { "client_id", settings.TwitchClientId },
+                        { "client_secret", settings.TwitchClientSecret },
+                        { "code", code },
+                        { "grant_type","authorization_code" },
+                        { "redirect_uri", "https://localhost:5001/api/twitch/authorize"}
+                    };
+                }
+            }
+
+            if (parameters == null)
+            {
+                parameters = new Dictionary<string, string> {
+                    { "client_id", settings.TwitchClientId },
+                    { "client_secret", settings.TwitchClientSecret },
+                    { "code", code },
+                    { "grant_type","authorization_code" },
+                    { "redirect_uri", "https://www.ravenfall.stream/api/twitch/authorize"}
+                };
+            }
 #else
             var parameters = new Dictionary<string, string> {
                 { "client_id", settings.TwitchClientId },

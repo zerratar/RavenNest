@@ -86,6 +86,10 @@ namespace RavenNest.BusinessLogic.Net
                 ws,
                 sessionToken);
 
+#if DEBUG
+            logger.LogDebug("[" + sessionToken.TwitchUserName + "] WebSocket Connection Established.");
+#endif
+
             return socketSessions[sessionToken.SessionId] = session.Start();
         }
 

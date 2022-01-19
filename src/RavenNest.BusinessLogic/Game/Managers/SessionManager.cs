@@ -111,6 +111,10 @@ namespace RavenNest.BusinessLogic.Game
             SendPermissionData(newGameSession, user);
             SendVillageInfo(newGameSession);
 
+#if DEBUG
+            logger.LogDebug(user.UserName + " game session started. " + activeChars.Count + " characters cleared.");
+#endif
+
             return GenerateSessionToken(token, user, newGameSession, clientVersion);
         }
 
@@ -339,9 +343,12 @@ namespace RavenNest.BusinessLogic.Game
             session.Status = (int)SessionStatus.Inactive;
             session.Stopped = DateTime.UtcNow;
 
-
             gameData.ClearAllCharacterSessionStates(session.UserId);
             //gameData.ClearCharacterSessionStates(session.Id);
+
+#if DEBUG
+            logger.LogDebug(owner.UserName + " game session ended. " + characters.Count + " characters cleared.");
+#endif
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
