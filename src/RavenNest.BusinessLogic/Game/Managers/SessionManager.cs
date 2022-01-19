@@ -295,6 +295,11 @@ namespace RavenNest.BusinessLogic.Game
 
             gameData.Add(ge);
             EndSession(token);
+
+#if DEBUG
+            logger.LogDebug(sessionUser + " is " + (isWarRaid ? "initiating a raid war on" : "raiding") + " " + user.DisplayName + " with " + characters.Count + " players.");
+#endif
+
             return true;
         }
 
@@ -303,6 +308,9 @@ namespace RavenNest.BusinessLogic.Game
             var session = gameData.GetSession(token.SessionId);
             if (session == null)
             {
+#if DEBUG
+                logger.LogDebug("Unable to end session " + token.TwitchUserName + ", no such session exists.");
+#endif
                 return;
             }
 

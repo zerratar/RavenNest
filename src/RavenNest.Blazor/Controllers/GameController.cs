@@ -119,6 +119,17 @@ namespace RavenNest.Controllers
             try
             {
                 var session = GetSessionToken();
+                if (session == null)
+                {
+                    var errorMessage = "GetEndSessionAndRaid Error: Session is null trying to Raid " + username + ", war: " + war;
+#if DEBUG
+                    errorMessage += " " + GetHeaderValues();
+#endif
+
+                    logger.LogError(errorMessage);
+                    return false;
+                }
+
                 AssertSessionTokenValidity(session);
                 return this.sessionManager.EndSessionAndRaid(session, username, war);
             }
