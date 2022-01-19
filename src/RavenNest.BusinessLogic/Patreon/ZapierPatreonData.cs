@@ -12,6 +12,7 @@ namespace RavenNest.BusinessLogic.Patreon
 
         [JsonProperty("tier")]
         public string RewardTitle { get; set; }
+
         [JsonProperty("patreonId")]
         public long PatreonId { get; set; }
         [JsonProperty("pledgeAmount")]
@@ -21,9 +22,11 @@ namespace RavenNest.BusinessLogic.Patreon
 
         [JsonProperty("twitchId")]
         public string TwitchUserId { get; set; }
-        
+
         [JsonProperty("twitchUrl")]
         public string TwitchUrl { get; set; }
+        
+        [JsonIgnore]
         public int Tier { get; set; }
     }
 }

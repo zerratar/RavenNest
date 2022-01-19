@@ -8,7 +8,6 @@
         long PatreonId { get; set; }
         string PledgeAmountCents { get; set; }
         int Tier { get; set; }
-
         string Status { get; set; }
         string TwitchUserId { get; set; }
         string TwitchUrl { get; set; }
