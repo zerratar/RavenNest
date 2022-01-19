@@ -31,17 +31,25 @@ namespace RavenNest.BusinessLogic.Game
                 //    var inventory = playerInventory.Get(main.Id);
                 //    inventory.AddPatreonTierRewards(data.Tier);
                 //}
-                user.PatreonTier = patreon.Tier;
+
+                var newTier = patreon.Tier.GetValueOrDefault();
+                var oldTier = user.PatreonTier.GetValueOrDefault();
+
+                if (newTier > oldTier) // only allow automatic increase of tiers. 
+                    user.PatreonTier = newTier;
             }
         }
 
         public void RemovePledge(IPatreonData data)
         {
-            return; // don't remove anything, but we should flag it to expire?
             var user = GetUser(data, out var patreon);
+
+            return; // don't remove anything, but we should flag it to expire?
+
             if (user != null &&
                 (data.Status == null || data.Status.IndexOf("active", StringComparison.OrdinalIgnoreCase) < 0))
                 user.PatreonTier = null;
+
             //user.PatreonExpires = ...
         }
 
@@ -56,7 +64,11 @@ namespace RavenNest.BusinessLogic.Game
                 //    var inventory = playerInventory.Get(main.Id);
                 //    inventory.AddPatreonTierRewards(data.Tier);
                 //}
-                user.PatreonTier = patreon.Tier;
+                var newTier = patreon.Tier.GetValueOrDefault();
+                var oldTier = user.PatreonTier.GetValueOrDefault();
+
+                if (newTier > oldTier) // only allow automatic increase of tiers. 
+                    user.PatreonTier = newTier;
             }
         }
 
