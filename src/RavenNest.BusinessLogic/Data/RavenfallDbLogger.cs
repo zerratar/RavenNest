@@ -37,7 +37,7 @@ namespace RavenNest.BusinessLogic
                     db.ServerLogs.Add(new ServerLogs
                     {
                         Created = DateTime.UtcNow,
-                        Data = msg + " [" + categoryName + "]",
+                        Data = msg.Trim() + " [" + categoryName + "]",
                         Severity = severity
                     });
                     await db.SaveChangesAsync();

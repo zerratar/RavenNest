@@ -142,12 +142,16 @@ namespace RavenNest.BusinessLogic.Game
         {
             var result = new PlayerJoinResult();
             var internalErrorMessage = "";
-            var hasCharacterId = false;
-            var characterId = Guid.Empty;
             try
             {
+                if (session == null || ((SessionStatus)session.Status != SessionStatus.Active))
+                {
+                    result.ErrorMessage = "Game Session has been terminated.";
+                    return result;
+                }
+
                 // in case a reload did something wonkers. ?
-                characterId = playerData.CharacterId;
+                var characterId = playerData.CharacterId;
                 if (characterId != Guid.Empty || Guid.TryParse(playerData.UserId ?? "", out characterId))
                 {
                     result = await AddPlayerByCharacterId(session, characterId, playerData.IsGameRestore);
@@ -229,9 +233,6 @@ namespace RavenNest.BusinessLogic.Game
                     return result;
                 }
 
-                characterId = character.Id;
-                hasCharacterId = true;
-
                 if (gameData.GetCharacterSkills(character.SkillsId) == null)
                 {
                     var skills = GenerateSkills();
@@ -253,7 +254,7 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 result.Player = await AddPlayerToSession(session, user, character);
-                result.Success = true;
+                result.Success = result.Player != null;
                 return result;
             }
             catch (Exception exc)
@@ -267,7 +268,7 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     var sessionOwner = gameData.GetUser(session.UserId);
 
-                    logger.LogError("Unable to add player " + playerData.UserName + " to " + sessionOwner.UserName + "'s stream. " + result.ErrorMessage + " " + internalErrorMessage);
+                    logger.LogError(("Unable to add player " + playerData.UserName + " to " + sessionOwner.UserName + "'s stream. " + (result.ErrorMessage + " " + internalErrorMessage).Trim()).Trim());
                 }
             }
         }
@@ -299,6 +300,12 @@ namespace RavenNest.BusinessLogic.Game
             if (c == null)
             {
                 result.ErrorMessage = $"No character found using id '{characterId}'";
+                return result;
+            }
+
+            if (session == null)
+            {
+                result.ErrorMessage = $"Session has been terminated";
                 return result;
             }
 
@@ -339,7 +346,7 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             result.Player = await AddPlayerToSession(session, u, c);
-            result.Success = true;
+            result.Success = result.Player != null;
             return result;
         }
 
@@ -371,20 +378,39 @@ namespace RavenNest.BusinessLogic.Game
 
         private async Task<Player> AddPlayerToSession(DataModels.GameSession session, User user, Character character)
         {
-            if (user.Status.GetValueOrDefault() == (int)AccountStatus.TemporarilySuspended)
+            try
             {
-                return null;
-            }
+                if (character == null)
+                {
+                    logger.LogError("AddPlayerToSession failed; character " + user?.UserName + ", " + character?.Identifier + " is null.");
+                    return null;
+                }
 
-            if (user.Status.GetValueOrDefault() == (int)AccountStatus.PermanentlySuspended)
-            {
-                return null;
-            }
-            var rejoin = false;
-            // check if we need to remove the player from
-            // their active session.
-            if (session != null)
-            {
+                if (user == null)
+                {
+                    logger.LogError("AddPlayerToSession failed; user " + character?.Name + ", " + character?.Identifier + " is null.");
+                    return null;
+                }
+
+                if (session == null)
+                {
+                    logger.LogError("AddPlayerToSession failed; session is null. user " + character?.Name + ", " + character?.Identifier);
+                    return null;
+                }
+
+                if (user.Status.GetValueOrDefault() == (int)AccountStatus.TemporarilySuspended)
+                {
+                    return null;
+                }
+
+                if (user.Status.GetValueOrDefault() == (int)AccountStatus.PermanentlySuspended)
+                {
+                    return null;
+                }
+                var rejoin = false;
+                // check if we need to remove the player from
+                // their active session.
+
                 var sessionChars = gameData.GetSessionCharacters(session);
                 if (sessionChars != null && sessionChars.Count > 0)
                 {
@@ -411,74 +437,79 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     SendRemovePlayerFromSessionToGame(character, session);
                 }
-            }
 
-            var resx = gameData.GetResourcesByCharacterId(character.Id);
-            if (resx == null)
-            {
-                // uh oh!
-                logger.LogError(character.Name + " does not have any resources saved!! Did this get lost in a recover step?");
-                resx = new Resources
+                var resx = gameData.GetResourcesByCharacterId(character.Id);
+                if (resx == null)
                 {
-                    Id = Guid.NewGuid()
-                };
+                    // uh oh!
+                    logger.LogError(character.Name + " does not have any resources saved!! Did this get lost in a recover step?");
+                    resx = new Resources
+                    {
+                        Id = Guid.NewGuid()
+                    };
 
-                character.ResourcesId = resx.Id;
-                gameData.Add(resx);
-            }
-
-            var app = gameData.GetAppearance(character.SyntyAppearanceId);
-
-            if (app == null)
-            {
-                // player not properly initialized.
-
-                app = GenerateRandomSyntyAppearance();
-                character.SyntyAppearanceId = app.Id;
-                gameData.Add(app);
-            }
-
-            var clanMembership = gameData.GetClanMembership(character.Id);
-            if (clanMembership != null)
-            {
-                var role = gameData.GetClanRole(clanMembership.ClanRoleId);
-                if (role != null && app != null && app.Cape == -1)
-                {
-                    app.Cape = role.Cape;
+                    character.ResourcesId = resx.Id;
+                    gameData.Add(resx);
                 }
-            }
-            else if (app != null)
-            {
-                app.Cape = -1;
-            }
 
-            character.LastUsed = DateTime.UtcNow;
+                var app = gameData.GetAppearance(character.SyntyAppearanceId);
 
-            if (character.StateId != null)
-            {
-                var state = gameData.GetCharacterState(character.StateId);
-                if (state != null && state.Island == "war")
+                if (app == null)
                 {
-                    state.Island = null;
-                    state.X = null;
-                    state.Y = null;
-                    state.Z = null;
+                    // player not properly initialized.
+
+                    app = GenerateRandomSyntyAppearance();
+                    character.SyntyAppearanceId = app.Id;
+                    gameData.Add(app);
                 }
+
+                var clanMembership = gameData.GetClanMembership(character.Id);
+                if (clanMembership != null)
+                {
+                    var role = gameData.GetClanRole(clanMembership.ClanRoleId);
+                    if (role != null && app != null && app.Cape == -1)
+                    {
+                        app.Cape = role.Cape;
+                    }
+                }
+                else if (app != null)
+                {
+                    app.Cape = -1;
+                }
+
+                character.LastUsed = DateTime.UtcNow;
+
+                if (character.StateId != null)
+                {
+                    var state = gameData.GetCharacterState(character.StateId);
+                    if (state != null && state.Island == "war")
+                    {
+                        state.Island = null;
+                        state.X = null;
+                        state.Y = null;
+                        state.Z = null;
+                    }
+                }
+
+                await SendUserRoleToRavenBotAsync(user);
+
+                await this.TrySendToExtensionAsync(character, new PlayerAdd
+                {
+                    Identifier = character.Identifier,
+                    UserId = user.UserId,
+                    UserName = user.UserName,
+                    CharacterId = character.Id
+                });
+
+                gameData.ResetCharacterSessionState(session.Id, character.Id);
+
+                return character.Map(gameData, user, rejoin, true);
             }
-
-            await SendUserRoleToRavenBotAsync(user);
-
-            await this.TrySendToExtensionAsync(character, new PlayerAdd
+            catch (Exception exc)
             {
-                Identifier = character.Identifier,
-                UserId = user.UserId,
-                UserName = user.UserName,
-                CharacterId = character.Id
-            });
-
-            gameData.ResetCharacterSessionState(session.Id, character.Id);
-
-            return character.Map(gameData, user, rejoin, true);
+                logger.LogError("AddPlayerToSession failed; character " + user?.UserName + ", " + character?.Identifier + ", session id " + session?.Id + ", session owner id " + session?.UserId + "; " + exc);
+                return null;
+            }
         }
 
         public Task<bool> RemovePlayerFromActiveSession(SessionToken token, Guid characterId)
