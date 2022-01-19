@@ -700,7 +700,7 @@ namespace RavenNest.BusinessLogic.Data
 
         private void AddOrReplace(IReadOnlyList<ItemCraftingRequirement> requirements, ItemCraftingRequirement itemCraftingRequirement)
         {
-            var existing = requirements.FirstOrDefault(x => x.ItemId == itemCraftingRequirement.ItemId);
+            var existing = requirements.FirstOrDefault(x => x.ResourceItemId == itemCraftingRequirement.ResourceItemId);
             if (existing != null)
             {
                 if (existing.Amount != itemCraftingRequirement.Amount)
