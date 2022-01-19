@@ -466,6 +466,11 @@ namespace RavenNest.BusinessLogic.Data
                 return items.Entities.FirstOrDefault(x => (ItemCategory)x.Category == ItemCategory.Resource && x.Name.Contains(containsName, StringComparison.OrdinalIgnoreCase));
             }
 
+            var etherCraftingLevel = 280;
+            var lionCraftingLevel = 240;
+            var phantomCraftingLevel = 200; // change to 210 ?
+
+
             var ingot = GetItemByCategory(ItemCategory.Resource, "ore ingot");
             var wood = GetItemByCategory(ItemCategory.Resource, "wood plank");
             var gold = GetItemByCategory(ItemCategory.Resource, "gold");
@@ -475,18 +480,15 @@ namespace RavenNest.BusinessLogic.Data
                 // Make lionsbane craftable
 
                 var nl = item.Name.ToLower();
-                if (nl.Contains("lionsbane"))
+                if (item.RequiredCraftingLevel >= 1000)
                 {
-                    item.RequiredCraftingLevel = 280;
-                }
-
-                if (nl.StartsWith("ether "))
-                {
-                    item.RequiredCraftingLevel = 330;
+                    item.RequiredCraftingLevel = 1000;
+                    item.Craftable = false;
                 }
 
                 if (item.RequiredCraftingLevel < 1000)
                 {
+                    item.Craftable = true;
                     var requirements = GetCraftingRequirements(item.Id) ?? new List<ItemCraftingRequirement>();
                     if (requirements != null && requirements.Count > 0 || item.WoodCost > 0 || item.OreCost > 0)
                     {
@@ -576,6 +578,7 @@ namespace RavenNest.BusinessLogic.Data
                         resType = GetItemByCategory(ItemCategory.Resource, "phantom core");
                         ingotCount = 75;
                         woodCount = woodCount * 15;
+                        item.RequiredCraftingLevel = phantomCraftingLevel;
                     }
 
                     if (nl.Contains("lionsbane"))
@@ -584,7 +587,7 @@ namespace RavenNest.BusinessLogic.Data
                         ingotCount = 90;
                         woodCount = woodCount * 18;
                         resCount = 3;
-                        item.RequiredCraftingLevel = 240;
+                        item.RequiredCraftingLevel = lionCraftingLevel;
                     }
 
                     if (nl.StartsWith("ether "))
@@ -593,7 +596,7 @@ namespace RavenNest.BusinessLogic.Data
                         ingotCount = 120;
                         woodCount = woodCount * 24;
                         resCount = 5;
-                        item.RequiredCraftingLevel = 280;
+                        item.RequiredCraftingLevel = etherCraftingLevel;
                     }
                     switch (type)
                     {

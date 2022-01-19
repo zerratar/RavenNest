@@ -1,268 +1,362 @@
 ﻿@page "/items"
 @page "/items/{Id}"
 @using RavenNest.Blazor.Services
+@using RavenNest.DataModels
 @inject NavigationManager NavigationManager
 @inject AuthService AuthService
 @inject ItemService ItemService
 @inject IJSRuntime JS
 
 <div class="top-section">
-  <div class="hero-text">
-    <h1>All Items</h1>
-  </div>
+    <div class="hero-text">
+        <h1>All Items</h1>
+    </div>
 </div>
 
 <div class="white-section-break"></div>
 <div class="page-content">
-  <div class="section">
+    <div class="section">
 
-    @if (items == null)
-    {
-      <LoadIndicator></LoadIndicator>
-    }
-    else
-    {
+        @if (items == null)
+        {
+            <LoadIndicator></LoadIndicator>
+        }
+        else
+        {
 
-      @if (sorting)
-      {
-        <LoadIndicator></LoadIndicator>
-      }
+            @if (sorting)
+            {
+                <LoadIndicator></LoadIndicator>
+            }
 
-      <table class="items-list">
-        <thead>
-          <tr>
-            <th></th>
-            <th @onclick="SortByName">Name <span>@GetIndicator("name")</span></th>
-            <th @onclick="SortByStats">Stats <span>@GetIndicator("stats")</span></th>
-            <th @onclick="SortByLevelReq">Level Req <span>@GetIndicator("lev-req")</span></th>
-            <th @onclick="SortByCategory">Category <span>@GetIndicator("category")</span></th>
-            <th @onclick="SortByType">Item Type <span>@GetIndicator("type")</span></th>
-            <th @onclick="SortByMaterial">Material Type <span>@GetIndicator("material")</span></th>
-            <th @onclick="SortByCraftingLevel">Crafting Level <span>@GetIndicator("crafting")</span></th>
-            <th @onclick="SortByVendorPrice">Vendor Price <span>@GetIndicator("vendor")</span></th>
-            <th @onclick="SortByCrafting">Crafting Requirements <span>@GetIndicator("cra-req")</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          @foreach (var item in items)
-          {
-            <tr id="@item.Id" class="@(Id == item.Id.ToString() ? "item-row selected" : "item-row")">
-              <td><img src="/imgs/items/@(item.Id).png" style="width: 40px" /></td>
-              <td class='item'>@item.Name</td>
-              <td class='item'>
-                @if (item.WeaponAim > 0)
-                {
-                  <span class="item-stat" title="Weapon Aim - Increases your hit rate in melee"><i class="fas fa-crosshairs"></i>@item.WeaponAim</span>
-                }
-                @if (item.WeaponPower > 0)
-                {
-                  <span class="item-stat" title="Weapon Power - Increases your maximum damage in melee"><i class="fas fa-swords"></i>@item.WeaponPower</span>
-                }
-                @if (item.RangedAim > 0)
-                {
-                  <span class="item-stat" title="Ranged Aim - Increases your ranged hit rate"><i class="fas fa-crosshairs"></i>@item.RangedAim</span>
-                }
-                @if (item.RangedPower > 0)
-                {
-                  <span class="item-stat" title="Ranged Power - Increases your ranged maximum damage"><i class="fas fa-bow-arrow"></i>@item.RangedPower</span>
-                }
-                @if (item.MagicAim > 0)
-                {
-                  <span class="item-stat" title="Magic Aim - Increases your magic hit rate">
-                    <i class="fas fa-wand"></i>@item.MagicAim
-                  </span>
-                }
-                @if (item.MagicPower > 0)
-                {
-                  <span class="item-stat" title="Magic Power - Increases your magic maximum damage">
-                    <i class="fas fa-hand-holding-magic"></i>
-                    @item.MagicPower
-                  </span>
-                }
-                @if (item.ArmorPower > 0)
-                {
-                  <span class="item-stat" title="Armor Power - Decreases the hit rate of your attacker"><i class="fas fa-shield"></i>@item.ArmorPower</span>
-                }
-              </td>
-              <td class='item'>
-                @if (item.RequiredAttackLevel > 0)
-                {
-                  <span class="item-stat" title="Required Attack Level">
-                    <i class="fas fa-swords"></i>
-                    @item.RequiredAttackLevel
-                  </span>
-                }
-                @if (item.RequiredDefenseLevel > 0)
-                {
-                  <span class="item-stat" title="Required Defense Level">
-                    <i class="fas fa-shield"></i>
-                    @item.RequiredDefenseLevel
-                  </span>
-                }
-                @if (item.RequiredMagicLevel > 0)
-                {
-                  <span class="item-stat" title="Required Magic Level">
-                    <i class="fas fa-hand-holding-magic"></i>
-                    @item.RequiredMagicLevel
-                  </span>
-                }
-                @if (item.RequiredRangedLevel > 0)
-                {
-                  <span class="item-stat" title="Required Ranged Level">
-                    <i class="fas fa-bow-arrow"></i>
-                    @item.RequiredRangedLevel
-                  </span>
-                }
-              </td>
-              <td class='item'>@item.Category</td>
-              <td class='item'>@item.Type</td>
-              <td class='item'>@item.Material</td>
-              <td class='item'>@item.RequiredCraftingLevel</td>
-              <td class='item'>@item.ShopSellPrice&nbsp;<img class="ravenCoins" src="/favicon.png" /></td>
-              <td class='item'>
-                @foreach (var req in item.CraftingRequirements)
-                {
-                  var reqItem = items.First(x => x.Id == req.ResourceItemId);
-                  <span><a href="/items/@reqItem.Id">@(reqItem.Name)</a> x@(req.Amount)&nbsp;</span>
-                }
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
-  </div>
+            <table class="items-list">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th @onclick="SortByName">Name <span>@GetIndicator("name")</span></th>
+                        <th @onclick="SortByStats">Stats <span>@GetIndicator("stats")</span></th>
+                        <th @onclick="SortByLevelReq">Level Req <span>@GetIndicator("lev-req")</span></th>
+                        <th @onclick="SortByCategory">Category <span>@GetIndicator("category")</span></th>
+                        <th @onclick="SortByType">Item Type <span>@GetIndicator("type")</span></th>
+                        <th @onclick="SortByMaterial">Material Type <span>@GetIndicator("material")</span></th>
+                        <th @onclick="SortByCraftingLevel">Crafting Level <span>@GetIndicator("crafting")</span></th>
+                        <th @onclick="SortByVendorPrice">Vendor Price <span>@GetIndicator("vendor")</span></th>
+                        <th @onclick="SortByCrafting">Crafting Requirements <span>@GetIndicator("cra-req")</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in items)
+                    {
+                        <tr id="@item.Id" class="@(Id == item.Id.ToString() ? "item-row selected" : "item-row")">
+                            <td><img src="/imgs/items/@(item.Id).png" style="width: 40px" /></td>
+                            <td class='item'>@item.Name</td>
+                            <td class='item'>
+                                @if (item.WeaponAim > 0)
+                                {
+                                    <span class="item-stat" title="Weapon Aim - Increases your hit rate in melee"><i class="fas fa-crosshairs"></i>@item.WeaponAim</span>
+                                }
+                                @if (item.WeaponPower > 0)
+                                {
+                                    <span class="item-stat" title="Weapon Power - Increases your maximum damage in melee"><i class="fas fa-swords"></i>@item.WeaponPower</span>
+                                }
+                                @if (item.RangedAim > 0)
+                                {
+                                    <span class="item-stat" title="Ranged Aim - Increases your ranged hit rate"><i class="fas fa-crosshairs"></i>@item.RangedAim</span>
+                                }
+                                @if (item.RangedPower > 0)
+                                {
+                                    <span class="item-stat" title="Ranged Power - Increases your ranged maximum damage"><i class="fas fa-bow-arrow"></i>@item.RangedPower</span>
+                                }
+                                @if (item.MagicAim > 0)
+                                {
+                                    <span class="item-stat" title="Magic Aim - Increases your magic hit rate">
+                                        <i class="fas fa-wand"></i>@item.MagicAim
+                                    </span>
+                                }
+                                @if (item.MagicPower > 0)
+                                {
+                                    <span class="item-stat" title="Magic Power - Increases your magic maximum damage">
+                                        <i class="fas fa-hand-holding-magic"></i>
+                                        @item.MagicPower
+                                    </span>
+                                }
+                                @if (item.ArmorPower > 0)
+                                {
+                                    <span class="item-stat" title="Armor Power - Decreases the hit rate of your attacker"><i class="fas fa-shield"></i>@item.ArmorPower</span>
+                                }
+                                @if ((item.WeaponAim + item.WeaponPower + item.RangedAim + item.RangedPower + item.MagicAim + item.MagicPower + item.ArmorPower) == 0)
+                                {
+                                    <span>-</span>
+                                }
+                            </td>
+                            <td class='item'>
+                                @if (item.RequiredAttackLevel > 0)
+                                {
+                                    <span class="item-stat" title="Required Attack Level">
+                                        <i class="fas fa-swords"></i>
+                                        @item.RequiredAttackLevel
+                                    </span>
+                                }
+                                @if (item.RequiredDefenseLevel > 0)
+                                {
+                                    <span class="item-stat" title="Required Defense Level">
+                                        <i class="fas fa-shield"></i>
+                                        @item.RequiredDefenseLevel
+                                    </span>
+                                }
+                                @if (item.RequiredMagicLevel > 0)
+                                {
+                                    <span class="item-stat" title="Required Magic Level">
+                                        <i class="fas fa-hand-holding-magic"></i>
+                                        @item.RequiredMagicLevel
+                                    </span>
+                                }
+                                @if (item.RequiredRangedLevel > 0)
+                                {
+                                    <span class="item-stat" title="Required Ranged Level">
+                                        <i class="fas fa-bow-arrow"></i>
+                                        @item.RequiredRangedLevel
+                                    </span>
+                                }
+                                @if ((item.RequiredRangedLevel + item.RequiredMagicLevel + item.RequiredDefenseLevel + item.RequiredAttackLevel) == 0)
+                                {
+                                    <span>-</span>
+                                }
+                            </td>
+                            <td class='item'>@item.Category</td>
+                            <td class='item'>@GetTypeName(item)</td>
+                            <td class='item'>@GetMaterialName(item)</td>
+                            <td class='item'>
+                                @if (item.Craftable.GetValueOrDefault())
+                                {
+                                    <span>@item.RequiredCraftingLevel</span>
+                                }
+                                else
+                                {
+                                    <span>-</span>
+                                }
+                            </td>
+                            <td class='item'>@item.ShopSellPrice&nbsp;<img class="ravenCoins" src="/favicon.png" /></td>
+                            <td class='item'>
+                                @foreach (var req in item.CraftingRequirements)
+                                {
+                                    var reqItem = items.First(x => x.Id == req.ResourceItemId);
+                                    <span><a href="/items/@reqItem.Id">@(reqItem.Name)</a> x@(req.Amount)&nbsp;</span>
+                                }
+                                @if (item.OreCost > 0)
+                                {
+                                    <span>Ore x@(item.OreCost)&nbsp;</span>
+                                }
+                                @if (item.WoodCost > 0)
+                                {
+                                    <span>Wood x@(item.WoodCost)&nbsp;</span>
+                                }
+                                @if (!item.Craftable.GetValueOrDefault())
+                                {
+                                    <span>Not craftable</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
 </div>
 @code {
 
-  [Parameter]
-  public string Id { get; set; }
+    [Parameter]
+    public string Id { get; set; }
 
-  private bool sorting;
-  private RavenNest.Models.ItemCollection items;
+    private bool sorting;
+    private RavenNest.Models.ItemCollection items;
 
-  private string sort = "name";
-  private SortDirection sortDirection;
+    private string sort = "name";
+    private SortDirection sortDirection;
 
-  protected override void OnInitialized()
-  {
-    LoadItems();
-  }
-  
-  private async void LoadItems()
-  {
-    items = new Models.ItemCollection((await ItemService.GetItemsAsync()).OrderBy(x => x.Name));
-    StateHasChanged();
-  }
-
-
-  protected override void OnAfterRender(bool firstRender)
-  {
-    base.OnAfterRender(firstRender);
-    if (!string.IsNullOrEmpty(Id))
-      ScrollToElementId(Id);
-  }
-
-  private MarkupString GetIndicator(string value)
-  {
-    if (value != sort)
+    protected override void OnInitialized()
     {
-      return (MarkupString)"";
+        LoadItems();
     }
 
-    return (MarkupString)(sortDirection == SortDirection.Ascending ? "&uarr;" : "&darr;");
-  }
-
-  private async void SortByName()
-  {
-    SetSorting("name");
-    await SortBy(x => x.Name);
-  }
-  private async void SortByLevelReq()
-  {
-    SetSorting("lev-req");
-    await SortBy(x => (x.RequiredAttackLevel + x.RequiredDefenseLevel + x.RequiredMagicLevel + x.RequiredRangedLevel + x.RequiredSlayerLevel));
-  }
-  private async void SortByCategory()
-  {
-    SetSorting("category");
-    await SortBy(x => (int)x.Category);
-  }
-  private async void SortByType()
-  {
-    SetSorting("type");
-    await SortBy(x => (int)x.Type);
-  }
-  private async void SortByMaterial()
-  {
-    SetSorting("material");
-    await SortBy(x => (int)x.Material);
-  }
-  private async void SortByCraftingLevel()
-  {
-    SetSorting("crafting");
-    await SortBy(x => x.RequiredCraftingLevel);
-  }
-  private async void SortByVendorPrice()
-  {
-    SetSorting("vendor");
-    await SortBy(x => x.ShopSellPrice);
-  }
-
-  private async void SortByCrafting()
-  {
-    //SetSorting("cra-req");
-    //await SortBy(x => x.RequiredCraftingLevel);
-  }
-
-  private async void SortByStats()
-  {
-    SetSorting("stats");
-    await SortBy(x => (x.ArmorPower + x.MagicPower + x.RangedPower + x.WeaponPower + x.MagicAim + x.RangedAim + x.WeaponAim));
-  }
-
-  private async Task SortBy<T>(Func<Models.Item, T> sort)
-  {
-    try
+    private async void LoadItems()
     {
-      sorting = true;
-      await Task.Run(() =>
-      {
-        if (sortDirection == SortDirection.Descending)
+        items = new Models.ItemCollection((await ItemService.GetItemsAsync()).OrderBy(x => x.Name));
+        StateHasChanged();
+    }
+
+    private string GetTypeName(RavenNest.Models.Item item)
+    {
+        var str = item.Type.ToString();
+        var start = Char.ToUpper(str[0]);
+        var process = str.Substring(1);
+        process.Select((x, i) =>
         {
-          items = new Models.ItemCollection(items.OrderByDescending(sort));
-          return;
+            if (Char.IsUpper(x)) return i;
+            return -1;
+        })
+        .Reverse()
+        .ForEach(x =>
+        {
+            if (x != -1)
+                process = process.Insert(x, " ");
+        });
+
+        return start + process;
+    }
+
+    private string GetMaterialName(RavenNest.Models.Item item)
+    {
+        if (item.Material == Models.ItemMaterial.Ultima)
+        {
+            return "Abraxas";
         }
-        items = new Models.ItemCollection(items.OrderBy(sort));
-      });
-    }
-    finally
-    {
-      sorting = false;
-      StateHasChanged();
-    }
-  }
 
-  private void SetSorting(string value)
-  {
-    if (sort != value)
-    {
-      sortDirection = SortDirection.Ascending;
-    }
-    else
-    {
-      sortDirection = (SortDirection)(((int)sortDirection + 1) % Enum.GetValues(typeof(SortDirection)).Length);
-    }
-    sort = value;
-  }
-  private async void ScrollToElementId(string elementId)
-  {
-    await JS.InvokeAsync<bool>("scrollToElementId", new object[] { elementId, 5 });
-  }
+        if (item.Type == Models.ItemType.None || item.Material == Models.ItemMaterial.None)
+        {
+            var itemNameMaterial = "";
+            if (item.Name.Contains(" "))
+            {
+                itemNameMaterial = item.Name.Split(' ')[0];
+            }
+            if (itemNameMaterial == "Ethereum")
+            {
+                return "Ether";
+            }
+            if (itemNameMaterial.ToLower() == "lionite")
+            {
+                return "Lionsbane";
+            }
+            if (itemNameMaterial.ToLower() == "gold")
+            {
+                return "Gold";
+            }
+            if (itemNameMaterial.ToLower() == "abraxas")
+            {
+                return "Abraxas";
+            }
 
-  private enum SortDirection
-  {
-    Ascending,
-    Descending
-  }
+            if (!string.IsNullOrEmpty(itemNameMaterial) && item.Material == Models.ItemMaterial.None)
+            {
+                if (Enum.TryParse<Models.ItemMaterial>(itemNameMaterial, true, out var res))
+                {
+                    return res.ToString();
+                }
+            }
+
+            return "-";
+        }
+
+        return item.Material.ToString();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+        if (!string.IsNullOrEmpty(Id))
+            ScrollToElementId(Id);
+    }
+
+    private MarkupString GetIndicator(string value)
+    {
+        if (value != sort)
+        {
+            return (MarkupString)"";
+        }
+
+        return (MarkupString)(sortDirection == SortDirection.Ascending ? "&uarr;" : "&darr;");
+    }
+
+    private async void SortByName()
+    {
+        SetSorting("name");
+        await SortBy(x => x.Name);
+    }
+    private async void SortByLevelReq()
+    {
+        SetSorting("lev-req");
+        await SortBy(x => (x.RequiredAttackLevel + x.RequiredDefenseLevel + x.RequiredMagicLevel + x.RequiredRangedLevel + x.RequiredSlayerLevel));
+    }
+    private async void SortByCategory()
+    {
+        SetSorting("category");
+        await SortBy(x => (int)x.Category);
+    }
+    private async void SortByType()
+    {
+        SetSorting("type");
+        await SortBy(x => (int)x.Type);
+    }
+    private async void SortByMaterial()
+    {
+        SetSorting("material");
+        await SortBy(x => (int)x.Material);
+    }
+    private async void SortByCraftingLevel()
+    {
+        SetSorting("crafting");
+        await SortBy(x => x.RequiredCraftingLevel);
+    }
+    private async void SortByVendorPrice()
+    {
+        SetSorting("vendor");
+        await SortBy(x => x.ShopSellPrice);
+    }
+
+    private async void SortByCrafting()
+    {
+        //SetSorting("cra-req");
+        //await SortBy(x => x.RequiredCraftingLevel);
+    }
+
+    private async void SortByStats()
+    {
+        SetSorting("stats");
+        await SortBy(x => (x.ArmorPower + x.MagicPower + x.RangedPower + x.WeaponPower + x.MagicAim + x.RangedAim + x.WeaponAim));
+    }
+
+    private async Task SortBy<T>(Func<Models.Item, T> sort)
+    {
+        try
+        {
+            sorting = true;
+            await Task.Run(() =>
+            {
+                if (sortDirection == SortDirection.Descending)
+                {
+                    items = new Models.ItemCollection(items.OrderByDescending(sort));
+                    return;
+                }
+                items = new Models.ItemCollection(items.OrderBy(sort));
+            });
+        }
+        finally
+        {
+            sorting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void SetSorting(string value)
+    {
+        if (sort != value)
+        {
+            sortDirection = SortDirection.Ascending;
+        }
+        else
+        {
+            sortDirection = (SortDirection)(((int)sortDirection + 1) % Enum.GetValues(typeof(SortDirection)).Length);
+        }
+        sort = value;
+    }
+    private async void ScrollToElementId(string elementId)
+    {
+        await JS.InvokeAsync<bool>("scrollToElementId", new object[] { elementId, 5 });
+    }
+
+    private enum SortDirection
+    {
+        Ascending,
+        Descending
+    }
 }
