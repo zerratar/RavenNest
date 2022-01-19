@@ -1282,34 +1282,41 @@ namespace RavenNest.BusinessLogic.Game
             foreach (var requirement in craftingRequirements)
             {
                 var stashItem = gameData.GetStashItem(character.UserId, requirement.ResourceItemId);
-                var availableResxAmount = stashItem != null ? stashItem.Amount : 0;
+                var availableAmount = stashItem != null ? stashItem.Amount : 0;
                 var resx = inventory.GetUnequippedItem(requirement.ResourceItemId);
 
-                availableResxAmount += resx.Amount;
-                var amountToRemove = requirement.Amount * craftableAmount;
+                availableAmount += resx.Amount;
+                var requiredAmount = requirement.Amount * craftableAmount;
 
-                if (availableResxAmount < amountToRemove)
+                if (availableAmount < requiredAmount)
                 {
                     return CraftItemResult.InsufficientResources;
                 }
 
                 if (resx.Amount <= 0)
                 {
-                    if (!gameData.RemoveFromStash(stashItem, amountToRemove))
+                    if (!gameData.RemoveFromStash(stashItem, requiredAmount))
                     {
                         return CraftItemResult.InsufficientResources;
                     }
                 }
-                else if (inventory.RemoveItem(resx, amountToRemove, out var leftToRemove))
-                {
-                    if (!gameData.RemoveFromStash(stashItem, (int)leftToRemove))
-                    {
-                        logger.LogError("Crafting Bug: Unable to remove items from stash (Res Id: " + requirement.ResourceItemId + ", Char Id: " + character.UserId + ", Amount: " + leftToRemove + ")");
-                    }
-                }
                 else
                 {
-                    return CraftItemResult.InsufficientResources;
+                    var invItemRemoved = inventory.RemoveItem(resx, requiredAmount, out var leftToRemove);
+                    if (stashItem == null && !invItemRemoved && leftToRemove == requiredAmount)
+                    {
+                        return CraftItemResult.InsufficientResources;
+                    }
+
+                    if (leftToRemove > 0)
+                    {
+                        if (!gameData.RemoveFromStash(stashItem, (int)leftToRemove))
+                        {
+                            var resItem = gameData.GetItem(requirement.ResourceItemId);
+                            logger.LogError("Crafting Bug: Unable to remove items from stash (Res Id: " + requirement.ResourceItemId + " [" + resItem.Name + "], Char Id: " + character.Id + " [" + character.Name + "], Amount: " + leftToRemove + ") "
+                                + " Amount in Stash: " + (stashItem?.Amount ?? 0));
+                        }
+                    }
                 }
             }
 
