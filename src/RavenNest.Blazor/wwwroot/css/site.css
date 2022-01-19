@@ -5,6 +5,9 @@ html, body {
     background-color: black;
 }
 
+a.nav-link.login {
+    color: black;
+}
 
 .h1, h1 {
     font-size: 2rem;
