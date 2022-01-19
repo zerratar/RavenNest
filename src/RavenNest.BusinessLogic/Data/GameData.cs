@@ -467,6 +467,7 @@ namespace RavenNest.BusinessLogic.Data
             }
 
             var ingot = GetItemByCategory(ItemCategory.Resource, "ore ingot");
+            var wood = GetItemByCategory(ItemCategory.Resource, "wood plank");
             var gold = GetItemByCategory(ItemCategory.Resource, "gold");
             foreach (var item in items.Entities)
             {
@@ -486,7 +487,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 if (item.RequiredCraftingLevel < 1000)
                 {
-                    var requirements = GetCraftingRequirements(item.Id);
+                    var requirements = GetCraftingRequirements(item.Id) ?? new List<ItemCraftingRequirement>();
                     if (requirements != null && requirements.Count > 0 || item.WoodCost > 0 || item.OreCost > 0)
                     {
                         if (requirements != null && requirements.Count > 0)
@@ -500,13 +501,14 @@ namespace RavenNest.BusinessLogic.Data
                             }
                         }
 
-                        continue;
+                        //continue;
                     }
 
                     Item resType = null;
-                    var ingotCount = 0;
-                    var goldCount = 0;
                     var type = (ItemType)item.Type;
+                    var ingotCount = 0;
+                    var woodCount = (type == ItemType.TwoHandedStaff || type == ItemType.TwoHandedBow || type == ItemType.TwoHandedSword || type == ItemType.Shield) ? 5 : 0;
+                    var goldCount = 0;
                     var resCount = 0;
 
                     if (nl.Contains("emerald"))
@@ -533,50 +535,65 @@ namespace RavenNest.BusinessLogic.Data
                         resType = GetItemByCategory(ItemCategory.Resource, "steel nugget");
                         ingotCount = 5;
                     }
+                    if (nl.Contains("gold "))
+                    {
+                        resType = gold;
+                        ingotCount = 5;
+                    }
                     if (nl.Contains("mithril"))
                     {
                         resType = GetItemByCategory(ItemCategory.Resource, "mithril nugget");
                         ingotCount = 10;
+                        woodCount = woodCount * 2;
                     }
                     if (nl.Contains("adamantite"))
                     {
                         resType = GetItemByCategory(ItemCategory.Resource, "adamantite nugget");
                         ingotCount = 15;
+                        woodCount = woodCount * 3;
                     }
                     if (nl.Contains("rune"))
                     {
                         resType = GetItemByCategory(ItemCategory.Resource, "rune nugget");
                         ingotCount = 25;
+                        woodCount = woodCount * 5;
                     }
                     if (nl.Contains("dragon"))
                     {
                         resType = GetItemByCategory(ItemCategory.Resource, "dragon scale");
                         ingotCount = 35;
+                        woodCount = woodCount * 7;
                     }
                     if (nl.Contains("abraxas"))
                     {
                         resType = GetItemByCategory(ItemCategory.Resource, "abraxas spirit");
                         ingotCount = 60;
+                        woodCount = woodCount * 12;
                     }
 
                     if (nl.Contains("phantom"))
                     {
                         resType = GetItemByCategory(ItemCategory.Resource, "phantom core");
                         ingotCount = 75;
+                        woodCount = woodCount * 15;
                     }
 
                     if (nl.Contains("lionsbane"))
                     {
                         resType = GetItemByCategory(ItemCategory.Resource, "lionite");
                         ingotCount = 90;
+                        woodCount = woodCount * 18;
                         resCount = 3;
+                        item.RequiredCraftingLevel = 240;
                     }
 
                     if (nl.StartsWith("ether "))
                     {
                         resType = GetItemByCategory(ItemCategory.Resource, "ethereum");
                         ingotCount = 120;
+                        woodCount = woodCount * 24;
                         resCount = 5;
+                        item.RequiredCraftingLevel = 280;
                     }
                     switch (type)
                     {
@@ -627,41 +644,13 @@ namespace RavenNest.BusinessLogic.Data
                             break;
                     }
 
-                    if (resType == null || ingot == null) continue;
 
-                    // special case for bronze, we use ingots only.
-                    if (ingotCount == 0 && resCount > 0)
+                    //if (resType == null || ingot == null) continue;
+
+                    if (ingotCount > 0 && ingot != null)
                     {
-                        Add(new ItemCraftingRequirement()
-                        {
-                            Id = Guid.NewGuid(),
-                            Amount = resCount,
-                            ItemId = item.Id,
-                            ResourceItemId = ingot.Id
-                        });
-                    }
-                    else
-                    {
-                        Add(new ItemCraftingRequirement()
-                        {
-                            Id = Guid.NewGuid(),
-                            Amount = resCount,
-                            ItemId = item.Id,
-                            ResourceItemId = resType.Id
-                        });
 
-                        if (goldCount > 0 && gold != null)
-                        {
-                            Add(new ItemCraftingRequirement()
-                            {
-                                Id = Guid.NewGuid(),
-                                Amount = goldCount,
-                                ItemId = item.Id,
-                                ResourceItemId = gold.Id
-                            });
-                        }
-
-                        Add(new ItemCraftingRequirement()
+                        AddOrReplace(requirements, new ItemCraftingRequirement()
                         {
                             Id = Guid.NewGuid(),
                             Amount = ingotCount,
@@ -669,11 +658,56 @@ namespace RavenNest.BusinessLogic.Data
                             ResourceItemId = ingot.Id
                         });
                     }
+
+                    if (woodCount > 0 && wood != null)
+                    {
+                        AddOrReplace(requirements, new ItemCraftingRequirement()
+                        {
+                            Id = Guid.NewGuid(),
+                            Amount = woodCount,
+                            ItemId = item.Id,
+                            ResourceItemId = wood.Id
+                        });
+                    }
+
+                    if (goldCount > 0 && gold != null)
+                    {
+                        AddOrReplace(requirements, new ItemCraftingRequirement()
+                        {
+                            Id = Guid.NewGuid(),
+                            Amount = goldCount,
+                            ItemId = item.Id,
+                            ResourceItemId = gold.Id
+                        });
+                    }
+
+                    if (resCount > 0 && resType != null)
+                    {
+                        AddOrReplace(requirements, new ItemCraftingRequirement()
+                        {
+                            Id = Guid.NewGuid(),
+                            Amount = resCount,
+                            ItemId = item.Id,
+                            ResourceItemId = resType.Id
+                        });
+                    }
                 }
             }
         }
 
+        private void AddOrReplace(IReadOnlyList<ItemCraftingRequirement> requirements, ItemCraftingRequirement itemCraftingRequirement)
+        {
+            var existing = requirements.FirstOrDefault(x => x.ItemId == itemCraftingRequirement.ItemId);
+            if (existing != null)
+            {
+                if (existing.Amount != itemCraftingRequirement.Amount)
+                    existing.Amount = itemCraftingRequirement.Amount;
 
+                return;
+            }
+
+            Add(itemCraftingRequirement);
+        }
 
         private void EnsureExpMultipliersWithinBounds(EntitySet<ExpMultiplierEvent, Guid> expMultiplierEvents)
         {

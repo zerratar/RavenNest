@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -99,12 +100,24 @@ namespace RavenNest.Controllers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected string GetHeaderValues()
+        {
+            var headers = HttpContext?.Request?.Headers;
+            if (headers != null)
+            {
+                return string.Join(", ", headers.Select(header => header.Key + ": " + header.Value));
+            }
+
+            return null;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void AssertSessionTokenValidity(SessionToken sessionToken, [CallerMemberName] string callingMethod = null)
         {
             string errorMessage = null;
             if (sessionToken == null)
             {
-                errorMessage = "Session token cannot be null.";
+                errorMessage = "Session token cannot be null. ";
             }
             else if (sessionToken.SessionId == Guid.Empty)
             {
@@ -115,6 +128,10 @@ namespace RavenNest.Controllers
                 errorMessage = "Session token has expired.";
             }
 
+#if DEBUG
+            errorMessage += " " + GetHeaderValues();
+#endif
+
             if (!string.IsNullOrEmpty(errorMessage))
             {
                 var authTokenJson = sessionToken != null ? Newtonsoft.Json.JsonConvert.SerializeObject(sessionToken) : "{}";
@@ -123,5 +140,4 @@ namespace RavenNest.Controllers
             }
         }
     }
-
 }
