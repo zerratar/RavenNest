@@ -1804,15 +1804,15 @@ namespace RavenNest.BusinessLogic.Game
             // only send directly between your own characters. This is not a gift.
             if (otherCharacter.UserId != character.UserId) return false;
 
-            var inv1 = inventoryProvider.Get(character.Id);
-            var inv2 = inventoryProvider.Get(otherCharacter.Id);
+            var sourceInventory = inventoryProvider.Get(character.Id);
+            var targetInventory = inventoryProvider.Get(otherCharacter.Id);
             var stack = gameData.GetInventoryItem(item.Id);
 
-            var stack2 = inv2.AddItem(stack, amount);
-            if (stack2 != null && inv1.RemoveItem(stack, amount))
+            if (sourceInventory.RemoveItem(stack, amount))
             {
+                var newItemStack = targetInventory.AddItem(stack, amount);
                 SendItemRemoveEvent(stack, (int)amount, character, true);
-                SendItemAddEvent(stack2, (int)amount, otherCharacter);
+                SendItemAddEvent(newItemStack, (int)amount, otherCharacter);
                 return true;
             }
 
