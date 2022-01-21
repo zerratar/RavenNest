@@ -1664,70 +1664,6 @@ namespace RavenNest.BusinessLogic.Game
                 });
         }
 
-        public long GiftItem(
-            SessionToken token,
-            string gifterUserId,
-            string receiverUserId,
-            Guid itemId,
-            long amount)
-        {
-            try
-            {
-                var gifter = GetCharacter(token, gifterUserId);
-                if (gifter == null) return 0;
-
-                if (!integrityChecker.VerifyPlayer(token.SessionId, gifter.Id, 0))
-                    return 0;
-
-                var receiver = GetCharacter(token, receiverUserId);
-                if (receiver == null) return 0;
-
-                var item = gameData.GetItem(itemId);
-                if (item == null || item.Soulbound.GetValueOrDefault())
-                    return 0;
-
-                var session = gameData.GetSession(token.SessionId);
-                var sessionOwner = gameData.GetUser(session.UserId);
-
-                string itemTag = null;
-                if (item.Category == (int)DataModels.ItemCategory.StreamerToken)
-                    itemTag = sessionOwner.UserId;
-
-                var inventory = inventoryProvider.Get(gifter.Id);
-
-                var gift = inventory.GetUnequippedItem(itemId, tag: itemTag);
-
-                if (gift.IsNull() || gift.Amount == 0)
-                    return 0;
-
-                if (gift.Soulbound)
-                    return 0;
-
-
-                var recvInventory = inventoryProvider.Get(receiver.Id);
-                var amountToGift = gift.Amount >= amount ? amount : (int)gift.Amount;
-                if (recvInventory.AddItem(gift, amountToGift) && inventory.RemoveItem(gift, amountToGift))
-                {
-                    return amount;
-                }
-
-                //recvInventory.EquipBestItems();
-                //gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, gameData.GetSession(token.SessionId), new ItemAdd
-                //{
-                //    UserId = receiverUserId,
-                //    Amount = giftedItemCount,
-                //    ItemId = itemId
-                //}));
-
-                return 0;
-            }
-            catch (Exception exc)
-            {
-                logger.LogError($"Unable to gift item (g {gifterUserId}, r {receiverUserId}, i {itemId}, a x{amount}): " + exc);
-                return 0;
-            }
-        }
-
         public bool EquipItem(Guid characterId, Models.InventoryItem item)
         {
             var character = gameData.GetCharacter(characterId);
@@ -1812,6 +1748,61 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             return false;
+        }
+
+        public long GiftItem(
+            SessionToken token,
+            string gifterUserId,
+            string receiverUserId,
+            Guid itemId,
+            long amount)
+        {
+            try
+            {
+                var gifter = GetCharacter(token, gifterUserId);
+                if (gifter == null) return 0;
+
+                if (!integrityChecker.VerifyPlayer(token.SessionId, gifter.Id, 0))
+                    return 0;
+
+                var receiver = GetCharacter(token, receiverUserId);
+                if (receiver == null) return 0;
+
+                var item = gameData.GetItem(itemId);
+                if (item == null || item.Soulbound.GetValueOrDefault())
+                    return 0;
+
+                var session = gameData.GetSession(token.SessionId);
+                var sessionOwner = gameData.GetUser(session.UserId);
+
+                string itemTag = null;
+                if (item.Category == (int)DataModels.ItemCategory.StreamerToken)
+                    itemTag = sessionOwner.UserId;
+
+                var inventory = inventoryProvider.Get(gifter.Id);
+
+                var gift = inventory.GetUnequippedItem(itemId, tag: itemTag);
+
+                if (gift.IsNull() || gift.Amount == 0)
+                    return 0;
+
+                if (gift.Soulbound)
+                    return 0;
+
+                var recvInventory = inventoryProvider.Get(receiver.Id);
+                var amountToGift = gift.Amount >= amount ? amount : (int)gift.Amount;
+                if (recvInventory.AddItem(gift, amountToGift) && inventory.RemoveItem(gift, amountToGift))
+                {
+                    return amount;
+                }
+
+                return 0;
+            }
+            catch (Exception exc)
+            {
+                logger.LogError($"Unable to gift item (g {gifterUserId}, r {receiverUserId}, i {itemId}, a x{amount}): " + exc);
+                return 0;
+            }
         }
 
         public bool SendToStash(Guid characterId, Models.InventoryItem item, long amount)
