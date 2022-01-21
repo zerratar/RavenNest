@@ -1706,9 +1706,9 @@ namespace RavenNest.BusinessLogic.Game
 
                 var recvInventory = inventoryProvider.Get(receiver.Id);
                 var amountToGift = gift.Amount >= amount ? amount : (int)gift.Amount;
-                if (recvInventory.AddItem(gift, amountToGift))
+                if (recvInventory.AddItem(gift, amountToGift) && inventory.RemoveItem(gift, amountToGift))
                 {
-                    inventory.RemoveItem(gift, amountToGift);
+                    return amount;
                 }
 
                 //recvInventory.EquipBestItems();
@@ -1719,7 +1719,7 @@ namespace RavenNest.BusinessLogic.Game
                 //    ItemId = itemId
                 //}));
 
-                return amount;
+                return 0;
             }
             catch (Exception exc)
             {
