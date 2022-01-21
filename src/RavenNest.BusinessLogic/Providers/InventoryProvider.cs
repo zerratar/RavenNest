@@ -12,14 +12,16 @@ namespace RavenNest.BusinessLogic.Providers
     public class PlayerInventory
     {
         private readonly Guid characterId;
+        private readonly ILogger logger;
         private readonly IGameData gameData;
         private readonly object mutex = new object();
         private List<InventoryItem> items;
 
         private static readonly TimeSpan PatreonRewardFrequency = TimeSpan.FromDays(1);
         private static readonly Random random = new Random();
-        public PlayerInventory(IGameData gameData, Guid characterId)
+        public PlayerInventory(ILogger logger, IGameData gameData, Guid characterId)
         {
+            this.logger = logger;
             this.gameData = gameData;
             this.characterId = characterId;
             items = GetInventoryItems(characterId);
@@ -392,19 +394,27 @@ namespace RavenNest.BusinessLogic.Providers
             return resultStack;
         }
 
-        public DataModels.InventoryItem AddItem(ReadOnlyInventoryItem itemToCopy, long amount)
+        public bool AddItem(ReadOnlyInventoryItem itemToCopy, long amount)
         {
-            if (CanBeStacked(itemToCopy))
+            try
             {
-                var existing = items.FirstOrDefault(x => CanBeStacked(x, itemToCopy));
-                if (existing != null)
+                if (CanBeStacked(itemToCopy))
                 {
-                    existing.Amount += amount;
-                    return existing;
+                    var existing = items.FirstOrDefault(x => CanBeStacked(x, itemToCopy));
+                    if (existing != null)
+                    {
+                        existing.Amount += amount;
+                        return true;
+                    }
                 }
+                return AddItemStack(itemToCopy, amount) != null;
             }
-
-            return AddItemStack(itemToCopy, amount);
+            catch (Exception exc)
+            {
+                var character = gameData.GetCharacter(this.characterId);
+                logger.LogError("Unable to add item: " + itemToCopy.Name + ", x" + amount + " to " + character?.Name + ". Exception: " + exc);
+                return false;
+            }
         }
 
         public InventoryItem AddItemStack(ReadOnlyInventoryItem itemToCopy, long amount)

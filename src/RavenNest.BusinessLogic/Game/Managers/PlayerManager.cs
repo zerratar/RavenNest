@@ -1696,27 +1696,22 @@ namespace RavenNest.BusinessLogic.Game
                 var inventory = inventoryProvider.Get(gifter.Id);
 
                 var gift = inventory.GetUnequippedItem(itemId, tag: itemTag);
-                if (gift.IsNull()) return 0;
+
+                if (gift.IsNull() || gift.Amount == 0)
+                    return 0;
 
                 if (gift.Soulbound)
                     return 0;
 
-                var giftedItemCount = amount;
-                if (gift.Amount >= amount)
-                {
-                    inventory.RemoveItem(gift, amount);
-                }
-                else
-                {
-                    giftedItemCount = (int)gift.Amount;
-                    inventory.RemoveStack(gift);
-                }
 
                 var recvInventory = inventoryProvider.Get(receiver.Id);
+                var amountToGift = gift.Amount >= amount ? amount : (int)gift.Amount;
+                if (recvInventory.AddItem(gift, amountToGift))
+                {
+                    inventory.RemoveItem(gift, amountToGift);
+                }
 
-                recvInventory.AddItem(gift, giftedItemCount);
                 //recvInventory.EquipBestItems();
-
                 //gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, gameData.GetSession(token.SessionId), new ItemAdd
                 //{
                 //    UserId = receiverUserId,
@@ -1724,7 +1719,7 @@ namespace RavenNest.BusinessLogic.Game
                 //    ItemId = itemId
                 //}));
 
-                return giftedItemCount;
+                return amount;
             }
             catch (Exception exc)
             {
