@@ -344,7 +344,7 @@ namespace RavenNest.BusinessLogic.Providers
                 InventoryItem resultStack = null;
                 if (CanBeStacked(i))
                 {
-                    var existing = items.FirstOrDefault(x => CanBeStacked(x, i));
+                    var existing = GetUnequipped(i);
                     if (existing != null)
                     {
                         existing.Amount += amount;
@@ -370,7 +370,7 @@ namespace RavenNest.BusinessLogic.Providers
                 InventoryItem resultStack = null;
                 if (CanBeStacked(itemToCopy))
                 {
-                    var existing = items.FirstOrDefault(x => CanBeStacked(x, itemToCopy));
+                    var existing = GetUnequipped(itemToCopy);
                     if (existing != null)
                     {
                         existing.Amount += amount;
@@ -393,7 +393,7 @@ namespace RavenNest.BusinessLogic.Providers
                 InventoryItem resultStack = null;
                 if (CanBeStacked(itemToCopy))
                 {
-                    var existing = items.FirstOrDefault(x => CanBeStacked(x, itemToCopy));
+                    var existing = GetUnequipped(itemToCopy);
                     if (existing != null)
                     {
                         existing.Amount += amount;
@@ -408,30 +408,20 @@ namespace RavenNest.BusinessLogic.Providers
                 return resultStack;
             }
         }
-
         public bool AddItem(ReadOnlyInventoryItem itemToCopy, long amount)
         {
-            try
+            lock (mutex)
             {
-                lock (mutex)
+                if (CanBeStacked(itemToCopy))
                 {
-                    if (CanBeStacked(itemToCopy))
+                    var existing = GetUnequipped(itemToCopy);
+                    if (existing != null)
                     {
-                        var existing = items.FirstOrDefault(x => CanBeStacked(x, itemToCopy));
-                        if (existing != null)
-                        {
-                            existing.Amount += amount;
-                            return true;
-                        }
+                        existing.Amount += amount;
+                        return true;
                     }
-                    return AddItemStack(itemToCopy, amount) != null;
                 }
-            }
-            catch (Exception exc)
-            {
-                var character = gameData.GetCharacter(this.characterId);
-                logger.LogError("Unable to add item: " + itemToCopy.Name + ", x" + amount + " to " + character?.Name + ". Exception: " + exc);
-                return false;
+                return AddItemStack(itemToCopy, amount) != null;
             }
         }
 
@@ -827,6 +817,30 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private InventoryItem GetUnequipped(Models.InventoryItem i)
+        {
+            lock (mutex) return items.FirstOrDefault(x => CanBeStacked(x, i) && !x.Equipped);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private InventoryItem GetUnequipped(DataModels.UserBankItem i)
+        {
+            lock (mutex) return items.FirstOrDefault(x => CanBeStacked(x, i) && !x.Equipped);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private InventoryItem GetUnequipped(DataModels.InventoryItem i)
+        {
+            lock (mutex) return items.FirstOrDefault(x => CanBeStacked(x, i) && !x.Equipped);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private InventoryItem GetUnequipped(ReadOnlyInventoryItem i)
+        {
+            lock (mutex) return items.FirstOrDefault(x => CanBeStacked(x, i) && !x.Equipped);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public InventoryItem GetUnequipped(Guid itemId)
         {
             lock (mutex)
