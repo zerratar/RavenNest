@@ -333,7 +333,7 @@ namespace RavenNest.BusinessLogic.Net
                             logger.LogError("[" + SessionToken.TwitchUserName + "] Error processing game update: " + exc.ToString());
                         }
 
-                        await Task.Delay(250);
+                        await Task.Delay(500);
                     }
 
                     logger.LogWarning("[" + SessionToken.TwitchUserName + "] Session terminated game loop (" + sessionToken.SessionId + ")");
