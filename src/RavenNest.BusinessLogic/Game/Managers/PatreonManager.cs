@@ -29,7 +29,6 @@ namespace RavenNest.BusinessLogic.Game
         public void RemovePledge(IPatreonData data)
         {
             var user = GetUser(data, out var patreon);
-
             return; // don't remove anything, but we should flag it to expire?
 
             //if (user != null &&
@@ -41,22 +40,15 @@ namespace RavenNest.BusinessLogic.Game
 
         public void UpdatePledge(IPatreonData data)
         {
-            var patreon = GetOrCreateUserPatreon(data);
-            var user = patreon.UserId != null ? gameData.GetUser(patreon.UserId.Value) : TryGetUser(data);
-
-            if (patreon.UserId == null && user != null)
-            {
-                patreon.UserId = user.Id;
-                patreon.TwitchUserId = user.UserId;
-            }
-
+            var user = GetUser(data, out var patreon);
             var currentPledgeAmount = patreon.PledgeAmount.GetValueOrDefault();
 
-            if (long.TryParse(data.PledgeAmountCents ?? "0", out var newPledgeAmount) && newPledgeAmount > currentPledgeAmount)
+            var newPledgeAmount = GetPledgeAmount(data);
+            if (newPledgeAmount > currentPledgeAmount)
             {
                 patreon.PledgeAmount = newPledgeAmount;
+                patreon.PledgeTitle = GetTierTitle(data);
                 patreon.Tier = data.Tier;
-                patreon.PledgeTitle = data.RewardTitle;
             }
 
             if (user != null && patreon.Tier > user.PatreonTier)
@@ -67,8 +59,6 @@ namespace RavenNest.BusinessLogic.Game
             patreon.Updated = DateTime.UtcNow;
         }
 
-
-
         private UserPatreon GetOrCreateUserPatreon(IPatreonData data)
         {
             var patreon = gameData.GetPatreonUser(data.PatreonId);
@@ -78,7 +68,10 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var now = DateTime.UtcNow;
-            long.TryParse(data.PledgeAmountCents ?? "0", out var pledgeAmount);
+            var firstName = data.FullName?.Split(' ')?.FirstOrDefault();
+
+            var pledgeAmount = GetPledgeAmount(data);
+            var title = GetTierTitle(data);
 
             patreon = new UserPatreon()
             {
@@ -87,9 +80,10 @@ namespace RavenNest.BusinessLogic.Game
                 FullName = data.FullName,
                 PatreonId = data.PatreonId,
                 PledgeAmount = pledgeAmount,
-                PledgeTitle = data.RewardTitle,
+                PledgeTitle = title,
                 Tier = data.Tier,
                 TwitchUserId = data.TwitchUserId,
+                FirstName = firstName,
                 //TwitchUserId = data.TwitchUserId ?? user?.UserId,                
                 //UserId = user?.Id,
                 Updated = now,
@@ -99,57 +93,59 @@ namespace RavenNest.BusinessLogic.Game
             return patreon;
         }
 
-        private User GetUser(IPatreonData data, out UserPatreon patreon, bool createPatreonIfNotExists = false)
+        private static string GetTierTitle(IPatreonData data)
         {
-            User user = null;
-            var firstName = data.FullName?.Split(' ')?.FirstOrDefault();
-
-            patreon = gameData.GetPatreonUser(data.PatreonId);
-            if (patreon == null || patreon.UserId == null)
-                user = TryGetUser(data);
-            else
-                user = gameData.GetUser(patreon.UserId.GetValueOrDefault());
-
-            var now = DateTime.UtcNow;
-            if (createPatreonIfNotExists && patreon == null)
+            var title = data.RewardTitle;
+            if (!string.IsNullOrEmpty(title) && title.Contains(','))
             {
-                long pledgeAmount = 0;
-                if (!string.IsNullOrEmpty(data.PledgeAmountCents))
-                {
-                    var value = data.PledgeAmountCents;
-                    if (data.PledgeAmountCents.Contains(','))
-                    {
-                        value = data.PledgeAmountCents.Split(',')[1];
-                    }
-
-                    long.TryParse(value, out pledgeAmount);
-                }
-
-                string title = data.RewardTitle;
-                if (!string.IsNullOrEmpty(title) && title.Contains(','))
-                {
-                    title = title.Split(',')[1];
-                }
-
-                patreon = new UserPatreon()
-                {
-                    Id = Guid.NewGuid(),
-                    Email = data.Email,
-                    FirstName = firstName,
-                    FullName = data.FullName,
-                    PatreonId = data.PatreonId,
-                    PledgeAmount = pledgeAmount,
-                    PledgeTitle = title,
-                    Tier = data.Tier,
-                    TwitchUserId = data.TwitchUserId ?? user?.UserId,
-                    UserId = user?.Id,
-                    Updated = now,
-                    Created = now,
-                };
-                gameData.Add(patreon);
+                title = title.Split(',')[0];
             }
-            else if (patreon != null)
+
+            return title;
+        }
+
+        private static long GetPledgeAmount(IPatreonData data)
+        {
+            long pledgeAmount = 0;
+            if (!string.IsNullOrEmpty(data.PledgeAmountCents))
             {
+                var value = data.PledgeAmountCents;
+                if (data.PledgeAmountCents.Contains(','))
+                {
+                    value = data.PledgeAmountCents.Split(',')[0];
+                }
+
+                long.TryParse(value, out pledgeAmount);
+            }
+
+            return pledgeAmount;
+        }
+
+        private User GetUser(IPatreonData data, out UserPatreon patreon)
+        {
+            patreon = GetOrCreateUserPatreon(data);
+            var user = patreon.UserId == null ? TryGetUser(data) : gameData.GetUser(patreon.UserId.GetValueOrDefault());
+            var now = DateTime.UtcNow;
+
+            if (patreon.UserId == null)
+            {
+                if (!string.IsNullOrEmpty(data.TwitchUserId))
+                {
+                    patreon.TwitchUserId = data.TwitchUserId;
+                    patreon.Updated = now;
+                }
+
+                if (user != null)
+                {
+                    patreon.TwitchUserId = user.UserId;
+                    patreon.UserId = user.Id;
+                    patreon.Updated = now;
+                }
+            }
+
+            if (string.IsNullOrEmpty(patreon.FirstName))
+            {
+                patreon.FirstName = data.FullName?.Split(' ')?.FirstOrDefault();
                 patreon.Updated = now;
             }
 
