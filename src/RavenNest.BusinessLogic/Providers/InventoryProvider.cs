@@ -408,6 +408,7 @@ namespace RavenNest.BusinessLogic.Providers
                 return resultStack;
             }
         }
+
         public bool AddItem(ReadOnlyInventoryItem itemToCopy, long amount)
         {
             lock (mutex)
