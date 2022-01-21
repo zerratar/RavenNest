@@ -108,50 +108,53 @@ namespace RavenNest.BusinessLogic.Providers
 
         internal void AddPatreonTierRewards(int? tierReward = null)
         {
-            var character = gameData.GetCharacter(characterId);
-            if (character == null || character.CharacterIndex > 0) return;
-            var user = gameData.GetUser(character.UserId);
-            if (user == null) return;
-
-            var lastReward = user.LastReward.GetValueOrDefault();
-            var elapsedSinceLastReward = DateTime.UtcNow - lastReward;
-            // in case you update your tier, we also give you the reward right away.
-            if (elapsedSinceLastReward < PatreonRewardFrequency && tierReward <= user.PatreonTier)
-                return;
-
-            var tier = tierReward ?? user.PatreonTier ?? 0;
-            if (tier >= 3)
+            lock (mutex)
             {
-                var expScroll = Guid.Parse("DA0179BE-2EF0-412D-8E18-D0EE5A9510C7");
-                // tier 3 (dragon)  = 2 exp scroll per day
-                // tier 4 (abraxas) = 4 exp scrolls per day
-                // tier 5 (phantom) = 6 exp scrolls per day
-                var scrollAmount = (tier - 2) * 2;
-                AddItem(expScroll, scrollAmount, soulbound: true);
-            }
+                var character = gameData.GetCharacter(characterId);
+                if (character == null || character.CharacterIndex > 0) return;
+                var user = gameData.GetUser(character.UserId);
+                if (user == null) return;
 
-            if (tier >= 2)
-            {
-                var dungeonScroll = Guid.Parse("C95AC1D6-108E-4B2F-9DB2-2EF00C092BFE");
-                // tier 2 (rune)    = 2 dungeon scrolls per day
-                // tier 3 (dragon)  = 4 dungeon scrolls per day
-                // tier 4 (abraxas) = 6 dungeon scrolls per day
-                // tier 5 (phantom) = 8 dungeon scrolls per day
-                var scrollAmount = 2 + ((tier - 2) * 2);
-                AddItem(dungeonScroll, scrollAmount, soulbound: true);
-            }
+                var lastReward = user.LastReward.GetValueOrDefault();
+                var elapsedSinceLastReward = DateTime.UtcNow - lastReward;
+                // in case you update your tier, we also give you the reward right away.
+                if (elapsedSinceLastReward < PatreonRewardFrequency && tierReward <= user.PatreonTier)
+                    return;
 
-            if (tier >= 1)
-            {
-                var raidScroll = Guid.Parse("061BAA06-5B73-4BBB-A9E1-AEA4907CD309");
-                // tier 1 (mithril) = 2 raid scrolls per day
-                // tier 2 (rune)    = 4 raid scrolls per day
-                // tier 3 (dragon)  = 6 raid scrolls per day
-                // tier 4 (abraxas) = 8 raid scrolls per day
-                // tier 5 (phantom) = 10 raid scrolls per day
-                var scrollAmount = tier * 2;
-                AddItem(raidScroll, scrollAmount, soulbound: true);
-                user.LastReward = DateTime.UtcNow;
+                var tier = tierReward ?? user.PatreonTier ?? 0;
+                if (tier >= 3)
+                {
+                    var expScroll = Guid.Parse("DA0179BE-2EF0-412D-8E18-D0EE5A9510C7");
+                    // tier 3 (dragon)  = 2 exp scroll per day
+                    // tier 4 (abraxas) = 4 exp scrolls per day
+                    // tier 5 (phantom) = 6 exp scrolls per day
+                    var scrollAmount = (tier - 2) * 2;
+                    AddItem(expScroll, scrollAmount, soulbound: true);
+                }
+
+                if (tier >= 2)
+                {
+                    var dungeonScroll = Guid.Parse("C95AC1D6-108E-4B2F-9DB2-2EF00C092BFE");
+                    // tier 2 (rune)    = 2 dungeon scrolls per day
+                    // tier 3 (dragon)  = 4 dungeon scrolls per day
+                    // tier 4 (abraxas) = 6 dungeon scrolls per day
+                    // tier 5 (phantom) = 8 dungeon scrolls per day
+                    var scrollAmount = 2 + ((tier - 2) * 2);
+                    AddItem(dungeonScroll, scrollAmount, soulbound: true);
+                }
+
+                if (tier >= 1)
+                {
+                    var raidScroll = Guid.Parse("061BAA06-5B73-4BBB-A9E1-AEA4907CD309");
+                    // tier 1 (mithril) = 2 raid scrolls per day
+                    // tier 2 (rune)    = 4 raid scrolls per day
+                    // tier 3 (dragon)  = 6 raid scrolls per day
+                    // tier 4 (abraxas) = 8 raid scrolls per day
+                    // tier 5 (phantom) = 10 raid scrolls per day
+                    var scrollAmount = tier * 2;
+                    AddItem(raidScroll, scrollAmount, soulbound: true);
+                    user.LastReward = DateTime.UtcNow;
+                }
             }
         }
 
@@ -165,9 +168,12 @@ namespace RavenNest.BusinessLogic.Providers
 
         public bool EquipItem(ReadOnlyInventoryItem invItem)
         {
-            var item = this.Get(invItem);
-            if (item == null) return false;
-            return EquipItem(item);
+            lock (mutex)
+            {
+                var item = this.Get(invItem);
+                if (item == null) return false;
+                return EquipItem(item);
+            }
         }
 
         public bool EquipItem(InventoryItem item)
@@ -331,83 +337,95 @@ namespace RavenNest.BusinessLogic.Providers
 
         public DataModels.InventoryItem AddItemInstance(Models.InventoryItem itemInstanceToCopy, long amount = 1)
         {
-            var i = itemInstanceToCopy;
-            // in this case, unless its Id is Empty guid, we even want to use the ID. GIven, there is no such id already present in the game.
-            InventoryItem resultStack = null;
-            if (CanBeStacked(i))
+            lock (mutex)
             {
-                var existing = items.FirstOrDefault(x => CanBeStacked(x, i));
-                if (existing != null)
+                var i = itemInstanceToCopy;
+                // in this case, unless its Id is Empty guid, we even want to use the ID. GIven, there is no such id already present in the game.
+                InventoryItem resultStack = null;
+                if (CanBeStacked(i))
                 {
-                    existing.Amount += amount;
-                    resultStack = existing;
-                    return resultStack;
+                    var existing = items.FirstOrDefault(x => CanBeStacked(x, i));
+                    if (existing != null)
+                    {
+                        existing.Amount += amount;
+                        resultStack = existing;
+                        return resultStack;
+                    }
                 }
+                resultStack = Copy(i, amount);
+                if (gameData.GetInventoryItem(i.Id) == null)
+                {
+                    resultStack.Id = i.Id;
+                }
+                this.gameData.Add(resultStack);
+                this.items.Add(resultStack);
+                return resultStack;
             }
-            resultStack = Copy(i, amount);
-            if (gameData.GetInventoryItem(i.Id) == null)
-            {
-                resultStack.Id = i.Id;
-            }
-            this.gameData.Add(resultStack);
-            this.items.Add(resultStack);
-            return resultStack;
         }
 
         public DataModels.InventoryItem AddItem(DataModels.UserBankItem itemToCopy, long amount)
         {
-            InventoryItem resultStack = null;
-            if (CanBeStacked(itemToCopy))
+            lock (mutex)
             {
-                var existing = items.FirstOrDefault(x => CanBeStacked(x, itemToCopy));
-                if (existing != null)
-                {
-                    existing.Amount += amount;
-                    resultStack = existing;
-                    return resultStack;
-                }
-            }
-
-            resultStack = Copy(itemToCopy, amount);
-            this.gameData.Add(resultStack);
-            this.items.Add(resultStack);
-            return resultStack;
-        }
-
-        public DataModels.InventoryItem AddItem(DataModels.InventoryItem itemToCopy, long amount)
-        {
-            InventoryItem resultStack = null;
-            if (CanBeStacked(itemToCopy))
-            {
-                var existing = items.FirstOrDefault(x => CanBeStacked(x, itemToCopy));
-                if (existing != null)
-                {
-                    existing.Amount += amount;
-                    resultStack = existing;
-                    return resultStack;
-                }
-            }
-
-            resultStack = Copy(itemToCopy, amount);
-            this.gameData.Add(resultStack);
-            this.items.Add(resultStack);
-            return resultStack;
-        }
-
-        public bool AddItem(ReadOnlyInventoryItem itemToCopy, long amount)
-        {
-            try
-            {
+                InventoryItem resultStack = null;
                 if (CanBeStacked(itemToCopy))
                 {
                     var existing = items.FirstOrDefault(x => CanBeStacked(x, itemToCopy));
                     if (existing != null)
                     {
                         existing.Amount += amount;
-                        return true;
+                        resultStack = existing;
+                        return resultStack;
                     }
                 }
-                return AddItemStack(itemToCopy, amount) != null;
+
+                resultStack = Copy(itemToCopy, amount);
+                this.gameData.Add(resultStack);
+                this.items.Add(resultStack);
+                return resultStack;
+            }
+        }
+
+        public DataModels.InventoryItem AddItem(DataModels.InventoryItem itemToCopy, long amount)
+        {
+            lock (mutex)
+            {
+                InventoryItem resultStack = null;
+                if (CanBeStacked(itemToCopy))
+                {
+                    var existing = items.FirstOrDefault(x => CanBeStacked(x, itemToCopy));
+                    if (existing != null)
+                    {
+                        existing.Amount += amount;
+                        resultStack = existing;
+                        return resultStack;
+                    }
+                }
+
+                resultStack = Copy(itemToCopy, amount);
+                this.gameData.Add(resultStack);
+                this.items.Add(resultStack);
+                return resultStack;
+            }
+        }
+
+        public bool AddItem(ReadOnlyInventoryItem itemToCopy, long amount)
+        {
+            try
+            {
+                lock (mutex)
+                {
+                    if (CanBeStacked(itemToCopy))
+                    {
+                        var existing = items.FirstOrDefault(x => CanBeStacked(x, itemToCopy));
+                        if (existing != null)
+                        {
+                            existing.Amount += amount;
+                            return true;
+                        }
+                    }
+                    return AddItemStack(itemToCopy, amount) != null;
+                }
             }
             catch (Exception exc)
             {
@@ -419,10 +437,13 @@ namespace RavenNest.BusinessLogic.Providers
 
         public InventoryItem AddItemStack(ReadOnlyInventoryItem itemToCopy, long amount)
         {
-            var resultStack = Copy(itemToCopy, amount);
-            this.gameData.Add(resultStack);
-            this.items.Add(resultStack);
-            return resultStack;
+            lock (mutex)
+            {
+                var resultStack = Copy(itemToCopy, amount);
+                this.gameData.Add(resultStack);
+                this.items.Add(resultStack);
+                return resultStack;
+            }
         }
 
         private InventoryItem Copy(Models.InventoryItem itemToCopy, long amount)
@@ -719,26 +740,29 @@ namespace RavenNest.BusinessLogic.Providers
         }
         public bool RemoveItem(InventoryItem stack, long amount, out long remainder)
         {
-            remainder = 0;
-            if (stack == null || stack.Amount < amount)
+            lock (mutex)
             {
+                remainder = 0;
+                if (stack == null || stack.Amount < amount)
+                {
+                    if (stack.Amount <= 0)
+                    {
+                        //logger.LogError("Removing empty inventory stack. Character: " + this.characterId + ", ItemId: " + stack.ItemId);
+                        RemoveStack(stack);
+                    }
+
+                    return false;
+                }
+
+                stack.Amount -= amount;
                 if (stack.Amount <= 0)
                 {
-                    //logger.LogError("Removing empty inventory stack. Character: " + this.characterId + ", ItemId: " + stack.ItemId);
+                    remainder = Math.Abs(stack.Amount.Value);
                     RemoveStack(stack);
                 }
 
-                return false;
+                return true;
             }
-
-            stack.Amount -= amount;
-            if (stack.Amount <= 0)
-            {
-                remainder = Math.Abs(stack.Amount.Value);
-                RemoveStack(stack);
-            }
-
-            return true;
         }
 
         public ReadOnlyInventoryItem GetEquippedItem(Guid itemId, string tag = null)
