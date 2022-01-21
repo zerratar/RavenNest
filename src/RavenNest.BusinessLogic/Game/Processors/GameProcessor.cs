@@ -34,8 +34,8 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
         private readonly TimeSpan ServerTimePushInterval = TimeSpan.FromSeconds(3);
         private readonly TimeSpan ExpMultiplierPushInterval = TimeSpan.FromSeconds(3);
-        private readonly TimeSpan villageInfoPushInterval = TimeSpan.FromSeconds(2);
-        private readonly TimeSpan pubsubPushInterval = TimeSpan.FromSeconds(10);
+        private readonly TimeSpan villageInfoPushInterval = TimeSpan.FromSeconds(10);
+        private readonly TimeSpan pubsubPushInterval = TimeSpan.FromSeconds(30);
         private readonly TimeSpan permissionInfoPushInterval = TimeSpan.FromSeconds(60);
 
         private DateTime lastVillageInfoPush;
@@ -209,55 +209,70 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private void UpdateSessionTasks(DateTime utcNow)
         {
             var session = gameData.GetSession(sessionToken.SessionId);
-            var characters = gameData.GetSessionCharacters(session);
-            var village = GetTaskProcessor(VillageProcessorName);
-            var loyalty = GetTaskProcessor(LoyaltyProcessorName);
-            var clan = GetTaskProcessor(ClanProcessorName);
-            var rested = GetTaskProcessor(RestedProcessorName);
-
             if (session == null)
                 return;
+
 
             // force keep a session alive if we are connected here
             session.Stopped = null;
             session.Status = (int)SessionStatus.Active;
             session.Updated = utcNow;
 
-            village.Process(integrityChecker, gameData, inventoryProvider, session, null, null);
 
-            foreach (var character in characters)
+            var village = GetTaskProcessor(VillageProcessorName);
+            if (village != null)
+                village.Process(integrityChecker, gameData, inventoryProvider, session, null, null);
+
+
+            var characters = gameData.GetSessionCharacters(session);
+            if (characters.Count > 0)
             {
-                //if (character.CharacterIndex == 0)
-                //{
-                //    var inventory = inventoryProvider.Get(character.Id);
-                //    inventory.AddPatreonTierRewards();
-                //}
+                var loyalty = GetTaskProcessor(LoyaltyProcessorName);
+                var clan = GetTaskProcessor(ClanProcessorName);
+                var rested = GetTaskProcessor(RestedProcessorName);
 
-                var state = gameData.GetCharacterState(character.StateId);
-                if (state == null)
+                foreach (var character in characters)
                 {
-                    state = new DataModels.CharacterState
+                    //if (character.CharacterIndex == 0)
+                    //{
+                    //    var inventory = inventoryProvider.Get(character.Id);
+                    //    inventory.AddPatreonTierRewards();
+                    //}
+
+                    var state = gameData.GetCharacterState(character.StateId);
+                    if (state == null)
                     {
-                        Id = Guid.NewGuid()
-                    };
-                    gameData.Add(state);
-                    character.StateId = state.Id;
+                        state = new DataModels.CharacterState
+                        {
+                            Id = Guid.NewGuid()
+                        };
+                        gameData.Add(state);
+                        character.StateId = state.Id;
+                    }
+
+                    rested.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
+                    clan.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
+                    loyalty.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
+
+                    if (string.IsNullOrEmpty(state.Task)
+                        || (state.InOnsen ?? false)
+                        || (state.InDungeon ?? false)
+                        || state.InArena
+                        || state.InRaid
+                        || string.IsNullOrEmpty(state.Island)
+                        || state.Island == "War"
+                        || !string.IsNullOrEmpty(state.DuelOpponent))
+                    {
+                        continue;
+                    }
+
+                    var task = GetTaskProcessor(state.Task);
+                    if (task != null)
+                        task.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
                 }
-
-                rested.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
-                clan.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
-                loyalty.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
-
-                if (string.IsNullOrEmpty(state.Task) || (state.InOnsen ?? false) || (state.InDungeon ?? false) || state.InArena || state.InRaid || state.Island == "War" || !string.IsNullOrEmpty(state.DuelOpponent))
-                {
-                    continue;
-                }
-
-                var task = GetTaskProcessor(state.Task);
-                if (task != null)
-                    task.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
             }
         }
+
         private ITaskProcessor GetTaskProcessor(string task)
         {
             if (taskProcessors.TryGetValue(task, out var type))
@@ -266,6 +281,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             }
             return null;
         }
+
         private void RegisterPlayerTask<T>(string taskName) where T : ITaskProcessor, new()
         {
             taskProcessors[taskName] = new T();
