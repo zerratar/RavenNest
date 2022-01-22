@@ -13,7 +13,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         protected static readonly Guid PlankId = Guid.Parse("EB112F4A-3B17-4DCB-94FE-E9E2C0D9BFAC");
 
         protected const int ResourceGatherInterval = 10;
-        protected const double DropChanceIncrement = 0.00015;
+        protected const double DropChanceIncrement = 0.00025;
 
         protected const int OrePerIngot = 10;
         protected const int WoodPerPlank = 10;
