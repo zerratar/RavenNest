@@ -44,7 +44,7 @@ namespace RavenNest.BusinessLogic.Game
             var currentPledgeAmount = patreon.PledgeAmount.GetValueOrDefault();
 
             var newPledgeAmount = GetPledgeAmount(data);
-            if (newPledgeAmount > currentPledgeAmount)
+            if (data.Tier >= patreon.Tier || newPledgeAmount >= currentPledgeAmount)
             {
                 patreon.PledgeAmount = newPledgeAmount;
                 patreon.PledgeTitle = GetTierTitle(data);
@@ -160,12 +160,14 @@ namespace RavenNest.BusinessLogic.Game
             {
                 twitchUserName = data.TwitchUrl.Split('/').LastOrDefault()?.ToLower();
             }
-
-            var emailuser = data.Email.ToLower().Split('@').FirstOrDefault();
+            var emailLower = data.Email.ToLower();
+            var emailuser = emailLower.Split('@').FirstOrDefault();
             return gameData.FindUser(u =>
             {
                 if (u == null)
                     return false;
+
+                var email = u.Email?.ToLower() ?? string.Empty;
 
                 if (!string.IsNullOrEmpty(twitchUserName) && u.UserName.ToLower() == twitchUserName)
                     return true;
@@ -176,7 +178,7 @@ namespace RavenNest.BusinessLogic.Game
                 if (!string.IsNullOrEmpty(u.UserName) && (u.UserName.ToLower() == firstName?.ToLower() || u.UserName.ToLower() == emailuser))
                     return true;
 
-                if (u.Email?.ToLower() == data.Email.ToLower())
+                if (email == emailLower || email.StartsWith(emailuser + "@"))
                     return true;
 
                 return false;
