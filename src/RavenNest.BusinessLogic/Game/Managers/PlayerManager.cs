@@ -1793,7 +1793,7 @@ namespace RavenNest.BusinessLogic.Game
                 var amountToGift = gift.Amount >= amount ? amount : (int)gift.Amount;
                 if (recvInventory.AddItem(gift, amountToGift) && inventory.RemoveItem(gift, amountToGift))
                 {
-                    return amount;
+                    return amountToGift;
                 }
 
                 return 0;
