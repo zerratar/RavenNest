@@ -27,7 +27,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 character.ResourcesId = resources.Id;
             }
             var state = gameData.GetCharacterSessionState(session.Id, character.Id);
-            if (now - state.LastTaskUpdate >= TimeSpan.FromSeconds(ResourceGatherInterval))
+            if (now - state.LastTaskUpdate >= TimeSpan.FromSeconds(ItemDropRateSettings.ResourceGatherInterval))
             {
                 session.Updated = DateTime.UtcNow;
                 state.LastTaskUpdate = DateTime.UtcNow;
