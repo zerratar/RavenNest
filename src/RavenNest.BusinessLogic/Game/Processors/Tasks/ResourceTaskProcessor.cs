@@ -7,18 +7,21 @@ using System.Collections.Generic;
 
 namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
+    public static class ItemDropRateSettings
+    {
+        public static int ResourceGatherInterval = 10;
+        public static double DropChanceIncrement = 0.00025;
+        public static double InitDropChance = 0.33;
+    }
+
     public abstract class ResourceTaskProcessor : PlayerTaskProcessor
     {
-        protected static readonly Guid IngotId = Guid.Parse("69A4372F-482F-4AC1-898A-CAFCE809BF4C");
-        protected static readonly Guid PlankId = Guid.Parse("EB112F4A-3B17-4DCB-94FE-E9E2C0D9BFAC");
+        public static readonly Guid IngotId = Guid.Parse("69A4372F-482F-4AC1-898A-CAFCE809BF4C");
+        public static readonly Guid PlankId = Guid.Parse("EB112F4A-3B17-4DCB-94FE-E9E2C0D9BFAC");
 
-        protected const int ResourceGatherInterval = 10;
-        protected const double DropChanceIncrement = 0.00025;
-
-        protected const int OrePerIngot = 10;
-        protected const int WoodPerPlank = 10;
-
-        protected static readonly IReadOnlyList<ResourceDrop> DroppableResources;
+        public static int OrePerIngot = 10;
+        public static int WoodPerPlank = 10;
+        public static readonly IReadOnlyList<ResourceDrop> DroppableResources;
 
         static ResourceTaskProcessor()
         {
@@ -57,7 +60,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             var now = DateTime.UtcNow;
             var state = gameData.GetCharacterSessionState(session.Id, character.Id);
-            if (now - state.LastTaskUpdate >= TimeSpan.FromSeconds(ResourceGatherInterval))
+            if (now - state.LastTaskUpdate >= TimeSpan.FromSeconds(ItemDropRateSettings.ResourceGatherInterval))
             {
                 session.Updated = DateTime.UtcNow;
                 var resources = gameData.GetResources(character.ResourcesId);
@@ -120,25 +123,25 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             gameData.Add(gameEvent);
         }
+    }
 
-        protected class ResourceDrop
+    public class ResourceDrop
+    {
+        public Guid Id { get; }
+        public string Name { get; }
+        public double DropChance { get; }
+        public int SkillLevel { get; set; }
+        public ResourceDrop(Guid id, string name, double dropChance, int skillLevel)
         {
-            public Guid Id { get; }
-            public string Name { get; }
-            public double DropChance { get; }
-            public int SkillLevel { get; set; }
-            public ResourceDrop(Guid id, string name, double dropChance, int miningLevel)
-            {
-                Id = id;
-                Name = name;
-                DropChance = dropChance;
-                SkillLevel = miningLevel;
-            }
+            Id = id;
+            Name = name;
+            DropChance = dropChance;
+            SkillLevel = skillLevel;
+        }
 
-            public double GetDropChance(int playerSkillLevel)
-            {
-                return DropChance + ((playerSkillLevel - SkillLevel) * DropChanceIncrement);
-            }
+        public double GetDropChance(int playerSkillLevel)
+        {
+            return DropChance + ((playerSkillLevel - SkillLevel) * ItemDropRateSettings.DropChanceIncrement);
         }
     }
 }
