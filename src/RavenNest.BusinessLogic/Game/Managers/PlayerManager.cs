@@ -1026,8 +1026,8 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     var sessionOwner = gameData.GetUser(session.UserId);
                     // player not part of this session.
-                    logger.LogWarning("Trying to remove player " + player.Name + " from " + sessionOwner.UserName + "... Player is getting update data from the game but is not part of it.");
-                    SendRemovePlayerFromSession(player, session);
+                    logger.LogError("Trying to remove player " + player.Name + " from " + sessionOwner.UserName + "... Player is getting update data from the game but is not part of it.");
+                    SendRemovePlayerFromSession(player, session, "Is not part of this session.");
                     return false;
                 }
 
@@ -2252,18 +2252,18 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (removeFromSession)
                 {
-                    SendRemovePlayerFromSession(character, gameSession);
+                    SendRemovePlayerFromSession(character, gameSession, "Not part of this session.");
                     if (character.UserIdLock != null)
                     {
                         var activeSessionOwner = gameData.GetUser(character.UserIdLock.GetValueOrDefault());
                         if (activeSessionOwner != null)
                         {
-                            logger.LogWarning($"{character.Name} tried to save from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is part of {activeSessionOwner.UserName}.");
+                            logger.LogError($"{character.Name} tried to save from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is part of {activeSessionOwner.UserName}.");
                         }
                     }
                     else
                     {
-                        logger.LogWarning($"{character.Name} tried to save from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is not in any session.");
+                        logger.LogError($"{character.Name} tried to save from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is not in any session.");
                     }
 
                     return true;
@@ -2372,7 +2372,7 @@ namespace RavenNest.BusinessLogic.Game
                 // Try and remove the player from the session and then add them back
                 if (await RemovePlayerFromActiveSession(gameSession, characterId))
                 {
-                    SendRemovePlayerFromSession(character, gameSession);
+                    SendRemovePlayerFromSession(character, gameSession, "Experience has been modified by admin");
                     await Task.Delay(100);
                     SendPlayerAddToSession(character, gameSession);
                 }
@@ -2452,18 +2452,18 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (removeFromSession)
                 {
-                    SendRemovePlayerFromSession(character, gameSession);
+                    SendRemovePlayerFromSession(character, gameSession, "Is not part of this session.");
                     if (character.UserIdLock != null)
                     {
                         var activeSessionOwner = gameData.GetUser(character.UserIdLock.GetValueOrDefault());
                         if (activeSessionOwner != null)
                         {
-                            logger.LogWarning($"{character.Name} was trying to save from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is part of {activeSessionOwner.UserName}.");
+                            logger.LogError($"{character.Name} was trying to save from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is part of {activeSessionOwner.UserName}.");
                         }
                     }
                     else
                     {
-                        logger.LogWarning($"{character.Name} was trying to save from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is not part of any session.");
+                        logger.LogError($"{character.Name} was trying to save from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is not part of any session.");
                     }
                     return false;
                 }
@@ -2626,15 +2626,34 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        private void SendRemovePlayerFromSession(Character character, DataModels.GameSession gameSession)
+        private void SendRemovePlayerFromSession(Character character, DataModels.GameSession gameSession, string reason)
         {
+            if (gameSession == null)
+            {
+                return;
+            }
+
+            var targetSessionOwner = gameData.GetUser(gameSession.UserId);
+            if (targetSessionOwner == null)
+            {
+                return;
+            }
+
             var characterUser = gameData.GetUser(character.UserId);
+            var currentSessionOwner = character.UserIdLock != null ? gameData.GetUser(character.UserIdLock.Value) : null;
+
+            var msg = currentSessionOwner != null
+                ? $"{character.Name} joined {currentSessionOwner.UserName}'s session."
+                : $"{character.Name} joined another session.";
+
+            logger.LogError($"{msg} And left {targetSessionOwner.UserName}. Reason: " + reason);
+
             var gameEvent = gameData.CreateSessionEvent(
                 GameEventType.PlayerRemove,
                 gameSession,
                 new PlayerRemove()
                 {
-                    Reason = $"{character.Name} joined another session.",
+                    Reason = msg,
                     UserId = characterUser.UserId,
                     CharacterId = character.Id
                 });
