@@ -1027,7 +1027,7 @@ namespace RavenNest.BusinessLogic.Game
                     var sessionOwner = gameData.GetUser(session.UserId);
                     // player not part of this session.
                     //logger.LogError("Trying to remove player " + player.Name + " from " + sessionOwner.UserName + "... Player is getting update data from the game but is not part of it.");
-                    SendRemovePlayerFromSession(player, session, "Is not part of this session. [UpdateCharacterState->UpdatePlayerState]");
+                    SendRemovePlayerFromSession(player, session, "[Update Player State]");
                     return false;
                 }
 
@@ -2252,7 +2252,7 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (removeFromSession)
                 {
-                    SendRemovePlayerFromSession(character, gameSession, "Not part of this session. [UpdateCharacterExperience->UpdateExperience]");
+                    SendRemovePlayerFromSession(character, gameSession, "[Update Training Skill]");
                     //if (character.UserIdLock != null)
                     //{
                     //    var activeSessionOwner = gameData.GetUser(character.UserIdLock.GetValueOrDefault());
@@ -2451,7 +2451,7 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (removeFromSession)
                 {
-                    SendRemovePlayerFromSession(character, gameSession, "Is not part of this session. [UpdateCharacterSkill->UpdateExperience]");
+                    SendRemovePlayerFromSession(character, gameSession, "[Update All Skills]");
                     //if (character.UserIdLock != null)
                     //{
                     //    var activeSessionOwner = gameData.GetUser(character.UserIdLock.GetValueOrDefault());
@@ -2641,7 +2641,7 @@ namespace RavenNest.BusinessLogic.Game
             var currentSessionOwner = character.UserIdLock != null ? gameData.GetUser(character.UserIdLock.Value) : null;
             var logMsg = currentSessionOwner != null
                 ? $"Sent Remove Player {character.Name} to {targetSessionOwner.UserName}. Player is part of {currentSessionOwner.UserName}'s session."
-                : $"Sent Remove Player {character.Name} to {targetSessionOwner.UserName}. ";
+                : $"Sent Remove Player {character.Name} to {targetSessionOwner.UserName}. Player is not part of any sessions.";
 
             logger.LogError($"{logMsg} Reason: " + reason);
 
