@@ -78,13 +78,17 @@ namespace RavenNest.BusinessLogic.Game
 
             var activeSession = gameData.GetSessionByUserId(userId);
             // x => x.UserId == userId && x.Status == (int)SessionStatus.Active
-
-            if (activeSession != null &&
-                DateTime.UtcNow - activeSession.Updated.GetValueOrDefault() >= TimeSpan.FromMinutes(30))
+            var oldSessionExpired = false;
+            var oldSession = activeSession;
+            if (activeSession != null)
             {
-                activeSession.Status = (int)SessionStatus.Inactive;
-                activeSession.Stopped = DateTime.UtcNow;
-                activeSession = null;
+                oldSessionExpired = DateTime.UtcNow - activeSession.Updated.GetValueOrDefault() >= TimeSpan.FromMinutes(30);
+                if (oldSessionExpired)
+                {
+                    activeSession.Status = (int)SessionStatus.Inactive;
+                    activeSession.Stopped = DateTime.UtcNow;
+                    activeSession = null;
+                }
             }
 
             var newGameSession = activeSession ?? gameData.CreateSession(userId);
@@ -93,13 +97,23 @@ namespace RavenNest.BusinessLogic.Game
                 gameData.Add(newGameSession);
             }
 
-            var activeChars = gameData.GetSessionCharacters(newGameSession);
-            if (activeChars != null)
+            if (oldSession != null && !oldSessionExpired)
             {
-                foreach (var c in activeChars)
+                logger.LogError("BeginSessionAsync was called while an existing session is active. User: " + user.UserName + ". Previous players will not be cleared.");
+            }
+            else
+            {
+                var activeChars = gameData.GetSessionCharacters(newGameSession);
+                if (activeChars != null)
                 {
-                    c.UserIdLock = null;
+                    foreach (var c in activeChars)
+                    {
+                        c.UserIdLock = null;
+                    }
                 }
+//#if DEBUG
+//                logger.LogDebug(user.UserName + " game session started. " + activeChars.Count + " characters cleared.");
+//#endif
             }
 
             newGameSession.Revision = 0;
@@ -110,10 +124,6 @@ namespace RavenNest.BusinessLogic.Game
 
             SendPermissionData(newGameSession, user);
             SendVillageInfo(newGameSession);
-
-#if DEBUG
-            logger.LogDebug(user.UserName + " game session started. " + activeChars.Count + " characters cleared.");
-#endif
 
             return GenerateSessionToken(token, user, newGameSession, clientVersion);
         }
@@ -434,12 +444,12 @@ namespace RavenNest.BusinessLogic.Game
 
         public void RecordTimeMismatch(SessionToken sessionToken, TimeSyncUpdate update)
         {
-            //var session = gameData.GetSession(sessionToken.SessionId);
-            //if (session == null) return;
-            //var owner = gameData.GetUser(session.UserId);
-            //if (owner == null) return;
+            var session = gameData.GetSession(sessionToken.SessionId);
+            if (session == null) return;
+            var owner = gameData.GetUser(session.UserId);
+            if (owner == null) return;
 
-            //logger.LogError("Session by " + owner.UserName + " has a time mismatch of " + update.Delta.TotalSeconds + " seconds. Server Time: " + update.ServerTime + ", Local Time: " + update.LocalTime);
+            logger.LogError("Session by " + owner.UserName + " has a time mismatch of " + update.Delta.TotalSeconds + " seconds. Server Time: " + update.ServerTime + ", Local Time: " + update.LocalTime);
             //if (update.Delta.TotalSeconds >= 3600)
             //{
             //    logger.LogError("Session by " + owner.UserName + " Terminated due to high time mismatch. Potential speedhack");
