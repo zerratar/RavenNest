@@ -2640,10 +2640,10 @@ namespace RavenNest.BusinessLogic.Game
 
             var currentSessionOwner = character.UserIdLock != null ? gameData.GetUser(character.UserIdLock.Value) : null;
             var logMsg = currentSessionOwner != null
-                ? $"Sent Remove Player {character.Name} to {targetSessionOwner.UserName}. Player is part of {currentSessionOwner.UserName}'s session."
+                ? $"Sent Remove Player {character.Name} to {targetSessionOwner.UserName}. Player is part of {currentSessionOwner.UserName}'s session. " + reason
                 : $"Sent Remove Player {character.Name} to {targetSessionOwner.UserName}. Player is not part of any sessions.";
 
-            logger.LogError($"{logMsg} Reason: " + reason);
+            logger.LogError(logMsg);
 
 
             var clientMessage = currentSessionOwner != null
