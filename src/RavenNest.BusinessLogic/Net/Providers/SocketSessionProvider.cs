@@ -144,6 +144,7 @@ namespace RavenNest.BusinessLogic.Net
             private readonly TaskCompletionSource<object> killTask;
 
             private readonly Thread receiveLoop;
+            private readonly Thread sendLoop;
             private readonly Thread gameLoop;
 
             private readonly SessionToken sessionToken;
@@ -155,7 +156,7 @@ namespace RavenNest.BusinessLogic.Net
 
             private readonly SemaphoreSlim readMutex = new SemaphoreSlim(1);
             private readonly SemaphoreSlim writeMutex = new SemaphoreSlim(1);
-
+            private readonly ConcurrentQueue<Data> writeQueue = new ConcurrentQueue<Data>();
             public WebSocketConnection(
                 ILogger logger,
                 IRavenBotApiClient ravenBotApi,
@@ -172,6 +173,7 @@ namespace RavenNest.BusinessLogic.Net
                 SessionToken sessionToken)
             {
                 this.receiveLoop = new Thread(ReceiveLoop);
+                this.sendLoop = new Thread(SendLoop);
                 this.gameLoop = new Thread(GameUpdateLoop);
                 this.logger = logger;
                 this.sessionToken = sessionToken;
@@ -192,7 +194,9 @@ namespace RavenNest.BusinessLogic.Net
             internal IGameWebSocketConnection Start()
             {
                 this.receiveLoop.Start();
+                this.sendLoop.Start();
                 this.gameLoop.Start();
+
                 return this;
             }
 
@@ -209,7 +213,7 @@ namespace RavenNest.BusinessLogic.Net
                     messageLookup[packet.CorrelationId] = taskSource;
 
                     var bytes = packetSerializer.Serialize(packet);
-                    await SendDataAsync(bytes, cancellationToken);
+                    SendDataAsync(bytes, cancellationToken);
                     return (TResult)await taskSource.Task;
                 }
                 catch (Exception exc)
@@ -229,7 +233,7 @@ namespace RavenNest.BusinessLogic.Net
 
                     var packet = CreatePacket(id, request);
                     var bytes = packetSerializer.Serialize(packet);
-                    await SendDataAsync(bytes, cancellationToken);
+                    SendDataAsync(bytes, cancellationToken);
                     return true;
                 }
                 catch (Exception exc)
@@ -259,7 +263,7 @@ namespace RavenNest.BusinessLogic.Net
 
                     var packet = CreatePacket(id, request, correlationId);
                     var bytes = packetSerializer.Serialize(packet);
-                    await SendDataAsync(bytes, cancellationToken);
+                    SendDataAsync(bytes, cancellationToken);
                 }
                 catch (Exception exc)
                 {
@@ -267,25 +271,19 @@ namespace RavenNest.BusinessLogic.Net
                 }
             }
 
-            private async Task SendDataAsync(byte[] bytes, CancellationToken cancellationToken)
+            private void SendDataAsync(byte[] bytes, CancellationToken cancellationToken)
             {
                 try
                 {
-                    var waitTime = 0;
-                    while (readMutex.CurrentCount == 0 && waitTime < 20)
-                        await Task.Delay(100);
-
-                    await writeMutex.WaitAsync();
-                    var data = new ArraySegment<byte>(bytes);
-                    await ws.SendAsync(data, WebSocketMessageType.Binary, true, cancellationToken);
+                    writeQueue.Enqueue(new Data
+                    {
+                        Binary = new ArraySegment<byte>(bytes),
+                        CancellationToken = cancellationToken
+                    });
                 }
                 catch (Exception exc)
                 {
                     this.logger.LogError("[" + SessionToken.TwitchUserName + "] (" + sessionToken.SessionId + ") " + exc.ToString());
-                }
-                finally
-                {
-                    writeMutex.Release();
                 }
             }
             public void Dispose()
@@ -301,6 +299,7 @@ namespace RavenNest.BusinessLogic.Net
                 this.sessionProvider.Disconnected(this);
                 this.disposed = true;
                 this.receiveLoop.Join();
+                this.sendLoop.Join();
                 this.gameLoop.Join();
                 this.ws.Dispose();
 
@@ -367,6 +366,49 @@ namespace RavenNest.BusinessLogic.Net
                 }
             }
 
+            private async void SendLoop()
+            {
+                using (var cts = new CancellationTokenSource())
+                {
+                    while (!this.disposed)
+                    {
+                        if (this.disposed)
+                        {
+                            cts.Cancel();
+                            return;
+                        }
+
+                        if (SessionToken == null || SessionToken.Expired)
+                        {
+                            logger.LogError("[" + SessionToken?.TwitchUserName + "] Session Token Expried. Closing WebSocket Connection.");
+                            Dispose();
+                            return;
+                        }
+
+                        try
+                        {
+                            await writeMutex.WaitAsync();
+                            if (writeQueue.TryDequeue(out var packet))
+                            {
+                                await ws.SendAsync(packet.Binary, WebSocketMessageType.Binary, true, packet.CancellationToken);
+                            }
+                        }
+                        catch (Exception exc)
+                        {
+                            logger.LogError("[" + SessionToken.TwitchUserName + "] (" + sessionToken.SessionId + ") Error Writing Packet: " + exc);
+                        }
+                        finally
+                        {
+                            writeMutex.Release();
+                        }
+                        await Task.Delay(15);
+
+                    }
+                }
+
+                logger.LogWarning("[" + SessionToken.TwitchUserName + "] Session terminated websocket send loop (" + sessionToken.SessionId + ")");
+            }
+
             private async void ReceiveLoop()
             {
                 using (var cts = new CancellationTokenSource())
@@ -388,12 +430,6 @@ namespace RavenNest.BusinessLogic.Net
 
                         try
                         {
-                            if (writeMutex.CurrentCount == 0)
-                            {
-                                await Task.Delay(100);
-                                continue;
-                            }
-
                             await readMutex.WaitAsync();
                             await ReceivePacketsAsync(cts.Token);
                         }
@@ -528,6 +564,12 @@ namespace RavenNest.BusinessLogic.Net
             public async Task KeepAlive()
             {
                 await killTask.Task;
+            }
+
+            private struct Data
+            {
+                public ArraySegment<byte> Binary;
+                public CancellationToken CancellationToken;
             }
         }
     }
