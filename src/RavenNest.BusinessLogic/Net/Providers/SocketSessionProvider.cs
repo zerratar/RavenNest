@@ -153,6 +153,9 @@ namespace RavenNest.BusinessLogic.Net
             private readonly ConcurrentDictionary<Guid, TaskCompletionSource<object>> messageLookup
                 = new ConcurrentDictionary<Guid, TaskCompletionSource<object>>();
 
+            private readonly SemaphoreSlim readMutex = new SemaphoreSlim(1);
+            private readonly SemaphoreSlim writeMutex = new SemaphoreSlim(1);
+
             public WebSocketConnection(
                 ILogger logger,
                 IRavenBotApiClient ravenBotApi,
@@ -206,13 +209,14 @@ namespace RavenNest.BusinessLogic.Net
                     messageLookup[packet.CorrelationId] = taskSource;
 
                     var bytes = packetSerializer.Serialize(packet);
-                    await ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, cancellationToken);
+                    await SendDataAsync(bytes, cancellationToken);
                     return (TResult)await taskSource.Task;
                 }
                 catch (Exception exc)
                 {
                     this.logger.LogError("[" + SessionToken.TwitchUserName + "] (" + sessionToken.SessionId + ") " + exc.ToString());
                 }
+
                 return default;
             }
 
@@ -225,17 +229,16 @@ namespace RavenNest.BusinessLogic.Net
 
                     var packet = CreatePacket(id, request);
                     var bytes = packetSerializer.Serialize(packet);
-                    var data = new ArraySegment<byte>(bytes);
-                    await ws.SendAsync(data, WebSocketMessageType.Binary, true, cancellationToken);
+                    await SendDataAsync(bytes, cancellationToken);
                     return true;
                 }
                 catch (Exception exc)
                 {
                     this.logger.LogError("[" + SessionToken.TwitchUserName + "] (" + sessionToken.SessionId + ") " + exc.ToString());
                 }
-
                 return false;
             }
+
 
             public Task ReplyAsync(GamePacket packet, object request)
             {
@@ -247,24 +250,43 @@ namespace RavenNest.BusinessLogic.Net
                 return ReplyAsync(packet.CorrelationId, packet.Type, request, cancellationToken);
             }
 
-            public Task ReplyAsync(Guid correlationId, string id, object request, CancellationToken cancellationToken)
+            public async Task ReplyAsync(Guid correlationId, string id, object request, CancellationToken cancellationToken)
             {
-
                 try
                 {
                     if (!CanSendData())
-                        return Task.CompletedTask;
+                        return;
 
                     var packet = CreatePacket(id, request, correlationId);
                     var bytes = packetSerializer.Serialize(packet);
-                    return ws.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Binary, true, cancellationToken);
+                    await SendDataAsync(bytes, cancellationToken);
                 }
                 catch (Exception exc)
                 {
                     this.logger.LogError("[" + SessionToken.TwitchUserName + "] (" + sessionToken.SessionId + ") " + exc.ToString());
                 }
+            }
 
-                return Task.CompletedTask;
+            private async Task SendDataAsync(byte[] bytes, CancellationToken cancellationToken)
+            {
+                try
+                {
+                    var waitTime = 0;
+                    while (readMutex.CurrentCount == 0 && waitTime < 20)
+                        await Task.Delay(100);
+
+                    await writeMutex.WaitAsync();
+                    var data = new ArraySegment<byte>(bytes);
+                    await ws.SendAsync(data, WebSocketMessageType.Binary, true, cancellationToken);
+                }
+                catch (Exception exc)
+                {
+                    this.logger.LogError("[" + SessionToken.TwitchUserName + "] (" + sessionToken.SessionId + ") " + exc.ToString());
+                }
+                finally
+                {
+                    writeMutex.Release();
+                }
             }
             public void Dispose()
             {
@@ -318,8 +340,6 @@ namespace RavenNest.BusinessLogic.Net
                 {
                     while (!this.disposed)
                     {
-
-
                         if (this.disposed)
                         {
                             cts.Cancel();
@@ -368,12 +388,22 @@ namespace RavenNest.BusinessLogic.Net
 
                         try
                         {
+                            if (writeMutex.CurrentCount == 0)
+                            {
+                                await Task.Delay(100);
+                                continue;
+                            }
 
+                            await readMutex.WaitAsync();
                             await ReceivePacketsAsync(cts.Token);
                         }
                         catch (Exception exc)
                         {
                             logger.LogError("[" + SessionToken.TwitchUserName + "] (" + sessionToken.SessionId + ") Error Receiving Packet: " + exc);
+                        }
+                        finally
+                        {
+                            readMutex.Release();
                         }
                         await Task.Delay(15);
 
