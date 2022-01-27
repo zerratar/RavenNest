@@ -129,7 +129,10 @@ namespace RavenNest.Controllers
             }
 
 #if DEBUG
-            errorMessage += " " + GetHeaderValues();
+            if (!string.IsNullOrEmpty(errorMessage))
+            {
+                errorMessage += " " + GetHeaderValues();
+            }
 #endif
 
             if (!string.IsNullOrEmpty(errorMessage))
