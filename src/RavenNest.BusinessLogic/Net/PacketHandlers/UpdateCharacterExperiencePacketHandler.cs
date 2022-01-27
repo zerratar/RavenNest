@@ -9,6 +9,8 @@ namespace RavenNest.BusinessLogic.Net
         private readonly ILogger logger;
         private readonly IPlayerManager playerManager;
 
+        //private ConcurrentDictionary<>
+
         public UpdateCharacterExperiencePacketHandler(ILogger logger, IPlayerManager playerManager)
         {
             this.logger = logger;
@@ -18,8 +20,25 @@ namespace RavenNest.BusinessLogic.Net
         {
             var result = false;
 
+            if (connection == null)
+            {
+                logger.LogError("Connection dropped during saving.");
+                return;
+            }
+            if (connection.SessionToken == null && packet != null)
+            {
+                logger.LogError("SessionToken is null. UpdateCharacterExperiencePacketHandler:" + packet.Data);
+                return;
+            }
+
             if (packet.TryGetValue<CharacterExpUpdate>(out var update))
             {
+                if (connection.SessionToken.Expired)
+                {
+                    logger.LogError("Trying to saving character but session expired. " + connection.SessionToken.SessionId);
+                    return;
+                }
+
                 result = this.playerManager.UpdateExperience(
                     connection.SessionToken,
                     update.SkillIndex,

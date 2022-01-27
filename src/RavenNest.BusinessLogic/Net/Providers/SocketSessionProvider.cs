@@ -318,12 +318,19 @@ namespace RavenNest.BusinessLogic.Net
                 {
                     while (!this.disposed)
                     {
+
+
                         if (this.disposed)
                         {
                             cts.Cancel();
                             return;
                         }
-
+                        if (SessionToken == null || SessionToken.Expired)
+                        {
+                            logger.LogError("[" + SessionToken?.TwitchUserName + "] Session Token Expried. Closing WebSocket Connection.");
+                            Dispose();
+                            return;
+                        }
                         try
                         {
                             await gameProcessor.ProcessAsync(cts).ConfigureAwait(false);
@@ -349,6 +356,13 @@ namespace RavenNest.BusinessLogic.Net
                         if (this.disposed)
                         {
                             cts.Cancel();
+                            return;
+                        }
+
+                        if (SessionToken == null || SessionToken.Expired)
+                        {
+                            logger.LogError("[" + SessionToken?.TwitchUserName + "] Session Token Expried. Closing WebSocket Connection.");
+                            Dispose();
                             return;
                         }
 

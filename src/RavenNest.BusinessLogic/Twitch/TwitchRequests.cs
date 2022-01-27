@@ -39,7 +39,13 @@ namespace RavenNest.Twitch
             }
         }
 
-        public async Task<TwitchValidateResponse> ValidateOAuthTokenAsync()
+        public async Task<TwitchValidateResponse> Kraken_ValidateOAuthTokenAsync()
+        {
+            return JsonConvert.DeserializeObject<TwitchValidateResponse>(
+                await RequestAsync("GET", "https://id.twitch.tv/oauth2/validate", this.accessToken, authMethod: "OAuth"));
+        }
+
+        public async Task<TwitchValidateResponse> Helix_ValidateOAuthTokenAsync()
         {
             return JsonConvert.DeserializeObject<TwitchValidateResponse>(
                 await RequestAsync("GET", "https://id.twitch.tv/oauth2/validate", this.accessToken, authMethod: "OAuth"));
@@ -53,12 +59,19 @@ namespace RavenNest.Twitch
             //return await TwitchRequestAsync("https://api.twitch.tv/kraken/user", auth.access_token);
         }
 
-        public async Task<TwitchChannel> GetUserAsync(string userId)
+        public async Task<TwitchChannel> Kraken_GetUserAsync(string userId)
         {
             await EnsureAuth();
 
             return JsonConvert.DeserializeObject<TwitchChannel>(
                 await TwitchRequestAsync("https://api.twitch.tv/kraken/channels/" + userId, auth.access_token));
+        }
+        public async Task<TwitchChannel> Helix_GetUserAsync(string userId)
+        {
+            await EnsureAuth();
+
+            return JsonConvert.DeserializeObject<TwitchChannel>(
+                await TwitchRequestAsync("https://api.twitch.tv/helix/users?id=" + userId, auth.access_token));
         }
 
         public Task<TwitchAuth> AuthenticateAsync()
