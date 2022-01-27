@@ -5,9 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using RavenNest.Blazor.Services;
@@ -70,7 +68,7 @@ namespace RavenNest.Controllers
                     requestUrl += "?token=" + sessionInfo.access_token + "&state=" + reqState;
 
                     var req = new TwitchRequests(sessionInfo.access_token, settings.TwitchClientId, settings.TwitchClientSecret);
-                    var info = await req.ValidateOAuthTokenAsync();
+                    var info = await req.Kraken_ValidateOAuthTokenAsync();
                     if (info != null)
                     {
                         requestUrl += "&id=" + info.ClientID + "&user=" + info.Login;
