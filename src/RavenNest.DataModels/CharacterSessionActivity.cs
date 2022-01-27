@@ -18,5 +18,7 @@ namespace RavenNest.DataModels
         private int totalInputCount; public int TotalInputCount { get => totalInputCount; set => Set(ref totalInputCount, value); }
         private int tripCount; public int TripCount { get => tripCount; set => Set(ref tripCount, value); }
         private bool tripped; public bool Tripped { get => tripped; set => Set(ref tripped, value); }
+        private DateTime? updated; public DateTime? Updated { get => updated; set => Set(ref updated, value); }
+        private DateTime? created; public DateTime? Created { get => created; set => Set(ref created, value); }
     }
 }

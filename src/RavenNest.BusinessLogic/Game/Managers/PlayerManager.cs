@@ -995,6 +995,7 @@ namespace RavenNest.BusinessLogic.Game
                     UserId = user.Id,
                     UserName = update.UserName,
                     CharacterId = update.CharacterId,
+                    Created = DateTime.UtcNow,
                 };
                 gameData.Add(sessionActivity);
             }
@@ -1008,6 +1009,7 @@ namespace RavenNest.BusinessLogic.Game
             sessionActivity.MaxResponseTime = update.MaxResponseTime.ToString();
             sessionActivity.AvgResponseTime = update.AvgResponseTime.ToString();
             sessionActivity.MaxResponseStreak = update.MaxResponseStreak;
+            sessionActivity.Updated = DateTime.UtcNow;
         }
 
         public bool UpdatePlayerState(

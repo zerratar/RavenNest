@@ -73,7 +73,7 @@ namespace RavenNest.Blazor.Services
                 }
 
                 var twitch = new TwitchRequests(clientId: settings.TwitchClientId, clientSecret: settings.TwitchClientSecret);
-                var profile = await twitch.GetUserAsync(userId);
+                var profile = await twitch.Kraken_GetUserAsync(userId);
                 if (profile != null)
                 {
                     using (var wc = new WebClient())
@@ -122,7 +122,7 @@ namespace RavenNest.Blazor.Services
                 if (string.IsNullOrEmpty(logoUrl))
                 {
                     var twitch = new TwitchRequests(clientId: settings.TwitchClientId, clientSecret: settings.TwitchClientSecret);
-                    var profile = await twitch.GetUserAsync(userId);
+                    var profile = await twitch.Kraken_GetUserAsync(userId);
                     if (profile != null)
                     {
                         logoUrl = profile.logo;
