@@ -9,7 +9,7 @@ namespace RavenNest.BusinessLogic.Data
     public interface IGameData
     {
         byte[] GetCompressedEntities();
-        Bot Bot { get; }
+        BotStats Bot { get; set; }
         GameClient Client { get; }
 
         #region Find
