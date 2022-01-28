@@ -22,7 +22,7 @@ namespace RavenNest.Controllers
         }
 
         [HttpPost("stats")]
-        public void OnStatsPosted([FromBody] StreamBotStats stats)
+        public void OnStatsPosted([FromBody] BotStats stats)
         {
             serverManager.UpdateBotStats(stats);
         }

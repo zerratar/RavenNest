@@ -147,10 +147,10 @@ namespace RavenNest.BusinessLogic.Game
             gameData.Add(ev);
         }
 
-        public void UpdateBotStats(StreamBotStats stats)
+        public void UpdateBotStats(BotStats stats)
         {
-            gameData.Bot.Stats = stats;
-            gameData.Bot.Stats.LastUpdated = DateTime.UtcNow;
+            gameData.Bot = stats;
+            gameData.Bot.LastUpdated = DateTime.UtcNow;
         }
     }
 }
