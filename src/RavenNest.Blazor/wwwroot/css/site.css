@@ -425,6 +425,32 @@ footer h3 {
     padding: 5px 10px;
 }
 
+
+.experience-multiplier form,
+.server-notification form {
+    display: flex;
+    flex-flow: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
+.experience-multiplier form button.btn.btn-primary,
+.server-notification form button.btn.btn-primary {
+    margin-bottom: 35px;
+}
+
+.experience-multiplier form .input-fields input,
+.server-notification form .input-fields input {
+    padding: 5px 15px;
+    margin: 5px;
+    margin-bottom: 10px;
+    max-width: 100%;
+    width: 350px;
+}
+button.btn.btn-primary.reload {
+    font-size: 9pt;
+    margin-left: 15px;
+}
 @media (max-width: 640.98px) {
     .section {
         padding: 30px 20px 50px 20px !important;

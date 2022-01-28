@@ -8,7 +8,7 @@
     flex-flow: column;
 }
 
-.content .experience-multiplier form,
+.experience-multiplier form,
 .server-notification form {
     display: flex;
     flex-flow: column;
@@ -16,22 +16,35 @@
     align-items: flex-start;
 }
 
-button.btn.btn-primary {
+.experience-multiplier form button.btn.btn-primary,
+.server-notification form button.btn.btn-primary {
     margin-bottom: 35px;
 }
 
-.input-fields input.input {
+.experience-multiplier form .input-fields input,
+.server-notification form .input-fields input {
     padding: 5px 15px;
     margin: 5px;
+    margin-bottom: 10px;
     max-width: 100%;
     width: 350px;
 }
-
-.bot-detail-rows {
-    max-width: 100%;
-    width: 340px;
+.bot-detail-row {
+    padding: 5px;
 }
 
+.bot-value {
+    max-width: 100%;
+    width: 380px;
+    text-align: right;
+}
+.bot-details {
+    width: 780px;
+    max-width: 100%;
+}
+.bot-detail-row:nth-of-type(odd) {
+    background-color: #f6f6f6;
+}
 input-fields input.input {
     margin-bottom: 10px;
 }

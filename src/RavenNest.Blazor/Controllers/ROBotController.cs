@@ -24,21 +24,15 @@ namespace RavenNest.Controllers
         }
 
         [HttpPost("stats")]
-        public async Task OnStatsPosted() // [FromBody] BotStats stats
+        public async Task OnStatsPosted()
         {
-            //if (stats == null || stats.Uptime == TimeSpan.Zero)
-            //{
             var contentLength = HttpContext.Request.ContentLength;
             if (contentLength > 0)
             {
                 var sr = new StreamReader(HttpContext.Request.Body);
                 var data = await sr.ReadToEndAsync();
-                var stats = Newtonsoft.Json.JsonConvert.DeserializeObject<BotStats>(data);
-                serverManager.UpdateBotStats(stats);
+                serverManager.UpdateBotStats(data);
             }
-            //}
-
-            //serverManager.UpdateBotStats(stats);
         }
     }
 }
