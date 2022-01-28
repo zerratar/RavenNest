@@ -3,6 +3,8 @@ using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using System;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace RavenNest.Controllers
 {
@@ -22,9 +24,21 @@ namespace RavenNest.Controllers
         }
 
         [HttpPost("stats")]
-        public void OnStatsPosted([FromBody] BotStats stats)
+        public async Task OnStatsPosted() // [FromBody] BotStats stats
         {
-            serverManager.UpdateBotStats(stats);
+            //if (stats == null || stats.Uptime == TimeSpan.Zero)
+            //{
+            var contentLength = HttpContext.Request.ContentLength;
+            if (contentLength > 0)
+            {
+                var sr = new StreamReader(HttpContext.Request.Body);
+                var data = await sr.ReadToEndAsync();
+                var stats = Newtonsoft.Json.JsonConvert.DeserializeObject<BotStats>(data);
+                serverManager.UpdateBotStats(stats);
+            }
+            //}
+
+            //serverManager.UpdateBotStats(stats);
         }
     }
 }

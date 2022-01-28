@@ -8,7 +8,8 @@
     flex-flow: column;
 }
 
-.content form {
+.content .experience-multiplier form,
+.server-notification form {
     display: flex;
     flex-flow: column;
     justify-content: flex-start;
@@ -19,7 +20,7 @@ button.btn.btn-primary {
     margin-bottom: 35px;
 }
 
-input.input {
+.input-fields input.input {
     padding: 5px 15px;
     margin: 5px;
     max-width: 100%;
@@ -31,7 +32,7 @@ input.input {
     width: 340px;
 }
 
-input.input {
+input-fields input.input {
     margin-bottom: 10px;
 }
 

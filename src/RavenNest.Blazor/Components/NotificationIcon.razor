@@ -155,7 +155,12 @@
         //  // ignored, most likely the object has been disposed
         //}
 
-        InvokeAsync(this.StateHasChanged);
+        try
+        {
+           InvokeAsync(this.StateHasChanged);
+        } catch
+        {
+        }
     }
 
     public void HideAlert()
