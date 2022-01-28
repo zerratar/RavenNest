@@ -1,6 +1,6 @@
 ﻿.experience-multiplier,
 .server-notification {
-    margin-top: 50px;
+    margin-top: 20px;
 }
 
 .input-fields {
@@ -8,11 +8,31 @@
     flex-flow: column;
 }
 
+.content form {
+    display: flex;
+    flex-flow: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
+button.btn.btn-primary {
+    margin-bottom: 35px;
+}
+
 input.input {
     padding: 5px 15px;
     margin: 5px;
     max-width: 100%;
     width: 350px;
+}
+
+.bot-detail-rows {
+    max-width: 100%;
+    width: 340px;
+}
+
+input.input {
+    margin-bottom: 10px;
 }
 
 .server-notification form {
@@ -26,4 +46,9 @@ input.input {
     justify-content: start;
     margin-bottom: 35px;
     align-items: baseline;
+}
+
+.bot-detail-row {
+    display: flex;
+    justify-content: space-between;
 }
