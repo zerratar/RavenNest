@@ -13,6 +13,6 @@ namespace RavenNest.BusinessLogic.Game
         void BroadcastMessageAsync(string message, int time);
         void SendExpMultiplierEventAsync(int multiplier, string message, DateTime? startTime, DateTime endTime);
         int GetIncreasableGlobalExpAmount();
-        void UpdateBotStats(BotStats stats);
+        void UpdateBotStats(string stats);
     }
 }

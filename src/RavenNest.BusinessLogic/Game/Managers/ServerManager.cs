@@ -2,6 +2,7 @@
 using RavenNest.BusinessLogic.Net;
 using System;
 using RavenNest.DataModels;
+using System.Collections.Generic;
 
 namespace RavenNest.BusinessLogic.Game
 {
@@ -147,10 +148,23 @@ namespace RavenNest.BusinessLogic.Game
             gameData.Add(ev);
         }
 
-        public void UpdateBotStats(BotStats stats)
+        public void UpdateBotStats(string data)
         {
-            if (stats == null) return;
-            gameData.Bot = stats;
+            if (string.IsNullOrEmpty(data)) return;
+
+            try
+            {
+                gameData.Bot.Values = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, object>>(data);
+            }
+            catch
+            {
+                var stats = Newtonsoft.Json.JsonConvert.DeserializeObject<BotStats>(data);
+                if (stats != null)
+                {
+                    gameData.Bot = stats;
+                }
+            }
+
             gameData.Bot.LastUpdated = DateTime.UtcNow;
         }
     }

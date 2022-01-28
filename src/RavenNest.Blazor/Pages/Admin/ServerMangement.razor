@@ -2,6 +2,7 @@
 @page "/admin/server"
 @using System.ComponentModel.DataAnnotations
 @using RavenNest.BusinessLogic.Data
+@using RavenNest.DataModels
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.ServerService ServerService
 
@@ -40,7 +41,7 @@
     </div>
 
     <div class="bot-details">
-        <h2>RavenBot Details</h2>
+        <h2>RavenBot Details<button class="btn btn-primary reload" @onclick="()=>ReloadStats()">Reload</button></h2>
 
         <div class="bot-detail-rows">
             <div class="bot-detail-row">
@@ -52,104 +53,123 @@
                     @FormatTimeSpan(botStats.TimeSinceUpdate)
                 </div>
             </div>
-            <div class="bot-detail-row">
-                <div class="bot-label">
-                    Joined Channels
-                </div>
 
-                <div class="bot-value">
-                    @botStats.JoinedChannelsCount
-                </div>
-            </div>
-            <div class="bot-detail-row">
-                <div class="bot-label">
-                    User Count
-                </div>
+            @if (botStats.Values != null && botStats.Values.Count > 0)
+            {
+                @foreach (var key in botStats.Values.Keys)
+                {
+                    <div class="bot-detail-row">
+                        <div class="bot-label">
+                            @Sentence(key)
+                        </div>
 
-                <div class="bot-value">
-                    @botStats.UserCount
-                </div>
-            </div>
-            <div class="bot-detail-row">
-                <div class="bot-label">
-                    Connection Count
-                </div>
+                        <div class="bot-value">
+                            @FormatValue(botStats.Values[key])
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="bot-detail-row">
+                    <div class="bot-label">
+                        Joined Channels
+                    </div>
 
-                <div class="bot-value">
-                    @botStats.ConnectionCount
+                    <div class="bot-value">
+                        @botStats.JoinedChannelsCount
+                    </div>
                 </div>
-            </div>
-            <div class="bot-detail-row">
-                <div class="bot-label">
-                    Session Count
-                </div>
+                <div class="bot-detail-row">
+                    <div class="bot-label">
+                        User Count
+                    </div>
 
-                <div class="bot-value">
-                    @botStats.SessionCount
+                    <div class="bot-value">
+                        @botStats.UserCount
+                    </div>
                 </div>
-            </div>
-            <div class="bot-detail-row">
-                <div class="bot-label">
-                    Total Commands Received
-                </div>
+                <div class="bot-detail-row">
+                    <div class="bot-label">
+                        Connection Count
+                    </div>
 
-                <div class="bot-value">
-                    @botStats.TotalCommandCount
+                    <div class="bot-value">
+                        @botStats.ConnectionCount
+                    </div>
                 </div>
-            </div>
-            <div class="bot-detail-row">
-                <div class="bot-label">
-                    Commands Per Seconds
-                </div>
-                <div class="bot-value">
-                    @botStats.CommandsPerSecondsDelta
-                </div>
-            </div>
-            <div class="bot-detail-row">
-                <div class="bot-label">
-                    Peak Commands Per Seconds
-                </div>
+                <div class="bot-detail-row">
+                    <div class="bot-label">
+                        Session Count
+                    </div>
 
-                <div class="bot-value">
-                    @botStats.CommandsPerSecondsMax
+                    <div class="bot-value">
+                        @botStats.SessionCount
+                    </div>
                 </div>
-            </div>
-            <div class="bot-detail-row">
-                <div class="bot-label">
-                    Last Session Started
-                </div>
+                <div class="bot-detail-row">
+                    <div class="bot-label">
+                        Total Commands Received
+                    </div>
 
-                <div class="bot-value">
-                    @botStats.LastSessionStarted
+                    <div class="bot-value">
+                        @botStats.TotalCommandCount
+                    </div>
                 </div>
-            </div>
-            <div class="bot-detail-row">
-                <div class="bot-label">
-                    Last Session Ended
+                <div class="bot-detail-row">
+                    <div class="bot-label">
+                        Commands Per Seconds
+                    </div>
+                    <div class="bot-value">
+                        @botStats.CommandsPerSecondsDelta
+                    </div>
                 </div>
+                <div class="bot-detail-row">
+                    <div class="bot-label">
+                        Peak Commands Per Seconds
+                    </div>
 
-                <div class="bot-value">
-                    @botStats.LastSessionEnded
+                    <div class="bot-value">
+                        @botStats.CommandsPerSecondsMax
+                    </div>
                 </div>
-            </div>
-            <div class="bot-detail-row">
-                <div class="bot-label">
-                    Started
-                </div>
+                <div class="bot-detail-row">
+                    <div class="bot-label">
+                        Last Session Started
+                    </div>
 
-                <div class="bot-value">
-                    @botStats.Started
+                    <div class="bot-value">
+                        @botStats.LastSessionStarted
+                    </div>
                 </div>
-            </div>
-            <div class="bot-detail-row">
-                <div class="bot-label">
-                    Uptime
-                </div>
+                <div class="bot-detail-row">
+                    <div class="bot-label">
+                        Last Session Ended
+                    </div>
 
-                <div class="bot-value">
-                    @FormatTimeSpan(botStats.Uptime)
+                    <div class="bot-value">
+                        @botStats.LastSessionEnded
+                    </div>
                 </div>
-            </div>
+                <div class="bot-detail-row">
+                    <div class="bot-label">
+                        Started
+                    </div>
+
+                    <div class="bot-value">
+                        @botStats.Started
+                    </div>
+                </div>
+                <div class="bot-detail-row">
+                    <div class="bot-label">
+                        Uptime
+                    </div>
+
+                    <div class="bot-value">
+                        @FormatTimeSpan(botStats.Uptime)
+                    </div>
+                </div>
+            }
         </div>
     </div>
 }
@@ -165,12 +185,65 @@
 
     private RavenNest.Sessions.SessionInfo session;
     private bool isAdmin;
+    private string FormatValue(object val)
+    {
+        var str = val?.ToString();
 
+        if (!string.IsNullOrEmpty(str) && str.IndexOf(':') > 0)
+        {
+            if (str.IndexOf('-') > 0 && DateTime.TryParse(str, out var dt))
+            {
+                return FormatDateTime(dt);
+            }
+            if (TimeSpan.TryParse(str, out var ts))
+            {
+                return FormatTimeSpan(ts);
+            }
+        }
+
+        return str;
+    }
+
+    private string FormatDateTime(DateTime dt)
+    {
+        if (dt == DateTime.MinValue)
+        {
+            return "-";
+        }
+
+        return dt.ToString();
+    }
+
+    private string Sentence(string input)
+    {
+        var str = input;
+        var start = Char.ToUpper(str[0]);
+        var process = str.Substring(1);
+        process.Select((x, i) =>
+        {
+            if (Char.IsUpper(x)) return i;
+            return -1;
+        })
+        .Reverse()
+        .ForEach(x =>
+        {
+            if (x != -1)
+                process = process.Insert(x, " ");
+        });
+
+        return start + process;
+    }
     protected override void OnInitialized()
     {
         session = AuthService.GetSession();
         isAdmin = session != null && session.Administrator;
         botStats = ServerService.GetBotStats();
+    }
+
+    private void ReloadStats()
+    {
+        botStats = ServerService.GetBotStats();
+        InvokeAsync(StateHasChanged);
     }
 
     private void SendServerNotification()

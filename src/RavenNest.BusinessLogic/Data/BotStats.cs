@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace RavenNest.BusinessLogic.Data
 {
@@ -17,7 +18,9 @@ namespace RavenNest.BusinessLogic.Data
         public DateTime LastSessionStarted { get; set; }
         public DateTime LastSessionEnded { get; set; }
         public DateTime Started { get; set; }
+
         public DateTime LastUpdated { get; set; }
+        public Dictionary<string, object> Values { get; set; } = new Dictionary<string, object>();
         public TimeSpan TimeSinceUpdate => DateTime.UtcNow - LastUpdated;
     }
 }
