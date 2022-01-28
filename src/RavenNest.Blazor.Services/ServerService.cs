@@ -26,9 +26,9 @@ namespace RavenNest.Blazor.Services
             this.serverManager = serverManager;
         }
 
-        public StreamBotStats GetBotStats()
+        public BotStats GetBotStats()
         {
-            return gameData.Bot.Stats;
+            return gameData.Bot;
         }
 
         public void SendServerAnnouncement(string message, int milliSeconds)
