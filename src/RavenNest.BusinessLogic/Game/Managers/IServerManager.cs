@@ -1,4 +1,5 @@
-﻿using RavenNest.DataModels;
+﻿using RavenNest.BusinessLogic.Data;
+using RavenNest.DataModels;
 using System;
 
 namespace RavenNest.BusinessLogic.Game
@@ -12,5 +13,6 @@ namespace RavenNest.BusinessLogic.Game
         void BroadcastMessageAsync(string message, int time);
         void SendExpMultiplierEventAsync(int multiplier, string message, DateTime? startTime, DateTime endTime);
         int GetIncreasableGlobalExpAmount();
+        void UpdateBotStats(StreamBotStats stats);
     }
 }

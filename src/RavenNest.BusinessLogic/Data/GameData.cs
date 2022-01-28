@@ -97,6 +97,8 @@ namespace RavenNest.BusinessLogic.Data
         public GameClient Client { get; private set; }
         public object SyncLock { get; } = new object();
         public bool InitializedSuccessful { get; } = false;
+
+        public Bot Bot { get; } = new Bot();
         #endregion
 
         #region Game Data Construction
@@ -2043,4 +2045,21 @@ namespace RavenNest.BusinessLogic.Data
     }
 
     #endregion
+
+
+    public class Bot
+    {
+        public StreamBotStats Stats;
+    }
+
+    public struct StreamBotStats
+    {
+        public UInt32 JoinedChannelsCount;
+        public UInt32 UserCount;
+        public uint ConnectionCount;
+        public uint SessionCount;
+        public TimeSpan Uptime;
+        public DateTime LastUpdated;
+        public TimeSpan TimeSinceUpdate => DateTime.UtcNow - LastUpdated;
+    }
 }
