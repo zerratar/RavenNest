@@ -1,114 +1,197 @@
 ﻿@layout AdminLayout
 @page "/admin/server"
 @using System.ComponentModel.DataAnnotations
+@using RavenNest.BusinessLogic.Data
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.ServerService ServerService
 
 
 @if (isAdmin)
 {
-  <h1>Send Server Announcement</h1>
-  <div class="server-notification">
-    <EditForm Model="@serverNotificationModel" OnValidSubmit="@SendServerNotification">
-      <DataAnnotationsValidator />
+    <h1>Send Server Announcement</h1>
+    <div class="server-notification">
+        <EditForm Model="@serverNotificationModel" OnValidSubmit="@SendServerNotification">
+            <DataAnnotationsValidator />
 
-      <div class="input-fields">
-        <InputText class="input" placeholder="Server Message" @bind-Value="serverNotificationModel.Value" />
-      </div>
+            <div class="input-fields">
+                <InputText class="input" placeholder="Server Message" @bind-Value="serverNotificationModel.Value" />
+            </div>
 
-      <ValidationSummary />
-      <button class="btn btn-primary" Type="submit">Send</button>
-    </EditForm>
-  </div>
+            <ValidationSummary />
+            <button class="btn btn-primary" Type="submit">Send</button>
+        </EditForm>
+    </div>
 
-  <h1>Set Global Exp Multiplier</h1>
-  <div class="experience-multiplier">
-    <EditForm Model="@expMultiplierEventModel" OnValidSubmit="@SetExpMultiplierEvent">
-      <DataAnnotationsValidator />
+    <h1>Set Global Exp Multiplier</h1>
+    <div class="experience-multiplier">
+        <EditForm Model="@expMultiplierEventModel" OnValidSubmit="@SetExpMultiplierEvent">
+            <DataAnnotationsValidator />
 
-      <div class="input-fields">
-        <InputText class="input" placeholder="Exp Multiplier" @bind-Value="expMultiplierEventModel.Multiplier" />
-        <InputText class="input" placeholder="Message" @bind-Value="expMultiplierEventModel.Message" />
-        <InputText class="input" placeholder="Start Time" @bind-Value="expMultiplierEventModel.StartTime" />
-        <InputText class="input" placeholder="End Time" @bind-Value="expMultiplierEventModel.EndTime" />
-      </div>
+            <div class="input-fields">
+                <InputText class="input" placeholder="Exp Multiplier" @bind-Value="expMultiplierEventModel.Multiplier" />
+                <InputText class="input" placeholder="Message" @bind-Value="expMultiplierEventModel.Message" />
+                <InputText class="input" placeholder="Start Time" @bind-Value="expMultiplierEventModel.StartTime" />
+                <InputText class="input" placeholder="End Time" @bind-Value="expMultiplierEventModel.EndTime" />
+            </div>
 
-      <ValidationSummary />
-      <button class="btn btn-primary" Type="submit"> Send</button>
-    </EditForm>
-  </div>
+            <ValidationSummary />
+            <button class="btn btn-primary" Type="submit"> Send</button>
+        </EditForm>
+    </div>
+
+    <div class="bot-details">
+        <h2>RavenBot Details</h2>
+
+        <div class="bot-detail-rows">
+            <div class="bot-detail-row">
+                <div class="bot-label">
+                    Last Ping
+                </div>
+
+                <div class="bot-value">
+                    @FormatTimeSpan(botStats.TimeSinceUpdate)
+                </div>
+            </div>
+            <div class="bot-detail-row">
+                <div class="bot-label">
+                    Joined Channels
+                </div>
+
+                <div class="bot-value">
+                    @botStats.JoinedChannelsCount
+                </div>
+            </div>
+            <div class="bot-detail-row">
+                <div class="bot-label">
+                    User Count
+                </div>
+
+                <div class="bot-value">
+                    @botStats.UserCount
+                </div>
+            </div>
+            <div class="bot-detail-row">
+                <div class="bot-label">
+                    Connection Count
+                </div>
+
+                <div class="bot-value">
+                    @botStats.ConnectionCount
+                </div>
+            </div>
+            <div class="bot-detail-row">
+                <div class="bot-label">
+                    Connection Count
+                </div>
+
+                <div class="bot-value">
+                    @botStats.SessionCount
+                </div>
+            </div>
+            <div class="bot-detail-row">
+                <div class="bot-label">
+                    Uptime
+                </div>
+
+                <div class="bot-value">
+                    @FormatTimeSpan(botStats.Uptime)
+                </div>
+            </div>
+        </div>
+    </div>
 }
 
 @code {
     private TextModel serverNotificationModel = new TextModel();
-
+    private StreamBotStats botStats;
     private ExpMultiplierModel expMultiplierEventModel = new ExpMultiplierModel
-    {
-      StartTime = DateTime.UtcNow.ToString(),
-      EndTime = DateTime.UtcNow.AddHours(1).ToString()
-    };
+        {
+            StartTime = DateTime.UtcNow.ToString(),
+            EndTime = DateTime.UtcNow.AddHours(1).ToString()
+        };
 
     private RavenNest.Sessions.SessionInfo session;
     private bool isAdmin;
 
     protected override void OnInitialized()
     {
-      session = AuthService.GetSession();
-      isAdmin = session != null && session.Administrator;
+        session = AuthService.GetSession();
+        isAdmin = session != null && session.Administrator;
+        botStats = ServerService.GetBotStats();
     }
 
     private void SendServerNotification()
     {
-      if (!isAdmin)
-      {
-        return;
-      }
+        if (!isAdmin)
+        {
+            return;
+        }
 
-      var msg = serverNotificationModel.Value;
-      var minDuration = 5000;
-      var wordCount = msg.Split(' ').Length;
-      ServerService.SendServerAnnouncement(msg, Math.Max(minDuration, wordCount * 1000));
-      serverNotificationModel.Value = null;
+        var msg = serverNotificationModel.Value;
+        var minDuration = 5000;
+        var wordCount = msg.Split(' ').Length;
+        ServerService.SendServerAnnouncement(msg, Math.Max(minDuration, wordCount * 1000));
+        serverNotificationModel.Value = null;
     }
+    private string FormatTimeSpan(TimeSpan elapsed)
+    {
+        var str = "";
+        if (elapsed.Days > 0)
+        {
+            str += elapsed.Days + "d ";
+        }
+        if (elapsed.Hours > 0)
+        {
+            str += elapsed.Hours + "h ";
+        }
+        if (elapsed.Minutes > 0)
+        {
+            str += elapsed.Minutes + "m ";
+        }
+
+        str += elapsed.Seconds + "s";
+        return str;
+    }
+
 
     private void SetExpMultiplierEvent()
     {
-      if (!isAdmin)
-      {
-        return;
-      }
+        if (!isAdmin)
+        {
+            return;
+        }
 
-      if (!DateTime.TryParse(expMultiplierEventModel.EndTime, out var endTime))
-      {
-        return;
-      }
-      if (!int.TryParse(expMultiplierEventModel.Multiplier, out var multiplier))
-      {
-        return;
-      }
+        if (!DateTime.TryParse(expMultiplierEventModel.EndTime, out var endTime))
+        {
+            return;
+        }
+        if (!int.TryParse(expMultiplierEventModel.Multiplier, out var multiplier))
+        {
+            return;
+        }
 
-      var startTime = DateTime.UtcNow;
-      DateTime.TryParse(expMultiplierEventModel.StartTime, out startTime);
+        var startTime = DateTime.UtcNow;
+        DateTime.TryParse(expMultiplierEventModel.StartTime, out startTime);
 
-      ServerService.SendExpMultiplierEvent(multiplier, expMultiplierEventModel.Message, startTime, endTime);
-      expMultiplierEventModel.Multiplier = null;
-      expMultiplierEventModel.Message = null;
+        ServerService.SendExpMultiplierEvent(multiplier, expMultiplierEventModel.Message, startTime, endTime);
+        expMultiplierEventModel.Multiplier = null;
+        expMultiplierEventModel.Message = null;
     }
 
     public class ExpMultiplierModel
     {
-      [Required]
-      public string Multiplier { get; set; }
-      [Required]
-      public string Message { get; set; }
-      public string StartTime { get; set; }
-      [Required]
-      public string EndTime { get; set; }
+        [Required]
+        public string Multiplier { get; set; }
+        [Required]
+        public string Message { get; set; }
+        public string StartTime { get; set; }
+        [Required]
+        public string EndTime { get; set; }
     }
 
     public class TextModel
     {
-      [Required]
-      public string Value { get; set; }
+        [Required]
+        public string Value { get; set; }
     }
 }
