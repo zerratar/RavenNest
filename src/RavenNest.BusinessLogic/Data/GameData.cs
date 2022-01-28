@@ -2044,24 +2044,5 @@ namespace RavenNest.BusinessLogic.Data
     {
     }
 
-    #endregion
-
-    public class BotStats
-    {
-        public UInt32 CommandsPerSecondsMax;
-        public UInt32 JoinedChannelsCount;
-        public UInt32 UserCount;
-        public UInt32 ConnectionCount;
-        public UInt32 SessionCount;
-
-        public UInt64 TotalCommandCount;
-        public double CommandsPerSecondsDelta;
-
-        public TimeSpan Uptime;
-        public DateTime LastSessionStarted;
-        public DateTime LastSessionEnded;
-        public DateTime Started;
-        public DateTime LastUpdated;
-        public TimeSpan TimeSinceUpdate => DateTime.UtcNow - LastUpdated;
-    }
+#endregion
 }

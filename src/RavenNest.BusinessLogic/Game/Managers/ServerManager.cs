@@ -149,6 +149,7 @@ namespace RavenNest.BusinessLogic.Game
 
         public void UpdateBotStats(BotStats stats)
         {
+            if (stats == null) return;
             gameData.Bot = stats;
             gameData.Bot.LastUpdated = DateTime.UtcNow;
         }
