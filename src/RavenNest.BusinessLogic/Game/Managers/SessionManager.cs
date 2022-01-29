@@ -111,9 +111,9 @@ namespace RavenNest.BusinessLogic.Game
                         c.UserIdLock = null;
                     }
                 }
-//#if DEBUG
-//                logger.LogDebug(user.UserName + " game session started. " + activeChars.Count + " characters cleared.");
-//#endif
+                //#if DEBUG
+                //                logger.LogDebug(user.UserName + " game session started. " + activeChars.Count + " characters cleared.");
+                //#endif
             }
 
             newGameSession.Revision = 0;
@@ -373,7 +373,17 @@ namespace RavenNest.BusinessLogic.Game
         public SessionToken Get(string sessionToken)
         {
             var json = Base64Decode(sessionToken);
-            return JSON.Parse<SessionToken>(json);
+            var token = JSON.Parse<SessionToken>(json);
+
+            if (token != null && !string.IsNullOrEmpty(token.ClientVersion))
+            {
+                var state = gameData.GetSessionState(token.SessionId);
+                if (state != null && string.IsNullOrEmpty(state.ClientVersion))
+                {
+                    state.ClientVersion = token.ClientVersion;
+                }
+            }
+            return token;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
