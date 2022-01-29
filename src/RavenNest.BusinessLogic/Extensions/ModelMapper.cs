@@ -30,6 +30,7 @@ namespace RavenNest.BusinessLogic.Extensions
             if (user == null)
                 return null;
 
+
             var state = gameData.GetSessionState(session.Id);
             if (state != null)
             {
