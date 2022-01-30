@@ -2,18 +2,17 @@
 
 namespace GameDataSimulation
 {
-    public class MiningDropSimulation
+    public class MiningDropSimulation : ISimulation
     {
         protected readonly Random Random = new Random();
 
-        public static void Run()
+        public SimulationResult Run(ISimulationSettings settings)
         {
-
-            MiningDropSimulation drt = new();
-
-            var miningLevel = 332;
-            var hours = 6;
-            var scale = 1000;
+            var simResult = new MiningSimulationResult();
+            var minSettings = (MiningDropSimulationSettings)settings;
+            var miningLevel = minSettings.MiningLevel;
+            var hours = minSettings.SimulateGamePlayHours;
+            var scale = minSettings.TimeScaleFactor;
 
             //DropRateTest.DropChanceIncrement = 0.00025;
             //DropRateTest.InitDropChance = 0.33;
@@ -39,15 +38,13 @@ namespace GameDataSimulation
             var progress = 0.0;
             var expectedOreCount = (double)(time.TotalSeconds / ItemDropRateSettings.ResourceGatherInterval);
 
-            var result = drt.Test(miningLevel, time, scale, (ctx, timeLeft) =>
+            var result = Test(miningLevel, time, scale, (ctx, timeLeft) =>
             {
-
                 progress = (int)((ctx.Ore / expectedOreCount) * 100);
                 Console.CursorLeft = left;
                 Console.CursorTop = top;
                 Console.WriteLine(" Progress: " + progress + "%       ");
                 Console.WriteLine(" Time Left: ~" + (int)(timeLeft.TotalSeconds / scale) + "s       ");
-
             });
 
             var elapsed = DateTime.UtcNow - start;
@@ -71,9 +68,11 @@ namespace GameDataSimulation
                 Console.Write((Math.Round((dropChance * 100), 2) + "%").PadLeft(7, ' '));
                 Console.WriteLine();
             }
+
+            return simResult;
         }
 
-        public ResourceContext Test(int miningLevel, TimeSpan duration, double timeScale = 1.0, Action<ResourceContext, TimeSpan> onTick = null)
+        private ResourceContext Test(int miningLevel, TimeSpan duration, double timeScale = 1.0, Action<ResourceContext, TimeSpan> onTick = null)
         {
             var ctx = new ResourceContext
             {
@@ -97,7 +96,7 @@ namespace GameDataSimulation
             return ctx;
         }
 
-        public void Update(ResourceContext ctx, Action<ResourceContext, TimeSpan> onTick, TimeSpan timeLeft)
+        private void Update(ResourceContext ctx, Action<ResourceContext, TimeSpan> onTick, TimeSpan timeLeft)
         {
             UpdateResourceGain(ctx, () =>
             {
@@ -112,7 +111,7 @@ namespace GameDataSimulation
             });
         }
 
-        protected void UpdateResourceGain(ResourceContext ctx, Action onUpdate)
+        private void UpdateResourceGain(ResourceContext ctx, Action onUpdate)
         {
             var now = Time.UtcNow;
             var elapsed = now - ctx.LastTaskUpdate;
@@ -126,7 +125,7 @@ namespace GameDataSimulation
             }
         }
 
-        protected void AddDrop(int miningLevel, Action<ResourceDrop> onDrop)
+        private void AddDrop(int miningLevel, Action<ResourceDrop> onDrop)
         {
             var multiDrop = Random.NextDouble();
             var isMultiDrop = multiDrop <= 0.1;
@@ -150,7 +149,9 @@ namespace GameDataSimulation
                     }
                 }
             }
-
+        }
+        public class MiningSimulationResult : SimulationResult
+        {
         }
 
         public class ResourceContext
