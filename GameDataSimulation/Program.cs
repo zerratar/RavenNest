@@ -3,6 +3,53 @@
 
 using GameDataSimulation;
 
-MiningDropSimulation.Run();
+double expBoost = 100;
+int nextLevel = 100;
+
+while (true)
+{
+    new SkillLevelingSimulation().Run(new SkillLevelingSimulationSettings
+    {
+        Skill = Skill.Attack,
+        ExpBoost = expBoost,
+        NextLevel = nextLevel,
+        MultiplierFactor = 1.0,
+        ExpFactor = 1.0,
+        PlayersInArea = 100,
+        Exp = 6000,
+        ExpGainType = ExpGainType.Fixed,
+    });
+
+    // Home, Away, Ironhill, Kyo, Heim
+
+    Console.WriteLine();
+    Console.Write(" > Next Level (Default 2, add + in end for boost): ");
+
+    var lv = Console.ReadLine() ?? "";
+    var checkBoost = false;
+    if (lv.EndsWith("+"))
+    {
+        lv = lv.Replace("+", "");
+        checkBoost = true;
+    }
+    if (!int.TryParse(lv, out nextLevel))
+        nextLevel = 2;
+
+    if (checkBoost)
+    {
+        Console.Write(" > Exp Boost (Default 1): ");
+        if (!double.TryParse(Console.ReadLine(), out expBoost))
+            expBoost = 1;
+    }
+
+    Console.Clear();
+}
+
+//new MiningDropSimulation().Run(new MiningDropSimulationSettings
+//{
+//    MiningLevel = 332,
+//    SimulateGamePlayHours = 6,
+//    TimeScaleFactor = 1000
+//});
 
 while (true) { System.Threading.Thread.Sleep(1000); }
