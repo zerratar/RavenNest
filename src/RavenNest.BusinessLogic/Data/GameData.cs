@@ -1039,32 +1039,35 @@ namespace RavenNest.BusinessLogic.Data
             var village = GetVillageBySession(session);
             if (village == null)
             {
-                var villageResources = new Resources()
-                {
-                    Id = Guid.NewGuid()
-                };
-
-                Add(villageResources);
-
-
-                var user = GetUser(session.UserId);
-                var villageExp = user.IsAdmin.GetValueOrDefault()
-                    ? GameMath.OLD_LevelToExperience(30)
-                    : 0;
-                var villageLevel = GameMath.OLD_ExperienceToLevel(villageExp);
-
-                village = new Village()
-                {
-                    Id = Guid.NewGuid(),
-                    ResourcesId = villageResources.Id,
-                    Level = villageLevel,
-                    Experience = (long)villageExp,
-                    Name = "Village",
-                    UserId = session.UserId
-                };
-
-                Add(village);
+                village = CreateVillage(session.UserId);
             }
+
+            return village;
+        }
+
+        public Village CreateVillage(Guid userId)
+        {
+            var villageResources = new Resources()
+            {
+                Id = Guid.NewGuid()
+            };
+
+            Add(villageResources);
+
+            var user = GetUser(userId);
+            var villageExp = user.IsAdmin.GetValueOrDefault() ? GameMath.OLD_LevelToExperience(30) : 0;
+            var villageLevel = GameMath.OLD_ExperienceToLevel(villageExp);
+            var village = new Village()
+            {
+                Id = Guid.NewGuid(),
+                ResourcesId = villageResources.Id,
+                Level = villageLevel,
+                Experience = (long)villageExp,
+                Name = "Village",
+                UserId = userId
+            };
+
+            Add(village);
 
             return village;
         }
