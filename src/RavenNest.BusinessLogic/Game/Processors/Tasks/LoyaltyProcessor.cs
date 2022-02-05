@@ -31,8 +31,15 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             var user = gameData.GetUser(character.UserId);
 
             var loyalty = gameData.GetUserLoyalty(character.UserId, session.UserId);
+            if (loyalty == null && character.UserIdLock != null)
+            {
+                loyalty = gameData.GetUserLoyalty(character.UserId, character.UserIdLock.GetValueOrDefault());
+            }
+
             if (loyalty == null)
+            {
                 loyalty = CreateUserLoyalty(gameData, session, user);
+            }
 
             //bool isActive = CheckUserActivity(user.Id, character, state);
 

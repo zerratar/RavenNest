@@ -2,6 +2,7 @@
 
 namespace RavenNest.BusinessLogic.Net
 {
+    [Obsolete("Use LoyaltyUpdate instead")]
     public class UserLoyaltyUpdate
     {
         public Guid CharacterId { get; set; }
@@ -13,4 +14,5 @@ namespace RavenNest.BusinessLogic.Net
         public int NewCheeredBits { get; set; }
         public string UserName { get; set; }
     }
+
 }
