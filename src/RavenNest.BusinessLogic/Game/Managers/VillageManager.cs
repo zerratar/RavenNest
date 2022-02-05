@@ -1,4 +1,5 @@
 ﻿using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Net;
 using System;
 using System.Linq;
 
@@ -68,6 +69,30 @@ namespace RavenNest.BusinessLogic.Game
 
             targetHouse.Type = type;
             return true;
+        }
+
+        public VillageInfo GetVillageInfo(Guid sessionId)
+        {
+            var session = gameData.GetSession(sessionId);
+            if (session == null) return null;
+            var village = gameData.GetOrCreateVillageBySession(session);
+            var villageHouses = gameData.GetOrCreateVillageHouses(village);
+            return new VillageInfo
+            {
+                Name = village.Name,
+                Level = village.Level,
+                Experience = village.Experience,
+                Houses = villageHouses.Select(x =>
+                   new VillageHouseInfo
+                   {
+                       Owner = x.UserId != null
+                           ? gameData.GetUser(x.UserId.Value).UserId
+                           : null,
+                       Slot = x.Slot,
+                       Type = x.Type
+                   }
+                 ).ToList()
+            };
         }
 
         public bool RemoveHouse(Guid sessionId, int slot)

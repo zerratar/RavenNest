@@ -116,19 +116,16 @@ namespace RavenNest.DataModels
         public void Add(TModel model)
         {
             var key = keySelector(model);
+
             if (entities.ContainsKey(key))
                 return;
-
-            if (!trackChanges)
-            {
-                entities[key] = model;
-                return;
-            }
 
             if (addedEntities.ContainsKey(key) || updatedEntities.ContainsKey(key) || removedEntities.ContainsKey(key))
                 return;
 
+
             LastModified = DateTime.UtcNow;
+
             model.PropertyChanged -= OnEntityPropertyChanged;
             model.PropertyChanged += OnEntityPropertyChanged;
 
@@ -138,12 +135,16 @@ namespace RavenNest.DataModels
             }
 
             entities[key] = model;
-            addedEntities[key] = new EntityChangeSet
+
+            if (trackChanges)
             {
-                LastModified = DateTime.UtcNow,
-                State = EntityState.Added,
-                Entity = model
-            };
+                addedEntities[key] = new EntityChangeSet
+                {
+                    LastModified = DateTime.UtcNow,
+                    State = EntityState.Added,
+                    Entity = model
+                };
+            }
         }
 
         public void Remove(TModel model)
@@ -151,11 +152,6 @@ namespace RavenNest.DataModels
             var key = keySelector(model);
             if (entities.TryRemove(key, out _))
             {
-                if (!trackChanges)
-                {
-                    return;
-                }
-
                 LastModified = DateTime.UtcNow;
                 model.PropertyChanged -= OnEntityPropertyChanged;
 
@@ -164,18 +160,21 @@ namespace RavenNest.DataModels
                     group.Value.Remove(model);
                 }
 
-                if (addedEntities.TryRemove(key, out _))
+                if (trackChanges)
                 {
-                    return;
-                }
+                    if (addedEntities.TryRemove(key, out _))
+                    {
+                        return;
+                    }
 
-                updatedEntities.TryRemove(key, out _);
-                removedEntities[key] = new EntityChangeSet
-                {
-                    LastModified = DateTime.UtcNow,
-                    State = EntityState.Deleted,
-                    Entity = model
-                };
+                    updatedEntities.TryRemove(key, out _);
+                    removedEntities[key] = new EntityChangeSet
+                    {
+                        LastModified = DateTime.UtcNow,
+                        State = EntityState.Deleted,
+                        Entity = model
+                    };
+                }
             }
         }
 
@@ -201,11 +200,6 @@ namespace RavenNest.DataModels
 
         private void OnEntityPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (!trackChanges)
-            {
-                return;
-            }
-
             LastModified = DateTime.UtcNow;
             var entity = sender as TModel;
             //var property = e.PropertyName;
@@ -217,20 +211,23 @@ namespace RavenNest.DataModels
                 group.Value.Update(entity);
             }
 
-            if (addedEntities.ContainsKey(key) || removedEntities.ContainsKey(key)) return;
-            if (updatedEntities.TryGetValue(key, out var value))
+            if (trackChanges)
             {
-                value.LastModified = DateTime.UtcNow;
-                value.State = EntityState.Modified;
-                return;
-            }
+                if (addedEntities.ContainsKey(key) || removedEntities.ContainsKey(key)) return;
+                if (updatedEntities.TryGetValue(key, out var value))
+                {
+                    value.LastModified = DateTime.UtcNow;
+                    value.State = EntityState.Modified;
+                    return;
+                }
 
-            updatedEntities[key] = new EntityChangeSet
-            {
-                LastModified = DateTime.UtcNow,
-                State = EntityState.Modified,
-                Entity = entity
-            };
+                updatedEntities[key] = new EntityChangeSet
+                {
+                    LastModified = DateTime.UtcNow,
+                    State = EntityState.Modified,
+                    Entity = entity
+                };
+            }
         }
 
         public void RegisterLookupGroup(string name, Func<TModel, TKey> lookupKey)

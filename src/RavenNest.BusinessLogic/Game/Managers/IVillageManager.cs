@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RavenNest.BusinessLogic.Net;
+using System;
 
 namespace RavenNest.BusinessLogic.Game
 {
@@ -8,5 +9,6 @@ namespace RavenNest.BusinessLogic.Game
         bool AssignPlayerToHouse(Guid sessionId, int slot, Guid characterId);
         bool BuildHouse(Guid sessionId, int slot, int type);
         bool RemoveHouse(Guid sessionId, int slot);
+        VillageInfo GetVillageInfo(Guid sessionId);
     }
 }

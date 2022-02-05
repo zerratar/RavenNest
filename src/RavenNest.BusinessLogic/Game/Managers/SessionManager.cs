@@ -18,6 +18,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly ITwitchClient twitchClient;
         private readonly IGameData gameData;
         private readonly IPlayerManager playerManager;
+        private readonly IVillageManager villageManager;
         private readonly IExtensionWebSocketConnectionProvider extWsConnectionProvider;
         private readonly int[] MaxMultiplier = new int[]
         {
@@ -31,12 +32,14 @@ namespace RavenNest.BusinessLogic.Game
             ITwitchClient twitchClient,
             IGameData gameData,
             IPlayerManager playerManager,
+            IVillageManager villageManager,
             IExtensionWebSocketConnectionProvider extWsConnectionProvider)
         {
             this.logger = logger;
             this.twitchClient = twitchClient;
             this.gameData = gameData;
             this.playerManager = playerManager;
+            this.villageManager = villageManager;
             this.extWsConnectionProvider = extWsConnectionProvider;
         }
 
@@ -180,29 +183,12 @@ namespace RavenNest.BusinessLogic.Game
 
         public void SendVillageInfo(DataModels.GameSession newGameSession)
         {
-            var village = gameData.GetOrCreateVillageBySession(newGameSession);
-            var villageHouses = gameData.GetOrCreateVillageHouses(village);
+            var villageInfo = villageManager.GetVillageInfo(newGameSession.Id);
             var villageInfoEvent = gameData.CreateSessionEvent(
                 GameEventType.VillageInfo,
                 newGameSession,
-                new VillageInfo
-                {
-                    Name = village.Name,
-                    Level = village.Level,
-                    Experience = village.Experience,
-                    Houses = villageHouses.Select(x =>
-                       new VillageHouseInfo
-                       {
-                           Owner = x.UserId != null
-                               ? gameData.GetUser(x.UserId.Value).UserId
-                               : null,
-                           Slot = x.Slot,
-                           Type = x.Type
-                       }
-                    ).ToList()
-                }
+                villageInfo
             );
-
             gameData.Add(villageInfoEvent);
         }
 

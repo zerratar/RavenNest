@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.BusinessLogic.Net;
 using RavenNest.Sessions;
 using System;
 
@@ -56,6 +57,15 @@ namespace RavenNest.Controllers
             var sessionToken = GetSessionToken();
             AssertSessionTokenValidity(sessionToken);
             return villageManager.RemoveHouse(sessionToken.SessionId, slot);
+        }
+
+
+        [HttpGet]
+        public VillageInfo GetVillageInfo()
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return villageManager.GetVillageInfo(sessionToken.SessionId);
         }
     }
 }

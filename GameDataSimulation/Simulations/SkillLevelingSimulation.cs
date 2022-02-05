@@ -4,10 +4,15 @@
     {
         public int PlayersInArea = 100;
         public int NextLevel = 50;
+
+        /// <summary>
+        /// 0 to 1.0, exp multiplier factor, 0 being no effect from the multiplier. 1 being full effect.<br/>
+        /// This could be controlled by island or other types of events.
+        /// </summary>
         public double MultiplierFactor = 1.0; // 0 to 1.0, multiplier factor, islands could control this.
 
         /// <summary>
-        /// 0 to 1.0, exp factor, 0 being no exp. Calculated based on current level and target level.  <br/>
+        /// 0 to 1.0, exp factor, 0 being no exp. Calculated based on current level and target level.<br/>
         /// If player level is too high compared to the target level, the exp amount is dropped. <br/> <br/>
         /// Could also be related to what island a player is mostly suited for. <br/> <br/>
         /// ■ If player can go to Away, training on home will yield less exp. <br/>
@@ -15,6 +20,9 @@
         /// ■ etc..
         /// </summary>
         public double ExpFactor = 1.0;
+        /// <summary>
+        /// Active exp multiplier, this is including rested, global boost and local boosts.
+        /// </summary>
         public double ExpBoost = 1.0;
         public Skill Skill;
         public double? Exp;
@@ -81,6 +89,7 @@
                     exp = Math.Min(maxExpGain, Math.Max(expRaw, minExpGain));
                     break;
             }
+
             var percent = (exp / expForNextLevel) * 100;
             var percentPerSeconds = ticksPerSeconds * (percent / 100.0);
             var timeLeft = TimeSpan.FromSeconds(1.0 / percentPerSeconds);
