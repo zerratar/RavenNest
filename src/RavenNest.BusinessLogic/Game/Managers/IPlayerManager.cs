@@ -14,6 +14,7 @@ namespace RavenNest.BusinessLogic.Game
         Task<Player> CreatePlayer(string userId, string userName, string identifier);
         Task<bool> RemovePlayerFromActiveSession(SessionToken token, Guid characterId);
         Task<bool> RemovePlayerFromActiveSession(DataModels.GameSession session, Guid characterId);
+        Task<PlayerRestoreResult> AddManyPlayers(SessionToken sessionToken, PlayerRestoreData players);
         Task<Player> AddPlayer(SessionToken token, Guid characterId);
         Task<PlayerJoinResult> AddPlayer(SessionToken token, PlayerJoinData playerJoinData);
         Task<PlayerJoinResult> AddPlayer(SessionToken token, string userId, string userName, string identifier = null);
@@ -55,7 +56,7 @@ namespace RavenNest.BusinessLogic.Game
         AddItemResult CraftItem_Old(SessionToken token, string userId, Guid itemId, int amount = 1);
         ItemEnchantmentResult EnchantItem(SessionToken token, string userId, Guid inventoryItemId);
         CraftItemResult CraftItems(SessionToken token, string userId, Guid itemId, int amount = 1);
-
+        bool AddLoyaltyData(SessionToken sessionToken, LoyaltyUpdate data);
         long GiftItem(SessionToken token, string gifterUserId, string receiverUserId, Guid itemId, long amount);
         long VendorItem(SessionToken token, string userId, Guid itemId, long amount);
         bool EquipItemInstance(SessionToken token, string userId, Guid inventoryItemId);

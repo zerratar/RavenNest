@@ -1,8 +1,8 @@
 ﻿namespace RavenNest.Models
 {
-    public class PlayerJoinResult
+    public class PlayerRestoreResult
     {
-        public Player Player { get; set; }
+        public PlayerJoinResult[] Players { get; set; }
         public bool Success { get; set; }
         public string ErrorMessage { get; set; }
     }

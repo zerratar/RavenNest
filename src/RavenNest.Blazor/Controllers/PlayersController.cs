@@ -11,6 +11,7 @@ using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.Models;
 using RavenNest.Sessions;
@@ -89,10 +90,26 @@ namespace RavenNest.Controllers
             return playerManager.AddPlayer(AssertGetSessionToken(), userId, username.Value, identifier);
         }
 
+        [HttpPost("loyalty")]
+        public bool SendLoyalty([FromBody] LoyaltyUpdate data)
+        {
+            return playerManager.AddLoyaltyData(AssertGetSessionToken(), data);
+        }
+
         [HttpPost]
         public Task<PlayerJoinResult> PlayerJoin([FromBody] PlayerJoinData playerData)
         {
             return playerManager.AddPlayer(AssertGetSessionToken(), playerData);
+        }
+
+        [HttpPost("restore")]
+        public Task<PlayerRestoreResult> Restore([FromBody] PlayerRestoreData players)
+        {
+            //var res = new JsonResult(players, new JsonSerializerSettings()
+            //{
+            //    NullValueHandling = NullValueHandling.Ignore
+            //});
+            return playerManager.AddManyPlayers(AssertGetSessionToken(), players);
         }
 
         [HttpDelete("{characterId}")]
