@@ -13,4 +13,5 @@ namespace RavenNest.Models
         public Guid CharacterId { get; set; }
         public bool IsGameRestore { get; set; }
     }
+
 }

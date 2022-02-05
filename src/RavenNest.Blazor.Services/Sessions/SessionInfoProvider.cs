@@ -151,6 +151,11 @@ namespace RavenNest.Sessions
                 }
                 if (user != null)
                 {
+                    if (user.UserName == null || user.UserName != twitchUser.Login)
+                    {
+                        user.UserName = twitchUser.Login;
+                        si.UserNameChanged = true;
+                    }
                     if (!string.IsNullOrEmpty(twitchUser.DisplayName) && twitchUser.DisplayName != user.DisplayName)
                     {
                         user.DisplayName = twitchUser.DisplayName;

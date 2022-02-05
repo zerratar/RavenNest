@@ -13,7 +13,7 @@ namespace RavenNest.DataModels
         private readonly ConcurrentDictionary<TKey, EntityChangeSet> updatedEntities;
         private readonly ConcurrentDictionary<TKey, EntityChangeSet> removedEntities;
         private readonly Func<TModel, TKey> keySelector;
-
+        private readonly bool trackChanges;
         private readonly ConcurrentDictionary<string, EntityLookupGroup<TModel, TKey>> groupLookup
             = new ConcurrentDictionary<string, EntityLookupGroup<TModel, TKey>>();
 
@@ -24,9 +24,10 @@ namespace RavenNest.DataModels
 
         public DateTime LastModified { get; private set; }
 
-        public EntitySet(IEnumerable<TModel> collection, Func<TModel, TKey> keySelector)
+        public EntitySet(IEnumerable<TModel> collection, Func<TModel, TKey> keySelector, bool trackChanges = true)
         {
             this.keySelector = keySelector;
+            this.trackChanges = trackChanges;
             this.entities = new ConcurrentDictionary<TKey, TModel>();
             this.addedEntities = new ConcurrentDictionary<TKey, EntityChangeSet>();
             this.updatedEntities = new ConcurrentDictionary<TKey, EntityChangeSet>();
@@ -34,12 +35,17 @@ namespace RavenNest.DataModels
 
             foreach (var entity in collection)
             {
-                entity.PropertyChanged += OnEntityPropertyChanged;
+                if (trackChanges)
+                {
+                    entity.PropertyChanged += OnEntityPropertyChanged;
+                }
+
                 var key = keySelector(entity);
                 entities[key] = entity;
             }
         }
 
+        // This is okay, its only used for saving backups or restoring from a backup.        
         public IReadOnlyList<IEntity> GetEntities()
         {
             return Entities.Cast<IEntity>().ToList();
@@ -102,7 +108,6 @@ namespace RavenNest.DataModels
                     return groupEntities[groupKey, itemKey];
                 }
 
-
                 return null;
                 //throw new KeyNotFoundException("No entities could be found with the provided ID.");
             }
@@ -113,6 +118,12 @@ namespace RavenNest.DataModels
             var key = keySelector(model);
             if (entities.ContainsKey(key))
                 return;
+
+            if (!trackChanges)
+            {
+                entities[key] = model;
+                return;
+            }
 
             if (addedEntities.ContainsKey(key) || updatedEntities.ContainsKey(key) || removedEntities.ContainsKey(key))
                 return;
@@ -140,6 +151,11 @@ namespace RavenNest.DataModels
             var key = keySelector(model);
             if (entities.TryRemove(key, out _))
             {
+                if (!trackChanges)
+                {
+                    return;
+                }
+
                 LastModified = DateTime.UtcNow;
                 model.PropertyChanged -= OnEntityPropertyChanged;
 
@@ -185,6 +201,11 @@ namespace RavenNest.DataModels
 
         private void OnEntityPropertyChanged(object sender, PropertyChangedEventArgs e)
         {
+            if (!trackChanges)
+            {
+                return;
+            }
+
             LastModified = DateTime.UtcNow;
             var entity = sender as TModel;
             //var property = e.PropertyName;
@@ -195,7 +216,6 @@ namespace RavenNest.DataModels
             {
                 group.Value.Update(entity);
             }
-
 
             if (addedEntities.ContainsKey(key) || removedEntities.ContainsKey(key)) return;
             if (updatedEntities.TryGetValue(key, out var value))
@@ -238,8 +258,6 @@ namespace RavenNest.DataModels
             }
         }
     }
-
-
     public enum EntityState
     {
         Unchanged,

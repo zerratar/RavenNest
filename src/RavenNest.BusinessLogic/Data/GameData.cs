@@ -47,7 +47,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<ClanRole, Guid> clanRoles;
         private readonly EntitySet<ClanSkill, Guid> clanSkills;
         private readonly EntitySet<MarketItemTransaction, Guid> marketTransactions;
-        private readonly EntitySet<VendorTransaction, Guid> vendorTransaction;
+        //private readonly EntitySet<VendorTransaction, Guid> vendorTransaction;
 
         private readonly EntitySet<CharacterClanMembership, Guid> clanMemberships;
 
@@ -142,7 +142,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(RedeemableItem),
                         //typeof(UserNotification),
                         typeof(MarketItemTransaction),
-                        typeof(VendorTransaction),
+                        //typeof(VendorTransaction),
                         typeof(GameSession),
                         typeof(Village),
                         typeof(VillageHouse),
@@ -234,7 +234,7 @@ namespace RavenNest.BusinessLogic.Data
 
                     // we can still store the game events, but no need to load them on startup as the DB will quickly be filled.
                     // and take a long time to load
-                    gameEvents = new EntitySet<GameEvent, Guid>(new List<GameEvent>() /*ctx.GameEvent.ToList()*/, i => i.Id);
+                    gameEvents = new EntitySet<GameEvent, Guid>(new List<GameEvent>() /*ctx.GameEvent.ToList()*/, i => i.Id, false);
                     gameEvents.RegisterLookupGroup(nameof(GameSession), x => x.GameSessionId);
                     gameEvents.RegisterLookupGroup(nameof(User), x => x.UserId);
 
@@ -306,11 +306,11 @@ namespace RavenNest.BusinessLogic.Data
 
 
 
-                    vendorTransaction = new EntitySet<VendorTransaction, Guid>(
-                        restorePoint?.Get<VendorTransaction>() ??
-                        ctx.VendorTransaction.ToList(), i => i.Id);
-                    vendorTransaction.RegisterLookupGroup(nameof(Item), x => x.ItemId);
-                    vendorTransaction.RegisterLookupGroup(nameof(Character) + "Seller", x => x.SellerCharacterId);
+                    //vendorTransaction = new EntitySet<VendorTransaction, Guid>(
+                    //    restorePoint?.Get<VendorTransaction>() ??
+                    //    ctx.VendorTransaction.ToList(), i => i.Id);
+                    //vendorTransaction.RegisterLookupGroup(nameof(Item), x => x.ItemId);
+                    //vendorTransaction.RegisterLookupGroup(nameof(Character) + "Seller", x => x.SellerCharacterId);
 
                     marketTransactions = new EntitySet<MarketItemTransaction, Guid>(
                         restorePoint?.Get<MarketItemTransaction>() ??
@@ -336,7 +336,7 @@ namespace RavenNest.BusinessLogic.Data
                         patreons, loyalty, loyaltyRewards, loyaltyRanks, claimedLoyaltyRewards,
                         expMultiplierEvents, notifications,
                         appearances, syntyAppearances, characters, characterStates,
-                        userProperties, vendorTransaction,
+                        userProperties, /*vendorTransaction,*/
                         userBankItems,
                         items, // so we can update items
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems, marketTransactions,
@@ -927,8 +927,8 @@ namespace RavenNest.BusinessLogic.Data
         public void Add(MarketItemTransaction entity) => Update(() => marketTransactions.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(VendorTransaction entity) => Update(() => vendorTransaction.Add(entity));
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public void Add(VendorTransaction entity) => Update(() => vendorTransaction.Add(entity));
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(CharacterClanInvite entity) => Update(() => this.clanInvites.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2044,5 +2044,5 @@ namespace RavenNest.BusinessLogic.Data
     {
     }
 
-#endregion
+    #endregion
 }

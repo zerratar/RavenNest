@@ -264,12 +264,14 @@ namespace RavenNest.BusinessLogic.Game
             }
             finally
             {
+#if DEBUG
                 if (!result.Success && session != null)
                 {
                     var sessionOwner = gameData.GetUser(session.UserId);
-
                     logger.LogError(("Unable to add player " + playerData.UserName + " to " + sessionOwner.UserName + "'s stream. " + (result.ErrorMessage + " " + internalErrorMessage).Trim()).Trim());
                 }
+
+#endif
             }
         }
 
@@ -347,6 +349,44 @@ namespace RavenNest.BusinessLogic.Game
 
             result.Player = await AddPlayerToSession(session, u, c);
             result.Success = result.Player != null;
+            return result;
+        }
+
+        public async Task<PlayerRestoreResult> AddManyPlayers(SessionToken sessionToken, PlayerRestoreData players)
+        {
+            var result = new PlayerRestoreResult();
+            var session = gameData.GetSession(sessionToken.SessionId);
+            if (session == null || session.Status != (int)SessionStatus.Active)
+            {
+                result.ErrorMessage = "Session is unavailable";
+                return result;
+            }
+
+            try
+            {
+                result.Success = true;
+
+                if (players.Characters == null)
+                {
+                    result.Players = new PlayerJoinResult[0];
+                    return result;
+                }
+
+                result.Players = new PlayerJoinResult[players.Characters.Length];
+                for (int i = 0; i < players.Characters.Length; i++)
+                {
+                    result.Players[i] = await AddPlayerByCharacterId(session, players.Characters[i], true);
+                }
+            }
+            catch (Exception exc)
+            {
+                var sessionOwner = gameData.GetUser(session.UserId);
+                logger.LogError("Restoring players failed. (Session: " + session.Id + ", " + sessionOwner?.UserName + ") " + exc?.Message + " " + exc?.InnerException?.Message);
+
+                result.Success = false;
+                result.ErrorMessage = "Restoring players failed. Server encountered an error.";
+            }
+
             return result;
         }
 
@@ -928,6 +968,37 @@ namespace RavenNest.BusinessLogic.Game
             if (subsAmount > 0)
                 loyalty.AddGiftedSubs(subsAmount);
 
+            return true;
+        }
+
+        public bool AddLoyaltyData(SessionToken sessionToken, LoyaltyUpdate data)
+        {
+            var session = gameData.GetSession(sessionToken.SessionId);
+            if (session == null)
+                return false;
+
+            var joinData = new PlayerJoinData
+            {
+                UserId = data.UserId,
+                UserName = data.UserName,
+                Identifier = "0",
+            };
+
+            var user = gameData.GetUserByTwitchId(data.UserId);
+            if (user == null)
+            {
+                user = CreateUser(session, joinData);
+                //return false;
+            }
+
+            var loyalty = gameData.GetUserLoyalty(user.Id, session.UserId);
+            if (loyalty == null)
+            {
+                loyalty = CreateUserLoyalty(session, user);
+            }
+
+            if (data.SubsCount > 0) loyalty.AddGiftedSubs(data.SubsCount);
+            if (data.BitsCount > 0) loyalty.AddCheeredBits(data.BitsCount);
             return true;
         }
 
@@ -1653,17 +1724,17 @@ namespace RavenNest.BusinessLogic.Game
 
         private void LogVendorTransaction(Guid characterId, Guid itemId, long amount, double totalPrice)
         {
-            gameData.Add(
-                new VendorTransaction
-                {
-                    Id = Guid.NewGuid(),
-                    Amount = amount,
-                    SellerCharacterId = characterId,
-                    ItemId = itemId,
-                    PricePerItem = totalPrice / amount,
-                    TotalPrice = totalPrice,
-                    Created = DateTime.UtcNow
-                });
+            //gameData.Add(
+            //    new VendorTransaction
+            //    {
+            //        Id = Guid.NewGuid(),
+            //        Amount = amount,
+            //        SellerCharacterId = characterId,
+            //        ItemId = itemId,
+            //        PricePerItem = totalPrice / amount,
+            //        TotalPrice = totalPrice,
+            //        Created = DateTime.UtcNow
+            //    });
         }
 
         public bool EquipItem(Guid characterId, Models.InventoryItem item)
@@ -2641,12 +2712,14 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var currentSessionOwner = character.UserIdLock != null ? gameData.GetUser(character.UserIdLock.Value) : null;
+
+#if DEBUG
             var logMsg = currentSessionOwner != null
                 ? $"Sent Remove Player {character.Name} to {targetSessionOwner.UserName}. Player is part of {currentSessionOwner.UserName}'s session. " + reason
                 : $"Sent Remove Player {character.Name} to {targetSessionOwner.UserName}. Player is not part of any sessions.";
 
             logger.LogError(logMsg);
-
+#endif
 
             var clientMessage = currentSessionOwner != null
                 ? $"{character.Name} joined {currentSessionOwner.UserName}'s session."
@@ -2683,23 +2756,23 @@ namespace RavenNest.BusinessLogic.Game
             gameData.Add(gameEvent);
         }
 
-        //private User CreateUser(DataModels.GameSession session, PlayerJoinData playerData)
-        //{
-        //    var user = gameData.GetUser(playerData.UserId);
-        //    if (user == null)
-        //    {
-        //        user = new User
-        //        {
-        //            Id = Guid.NewGuid(),
-        //            UserId = playerData.UserId,
-        //            UserName = playerData.UserName,
-        //            Created = DateTime.UtcNow
-        //        };
-        //        gameData.Add(user);
-        //    }
-        //    CreateUserLoyalty(session, user, playerData);
-        //    return user;
-        //}
+        private User CreateUser(DataModels.GameSession session, PlayerJoinData playerData)
+        {
+            var user = gameData.GetUserByTwitchId(playerData.UserId);
+            if (user == null)
+            {
+                user = new User
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = playerData.UserId,
+                    UserName = playerData.UserName,
+                    Created = DateTime.UtcNow
+                };
+                gameData.Add(user);
+            }
+            CreateUserLoyalty(session, user, playerData);
+            return user;
+        }
 
         private Task<Player> CreateUserAndPlayer(
             DataModels.GameSession session,

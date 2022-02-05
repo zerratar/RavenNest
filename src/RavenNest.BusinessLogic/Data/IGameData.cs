@@ -138,7 +138,7 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Add
-        void Add(VendorTransaction entity);
+        //void Add(VendorTransaction entity);
         void Add(DataModels.UserBankItem item);
         void Add(Agreements item);
         void Add(RedeemableItem item);

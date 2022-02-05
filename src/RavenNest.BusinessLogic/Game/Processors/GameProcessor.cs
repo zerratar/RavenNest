@@ -201,7 +201,6 @@ namespace RavenNest.BusinessLogic.Game.Processors
                     eventList.Events = allEvents.Skip(batchSize * i).Take(batchSize).ToList();
                     await gameConnection.PushAsync("game_event", eventList, cts.Token);
                     i += allEvents.Count < batchSize ? allEvents.Count : batchSize;
-                    //await Task.Delay(50);
                 }
             }
         }
