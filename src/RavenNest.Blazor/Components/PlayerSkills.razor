@@ -128,8 +128,6 @@
 
 	private bool CanModify => session != null && session.Administrator;
 
-	@*private Timer timer;*@
-
 	public string GetLastUpdateString(DateTime update)
 	{
 		var elapsed = DateTime.UtcNow - update;
@@ -220,47 +218,6 @@
 		modifyingSkillLevel = skill.Level;
 		modifyingSkillExperiencePercent = (int)(skill.Percent * 100);
 	}
-
-
-	@*
-		protected override void OnAfterRender(bool firstRender)
-		{
-		if (firstRender)
-		{
-		timer = new Timer();
-		timer.Interval = 1000;
-		timer.Elapsed += OnTimerInterval;
-		timer.AutoReset = true;
-		// Start the timer
-		timer.Enabled = true;
-		}
-		base.OnAfterRender(firstRender);
-		}
-
-		private async void OnTimerInterval(object sender, ElapsedEventArgs e)
-		{
-		await UpdatePlayer();
-		}
-
-		private async Task UpdatePlayer()
-		{
-		try
-		{
-		this.Player = await PlayerService.GetPlayerAsync(Player.Id);
-		await InvokeAsync(StateHasChanged);
-		}
-		catch
-		{
-		timer?.Dispose();
-		timer = null;
-		}
-		}
-
-		public void Dispose()
-		{
-		timer?.Dispose();
-		}
-	*@
 
 	private string GetTrainingSkillName()
 	{
