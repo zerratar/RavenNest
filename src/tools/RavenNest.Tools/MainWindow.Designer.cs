@@ -13,7 +13,7 @@ namespace RavenNest.Tools
         private int LogoLabelWidth = 54;
 
         private TextBlock ToolStatus;
-        private MenuItem ExpBump, BuildUpdatePackage;
+        private MenuItem ExpBump, BuildUpdatePackage, PatreonSync;
         //private Shinobytes.Console.Forms.Image Logo;
 
         public void InitializeComponents()
@@ -87,6 +87,11 @@ namespace RavenNest.Tools
                 ExpBump.Invoke += ExpBump_Invoke;
                 ExpBump.IsEnabled = false;
                 editMenu.SubItems.Add(ExpBump);
+
+                PatreonSync = new MenuItem("Patreon Sync");
+                PatreonSync.Invoke += PatreonSync_Invoke;
+                editMenu.SubItems.Add(PatreonSync);
+
                 menuStrip.Controls.Add(editMenu);
             }
 
@@ -98,6 +103,10 @@ namespace RavenNest.Tools
                 ForegroundColor = ConsoleColor.Black
             });
             statusStrip.Controls.Add(new TextBlock("F2=Build Update Package")
+            {
+                ForegroundColor = ConsoleColor.Black
+            });
+            statusStrip.Controls.Add(new TextBlock("F3=Patreon Sync")
             {
                 ForegroundColor = ConsoleColor.Black
             });

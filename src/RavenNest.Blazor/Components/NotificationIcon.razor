@@ -64,7 +64,6 @@
 
     private UserNotification alert;
     private IReadOnlyList<UserNotification> notifications;
-    private BusinessLogic.ITimeoutHandle updateTimer;
     private bool disposed;
     private bool firstRead;
 
@@ -72,7 +71,7 @@
     {
         //notifications = await NotificationService.GetNotificationsAsync();
         //UnreadMessageCount = notifications.Count(x => !x.Read);
-        ReloadNotifications();
+        await ReloadNotifications();
     }
 
     private void FollowNavigation(UserNotification n)
@@ -123,7 +122,7 @@
         ListVisible = !ListVisible;
     }
 
-    private async void ReloadNotifications()
+    private async Task ReloadNotifications()
     {
         var data = await NotificationService.GetNotificationsAsync(UserId);
         notifications = data.Take(5).ToList();
@@ -140,27 +139,16 @@
             {
                 alert = notifications.FirstOrDefault(x => !x.HasRead);
             }
+
         }
-        //try
-        //{
-        //  if (disposed) return;
-
-        //  updateTimer = Kernel.SetTimeout(ReloadNotifications, 500);
-
-        //  if (newMessages)
-        //    InvokeAsync(this.StateHasChanged);
-        //}
-        //catch
-        //{
-        //  // ignored, most likely the object has been disposed
-        //}
 
         try
         {
-           InvokeAsync(this.StateHasChanged);
-        } catch
-        {
+
+            await InvokeAsync(this.StateHasChanged);
         }
+        catch { }
+       
     }
 
     public void HideAlert()
@@ -172,7 +160,5 @@
     {
         if (disposed) return;
         disposed = true;
-        if (updateTimer != null)
-            Kernel.ClearTimeout(updateTimer);
     }
 }

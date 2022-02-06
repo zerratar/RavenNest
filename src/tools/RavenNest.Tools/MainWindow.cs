@@ -10,11 +10,14 @@ namespace RavenNest.Tools
         private readonly AdjustPlayerExperienceAction expAdjuster;
         private readonly BuildUpdatePackageAction buildUpdatePackage;
 
+        private readonly PatreonSynchronizationAction patreonSync;
+
         public MainWindow()
         {
             InitializeComponents();
             expAdjuster = new AdjustPlayerExperienceAction(ToolProgress, ToolStatus);
             buildUpdatePackage = new BuildUpdatePackageAction(ToolProgress, ToolStatus);
+            patreonSync = new PatreonSynchronizationAction(ToolProgress, ToolStatus);
         }
 
         private void BuildUpdatePackage_Invoke(object sender, EventArgs e)
@@ -25,6 +28,11 @@ namespace RavenNest.Tools
         private void ExpBump_Invoke(object sender, EventArgs e)
         {
             expAdjuster.Apply();
+        }
+
+        private void PatreonSync_Invoke(object sender, EventArgs e)
+        {
+            patreonSync.Apply();
         }
 
         public override void Update(AppTime appTime)
@@ -53,6 +61,10 @@ namespace RavenNest.Tools
             if (key.Key == ConsoleKey.F2)
             {
                 buildUpdatePackage.Apply();
+            }
+            if (key.Key == ConsoleKey.F3)
+            {
+                patreonSync.Apply();
             }
             return base.OnKeyDown(key);
         }
