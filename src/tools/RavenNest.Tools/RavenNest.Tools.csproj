@@ -6,15 +6,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="JsonApiSerializer" Version="1.7.4" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
     <PackageReference Include="Squid-Box.SevenZipSharp" Version="1.4.0.345" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="5.0.0" />
+    <PackageReference Include="System.Xml.XDocument" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\RavenNest.BusinessLogic\RavenNest.BusinessLogic.csproj" />
     <ProjectReference Include="..\..\RavenNest.DataModels\RavenNest.DataModels.csproj" />
+    <ProjectReference Include="..\..\RavenNest.PatreonAPI\RavenNest.PatreonAPI.csproj" />
   </ItemGroup>
 
   <ItemGroup>
