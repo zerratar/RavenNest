@@ -236,6 +236,7 @@ namespace RavenNest.BusinessLogic.Game
                     IsModerator = user.IsModerator ?? false,
                     SubscriberTier = subscriptionTier,
                     ExpMultiplierLimit = expMultiplierLimit,
+                    StrictLevelRequirements = true,
                 });
 
             gameData.Add(permissionEvent);
