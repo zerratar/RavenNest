@@ -19,8 +19,9 @@ namespace RavenNest.BusinessLogic.Net
         {
             var tmpArray = new byte[this.count + count];
             Array.Copy(this.array, 0, tmpArray, 0, this.count);
-            Array.Copy(array, 0, tmpArray, this.count - 1, count);
+            Array.Copy(array, 0, tmpArray, this.count, count);
             this.array = tmpArray;
+            this.count = tmpArray.Length;
         }
 
         public GamePacket Build()

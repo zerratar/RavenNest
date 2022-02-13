@@ -103,13 +103,13 @@ namespace RavenNest.Blazor
         public void Configure(IApplicationBuilder app, IHostApplicationLifetime applicationLifetime, IWebHostEnvironment env)
         {
             applicationLifetime.ApplicationStopping.Register(
-                () => app.ApplicationServices.GetService<IGameData>().Flush());
+                () => OnApplicaftionStopping(app));
 
             //app.UseCookiePolicy();
 
-//#if DEBUG
-//            app.AddRequestTiming();
-//#endif
+            //#if DEBUG
+            //            app.AddRequestTiming();
+            //#endif
 
             app.AddSessionCookies();
 
@@ -135,7 +135,7 @@ namespace RavenNest.Blazor
 
             app.UseWebSockets(new WebSocketOptions()
             {
-                KeepAliveInterval = TimeSpan.FromSeconds(120),
+                KeepAliveInterval = TimeSpan.FromSeconds(120)
             });
 
             app.UseHttpsRedirection();
@@ -200,6 +200,23 @@ namespace RavenNest.Blazor
             });
         }
 
+        private void OnApplicaftionStopping(IApplicationBuilder app)
+        {
+            try
+            {
+                app.ApplicationServices.GetService<IGameData>().Flush();
+            }
+            catch { }
+
+            try
+            {
+                app.ApplicationServices.GetService<IGameTcpConnectionProvider>().Dispose();
+            }
+            catch { }
+
+
+        }
+
         private static void RegisterServices(IServiceCollection services)
         {
             // keep this one for now... LUL
@@ -260,11 +277,12 @@ namespace RavenNest.Blazor
             services.AddSingleton<IPlayerInventoryProvider, PlayerInventoryProvider>();
             services.AddSingleton<IPlayerHighscoreProvider, PlayerHighscoreProvider>();
             services.AddSingleton<IRavenfallDbContextProvider, RavenfallDbContextProvider>();
-            services.AddSingleton<IGameWebSocketConnectionProvider, GameWebSocketConnectionProvider>();
             services.AddSingleton<ISessionInfoProvider, SessionInfoProvider>();
             services.AddSingleton<IPropertyProvider, MemoryCachedPropertyProvider>();
 
 
+            services.AddSingleton<IGameTcpConnectionProvider, GameTcpConnectionProvider>();
+            services.AddSingleton<IGameWebSocketConnectionProvider, GameWebSocketConnectionProvider>();
             services.AddSingleton<IExtensionWebSocketConnectionProvider, ExtensionConnectionProvider>();
             services.AddSingleton<IExtensionPacketDataSerializer, JsonPacketDataSerializer>();
         }
