@@ -10,13 +10,46 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using System.Text;
-using Newtonsoft.Json.Serialization;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Twitch.Extension;
 
 namespace RavenNest.BusinessLogic.Net
 {
+    public class GameTcpConnectionProvider : IGameTcpConnectionProvider
+    {
+        private readonly ILogger<GameTcpConnectionProvider> logger;
+        private readonly IGameData gameData;
+        private readonly IGamePacketManager packetManager;
+        private readonly IGamePacketSerializer packetSerializer;
+        private readonly ISessionManager sessionManager;
+
+        public GameTcpConnectionProvider(
+            ILogger<GameTcpConnectionProvider> logger,
+            IGameData gameData,
+            IGamePacketManager packetManager,
+            IGamePacketSerializer packetSerializer,
+            ISessionManager sessionManager)
+        {
+            this.logger = logger;
+            this.gameData = gameData;
+            this.packetManager = packetManager;
+            this.packetSerializer = packetSerializer;
+            this.sessionManager = sessionManager;
+        }
+
+        // TODO: make packetManager handle batch of packets
+        //       same with serializer. So we can create a batch of packets to be sent as well.
+
+        // Then for each new connection. Expect client to send session token or disconnect the client if it is not received within moments of connection.
+        // Client needs to retry connection if that happens.
+
+        // Come up with a nice port numaber, make sure its open in the router.
+
+        public void Dispose()
+        {
+        }
+    }
+
     public class GameWebSocketConnectionProvider : IGameWebSocketConnectionProvider
     {
         private readonly ILogger logger;
@@ -24,11 +57,13 @@ namespace RavenNest.BusinessLogic.Net
         private readonly IIntegrityChecker integrityChecker;
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly IExtensionWebSocketConnectionProvider extWsProvider;
+
         private readonly IGameData gameData;
         private readonly IGameManager gameManager;
         private readonly IGamePacketManager packetManager;
         private readonly IGamePacketSerializer packetSerializer;
         private readonly ISessionManager sessionManager;
+
         private readonly ConcurrentDictionary<Guid, IGameWebSocketConnection> socketSessions
             = new ConcurrentDictionary<Guid, IGameWebSocketConnection>();
 
@@ -453,7 +488,7 @@ namespace RavenNest.BusinessLogic.Net
             {
                 try
                 {
-                    var buffer = new byte[4096];
+                    var buffer = new byte[8192];
                     var receiveBuffer = new ArraySegment<byte>(buffer);
                     var result = await ws.ReceiveAsync(receiveBuffer, cancellationToken).ConfigureAwait(false);
 
@@ -511,6 +546,7 @@ namespace RavenNest.BusinessLogic.Net
                     {
                         unfinishedPacket.Append(array, count);
                         packet = unfinishedPacket.Build();
+                        unfinishedPacket = null;
                     }
                     else
                     {
@@ -541,6 +577,15 @@ namespace RavenNest.BusinessLogic.Net
 
             private async Task HandleGamePacketAsync(GamePacket packet)
             {
+                if (packet is GamePacketContainer container)
+                {
+                    foreach (var p in container.Packets)
+                    {
+                        await HandleGamePacketAsync(p);
+                    }
+                    return;
+                }
+
                 if (packetManager.TryGetPacketHandler(packet.Id, out var packetHandler))
                 {
                     await packetHandler.HandleAsync(this, packet).ConfigureAwait(false);

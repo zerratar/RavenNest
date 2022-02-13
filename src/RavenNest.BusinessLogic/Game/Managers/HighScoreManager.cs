@@ -1,5 +1,4 @@
 ﻿using System.Linq;
-using RavenNest.BusinessLogic.Providers;
 using RavenNest.Models;
 
 namespace RavenNest.BusinessLogic.Game
@@ -18,7 +17,7 @@ namespace RavenNest.BusinessLogic.Game
 
         public HighScoreCollection GetSkillHighScore(string skill, int skip = 0, int take = 100, int characterIndex = 0)
         {
-            var players = playerManager.GetPlayers().Where(x => x.IsHiddenInHighscore != true && !x.IsAdmin && (characterIndex == -1 || x.CharacterIndex == characterIndex)).ToList();
+            var players = playerManager.GetHighscorePlayers().Where(x => (characterIndex == -1 || x.CharacterIndex == characterIndex)).ToList();
             return highscoreProvider.GetSkillHighScore(players, skill, skip, take);
         }
 

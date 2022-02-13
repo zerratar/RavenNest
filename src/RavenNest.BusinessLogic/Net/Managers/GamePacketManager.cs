@@ -8,6 +8,7 @@ namespace RavenNest.BusinessLogic.Net
     {
         private readonly ConcurrentDictionary<string, IGamePacketHandler> packetHandlers
             = new ConcurrentDictionary<string, IGamePacketHandler>();
+
         private readonly ILogger logger;
         private readonly IPlayerManager playerManager;
 

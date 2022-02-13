@@ -33,22 +33,38 @@ namespace RavenNest.BusinessLogic.Net
 
         public GamePacket Deserialize(byte[] data, int length)
         {
-            var packet = new GamePacket();
             using (var ms = new MemoryStream(data, 0, length))
             using (var br = new BinaryReader(ms))
             {
-                packet.Id = br.ReadString();
-                packet.Type = br.ReadString();
-                packet.CorrelationId = new Guid(br.ReadBytes(br.ReadInt32()));
+                var packetId = br.ReadString();
 
-                var dataSize = br.ReadInt32();
-                var payload = br.ReadBytes(dataSize);
+                var dataSize = 0;
+                var payload = new byte[0];
                 Type targetType = null;
+
                 try
                 {
-                    packet.Data = loadedTypes.TryGetValue(packet.Type, out targetType)
-                        ? binarySerializer.Deserialize(payload, targetType)
-                        : payload;
+                    if (packetId == "collection")
+                    {
+                        var packetCount = br.ReadInt32();
+                        var packets = new List<GamePacket>();
+                        for (var i = 0; i < packetCount; ++i)
+                        {
+                            var childPacket = new GamePacket();
+                            childPacket.Id = br.ReadString();
+                            ReadPacket(br, childPacket, out dataSize, out payload, out targetType);
+                            packets.Add(childPacket);
+                        }
+
+                        return new GamePacketContainer(packets);
+                    }
+                    else
+                    {
+                        var packet = new GamePacket();
+                        packet.Id = packetId;
+                        ReadPacket(br, packet, out dataSize, out payload, out targetType);
+                        return packet;
+                    }
                 }
                 catch (Exception exc)
                 {
@@ -65,7 +81,24 @@ namespace RavenNest.BusinessLogic.Net
                     throw;
                 }
             }
-            return packet;
+
+            return null;
+        }
+
+        private void ReadPacket(BinaryReader br, GamePacket packet, out int dataSize, out byte[] payload, out Type targetType)
+        {
+            packet.Type = br.ReadString();
+            packet.CorrelationId = new Guid(br.ReadBytes(br.ReadInt32()));
+
+            dataSize = br.ReadInt32();
+            payload = br.ReadBytes(dataSize);
+
+            packet.Data = payload;
+
+            if (loadedTypes.TryGetValue(packet.Type, out targetType))
+            {
+                packet.Data = binarySerializer.Deserialize(payload, targetType);
+            }
         }
 
         public byte[] Serialize(GamePacket packet)
@@ -102,10 +135,13 @@ namespace RavenNest.BusinessLogic.Net
             sb.Append("var payload = new byte[] { ");
             foreach (var b in payload)
                 sb.Append(b.ToString() + ", ");
+
             sb.AppendLine("};");
             sb.AppendLine();
+
+            sb.AppendLine("var str = \"" + System.Text.Encoding.UTF8.GetString(payload) + "\"");
             sb.AppendLine("var targetType = typeof(" + targetType.FullName + ");");
-            sb.AppendLine("var serializer = new BinarySerializer();");
+            sb.AppendLine("var serializer = new " + binarySerializer.GetType().FullName + "();");
             sb.AppendLine("var data = serializer.Deserialize(payload, targetType);");
 
             return sb.ToString();
