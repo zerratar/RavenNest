@@ -224,6 +224,7 @@ namespace RavenNest.Blazor
 
             services.AddSingleton<AuthService>();
             services.AddSingleton<SessionService>();
+            services.AddSingleton<PoQService>();
             services.AddSingleton<HighscoreService>();
             services.AddSingleton<ItemService>();
             services.AddSingleton<ClanService>();

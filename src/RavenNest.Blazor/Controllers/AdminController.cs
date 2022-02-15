@@ -128,6 +128,22 @@ namespace RavenNest.Controllers
             }
         }
 
+        [HttpGet("set-password/{username}/{newPassword}")]
+        public async Task<bool> SetPassword(string username, string newPassword)
+        {
+            try
+            {
+                await AssertAdminAccessAsync();
+                return adminManager.SetPassword(username, newPassword);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                throw;
+            }
+        }
+
+
         [HttpGet("set-skill/{character}/{identifier}/{skill}/{level}/{experience}")]
         public async Task<bool> SetSkillLevel(string character, string identifier, string skill, int level, double experience)
         {
