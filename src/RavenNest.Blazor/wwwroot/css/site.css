@@ -54,6 +54,7 @@ td.item.link {
 .loyalty-reward-list {
     display: flex;
     flex-flow: wrap;
+    justify-content: space-between;
 }
 .loyalty-users {
     margin-top: 25px;
@@ -65,9 +66,27 @@ td.item.link {
 
 .reward-item {
     display: flex;
+    border-radius: 6px;
     padding: 5px;
-    background-color: #f6f6f6;
+    background-color: #feca57;
     cursor: pointer;
+    min-width: 225px;
+    margin-top: 5px;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 2px 2px 5px rgb(0 0 0 / 20%);
+    transition: all ease 0.2s;
+}
+.reward-item:hover {
+    background-color: #f3a800;
+}
+.reward-item.locked:hover {
+    background-color: #f6f6f6;
+}
+.reward-item.locked {
+    opacity: 0.5;
+    cursor: default;
+    background-color: #f6f6f6;
 }
 
 .reward-item-details {
@@ -83,11 +102,16 @@ td.item.link {
     left: 50%;
     transform: translate(-50%, -50%);
     padding: 20px;
-    background-color: white;
+    background-color: white;5
     display: flex;
     flex-flow: column;
     box-shadow: 3px 3px 6px rgba(0,0,0,0.125);
     max-width: 100%;
+}
+
+.reward-redeem-confirmation .btn {
+    margin-top: 10px;
+    margin-right: 10px;
 }
 
 .confirm-body select {

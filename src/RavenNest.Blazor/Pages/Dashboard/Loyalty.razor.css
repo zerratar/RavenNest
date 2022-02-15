@@ -121,11 +121,6 @@ table.items-list tr:nth-of-type(even) {
     background-color: aquamarine;
 }
 
-.reward-item.locked {
-    opacity:0.5;
-    cursor:default;
-}
-
 table.items-list tr:nth-of-type(even).selected,
 .item-row.selected {
     background-color: aquamarine;

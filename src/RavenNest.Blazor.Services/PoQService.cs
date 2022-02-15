@@ -5,6 +5,7 @@ using RavenNest.BusinessLogic;
 using RavenNest.Sessions;
 using System.Net.Http;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace RavenNest.Blazor.Services
 {
@@ -26,7 +27,7 @@ namespace RavenNest.Blazor.Services
             $"/api/oauth2/authorize" +
             $"?response_type=code" +
             $"&client_id={settings.PoQClientId}" +
-            $"&redirect_uri={GetRedirectUrl()}" +
+            $"&redirect_uri={HttpUtility.UrlEncode(GetRedirectUrl())}" +
             $"&scope={GetScope()}";
 
         public async Task<PoQAuthToken> RequestAccessTokenAsync(string code)
@@ -89,13 +90,19 @@ namespace RavenNest.Blazor.Services
         }
 
         private string GetScope() => "email";
+
+#if DEBUG
+        private string GetBaseUrl() => settings.PoQDevUrl;
+#else
         private string GetBaseUrl() => settings.PoQProdUrl;
+#endif
+
         private string GetRedirectUrl()
 #if DEBUG
             => $"https://{Context.Request.Host}/poq-auth";
 #else
             => "https://www.ravenfall.stream/poq-auth";
-#endif            
+#endif
 
     }
     public class PoQAuthToken
