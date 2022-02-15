@@ -1,0 +1,32 @@
+﻿@layout DashboardLayout
+@page "/poq-auth"
+@inject RavenNest.Blazor.Services.PoQService PoQService
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject NavigationManager NavManager
+
+@if (session.UserId == null)
+{
+    <p>You don't seem to be logged in.</p>
+}
+else
+{
+    <p>Welcome back, @session.UserName</p>
+}
+
+@if (token == null)
+{
+    if (!string.IsNullOrEmpty(code))
+    {
+        <div>Logging in... Please wait</div>
+    }
+    else
+    {
+        <div>Login to PoQ to see details</div>
+        <button class="btn btn-primary" @onclick="Login">Login</button>
+    }
+}
+else
+{
+    <div>@UserDetails</div>
+    <div>@token.access_token</div>
+}

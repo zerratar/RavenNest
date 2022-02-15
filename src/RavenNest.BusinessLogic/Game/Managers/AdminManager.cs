@@ -24,6 +24,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly IPlayerManager playerManager;
         private readonly IGameData gameData;
         private readonly ISessionManager sessionManager;
+        private readonly ISecureHasher secureHasher;
 
         public AdminManager(
             ILogger<AdminManager> logger,
@@ -40,6 +41,7 @@ namespace RavenNest.BusinessLogic.Game
             this.playerManager = playerManager;
             this.gameData = gameData;
             this.sessionManager = sessionManager;
+            this.secureHasher = secureHasher;
         }
 
         public bool NerfItems()
@@ -592,5 +594,13 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
+        public bool SetPassword(string username, string newPassword)
+        {
+            if (string.IsNullOrWhiteSpace(newPassword)) return false;
+            var user = gameData.GetUserByUsername(username);
+            if (user == null) return false;
+            user.PasswordHash = secureHasher.Get(newPassword.Trim());
+            return true;
+        }
     }
 }
