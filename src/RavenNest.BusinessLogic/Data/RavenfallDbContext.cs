@@ -63,6 +63,8 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<Resources> Resources { get; set; }
         public virtual DbSet<Statistics> Statistics { get; set; }
         public virtual DbSet<Skills> Skills { get; set; }
+
+        public virtual DbSet<CharacterSkillRecord> CharacterSkillRecord { get; set; }
         public virtual DbSet<Skill> Skill { get; set; }
         public virtual DbSet<User> User { get; set; }
         public virtual DbSet<ServerLogs> ServerLogs { get; set; }
@@ -150,6 +152,7 @@ namespace RavenNest.BusinessLogic.Data
             });
 
             modelBuilder.Entity<Resources>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<CharacterSkillRecord>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<Skills>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<Skill>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<Statistics>(entity => entity.Property(e => e.Id).ValueGeneratedNever());

@@ -65,6 +65,8 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<InventoryItem, Guid> inventoryItems;
 
 
+
+
         private readonly EntitySet<ItemAttribute, Guid> itemAttributes;
 
         private readonly EntitySet<RedeemableItem, Guid> redeemableItems;
@@ -77,6 +79,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<ItemCraftingRequirement, Guid> itemCraftingRequirements;
         private readonly EntitySet<Resources, Guid> resources;
         private readonly EntitySet<Statistics, Guid> statistics;
+        private readonly EntitySet<CharacterSkillRecord, Guid> characterSkillRecords;
         private readonly EntitySet<Skills, Guid> characterSkills;
         private readonly EntitySet<Skill, Guid> skills;
 
@@ -127,6 +130,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(ClanRole),
                         //typeof(CharacterClanInvite),
                         typeof(CharacterClanMembership),
+                        typeof(CharacterSkillRecord),
                         typeof(ClanSkill),
                         typeof(UserClaimedLoyaltyReward),
                         typeof(UserPatreon),
@@ -295,6 +299,12 @@ namespace RavenNest.BusinessLogic.Data
                         restorePoint?.Get<Statistics>() ??
                         ctx.Statistics.ToList(), i => i.Id);
 
+                    characterSkillRecords = new EntitySet<CharacterSkillRecord, Guid>(
+                        restorePoint?.Get<CharacterSkillRecord>() ??
+                        ctx.CharacterSkillRecord.ToList(), i => i.Id);
+
+                    characterSkillRecords.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
+
                     characterSkills = new EntitySet<Skills, Guid>(
                         restorePoint?.Get<Skills>() ??
                         ctx.Skills.ToList(), i => i.Id);
@@ -338,6 +348,7 @@ namespace RavenNest.BusinessLogic.Data
                         appearances, syntyAppearances, characters, characterStates,
                         userProperties, /*vendorTransaction,*/
                         userBankItems,
+                        characterSkillRecords,
                         items, // so we can update items
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems, marketTransactions,
                         resources, statistics, characterSkills, clanSkills, users, villages, villageHouses,
@@ -904,6 +915,8 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Add Methods
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(CharacterSkillRecord item) => Update(() => characterSkillRecords.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(ItemAttribute item) => Update(() => itemAttributes.Add(item));
@@ -1669,6 +1682,12 @@ namespace RavenNest.BusinessLogic.Data
             syntyAppearanceId == null ? null : syntyAppearances[syntyAppearanceId.Value];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public CharacterSkillRecord GetCharacterSkillRecord(Guid id, int skillIndex)
+        {
+            return characterSkillRecords[nameof(Character), id].FirstOrDefault(x => x.SkillIndex == skillIndex);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Skills GetCharacterSkills(Guid skillsId) => characterSkills[skillsId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2041,6 +2060,7 @@ namespace RavenNest.BusinessLogic.Data
 
             return true;
         }
+
     }
 
     public class DataSaveError

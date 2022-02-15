@@ -48,7 +48,8 @@ namespace RavenNest.Blazor.Pages.Dashboard
 
         private void Login()
         {
-            NavManager.NavigateTo(PoQService.AuthorizeUrl);
+            var authUrl = PoQService.AuthorizeUrl;
+            NavManager.NavigateTo(authUrl);
         }
     }
 

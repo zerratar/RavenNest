@@ -140,6 +140,7 @@ namespace RavenNest.BusinessLogic.Data
         #region Add
         //void Add(VendorTransaction entity);
         void Add(DataModels.UserBankItem item);
+        void Add(CharacterSkillRecord item);
         void Add(Agreements item);
         void Add(RedeemableItem item);
         void Add(ClanSkill entity);
@@ -232,5 +233,6 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<ItemAttribute> GetItemAttributes();
         IReadOnlyList<Clan> GetClans();
         UserBankItem GetUserBankItem(Guid id);
+        CharacterSkillRecord GetCharacterSkillRecord(Guid id, int skillIndex);
     }
 }

@@ -2383,6 +2383,11 @@ namespace RavenNest.BusinessLogic.Game
                     }
                 }
 
+                if (existingLevel != level)
+                {
+                    UpdateCharacterSkillRecord(character.Id, skillIndex, level, experience);
+                }
+
                 skills.Set(skillIndex, level, experience);
                 updated = true;
 
@@ -2611,6 +2616,8 @@ namespace RavenNest.BusinessLogic.Game
 
                     var existingLevel = skills.GetLevel(skillIndex);
 
+
+
                     if (skillLevel > 100 && existingLevel < skillLevel * 0.5)
                     {
                         if (timeSinceLastSkillUpdate <= TimeSpan.FromSeconds(10))
@@ -2632,6 +2639,11 @@ namespace RavenNest.BusinessLogic.Game
 
                     //var existingExp = skills.GetExperience(skillIndex);
 
+                    if (existingLevel != skillLevel)
+                    {
+                        UpdateCharacterSkillRecord(character.Id, skillIndex, skillLevel, xp);
+                    }
+
                     skills.Set(skillIndex, skillLevel, experience[skillIndex]);
                     updated = true;
                 }
@@ -2640,11 +2652,11 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     characterSessionState.LastSkillUpdate = DateTime.UtcNow;
                 }
+
                 //if (savedSkillsCount != experience.Length)
                 //{
                 //    logger.LogError(character.Name + " could only save " + savedSkillsCount + " out of " + experience.Length + " skills. Client did not provide level data. Saving using old way of saving. Session: " + sessionOwner?.UserName + " (" + gameSession.Id + "), Client Version: " + sessionState.ClientVersion);
                 //}
-
 
                 return true;
             }
@@ -2652,6 +2664,30 @@ namespace RavenNest.BusinessLogic.Game
             {
                 logger.LogError(exc.ToString());
                 return false;
+            }
+        }
+
+        private void UpdateCharacterSkillRecord(Guid characterId, int skillIndex, int skillLevel, double skillExp)
+        {
+            CharacterSkillRecord skillRecord = gameData.GetCharacterSkillRecord(characterId, skillIndex);
+            if (skillRecord == null)
+            {
+                gameData.Add(new CharacterSkillRecord
+                {
+                    DateReached = DateTime.UtcNow,
+                    CharacterId = characterId,
+                    Id = Guid.NewGuid(),
+                    SkillIndex = skillIndex,
+                    SkillExperience = skillExp,
+                    SkillLevel = skillLevel,
+                    SkillName = Skills.SkillNames[skillIndex]
+                });
+            }
+            else
+            {
+                skillRecord.DateReached = DateTime.UtcNow;
+                skillRecord.SkillLevel = skillLevel;
+                skillRecord.SkillExperience = skillExp;
             }
         }
 
