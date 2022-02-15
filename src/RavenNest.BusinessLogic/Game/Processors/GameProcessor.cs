@@ -189,19 +189,28 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
         private async Task PushGameEventsAsync(DateTime utcNow, CancellationTokenSource cts)
         {
+            //var events = gameManager.GetGameEvents(sessionToken);
+            //if (events.Count > 0)
+            //{
+            //    var allEvents = events.ToList();
+            //    var batchSize = 10;
+            //    for (var i = 0; i < allEvents.Count;)
+            //    {
+            //        var eventList = new EventList();
+            //        eventList.Revision = events.Revision;
+            //        eventList.Events = allEvents.Skip(batchSize * i).Take(batchSize).ToList();
+            //        await gameConnection.PushAsync("game_event", eventList, cts.Token);
+            //        i += allEvents.Count < batchSize ? allEvents.Count : batchSize;
+            //    }
+            //}
+
             var events = gameManager.GetGameEvents(sessionToken);
             if (events.Count > 0)
             {
-                var allEvents = events.ToList();
-                var batchSize = 10;
-                for (var i = 0; i < allEvents.Count;)
-                {
-                    var eventList = new EventList();
-                    eventList.Revision = events.Revision;
-                    eventList.Events = allEvents.Skip(batchSize * i).Take(batchSize).ToList();
-                    await gameConnection.PushAsync("game_event", eventList, cts.Token);
-                    i += allEvents.Count < batchSize ? allEvents.Count : batchSize;
-                }
+                var eventList = new EventList();
+                eventList.Revision = events.Revision;
+                eventList.Events = events.ToList();
+                await gameConnection.PushAsync("game_event", eventList, cts.Token);
             }
         }
 

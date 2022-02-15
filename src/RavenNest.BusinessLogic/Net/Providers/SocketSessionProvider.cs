@@ -422,10 +422,14 @@ namespace RavenNest.BusinessLogic.Net
 
                         try
                         {
-                            await writeMutex.WaitAsync();
+                            await writeMutex.WaitAsync(TimeSpan.FromSeconds(2));
                             if (writeQueue.TryDequeue(out var packet))
                             {
                                 await ws.SendAsync(packet.Binary, WebSocketMessageType.Binary, true, packet.CancellationToken);
+                            }
+                            else
+                            {
+                                await Task.Delay(15);
                             }
                         }
                         catch (Exception exc)
@@ -436,7 +440,6 @@ namespace RavenNest.BusinessLogic.Net
                         {
                             writeMutex.Release();
                         }
-                        await Task.Delay(15);
 
                     }
                 }
