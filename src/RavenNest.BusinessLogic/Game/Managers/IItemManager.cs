@@ -136,7 +136,6 @@ namespace RavenNest.BusinessLogic.Game
             dataItem.WeaponAim = item.WeaponAim;
             dataItem.WeaponPower = item.WeaponPower;
             dataItem.WoodCost = item.WoodCost;
-
             InvalidateCache();
         }
 

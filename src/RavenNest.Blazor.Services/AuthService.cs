@@ -15,6 +15,7 @@ namespace RavenNest.Blazor.Services
         private readonly IGameData gameData;
         private readonly IAuthManager authManager;
         private readonly IPlayerManager playerManager;
+        private readonly LogoService logoService;
         private readonly AppSettings settings;
 
         public AuthService(
@@ -24,13 +25,15 @@ namespace RavenNest.Blazor.Services
             IAuthManager authManager,
             IPlayerManager playerManager,
             IHttpContextAccessor accessor,
-            ISessionInfoProvider sessionInfoProvider)
+            ISessionInfoProvider sessionInfoProvider,
+            LogoService logoService)
             : base(accessor, sessionInfoProvider)
         {
             this.ravenbotApi = ravenbotApi;
             this.gameData = gameData;
             this.authManager = authManager;
             this.playerManager = playerManager;
+            this.logoService = logoService;
             this.settings = settings.Value;
         }
 
@@ -58,6 +61,7 @@ namespace RavenNest.Blazor.Services
 
                     gameData.SetUserProperty(u.Id, UserProperties.Twitch_PubSub, accessToken);
                     await ravenbotApi.SendPubSubAccessTokenAsync(user.Id, user.Login, accessToken);
+                    await logoService.UpdateUserLogosAsync(user);
                 }
             }
         }
@@ -66,11 +70,11 @@ namespace RavenNest.Blazor.Services
         {
             var session = Context.GetSessionId();
             var result = await sessionInfoProvider.SetTwitchTokenAsync(session, accessToken);
+            var sessionInfo = result.SessionInfo;
             var user = await sessionInfoProvider.GetTwitchUserAsync(session, accessToken);
             if (user != null)
             {
-                playerManager.CreatePlayerIfNotExists(user.Id, user.Login, "1");
-
+                await playerManager.CreatePlayerIfNotExists(user.Id, user.Login, "1");
                 var u = gameData.GetUserByTwitchId(user.Id);
                 if (u != null)
                 {
@@ -80,33 +84,36 @@ namespace RavenNest.Blazor.Services
                     // u.Token = accessToken;
                     if (u.Status >= 1)
                     {
-                        result.Authenticated = false;
-                        result.AuthToken = null;
-                        return result;
+                        sessionInfo.Authenticated = false;
+                        sessionInfo.AuthToken = null;
+                        return sessionInfo;
                     }
 
                     if (!u.UserName.Equals(user.Login, System.StringComparison.OrdinalIgnoreCase))
                     {
                         u.UserName = user.Login;
-                        result.UserName = user.Login;
-                        result.UserNameChanged = true;
+                        sessionInfo.UserName = user.Login;
+                        sessionInfo.UserNameChanged = true;
                     }
                 }
+
+                await logoService.UpdateUserLogosAsync(user);
             }
-            return result;
+
+            return sessionInfo;
         }
 
-        public Task<SessionInfo> LoginAsync(UserLoginModel model)
+        public async Task<SessionInfo> LoginAsync(UserLoginModel model)
         {
             var id = SessionCookie.GetSessionId(Context);
             var auth = authManager.Authenticate(model.Username, model.Password);
             var user = gameData.GetUser(auth.UserId);
             if (user != null && user.Status >= 1)
             {
-                return Task.FromResult(new SessionInfo() { Authenticated = false });
+                return new SessionInfo() { Authenticated = false };
             }
 
-            return sessionInfoProvider.SetAuthTokenAsync(id, auth);
+            return (await sessionInfoProvider.SetAuthTokenAsync(id, auth)).SessionInfo;
         }
 
         public string GetTwitchLoginUrl()

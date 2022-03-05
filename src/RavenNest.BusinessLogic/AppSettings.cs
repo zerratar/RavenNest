@@ -21,11 +21,14 @@
         public string DevelopmentServer { get; set; }
 
         #region Pocket full of Quarters
-        public string PoQClientId { get; set; }
-        public string PoQClientSecret { get; set; }
-        public string PoQServerAPIToken { get; set; }
-        public string PoQProdUrl { get; set; }
-        public string PoQDevUrl { get; set; }
+        public string PoQ_Dev_ClientId { get; set; }
+        public string PoQ_Dev_ClientSecret { get; set; }
+        public string PoQ_Dev_ServerAPIToken { get; set; }
+        public string PoQ_Prod_ClientId { get; set; }
+        public string PoQ_Prod_ClientSecret { get; set; }
+        public string PoQ_Prod_ServerAPIToken { get; set; }
+        public string PoQ_Dev_Url { get; set; }
+        public string PoQ_Prod_Url { get; set; }
         #endregion
 
         #region Patreon

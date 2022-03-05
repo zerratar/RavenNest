@@ -10,9 +10,11 @@ using System.Web;
 namespace RavenNest.Blazor.Services
 {
     // https://github.com/weiks/poq-docs/blob/main/README.md
+
     public class PoQService : RavenNestService
     {
-        private AppSettings settings;
+        private AppSettings appSettings;
+        private PoQSettings poqSettings;
 
         public PoQService(
             IOptions<AppSettings> settings,
@@ -20,13 +22,19 @@ namespace RavenNest.Blazor.Services
             ISessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
-            this.settings = settings.Value;
+            this.appSettings = settings.Value;
+
+#if !DEBUG
+            this.poqSettings = new PoQDevelopmentSettings(appSettings);
+#else
+            this.poqSettings = new PoQSettings(appSettings);
+#endif
         }
 
         public string AuthorizeUrl => GetBaseUrl() +
             $"/api/oauth2/authorize" +
             $"?response_type=code" +
-            $"&client_id={settings.PoQClientId}" +
+            $"&client_id={poqSettings.ClientId}" +
             $"&redirect_uri={HttpUtility.UrlEncode(GetRedirectUrl())}" +
             $"&scope={GetScope()}";
 
@@ -35,8 +43,8 @@ namespace RavenNest.Blazor.Services
             var data = await DoPoqRequestAsync("api/oauth2/token", new PoQAuthRequest
             {
                 code = code,
-                client_id = settings.PoQClientId,
-                client_secret = settings.PoQClientSecret,
+                client_id = poqSettings.ClientId,
+                client_secret = poqSettings.ClientSecret,
                 redirect_uri = GetRedirectUrl()
             }, null);
 
@@ -90,12 +98,8 @@ namespace RavenNest.Blazor.Services
         }
 
         private string GetScope() => "email";
+        private string GetBaseUrl() => poqSettings.Url;
 
-#if DEBUG
-        private string GetBaseUrl() => settings.PoQDevUrl;
-#else
-        private string GetBaseUrl() => settings.PoQProdUrl;
-#endif
 
         private string GetRedirectUrl()
 #if DEBUG
@@ -105,6 +109,35 @@ namespace RavenNest.Blazor.Services
 #endif
 
     }
+    public class PoQDevelopmentSettings : PoQSettings
+    {
+        public PoQDevelopmentSettings(AppSettings appSettings)
+            : base(appSettings.PoQ_Dev_ClientId, appSettings.PoQ_Dev_ClientSecret, appSettings.PoQ_Dev_ServerAPIToken, appSettings.PoQ_Dev_Url)
+        {
+        }
+    }
+
+    public class PoQSettings
+    {
+        public PoQSettings(AppSettings appSettings)
+            : this(appSettings.PoQ_Prod_ClientId, appSettings.PoQ_Prod_ClientSecret, appSettings.PoQ_Prod_ServerAPIToken, appSettings.PoQ_Prod_Url)
+        {
+        }
+
+        public PoQSettings(string clientId, string clientSecret, string serverApiToken, string url)
+        {
+            this.ClientId = clientId;
+            this.ClientSecret = clientSecret;
+            this.ServerAPIToken = serverApiToken;
+            this.Url = url;
+        }
+
+        public string ClientId { get; }
+        public string ClientSecret { get; }
+        public string ServerAPIToken { get; }
+        public string Url { get; }
+    }
+
     public class PoQAuthToken
     {
         public string scope { get; set; }
