@@ -36,6 +36,8 @@ namespace RavenNest.Controllers
 
         private readonly byte[] unknownProfilePictureBytes;
         private readonly byte[] unknownClanLogoBytes;
+        private readonly string unknownProfilePictureUrl;
+        private readonly string unknownClanLogoUrl;
 
         public TwitchController(
             IOptions<AppSettings> settings,
@@ -52,8 +54,8 @@ namespace RavenNest.Controllers
             this.logoService = logoService;
             this.settings = settings.Value;
 
-            var a = "imgs/ravenfall_logo_tiny.png";
-            var b = "imgs/logo-tiny-black.png";
+            var a = unknownProfilePictureUrl = "imgs/ravenfall_logo_tiny.png";
+            var b = unknownClanLogoUrl = "imgs/logo-tiny-black.png";
 
             if (!System.IO.File.Exists(a))
             {
@@ -106,6 +108,8 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("logo/{userId}")]
+
+        [ResponseCache(VaryByHeader = "User-Agent", Duration = 600)]
         public async Task<ActionResult> GetChannelPictureAsync(string userId)
         {
             try
@@ -121,6 +125,7 @@ namespace RavenNest.Controllers
                     return NotFound();
                 }
 
+                //return Redirect(unknownProfilePictureUrl);
                 return File(unknownProfilePictureBytes, "image/png");
             }
             catch { }
@@ -128,6 +133,7 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("clan-logo/{userId}")]
+        [ResponseCache(VaryByHeader = "User-Agent", Duration = 600)]
         public async Task<ActionResult> GetClanLogoAsync(string userId)
         {
             try
@@ -142,7 +148,8 @@ namespace RavenNest.Controllers
                 {
                     return NotFound();
                 }
-                
+
+                //return Redirect(unknownClanLogoUrl);
                 return File(unknownClanLogoBytes, "image/png");
             }
             catch { }
