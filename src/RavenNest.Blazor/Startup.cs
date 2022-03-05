@@ -83,6 +83,7 @@ namespace RavenNest.Blazor
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddHttpContextAccessor();
+            services.AddResponseCaching();
 
             RegisterServices(services);
 
@@ -139,6 +140,7 @@ namespace RavenNest.Blazor
             });
 
             app.UseHttpsRedirection();
+            app.UseResponseCaching();
 
             app.UseRewriter(new RewriteOptions()
                .AddRedirectToWww()
