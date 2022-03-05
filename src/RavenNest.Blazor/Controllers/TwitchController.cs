@@ -52,9 +52,24 @@ namespace RavenNest.Controllers
             this.logoService = logoService;
             this.settings = settings.Value;
 
+            var a = "imgs/ravenfall_logo_tiny.png";
+            var b = "imgs/logo-tiny-black.png";
 
-            this.unknownProfilePictureBytes = System.IO.File.ReadAllBytes("wwwroot/imgs/ravenfall_logo_tiny.png");
-            this.unknownClanLogoBytes = System.IO.File.ReadAllBytes("wwwroot/imgs/logo-tiny-black.png");
+            if (!System.IO.File.Exists(a))
+            {
+                a = Path.Combine("wwwroot", a);
+                b = Path.Combine("wwwroot", b);
+            }
+
+            if (System.IO.File.Exists(a))
+            {
+                this.unknownProfilePictureBytes = System.IO.File.ReadAllBytes(a);
+            }
+
+            if (System.IO.File.Exists(b))
+            {
+                this.unknownClanLogoBytes = System.IO.File.ReadAllBytes(b);
+            }
         }
 
         [HttpGet("authorize")]
@@ -101,6 +116,11 @@ namespace RavenNest.Controllers
                     return File(imageData, "image/png");
                 }
 
+                if (unknownProfilePictureBytes == null)
+                {
+                    return NotFound();
+                }
+
                 return File(unknownProfilePictureBytes, "image/png");
             }
             catch { }
@@ -118,6 +138,11 @@ namespace RavenNest.Controllers
                     return File(imageData, "image/png");
                 }
 
+                if (unknownClanLogoBytes == null)
+                {
+                    return NotFound();
+                }
+                
                 return File(unknownClanLogoBytes, "image/png");
             }
             catch { }
