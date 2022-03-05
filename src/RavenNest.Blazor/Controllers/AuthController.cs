@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using RavenNest.Blazor.Services;
 using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
@@ -16,13 +17,16 @@ namespace RavenNest.Controllers
     {
         private readonly IAuthManager authManager;
         private readonly ISessionInfoProvider sessionInfoProvider;
+        private readonly LogoService logoService;
 
         public AuthController(
             IAuthManager authManager,
-            ISessionInfoProvider sessionInfoProvider)
+            ISessionInfoProvider sessionInfoProvider,
+            LogoService logoService)
         {
             this.authManager = authManager;
             this.sessionInfoProvider = sessionInfoProvider;
+            this.logoService = logoService;
         }
 
         [HttpGet("activate-pubsub")]
@@ -86,10 +90,10 @@ namespace RavenNest.Controllers
             RequiresAuth = false,
             RequiresAdmin = false)
         ]
-        public Task<SessionInfo> LoginAsync(AuthModel model)
+        public async Task<SessionInfo> LoginAsync(AuthModel model)
         {
             var authenticateAsync = this.authManager.Authenticate(model.Username, model.Password);
-            return sessionInfoProvider.SetAuthTokenAsync(SessionId, authenticateAsync);
+            return (await sessionInfoProvider.SetAuthTokenAsync(SessionId, authenticateAsync)).SessionInfo;
         }
 
         [HttpGet("logout")]
@@ -119,7 +123,9 @@ namespace RavenNest.Controllers
         {
             var user = await sessionInfoProvider.GetTwitchUserAsync(SessionId);
             authManager.SignUp(user.Id, user.Login, user.DisplayName, user.Email, password.Password);
-            return await sessionInfoProvider.StoreAsync(SessionId);
+            var result = await sessionInfoProvider.StoreAsync(SessionId);
+            await logoService.UpdateUserLogosAsync(result.TwitchUser);
+            return result.SessionInfo;
         }
 
         private string SessionId => HttpContext.GetSessionId();

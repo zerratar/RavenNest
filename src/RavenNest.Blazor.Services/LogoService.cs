@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Providers;
 using RavenNest.Sessions;
 using RavenNest.Twitch;
 using System;
@@ -13,19 +15,19 @@ namespace RavenNest.Blazor.Services
 {
     public class LogoService : RavenNestService
     {
-        private readonly IMemoryCache memoryCache;
+        private readonly IMemoryFileCache fileCache;
         private readonly IGameData gameData;
         private readonly AppSettings settings;
         public LogoService(
             IOptions<AppSettings> settings,
             IGameData gameData,
-            IMemoryCache memoryCache,
+            IMemoryFileCacheProvider fileCacheProvider,
             IHttpContextAccessor accessor,
             ISessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
             this.settings = settings.Value;
-            this.memoryCache = memoryCache;
+            this.fileCache = fileCacheProvider.Get("user_images", ".png");
             this.gameData = gameData;
         }
 
@@ -35,19 +37,25 @@ namespace RavenNest.Blazor.Services
             await GetChannelPictureAsync("_" + userId);
         }
 
+        public async Task UpdateUserLogosAsync(TwitchRequests.TwitchUser twitchUser)
+        {
+            await DownloadLogoAsync(twitchUser.Id, twitchUser.ProfileImageUrl);
+            await DownloadClanLogoAsync(twitchUser.Id, twitchUser.ProfileImageUrl);
+        }
+
         public bool ClearLogos(string userId)
         {
             var success = false;
             try
             {
-                memoryCache.Remove("logo_" + userId);
+                fileCache.Remove("logo_" + userId);
                 success = true;
             }
             catch { }
 
             try
             {
-                memoryCache.Remove("clan_logo_" + userId);
+                fileCache.Remove("clan_logo_" + userId);
                 success = true;
             }
             catch { }
@@ -55,7 +63,7 @@ namespace RavenNest.Blazor.Services
             return success;
         }
 
-        public async Task<byte[]> GetChannelPictureAsync(string userId)
+        public async Task<byte[]> GetChannelPictureAsync(string userId, string downloadUrl = null)
         {
             try
             {
@@ -66,22 +74,16 @@ namespace RavenNest.Blazor.Services
                 }
                 else
                 {
-                    if (memoryCache != null && memoryCache.TryGetValue("logo_" + userId, out var logoData) && logoData is byte[] data)
+                    if (fileCache != null && fileCache.TryGetValue("logo_" + userId, out var logoData) && logoData is byte[] data)
                     {
                         return data;
                     }
                 }
 
-                var twitch = new TwitchRequests(clientId: settings.TwitchClientId, clientSecret: settings.TwitchClientSecret);
-                var profile = await twitch.Kraken_GetUserAsync(userId);
-                if (profile != null)
-                {
-                    using (var wc = new WebClient())
-                    {
-                        var binaryData = await wc.DownloadDataTaskAsync(new Uri(profile.logo));
-                        return memoryCache.Set("logo_" + userId, binaryData);
-                    }
-                }
+                //var twitch = new TwitchRequests(clientId: settings.TwitchClientId, clientSecret: settings.TwitchClientSecret);
+                //var profile = await twitch.KGetUserAsync(userId);
+
+                return await DownloadLogoAsync(userId, downloadUrl);
 
             }
             catch { }
@@ -89,11 +91,11 @@ namespace RavenNest.Blazor.Services
             return null;
         }
 
-        public async Task<byte[]> GetClanLogoAsync(string userId)
+        public async Task<byte[]> GetClanLogoAsync(string userId, string downloadUrl = null)
         {
             try
             {
-                string logoUrl = null;
+                string logoUrl = downloadUrl;
                 var forceRefreshLogo = userId.Contains("_");
                 if (forceRefreshLogo)
                 {
@@ -113,34 +115,56 @@ namespace RavenNest.Blazor.Services
                 }
                 else
                 {
-                    if (memoryCache != null && memoryCache.TryGetValue("clan_logo_" + userId, out var logoData) && logoData is byte[] data)
+                    if (fileCache != null && fileCache.TryGetValue("clan_logo_" + userId, out var logoData) && logoData is byte[] data)
                     {
                         return data;
                     }
                 }
 
-                if (string.IsNullOrEmpty(logoUrl))
-                {
-                    var twitch = new TwitchRequests(clientId: settings.TwitchClientId, clientSecret: settings.TwitchClientSecret);
-                    var profile = await twitch.Kraken_GetUserAsync(userId);
-                    if (profile != null)
-                    {
-                        logoUrl = profile.logo;
-                    }
-                }
+                //if (string.IsNullOrEmpty(logoUrl))
+                //{
+                //    var twitch = new TwitchRequests(clientId: settings.TwitchClientId, clientSecret: settings.TwitchClientSecret);
+                //    var profile = await twitch.GetUserAsync(userId);
+                //    if (profile != null)
+                //    {
+                //        logoUrl = profile.logo;
+                //    }
+                //}
 
-                if (!string.IsNullOrEmpty(logoUrl))
-                {
-                    using (var wc = new WebClient())
-                    {
-                        var binaryData = await wc.DownloadDataTaskAsync(new Uri(logoUrl));
-                        return memoryCache.Set("clan_logo_" + userId, binaryData);
-                    }
-                }
+                return await DownloadClanLogoAsync(userId, logoUrl);
             }
             catch { }
             return null;
         }
 
+        private async Task<byte[]> DownloadLogoAsync(string userId, string downloadUrl)
+        {
+            return await DownloadAndStoreInCacheAsync("logo_" + userId, downloadUrl);
+        }
+
+        private async Task<byte[]> DownloadClanLogoAsync(string userId, string downloadUrl)
+        {
+            return await DownloadAndStoreInCacheAsync("clan_logo_" + userId, downloadUrl);
+        }
+
+        private async Task<byte[]> DownloadAndStoreInCacheAsync(string key, string downloadUrl)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(downloadUrl))
+                {
+                    using (var wc = new WebClient())
+                    {
+                        var binaryData = await wc.DownloadDataTaskAsync(new Uri(downloadUrl));
+                        return fileCache.Set(key, binaryData);
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            return null;
+        }
     }
 }

@@ -34,6 +34,9 @@ namespace RavenNest.Controllers
         private readonly LogoService logoService;
         private readonly AppSettings settings;
 
+        private readonly byte[] unknownProfilePictureBytes;
+        private readonly byte[] unknownClanLogoBytes;
+
         public TwitchController(
             IOptions<AppSettings> settings,
             IPlayerManager playerManager,
@@ -48,6 +51,10 @@ namespace RavenNest.Controllers
             this.authManager = authManager;
             this.logoService = logoService;
             this.settings = settings.Value;
+
+
+            this.unknownProfilePictureBytes = System.IO.File.ReadAllBytes("wwwroot/imgs/ravenfall_logo_tiny.png");
+            this.unknownClanLogoBytes = System.IO.File.ReadAllBytes("wwwroot/imgs/logo-tiny-black.png");
         }
 
         [HttpGet("authorize")]
@@ -68,7 +75,7 @@ namespace RavenNest.Controllers
                     requestUrl += "?token=" + sessionInfo.access_token + "&state=" + reqState;
 
                     var req = new TwitchRequests(sessionInfo.access_token, settings.TwitchClientId, settings.TwitchClientSecret);
-                    var info = await req.Kraken_ValidateOAuthTokenAsync();
+                    var info = await req.ValidateOAuthTokenAsync();
                     if (info != null)
                     {
                         requestUrl += "&id=" + info.ClientID + "&user=" + info.Login;
@@ -93,6 +100,8 @@ namespace RavenNest.Controllers
                 {
                     return File(imageData, "image/png");
                 }
+
+                return File(unknownProfilePictureBytes, "image/png");
             }
             catch { }
             return NotFound();
@@ -108,6 +117,8 @@ namespace RavenNest.Controllers
                 {
                     return File(imageData, "image/png");
                 }
+
+                return File(unknownClanLogoBytes, "image/png");
             }
             catch { }
             return NotFound();
@@ -145,7 +156,7 @@ namespace RavenNest.Controllers
             {
                 playerManager.CreatePlayerIfNotExists(user.Id, user.Login, "1");
             }
-            return result;
+            return result.SessionInfo;
         }
 
         [HttpGet("extension/set-task/{broadcasterId}/{characterId}/{task}")]

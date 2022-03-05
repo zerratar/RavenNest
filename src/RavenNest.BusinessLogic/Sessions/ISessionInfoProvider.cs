@@ -14,10 +14,10 @@ namespace RavenNest.Sessions
         bool TryGetTwitchToken(string sessionId, out string token);
         bool TryGetAuthToken(string sessionId, out AuthToken authToken);
         Task<TwitchRequests.TwitchUser> GetTwitchUserAsync(string sessionId, string token = null);
-        Task<SessionInfo> SetTwitchUserAsync(string sessionId, string twitchUser);
-        Task<SessionInfo> SetTwitchTokenAsync(string sessionId, string token);
-        Task<SessionInfo> SetAuthTokenAsync(string sessionId, AuthToken token);
-        Task<SessionInfo> StoreAsync(string sessionId);
+        Task<TwitchUserSessionInfo> SetTwitchUserAsync(string sessionId, string twitchUser);
+        Task<TwitchUserSessionInfo> SetTwitchTokenAsync(string sessionId, string token);
+        Task<TwitchUserSessionInfo> SetAuthTokenAsync(string sessionId, AuthToken token);
+        Task<TwitchUserSessionInfo> StoreAsync(string sessionId);
         Task<SessionInfo> CreateTwitchUserSessionAsync(string sessionId, string broadcasterId, string twitchUserId);
         void SetActiveCharacter(SessionInfo session, Guid? id);
         void SetCookieDisclaimer(SessionInfo session, bool accepted);

@@ -244,7 +244,10 @@ namespace RavenNest.Blazor
             services.AddSingleton<IRavenBotApiClient, RavenBotApiClient>();
 
             services.AddSingleton<IKernel, Kernel>();
+
             services.AddSingleton<IMemoryCache, MemoryCache>();
+            services.AddSingleton<IMemoryFileCacheProvider, MemoryFileCacheProvider>();
+
             services.AddSingleton<ISecureHasher, SecureHasher>();
             services.AddSingleton<IBinarySerializer, CompressedJsonSerializer>();
             services.AddSingleton<IGamePacketSerializer, GamePacketSerializer>();

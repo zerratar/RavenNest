@@ -39,13 +39,7 @@ namespace RavenNest.Twitch
             }
         }
 
-        public async Task<TwitchValidateResponse> Kraken_ValidateOAuthTokenAsync()
-        {
-            return JsonConvert.DeserializeObject<TwitchValidateResponse>(
-                await RequestAsync("GET", "https://id.twitch.tv/oauth2/validate", this.accessToken, authMethod: "OAuth"));
-        }
-
-        public async Task<TwitchValidateResponse> Helix_ValidateOAuthTokenAsync()
+        public async Task<TwitchValidateResponse> ValidateOAuthTokenAsync()
         {
             return JsonConvert.DeserializeObject<TwitchValidateResponse>(
                 await RequestAsync("GET", "https://id.twitch.tv/oauth2/validate", this.accessToken, authMethod: "OAuth"));
@@ -54,24 +48,7 @@ namespace RavenNest.Twitch
         public async Task<string> GetUserAsync()
         {
             await EnsureAuth();
-
             return await TwitchRequestAsync("https://api.twitch.tv/helix/users");
-            //return await TwitchRequestAsync("https://api.twitch.tv/kraken/user", auth.access_token);
-        }
-
-        public async Task<TwitchChannel> Kraken_GetUserAsync(string userId)
-        {
-            await EnsureAuth();
-
-            return JsonConvert.DeserializeObject<TwitchChannel>(
-                await TwitchRequestAsync("https://api.twitch.tv/kraken/channels/" + userId, auth.access_token));
-        }
-        public async Task<TwitchChannel> Helix_GetUserAsync(string userId)
-        {
-            await EnsureAuth();
-
-            return JsonConvert.DeserializeObject<TwitchChannel>(
-                await TwitchRequestAsync("https://api.twitch.tv/helix/users?id=" + userId, auth.access_token));
         }
 
         public Task<TwitchAuth> AuthenticateAsync()
@@ -110,8 +87,7 @@ namespace RavenNest.Twitch
 
         private async Task<string> TwitchRequestAsync(string url, string access_token = null, Dictionary<string, string> parameters = null)
         {
-            return await RequestAsync("GET", url, access_token, parameters,
-                url.IndexOf("kraken", StringComparison.OrdinalIgnoreCase) >= 0 ? "OAuth" : "Bearer");
+            return await RequestAsync("GET", url, access_token, parameters, "Bearer");
         }
 
         private async Task<string> RequestAsync(
@@ -226,12 +202,38 @@ namespace RavenNest.Twitch
 
         public class TwitchUser
         {
+            [JsonProperty("id")]
             public string Id { get; set; }
+
+            [JsonProperty("login")]
             public string Login { get; set; }
+
             [JsonProperty("display_name")]
             public string DisplayName { get; set; }
+
+            [JsonProperty("type")]
             public string Type { get; set; }
+
+            [JsonProperty("broadcaster_type")]
+            public string BroadcasterType { get; set; }
+
+            [JsonProperty("description")]
+            public string Description { get; set; }
+
+            [JsonProperty("profile_image_url")]
+            public string ProfileImageUrl { get; set; }
+
+            [JsonProperty("offline_image_url")]
+            public string OfflineImageUrl { get; set; }
+
+            [JsonProperty("view_count")]
+            public int ViewCount { get; set; }
+
+            [JsonProperty("email")]
             public string Email { get; set; }
+
+            [JsonProperty("created_at")]
+            public DateTime CreatedAt { get; set; }
         }
     }
 }

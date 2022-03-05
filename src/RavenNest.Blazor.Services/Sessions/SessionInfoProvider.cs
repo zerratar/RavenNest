@@ -12,6 +12,7 @@ using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Twitch;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.Blazor.Services;
 
 namespace RavenNest.Sessions
 {
@@ -137,8 +138,9 @@ namespace RavenNest.Sessions
             return si;
         }
 
-        public async Task<SessionInfo> StoreAsync(string sessionId)
+        public async Task<TwitchUserSessionInfo> StoreAsync(string sessionId)
         {
+            var result = new TwitchUserSessionInfo();
             var si = new SessionInfo();
             User user = null;
 
@@ -147,6 +149,7 @@ namespace RavenNest.Sessions
                 var twitchUser = await GetTwitchUserAsync(sessionId, token);
                 if (twitchUser != null)
                 {
+                    result.TwitchUser = twitchUser;
                     user = gameData.GetUserByTwitchId(twitchUser.Id);
                 }
                 if (user != null)
@@ -183,7 +186,11 @@ namespace RavenNest.Sessions
             GetSessionData(sessionId).SessionInfo = si;
 
             SetString(sessionId, AuthState, sessionState);
-            return si;
+
+            result.SessionInfo = si;
+            
+
+            return result;
         }
 
         private void UpdateSessionInfoData(SessionInfo si, User user)
@@ -305,19 +312,19 @@ namespace RavenNest.Sessions
             GetSessionData(sessionId).Clear();
         }
 
-        public async Task<SessionInfo> SetTwitchTokenAsync(string sessionId, string token)
+        public async Task<TwitchUserSessionInfo> SetTwitchTokenAsync(string sessionId, string token)
         {
             SetString(sessionId, TwitchAccessToken, token);
             return await this.StoreAsync(sessionId);
         }
 
-        public async Task<SessionInfo> SetTwitchUserAsync(string sessionId, string twitchUser)
+        public async Task<TwitchUserSessionInfo> SetTwitchUserAsync(string sessionId, string twitchUser)
         {
             SetString(sessionId, TwitchUser, twitchUser);
             return await StoreAsync(sessionId);
         }
 
-        public async Task<SessionInfo> SetAuthTokenAsync(string sessionId, AuthToken token)
+        public async Task<TwitchUserSessionInfo> SetAuthTokenAsync(string sessionId, AuthToken token)
         {
             SetString(sessionId, AuthToken, JSON.Stringify(token));
             return await StoreAsync(sessionId);
