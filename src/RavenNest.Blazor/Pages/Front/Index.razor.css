@@ -94,6 +94,7 @@
     flex-flow: column;
     align-items: center;
 }
+
 .content {
     margin-top: -95px;
 }
@@ -172,6 +173,7 @@
 .hero-text b {
     font-weight: 600;
 }
+
 p.invalid {
     color: red;
     /* font-weight: bold; */
@@ -188,7 +190,7 @@ p.invalid {
 }
 
 .twitch-stream-item {
-    width: 360px;
+    width: 320px;
 }
 
 .streamer-name {
@@ -205,7 +207,7 @@ p.invalid {
 .twitch-streams {
     display: flex;
     flex-wrap: wrap;
-    align-items: baseline;
+    /*align-items: baseline;*/
     justify-content: space-around;
     max-width: 100%;
     margin-left: auto;
@@ -222,10 +224,32 @@ p.invalid {
 .twitch-stream-header {
     position: absolute;
     box-sizing: border-box;
-    width: 360px;
-    padding: 7px 15px 40px 15px;
+    width: 320px;
+    padding: 7px 15px 108px 15px;
     background: linear-gradient(180deg, black, rgba(0,0,0,0.75), transparent);
     color: white;
+}
+
+.stream-view {
+    height: 180px;
+    width: 320px;
+    box-sizing: border-box;
+    background-color: black;
+    background-size: contain;
+    color: white;
+    cursor: pointer;
+}
+
+i.fas.fa-play {
+    color: white;
+    z-index: 1;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    line-height: 180px;
+    text-align: center;
+    font-size: 54pt;
+    text-shadow: 3px 4px 6px rgb(0 0 0 / 20%);
 }
 
 .twitch-content p {
@@ -240,6 +264,7 @@ p.invalid {
     background-color: rgba(0,0,0,0.03);
     cursor: pointer;
 }
+
 @media (max-width: 1519px) {
     .news-item {
         width: 48%;

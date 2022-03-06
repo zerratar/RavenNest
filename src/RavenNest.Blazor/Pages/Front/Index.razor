@@ -5,158 +5,168 @@
 @inject NavigationManager NavigationManager
 
 <div class="top-section">
-  <div class="hero-text">
-    <b>Ravenfall</b> is a <b>Twitch</b> Integrated Idle game you can play with your viewers. The viewers control their characters using chat commands to train their characters in various skills and competing in the leaderboard or helping out fighting huge bosses together.
-  </div>
-  <div class="hero-buttons">
-    @*<RavenLink Href="#features" CssClass="blue"><i class="oi oi-info"></i>&nbsp;Learn More</RavenLink>*@
-    <RavenLink Href="https://discord.gg/gtfDts7"><i class="oi oi-people"></i>&nbsp;Join the Community</RavenLink>
-  </div>
+    <div class="hero-text">
+        <b>Ravenfall</b> is a <b>Twitch</b> Integrated Idle game you can play with your viewers. The viewers control their characters using chat commands to train their characters in various skills and competing in the leaderboard or helping out fighting huge bosses together.
+    </div>
+    <div class="hero-buttons">
+        @*<RavenLink Href="#features" CssClass="blue"><i class="oi oi-info"></i>&nbsp;Learn More</RavenLink>*@
+        <RavenLink Href="https://discord.gg/gtfDts7"><i class="oi oi-people"></i>&nbsp;Join the Community</RavenLink>
+    </div>
 </div>
 
 <div class="white-section-break"></div>
 
 <div class="page-content">
- @* <div class="section">
-    <h1>News</h1>
-    <div class="news-list">
-      @if (news == null)
-      {
+    @* <div class="section">
+        <h1>News</h1>
+        <div class="news-list">
+        @if (news == null)
+        {
         <LoadIndicator></LoadIndicator>
-      }
-      else
-      {
+        }
+        else
+        {
         foreach (var item in news)
         {
-          <a class="news-item" href="@item.NewsSource" target="_blank">
-            <div class="news-item-image">
-              <img src="@item.ImageSource" />
-            </div>
-            <div class="news-item-text">
-              <h3 class="news-header">@item.Title</h3>
-              <div class="news-description">@item.ShortDescription</div>
-            </div>
-          </a>
+        <a class="news-item" href="@item.NewsSource" target="_blank">
+        <div class="news-item-image">
+        <img src="@item.ImageSource" />
+        </div>
+        <div class="news-item-text">
+        <h3 class="news-header">@item.Title</h3>
+        <div class="news-description">@item.ShortDescription</div>
+        </div>
+        </a>
         }
-      }
+        }
+        </div>
+        <div class="section-split"></div>
+        <div class="section-buttons">
+        <RavenLink Href="https://www.medium.com/ravenfall"><i class="fal fa-newspaper"></i>&nbsp;More News</RavenLink>
+        </div>
+        </div>*@
+    <div class="section">
+        <h1>Features</h1>
+        <a id="features" name="features"></a>
+        <div class="feature-list">
+            <div class="feature-item">
+                <img src="/imgs/users.png" />
+                <div class="feature-item-text">
+                    Engage and retain your viewers with loyalty rewards.
+                </div>
+            </div>
+
+            <div class="feature-item">
+                <img src="/imgs/customization.png" />
+                <div class="feature-item-text">
+                    Adjust your game experience with clans and character customisation.
+                </div>
+            </div>
+
+            <div class="feature-item">
+                <img src="/imgs/twitch.png" />
+                <div class="feature-item-text">
+                    Utilise the Twitch Channel Points system to trigger unique in-game events.
+                </div>
+            </div>
+
+            <div class="feature-item">
+                <img src="/imgs/strength.png" />
+                <div class="feature-item-text">
+                    Play along with your viewers to defeat enormous bosses.
+                </div>
+            </div>
+
+            <div class="feature-item">
+                <img src="/imgs/attack.png" />
+                <div class="feature-item-text">
+                    Players can specialise in multiple different skills and compete with each other on the leaderboards.
+                </div>
+            </div>
+
+            <div class="feature-item">
+                <img src="/imgs/marketplace.png" />
+                <div class="feature-item-text">
+                    Players can trade directly with each other or list their items in the global marketplace.
+                </div>
+            </div>
+
+            <div class="feature-item">
+                <img src="/imgs/crafting.png" />
+                <div class="feature-item-text">
+                    Craft different armour pieces and weapons by gathering specific source materials from dungeon drops, mining or woodcutting.
+                </div>
+            </div>
+        </div>
+
     </div>
-    <div class="section-split"></div>
-    <div class="section-buttons">
-      <RavenLink Href="https://www.medium.com/ravenfall"><i class="fal fa-newspaper"></i>&nbsp;More News</RavenLink>
-    </div>
-  </div>*@
-  <div class="section">
-    <h1>Features</h1>
-    <a id="features" name="features"></a>
-    <div class="feature-list">
-      <div class="feature-item">
-        <img src="/imgs/users.png" />
-        <div class="feature-item-text">
-          Engage and retain your viewers with loyalty rewards.
-        </div>
-      </div>
 
-      <div class="feature-item">
-        <img src="/imgs/customization.png" />
-        <div class="feature-item-text">
-          Adjust your game experience with clans and character customisation.
-        </div>
-      </div>
-
-      <div class="feature-item">
-        <img src="/imgs/twitch.png" />
-        <div class="feature-item-text">
-          Utilise the Twitch Channel Points system to trigger unique in-game events.
-        </div>
-      </div>
-
-      <div class="feature-item">
-        <img src="/imgs/strength.png" />
-        <div class="feature-item-text">
-          Play along with your viewers to defeat enormous bosses.
-        </div>
-      </div>
-
-      <div class="feature-item">
-        <img src="/imgs/attack.png" />
-        <div class="feature-item-text">
-          Players can specialise in multiple different skills and compete with each other on the leaderboards.
-        </div>
-      </div>
-
-      <div class="feature-item">
-        <img src="/imgs/marketplace.png" />
-        <div class="feature-item-text">
-          Players can trade directly with each other or list their items in the global marketplace.
-        </div>
-      </div>
-
-      <div class="feature-item">
-        <img src="/imgs/crafting.png" />
-        <div class="feature-item-text">
-          Craft different armour pieces and weapons by gathering specific source materials from dungeon drops, mining or woodcutting.
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <div class="section">
-    <h1>Twitch</h1>
-    @if (twitchStreams == null)
-    {
-      <LoadIndicator></LoadIndicator>
-    }
-    else if (twitchStreams.Count == 0)
-    {
-      <div class="twitch-content">
-        <h3>The ravens are chasing something shiny right now, check back in a bit...</h3>
-        <p>Want to be featured here? Stream Ravenfall!</p>
-      </div>
-    }
-    else
-    {
-      <div class="twitch-content">
-        <h3>Want to get right into the feel of the game? Check out who is streaming it right now.</h3>
-      </div>
-
-      <div class="twitch-streams">
-        @foreach (var stream in twitchStreams)
+    <div class="section">
+        <h1>Twitch</h1>
+        @if (twitchStreams == null)
         {
-          <div class="twitch-stream-item">
-            <div class="twitch-stream-header">
-              <div class="streamer-name">@stream.TwitchUserName</div>
-              <div class="streamer-title">@stream.UserTitle</div>
-              <div class="streamer-details">@stream.PlayerCount players</div>
-            </div>
-            <iframe src="https://player.twitch.tv/?channel=@(stream.TwitchUserName)&autoplay=false&parent=www.ravenfall.stream&parent=ravenfall.stream&parent=www.ravenfall.gg&parent=ravenfall.gg&parent=localhost"
-                    height="200"
-                    width="360"
-                    frameborder="0"
-                    scrolling="no"
-                    allowfullscreen="true">
-            </iframe>
-          </div>
+            <LoadIndicator></LoadIndicator>
         }
-      </div>
+        else if (twitchStreams.Count == 0)
+        {
+            <div class="twitch-content">
+                <h3>The ravens are chasing something shiny right now, check back in a bit...</h3>
+                <p>Want to be featured here? Stream Ravenfall!</p>
+            </div>
+        }
+        else
+        {
+            <div class="twitch-content">
+                <h3>Want to get right into the feel of the game? Check out who is streaming it right now.</h3>
+            </div>
 
-      <div class="section-split"></div>
-      <div class="section-buttons">
-        <RavenButton CssClass="twitch" NavigateTo="/streams"><i class="fab fa-twitch"></i>&nbsp;All Streams</RavenButton>
-      </div>
-    }
-  </div>
+            <div class="twitch-streams">
+                @foreach (var stream in twitchStreams)
+                {
+                    <div class="twitch-stream-item" @onclick="() => ShowStream(stream)">
 
-  <div class="section patreon">
-    <h1>Patreon</h1>
-    <div class="patreon-content">
-      <div class="patreon-header">
-        MADE POSSIBLE BY YOU
-      </div>
-      <div class="patreon-text">
-        Our generous community is supporting Ravenfall through Patreon. Support the game for at least <b>$5 / month</b>, and you have access to a Patron-only channel on Discord with exclusive updates and surveys
-      </div>
-      <RavenLink Href="https://www.patreon.com/ravenfall"><i class="fab fa-patreon"></i>&nbsp;BECOME A PATRON</RavenLink>
+                        @if (stream.IsVisible)
+                        {
+                            <iframe src="https://player.twitch.tv/?channel=@(stream.TwitchUserName)&autoplay=false&parent=www.ravenfall.stream&parent=ravenfall.stream&parent=www.ravenfall.gg&parent=ravenfall.gg&parent=localhost"
+                        height="180"
+                        width="320"
+                        frameborder="0"
+                        scrolling="no"
+                        allowfullscreen="true">
+                            </iframe>
+                        }
+                        else
+                        {
+                            <div class="twitch-stream-header">
+                                <div class="streamer-name">@stream.TwitchUserName</div>
+                                <div class="streamer-title">@stream.UserTitle</div>
+                                <div class="streamer-details">@stream.PlayerCount players</div>
+                            </div>
+                            <div class="stream-view" style="background: url('@("https://static-cdn.jtvnw.net/previews-ttv/live_user_"+stream.TwitchUserName+"-320x180.jpg")')">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="section-split"></div>
+            <div class="section-buttons">
+                <RavenButton CssClass="twitch" NavigateTo="/streams"><i class="fab fa-twitch"></i>&nbsp;All Streams</RavenButton>
+            </div>
+        }
     </div>
-  </div>
+
+    <div class="section patreon">
+        <h1>Patreon</h1>
+        <div class="patreon-content">
+            <div class="patreon-header">
+                MADE POSSIBLE BY YOU
+            </div>
+            <div class="patreon-text">
+                Our generous community is supporting Ravenfall through Patreon. Support the game for at least <b>$5 / month</b>, and you have access to a Patron-only channel on Discord with exclusive updates and surveys
+            </div>
+            <RavenLink Href="https://www.patreon.com/ravenfall"><i class="fab fa-patreon"></i>&nbsp;BECOME A PATRON</RavenLink>
+        </div>
+    </div>
 </div>

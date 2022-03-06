@@ -39,5 +39,6 @@ namespace RavenNest.Blazor.Services
         public string UserTitle { get; set; }
         public int PlayerCount { get; set; }
         public TimeSpan Uptime { get; set; }
+        public bool IsVisible { get; set; }
     }
 }

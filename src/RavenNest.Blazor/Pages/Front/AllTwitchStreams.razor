@@ -3,57 +3,74 @@
 @inject RavenNest.Blazor.Services.TwitchService TwitchService
 
 <div class="top-section">
-  <div class="hero-text">
-  </div>
+    <div class="hero-text">
+    </div>
 </div>
 <div class="white-section-break"></div>
 <div class="page-content">
-  <div class="section">
-    <h1>All Ravenfall Streams</h1>
-    @if (twitchStreams == null)
-    {
-      <LoadIndicator></LoadIndicator>
-    }
-    else if (twitchStreams.Count == 0)
-    {
-      <div class="twitch-content">
-        <h3>The ravens are chasing something shiny right now, check back in a bit...</h3>
-        <p>Want to be featured here? Stream Ravenfall!</p>
-      </div>
-    }
-    else
-    {
-      <div class="twitch-content">
-        <h3>Want to get right into the feel of the game? Check out who is streaming it right now.</h3>
-      </div>
-
-      <div class="twitch-streams">
-        @foreach (var stream in twitchStreams)
+    <div class="section">
+        <h1>All Ravenfall Streams</h1>
+        @if (twitchStreams == null)
         {
-          <div class="twitch-stream-item">
-            <div class="twitch-stream-header">
-              <div class="streamer-name">@stream.TwitchUserName</div>
-              <div class="streamer-title">@stream.UserTitle</div>
-              <div class="streamer-details">@stream.PlayerCount players</div>
-            </div>
-            <iframe src="https://player.twitch.tv/?channel=@(stream.TwitchUserName)&autoplay=false&parent=www.ravenfall.stream&parent=ravenfall.stream&parent=www.ravenfall.gg&parent=ravenfall.gg&parent=localhost"
-                    height="200"
-                    width="360"
-                    frameborder="0"
-                    scrolling="no"
-                    allowfullscreen="true">
-            </iframe>
-          </div>
+            <LoadIndicator></LoadIndicator>
         }
-      </div>
-    }
-  </div>
+        else if (twitchStreams.Count == 0)
+        {
+            <div class="twitch-content">
+                <h3>The ravens are chasing something shiny right now, check back in a bit...</h3>
+                <p>Want to be featured here? Stream Ravenfall!</p>
+            </div>
+        }
+        else
+        {
+            <div class="twitch-content">
+                <h3>Want to get right into the feel of the game? Check out who is streaming it right now.</h3>
+            </div>
+
+            <div class="twitch-streams">
+                @foreach (var stream in twitchStreams)
+                {
+                    <div class="twitch-stream-item" @onclick="() => ShowStream(stream)">
+
+                        @if (stream.IsVisible)
+                        {
+                            <iframe src="https://player.twitch.tv/?channel=@(stream.TwitchUserName)&autoplay=false&parent=www.ravenfall.stream&parent=ravenfall.stream&parent=www.ravenfall.gg&parent=ravenfall.gg&parent=localhost"
+                        height="180"
+                        width="320"
+                        frameborder="0"
+                        scrolling="no"
+                        allowfullscreen="true">
+                            </iframe>
+                        }
+                        else
+                        {
+                            <div class="twitch-stream-header">
+                                <div class="streamer-name">@stream.TwitchUserName</div>
+                                <div class="streamer-title">@stream.UserTitle</div>
+                                <div class="streamer-details">@stream.PlayerCount players</div>
+                            </div>
+                            <div class="stream-view" style="background: url('@("https://static-cdn.jtvnw.net/previews-ttv/live_user_"+stream.TwitchUserName+"-320x180.jpg")')">
+                                <i class="fas fa-play"></i>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
 </div>
 
 @code {
-  private IReadOnlyList<TwitchStream> twitchStreams;
-  protected override async Task OnInitializedAsync()
-  {
-    twitchStreams = await Task.Run(() => TwitchService.GetTwitchStreams());
-  }
+    private IReadOnlyList<TwitchStream> twitchStreams;
+    protected override async Task OnInitializedAsync()
+    {
+        twitchStreams = await Task.Run(() => TwitchService.GetTwitchStreams());
+    }
+
+    private void ShowStream(TwitchStream stream)
+    {
+        if (stream.IsVisible) return;
+        stream.IsVisible = true;
+        InvokeAsync(StateHasChanged);
+    }
 }

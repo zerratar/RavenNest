@@ -28,6 +28,12 @@ namespace RavenNest.Blazor.Pages.Front
                     .ToList());
         }
 
+        private void ShowStream(TwitchStream stream)
+        {
+            if (stream.IsVisible) return;
+            stream.IsVisible = true;
+            InvokeAsync(StateHasChanged);
+        }
         public void OpenNewsPage()
         {
             NavigationManager.NavigateTo("https://medium.com/ravenfall");

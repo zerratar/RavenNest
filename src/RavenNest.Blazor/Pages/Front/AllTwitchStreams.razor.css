@@ -3,6 +3,29 @@
     padding: 30px 100px 50px 100px;
 }
 
+.stream-view {
+    height: 180px;
+    width: 320px;
+    box-sizing: border-box;
+    background-color: black;
+    background-size: contain;
+    color: white;
+    cursor: pointer;
+}
+
+
+i.fas.fa-play {
+    color: white;
+    z-index: 1;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    line-height: 180px;
+    text-align: center;
+    font-size: 54pt;
+    text-shadow: 3px 4px 6px rgb(0 0 0 / 20%);
+}
+
 .top-section {
     background-image: url('/imgs/TopImage.jpg');
     width: 100vw;
@@ -26,7 +49,7 @@
 
 
 .twitch-stream-item {
-    width: 360px;
+    width: 320px;
 }
 
 .streamer-name {
@@ -50,15 +73,15 @@
 }
 
 .twitch-content {
-    width:100%;
+    width: 100%;
     max-width: 100%;
 }
 
 .twitch-stream-header {
     position: absolute;
     box-sizing: border-box;
-    width: 360px;
-    padding: 7px 15px 40px 15px;
+    width: 320px;
+    padding: 7px 15px 108px 15px;
     background: linear-gradient(180deg, black, rgba(0,0,0,0.75), transparent);
     color: white;
 }
