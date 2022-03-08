@@ -238,6 +238,7 @@ p.invalid {
     background-size: contain;
     color: white;
     cursor: pointer;
+    margin-bottom: 7px;
 }
 
 i.fas.fa-play {

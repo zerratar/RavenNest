@@ -2360,28 +2360,29 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 var gains = characterSessionState.ExpGain;
+                var user = gameData.GetUser(character.UserId);
+                var updated = false;
+                var timeSinceLastSkillUpdate = DateTime.UtcNow - characterSessionState.LastSkillUpdate;
+                var existingLevel = skills.GetLevel(skillIndex);
 
                 if (level > GameMath.MaxLevel)
                 {
-                    logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Tried to set level above max.");
-                    BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
                     return true;
                 }
 
-                var updated = false;
-                var timeSinceLastSkillUpdate = DateTime.UtcNow - characterSessionState.LastSkillUpdate;
-                var user = gameData.GetUser(character.UserId);
-
-                var existingLevel = skills.GetLevel(skillIndex);
-                if (level > 100 && existingLevel < level * 0.5)
+                if (!user.IsAdmin.GetValueOrDefault() && user.IsModerator.GetValueOrDefault())
                 {
-                    if (timeSinceLastSkillUpdate <= TimeSpan.FromSeconds(10))
+                    if (level > 100 && existingLevel < level * 0.5)
                     {
-                        logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Level changed from " + existingLevel + " to " + level);
-                        BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
-                        return true;
+                        if (timeSinceLastSkillUpdate <= TimeSpan.FromSeconds(10))
+                        {
+                            logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Level changed from " + existingLevel + " to " + level);
+                            BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
+                            return true;
+                        }
                     }
                 }
+
 
                 if (existingLevel != level)
                 {
@@ -2569,13 +2570,6 @@ namespace RavenNest.BusinessLogic.Game
 
                 var gains = characterSessionState.ExpGain;
 
-                if (level != null && level.Length > 0 && level.Any(x => x > GameMath.MaxLevel))
-                {
-                    logger.LogError("UpdateExperience: The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Tried to set level above max.");
-                    BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
-                    return true;
-                }
-
                 var updated = false;
                 var timeSinceLastSkillUpdate = DateTime.UtcNow - characterSessionState.LastSkillUpdate;
                 var user = gameData.GetUser(character.UserId);
@@ -2586,66 +2580,31 @@ namespace RavenNest.BusinessLogic.Game
                     var skillLevel = level != null ? level[skillIndex] : 0;
                     var xp = experience[skillIndex];
 
-                    //// Backward compability
-                    //if (skillLevel == 0)
-                    //{
-                    //    if (skills == null) continue;
-
-                    //    var maxXP = GameMath.OLD_LevelToExperience(170);
-                    //    var curLevel = skills.GetLevel(skillIndex);
-                    //    var minXP = GameMath.OLD_LevelToExperience(curLevel);
-                    //    if (xp > minXP && xp < maxXP && curLevel <= 170)
-                    //    {
-                    //        skillLevel = GameMath.OLD_ExperienceToLevel(xp);
-                    //        xp -= GameMath.OLD_LevelToExperience(skillLevel);
-                    //        logger.LogWarning(character.Name + ". (Skill Index: " + skillIndex + ") Client did not provide level data. Saving using old way of saving. Session: " + sessionOwner?.UserName + " (" + gameSession.Id + "), Client Version: " + sessionState.ClientVersion);
-                    //    }
-                    //}
-                    //if (level == null && skillLevel == 0)
-                    //    continue;
-                    //// throw new Exception("Unable to save exp for " + character.Name + ". Client did not provide level data. Session: " + sessionOwner?.UserName + " (" + gameSession.Id + "), Client Version: " + sessionState.ClientVersion);
-
-                    //++savedSkillsCount;
-                    //if (skillLevel <= 170 &&
-                    //    experience[skillIndex] >= GameMath.ExperienceForLevel(skillLevel))
-                    //{
-                    //    xp -= GameMath.OLD_LevelToExperience(skillLevel);
-                    //    if (xp < 0) xp = 0;
-                    //}
-
-
                     var existingLevel = skills.GetLevel(skillIndex);
 
-
-
-                    if (skillLevel > 100 && existingLevel < skillLevel * 0.5)
+                    if (!user.IsAdmin.GetValueOrDefault() && user.IsModerator.GetValueOrDefault())
                     {
-                        if (timeSinceLastSkillUpdate <= TimeSpan.FromSeconds(10))
+                        if (skillLevel > 100 && existingLevel < skillLevel * 0.5)
                         {
-                            logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Level changed from " + existingLevel + " to " + skillLevel);
-                            BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
-                            return true;
+                            if (timeSinceLastSkillUpdate <= TimeSpan.FromSeconds(10))
+                            {
+                                logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Level changed from " + existingLevel + " to " + skillLevel);
+                                BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
+                                return true;
+                            }
                         }
                     }
 
-                    //// if the existing level is higher than the new one. In case a player tries to hide that they changed their level
-                    //// and we didnt detect when they did change their level.. Hehehe
-                    //if (existingLevel > skillLevel * 1.05m)
-                    //{
-                    //    logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Reduced the level by more than 5%. This should not be possible");
-                    //    BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
-                    //    return false;
-                    //}
-
-                    //var existingExp = skills.GetExperience(skillIndex);
-
-                    if (existingLevel != skillLevel)
+                    if (skillLevel <= GameMath.MaxLevel)
                     {
-                        UpdateCharacterSkillRecord(character.Id, skillIndex, skillLevel, xp);
-                    }
+                        if (existingLevel != skillLevel)
+                        {
+                            UpdateCharacterSkillRecord(character.Id, skillIndex, skillLevel, xp);
+                        }
 
-                    skills.Set(skillIndex, skillLevel, experience[skillIndex]);
-                    updated = true;
+                        skills.Set(skillIndex, skillLevel, experience[skillIndex]);
+                        updated = true;
+                    }
                 }
 
                 if (updated)

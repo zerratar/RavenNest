@@ -15,6 +15,7 @@
         Phantom,
         Lionsbane,
         Ether,
-        Ancient
+        Ancient,
+        Atlarus
     }
 }
