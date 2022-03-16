@@ -35,6 +35,14 @@ namespace RavenNest.Controllers
             return villageManager.AssignPlayerToHouse(sessionToken.SessionId, slot, userId);
         }
 
+        [HttpPost("{slot}/assign-village")]
+        public bool AssignVillage([FromBody] VillageAssignRequest request)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return villageManager.AssignVillage(sessionToken.SessionId, request.Type, request.CharacterIds);
+        }
+
         [HttpGet("{slot}/assign-character/{characterId}")]
         public bool AssignPlayerByCharacterAsync(int slot, Guid characterId)
         {
@@ -67,5 +75,11 @@ namespace RavenNest.Controllers
             AssertSessionTokenValidity(sessionToken);
             return villageManager.GetVillageInfo(sessionToken.SessionId);
         }
+    }
+
+    public class VillageAssignRequest
+    {
+        public int Type { get; set; }
+        public Guid[] CharacterIds { get; set; }
     }
 }

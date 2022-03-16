@@ -7,8 +7,8 @@ namespace RavenNest.DataModels
         public const double MinExpForLevel = 1000;
         public const double ExpPerBit = 5;
         public const double ExpPerSubscription = 500;
-        public const double ExpPerSecond = 0.045d; // 2h ish for first level.
-        public const double ActivityMultiplier = 10d;
+        public const double ExpPerSecond = 0.2d; // 2h ish for first level.
+        public const double SubscriberMultiplier = 5d;
 
         public const int PointsPerCheeredBit = 1;
         public const int PointsPerGiftedSub = 200;
