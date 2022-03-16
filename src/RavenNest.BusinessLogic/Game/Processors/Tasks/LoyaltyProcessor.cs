@@ -52,8 +52,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             }
             lastUpdate[user.Id] = now;
 
-            var isSubMdVip = loyalty.IsSubscriber || loyalty.IsModerator || loyalty.IsVip;
-            var activityMultiplier = isSubMdVip ? UserLoyalty.ActivityMultiplier : 1d;
+            var isSubMdVip = loyalty.IsSubscriber;
+            var activityMultiplier = isSubMdVip ? UserLoyalty.SubscriberMultiplier : 1;
             loyalty.AddExperience((double)elapsed.TotalSeconds * UserLoyalty.ExpPerSecond * activityMultiplier);
         }
 

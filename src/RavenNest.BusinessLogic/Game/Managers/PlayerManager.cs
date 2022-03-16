@@ -3052,7 +3052,10 @@ namespace RavenNest.BusinessLogic.Game
                 InOnsen = update.InOnsen,
                 Island = update.Island,
                 Task = update.Task,
-                TaskArgument = update.TaskArgument
+                TaskArgument = update.TaskArgument,
+                X = update.X,
+                Y = update.Y,
+                Z = update.Z,
             };
             return state;
         }
