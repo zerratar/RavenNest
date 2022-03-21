@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RavenNest.Blazor.Services.Models;
 using RavenNest.BusinessLogic;
@@ -11,6 +12,7 @@ namespace RavenNest.Blazor.Services
 {
     public class AuthService : RavenNestService
     {
+        private readonly ILogger<AuthService> logger;
         private readonly IRavenBotApiClient ravenbotApi;
         private readonly IGameData gameData;
         private readonly IAuthManager authManager;
@@ -20,6 +22,7 @@ namespace RavenNest.Blazor.Services
 
         public AuthService(
             IOptions<AppSettings> settings,
+            ILogger<AuthService> logger,
             IRavenBotApiClient ravenbotApi,
             IGameData gameData,
             IAuthManager authManager,
@@ -29,6 +32,7 @@ namespace RavenNest.Blazor.Services
             LogoService logoService)
             : base(accessor, sessionInfoProvider)
         {
+            this.logger = logger;
             this.ravenbotApi = ravenbotApi;
             this.gameData = gameData;
             this.authManager = authManager;
@@ -107,13 +111,26 @@ namespace RavenNest.Blazor.Services
         {
             var id = SessionCookie.GetSessionId(Context);
             var auth = authManager.Authenticate(model.Username, model.Password);
+            if (auth == null)
+            {
+                logger.LogError("Login for " + model.Username + " failed. " + nameof(IAuthManager.Authenticate) + " returned null.");
+                return new SessionInfo { };
+            }
+
             var user = gameData.GetUser(auth.UserId);
             if (user != null && user.Status >= 1)
             {
                 return new SessionInfo() { Authenticated = false };
             }
 
-            return (await sessionInfoProvider.SetAuthTokenAsync(id, auth)).SessionInfo;
+            var result = await sessionInfoProvider.SetAuthTokenAsync(id, auth);
+            if (result == null)
+            {
+                logger.LogError("Login for " + model.Username + " failed. " + nameof(ISessionInfoProvider.SetAuthTokenAsync) + " returned null.");
+                return new SessionInfo { };
+            }
+
+            return result.SessionInfo;
         }
 
         public string GetTwitchLoginUrl()
