@@ -93,7 +93,7 @@ namespace RavenNest.Blazor.Services
                         return sessionInfo;
                     }
 
-                    if (!u.UserName.Equals(user.Login, System.StringComparison.OrdinalIgnoreCase))
+                    if (!u.UserName.Equals(user.Login, System.StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(user.Login))
                     {
                         u.UserName = user.Login;
                         sessionInfo.UserName = user.Login;

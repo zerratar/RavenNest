@@ -859,6 +859,11 @@ namespace RavenNest.BusinessLogic.Data
             {
                 Remove(badUser);
             }
+
+            if (toRemove.Count > 0)
+            {
+                logger.LogError("Removed " + toRemove.Count + " users without username or users with twitch user id being a guid.");
+            }
         }
 
         private void UpgradeSkillLevels(EntitySet<Skills, Guid> skills)

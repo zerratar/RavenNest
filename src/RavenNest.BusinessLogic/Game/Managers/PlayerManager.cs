@@ -185,7 +185,7 @@ namespace RavenNest.BusinessLogic.Game
                     return result;
                 }
 
-                if (string.IsNullOrEmpty(user.UserName))
+                if (!string.IsNullOrEmpty(userName))
                 {
                     user.UserName = userName;
                     user.DisplayName = userName;
@@ -2774,6 +2774,18 @@ namespace RavenNest.BusinessLogic.Game
             var user = gameData.GetUserByTwitchId(playerData.UserId);
             if (user == null)
             {
+                if (string.IsNullOrEmpty(playerData.UserId))
+                {
+                    logger.LogError("Trying to create a new user but twitch user id is null.");
+                    return null;
+                }
+
+                if (string.IsNullOrEmpty(playerData.UserName))
+                {
+                    logger.LogError("Trying to create a new user but username is null.");
+                    return null;
+                }
+
                 user = new User
                 {
                     Id = Guid.NewGuid(),
@@ -2801,6 +2813,13 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (string.IsNullOrEmpty(playerData.UserId))
                 {
+                    logger.LogError("Trying to create a new user but twitch user id is null.");
+                    return null;
+                }
+
+                if (string.IsNullOrEmpty(playerData.UserName))
+                {
+                    logger.LogError("Trying to create a new user but username is null.");
                     return null;
                 }
 
