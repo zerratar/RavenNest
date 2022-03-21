@@ -188,7 +188,6 @@ namespace RavenNest.Sessions
             SetString(sessionId, AuthState, sessionState);
 
             result.SessionInfo = si;
-            
 
             return result;
         }
