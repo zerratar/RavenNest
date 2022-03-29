@@ -9,6 +9,7 @@ using RavenNest.Sessions;
 
 namespace RavenNest.Controllers
 {
+    [ApiExplorerSettings(IgnoreApi = true)]
     [Route("api/[controller]")]
     [ApiController]
     //[ApiDescriptor(Name = "Game API", Description = "Used for handling game sessions and polling game events.")]

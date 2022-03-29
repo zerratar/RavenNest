@@ -12,6 +12,7 @@ namespace RavenNest.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [ApiExplorerSettings(IgnoreApi = true)]
     public class ServerController : ControllerBase
     {
         private const string InsufficientPermissions = "You do not have permissions to call this API";

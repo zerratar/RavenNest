@@ -52,6 +52,10 @@ namespace RavenNest.Blazor
                 options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault | JsonIgnoreCondition.WhenWritingNull;
             });
 
+
+            //services.AddEndpointsApiExplorer();
+            services.AddSwaggerGen();
+
             services.AddLogging(loggingBuilder =>
             {
                 var loggingDbContext = new RavenfallDbContextProvider(Options.Create(appSettings));
@@ -63,7 +67,7 @@ namespace RavenNest.Blazor
             //    options.CheckConsentNeeded = context => true;
             //    options.MinimumSameSitePolicy = SameSiteMode.None;
             //});
-
+            services.AddMvc();
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowAllOrigins", builder => builder.AllowAnyOrigin());
@@ -147,8 +151,8 @@ namespace RavenNest.Blazor
                .AddRedirectToHttps()
             );
 
-
-
+            app.UseSwagger();
+            app.UseSwaggerUI();
             app.UseStaticFiles();
             app.Map("/download/latest", builder =>
             {
@@ -200,6 +204,7 @@ namespace RavenNest.Blazor
                     endpoints.MapFallbackToController("Index", "Home");
                 });
             });
+
         }
 
         private void OnApplicaftionStopping(IApplicationBuilder app)

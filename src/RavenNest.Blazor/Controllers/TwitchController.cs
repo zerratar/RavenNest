@@ -73,6 +73,7 @@ namespace RavenNest.Controllers
                 this.unknownClanLogoBytes = System.IO.File.ReadAllBytes(b);
             }
         }
+        [ApiExplorerSettings(IgnoreApi = true)]
 
         [HttpGet("authorize")]
         public async Task<ActionResult> OAuthAuthorize()
@@ -155,6 +156,7 @@ namespace RavenNest.Controllers
             catch { }
             return NotFound();
         }
+        [ApiExplorerSettings(IgnoreApi = true)]
 
         [HttpGet("clear-logo/{userId}")]
         public bool ClearClanLogoAsync(string userId)
@@ -176,7 +178,7 @@ namespace RavenNest.Controllers
             catch { }
             return false;
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("session/{token}")]
         [MethodDescriptor(Name = "Set Twitch Access Token", Description = "Updates current session with the set Twitch access token, used as an user identifier throughout the website.")]
         public async Task<SessionInfo> SetAccessToken(string token)
@@ -190,13 +192,13 @@ namespace RavenNest.Controllers
             }
             return result.SessionInfo;
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/set-task/{broadcasterId}/{characterId}/{task}")]
         public bool SetTask(string broadcasterId, Guid characterId, string task)
         {
             return SetTask(broadcasterId, characterId, task, null);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/set-task/{broadcasterId}/{characterId}/{task}/{taskArgument}")]
         public bool SetTask(string broadcasterId, Guid characterId, string task, string taskArgument)
         {
@@ -232,7 +234,7 @@ namespace RavenNest.Controllers
             playerManager.SendPlayerTaskToGame(activeSession, character, task, taskArgument);
             return true;
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/player/{broadcasterId}")]
         public WebsitePlayer GetActivePlayer(string broadcasterId)
         {
@@ -252,7 +254,7 @@ namespace RavenNest.Controllers
             return null;
         }
 
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/leave/{broadcasterId}/{characterId}")]
         public bool PlayerLeave(string broadcasterId, Guid characterId)
         {
@@ -294,7 +296,7 @@ namespace RavenNest.Controllers
             // playerManager.RemovePlayerFromActiveSession(activeSession, characterId)
             return false;
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/create-join/{broadcasterId}")]
         public async Task<ExtensionPlayerJoinResult> PlayerJoin(string broadcasterId)
         {
@@ -372,7 +374,7 @@ namespace RavenNest.Controllers
             return result;
         }
 
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/join/{broadcasterId}/{characterId}")]
         public ExtensionPlayerJoinResult PlayerJoin(string broadcasterId, Guid characterId)
         {
@@ -441,7 +443,7 @@ namespace RavenNest.Controllers
 
             return result;
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
 
         [HttpGet("extension/new/{broadcasterId}/{userId}/{username}/{displayName}")]
         public Task<SessionInfo> CreateUserAsync(string broadcasterId, string userId, string username, string displayName)
@@ -453,7 +455,7 @@ namespace RavenNest.Controllers
             }
             return SetExtensionViewer(broadcasterId, userId);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/{broadcasterId}")]
         public StreamerInfo GetStreamerInfo(string broadcasterId)
         {
@@ -502,7 +504,7 @@ namespace RavenNest.Controllers
 
             return result;
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/{broadcasterId}/{viewerId}")]
         public async Task<SessionInfo> SetExtensionViewer(string broadcasterId, string viewerId)
         {
@@ -513,7 +515,7 @@ namespace RavenNest.Controllers
             var result = await sessionInfoProvider.CreateTwitchUserSessionAsync(session, broadcasterId, viewerId);
             return result;
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("access")]
         [MethodDescriptor(Name = "Get Access Token Request URL", Description = "Gets a Twitch access token request url with the scope user:read:email.")]
         public string GetAccessTokenRequestUrl()
@@ -537,6 +539,7 @@ namespace RavenNest.Controllers
             //}
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("user")]
         [MethodDescriptor(Name = "Get Twitch User", Description = "After authenticating with Twitch, this can be used to get information about the logged in user.")]
         public async Task<string> GetTwitchUser()

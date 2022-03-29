@@ -70,6 +70,7 @@ namespace RavenNest.Controllers
         }
 
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{clientVersion}/{accessKey}")]
         public async Task<SessionToken> BeginSessionAsync(string clientVersion, string accessKey, Two<bool, float> param)
         {
@@ -97,6 +98,7 @@ namespace RavenNest.Controllers
             return session;
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpDelete("raid/{username}")]
         public bool EndSessionAndRaid(string username, Single<bool> war)
         {
@@ -105,6 +107,7 @@ namespace RavenNest.Controllers
             return this.sessionManager.EndSessionAndRaid(session, username, war.Value);
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("raid/{username}")]
         public bool PostEndSessionAndRaid(string username, Single<bool> war)
         {
@@ -113,6 +116,7 @@ namespace RavenNest.Controllers
             return this.sessionManager.EndSessionAndRaid(session, username, war.Value);
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("raid/{username}/{war}")]
         public bool GetEndSessionAndRaid(string username, bool war)
         {
@@ -140,6 +144,7 @@ namespace RavenNest.Controllers
             }
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("end")]
         public void GetEndSession()
         {
@@ -148,6 +153,7 @@ namespace RavenNest.Controllers
             this.sessionManager.EndSession(session);
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         public void PostEndSession()
         {
@@ -156,6 +162,7 @@ namespace RavenNest.Controllers
             this.sessionManager.EndSession(session);
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpDelete]
         public void EndSession()
         {
@@ -164,6 +171,7 @@ namespace RavenNest.Controllers
             this.sessionManager.EndSession(session);
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("attach")]
         public bool AttachPlayers(Many<Guid> characterIds)
         {
@@ -188,6 +196,7 @@ namespace RavenNest.Controllers
             return gameManager.GetScrolls(session, characterId);
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("use-exp-scroll/{characterId}/{count}")]
         public int UseExpScroll(Guid characterId, int count)
         {
@@ -197,6 +206,7 @@ namespace RavenNest.Controllers
             return gameManager.UseExpScroll(session, characterId, count);
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("use-scroll/{characterId}/{scrollType}")]
         public ScrollUseResult UseScroll(Guid characterId, string scrollType)
         {

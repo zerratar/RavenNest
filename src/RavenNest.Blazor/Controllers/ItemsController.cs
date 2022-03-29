@@ -32,6 +32,10 @@ namespace RavenNest.Controllers
             this.authManager = authManager;
         }
 
+        /// <summary>
+        /// Get all available items
+        /// </summary>
+        /// <returns>This will return the list of all available items in Ravenfall. This is required as no other endpoints will give out any item data other than item id. This list of items is then necessary to do an item lookup.</returns>
         [HttpGet]
         [MethodDescriptor(
             Name = "Get all available items",
@@ -50,6 +54,10 @@ namespace RavenNest.Controllers
             return itemCollection;
         }
 
+        /// <summary>
+        /// Get all redeemable items
+        /// </summary>
+        /// <returns>This will return the list of all redeemable items in Ravenfall.</returns>
         [HttpGet("redeemable")]
         [MethodDescriptor(
             Name = "Get all redeemable items",
@@ -67,7 +75,7 @@ namespace RavenNest.Controllers
             var itemCollection = itemManager.GetRedeemableItems();
             return itemCollection;
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         [MethodDescriptor(
             Name = "Add a new item to the database",
@@ -82,7 +90,7 @@ namespace RavenNest.Controllers
             AssertAdminAuthToken(authToken);
             return this.itemManager.TryAddItem(item);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpDelete("{itemId}")]
         [MethodDescriptor(
             Name = "Delete an item from the database",
@@ -97,7 +105,7 @@ namespace RavenNest.Controllers
             AssertAdminAuthToken(authToken);
             return this.itemManager.RemoveItem(itemId);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPut]
         [MethodDescriptor(
             Name = "Update an item in the database",

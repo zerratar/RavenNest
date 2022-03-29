@@ -110,6 +110,7 @@ namespace RavenNest.Controllers
             return new SessionInfo();
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("signup")]
         [MethodDescriptor(
             Name = "Signup",
