@@ -18,6 +18,7 @@ namespace RavenNest.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [ApiExplorerSettings(IgnoreApi = true)]
     public class PatreonController : ControllerBase
     {
         private readonly ILogger<PatreonController> logger;

@@ -75,33 +75,33 @@ namespace RavenNest.Controllers
         {
             return GetPlayerAsync();
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{userId}")]
         //[MethodDescriptor(Name = "Add Player to Game Session", Description = "Adds the target player to the ongoing session. This will lock the target player to the session and then return the player data.", RequiresSession = true)]
         public Task<PlayerJoinResult> PlayerJoin(string userId, Single<string> username)
         {
             return playerManager.AddPlayer(AssertGetSessionToken(), userId, username.Value);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{userId}/{identifier}")]
         //[MethodDescriptor(Name = "Add Player to Game Session", Description = "Adds the target player to the ongoing session. This will lock the target player to the session and then return the player data.", RequiresSession = true)]
         public Task<PlayerJoinResult> PlayerJoin(string userId, string identifier, Single<string> username)
         {
             return playerManager.AddPlayer(AssertGetSessionToken(), userId, username.Value, identifier);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("loyalty")]
         public bool SendLoyalty([FromBody] LoyaltyUpdate data)
         {
             return playerManager.AddLoyaltyData(AssertGetSessionToken(), data);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         public Task<PlayerJoinResult> PlayerJoin([FromBody] PlayerJoinData playerData)
         {
             return playerManager.AddPlayer(AssertGetSessionToken(), playerData);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("restore")]
         public Task<PlayerRestoreResult> Restore([FromBody] PlayerRestoreData players)
         {
@@ -111,7 +111,7 @@ namespace RavenNest.Controllers
             //});
             return playerManager.AddManyPlayers(AssertGetSessionToken(), players);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpDelete("{characterId}")]
         public Task<bool> RemovePlayer(Guid characterId)
         {
@@ -151,77 +151,79 @@ namespace RavenNest.Controllers
 
             return playerManager.GetPlayer(AssertGetSessionToken(), userId);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("highscore/{characterId}/{skillName}")]
         public int GetHighscore(Guid characterId, string skillName)
         {
             return playerManager.GetHighscore(AssertGetSessionToken(), characterId, skillName);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/redeem-tokens/{amount}/{exact}")]
         public int RedeemTokens(string userId, int amount, bool exact)
         {
             return playerManager.RedeemTokens(AssertGetSessionToken(), userId, amount, exact);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{characterId}/redeem-item/{itemId}")]
         public RedeemItemResult RedeemItem(Guid characterId, Guid itemId)
         {
             return playerManager.RedeemItem(AssertGetSessionToken(), characterId, itemId);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/add-tokens/{amount}")]
         public bool AddTokens(string userId, int amount)
         {
             return playerManager.AddTokens(AssertGetSessionToken(), userId, amount);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/craft/{item}")]
         public AddItemResult CraftItem(string userId, Guid item)
         {
             return playerManager.CraftItem_Old(AssertGetSessionToken(), userId, item);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/craft/{item}/{amount}")]
         public AddItemResult CraftItem(string userId, Guid item, int amount)
         {
             return playerManager.CraftItem_Old(AssertGetSessionToken(), userId, item, amount);
         }
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/craft-many/{item}/{amount}")]
         public CraftItemResult CraftItems(string userId, Guid item, int amount)
         {
             return playerManager.CraftItems(AssertGetSessionToken(), userId, item, amount);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/enchant-item/{inventoryItemId}")]
         public ItemEnchantmentResult EnchantItem(string userId, Guid inventoryItemId)
         {
             return playerManager.EnchantItem(AssertGetSessionToken(), userId, inventoryItemId);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/item/{item}")]
         public AddItemResult AddItem(string userId, Guid item)
         {
             return playerManager.AddItem(AssertGetSessionToken(), userId, item);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{userId}/item-instance")]
         public Guid AddItemInstance(string userId, [FromBody] Models.InventoryItem instance)
         {
             return playerManager.AddItemInstance(AssertGetSessionToken(), userId, instance);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/toggle-helmet")]
         public bool UnEquipItem(string userId)
         {
             return playerManager.ToggleHelmet(AssertGetSessionToken(), userId);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/unequip/{item}")]
         public bool UnEquipItem(string userId, Guid item)
         {
             return playerManager.UnequipItem(AssertGetSessionToken(), userId, item);
         }
+        [ApiExplorerSettings(IgnoreApi = true)]
 
         [HttpGet("{userId}/unequip-instance/{inventoryItemId}")]
         public bool UnEquipItemInstance(string userId, Guid inventoryItemId)
@@ -229,43 +231,43 @@ namespace RavenNest.Controllers
             return playerManager.UnequipItemInstance(AssertGetSessionToken(), userId, inventoryItemId);
         }
 
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/unequipall")]
         public bool UnequipAllItems(string userId)
         {
             return playerManager.UnequipAllItems(AssertGetSessionToken(), userId);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/equip-instance/{item}")]
         public bool EquipItemInstance(string userId, Guid inventoryItemId)
         {
             return playerManager.EquipItemInstance(AssertGetSessionToken(), userId, inventoryItemId);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/equip/{item}")]
         public bool EquipItem(string userId, Guid item)
         {
             return playerManager.EquipItem(AssertGetSessionToken(), userId, item);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/equipall")]
         public bool EquipBestItems(string userId)
         {
             return playerManager.EquipBestItems(AssertGetSessionToken(), userId);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/gift/{receiverUserId}/{itemId}/{amount}")]
         public long GiftItem(string userId, string receiverUserId, Guid itemId, long amount)
         {
             return playerManager.GiftItem(AssertGetSessionToken(), userId, receiverUserId, itemId, amount);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/vendor/{item}/{amount}")]
         public long VendorItem(string userId, Guid item, long amount)
         {
             return playerManager.VendorItem(AssertGetSessionToken(), userId, item, amount);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{userId}/appearance")]
         public async Task<bool> UpdateSyntyAppearanceAsync(string userId, SyntyAppearance appearance)
         {
@@ -278,7 +280,7 @@ namespace RavenNest.Controllers
 
             return await UpdateSyntyAppearanceAsync(userId, "1", appearance);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{userId}/{identifier}/appearance")]
         public async Task<bool> UpdateSyntyAppearanceAsync(string userId, string identifier, SyntyAppearance appearance)
         {
@@ -299,7 +301,7 @@ namespace RavenNest.Controllers
 
             return playerManager.UpdateAppearance(AssertGetSessionToken(), userId, appearance);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{userId}/statistics")]
         public bool UpdateStatistics(string userId, Many<double> statistics)
         {

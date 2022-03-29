@@ -26,7 +26,7 @@ namespace RavenNest.Controllers
         {
             this.villageManager = villageManager;
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{slot}/assign/{userId}")]
         public bool AssignPlayerAsync(int slot, string userId)
         {
@@ -34,7 +34,7 @@ namespace RavenNest.Controllers
             AssertSessionTokenValidity(sessionToken);
             return villageManager.AssignPlayerToHouse(sessionToken.SessionId, slot, userId);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{slot}/assign-village")]
         public bool AssignVillage([FromBody] VillageAssignRequest request)
         {
@@ -42,7 +42,7 @@ namespace RavenNest.Controllers
             AssertSessionTokenValidity(sessionToken);
             return villageManager.AssignVillage(sessionToken.SessionId, request.Type, request.CharacterIds);
         }
-
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{slot}/assign-character/{characterId}")]
         public bool AssignPlayerByCharacterAsync(int slot, Guid characterId)
         {
@@ -50,6 +50,7 @@ namespace RavenNest.Controllers
             AssertSessionTokenValidity(sessionToken);
             return villageManager.AssignPlayerToHouse(sessionToken.SessionId, slot, characterId);
         }
+        [ApiExplorerSettings(IgnoreApi = true)]
 
         [HttpGet("{slot}/build/{type}")]
         public bool BuildHouseAsync(int slot, int type)
@@ -58,6 +59,7 @@ namespace RavenNest.Controllers
             AssertSessionTokenValidity(sessionToken);
             return villageManager.BuildHouse(sessionToken.SessionId, slot, type);
         }
+        [ApiExplorerSettings(IgnoreApi = true)]
 
         [HttpGet("{slot}/remove")]
         public bool RemoveHouseAsync(int slot)
@@ -67,7 +69,7 @@ namespace RavenNest.Controllers
             return villageManager.RemoveHouse(sessionToken.SessionId, slot);
         }
 
-
+        
         [HttpGet]
         public VillageInfo GetVillageInfo()
         {

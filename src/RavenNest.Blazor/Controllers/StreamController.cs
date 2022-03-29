@@ -10,6 +10,7 @@ using RavenNest.BusinessLogic.Twitch.Extension;
 
 namespace RavenNest.Controllers
 {
+    [ApiExplorerSettings(IgnoreApi = true)]
     [Route("api/[controller]")]
     [ApiController]
     public class StreamController : ControllerBase
