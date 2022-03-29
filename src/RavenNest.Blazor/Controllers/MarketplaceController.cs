@@ -46,6 +46,7 @@ namespace RavenNest.Controllers
         {
             return this.marketplace.GetItems(offset, size);
         }
+        [ApiExplorerSettings(IgnoreApi = true)]
 
         [HttpGet("{userId}/sell/{itemId}/{amount}/{pricePerItem}")]
         [MethodDescriptor(
@@ -65,6 +66,7 @@ namespace RavenNest.Controllers
             return this.marketplace.SellItem(session, userId, itemId, amount, pricePerItem);
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/buy/{itemId}/{amount}/{maxPricePerItem}")]
         [MethodDescriptor(
             Name = "Buy items on the marketplace",

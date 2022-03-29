@@ -320,6 +320,7 @@ namespace RavenNest.Controllers
         //    return playerManager.UpdateMany(AssertGetSessionToken(), states.Values);
         //}
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extended/{identifier}")]
         public async Task<WebsitePlayer> GetPlayerExtendedAsync(string identifier)
         {
