@@ -615,8 +615,7 @@ namespace RavenNest.BusinessLogic.Game
 #endif
 
                 character.UserIdLock = null;
-                var gameEvent = gameData.CreateSessionEvent(
-                 GameEventType.PlayerRemove,
+                var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRemove,
                  currentSession,
                  new PlayerRemove()
                  {
@@ -660,8 +659,7 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var characterUser = gameData.GetUser(character.UserId);
-            var gameEvent = gameData.CreateSessionEvent(
-                GameEventType.PlayerRemove,
+            var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRemove,
                 currentSession,
                 new PlayerRemove()
                 {
@@ -1527,8 +1525,7 @@ namespace RavenNest.BusinessLogic.Game
             var session = gameData.GetSessionByUserId(sessionUserId.Value);
             if (session != null)
             {
-                gameData.Add(gameData.CreateSessionEvent(equipped
-                    ? GameEventType.ItemEquip : GameEventType.ItemUnEquip, session, data));
+                gameData.Add(gameData.CreateSessionEvent(equipped? GameEventType.ItemEquip : GameEventType.ItemUnEquip, session, data));
                 TrySendToExtensionAsync(character, data);
             }
         }
@@ -2070,57 +2067,43 @@ namespace RavenNest.BusinessLogic.Game
                 User = gameData.GetUser(x.UserId),
                 Character = x
             })
-            .Where(x => x.Character != null && x.User != null)
-            .Select(x => x.User.MapForAdmin(gameData, x.Character))
-            .ToList();
+            .SelectWhere(x => x.Character != null && x.User != null, x => x.User.MapForAdmin(gameData, x.Character));
         }
 
         public IReadOnlyList<Player> GetPlayerWithoutAdmins()
         {
-            var chars = gameData.GetCharacters();
-            return chars.Select(x => new
-            {
-                User = gameData.GetUser(x.UserId),
-                Character = x
-            })
-            .Where(x => x.Character != null
-                    && x.User != null
-                    && (x.User.Status == null || x.User.Status == 0)
-                    && !x.User.IsModerator.GetValueOrDefault()
-                    && !x.User.IsAdmin.GetValueOrDefault())
-            .Select(x => x.User.Map(gameData, x.Character))
-            .ToList();
+            return GetPlayers((user, character) => user != null && (user.Status == null || user.Status == 0) && !user.IsModerator.GetValueOrDefault() && !user.IsAdmin.GetValueOrDefault());
         }
         public IReadOnlyList<Player> GetHighscorePlayers()
         {
-            var chars = gameData.GetCharacters();
-            return chars.Select(x => new
-            {
-                User = gameData.GetUser(x.UserId),
-                Character = x
-            })
-            .Where(x => x.Character != null
-                    && x.User != null
-                    && (x.User.Status == null || x.User.Status == 0)
-                    && !x.User.IsModerator.GetValueOrDefault()
-                    && !x.User.IsAdmin.GetValueOrDefault()
-                    && !x.User.IsHiddenInHighscore.GetValueOrDefault())
-            .Select(x => x.User.Map(gameData, x.Character))
-            .ToList();
+            return GetPlayers((user, character) => user != null && (user.Status == null || user.Status == 0)
+                    && !user.IsModerator.GetValueOrDefault()
+                    && !user.IsAdmin.GetValueOrDefault()
+                    && !user.IsHiddenInHighscore.GetValueOrDefault());
         }
         public IReadOnlyList<Player> GetPlayers()
         {
+            return GetPlayers((user, character) => user != null && (user.Status == null || user.Status == 0));
+        }
+
+        private IReadOnlyList<Player> GetPlayers(Func<User, Character, bool> predicate)
+        {
             var chars = gameData.GetCharacters();
-            return chars.Select(x => new
+            var result = new List<Player>();
+            foreach (var c in chars)
             {
-                User = gameData.GetUser(x.UserId),
-                Character = x
-            })
-            .Where(x => x.Character != null
-                    && x.User != null
-                    && (x.User.Status == null || x.User.Status == 0))
-            .Select(x => x.User.Map(gameData, x.Character))
-            .ToList();
+                if (c == null)
+                {
+                    continue;
+                }
+
+                var user = gameData.GetUser(c.UserId);
+                if (predicate(user, c))
+                {
+                    result.Add(user.Map(gameData, c));
+                }
+            }
+            return result;
         }
 
         public bool UpdateStatistics(SessionToken token, string userId, double[] statistics, Guid? characterId = null)
@@ -2190,8 +2173,7 @@ namespace RavenNest.BusinessLogic.Game
 
             if (gameSession != null)
             {
-                var gameEvent = gameData.CreateSessionEvent(
-                    GameEventType.PlayerAppearance,
+                var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerAppearance,
                     gameSession,
                     new SyntyAppearanceUpdate
                     {
@@ -2739,8 +2721,7 @@ namespace RavenNest.BusinessLogic.Game
                 : $"{character.Name} joined another session.";
 
             var characterUser = gameData.GetUser(character.UserId);
-            var gameEvent = gameData.CreateSessionEvent(
-                GameEventType.PlayerRemove,
+            var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRemove,
                 gameSession,
                 new PlayerRemove()
                 {
@@ -2755,8 +2736,7 @@ namespace RavenNest.BusinessLogic.Game
         private void SendPlayerAddToSession(Character character, DataModels.GameSession gameSession)
         {
             var characterUser = gameData.GetUser(character.UserId);
-            var gameEvent = gameData.CreateSessionEvent(
-                GameEventType.PlayerAdd,
+            var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerAdd,
                 gameSession,
                 new PlayerAdd()
                 {

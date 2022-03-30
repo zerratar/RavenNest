@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.DataModels;
 using RavenNest.Sessions;
 using System;
 using System.Collections.Generic;
@@ -94,7 +95,7 @@ namespace RavenNest.Blazor.Services
                 var startTime = sessions.Min(x => x.Started);
                 var stopTime = sessions.Max(x => x.Started);
 
-                var stoppedSessions = sessions.Where(x => x.Stopped != null).ToList();
+                var stoppedSessions = sessions.AsList(x => x.Stopped != null);
                 if (stoppedSessions.Count > 0)
                 {
                     var lastStoppedSessionTime = stoppedSessions.Max(x => x.Stopped.Value);

@@ -4,6 +4,7 @@ using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.DataModels;
 using RavenNest.Sessions;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,7 +36,7 @@ namespace RavenNest.Blazor.Services
             return Task.Run(() =>
             {
                 var activeSessions = gameData.GetActiveSessions();
-                return (IReadOnlyList<RavenNest.Models.GameSession>)activeSessions.Select(s => ModelMapper.Map(gameData, s)).ToList();
+                return activeSessions.Select(s => ModelMapper.Map(gameData, s)).AsReadOnlyList();
             });
         }
     }

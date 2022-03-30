@@ -6,15 +6,22 @@ using System.Collections.Concurrent;
 
 namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
+    public class PlayerRestedState
+    {
+        public DateTime Updated;
+        public bool Resting;
+        public double RestedTime;
+    }
+
     public class RestedProcessor : PlayerTaskProcessor
     {
         private readonly ConcurrentDictionary<Guid, DateTime> lastUpdate
             = new ConcurrentDictionary<Guid, DateTime>();
 
-        private readonly ConcurrentDictionary<Guid, DateTime> lastEvent
-            = new ConcurrentDictionary<Guid, DateTime>();
+        private readonly ConcurrentDictionary<Guid, PlayerRestedState> lastEvent
+            = new ConcurrentDictionary<Guid, PlayerRestedState>();
 
-        private readonly TimeSpan RestedEventUpdateInterval = TimeSpan.FromSeconds(1);
+        private readonly TimeSpan RestedEventUpdateInterval = TimeSpan.FromSeconds(5);
         private readonly TimeSpan MaxRestTime = TimeSpan.FromHours(2);
 
         private const double RestedGainFactor = 2.0;
@@ -43,7 +50,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             var now = DateTime.UtcNow;
             if (!lastUpdate.TryGetValue(character.Id, out var lastUpdateTime))
             {
-                lastUpdateTime = now;
+                lastUpdate[character.Id] = (lastUpdateTime = now);
             }
 
             var elapsed = now - lastUpdateTime;
@@ -53,17 +60,18 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             if (!lastEvent.TryGetValue(character.Id, out var lastEventUpdate))
             {
-                lastEventUpdate = DateTime.MinValue;
+                lastEvent[character.Id] = (lastEventUpdate = new PlayerRestedState());
             }
 
             if (requireUpdate)
             {
-                var sinceLastEvent = now - lastEventUpdate;
-                if (sinceLastEvent >= RestedEventUpdateInterval)
+                var sinceLastEvent = now - lastEventUpdate.Updated;
+                var restedTime = (double)(state.RestedTime ?? 0);
+                var isRested = restedTime > 0;
+
+                if (sinceLastEvent >= RestedEventUpdateInterval && (lastEventUpdate.RestedTime != restedTime || lastEventUpdate.Resting != isResting))
                 {
-                    var restedTime = (double)(state.RestedTime ?? 0);
                     var restedPercent = restedTime / MaxRestTime.TotalSeconds;
-                    var isRested = restedTime > 0;
 
                     var data = new Models.PlayerRestedUpdate
                     {
@@ -76,7 +84,10 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
                     var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRestedUpdate, session, data);
                     gameData.Add(gameEvent);
-                    lastEvent[character.Id] = now;
+
+                    lastEventUpdate.RestedTime = restedTime;
+                    lastEventUpdate.Resting = isResting;
+                    lastEventUpdate.Updated = now;
 
                     if (restedTime > 0)
                     {
@@ -84,6 +95,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     }
                 }
             }
+
             lastUpdate[character.Id] = now;
         }
 

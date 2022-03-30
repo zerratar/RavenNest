@@ -5,9 +5,9 @@ namespace RavenNest.DataModels
 {
     public interface IEntitySet
     {
-        ICollection<EntityChangeSet> Added { get; }
-        ICollection<EntityChangeSet> Updated { get; }
-        ICollection<EntityChangeSet> Removed { get; }
+        IReadOnlyList<EntityChangeSet> Added { get; }
+        IReadOnlyList<EntityChangeSet> Updated { get; }
+        IReadOnlyList<EntityChangeSet> Removed { get; }
         DateTime LastModified { get; }
         void ClearChanges();
         void Clear(IReadOnlyList<IEntity> entities);
@@ -17,7 +17,7 @@ namespace RavenNest.DataModels
 
     public interface IEntitySet<TModel, TKey> : IEntitySet
     {
-        ICollection<TModel> Entities { get; }
+        IReadOnlyList<TModel> Entities { get; }
 
         void Add(TModel model);
         void Remove(TModel model);

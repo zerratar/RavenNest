@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -34,11 +35,39 @@ namespace RavenNest.BusinessLogic
             }
         }
 
+        public static List<TTo> MapMany<TTo, TFrom>(IEnumerable<TFrom> data) where TTo : new()
+        {
+            var result = new List<TTo>();
+            foreach (var dataItem in data)
+            {
+                result.Add(Map<TTo, TFrom>(dataItem));
+            }
+            return result;
+        }
+
+        public static List<TTo> MapMany<TTo>(IEnumerable<object> data) where TTo : new()
+        {
+            var result = new List<TTo>();
+            foreach (var dataItem in data)
+            {
+                result.Add(Map<TTo>(dataItem));
+            }
+            return result;
+        }
+
+
+        [Obsolete("Use Map<TTo> instead")]
         public static TTo Map<TTo, TFrom>(TFrom data) where TTo : new()
         {
+            return Map<TTo>(data);
+        }
+
+        public static TTo Map<TTo>(object data) where TTo : new()
+        {
             var output = new TTo();
+            var targetType = data.GetType();
             var props = typeof(TTo).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var prop in typeof(TFrom).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            foreach (var prop in targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
                 var p = props.FirstOrDefault(x => x.Name == prop.Name);
                 if (p == null)
@@ -46,8 +75,7 @@ namespace RavenNest.BusinessLogic
 
                 try
                 {
-                    if (data == null) continue;                    
-
+                    if (data == null) continue;
                     var value = prop.GetValue(data);
                     if (prop.PropertyType.IsEnum)
                         p.SetValue(output, Convert.ToInt32(value));
@@ -61,6 +89,34 @@ namespace RavenNest.BusinessLogic
             }
             return output;
         }
+
+        //public static TTo Map<TTo, TFrom>(TFrom data) where TTo : new()
+        //{
+        //    var output = new TTo();
+        //    var props = typeof(TTo).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        //    foreach (var prop in typeof(TFrom).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        //    {
+        //        var p = props.FirstOrDefault(x => x.Name == prop.Name);
+        //        if (p == null)
+        //            continue;
+
+        //        try
+        //        {
+        //            if (data == null) continue;
+
+        //            var value = prop.GetValue(data);
+        //            if (prop.PropertyType.IsEnum)
+        //                p.SetValue(output, Convert.ToInt32(value));
+        //            else
+        //                p.SetValue(output, value);
+        //        }
+        //        catch
+        //        {
+        //            // ignored
+        //        }
+        //    }
+        //    return output;
+        //}
 
     }
 }

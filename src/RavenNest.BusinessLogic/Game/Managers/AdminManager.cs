@@ -169,8 +169,7 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
 
             var characterUser = gameData.GetUser(character.UserId);
-            var gameEvent = gameData.CreateSessionEvent(
-                GameEventType.PlayerRemove,
+            var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRemove,
                 currentSession,
                 new PlayerRemove()
                 {
@@ -446,8 +445,7 @@ namespace RavenNest.BusinessLogic.Game
 
             SetValue(skills, skill, experience);
 
-            var gameEvent = gameData.CreateSessionEvent(
-                GameEventType.PlayerExpUpdate,
+            var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerExpUpdate,
                 playerSession,
                 new PlayerExpUpdate
                 {
@@ -473,8 +471,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var user = this.gameData.GetUser(character.UserId);
 
-            var gameEvent = gameData.CreateSessionEvent(
-                GameEventType.PlayerNameUpdate,
+            var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerNameUpdate,
                 playerSession,
                 new PlayerNameUpdate
                 {

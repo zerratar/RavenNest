@@ -239,7 +239,7 @@ namespace RavenNest.BusinessLogic.Data
                     // we can still store the game events, but no need to load them on startup as the DB will quickly be filled.
                     // and take a long time to load
                     gameEvents = new EntitySet<GameEvent, Guid>(new List<GameEvent>() /*ctx.GameEvent.ToList()*/, i => i.Id, false);
-                    gameEvents.RegisterLookupGroup(nameof(GameSession), x => x.GameSessionId);
+                    //gameEvents.RegisterLookupGroup(nameof(GameSession), x => x.GameSessionId);
                     gameEvents.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     userBankItems = new EntitySet<UserBankItem, Guid>(restorePoint?.Get<UserBankItem>() ?? ctx.UserBankItem.ToList(), i => i.Id);
@@ -1019,7 +1019,7 @@ namespace RavenNest.BusinessLogic.Data
         public void Add(MarketItem entity) => Update(() => marketItems.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(GameEvent entity) => Update(() => gameEvents.Add(entity));
+        public void Add(GameEvent entity) => gameEvents.Add(entity);//Update(() => gameEvents.Add(entity));
 
         public GameSession CreateSession(Guid userId)
         {
@@ -1401,65 +1401,59 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<Character> GetCharacters(Func<Character, bool> predicate) =>
-            characters.Entities.Where(predicate).ToList();
+            characters.Entities.AsList(predicate);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<Character> GetCharacters() => characters.Entities.ToList();
+        public IReadOnlyList<Character> GetCharacters() => characters.Entities.AsReadOnlyList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<User> GetUsers() => users.Entities.ToList();
+        public IReadOnlyList<User> GetUsers() => users.Entities.AsReadOnlyList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<Clan> GetClans() => clans.Entities.ToList();
+        public IReadOnlyList<Clan> GetClans() => clans.Entities.AsReadOnlyList();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public InventoryItem GetEquippedItem(Guid characterId, Guid itemId) =>
-            inventoryItems[nameof(Character), characterId]
-                .FirstOrDefault(x => x.Equipped && x.ItemId == itemId);
+            inventoryItems[nameof(Character), characterId].FirstOrDefault(x => x.Equipped && x.ItemId == itemId);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public InventoryItem GetInventoryItem(Guid inventoryItemId) => inventoryItems[inventoryItemId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public InventoryItem GetInventoryItem(Guid characterId, Guid itemId) =>
-            inventoryItems[nameof(Character), characterId]
-               .FirstOrDefault(x => !x.Equipped && x.ItemId == itemId);
+            inventoryItems[nameof(Character), characterId].FirstOrDefault(x => !x.Equipped && x.ItemId == itemId);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<InventoryItem> GetEquippedItems(Guid characterId) =>
-            inventoryItems[nameof(Character), characterId]
-                    .Where(x => x.Equipped)
-                    .ToList();
+            inventoryItems[nameof(Character), characterId].AsList(x => x.Equipped);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<InventoryItem> GetInventoryItems(Guid characterId, Guid itemId) =>
-            inventoryItems[nameof(Character), characterId]
-                    .Where(x => !x.Equipped && x.ItemId == itemId)
-                    .ToList();
+            inventoryItems[nameof(Character), characterId].AsList(x => !x.Equipped && x.ItemId == itemId);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Item GetItem(Guid id) => items[id];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<Item> GetItems() => items.Entities.ToList();
+        public IReadOnlyList<Item> GetItems() => items.Entities;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<ItemAttribute> GetItemAttributes() => itemAttributes.Entities.ToList();
+        public IReadOnlyList<ItemAttribute> GetItemAttributes() => itemAttributes.Entities;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactions() => marketTransactions.Entities.ToList();
+        public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactions() => marketTransactions.Entities;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactions(DateTime start, DateTime end) => marketTransactions.Entities.Where(x => x.Created >= start && x.Created <= end).ToList();
+        public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactions(DateTime start, DateTime end) => marketTransactions.Entities.AsList(x => x.Created >= start && x.Created <= end);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactions(Guid itemId, DateTime start, DateTime end) => marketTransactions[nameof(Item), itemId].Where(x => x.Created >= start && x.Created <= end).ToList();
+        public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactions(Guid itemId, DateTime start, DateTime end) => marketTransactions[nameof(Item), itemId].AsList(x => x.Created >= start && x.Created <= end);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactionsBySeller(Guid seller, DateTime start, DateTime end) => marketTransactions[nameof(Character) + "Seller", seller].Where(x => x.Created >= start && x.Created <= end).ToList();
+        public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactionsBySeller(Guid seller, DateTime start, DateTime end) => marketTransactions[nameof(Character) + "Seller", seller].AsList(x => x.Created >= start && x.Created <= end);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactionsByBuyer(Guid buyer, DateTime start, DateTime end) => marketTransactions[nameof(Character) + "Buyer", buyer].Where(x => x.Created >= start && x.Created <= end).ToList();
+        public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactionsByBuyer(Guid buyer, DateTime start, DateTime end) => marketTransactions[nameof(Character) + "Buyer", buyer].AsList(x => x.Created >= start && x.Created <= end);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetMarketItemCount() => marketItems.Entities.Count;
@@ -1470,7 +1464,7 @@ namespace RavenNest.BusinessLogic.Data
             if (string.IsNullOrEmpty(tag))
                 return marketItems[nameof(Item), itemId];
 
-            return marketItems[nameof(Item), itemId].Where(x => x.Tag == tag).ToList();
+            return marketItems[nameof(Item), itemId].AsList(x => x.Tag == tag);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1480,8 +1474,7 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<MarketItem> GetMarketItems(int skip, int take) =>
-            marketItems.Entities.Skip(skip).Take(take).ToList();
+        public IReadOnlyList<MarketItem> GetMarketItems(int skip, int take) => marketItems.Entities.Slice(skip, take);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetNextGameEventRevision(Guid sessionId)
@@ -1516,14 +1509,13 @@ namespace RavenNest.BusinessLogic.Data
             if (currentSession == null) return null;
             if (activeSessionOnly)
                 return characters[nameof(GameSession), currentSession.UserId]
-                    .Where(x => GetUser(x.UserId) != null && x.UserIdLock == currentSession.UserId && x.LastUsed >= currentSession.Started)
                     .OrderByDescending(x => x.LastUsed)
-                    .ToList();
+                    .AsList(x => GetUser(x.UserId) != null && x.UserIdLock == currentSession.UserId && x.LastUsed >= currentSession.Started);
 
             // in case we need to know all characters that has been locked to this user (based on sessionId).
             // so we can clear those users out if necessary.
             // note(zerratar): should be a separate method. Not part of this As we want to ensure we only get the real active players.
-            return characters[nameof(GameSession), currentSession.UserId].OrderByDescending(x => x.LastUsed).Where(x => GetUser(x.UserId) != null).ToList();
+            return characters[nameof(GameSession), currentSession.UserId].OrderByDescending(x => x.LastUsed).AsList(x => GetUser(x.UserId) != null);
         }
 
 
@@ -1582,20 +1574,17 @@ namespace RavenNest.BusinessLogic.Data
             .FirstOrDefault();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<GameEvent> GetSessionEvents(GameSession gameSession) =>
-            GetSessionEvents(gameSession.Id);
+        public IReadOnlyList<GameEvent> GetSessionEvents(GameSession gameSession) => GetUserEvents(gameSession.UserId);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<GameEvent> GetSessionEvents(Guid sessionId) =>
-            gameEvents[nameof(GameSession), sessionId];
+        public IReadOnlyList<GameEvent> GetSessionEvents(Guid sessionId) => GetUserEvents(GetSession(sessionId).UserId);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<DataModels.UserNotification> GetNotifications(Guid userId)
             => notifications[nameof(User), userId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<GameEvent> GetUserEvents(Guid userId) =>
-            gameEvents[nameof(User), userId];
+        public IReadOnlyList<GameEvent> GetUserEvents(Guid userId) => gameEvents[nameof(User), userId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public User GetUser(Guid userId) => users[userId];
@@ -1659,7 +1648,7 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ICollection<RedeemableItem> GetRedeemableItems() => redeemableItems.Entities;
+        public IReadOnlyList<RedeemableItem> GetRedeemableItems() => redeemableItems.Entities;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RedeemableItem GetRedeemableItemByItemId(Guid itemId) => redeemableItems[nameof(Item), itemId].FirstOrDefault(x => x.ItemId == itemId);
@@ -1747,7 +1736,7 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<GameSession> GetActiveSessions() => gameSessions.Entities
                     .OrderByDescending(x => x.Started)
-                    .Where(x => x.Stopped == null && DateTime.UtcNow - x.Updated <= TimeSpan.FromSeconds(SessionTimeoutSeconds)).ToList();
+                    .AsList(x => x.Stopped == null && DateTime.UtcNow - x.Updated <= TimeSpan.FromSeconds(SessionTimeoutSeconds));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<GameSession> GetSessions() => gameSessions.Entities.OrderByDescending(x => x.Started).ToList();
@@ -2008,19 +1997,19 @@ namespace RavenNest.BusinessLogic.Data
         private Queue<EntityStoreItems> BuildSaveQueue()
         {
             var queue = new Queue<EntityStoreItems>();
-            var addedItems = JoinChangeSets(entitySets.Select(x => x.Added).ToArray());
+            var addedItems = JoinChangeSets(entitySets.SelectAsArray(x => x.Added));
             foreach (var batch in CreateBatches(EntityState.Added, addedItems, SaveMaxBatchSize))
             {
                 queue.Enqueue(batch);
             }
 
-            var updateItems = JoinChangeSets(entitySets.Select(x => x.Updated).ToArray());
+            var updateItems = JoinChangeSets(entitySets.SelectAsArray(x => x.Updated));
             foreach (var batch in CreateBatches(EntityState.Modified, updateItems, SaveMaxBatchSize))
             {
                 queue.Enqueue(batch);
             }
 
-            var deletedItems = JoinChangeSets(entitySets.Select(x => x.Removed).ToArray());
+            var deletedItems = JoinChangeSets(entitySets.SelectAsArray(x => x.Removed));
             foreach (var batch in CreateBatches(EntityState.Deleted, deletedItems, SaveMaxBatchSize))
             {
                 queue.Enqueue(batch);
@@ -2029,21 +2018,21 @@ namespace RavenNest.BusinessLogic.Data
             return queue;
         }
 
-        private ICollection<EntityStoreItems> CreateBatches(RavenNest.DataModels.EntityState state, ICollection<EntityChangeSet> items, int batchSize)
+        private ICollection<EntityStoreItems> CreateBatches(EntityState state, IReadOnlyList<EntityChangeSet> items, int batchSize)
         {
             if (items == null || items.Count == 0) return new List<EntityStoreItems>();
             var batches = (int)Math.Floor(items.Count / (float)batchSize) + 1;
             var batchList = new List<EntityStoreItems>(batches);
             for (var i = 0; i < batches; ++i)
             {
-                batchList.Add(new EntityStoreItems(state, items.Skip(i * batchSize).Take(batchSize).Select(x => x.Entity).ToList()));
+                batchList.Add(new EntityStoreItems(state, items.SliceAs(i * batchSize, batchSize, x => x.Entity)));
             }
             return batchList;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private ICollection<EntityChangeSet> JoinChangeSets(params ICollection<EntityChangeSet>[] changesets) =>
-            changesets.SelectMany(x => x).OrderBy(x => x.LastModified).ToList();
+        private IReadOnlyList<EntityChangeSet> JoinChangeSets(params IEnumerable<EntityChangeSet>[] changesets) =>
+            changesets.SelectMany(x => x).OrderBy(x => x.LastModified).AsReadOnlyList();
 
 
 
