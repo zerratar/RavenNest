@@ -17,10 +17,10 @@ namespace RavenNest.DataModels
         private readonly ConcurrentDictionary<string, EntityLookupGroup<TModel, TKey>> groupLookup
             = new ConcurrentDictionary<string, EntityLookupGroup<TModel, TKey>>();
 
-        public ICollection<TModel> Entities => entities.Values;
-        public ICollection<EntityChangeSet> Added => addedEntities.Values;
-        public ICollection<EntityChangeSet> Updated => updatedEntities.Values;
-        public ICollection<EntityChangeSet> Removed => removedEntities.Values;
+        public IReadOnlyList<TModel> Entities => entities.Values.AsReadOnlyList();
+        public IReadOnlyList<EntityChangeSet> Added => addedEntities.Values.AsReadOnlyList();
+        public IReadOnlyList<EntityChangeSet> Updated => updatedEntities.Values.AsReadOnlyList();
+        public IReadOnlyList<EntityChangeSet> Removed => removedEntities.Values.AsReadOnlyList();
 
         public DateTime LastModified { get; private set; }
 
@@ -90,7 +90,7 @@ namespace RavenNest.DataModels
                 {
                     var grouped = groupEntities[groupKey];
                     if (grouped != null)
-                        return grouped.Values.ToList();
+                        return grouped.Values.AsList();
                     return new List<TModel>();
                 }
 

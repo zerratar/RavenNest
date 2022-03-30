@@ -2,11 +2,13 @@
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Sessions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace RavenNest.Blazor.Services
@@ -57,7 +59,7 @@ namespace RavenNest.Blazor.Services
             {
                 var players = playerManager.GetFullPlayers();
                 var users = GetUsers(players);
-                return users.Where(x => x.Created >= start && x.Created <= end).ToList();
+                return users.AsList(x => x.Created >= start && x.Created <= end);
             });
         }
 
@@ -81,7 +83,7 @@ namespace RavenNest.Blazor.Services
         public async Task<PagedCollection<WebsiteAdminUser>> GetUserPageAsync(string search, int pageIndex, int pageSize)
         {
             var players = await SearchForPlayersAsync(search);
-            var pageItems = players.Skip(pageSize * pageIndex).Take(pageSize).ToList();
+            var pageItems = players.Slice(pageSize * pageIndex, pageSize);
             return new PagedCollection<WebsiteAdminUser>(pageItems, players.Count);
         }
 
@@ -95,13 +97,22 @@ namespace RavenNest.Blazor.Services
                 {
                     return users;
                 }
-
-                return users.Where(x =>
-                    x.UserId.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) ||
-                    x.UserName.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) ||
-                    (x.Email != null && x.Email.Contains(searchText, System.StringComparison.OrdinalIgnoreCase)))
-                .ToList();
+                var result = new List<WebsiteAdminUser>();
+                foreach (var x in users)
+                {
+                    if (Contains(x.UserId, searchText) || Contains(x.UserName, searchText) || Contains(x.Email, searchText))
+                        result.Add(x);
+                }
+                return result;
             });
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool Contains(string a, string b)
+        {
+            if (a == null || b == null) return false;
+            return a.IndexOf(b, System.StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         public async Task<bool> SetUserStatusAsync(Guid userId, AccountStatus status)
@@ -182,11 +193,7 @@ namespace RavenNest.Blazor.Services
                 };
             }
 
-            var bankItems =
-                gameData
-                .GetUserBankItems(userData.Id)
-                .Select(DataMapper.Map<RavenNest.Models.UserBankItem, RavenNest.DataModels.UserBankItem>)
-                .ToList();
+            var bankItems = DataMapper.MapMany<RavenNest.Models.UserBankItem>(gameData.GetUserBankItems(userData.Id));
 
             return new WebsiteAdminUser
             {

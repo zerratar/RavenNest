@@ -1,6 +1,7 @@
 ﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Providers;
+using RavenNest.DataModels;
 using RavenNest.Models;
 using System;
 using System.Linq;
@@ -198,9 +199,9 @@ namespace RavenNest.BusinessLogic.Game
                 return new EventCollection();
             }
 
-            var events = gameData.GetSessionEvents(gameSession).ToList();
+            var events = gameData.GetSessionEvents(gameSession).AsList();
             if (events == null || events.Count == 0)
-                events = gameData.GetUserEvents(gameSession.UserId).ToList();
+                events = gameData.GetUserEvents(gameSession.UserId).AsList();
 
             var eventCollection = new EventCollection();
 

@@ -166,8 +166,7 @@ namespace RavenNest.BusinessLogic.Game
             //if (multiplier >= 0)
             //{
             var expMulti = Math.Min(multiplier, activeEvent.Multiplier);
-            var expEvent = gameData.CreateSessionEvent(
-                  GameEventType.ExpMultiplier,
+            var expEvent = gameData.CreateSessionEvent(GameEventType.ExpMultiplier,
                   session,
                   new ExpMultiplier
                   {
@@ -184,8 +183,7 @@ namespace RavenNest.BusinessLogic.Game
         public void SendVillageInfo(DataModels.GameSession newGameSession)
         {
             var villageInfo = villageManager.GetVillageInfo(newGameSession.Id);
-            var villageInfoEvent = gameData.CreateSessionEvent(
-                GameEventType.VillageInfo,
+            var villageInfoEvent = gameData.CreateSessionEvent(GameEventType.VillageInfo,
                 newGameSession,
                 villageInfo
             );
@@ -227,8 +225,7 @@ namespace RavenNest.BusinessLogic.Game
                 expMultiplierLimit = 50000000;
             }
 
-            var permissionEvent = gameData.CreateSessionEvent(
-                GameEventType.PermissionChange,
+            var permissionEvent = gameData.CreateSessionEvent(GameEventType.PermissionChange,
                 gameSession,
                 new Permissions
                 {
@@ -276,9 +273,7 @@ namespace RavenNest.BusinessLogic.Game
             var characters = gameData.GetSessionCharacters(currentSession);
 
             //var state = gameData.GetSessionState(token.SessionId);
-            var ge = gameData.CreateSessionEvent(
-                isWarRaid ? GameEventType.WarRaid : GameEventType.Raid,
-
+            var ge = gameData.CreateSessionEvent(isWarRaid ? GameEventType.WarRaid : GameEventType.Raid,
                 targetSession, new StreamRaidInfo
                 {
                     RaiderUserName = sessionUser.UserName,
@@ -402,8 +397,7 @@ namespace RavenNest.BusinessLogic.Game
 
         public void SendPubSubToken(DataModels.GameSession session, string pubsubAccessToken)
         {
-            var serverTime = gameData.CreateSessionEvent(
-                GameEventType.PubSubToken,
+            var serverTime = gameData.CreateSessionEvent(GameEventType.PubSubToken,
                 session,
                 new PubSubToken
                 {
@@ -414,8 +408,7 @@ namespace RavenNest.BusinessLogic.Game
         }
         public void SendServerTime(DataModels.GameSession session)
         {
-            var serverTime = gameData.CreateSessionEvent(
-                GameEventType.ServerTime,
+            var serverTime = gameData.CreateSessionEvent(GameEventType.ServerTime,
                 session,
                 new ServerTime
                 {

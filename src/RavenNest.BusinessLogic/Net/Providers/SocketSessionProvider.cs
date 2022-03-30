@@ -379,12 +379,14 @@ namespace RavenNest.BusinessLogic.Net
                             cts.Cancel();
                             return;
                         }
+
                         if (SessionToken == null || SessionToken.Expired)
                         {
                             logger.LogError("[" + SessionToken?.TwitchUserName + "] Session Token Expried. Closing WebSocket Connection.");
                             Dispose();
                             return;
                         }
+
                         try
                         {
                             await gameProcessor.ProcessAsync(cts).ConfigureAwait(false);
@@ -392,9 +394,10 @@ namespace RavenNest.BusinessLogic.Net
                         catch (Exception exc)
                         {
                             logger.LogError("[" + SessionToken.TwitchUserName + "] Error processing game update: " + exc.ToString());
+                            await Task.Delay(500);
                         }
 
-                        await Task.Delay(500);
+                        await Task.Delay(10);
                     }
 
                     logger.LogWarning("[" + SessionToken.TwitchUserName + "] Session terminated game loop (" + sessionToken.SessionId + ")");

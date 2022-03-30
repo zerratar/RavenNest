@@ -164,13 +164,14 @@ namespace RavenNest.Blazor.Services
 
         public float GetActiveBonus(TownHouseSlotType type)
         {
-            var h = TownHouses.Where(x => x.Type == type && x.IsActive).ToList();
-            if (h.Count == 0)
+            if (TownHouses.Count == 0) return 0;
+            var bonusValue = 0f;
+            for (var i = 0; i < TownHouses.Count; i++)
             {
-                return 0;
+                var x = TownHouses[i];
+                if (x.Type == type && x.IsActive) bonusValue += x.Bonus;
             }
-
-            return h.Sum(x => x.Bonus);
+            return bonusValue;
         }
     }
 

@@ -236,8 +236,8 @@ namespace RavenNest.BusinessLogic.Providers
             lock (mutex)
             {
                 // No stack exists. That means we dont own that item.
-                var existingStacks = items.Where(x => CanBeStacked(x, item)).ToArray();
-                if (existingStacks == null || existingStacks.Length == 0)
+                var existingStacks = items.AsList(x => CanBeStacked(x, item));
+                if (existingStacks == null || existingStacks.Count == 0)
                 {
                     return false;
                 }
@@ -311,10 +311,9 @@ namespace RavenNest.BusinessLogic.Providers
         {
             lock (mutex)
             {
-                return items
-                    .Where(x => !x.Equipped && gameData.GetItem(x.ItemId)?.Category == (int)itemCategory)
-                    .Select(x => x.AsReadOnly(gameData))
-                    .ToList();
+                return items.SelectWhere(
+                    x => !x.Equipped && gameData.GetItem(x.ItemId)?.Category == (int)itemCategory,
+                    x => x.AsReadOnly(gameData));
             }
         }
 
@@ -801,11 +800,9 @@ namespace RavenNest.BusinessLogic.Providers
             {
                 var streamer = gameData.GetUser(session.UserId);
                 if (streamer == null) return new List<ReadOnlyInventoryItem>();
-                return items
-                    .Where(x => gameData.GetItem(x.ItemId).Category == (int)ItemCategory.StreamerToken
-                       && (x.Tag == streamer.UserId || x.Tag == null))
-                    .Select(x => x.AsReadOnly(gameData))
-                    .ToList();
+                return items.SelectWhere(
+                    x => gameData.GetItem(x.ItemId).Category == (int)ItemCategory.StreamerToken && (x.Tag == streamer.UserId || x.Tag == null),
+                    x => x.AsReadOnly(gameData));
             }
         }
 
@@ -881,7 +878,7 @@ namespace RavenNest.BusinessLogic.Providers
         {
             lock (mutex)
             {
-                return items.Where(x => x.Equipped).Select(x => x.AsReadOnly(gameData)).ToList();
+                return items.SelectWhere(x => x.Equipped, x => x.AsReadOnly(gameData));
             }
         }
 
@@ -889,11 +886,11 @@ namespace RavenNest.BusinessLogic.Providers
         {
             lock (mutex)
             {
-                return items.Where(x =>
+                return items.SelectWhere(x =>
                 {
                     var item = gameData.GetItem(x.ItemId);
                     return x.Equipped && item.Category == category && item.Type == itemType;
-                }).Select(x => x.AsReadOnly(gameData)).ToList();
+                }, x => x.AsReadOnly(gameData));
             }
         }
 
@@ -901,7 +898,7 @@ namespace RavenNest.BusinessLogic.Providers
         {
             lock (mutex)
             {
-                return items.Where(x => !x.Equipped).Select(x => x.AsReadOnly(gameData)).ToList();
+                return items.SelectWhere(x => !x.Equipped, x => x.AsReadOnly(gameData));
             }
         }
 
@@ -936,7 +933,7 @@ namespace RavenNest.BusinessLogic.Providers
         {
             lock (mutex)
             {
-                var equippedItems = items.Where(x => x.Equipped).ToList();
+                var equippedItems = items.AsList(x => x.Equipped);
                 foreach (var equippedItem in equippedItems)
                 {
                     UnequipItem(equippedItem);

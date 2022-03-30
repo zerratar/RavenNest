@@ -39,10 +39,106 @@ namespace RavenNest.DataModels
             return items.ToList();
         }
 
-        public static IReadOnlyList<T> AsIReadOnlyList<T>(this IEnumerable<T> items)
+
+        public static List<T> AsList<T>(this IEnumerable<T> items, Func<T, bool> predicateWhere)
         {
+            var result = new List<T>();
+            foreach (var item in items)
+            {
+                if (predicateWhere(item))
+                {
+                    result.Add(item);
+                }
+            }
+            return result;
+        }
+
+        public static List<T2> SelectWhere<T, T2>(this IEnumerable<T> items, Func<T, bool> predicateWhere, Func<T, T2> select)
+        {
+            var result = new List<T2>();
+            foreach (var item in items)
+            {
+                if (predicateWhere(item))
+                {
+                    result.Add(select(item));
+                }
+            }
+            return result;
+        }
+
+        public static List<T> Slice<T>(this T[] src, int skip, int take)
+        {
+            var result = new List<T>(take);
+            for (int i = skip, j = 0; i < src.Length && j < take; ++i, ++j)
+            {
+                result.Add(src[i]);
+            }
+            return result;
+        }
+
+        public static List<T> Slice<T>(this IReadOnlyList<T> src, int skip, int take)
+        {
+            var result = new List<T>(take);
+            for (int i = skip, j = 0; i < src.Count && j < take; ++i, ++j)
+            {
+                result.Add(src[i]);
+            }
+            return result;
+        }
+
+        public static List<T> Slice<T>(this IEnumerable<T> src, int skip, int take)
+        {
+            var result = new List<T>(take);
+            var j = 0;
+            foreach (var item in src)
+            {
+                if (result.Count >= take)
+                {
+                    break;
+                }
+                if (skip <= j)
+                {
+                    result.Add(item);
+                }
+                ++j;
+            }
+            return result;
+        }
+
+        public static List<T> SliceAs<T, T2>(this IReadOnlyList<T2> src, int skip, int take, Func<T2, T> select)
+        {
+            var result = new List<T>(take);
+            for (int i = skip, j = 0; i < src.Count && j < take; ++i, ++j)
+            {
+                result.Add(select(src[i]));
+            }
+            return result;
+        }
+        public static T[] SelectAsArray<T, T2>(this IReadOnlyList<T2> src, Func<T2, T> select)
+        {
+            var result = new T[src.Count];
+            for (var i = 0; i < src.Count; ++i)
+            {
+                result[i] = select(src[i]);
+            }
+            return result;
+        }
+
+        public static IReadOnlyList<T> SelectAsReadOnly<T, T2>(this IReadOnlyList<T2> src, Func<T2, T> select)
+        {
+            var result = new List<T>(src.Count);
+            for (var i = 0; i < src.Count; ++i)
+            {
+                result.Add(select(src[i]));
+            }
+            return result;
+        }
+
+        public static IReadOnlyList<T> AsReadOnlyList<T>(this IEnumerable<T> items)
+        {
+            if (items is T[] array) return array;
             if (items is IReadOnlyList<T> list) return list;
-            return items.ToList();
+            return items.AsList();
         }
 
         public static void ForEach<T>(this IEnumerable<T> items, Action<T> forEach)

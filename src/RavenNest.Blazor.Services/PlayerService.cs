@@ -2,6 +2,7 @@
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Sessions;
 using System;
@@ -88,7 +89,7 @@ namespace RavenNest.Blazor.Services
             return playerManager.GetWebsitePlayer(characterId);
         }
 
-        public WebsitePlayer AddItem(Guid characterId, Item item)
+        public WebsitePlayer AddItem(Guid characterId, RavenNest.Models.Item item)
         {
             playerManager.AddItem(characterId, item.Id);
             return playerManager.GetWebsitePlayer(characterId);
@@ -137,7 +138,7 @@ namespace RavenNest.Blazor.Services
         {
             return await Task.Run(() =>
             {
-                var players = playerManager.GetFullPlayers();
+                IEnumerable<WebsiteAdminPlayer> players = playerManager.GetFullPlayers();
                 if (ignoreClanInvitedPlayers)
                 {
                     var session = GetSession();
@@ -147,23 +148,22 @@ namespace RavenNest.Blazor.Services
 
                     var clan = gameData.GetClanByUser(user.Id);
                     players = players.Where(x => x.Clan == null &&
-                        gameData.GetClanInvitesByCharacter(x.Id).All(y => y.ClanId != clan.Id))
-                    .ToList();
+                        gameData.GetClanInvitesByCharacter(x.Id).All(y => y.ClanId != clan.Id));
                 }
 
                 if (string.IsNullOrEmpty(searchText))
                 {
                     if (allOnEmptySearch)
-                        return players.ToList();
+                        return players.AsList();
 
                     return new List<WebsiteAdminPlayer>();
                 }
 
-                return players.Where(x =>
+                return players.AsList(x =>
                     x.UserId.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) ||
                     x.UserName.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) ||
                     x.Name.Contains(searchText, System.StringComparison.OrdinalIgnoreCase)
-                ).ToList();
+                );
             });
         }
     }

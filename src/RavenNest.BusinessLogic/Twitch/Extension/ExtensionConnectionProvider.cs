@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.DataModels;
 using RavenNest.Sessions;
 using System;
 using System.Collections.Generic;
@@ -74,7 +75,7 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
             lock (mutex)
             {
                 var streamer = gameData.GetUser(streamerUserId);
-                return (connections = this.connections.Where(x => x.Value.BroadcasterTwitchUserId == streamer.UserId).Select(x => x.Value).ToList()).Count > 0;
+                return (connections = this.connections.SelectWhere(x => x.Value.BroadcasterTwitchUserId == streamer.UserId, x => x.Value)).Count > 0;
             }
         }
 
@@ -82,7 +83,7 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
         {
             lock (mutex)
             {
-                return (connections = this.connections.Where(x => x.Value.Session.Id == userId).Select(x => x.Value).ToList()).Count > 0;
+                return (connections = this.connections.SelectWhere(x => x.Value.Session.Id == userId, x => x.Value)).Count > 0;
             }
         }
 

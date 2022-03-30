@@ -352,8 +352,7 @@ namespace RavenNest.Controllers
 
                 sessionInfoProvider.SetActiveCharacter(sessionInfo, c.Id);
 
-                var gameEvent = gameData.CreateSessionEvent(
-                    GameEventType.PlayerAdd,
+                var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerAdd,
                     activeSession,
                     new PlayerAdd()
                     {
@@ -422,8 +421,7 @@ namespace RavenNest.Controllers
 
                 sessionInfoProvider.SetActiveCharacter(sessionInfo, characterId);
 
-                var gameEvent = gameData.CreateSessionEvent(
-                    GameEventType.PlayerAdd,
+                var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerAdd,
                     activeSession,
                     new PlayerAdd()
                     {
