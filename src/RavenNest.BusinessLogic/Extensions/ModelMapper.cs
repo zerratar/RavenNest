@@ -19,13 +19,13 @@ namespace RavenNest.BusinessLogic.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.Appearance Map(Appearance data)
         {
-            return DataMapper.Map<Models.Appearance, Appearance>(data);
+            return DataMapper.Map<Models.Appearance>(data);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.GameSession Map(IGameData gameData, DataModels.GameSession data)
         {
-            var session = DataMapper.Map<Models.GameSession, DataModels.GameSession>(data);
+            var session = DataMapper.Map<Models.GameSession>(data);
             var user = gameData.GetUser(session.UserId);
             if (user == null)
                 return null;
@@ -67,7 +67,7 @@ namespace RavenNest.BusinessLogic.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.CharacterState Map(DataModels.CharacterState data)
         {
-            var state = DataMapper.Map<Models.CharacterState, DataModels.CharacterState>(data);
+            var state = DataMapper.Map<Models.CharacterState>(data);
             if (state == null)
             {
                 state = new Models.CharacterState();
@@ -99,7 +99,7 @@ namespace RavenNest.BusinessLogic.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.Statistics Map(DataModels.Statistics data)
         {
-            return DataMapper.Map<Models.Statistics, DataModels.Statistics>(data);
+            return DataMapper.Map<Models.Statistics>(data);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -152,34 +152,34 @@ namespace RavenNest.BusinessLogic.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.Skills Map(Skills data)
         {
-            return DataMapper.Map<Models.Skills, Skills>(data);
+            return DataMapper.Map<Models.Skills>(data);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static SkillsExtended MapForWebsite(Skills data)
         {
-            return DataMapper.Map<SkillsExtended, Skills>(data);
+            return DataMapper.Map<SkillsExtended>(data);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.GameEvent Map(DataModels.GameEvent data)
         {
-            return DataMapper.Map<Models.GameEvent, DataModels.GameEvent>(data);
+            return DataMapper.Map<Models.GameEvent>(data);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.Resources Map(Resources data)
         {
-            return DataMapper.Map<Models.Resources, Resources>(data);
+            return DataMapper.Map<Models.Resources>(data);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.Item Map(IGameData gameData, Item item)
         {
             if (item == null) return null;
-            var mapped = DataMapper.Map<Models.Item, Item>(item);
+            var mapped = DataMapper.Map<Models.Item>(item);
             mapped.CraftingRequirements = gameData.GetCraftingRequirements(item.Id)
-                .Select(x => DataMapper.Map<Models.ItemCraftingRequirement, DataModels.ItemCraftingRequirement>(x))
+                .Select(x => DataMapper.Map<Models.ItemCraftingRequirement>(x))
                 .ToList();
 
             return mapped;
@@ -188,14 +188,14 @@ namespace RavenNest.BusinessLogic.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Item Map(Models.Item itemsItem)
         {
-            return DataMapper.Map<Item, Models.Item>(itemsItem);
+            return DataMapper.Map<Item>(itemsItem);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Models.SyntyAppearance Map(DataModels.SyntyAppearance appearance)
         {
             if (appearance == null) return new Models.SyntyAppearance();
-            return DataMapper.Map<Models.SyntyAppearance, DataModels.SyntyAppearance>(appearance);
+            return DataMapper.Map<Models.SyntyAppearance>(appearance);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -247,7 +247,7 @@ namespace RavenNest.BusinessLogic.Extensions
             {
                 var targetStreamUser = gameData.GetUser(character.UserIdLock.Value);
                 // if we got streamer tokens, only send the ones for the appropriate streamer
-                playItems = playItems.Where(x => x.Tag == null || x.Tag == targetStreamUser.UserId).ToList();
+                playItems = playItems.AsList(x => x.Tag == null || x.Tag == targetStreamUser.UserId);
             }
 
             var invItems = Map(playItems);
