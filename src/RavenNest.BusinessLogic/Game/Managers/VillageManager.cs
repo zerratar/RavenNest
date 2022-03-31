@@ -123,15 +123,20 @@ namespace RavenNest.BusinessLogic.Game
                 Level = village.Level,
                 Experience = village.Experience,
                 Houses = villageHouses.Select(x =>
-                   new VillageHouseInfo
-                   {
-                       Owner = x.UserId != null
-                           ? gameData.GetUser(x.UserId.Value).UserId
-                           : null,
-                       Slot = x.Slot,
-                       Type = x.Type
-                   }
-                 ).ToList()
+                {
+                    RavenNest.DataModels.User owner = null;
+                    var uid = x.UserId;
+                    if (uid != null)
+                    {
+                        owner = gameData.GetUser(uid.Value);
+                    }
+                    return new VillageHouseInfo
+                    {
+                        Owner = owner?.UserId,
+                        Slot = x.Slot,
+                        Type = x.Type
+                    };
+                }).ToList()
             };
         }
 
