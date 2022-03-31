@@ -68,7 +68,7 @@ namespace RavenNest.DataModels
 
         public static List<T> Slice<T>(this T[] src, int skip, int take)
         {
-            var result = new List<T>(take);
+            var result = new List<T>();
             for (int i = skip, j = 0; i < src.Length && j < take; ++i, ++j)
             {
                 result.Add(src[i]);
@@ -78,7 +78,7 @@ namespace RavenNest.DataModels
 
         public static List<T> Slice<T>(this IReadOnlyList<T> src, int skip, int take)
         {
-            var result = new List<T>(take);
+            var result = new List<T>();
             for (int i = skip, j = 0; i < src.Count && j < take; ++i, ++j)
             {
                 result.Add(src[i]);
@@ -88,7 +88,7 @@ namespace RavenNest.DataModels
 
         public static List<T> Slice<T>(this IEnumerable<T> src, int skip, int take)
         {
-            var result = new List<T>(take);
+            var result = new List<T>();
             var j = 0;
             foreach (var item in src)
             {
@@ -107,7 +107,7 @@ namespace RavenNest.DataModels
 
         public static List<T> SliceAs<T, T2>(this IReadOnlyList<T2> src, int skip, int take, Func<T2, T> select)
         {
-            var result = new List<T>(take);
+            var result = new List<T>();
             for (int i = skip, j = 0; i < src.Count && j < take; ++i, ++j)
             {
                 result.Add(select(src[i]));
