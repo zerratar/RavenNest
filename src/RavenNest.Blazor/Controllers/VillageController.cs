@@ -35,7 +35,7 @@ namespace RavenNest.Controllers
             return villageManager.AssignPlayerToHouse(sessionToken.SessionId, slot, userId);
         }
         [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpPost("{slot}/assign-village")]
+        [HttpPost("assign-village")]
         public bool AssignVillage([FromBody] VillageAssignRequest request)
         {
             var sessionToken = GetSessionToken();
