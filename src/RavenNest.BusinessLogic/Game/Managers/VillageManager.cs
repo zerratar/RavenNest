@@ -92,7 +92,7 @@ namespace RavenNest.BusinessLogic.Game
 Guid? userId = null;
 var user = gameData.GetUser(characterIds[i]);
 if (user != null) userId = user.Id;
-if (userId == null) gameData.GetCharacter(characterIds[i])?.UserId;
+if (userId == null) userId = gameData.GetCharacter(characterIds[i])?.UserId;
 
                     house.UserId = userId;
                 }
