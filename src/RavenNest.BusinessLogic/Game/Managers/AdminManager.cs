@@ -19,6 +19,7 @@ namespace RavenNest.BusinessLogic.Game
     public class AdminManager : IAdminManager
     {
         private readonly ILogger<AdminManager> logger;
+        private readonly Random random;
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly IEntityResolver itemResolver;
         private readonly IPlayerManager playerManager;
@@ -36,6 +37,7 @@ namespace RavenNest.BusinessLogic.Game
             ISecureHasher secureHasher)
         {
             this.logger = logger;
+            this.random = new Random();
             this.inventoryProvider = inventoryProvider;
             this.itemResolver = itemResolver;
             this.playerManager = playerManager;
@@ -72,6 +74,44 @@ namespace RavenNest.BusinessLogic.Game
         //        skill.Experience
         //    }
         //}
+
+        public GameSessionPlayerCache GetRandomStateCache(int playerCount)
+        {
+            var players = new List<GameSessionPlayerCache.GameCachePlayerItem>();
+            var uid = new HashSet<Guid>();
+
+            foreach (var user in gameData.GetUsers().OrderBy(x => random.Next()))
+            {
+                if (uid.Add(user.Id))
+                {
+                    var character = gameData.GetCharacterByUserId(user.Id);
+                    if (character == null)
+                    {
+                        uid.Remove(user.Id);
+                        continue;
+                    }
+
+
+                    players.Add(new GameSessionPlayerCache.GameCachePlayerItem
+                    {
+                        CharacterId = character.Id,
+                        CharacterIndex = character.CharacterIndex,
+                        TwitchUser = new GameSessionPlayerCache.GameCachePlayerItem.TwitchPlayerInfo(
+                                user.UserId, user.UserName, user.DisplayName, "", false, false, false, false, character.Identifier
+                            )
+                    });
+                }
+
+                if (uid.Count >= playerCount)
+                    break;
+            }
+
+            return new GameSessionPlayerCache()
+            {
+                Created = DateTime.UtcNow,
+                Players = players
+            };
+        }
 
         public bool AddCoins(string query, string identifier)
         {
