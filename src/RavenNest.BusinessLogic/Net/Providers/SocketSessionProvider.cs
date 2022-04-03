@@ -190,7 +190,6 @@ namespace RavenNest.BusinessLogic.Net
                 = new ConcurrentDictionary<Guid, TaskCompletionSource<object>>();
 
             private readonly SemaphoreSlim readMutex = new SemaphoreSlim(1);
-            private readonly SemaphoreSlim writeMutex = new SemaphoreSlim(1);
             private readonly ConcurrentQueue<Data> writeQueue = new ConcurrentQueue<Data>();
             public WebSocketConnection(
                 ILogger logger,
@@ -425,7 +424,6 @@ namespace RavenNest.BusinessLogic.Net
 
                         try
                         {
-                            await writeMutex.WaitAsync(TimeSpan.FromSeconds(2));
                             if (writeQueue.TryDequeue(out var packet))
                             {
                                 await ws.SendAsync(packet.Binary, WebSocketMessageType.Binary, true, packet.CancellationToken);
@@ -441,7 +439,6 @@ namespace RavenNest.BusinessLogic.Net
                         }
                         finally
                         {
-                            writeMutex.Release();
                         }
 
                     }
@@ -482,8 +479,6 @@ namespace RavenNest.BusinessLogic.Net
                         {
                             readMutex.Release();
                         }
-                        await Task.Delay(15);
-
                     }
                 }
 

@@ -87,14 +87,14 @@ namespace RavenNest.BusinessLogic.Game
                 house.Type = type;
                 if (i < characterIds.Length)
                 {
-// edited from the mobile, lol!
-
-Guid? userId = null;
-var user = gameData.GetUser(characterIds[i]);
-if (user != null) userId = user.Id;
-if (userId == null) userId = gameData.GetCharacter(characterIds[i])?.UserId;
+                    // edited from the mobile, lol!
+                    Guid? userId = null;
+                    var user = gameData.GetUser(characterIds[i]);
+                    if (user != null) userId = user.Id;
+                    if (userId == null) userId = gameData.GetCharacter(characterIds[i])?.UserId;
 
                     house.UserId = userId;
+                    i++;
                 }
                 else
                 {

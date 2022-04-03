@@ -71,6 +71,22 @@ namespace RavenNest.Controllers
             return adminManager.SetCraftingRequirements(itemQuery, requirementQuery);
         }
 
+        [HttpGet("debug/state-data/{playerCount}")]
+        public async Task<GameSessionPlayerCache> DownloadRandomStateCache(int playerCount)
+        {
+            try
+            {
+                await AssertAdminAccessAsync();
+                return adminManager.GetRandomStateCache(playerCount);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+
+
         [HttpGet("backup/download")]
         public async Task<ActionResult> DownloadGameState()
         {
