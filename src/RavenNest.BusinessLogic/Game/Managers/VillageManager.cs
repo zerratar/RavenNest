@@ -72,7 +72,6 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
-
         public bool AssignVillage(Guid sessionId, int type, Guid[] characterIds)
         {
             var session = gameData.GetSession(sessionId);
@@ -87,12 +86,10 @@ namespace RavenNest.BusinessLogic.Game
                 house.Type = type;
                 if (i < characterIds.Length)
                 {
-                    // edited from the mobile, lol!
                     Guid? userId = null;
                     var user = gameData.GetUser(characterIds[i]);
                     if (user != null) userId = user.Id;
                     if (userId == null) userId = gameData.GetCharacter(characterIds[i])?.UserId;
-
                     house.UserId = userId;
                     i++;
                 }

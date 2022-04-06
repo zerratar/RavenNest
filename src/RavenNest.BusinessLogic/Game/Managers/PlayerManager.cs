@@ -1102,6 +1102,12 @@ namespace RavenNest.BusinessLogic.Game
                     return false;
                 }
 
+
+                // temporary debugging
+                if (player.Name.ToLower() == "zerratar")
+                {
+
+                }
                 //player.UserIdLock = session.UserId;
                 //player.LastUsed = DateTime.UtcNow;
 
@@ -1525,7 +1531,7 @@ namespace RavenNest.BusinessLogic.Game
             var session = gameData.GetSessionByUserId(sessionUserId.Value);
             if (session != null)
             {
-                gameData.Add(gameData.CreateSessionEvent(equipped? GameEventType.ItemEquip : GameEventType.ItemUnEquip, session, data));
+                gameData.Add(gameData.CreateSessionEvent(equipped ? GameEventType.ItemEquip : GameEventType.ItemUnEquip, session, data));
                 TrySendToExtensionAsync(character, data);
             }
         }
@@ -2323,6 +2329,14 @@ namespace RavenNest.BusinessLogic.Game
                     gameData.Add(skills);
                 }
 
+                /*
+                    Temporary Debugging
+                 */
+                if (character.Name.ToLower() == "zerratar")
+                {
+
+                }
+
                 if (removeFromSession)
                 {
                     SendRemovePlayerFromSession(character, gameSession, "[Update Training Skill]");
@@ -2501,6 +2515,15 @@ namespace RavenNest.BusinessLogic.Game
                 var character = (characterId != null ? gameData.GetCharacter(characterId.Value) : GetCharacter(token, userId)) ?? GetCharacter(token, userId);
                 if (character == null)
                     throw new Exception("UpdateExperience: Unable to save exp. Character for user ID " + userId + " could not be found.");
+
+
+                /*
+                    Temporary Debugging
+                 */
+                if (character.Name.ToLower() == "zerratar")
+                {
+
+                }
 
                 var sessionState = gameData.GetSessionState(gameSession.Id);
                 var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
