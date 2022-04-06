@@ -1888,6 +1888,7 @@ namespace RavenNest.BusinessLogic.Game
             var inventory = inventoryProvider.Get(character.Id);
 
             var stack = gameData.GetInventoryItem(item.Id);
+            if (stack == null) return false;
             if (inventory.RemoveItem(stack, amount))
             {
                 // Check whether or not this item can be stacked.
