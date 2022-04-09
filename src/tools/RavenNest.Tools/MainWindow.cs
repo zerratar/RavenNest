@@ -9,8 +9,8 @@ namespace RavenNest.Tools
     {
         private readonly AdjustPlayerExperienceAction expAdjuster;
         private readonly BuildUpdatePackageAction buildUpdatePackage;
-
         private readonly PatreonSynchronizationAction patreonSync;
+        private readonly PlayerSkillRollback skillRollbackv0788;
 
         public MainWindow()
         {
@@ -18,6 +18,7 @@ namespace RavenNest.Tools
             expAdjuster = new AdjustPlayerExperienceAction(ToolProgress, ToolStatus);
             buildUpdatePackage = new BuildUpdatePackageAction(ToolProgress, ToolStatus);
             patreonSync = new PatreonSynchronizationAction(ToolProgress, ToolStatus);
+            skillRollbackv0788 = new PlayerSkillRollback(ToolProgress, ToolStatus, @"C:\Ravenfall\pre0.7.8.9-restorepoint\", @"C:\Ravenfall\pre0.7.8.9\");
         }
 
         private void BuildUpdatePackage_Invoke(object sender, EventArgs e)
@@ -35,6 +36,11 @@ namespace RavenNest.Tools
             patreonSync.Apply();
         }
 
+        private void SkillRollbackv0788_Invoke(object sender, EventArgs e)
+        {
+            skillRollbackv0788.Apply();
+        }
+
         public override void Update(AppTime appTime)
         {
             base.Update(appTime);
@@ -47,7 +53,6 @@ namespace RavenNest.Tools
             //Logo.Position = new System.Drawing.Point(wHalf - Logo.ImageSource.Width / 2, hHalf - Logo.ImageSource.Height / 2);
 
             LogoLabel.Position = new System.Drawing.Point(wHalf - LogoLabelWidth / 2, hHalf - 9);
-
             ToolStatus.Position = new System.Drawing.Point(wHalf - ToolStatus.Text.Length / 2, hHalf - 2);
             ToolProgress.Position = new System.Drawing.Point(wHalf - ToolProgress.Size.Width / 2, hHalf);
         }
@@ -65,6 +70,10 @@ namespace RavenNest.Tools
             if (key.Key == ConsoleKey.F3)
             {
                 patreonSync.Apply();
+            }
+            if (key.Key == ConsoleKey.F4)
+            {
+                skillRollbackv0788.Apply();
             }
             return base.OnKeyDown(key);
         }

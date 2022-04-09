@@ -24,11 +24,11 @@ namespace RavenNest.BusinessLogic.Data
 
     public class GameDataBackupProvider : IGameDataBackupProvider
     {
-#if RELEASE || Linux
+        //#if RELEASE || Linux
         private const string RestorePointFolder = @"restorepoints";
-#else
-        private const string RestorePointFolder = @"C:\git\RavenNest\src\RavenNest.Blazor\restorepoints";
-#endif
+        //#else
+        //        private const string RestorePointFolder = @"C:\git\RavenNest\src\RavenNest.Blazor\restorepoints";
+        //#endif
         private const string BackupFolder = "backups";
         private const string FileTypeExt = ".json";
 
@@ -278,7 +278,7 @@ namespace RavenNest.BusinessLogic.Data
 
             public IReadOnlyList<Type> GetEntityTypes()
             {
-                return entityData.Keys.ToList();
+                return entityData.Keys.AsList();
             }
         }
     }
