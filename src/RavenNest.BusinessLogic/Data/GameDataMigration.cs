@@ -28,20 +28,6 @@ namespace RavenNest.BusinessLogic.Data
                 var sw = new Stopwatch();
                 sw.Start();
                 var queryBuilder = new QueryBuilder();
-                var users = restorePoint.Get<User>();
-                var characters = restorePoint.Get<Character>();
-                var skills = restorePoint.Get<Skills>();
-                var marketplaceItems = restorePoint.Get<MarketItem>();
-                var syntyAppearance = restorePoint.Get<SyntyAppearance>();
-                var appearances = restorePoint.Get<Appearance>();
-                var resources = restorePoint.Get<Resources>();
-                var charStates = restorePoint.Get<CharacterState>();
-                var charStats = restorePoint.Get<Statistics>();
-                var invItems = restorePoint.Get<InventoryItem>();
-                var villages = restorePoint.Get<Village>();
-                var villageHouses = restorePoint.Get<VillageHouse>();
-
-                var failedCount = 0;
                 using (var con = db.GetConnection())
                 {
                     con.Open();
@@ -57,6 +43,12 @@ namespace RavenNest.BusinessLogic.Data
                         var table = $"[DB_A3551F_ravenfall].[dbo].[{restoreType.Name}]";
                         try
                         {
+                            var entities = restorePoint.Get(restoreType);
+                            if (entities == null)
+                            {
+                                continue;
+                            }
+
                             using (var cmd = con.CreateCommand())
                             {
                                 cmd.CommandText = $"truncate table {table};";
@@ -64,7 +56,7 @@ namespace RavenNest.BusinessLogic.Data
                             }
 
                             logger.LogInformation($"Migrating {table} data...");
-                            var entities = restorePoint.Get(restoreType);
+
                             var queries = BuildInsertQuery(queryBuilder, entities);
                             foreach (var q in queries)
                             {
@@ -86,7 +78,6 @@ namespace RavenNest.BusinessLogic.Data
                 }
 
                 sw.Stop();
-                logger.LogInformation($"Data migration inserted {characters.Count} characters, {failedCount} failed inserts and took a total of: " + sw.Elapsed);
             }
             catch (Exception exc)
             {

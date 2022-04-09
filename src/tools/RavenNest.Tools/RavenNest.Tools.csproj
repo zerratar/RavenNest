@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\GameDataSimulation\GameDataSimulation.csproj" />
     <ProjectReference Include="..\..\RavenNest.BusinessLogic\RavenNest.BusinessLogic.csproj" />
     <ProjectReference Include="..\..\RavenNest.DataModels\RavenNest.DataModels.csproj" />
     <ProjectReference Include="..\..\RavenNest.PatreonAPI\RavenNest.PatreonAPI.csproj" />

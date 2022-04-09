@@ -196,7 +196,7 @@ namespace RavenNest.DataModels
             this.expProp = expProp;
             this.lvlProp = lvlProp;
         }
-
+        public Skills Skills => source;
         public string Name { get; }
         public int Index { get; }
         public int Level
@@ -209,6 +209,11 @@ namespace RavenNest.DataModels
         {
             get => (double)expProp.GetValue(source);
             set => expProp.SetValue(source, value);
+        }
+
+        public override string ToString()
+        {
+            return "[" + Index + "] " + Name + " " + Level;
         }
     }
 }

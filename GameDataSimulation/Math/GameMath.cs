@@ -51,14 +51,46 @@ namespace GameDataSimulation
             return (level - 2 < 0 ? 0 : ExperienceArray[level - 2]);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double Lerp(double v1, double v2, double t)
+        {
+            return v1 + (v2 - v1) * t;
+        }
+
         public static class Exp
         {
+            /// <summary>
+            /// The level where time between level has peaked at <see cref="IncrementMins"/>.
+            /// </summary>
+            public const double EasyLevel = 75.0;
+
             public const double IncrementMins = 14.0;
             public const double IncrementHours = IncrementMins / 60.0;
             public const double IncrementDays = IncrementHours / 24.0;
             public const double MaxLevelDays = IncrementDays * MaxLevel;
             public const double MultiEffectiveness = 1.375d;
 
+            public const double MaxExpFactorFromIsland = 1d;
+
+            /// <summary>
+            /// Calculates the amount of exp that should be yielded given the current skill and level.
+            /// </summary>
+            /// <param name="nextLevel"></param>
+            /// <param name="skill"></param>
+            /// <param name="factor"></param>
+            /// <param name="boost"></param>
+            /// <param name="multiplierFactor"></param>
+            /// <returns></returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static double CalculateExperience(int nextLevel, Skill skill, double factor = 1, double boost = 1, double multiplierFactor = 1)
+            {
+                var bTicksForLevel = GetTotalTicksForLevel(nextLevel, skill, boost);
+                var expForNextLevel = ExperienceForLevel(nextLevel);
+                var maxExpGain = expForNextLevel / bTicksForLevel;
+                var minExpGainPercent = GetMinExpGainPercent(nextLevel, skill);
+                var minExpGain = ExperienceForLevel(nextLevel) * minExpGainPercent;
+                return Lerp(0, Lerp(minExpGain, maxExpGain, multiplierFactor), factor);
+            }
 
             /// <summary>
             /// Gets the total amount of "Ticks" to level up to the given target level after applying the exp boost.
@@ -120,6 +152,11 @@ namespace GameDataSimulation
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static double GetMaxMinutesForLevel(int level)
             {
+                if (level <= EasyLevel)
+                {
+                    return (level - 1) * GameMath.Lerp(IncrementMins / 4.0d, IncrementMins, level / EasyLevel);
+                }
+
                 return (level - 1) * IncrementMins;
             }
 
@@ -165,7 +202,8 @@ namespace GameDataSimulation
                         return 1.25;
 
                     case Skill.Healing: return 0.5d;
-                    default: return 1;
+                    case Skill.Sailing: return 0.4d;
+                    default: return 0.5;
                 }
             }
         }

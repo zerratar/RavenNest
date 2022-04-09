@@ -31,7 +31,6 @@ namespace RavenNest.Tools.Actions
 
             var members = await patreon.GetCampaignMembers(CAMPAIGN_ID);
             //var campaign = await patreon.GetCampaign(CAMPAIGN_ID);
-
         }
     }
 }
