@@ -2320,6 +2320,12 @@ namespace RavenNest.BusinessLogic.Game
                     return true;
                 }
 
+                // Temporary solution to skill rollback, block saving skills from clients other than the one definied.
+                if (!sessionOwner.IsAdmin.GetValueOrDefault() && !gameData.IsExpectedVersion(gameSession))
+                {
+                    return true;
+                }
+
                 var removeFromSession = !AcquiredUserLock(token, character) && character.UserIdLock != null;
                 var skills = gameData.GetCharacterSkills(character.SkillsId);
 
@@ -2335,7 +2341,6 @@ namespace RavenNest.BusinessLogic.Game
                  */
                 if (character.Name.ToLower() == "zerratar")
                 {
-
                 }
 
                 if (removeFromSession)
@@ -2526,7 +2531,7 @@ namespace RavenNest.BusinessLogic.Game
 
                 }
 
-                var sessionState = gameData.GetSessionState(gameSession.Id);
+
                 var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
                 if (characterSessionState.Compromised)
                 {
@@ -2538,6 +2543,12 @@ namespace RavenNest.BusinessLogic.Game
                 if (sessionOwner.Status >= 1)
                 {
                     logger.LogError("UpdateExperience: The user session from " + sessionOwner.UserName + " trying to save players, but the owner has been banned.");
+                    return true;
+                }
+
+                // Temporary solution to skill rollback, block saving skills from clients other than the one definied.
+                if (!sessionOwner.IsAdmin.GetValueOrDefault() && !gameData.IsExpectedVersion(gameSession))
+                {
                     return true;
                 }
 

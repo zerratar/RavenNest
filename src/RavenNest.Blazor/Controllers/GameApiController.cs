@@ -127,7 +127,6 @@ namespace RavenNest.Controllers
             {
                 errorMessage = "Session token has expired.";
             }
-
 #if DEBUG
             if (!string.IsNullOrEmpty(errorMessage))
             {

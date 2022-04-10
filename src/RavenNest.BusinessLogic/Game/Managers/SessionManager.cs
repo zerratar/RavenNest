@@ -66,9 +66,10 @@ namespace RavenNest.BusinessLogic.Game
 
             if (clientVersion.ToLower() != game.ClientVersion.ToLower())
             {
-                var expectedVersionStr = game.ClientVersion.Replace("a", "");
-                var clientVersionStr = clientVersion.Replace("a", "");
-                if (!Version.TryParse(clientVersionStr, out var version) || !Version.TryParse(expectedVersionStr, out var expectedVersion) || version < expectedVersion)
+                var expectedVersionStr = game.ClientVersion;
+                var clientVersionStr = clientVersion;
+
+                if (!GameVersion.TryParse(clientVersionStr, out var version) || !GameVersion.TryParse(expectedVersionStr, out var expectedVersion) || version < expectedVersion)
                 {
                     //logger.LogError("Unable to start session for user: " + token.UserId + $", client version: {clientVersion}, accessKey: {accessKey}");
                     return null; // new SessionToken();
