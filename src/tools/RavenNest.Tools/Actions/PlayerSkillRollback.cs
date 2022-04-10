@@ -9,6 +9,7 @@ using RavenNest.DataModels;
 using SkillType = GameDataSimulation.Skill;
 using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace RavenNest.Tools.Actions
 {
@@ -38,8 +39,21 @@ namespace RavenNest.Tools.Actions
             this.restorePointFolder = restorePointFolder;
         }
 
-        public void Apply()
+        public async void Apply()
         {
+            var wasIndeterminate = this.ToolProgress.Indeterminate;
+
+            var maxSteps = 23f;
+            var stepIndex = 0;
+
+            this.ToolProgress.Indeterminate = false;
+            this.ToolProgress.MaxValue = 100f;
+
+            int IncrementProgress()
+            {
+                return (int)((stepIndex++ / maxSteps) * 100f);
+            }
+
             /*
                 Rules:
                 * No players should be removed. 
@@ -55,161 +69,219 @@ namespace RavenNest.Tools.Actions
 
             // most important files are character, skills and characterskillrecord. but only skills and characterskillrecord should be the output .json files. 
 
-            // 1. we know we will have to truncate the character skill record. so lets save an empty one right away.
-            Write(new DataModels.CharacterSkillRecord[0]);
-
-            // get all sub directories in the rollbackdatafolder, they are sperated per date.
-
-            var backups = Backups.GetSkillBackups(rollbackDataFolder);
-            var earliestFirst = backups.OrderBy(x => x.Created).ToList();
-
-            // Earliest one should be our initial state and also our worst case rollback to. Which means this is our ground truth.
-            // Last item should be our latest state and current one in game
-            var groundTruth = earliestFirst[0];
-            var actual = earliestFirst[^1];
-
-
-            List<SkillChangeRecord> changes = new List<SkillChangeRecord>();
-            List<SkillChangeMatch> ignored = new List<SkillChangeMatch>();
-            List<SkillChangeMatch> forced = new List<SkillChangeMatch>();
-
-            void Ignored(string query)
+            await Task.Run(() =>
             {
-                if (!query.Contains(' '))
+                this.ToolProgress.Value = IncrementProgress();
+                this.ToolStatus.Text = "Saving Empty Character Skill Records";
+                // 1. we know we will have to truncate the character skill record. so lets save an empty one right away.
+                Write(new DataModels.CharacterSkillRecord[0]);
+
+
+                // get all sub directories in the rollbackdatafolder, they are sperated per date.
+                this.ToolProgress.Value = IncrementProgress();
+                this.ToolStatus.Text = "Loading Backup Files...";
+                var backups = Backups.GetSkillBackups(rollbackDataFolder);
+                var earliestFirst = backups.OrderBy(x => x.Created).ToList();
+
+                // Earliest one should be our initial state and also our worst case rollback to. Which means this is our ground truth.
+                // Last item should be our latest state and current one in game
+                var groundTruth = earliestFirst[0];
+                var actual = earliestFirst[^1];
+
+
+                List<SkillChangeRecord> changes = new List<SkillChangeRecord>();
+                List<SkillChangeMatch> ignored = new List<SkillChangeMatch>();
+                List<SkillChangeMatch> forced = new List<SkillChangeMatch>();
+
+                void Ignored(string query)
                 {
-                    ignored.Add(new SkillChangeMatch
+                    if (!query.Contains(' '))
                     {
-                        Name = query
-                    });
-                    return;
-                }
+                        ignored.Add(new SkillChangeMatch
+                        {
+                            Name = query
+                        });
+                        return;
+                    }
 
-                var d = query.Split(' ');
-                ignored.Add(new SkillChangeMatch
-                {
-                    Name = d[0],
-                    SkillName = d[1]
-                });
-            }
-
-
-            void Forced(string query)
-            {
-                var d = query.Split(' ');
-                if (d.Length == 2)
-                {
-                    forced.Add(new SkillChangeMatch
+                    var d = query.Split(' ');
+                    ignored.Add(new SkillChangeMatch
                     {
                         Name = d[0],
                         SkillName = d[1]
                     });
                 }
-                else if (d.Length > 2)
+
+
+                void Forced(string query)
                 {
-                    for (var i = 1; i < d.Length; ++i)
+                    var d = query.Split(' ');
+                    if (d.Length == 2)
                     {
                         forced.Add(new SkillChangeMatch
                         {
                             Name = d[0],
-                            SkillName = d[i]
+                            SkillName = d[1]
                         });
                     }
-                }
-            }
-
-            /*
-                List exceptions taken from discord.
-             */
-            Ignored("zerratar");
-            Ignored("mhney fishing");
-            Ignored("verynasty1#1 ranged");
-            Ignored("blm_blacklivesmatterstill#0 magic");
-
-            /*
-                List of forced changed
-             */
-            // verynasty1 had slayer skill transferred from magic
-            Forced("verynasty1#1 slayer");
-            Forced("t3phie#0 ranged");
-
-            // lv99redfighter: I don't see my alt on the list, "lv99redfighter" and I believe it should be.  73 levels in magic and ranged, never trained either of those on that.
-            Forced("lv99redfighter ranged");
-            Forced("lv99redfighter magic");
-
-
-            // first of all, lets get separate affected and unaffected players
-            // as we will join them in the end, we will use the actual data for the unaffected players.
-            var workset = FilterByCreationAndLastUsed(actual, forced, ignored, groundTruth.Created);
-
-            // with a workset, we can now go through all affected characters and do a second pass.
-            // this time, a more thourough one. But to do that. we need to pull the affected one from each backup            
-
-            // But before that. Lets do one more pass on filtering by comparing groundTruth with actual affected one
-            // this will allow us to roughly get out characters with skills that went crazy past those days.
-            workset = FilterByImpossibleExpGain(workset, groundTruth, forced, ExpMultiplier);
-
-            // most expensive step, we have to check all affected in workset
-            // with previous backups, going backwards until we can find the deviation.
-            // We don't need to test against first one as we already did that.
-
-
-
-            // we can also do the other way around, to find the last with deviation. if this isnt enough.
-            for (var i = backups.Count - 2; i >= 0; --i)
-            {
-                var backup = backups[i];
-
-                if (backup.Created == workset.Affected.Created) continue;
-                var tmpWorkset = FilterByImpossibleExpGain(workset, backup, forced, ExpMultiplier);
-                if (tmpWorkset.Affected.Characters.Count > 0)
-                {
-                    // we will re-assign our workset to a reverted skill state
-                    // so we can later compare with a previous state before that and apply reverts
-                    // until no longer affected.
-                    workset = RevertSkillsTo(tmpWorkset, workset, backup, ExpMultiplier, forced, ignored, ref changes);
-                }
-            }
-
-            // review changes, then save changes to disk.
-
-            MergeRecords(ref changes);
-
-            var playerChanges = changes.GroupBy(x => x.CharacterId).ToList();
-
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine("A total of " + changes.Count + " changes will be made. " + playerChanges.Count + " players affected.");
-            sb.AppendLine();
-            foreach (var change in playerChanges)
-            {
-                var items = change.ToList();
-
-                sb.AppendLine(items[0].CharacterName + "#" + items[0].CharacterIndex);
-
-                foreach (var c in items)
-                {
-                    var reason = c.Reason;
-                    if (string.IsNullOrEmpty(reason))
+                    else if (d.Length > 2)
                     {
-                        reason =
-                            c.SimilarSkillLevel == c.LevelFrom
-                            ? "Copy of " + c.SimilarSkillName + " " + c.SimilarSkillLevel
-                            : "Most likely a copy of " + c.SimilarSkillName + " " + c.SimilarSkillLevel;
-
-                        if (c.SimilarSkillLevel == 0)
+                        for (var i = 1; i < d.Length; ++i)
                         {
-                            reason = "Exp gained too quickly";
+                            forced.Add(new SkillChangeMatch
+                            {
+                                Name = d[0],
+                                SkillName = d[i]
+                            });
                         }
                     }
-
-                    sb.AppendLine(c.SkillName.PadRight(10, ' ') + "\t" + c.LevelFrom.ToString().PadRight(3, ' ') + " => " + c.LevelTo.ToString().PadRight(3, ' ') + "\t(" + c.From + " => " + c.To + ") Reason: " + reason);
                 }
+
+                this.ToolProgress.Value = IncrementProgress();
+                this.ToolStatus.Text = "Configuring Rules...";
+                /*
+                    List exceptions taken from discord.
+                 */
+                Ignored("zerratar");
+                Ignored("mhney fishing");
+                Ignored("verynasty1#1 ranged");
+                Ignored("blm_blacklivesmatterstill#0 magic");
+
+                /*
+                    List of forced changed
+                 */
+                // verynasty1 had slayer skill transferred from magic
+                Forced("verynasty1#1 slayer");
+                Forced("t3phie#0 ranged");
+
+                // lv99redfighter: I don't see my alt on the list, "lv99redfighter" and I believe it should be.  73 levels in magic and ranged, never trained either of those on that.
+                Forced("lv99redfighter ranged");
+                Forced("lv99redfighter magic");
+
+                this.ToolProgress.Value = IncrementProgress();
+                this.ToolStatus.Text = "Filtering Pass 0";
+
+                // first of all, lets get separate affected and unaffected players
+                // as we will join them in the end, we will use the actual data for the unaffected players.
+                var workset = FilterByCreationAndLastUsed(actual, forced, ignored, groundTruth.Created);
+
+                // with a workset, we can now go through all affected characters and do a second pass.
+                // this time, a more thourough one. But to do that. we need to pull the affected one from each backup            
+
+                this.ToolProgress.Value = IncrementProgress();
+                this.ToolStatus.Text = "Filtering Pass 1";
+                // But before that. Lets do one more pass on filtering by comparing groundTruth with actual affected one
+                // this will allow us to roughly get out characters with skills that went crazy past those days.
+                workset = FilterByImpossibleExpGain(workset, groundTruth, forced, ExpMultiplier);
+
+                // most expensive step, we have to check all affected in workset
+                // with previous backups, going backwards until we can find the deviation.
+                // We don't need to test against first one as we already did that.
+
+
+                this.ToolProgress.Value = IncrementProgress();
+                this.ToolStatus.Text = "Creating Changeset for Rollback...";
+                // we can also do the other way around, to find the last with deviation. if this isnt enough.
+                for (var i = backups.Count - 2; i >= 0; --i)
+                {
+                    var backup = backups[i];
+
+                    if (backup.Created == workset.Affected.Created) continue;
+                    var tmpWorkset = FilterByImpossibleExpGain(workset, backup, forced, ExpMultiplier);
+
+                    this.ToolProgress.Value = IncrementProgress();
+
+                    if (tmpWorkset.Affected.Characters.Count > 0)
+                    {
+                        // we will re-assign our workset to a reverted skill state
+                        // so we can later compare with a previous state before that and apply reverts
+                        // until no longer affected.
+                        workset = RevertSkillsTo(tmpWorkset, workset, backup, ExpMultiplier, forced, ignored, ref changes);
+                        this.ToolProgress.Value = IncrementProgress();
+                    }
+                }
+
+                this.ToolStatus.Text = "Merging Changeset Records...";
+                // review changes, then save changes to disk.
+
+                MergeRecords(ref changes);
+
+                var playerChanges = changes.GroupBy(x => x.CharacterId).ToList();
+
+                this.ToolStatus.Text = "Saving Changeset Records to changes.txt...";
+                this.ToolProgress.Value = IncrementProgress();
+
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine("A total of " + changes.Count + " changes will be made. " + playerChanges.Count + " players affected.");
                 sb.AppendLine();
-            }
+                foreach (var change in playerChanges)
+                {
+                    var items = change.ToList();
 
-            System.IO.File.WriteAllText(System.IO.Path.Combine(restorePointFolder, "changes.txt"), sb.ToString());
+                    sb.AppendLine(items[0].CharacterName + "#" + items[0].CharacterIndex);
 
-            // final step is as easy as combining unaffected and affected lists in the current workset and save the characterskills.json file.
-            // and then verify that all players are still in there by reading the file one more time and double check.
+                    foreach (var c in items)
+                    {
+                        var reason = c.Reason;
+                        if (string.IsNullOrEmpty(reason))
+                        {
+                            reason =
+                                c.SimilarSkillLevel == c.LevelFrom
+                                ? "Copy of " + c.SimilarSkillName + " " + c.SimilarSkillLevel
+                                : "Most likely a copy of " + c.SimilarSkillName + " " + c.SimilarSkillLevel;
+
+                            if (c.SimilarSkillLevel == 0)
+                            {
+                                reason = "Exp gained too quickly";
+                            }
+                        }
+
+                        sb.AppendLine(c.SkillName.PadRight(10, ' ') + "\t" + c.LevelFrom.ToString().PadRight(3, ' ') + " => " + c.LevelTo.ToString().PadRight(3, ' ') + "\t(" + c.From + " => " + c.To + ") Reason: " + reason);
+                    }
+                    sb.AppendLine();
+                }
+
+                System.IO.File.WriteAllText(System.IO.Path.Combine(restorePointFolder, "changes.txt"), sb.ToString());
+
+
+                this.ToolStatus.Text = "Creating Restorepoint...";
+                this.ToolProgress.Value = IncrementProgress();
+                // final step is as easy as combining unaffected and affected lists in the current workset and save the characterskills.json file.
+                // and then verify that all players are still in there by reading the file one more time and double check.
+
+                var restorePointSkillListWrite = new List<Skills>();
+                restorePointSkillListWrite.AddRange(workset.Unaffected.Skills.Values);
+                restorePointSkillListWrite.AddRange(workset.Affected.Skills.Values);
+                Write(restorePointSkillListWrite);
+
+
+                this.ToolStatus.Text = "Validating Restorepoint...";
+                this.ToolProgress.Value = IncrementProgress();
+
+                var restorePointSkillListRead = Read<Skills>().ToDictionary(x => x.Id, x => x);
+
+                var missingSkillsCount = 0;
+                foreach (var c in actual.Characters)
+                {
+                    if (!restorePointSkillListRead.TryGetValue(c.Value.SkillsId, out _))
+                    {
+                        missingSkillsCount++;
+                    }
+                }
+
+                if (missingSkillsCount > 0)
+                {
+                    this.ToolStatus.Text = "Rollback Restorepoint Failed. " + missingSkillsCount + " Character Skills Records Missing!!";
+                    this.ToolProgress.Value = IncrementProgress();
+                }
+                else
+                {
+                    this.ToolStatus.Text = "Rollback Restorepoint Completed.";
+                    this.ToolProgress.Value = IncrementProgress();
+                }
+            });
+
+            this.ToolProgress.Indeterminate = wasIndeterminate;
         }
 
         private void MergeRecords(ref List<SkillChangeRecord> changes)
@@ -730,6 +802,12 @@ namespace RavenNest.Tools.Actions
         private void Write<T>(T data)
         {
             RestorepointUtilities.Write(restorePointFolder, data);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private List<T> Read<T>()
+        {
+            return RestorepointUtilities.Read<T>(restorePointFolder);
         }
     }
 
