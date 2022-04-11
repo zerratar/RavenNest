@@ -24,6 +24,18 @@
             set => DataPosition = value;
         }
 
+        public void WriteByte(byte value)
+        {
+            Data[Position++] = value;
+            Modified = true;
+        }
+
+        public void WriteByte(byte value, int offset)
+        {
+            Data[offset] = value;
+            Modified = true;
+        }
+
         public void WriteString(string value)
         {
             WriteString(DataPosition, value, value.Length, '\0');
@@ -51,6 +63,11 @@
                     Data[offset + i] = (byte)padChar;
                 }
             }
+        }
+
+        public byte ReadByte(int offset)
+        {
+            return Data[offset];
         }
 
         public int IndexOf(string text)
@@ -113,6 +130,66 @@
             return -1;
         }
 
+        public int IndexOf(double value, int startIndex)
+        {
+            return IndexOf(BitConverter.GetBytes(value), startIndex);
+        }
+        public int IndexOf(long value, int startIndex)
+        {
+            return IndexOf(BitConverter.GetBytes(value), startIndex);
+        }
+        public int IndexOf(int value, int startIndex)
+        {
+            return IndexOf(BitConverter.GetBytes(value), startIndex);
+        }
+        public int IndexOf(short value, int startIndex)
+        {
+            return IndexOf(BitConverter.GetBytes(value), startIndex);
+        }
+        public int IndexOf(byte[] comparison, int startIndex)
+        {
+            var index = startIndex;
+            while (index < Data.Length)
+            {
+                var at = index;
+                if (comparison[0] == Data[index])
+                {
+
+                    var wasFound = true;
+                    for (var i = 1; i < comparison.Length; i++)
+                    {
+                        if (Data[index + i] != comparison[i])
+                        {
+                            wasFound = false;
+                            break;
+                        }
+                    }
+
+                    if (wasFound)
+                    {
+                        return at;
+                    }
+
+                    return at;
+                }
+                index++;
+            }
+            return -1;
+        }
+        public int IndexOf(byte value, int startIndex)
+        {
+            var index = startIndex;
+            while (index < Data.Length)
+            {
+                var at = index;
+                if (value == Data[index])
+                {
+                    return at;
+                }
+                index++;
+            }
+            return -1;
+        }
         public int ReadStringLength()
         {
             var endOfStringEncountered = false;
@@ -130,6 +207,21 @@
                     return len;
             } while (DataPosition < Data.Length);
             return -1;
+        }
+
+        public string ReadString(int position)
+        {
+            var str = "";
+            var index = position;
+            do
+            {
+                var value = (char)Data[index++];
+                if (value == '\0')
+                    break;
+
+                str += value;
+            } while (index < Data.Length);
+            return str;
         }
 
         public string ReadString()
@@ -160,7 +252,14 @@
 
             if (createBackup)
             {
-                System.IO.File.Copy(File, File + ".bak", true);
+
+                var bakupFile = File + ".bak";
+                while (System.IO.File.Exists(bakupFile))
+                {
+                    bakupFile += ".bak";
+                }
+
+                System.IO.File.Copy(File, bakupFile, true);
             }
 
             System.IO.File.WriteAllBytes(File, Data);
