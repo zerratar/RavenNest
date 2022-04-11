@@ -71,16 +71,21 @@ namespace RavenNest.Tools.Actions
 
             await Task.Run(() =>
             {
+
+                // get all sub directories in the rollbackdatafolder, they are sperated per date.
+                this.ToolProgress.Value = IncrementProgress();
+                this.ToolStatus.Text = "Loading Backup Files...";
+                var backups = Backups.GetSkillBackups(rollbackDataFolder, (val, max) =>
+                {
+                    ToolProgress.Value = (int)((val / (float)max) * 100f);
+                });
+
                 this.ToolProgress.Value = IncrementProgress();
                 this.ToolStatus.Text = "Saving Empty Character Skill Records";
                 // 1. we know we will have to truncate the character skill record. so lets save an empty one right away.
                 Write(new DataModels.CharacterSkillRecord[0]);
 
 
-                // get all sub directories in the rollbackdatafolder, they are sperated per date.
-                this.ToolProgress.Value = IncrementProgress();
-                this.ToolStatus.Text = "Loading Backup Files...";
-                var backups = Backups.GetSkillBackups(rollbackDataFolder);
                 var earliestFirst = backups.OrderBy(x => x.Created).ToList();
 
                 // Earliest one should be our initial state and also our worst case rollback to. Which means this is our ground truth.
@@ -151,6 +156,7 @@ namespace RavenNest.Tools.Actions
                     List of forced changed
                  */
                 // verynasty1 had slayer skill transferred from magic
+                Forced("zzjing#1 magic ranged");
                 Forced("verynasty1#1 slayer");
                 Forced("t3phie#0 ranged");
 
@@ -280,6 +286,8 @@ namespace RavenNest.Tools.Actions
                     this.ToolProgress.Value = IncrementProgress();
                 }
             });
+
+            GC.Collect();
 
             this.ToolProgress.Indeterminate = wasIndeterminate;
         }
