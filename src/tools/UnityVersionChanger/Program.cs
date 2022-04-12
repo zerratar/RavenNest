@@ -67,6 +67,6 @@ if (gm.Position == -1)
 }
 
 //var foundVersion = gm.ReadString();
-gm.WriteByte((byte)replacementVersion.Length, 4632);
+gm.WriteByte((byte)replacementVersion.Length, versionLengthPos);
 gm.WriteString(replacementVersion, 25, '\0');
 gm.Save(true);
