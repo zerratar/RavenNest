@@ -43,7 +43,9 @@ namespace RavenNest.Tools.Actions
         {
             var wasIndeterminate = this.ToolProgress.Indeterminate;
 
-            var maxSteps = 23f;
+            var backupInfo = Backups.GetBackups(rollbackDataFolder);
+
+            var maxSteps = backupInfo.Count + 14;
             var stepIndex = 0;
 
             this.ToolProgress.Indeterminate = false;
@@ -75,6 +77,8 @@ namespace RavenNest.Tools.Actions
                 // get all sub directories in the rollbackdatafolder, they are sperated per date.
                 this.ToolProgress.Value = IncrementProgress();
                 this.ToolStatus.Text = "Loading Backup Files...";
+
+
                 var backups = Backups.GetSkillBackups(rollbackDataFolder, (val, max) =>
                 {
                     ToolProgress.Value = (int)((val / (float)max) * 100f);
@@ -152,6 +156,16 @@ namespace RavenNest.Tools.Actions
                 Ignored("verynasty1#1 ranged");
                 Ignored("blm_blacklivesmatterstill#0 magic");
 
+                Ignored("hendi_cdn#1 healing");
+                Ignored("ar0wann#2 healing");
+                Ignored("toilet_peipa#2 healing");
+                Ignored("hayhaythats#0 healing");
+                Ignored("rexcower#1 healing");
+                Ignored("damocles90#1 healing");
+
+                Ignored("indiana_cojones#2");
+                Ignored("seraphinne#0");
+
                 /*
                     List of forced changed
                  */
@@ -159,6 +173,9 @@ namespace RavenNest.Tools.Actions
                 Forced("zzjing#1 magic ranged");
                 Forced("verynasty1#1 slayer");
                 Forced("t3phie#0 ranged");
+
+                // needs the slayer level rolled back.
+                Forced("toilet_peipa#1 slayer");
 
                 // lv99redfighter: I don't see my alt on the list, "lv99redfighter" and I believe it should be.  73 levels in magic and ranged, never trained either of those on that.
                 Forced("lv99redfighter ranged");
@@ -490,7 +507,7 @@ namespace RavenNest.Tools.Actions
                         //    }
                         //}
 
-                        if (skillDelta >= LevelDeltaMax)
+                        if (skillDelta >= LevelDeltaMax * 2)
                         {
                             var estimated0 = EstimateTrainingTime((SkillType)s0.Index, olds0.Level, s0.Level, multiplier);
                             //if (estimated0 >= elapsedTime)
