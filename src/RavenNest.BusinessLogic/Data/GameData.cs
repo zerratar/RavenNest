@@ -370,6 +370,7 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureExpMultipliersWithinBounds(expMultiplierEvents);
                 EnsureCraftingRequirements(items);
                 MergeLoyaltyData(loyalty);
+
                 #endregion
 
                 stopWatch.Stop();
