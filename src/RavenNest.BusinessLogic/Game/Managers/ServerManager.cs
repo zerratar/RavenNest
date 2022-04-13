@@ -133,17 +133,61 @@ namespace RavenNest.BusinessLogic.Game
             var activeEvent = gameData.GetActiveExpMultiplierEvent();
             if (activeEvent != null)
             {
-                if (activeEvent.StartedByPlayer && activeEvent.Multiplier >= multiplier)
+                // if the start time 
+                if (startTime >= activeEvent.EndTime)
+                {
+                    AddExpMultiplierr(multiplier, message, start, endTime);
                     return;
+                }
 
-                if (start < activeEvent.EndTime)
-                    activeEvent.EndTime = start;
+                if ((start >= activeEvent.StartTime && start <= activeEvent.EndTime) || (endTime >= activeEvent.EndTime && startTime <= activeEvent.StartTime))
+                {
+                    if (activeEvent.StartedByPlayer)
+                    {
+                        // when we overriding the multiplier that exists placed by a player
+                        // we must be able to go back to their multiplier as soon as our server multi is over.
+                        // we will update the current event, push it forward until after the overriden multi is over
+                        // but reduce the length with the past time. Since this is active currently. UtcNow has already past its start time.
+
+                        var elapsedTime = DateTime.UtcNow - activeEvent.StartTime;
+                        var duration = activeEvent.EndTime - activeEvent.StartTime;
+                        var remaining = duration.Subtract(elapsedTime);
+
+                        activeEvent.StartTime = endTime;
+                        activeEvent.EndTime = endTime.Add(remaining);
+
+                        // finally, add the new multiplier
+                        AddExpMultiplierr(multiplier, message, start, endTime);
+                        return;
+                    }
+
+                    // otherwise we will update the current multiplier with the new values
+                    activeEvent.Multiplier = multiplier;
+                    activeEvent.StartTime = start;
+                    activeEvent.EndTime = endTime;
+                    activeEvent.EventName = message;
+                    return;
+                }
             }
+
+            AddExpMultiplierr(multiplier, message, start, endTime);
+        }
+
+        private void AddExpMultiplierr(int multiplier, string eventName, DateTime startTime, DateTime endTime, bool startedByPlayer = false)
+        {
+            if (endTime < startTime)
+            {
+                var tmp = endTime;
+                endTime = startTime;
+                startTime = tmp;
+            }
+
             var ev = new ExpMultiplierEvent();
             ev.Id = Guid.NewGuid();
-            ev.EventName = message;
+            ev.EventName = eventName;
+            ev.StartedByPlayer = startedByPlayer;
             ev.Multiplier = multiplier;
-            ev.StartTime = start;
+            ev.StartTime = startTime;
             ev.EndTime = endTime;
             gameData.Add(ev);
         }

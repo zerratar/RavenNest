@@ -112,7 +112,7 @@ namespace RavenNest.DataModels
 
             return (double)expProp.GetValue(this);
         }
-        public void Set(int skillIndex, int level, double exp)
+        public void Set(int skillIndex, int level, double exp, bool overrideLevel = false)
         {
             var name = SkillNames[skillIndex];
             if (!expProperties.TryGetValue(name, out var expProp))
@@ -120,8 +120,16 @@ namespace RavenNest.DataModels
 
             levelProperties.TryGetValue(name, out var lvlProp);
 
+            if (overrideLevel)
+            {
+                lvlProp.SetValue(this, level);
+                expProp.SetValue(this, exp);
+                return;
+            }
+
             var curLevel = (int)lvlProp.GetValue(this);
             var curExp = (double)expProp.GetValue(this);
+
             if (level > curLevel)
             {
                 lvlProp.SetValue(this, level);

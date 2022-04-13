@@ -39,6 +39,24 @@ namespace RavenNest.Tools.Actions
             this.restorePointFolder = restorePointFolder;
         }
 
+        private static List<StatsUpdater> Filter(IReadOnlyList<StatsUpdater> src)
+        {
+            var res = new List<StatsUpdater>();
+            foreach (var i in src)
+            {
+                var st = (SkillType)i.Index;
+                var notAffectedSkill = st != SkillType.Slayer && st != SkillType.Magic && st != SkillType.Ranged;
+                if (notAffectedSkill)
+                {
+                    continue;
+                }
+                res.Add(i);
+            }
+
+            return res;
+        }
+
+
         public async void Apply()
         {
             var wasIndeterminate = this.ToolProgress.Indeterminate;
@@ -272,6 +290,13 @@ namespace RavenNest.Tools.Actions
                 // final step is as easy as combining unaffected and affected lists in the current workset and save the characterskills.json file.
                 // and then verify that all players are still in there by reading the file one more time and double check.
 
+                //foreach (var change in changes)
+                //{
+                //    var character = workset.Affected.Characters[change.CharacterId];
+                //    var skill = workset.Affected.Skills[character.SkillsId];
+                //    skill.Set(change.SkillIndex, change.LevelTo, change.ExperienceTo);
+                //}
+
                 var restorePointSkillListWrite = new List<Skills>();
                 restorePointSkillListWrite.AddRange(workset.Unaffected.Skills.Values);
                 restorePointSkillListWrite.AddRange(workset.Affected.Skills.Values);
@@ -342,6 +367,17 @@ namespace RavenNest.Tools.Actions
                         change.SimilarSkillName = c.SimilarSkillName;
                         change.SimilarSkillLevel = c.SimilarSkillLevel;
                     }
+
+                    if (change.LevelTo == change.LevelFrom)
+                    {
+                        records.Remove(key);
+                    }
+
+                    continue;
+                }
+
+                if (c.LevelTo == c.LevelFrom)
+                {
                     continue;
                 }
 
@@ -387,18 +423,16 @@ namespace RavenNest.Tools.Actions
 
             var elapsedTime = workset.Affected.Created - backup.Created;
 
-
-
             foreach (var characterId in selection.Affected.Characters.Keys)
             {
                 var character = workset.Affected.Characters[characterId];
 
 
                 var current = workset.Affected.Skills[character.SkillsId];
-                var currentSkills = current.GetSkills();
+                var currentSkills = Filter(current.GetSkills());
                 // if skills does not exist here, we have done something really bad in a previous filter, so let it throw.
                 var old = backup.Skills[character.SkillsId];
-                var oldSkills = old.GetSkills();
+                var oldSkills = Filter(old.GetSkills());
 
                 var exc = exceptions.Where(x => x.Match(character)).ToList();
                 var fm = forced.Where(x => x.Match(character)).ToList();
@@ -447,7 +481,7 @@ namespace RavenNest.Tools.Actions
                         {
                             wasForciblyAdded = true;
                             changes.Add(CreateRecord(selection, backup, characterId, character, s0, olds0, TimeSpan.Zero, forcedMatch.SkillCompareName, -1, "Requested by player"));
-                            current.Set(s0.Index, olds0.Level, olds0.Experience);
+                            current.Set(s0.Index, olds0.Level, olds0.Experience, true);
                             recorded.Add(s0.Index);
                             break;
                         }
@@ -476,7 +510,7 @@ namespace RavenNest.Tools.Actions
                                 if (estimated0 >= elapsedTime || (skill0Delta >= LevelDeltaMax && similarityDelta <= LevelSimilarityDeltaMin))
                                 {
                                     changes.Add(CreateRecord(selection, backup, characterId, character, s0, olds0, estimated0, s1.Name, s1.Level));
-                                    current.Set(s0.Index, olds0.Level, olds0.Experience);
+                                    current.Set(s0.Index, olds0.Level, olds0.Experience, true);
                                     recorded.Add(s0.Index);
                                     changed = true;
                                 }
@@ -489,7 +523,7 @@ namespace RavenNest.Tools.Actions
                                 if (estimated1 >= elapsedTime || (skill1Delta >= LevelDeltaMax && similarityDelta <= LevelSimilarityDeltaMin))
                                 {
                                     changes.Add(CreateRecord(selection, backup, characterId, character, s1, olds1, estimated1, s0.Name, s0.Level));
-                                    current.Set(s1.Index, olds1.Level, olds1.Experience);
+                                    current.Set(s1.Index, olds1.Level, olds1.Experience, true);
                                     recorded.Add(s1.Index);
                                 }
                             }
@@ -513,7 +547,7 @@ namespace RavenNest.Tools.Actions
                             //if (estimated0 >= elapsedTime)
                             //{
                             changes.Add(CreateRecord(selection, backup, characterId, character, s0, olds0, estimated0, "", 0));
-                            current.Set(s0.Index, olds0.Level, olds0.Experience);
+                            current.Set(s0.Index, olds0.Level, olds0.Experience, true);
                             recorded.Add(s0.Index);
                             //}
                         }
@@ -574,7 +608,7 @@ namespace RavenNest.Tools.Actions
                 {
                     if (match != null)
                     {
-                        foreach (var skill in currentSkill.GetSkills())
+                        foreach (var skill in Filter(currentSkill.GetSkills()))
                         {
                             if (match.Match(skill))
                             {
@@ -640,7 +674,7 @@ namespace RavenNest.Tools.Actions
         {
             var maxLevelDelta = 0;
             var total = 0;
-            foreach (var s in current.GetSkills())
+            foreach (var s in Filter(current.GetSkills()))
             {
                 var prev = previous.GetSkill(s.Name);
                 var delta = s.Level - prev.Level;
@@ -706,7 +740,7 @@ namespace RavenNest.Tools.Actions
         private static TimeSpan EstimateTrainingTime(DataModels.Skills from, DataModels.Skills to, double multiplier)
         {
             //var oldSkills = from.GetSkills();
-            var newSkills = to.GetSkills();
+            var newSkills = Filter(to.GetSkills());
             var result = TimeSpan.Zero;
 
             foreach (var ns in newSkills)
