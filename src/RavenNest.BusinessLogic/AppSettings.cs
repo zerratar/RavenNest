@@ -39,5 +39,6 @@
         public string PatreonUpdatePledge { get; set; }
         public string PatreonCreatePledge { get; set; }
         #endregion
+        public int TcpApiPort { get; set; }
     }
 }

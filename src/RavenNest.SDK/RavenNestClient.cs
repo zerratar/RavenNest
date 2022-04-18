@@ -71,6 +71,8 @@ namespace RavenNest.SDK
                                       !string.IsNullOrEmpty(currentSessionToken.AuthToken) &&
                                       !currentSessionToken.Expired;
 
+        public SessionToken SessionToken => currentSessionToken;
+
         public bool HasActiveRequest => activeRequestCount > 0;
 
         public string ServerAddress => appSettings.ApiEndpoint;

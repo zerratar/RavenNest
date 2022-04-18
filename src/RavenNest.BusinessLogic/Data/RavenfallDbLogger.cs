@@ -14,6 +14,15 @@ namespace RavenNest.BusinessLogic
         public RavenfallDbLogWriter(IRavenfallDbContextProvider dbProvider)
         {
             this.dbProvider = dbProvider;
+
+            // note(zerratar): Experimental. Trying Telepathy to avoid writing a 10th server/client connection again.
+            //                 I'm too lazy at this point. The source code looks straight forward.
+
+#pragma warning disable 4014
+            Telepathy.Log.Info = str => WriteAsync(str, ServerLogSeverity.Message, "Telepathy");
+            Telepathy.Log.Warning = str => WriteAsync(str, ServerLogSeverity.Warning, "Telepathy");
+            Telepathy.Log.Error = str => WriteAsync(str, ServerLogSeverity.Error, "Telepathy");
+#pragma warning restore 4014
         }
 
         public async Task WriteAsync(string msg, ServerLogSeverity severity, string categoryName)
@@ -32,15 +41,18 @@ namespace RavenNest.BusinessLogic
                     return;
                 }
 
-                using (var db = dbProvider.Get())
+                if (severity > ServerLogSeverity.Debug)
                 {
-                    db.ServerLogs.Add(new ServerLogs
+                    using (var db = dbProvider.Get())
                     {
-                        Created = DateTime.UtcNow,
-                        Data = msg.Trim() + " [" + categoryName + "]",
-                        Severity = severity
-                    });
-                    await db.SaveChangesAsync();
+                        db.ServerLogs.Add(new ServerLogs
+                        {
+                            Created = DateTime.UtcNow,
+                            Data = msg.Trim() + " [" + categoryName + "]",
+                            Severity = severity
+                        });
+                        await db.SaveChangesAsync();
+                    }
                 }
             }
             catch (Exception ex)

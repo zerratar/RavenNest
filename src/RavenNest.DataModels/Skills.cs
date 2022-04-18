@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 
 namespace RavenNest.DataModels
 {
@@ -94,6 +95,13 @@ namespace RavenNest.DataModels
         public int SailingLevel { get => sailingLevel; set => Set(ref sailingLevel, value); }
         public int HealingLevel { get => healingLevel; set => Set(ref healingLevel, value); }
 
+
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //private static string AsLower(string input)
+        //{
+        //    return char.IsUpper(input[0]) ? input.ToLower() : input;
+        //}
+
         public int GetLevel(int skillIndex)
         {
             var name = SkillNames[skillIndex];
@@ -101,6 +109,14 @@ namespace RavenNest.DataModels
                 expProp = EnsureDictionaries(name);
             levelProperties.TryGetValue(name, out var lvlProp);
 
+            return (int)lvlProp.GetValue(this);
+        }
+        public int GetLevel(string skill)
+        {
+            var name = skill;
+            if (!expProperties.TryGetValue(name, out _)) EnsureDictionaries(skill);
+            levelProperties.TryGetValue(skill, out var lvlProp);
+            if (lvlProp == null) return 0;
             return (int)lvlProp.GetValue(this);
         }
 

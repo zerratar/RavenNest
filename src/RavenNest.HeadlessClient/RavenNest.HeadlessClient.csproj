@@ -10,8 +10,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\RavenNest.BusinessLogic\RavenNest.BusinessLogic.csproj" />
     <ProjectReference Include="..\RavenNest.Models\RavenNest.Models.csproj" />
     <ProjectReference Include="..\RavenNest.SDK\RavenNest.SDK.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="MessagePack">
+      <HintPath>..\..\..\..\Users\kaaru\.nuget\packages\messagepack\2.4.14-alpha\lib\net5.0\MessagePack.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>

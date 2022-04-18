@@ -29,7 +29,7 @@ namespace RavenNest.SDK
         string TwitchUserName { get; }
         string TwitchDisplayName { get; }
         string TwitchUserId { get; }
-
+        SessionToken SessionToken { get; }
         bool BadClientVersion { get; }
         bool Authenticated { get; }
         bool SessionStarted { get; }
