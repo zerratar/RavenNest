@@ -6,269 +6,301 @@
 
 <div class="player-skills">
 
-	@if (Player != null && Player.Skills != null && Player.SessionInfo != null)
-	{
-	 <div class="training-skill">
-	  <span>
+    @if (Player != null && Player.Skills != null && Player.SessionInfo != null)
+    {
+        <div class="training-skill">
+            <span>
 
-				@if (!string.IsNullOrEmpty(trainingSkill))
-				{
-		   <span>You're currently training&nbsp;</span><b>@GetTrainingSkillName()</b><span>&nbsp;</span>
-				}
-				else
-				{
-		   <span>You're currently </span>
-				}
+                @if (Player.State != null && Player.State.InOnsen)
+                {
+                    <span>You're currently resting and have</span>
+                    <b>@GetRestedTime()</b>
+                    <span>of rested time</span>
+                }
+                else if (!string.IsNullOrEmpty(trainingSkill))
+                {
+                    <span>You're currently training&nbsp;</span>
 
-				@if (Player.State != null)
-				{
-					if (Player.State.InDungeon)
-					{
-			   <span>in the dungeon </span>
-					}
-					else if (Player.State.InArena)
-					{
-			   <span>in the Arena </span>
-					}
-					else if (Player.State.InRaid)
-					{
-			   <span>in a Raid </span>
-					}
-					else if (!string.IsNullOrEmpty(Player.State.DuelOpponent))
-					{
-			   <span>in a duel with&nbsp;</span><b>Player.State.DuelOpponent </b>
-					}
-					else if (!string.IsNullOrEmpty(Player.State?.Island))
-					{
-			   <span>at&nbsp;</span><b>@Player.State.Island </b>
-					}
-					else
-					{
-			        <span>sailing </span>
-					}
-				}
+                    <b>@GetTrainingSkillName()</b>
 
-				@if (!string.IsNullOrEmpty(Player.SessionInfo.OwnerUserName))
-				{
-		            <span>&nbsp;on&nbsp;</span><b>@Player.SessionInfo.OwnerUserName</b><span>'s stream.</span>
-				}
-	  </span>
-	 </div>
+                    <span>&nbsp;</span>
+                }
+                else
+                {
+                    <span>You're currently </span>
+                }
 
-	 <div class="last-updated">@GetLastUpdateString(Player.SessionInfo.SkillsUpdated)</div>
-	}
+                @if (Player.State != null)
+                {
+                    if (Player.State.InDungeon)
+                    {
+                        <span>in the dungeon </span>
+                    }
+                    else if (Player.State.InArena)
+                    {
+                        <span>in the Arena </span>
+                    }
+                    else if (Player.State.InRaid)
+                    {
+                        <span>in a Raid </span>
+                    }
+                    else if (!string.IsNullOrEmpty(Player.State.DuelOpponent))
+                    {
+                        <span>in a duel with&nbsp;</span>
 
-	@foreach (var skill in Player.Skills.AsList())
-	{
-		var isActive = IsTrainingSkill(skill);
-	 <div class="stats-row@(isActive ? " active" : "")" title="@(isActive?"You're currently training this skill." : "")">
-	  <div class="stats-label">@skill.Name</div>
-	  <div class="stats-progress" title="@ExpDisplay(skill.Experience)">
-	   <div class="stats-progress-value" style="@StyleWidth((int)(skill.Percent*120))"></div>
-	   <div class="stats-progress-percent">@Math.Round(skill.Percent * 100, 2)%</div>
-	  </div>
+                        <b>Player.State.DuelOpponent </b>
+                    }
+                    else if (!string.IsNullOrEmpty(Player.State?.Island))
+                    {
+                        <span>at&nbsp;</span>
 
-			@if (skill.Name == "Health")
-			{
-		  <div class="stats-value"><span class="current-health" title="Current Health">@currentHealth</span> / <span class="max-health">@skill.Level</span></div>
-			}
-			else
-			{
-		  <div class="stats-value">@skill.Level</div>
-			}
+                        <b>@Player.State.Island </b>
+                    }
+                    else
+                    {
+                        <span>sailing </span>
+                    }
+                }
 
-			@if (CanModify)
-			{
-		  <div class="inventory-management">
-		   <button @onclick="()=> ShowModifySkill(skill)" class="btn-icon"><i class="fa fa-pen"></i></button>
-		  </div>
-			}
-	 </div>
-	}
+                @if (!string.IsNullOrEmpty(Player.SessionInfo.OwnerUserName))
+                {
+                    <span>&nbsp;on&nbsp;</span>
+
+                    <b>@Player.SessionInfo.OwnerUserName</b>
+
+                    <span>'s stream.</span>
+                }
+            </span>
+        </div>
+
+        <div class="last-updated">@GetLastUpdateString(Player.SessionInfo.SkillsUpdated)</div>
+    }
+
+    @foreach (var skill in Player.Skills.AsList())
+    {
+        var isActive = IsTrainingSkill(skill);
+        <div class="stats-row@(isActive ? " active" : "")" title="@(isActive?"You're currently training this skill." : "")">
+            <div class="stats-label">@skill.Name</div>
+            <div class="stats-progress" title="@ExpDisplay(skill.Experience)">
+                <div class="stats-progress-value" style="@StyleWidth((int)(skill.Percent*120))"></div>
+                <div class="stats-progress-percent">@Math.Round(skill.Percent * 100, 2)%</div>
+            </div>
+
+            @if (skill.Name == "Health")
+            {
+                <div class="stats-value"><span class="current-health" title="Current Health">@currentHealth</span> / <span class="max-health">@skill.Level</span></div>
+            }
+            else
+            {
+                <div class="stats-value">@skill.Level</div>
+            }
+
+            @if (CanModify)
+            {
+                <div class="inventory-management">
+                    <button @onclick="()=> ShowModifySkill(skill)" class="btn-icon"><i class="fa fa-pen"></i></button>
+                </div>
+            }
+        </div>
+    }
 
 
-	@if (modifySkillDialogVisible && modifyingSkill != null)
-	{
-	 <div class="skill-modify-modal">
-	  <div class="skill-modify-modal-header">
-	   <h2>@modifyingSkill.Name</h2>
-	   <button class="close" @onclick="HideModifySkill">x</button>
-	  </div>
+    @if (modifySkillDialogVisible && modifyingSkill != null)
+    {
+        <div class="skill-modify-modal">
+            <div class="skill-modify-modal-header">
+                <h2>@modifyingSkill.Name</h2>
+                <button class="close" @onclick="HideModifySkill">x</button>
+            </div>
 
-	  <label for="skill-level" class="input-label">Set the new <b>Level</b></label>
-	  <input name="skill-level" type="number" class="input" value="@modifyingSkill.Level" @onchange="OnLevelModified" />
+            <label for="skill-level" class="input-label">Set the new <b>Level</b></label>
+            <input name="skill-level" type="number" class="input" value="@modifyingSkill.Level" @onchange="OnLevelModified" />
 
-	  <label for="skill-experience" class="input-label">Set the new <b>Experience</b>%</label>
-	  <input name="skill-experience" type="number" class="input" value="@((int)(modifyingSkill.Percent * 100))" @onchange="OnExperienceModified" />
+            <label for="skill-experience" class="input-label">Set the new <b>Experience</b>%</label>
+            <input name="skill-experience" type="number" class="input" value="@((int)(modifyingSkill.Percent * 100))" @onchange="OnExperienceModified" />
 
-	  <div class="skill-modify-modal-controls">
-	   <button @onclick="ApplyModifySkill" class="btn btn-primary">Save</button>
-	   <button @onclick="HideModifySkill" class="btn btn-secondary">Cancel</button>
-	  </div>
-	 </div>
-	}
+            <div class="skill-modify-modal-controls">
+                <button @onclick="ApplyModifySkill" class="btn btn-primary">Save</button>
+                <button @onclick="HideModifySkill" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    }
 </div>
 
 @code {
-	[Parameter]
-	public WebsitePlayer Player { get; set; }
+    [Parameter]
+    public WebsitePlayer Player { get; set; }
 
-	[Parameter]
-	public bool CanManage { get; set; }
-	private string trainingSkill;
-	private int currentHealth;
+    [Parameter]
+    public bool CanManage { get; set; }
+    private string trainingSkill;
+    private int currentHealth;
 
-	private Sessions.SessionInfo session;
+    private Sessions.SessionInfo session;
 
-	private bool modifySkillDialogVisible;
-	private int modifyingSkillLevel = 0;
-	private int modifyingSkillExperiencePercent = 0;
+    private bool modifySkillDialogVisible;
+    private int modifyingSkillLevel = 0;
+    private int modifyingSkillExperiencePercent = 0;
 
-	private PlayerSkill modifyingSkill;
+    private PlayerSkill modifyingSkill;
 
-	private bool CanModify => session != null && session.Administrator;
+    private bool CanModify => session != null && session.Administrator;
 
-	public string GetLastUpdateString(DateTime update)
-	{
-		var elapsed = DateTime.UtcNow - update;
-		if (update == DateTime.MinValue)
-		{
-			return "";
-		}
-		var prefix = "Exp Last updated: ";
-		if (elapsed.TotalHours >= 24)
-		{
-			return prefix + (int)elapsed.TotalDays + " days ago";
-		}
+    public string GetLastUpdateString(DateTime update)
+    {
+        var elapsed = DateTime.UtcNow - update;
+        if (update == DateTime.MinValue)
+        {
+            return "";
+        }
+        var prefix = "Exp Last updated: ";
+        if (elapsed.TotalHours >= 24)
+        {
+            return prefix + (int)elapsed.TotalDays + " days ago";
+        }
 
-		if (elapsed.TotalHours >= 1)
-		{
-			return prefix + (int)elapsed.TotalHours + " hours ago";
-		}
+        if (elapsed.TotalHours >= 1)
+        {
+            return prefix + (int)elapsed.TotalHours + " hours ago";
+        }
 
-		if (elapsed.TotalMinutes >= 1)
-		{
-			return prefix + (int)elapsed.TotalMinutes + " minutes ago";
-		}
+        if (elapsed.TotalMinutes >= 1)
+        {
+            return prefix + (int)elapsed.TotalMinutes + " minutes ago";
+        }
 
-		return prefix + (int)elapsed.TotalSeconds + " seconds ago";
-	}
+        return prefix + (int)elapsed.TotalSeconds + " seconds ago";
+    }
 
-	protected override void OnParametersSet()
-	{
-		if (Player == null)
-			return;
+    protected override void OnParametersSet()
+    {
+        if (Player == null)
+            return;
 
-		if (Player.State != null)
-		{
-			trainingSkill = Player.State.TaskArgument ?? Player.State.Task;
-			currentHealth = Player.State.Health;
-		}
-		else
-		{
-			currentHealth = Player.Skills.HealthLevel;
-		}
-	}
+        if (Player.State != null)
+        {
+            trainingSkill = Player.State.TaskArgument ?? Player.State.Task;
+            currentHealth = Player.State.Health;
+        }
+        else
+        {
+            currentHealth = Player.Skills.HealthLevel;
+        }
+    }
 
-	protected override void OnInitialized()
-	{
-		session = AuthService.GetSession();
-	}
+    protected override void OnInitialized()
+    {
+        session = AuthService.GetSession();
+    }
 
 
-	private void OnLevelModified(ChangeEventArgs evt)
-	{
-		if (evt.Value != null && int.TryParse(evt.Value?.ToString() ?? modifyingSkill.Level.ToString(), out var newLevel))
-		{
-			modifyingSkillLevel = newLevel;
-		}
-	}
+    private void OnLevelModified(ChangeEventArgs evt)
+    {
+        if (evt.Value != null && int.TryParse(evt.Value?.ToString() ?? modifyingSkill.Level.ToString(), out var newLevel))
+        {
+            modifyingSkillLevel = newLevel;
+        }
+    }
 
-	private void OnExperienceModified(ChangeEventArgs evt)
-	{
-		if (evt.Value != null && int.TryParse(evt.Value?.ToString() ?? "0", out var newExpPercent))
-		{
-			modifyingSkillExperiencePercent = newExpPercent;
-		}
-	}
+    private void OnExperienceModified(ChangeEventArgs evt)
+    {
+        if (evt.Value != null && int.TryParse(evt.Value?.ToString() ?? "0", out var newExpPercent))
+        {
+            modifyingSkillExperiencePercent = newExpPercent;
+        }
+    }
 
-	public async void ApplyModifySkill()
-	{
-		var result = await PlayerService.UpdatePlayerSkillAsync(Player.Id, modifyingSkill.Name, modifyingSkillLevel, modifyingSkillExperiencePercent / 100f);
+    public async void ApplyModifySkill()
+    {
+        var result = await PlayerService.UpdatePlayerSkillAsync(Player.Id, modifyingSkill.Name, modifyingSkillLevel, modifyingSkillExperiencePercent / 100f);
 
-		HideModifySkill();
+        HideModifySkill();
 
-		if (result)
-		{
-			this.Player = await PlayerService.GetPlayerAsync(Player.Id);
-			await InvokeAsync(StateHasChanged);
-		}
-	}
+        if (result)
+        {
+            this.Player = await PlayerService.GetPlayerAsync(Player.Id);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
 
-	public void HideModifySkill()
-	{
-		modifySkillDialogVisible = false;
-		modifyingSkill = null;
-	}
+    public void HideModifySkill()
+    {
+        modifySkillDialogVisible = false;
+        modifyingSkill = null;
+    }
 
-	public void ShowModifySkill(PlayerSkill skill)
-	{
-		modifySkillDialogVisible = true;
-		modifyingSkill = skill;
-		modifyingSkillLevel = skill.Level;
-		modifyingSkillExperiencePercent = (int)(skill.Percent * 100);
-	}
+    public void ShowModifySkill(PlayerSkill skill)
+    {
+        modifySkillDialogVisible = true;
+        modifyingSkill = skill;
+        modifyingSkillLevel = skill.Level;
+        modifyingSkillExperiencePercent = (int)(skill.Percent * 100);
+    }
 
-	private string GetTrainingSkillName()
-	{
-		if (string.IsNullOrEmpty(trainingSkill))
-			return null;
+    private string GetRestedTime()
+    {
+        return FormatTime(System.TimeSpan.FromSeconds(Player.State.RestedTime));
+    }
 
-		if (trainingSkill.Equals("all", StringComparison.OrdinalIgnoreCase))
-			return "All";
+    private string FormatTime(TimeSpan time)
+    {
+        if (time.TotalSeconds < 60) return time.TotalSeconds + " seconds";
+        if (time.TotalMinutes < 60)
+            return (int)Math.Floor(time.TotalMinutes) + " minutes";
 
-		if (trainingSkill.Equals("heal", StringComparison.OrdinalIgnoreCase))
-			return "Healing";
+        return $"{time.Hours} hours, {time.Minutes} minutes";
+    }
 
-		if (Player == null || Player.Skills == null)
-			return null;
+    private string GetTrainingSkillName()
+    {
+        if (string.IsNullOrEmpty(trainingSkill))
+            return null;
 
-		var training = Player.Skills.AsList().FirstOrDefault(IsTrainingSkill);
-		return training?.Name;
-	}
+        if (trainingSkill.Equals("all", StringComparison.OrdinalIgnoreCase))
+            return "All";
 
-	private bool IsTrainingSkill(PlayerSkill skill)
-	{
-		if (string.IsNullOrEmpty(trainingSkill))
-			return false;
+        if (trainingSkill.Equals("heal", StringComparison.OrdinalIgnoreCase))
+            return "Healing";
 
-		if (skill.Name.StartsWith(trainingSkill, StringComparison.OrdinalIgnoreCase))
-			return true;
+        if (Player == null || Player.Skills == null)
+            return null;
 
-		if (trainingSkill == "heal")
-			return skill.Name.Equals("healing", StringComparison.OrdinalIgnoreCase);
+        var training = Player.Skills.AsList().FirstOrDefault(IsTrainingSkill);
+        return training?.Name;
+    }
 
-		if (trainingSkill.ToLower() == "all")
-			return skill.Name.Equals("attack", StringComparison.OrdinalIgnoreCase) ||
-							skill.Name.Equals("defense", StringComparison.OrdinalIgnoreCase) ||
-							skill.Name.Equals("strength", StringComparison.OrdinalIgnoreCase);
+    private bool IsTrainingSkill(PlayerSkill skill)
+    {
+        if (string.IsNullOrEmpty(trainingSkill))
+            return false;
 
-		if (skill.Name.ToLower() == "attack" && trainingSkill.ToLower() == "atk")
-			return true;
+        if (skill.Name.StartsWith(trainingSkill, StringComparison.OrdinalIgnoreCase))
+            return true;
 
-		if (trainingSkill.ToLower() == "mine" && skill.Name.Equals("mining", StringComparison.OrdinalIgnoreCase))
-			return true;
+        if (trainingSkill == "heal")
+            return skill.Name.Equals("healing", StringComparison.OrdinalIgnoreCase);
 
-		return false;
-	}
+        if (trainingSkill.ToLower() == "all")
+            return skill.Name.Equals("attack", StringComparison.OrdinalIgnoreCase) ||
+                            skill.Name.Equals("defense", StringComparison.OrdinalIgnoreCase) ||
+                            skill.Name.Equals("strength", StringComparison.OrdinalIgnoreCase);
 
-	private string ExpDisplay(double value)
-	{
-		return value + " exp";
-	}
+        if (skill.Name.ToLower() == "attack" && trainingSkill.ToLower() == "atk")
+            return true;
 
-	private string StyleWidth(int value)
-	{
-		return $"width: {value}px";
-	}
+        if (trainingSkill.ToLower() == "mine" && skill.Name.Equals("mining", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        return false;
+    }
+
+    private string ExpDisplay(double value)
+    {
+        return value + " exp";
+    }
+
+    private string StyleWidth(int value)
+    {
+        return $"width: {value}px";
+    }
 }

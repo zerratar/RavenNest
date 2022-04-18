@@ -28,6 +28,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private readonly IIntegrityChecker integrityChecker;
         private readonly IGameWebSocketConnection gameConnection;
         private readonly IExtensionWebSocketConnectionProvider extensionConnectionProvider;
+        private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
         private readonly ISessionManager sessionManager;
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly SessionToken sessionToken;
@@ -49,6 +50,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             IIntegrityChecker integrityChecker,
             IGameWebSocketConnection websocket,
             IExtensionWebSocketConnectionProvider extWsProvider,
+            ITcpSocketApiConnectionProvider tcpConnectionProvider,
             ISessionManager sessionManager,
             IPlayerInventoryProvider inventoryProvider,
             IGameData gameData,
@@ -61,6 +63,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             this.integrityChecker = integrityChecker;
             this.gameConnection = websocket;
             this.extensionConnectionProvider = extWsProvider;
+            this.tcpConnectionProvider = tcpConnectionProvider;
             this.sessionManager = sessionManager;
             this.inventoryProvider = inventoryProvider;
             this.sessionToken = sessionToken;
@@ -294,6 +297,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         {
             taskProcessors[taskName] = new T();
             taskProcessors[taskName].SetExtensionConnectionProvider(extensionConnectionProvider);
+            taskProcessors[taskName].SetTcpSocketApiConnectionProvider(tcpConnectionProvider);
         }
     }
 }
