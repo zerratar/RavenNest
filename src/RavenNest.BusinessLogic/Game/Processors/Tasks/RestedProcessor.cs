@@ -82,8 +82,15 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                         RestedPercent = restedPercent,
                     };
 
-                    var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRestedUpdate, session, data);
-                    gameData.Add(gameEvent);
+                    if (TcpConnectionProvider.TryGet(session.Id, out var connection))
+                    {
+                        connection.Send(data);
+                    }
+                    else
+                    {
+                        var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRestedUpdate, session, data);
+                        gameData.Add(gameEvent);
+                    }
 
                     lastEventUpdate.RestedTime = restedTime;
                     lastEventUpdate.Resting = isResting;

@@ -16,9 +16,82 @@ using Microsoft.Extensions.Options;
 using System.Diagnostics;
 using RavenNest.Models.TcpApi;
 using MessagePack;
+using System.Linq;
 
 namespace RavenNest.BusinessLogic.Net
 {
+    // Used for external resources to access a tcp api connection
+    public interface ITcpSocketApiConnectionProvider
+    {
+        void Add(int connectionId, TcpSocketApi server);
+        bool TryGet(int connectionId, out TcpSocketApiConnection connection);
+        bool TryGet(Guid sessionId, out TcpSocketApiConnection connection);
+        bool Contains(int connectionId);
+        bool Remove(int connectionId);
+    }
+
+    public class TcpSocketApiConnectionProvider : ITcpSocketApiConnectionProvider
+    {
+        private readonly Dictionary<int, TcpSocketApiConnection> connections = new Dictionary<int, TcpSocketApiConnection>();
+        private readonly object syncRoot = new object();
+        public void Add(int connectionId, TcpSocketApi server)
+        {
+            lock (syncRoot)
+            {
+                connections[connectionId] = new TcpSocketApiConnection(connectionId, server);
+            }
+        }
+
+        public bool Contains(int connectionId)
+        {
+            lock (syncRoot)
+                return connections.ContainsKey(connectionId);
+        }
+
+        public bool Remove(int connectionId)
+        {
+            lock (syncRoot)
+                return connections.Remove(connectionId);
+        }
+
+        public bool TryGet(int connectionId, out TcpSocketApiConnection connection)
+        {
+            lock (syncRoot)
+                return connections.TryGetValue(connectionId, out connection);
+
+        }
+        public bool TryGet(Guid sessionId, out TcpSocketApiConnection connection)
+        {
+            lock (syncRoot)
+            {
+                connection = connections.Values.FirstOrDefault(x => x.SessionToken != null && x.SessionToken.SessionId == sessionId);
+                return connection != null;
+            }
+        }
+    }
+
+    public class TcpSocketApiConnection
+    {
+        private readonly int connectionId;
+        private TcpSocketApi server;
+
+        public TcpSocketApiConnection(int connectionId, TcpSocketApi server)
+        {
+            this.connectionId = connectionId;
+            this.server = server;
+        }
+        public SessionToken SessionToken { get; set; }
+        public bool Connected => server.IsConnected(this.connectionId);
+        public void Send<T>(T model)
+        {
+            // send a separate packet first with the incoming model type name?
+            // or just let it be?
+
+            // currently we should only be sending Models.PlayerRestedUpdate, but this may change in the future.
+            server.Send(connectionId, MessagePackSerializer.Serialize(model, MessagePack.Resolvers.ContractlessStandardResolver.Options));
+        }
+    }
+
     public class TcpSocketApi : ITcpSocketApi
     {
         public const int MaxMessageSize = 16 * 1024;
@@ -27,6 +100,7 @@ namespace RavenNest.BusinessLogic.Net
 
         private readonly IOptions<AppSettings> settings;
         private readonly ILogger<TcpSocketApi> logger;
+        private readonly ITcpSocketApiConnectionProvider connectionProvider;
         private readonly IPlayerManager playerManager;
         private readonly IGameData gameData;
         private readonly IGamePacketManager packetManager;
@@ -42,13 +116,12 @@ namespace RavenNest.BusinessLogic.Net
         static long messagesReceived = 0;
         static long dataReceived = 0;
 
-
-        private readonly Dictionary<int, SessionToken> sessionTokens = new Dictionary<int, SessionToken>();
         private readonly object clientMutex = new object();
 
         public TcpSocketApi(
             IOptions<AppSettings> settings,
             ILogger<TcpSocketApi> logger,
+            ITcpSocketApiConnectionProvider connectionProvider,
             IPlayerManager playerManager,
             IGameData gameData,
             IGamePacketManager packetManager,
@@ -57,6 +130,7 @@ namespace RavenNest.BusinessLogic.Net
         {
             this.settings = settings;
             this.logger = logger;
+            this.connectionProvider = connectionProvider;
             this.playerManager = playerManager;
             this.gameData = gameData;
             this.packetManager = packetManager;
@@ -69,6 +143,11 @@ namespace RavenNest.BusinessLogic.Net
             }
 
             Start();
+        }
+
+        public bool IsConnected(int connectionId)
+        {
+            return connectionProvider.Contains(connectionId);
         }
 
         private void StartInternal()
@@ -138,12 +217,13 @@ namespace RavenNest.BusinessLogic.Net
 
         private void OnClientDisconnected(int connectionId)
         {
-            lock (clientMutex)
-            {
-                sessionTokens.Remove(connectionId);
-            }
-
+            connectionProvider.Remove(connectionId);
             logger.LogDebug(connectionId + " Disconnected");
+        }
+
+        public void Send(int connectionId, ArraySegment<byte> message)
+        {
+            server.Send(connectionId, message);
         }
 
         private void OnData(int connectionId, ReadOnlyMemory<byte> packetData)
@@ -152,23 +232,29 @@ namespace RavenNest.BusinessLogic.Net
             {
                 lock (clientMutex)
                 {
-                    if (sessionTokens.TryGetValue(connectionId, out var token))
+                    // we always have one, but don't always have a session token
+                    if (!connectionProvider.TryGet(connectionId, out var connection))
+                    {
+                        return;
+                    }
+
+                    if (connection.SessionToken != null)
                     {
                         // connection is authenticated. 
                         // we will expect state skill update
 
                         // check if token is still valid.
                         // Most likely wont be an issue as expiry time is 6 months. LUL.
-                        if (!CheckSessionTokenValidity(token))
+                        if (!CheckSessionTokenValidity(connection.SessionToken))
                         {
-                            logger.LogWarning("Session token expired for tcp api connection (" + (token?.SessionId.ToString() ?? "Token Unavailble") + ")");
+                            logger.LogWarning("Session token expired for tcp api connection (" + (connection?.SessionToken?.SessionId.ToString() ?? "Token Unavailble") + ")");
                             server.Disconnect(connectionId);
                             return;
                         }
 
                         var update = MessagePackSerializer.Deserialize<CharacterUpdate>(packetData, MessagePack.Resolvers.ContractlessStandardResolver.Options);
 
-                        playerManager.UpdateCharacter(token, update);
+                        playerManager.UpdateCharacter(connection.SessionToken, update);
                     }
                     else
                     {
@@ -184,7 +270,7 @@ namespace RavenNest.BusinessLogic.Net
                             return;
                         }
 
-                        sessionTokens[connectionId] = sessionToken;
+                        connection.SessionToken = sessionToken;
                     }
                 }
 
@@ -204,6 +290,7 @@ namespace RavenNest.BusinessLogic.Net
 
         private void OnClientConnected(int connectionId)
         {
+            connectionProvider.Add(connectionId, this);
             logger.LogDebug(connectionId + " Connected");
         }
 
@@ -239,7 +326,7 @@ namespace RavenNest.BusinessLogic.Net
         private readonly IIntegrityChecker integrityChecker;
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly IExtensionWebSocketConnectionProvider extWsProvider;
-
+        private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
         private readonly IGameData gameData;
         private readonly IGameManager gameManager;
         private readonly IGamePacketManager packetManager;
@@ -255,6 +342,7 @@ namespace RavenNest.BusinessLogic.Net
             IIntegrityChecker integrityChecker,
             IPlayerInventoryProvider inventoryProvider,
             IExtensionWebSocketConnectionProvider extWsProvider,
+            ITcpSocketApiConnectionProvider tcpConnectionProvider,
             IGameData gameData,
             IGameManager gameManager,
             IGamePacketManager packetManager,
@@ -266,6 +354,7 @@ namespace RavenNest.BusinessLogic.Net
             this.integrityChecker = integrityChecker;
             this.inventoryProvider = inventoryProvider;
             this.extWsProvider = extWsProvider;
+            this.tcpConnectionProvider = tcpConnectionProvider;
             this.gameData = gameData;
             this.gameManager = gameManager;
             this.packetManager = packetManager;
@@ -299,6 +388,7 @@ namespace RavenNest.BusinessLogic.Net
                 packetSerializer,
                 sessionManager,
                 extWsProvider,
+                tcpConnectionProvider,
                 this,
                 ws,
                 sessionToken);
@@ -384,6 +474,7 @@ namespace RavenNest.BusinessLogic.Net
                 IGamePacketSerializer packetSerializer,
                 ISessionManager sessionManager,
                 IExtensionWebSocketConnectionProvider extWsProvider,
+                ITcpSocketApiConnectionProvider tcpConnectionProvider,
                 GameWebSocketConnectionProvider sessionProvider,
                 WebSocket ws,
                 SessionToken sessionToken)
@@ -401,7 +492,7 @@ namespace RavenNest.BusinessLogic.Net
 
                 this.killTask = new TaskCompletionSource<object>();
                 this.gameProcessor = new GameProcessor(
-                    ravenBotApi, integrityChecker, this, extWsProvider, sessionManager, inventoryProvider, gameData, gameManager, sessionToken);
+                    ravenBotApi, integrityChecker, this, extWsProvider, tcpConnectionProvider, sessionManager, inventoryProvider, gameData, gameManager, sessionToken);
             }
 
             internal Guid SessionId => this.sessionToken.SessionId;

@@ -286,6 +286,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<IPropertyProvider, MemoryCachedPropertyProvider>();
 
 
+            services.AddSingleton<ITcpSocketApiConnectionProvider, TcpSocketApiConnectionProvider>();
             services.AddSingleton<ITcpSocketApi, TcpSocketApi>();
             services.AddSingleton<IGameWebSocketConnectionProvider, GameWebSocketConnectionProvider>();
             services.AddSingleton<IExtensionWebSocketConnectionProvider, ExtensionConnectionProvider>();
