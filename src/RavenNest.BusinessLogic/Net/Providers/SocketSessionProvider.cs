@@ -12,29 +12,199 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Twitch.Extension;
+using Microsoft.Extensions.Options;
+using System.Diagnostics;
+using RavenNest.Models.TcpApi;
+using MessagePack;
 
 namespace RavenNest.BusinessLogic.Net
 {
-    public class GameTcpConnectionProvider : IGameTcpConnectionProvider
+    public class TcpSocketApi : ITcpSocketApi
     {
-        private readonly ILogger<GameTcpConnectionProvider> logger;
+        public const int MaxMessageSize = 16 * 1024;
+        public const int DefaultServerPort = 3920;
+        public const int ServerRefreshRate = 60;
+
+        private readonly IOptions<AppSettings> settings;
+        private readonly ILogger<TcpSocketApi> logger;
+        private readonly IPlayerManager playerManager;
         private readonly IGameData gameData;
         private readonly IGamePacketManager packetManager;
         private readonly IGamePacketSerializer packetSerializer;
         private readonly ISessionManager sessionManager;
+        private Thread serverThread;
 
-        public GameTcpConnectionProvider(
-            ILogger<GameTcpConnectionProvider> logger,
+        private int serverPort = DefaultServerPort;
+        private Telepathy.Server server;
+        private bool running;
+        private bool disposed;
+
+        static long messagesReceived = 0;
+        static long dataReceived = 0;
+
+
+        private readonly Dictionary<int, SessionToken> sessionTokens = new Dictionary<int, SessionToken>();
+        private readonly object clientMutex = new object();
+
+        public TcpSocketApi(
+            IOptions<AppSettings> settings,
+            ILogger<TcpSocketApi> logger,
+            IPlayerManager playerManager,
             IGameData gameData,
             IGamePacketManager packetManager,
             IGamePacketSerializer packetSerializer,
             ISessionManager sessionManager)
         {
+            this.settings = settings;
             this.logger = logger;
+            this.playerManager = playerManager;
             this.gameData = gameData;
             this.packetManager = packetManager;
             this.packetSerializer = packetSerializer;
             this.sessionManager = sessionManager;
+
+            if (settings.Value.TcpApiPort > 0)
+            {
+                serverPort = settings.Value.TcpApiPort;
+            }
+
+            Start();
+        }
+
+        private void StartInternal()
+        {
+            if (server != null && running)
+            {
+                return;
+            }
+
+            dataReceived = 0;
+            messagesReceived = 0;
+            var started = false;
+            try
+            {
+                server = new Telepathy.Server(MaxMessageSize);
+                server.OnConnected = OnClientConnected;
+                server.OnData = (id, data) => OnData(id, data);
+                server.OnDisconnected = OnClientDisconnected;
+                server.Start(serverPort);
+                running = true;
+                started = true;
+                logger.LogDebug("TCP API Server started on port " + serverPort);
+
+                Stopwatch stopwatch = Stopwatch.StartNew();
+
+                while (running)
+                {
+                    // tick and process as many as we can. will auto reply.
+                    // (100k limit to avoid deadlocks)
+                    server.Tick(100000);
+
+                    // sleep
+                    Thread.Sleep(1000 / ServerRefreshRate);
+
+                    // report every 10 seconds
+                    if (stopwatch.ElapsedMilliseconds > 10000 && (messagesReceived > 0))
+                    {
+                        logger.LogDebug(string.Format("Thread[" + Thread.CurrentThread.ManagedThreadId + "]: Server in={0} ({1} KB/s)  out={0} ({1} KB/s) ReceiveQueue={2}", messagesReceived, (dataReceived * 1000 / (stopwatch.ElapsedMilliseconds * 1024)), server.ReceivePipeTotalCount.ToString()));
+                        stopwatch.Stop();
+                        stopwatch = Stopwatch.StartNew();
+                        messagesReceived = 0;
+                        dataReceived = 0;
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Failed to start TCP API Server. " + exc.ToString());
+                running = false;
+            }
+
+            // if the server did properly start
+            // then we want to say that the server stopped.
+            if (started)
+            {
+                logger.LogDebug("TCP API Server stopped.");
+            }
+        }
+
+        public void Start()
+        {
+            serverThread = new Thread(StartInternal);
+            serverThread.Name = "Tcp Api Server";
+            serverThread.IsBackground = true;
+            serverThread.Start();
+        }
+
+        private void OnClientDisconnected(int connectionId)
+        {
+            lock (clientMutex)
+            {
+                sessionTokens.Remove(connectionId);
+            }
+
+            logger.LogDebug(connectionId + " Disconnected");
+        }
+
+        private void OnData(int connectionId, ReadOnlyMemory<byte> packetData)
+        {
+            try
+            {
+                lock (clientMutex)
+                {
+                    if (sessionTokens.TryGetValue(connectionId, out var token))
+                    {
+                        // connection is authenticated. 
+                        // we will expect state skill update
+
+                        // check if token is still valid.
+                        // Most likely wont be an issue as expiry time is 6 months. LUL.
+                        if (!CheckSessionTokenValidity(token))
+                        {
+                            logger.LogWarning("Session token expired for tcp api connection (" + (token?.SessionId.ToString() ?? "Token Unavailble") + ")");
+                            server.Disconnect(connectionId);
+                            return;
+                        }
+
+                        var update = MessagePackSerializer.Deserialize<CharacterUpdate>(packetData, MessagePack.Resolvers.ContractlessStandardResolver.Options);
+
+                        playerManager.UpdateCharacter(token, update);
+                    }
+                    else
+                    {
+                        // we will expect authentication
+                        // if it isnt, we will disconnect the client.
+                        //var auth = BinaryPack.BinaryConverter.Deserialize<AuthenticationRequest>(packetData);
+                        var auth = MessagePackSerializer.Deserialize<AuthenticationRequest>(packetData, MessagePack.Resolvers.ContractlessStandardResolver.Options);
+                        var sessionToken = sessionManager.Get(auth.SessionToken);
+                        if (!CheckSessionTokenValidity(sessionToken))
+                        {
+                            logger.LogWarning("Invalid session token for tcp api connection (" + (sessionToken?.SessionId.ToString() ?? "Token Unavailble") + ")");
+                            server.Disconnect(connectionId);
+                            return;
+                        }
+
+                        sessionTokens[connectionId] = sessionToken;
+                    }
+                }
+
+                //logger.LogDebug(connectionId + " Data: " + BitConverter.ToString(packetData., packetData.Offset, packetData.Count));
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Failed to handle data from connectionId (" + connectionId + "): " + exc.ToString());
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool CheckSessionTokenValidity(SessionToken sessionToken)
+        {
+            return sessionToken != null && sessionToken.SessionId != Guid.Empty && !sessionToken.Expired;
+        }
+
+        private void OnClientConnected(int connectionId)
+        {
+            logger.LogDebug(connectionId + " Connected");
         }
 
         // TODO: make packetManager handle batch of packets
@@ -47,6 +217,18 @@ namespace RavenNest.BusinessLogic.Net
 
         public void Dispose()
         {
+            if (server != null)
+            {
+                try
+                {
+                    server.Stop();
+                }
+                catch { }
+                server = null;
+            }
+
+            this.running = false;
+            this.disposed = true;
         }
     }
 

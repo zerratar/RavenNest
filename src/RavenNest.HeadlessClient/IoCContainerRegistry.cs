@@ -52,6 +52,11 @@ namespace RavenNest.HeadlessClient
 
             ioc.RegisterCustomShared<IIoC>(() => ioc);
 
+            var binSer = new RavenNest.BusinessLogic.Serializers.CompressedJsonSerializer();
+            var packetSerializer = new RavenNest.BusinessLogic.Net.GamePacketSerializer(null, binSer);
+            ioc.RegisterCustomShared<RavenNest.BusinessLogic.Net.IGamePacketSerializer>(() => packetSerializer);
+
+            ioc.RegisterShared<TcpApiClient, TcpApiClient>();
             ioc.RegisterShared<IPlayerManager, PlayerManager>();
             ioc.RegisterShared<ILogger, SDK.ConsoleLogger>();
             ioc.RegisterShared<IGameCache, GameCache>();

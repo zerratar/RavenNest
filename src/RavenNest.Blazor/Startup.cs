@@ -1,9 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Json;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Rewrite;
 using Microsoft.Extensions.Caching.Memory;
@@ -24,10 +22,7 @@ using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.Health;
 using RavenNest.Sessions;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace RavenNest.Blazor
 {
@@ -51,7 +46,6 @@ namespace RavenNest.Blazor
             {
                 options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault | JsonIgnoreCondition.WhenWritingNull;
             });
-
 
             //services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
@@ -100,8 +94,6 @@ namespace RavenNest.Blazor
             });
 
             services.AddRavenNestHealthChecks(Configuration.GetSection("AppSettings"));
-
-
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -205,6 +197,8 @@ namespace RavenNest.Blazor
                 });
             });
 
+            // Start the TCP Api
+            app.ApplicationServices.GetService<ITcpSocketApi>();
         }
 
         private void OnApplicaftionStopping(IApplicationBuilder app)
@@ -217,7 +211,7 @@ namespace RavenNest.Blazor
 
             try
             {
-                app.ApplicationServices.GetService<IGameTcpConnectionProvider>().Dispose();
+                app.ApplicationServices.GetService<ITcpSocketApi>().Dispose();
             }
             catch { }
 
@@ -292,7 +286,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<IPropertyProvider, MemoryCachedPropertyProvider>();
 
 
-            services.AddSingleton<IGameTcpConnectionProvider, GameTcpConnectionProvider>();
+            services.AddSingleton<ITcpSocketApi, TcpSocketApi>();
             services.AddSingleton<IGameWebSocketConnectionProvider, GameWebSocketConnectionProvider>();
             services.AddSingleton<IExtensionWebSocketConnectionProvider, ExtensionConnectionProvider>();
             services.AddSingleton<IExtensionPacketDataSerializer, JsonPacketDataSerializer>();

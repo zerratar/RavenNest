@@ -14,70 +14,70 @@
 @inject AuthService AuthService
 
 <div class="top-section">
-  <div class="hero-text">
-    @if (activeSkill != null)
-    {
-      <h1>Highscore Top 100 players - @activeSkill.Name</h1>
-    }
-    else
-    {
-      <h1>Highscore Top 100 players</h1>
-    }
-  </div>
+    <div class="hero-text">
+        @if (activeSkill != null)
+        {
+            <h1>Highscore Top 100 players - @activeSkill.Name</h1>
+        }
+        else
+        {
+            <h1>Highscore Top 100 players</h1>
+        }
+    </div>
 </div>
 
 <div class="white-section-break"></div>
 <div class="page-content">
-  <div class="section">
+    <div class="section">
 
-    @if (highscores == null)
-    {
-      <h2>Loading highscores...</h2>
-      <LoadIndicator></LoadIndicator>
-    }
-    else
-    {
-      <div class="skill-selector">
-        @for (var i = 0; i < characterIndexNames.Length; ++i)
+        @if (highscores == null)
         {
-          var name = characterIndexNames[i];
-          var index = characterIndices[i];
-          int.TryParse(CharacterIndex, out var selectedIndex);
-          {
-            <button @onclick="(() => SelectIndex(index))" class="btn @(selectedIndex == index ? "active" : "")">@name</button>
-          }
+            <h2>Loading highscores...</h2>
+            <LoadIndicator></LoadIndicator>
         }
-      </div>
+        else
+        {
+            <div class="skill-selector">
+                @for (var i = 0; i < characterIndexNames.Length; ++i)
+                {
+                    var name = characterIndexNames[i];
+                    var index = characterIndices[i];
+                    int.TryParse(CharacterIndex, out var selectedIndex);
+                    {
+                        <button @onclick="(() => SelectIndex(index))" class="btn @(selectedIndex == index ? "active" : "")">@name</button>
+                    }
+                }
+            </div>
 
-      <div class="skill-selector">
-        @foreach (var skill in Skills)
-        {
-          <button @onclick="(() => SelectSkill(skill))" class="btn @(skill.Active ? "active" : "")">@skill.Name</button>
+            <div class="skill-selector">
+                @foreach (var skill in Skills)
+                {
+                    <button @onclick="(() => SelectSkill(skill))" class="btn @(skill.Active ? "active" : "")">@skill.Name</button>
+                }
+            </div>
+            <table class="highscore-list">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player</th>
+                        <th>Level</th>
+                        <th>Experience</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in highscores.Players)
+                    {
+                        <tr class="highscore-item" @onclick="(() => DisplayPlayer(item))">
+                            <td class='player-rank'>@item.Rank</td>
+                            <td class='player-name'>@item.PlayerName<span class='player-character-index' alt='Character Number'>#@item.CharacterIndex</span></td>
+                            <td class='player-level'>@item.Level</td>
+                            <td class='player-experience'>@item.Experience</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         }
-      </div>
-      <table class="highscore-list">
-        <thead>
-          <tr>
-            <th>Rank</th>
-            <th>Player</th>
-            <th>Level</th>
-            <th>Experience</th>
-          </tr>
-        </thead>
-        <tbody>
-          @foreach (var item in highscores.Players)
-          {
-            <tr class="highscore-item" @onclick="(() => DisplayPlayer(item))">
-              <td class='player-rank'>@item.Rank</td>
-              <td class='player-name'>@item.PlayerName<span class='player-character-index' alt='Character Number'>#@item.CharacterIndex</span></td>
-              <td class='player-level'>@item.Level</td>
-              <td class='player-experience'>@item.Experience</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
-  </div>
+    </div>
 </div>
 
 @code {
@@ -95,50 +95,50 @@
 
     protected override void OnInitialized()
     {
-      if (Top == 0) Top = 100;
-      LoadHighscoreAsync();
+        if (Top == 0) Top = 100;
+        LoadHighscoreAsync();
     }
 
     private void SelectIndex(int index)
     {
-      if (activeSkill != null)
-      {
-        NavigationManager.NavigateTo(string.Format(activeSkill.Link, index), true);
-      }
-      else
-      {
-        NavigationManager.NavigateTo("/leaderboard/All/" + index, true);
-      }
+        if (activeSkill != null)
+        {
+            NavigationManager.NavigateTo(string.Format(activeSkill.Link, index), true);
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/leaderboard/All/" + index, true);
+        }
     }
 
     private void SelectSkill(Skill skill)
     {
-      NavigationManager.NavigateTo(string.Format(skill.Link, CharacterIndex), true);
+        NavigationManager.NavigateTo(string.Format(skill.Link, CharacterIndex), true);
     }
     private void DisplayPlayer(Models.HighScoreItem player)
     {
-      NavigationManager.NavigateTo("/inspect/" + player.CharacterId);
+        NavigationManager.NavigateTo("/inspect/" + player.CharacterId);
     }
 
     private async Task LoadHighscoreAsync()
     {
-      int.TryParse(CharacterIndex, out var ci);
-      if (HighscoreSkill != null)
-      {
-        highscores = await HighscoreService.GetHighscoreAsync(HighscoreSkill, 0, Top, ci);
-        var s = Skills.FirstOrDefault(x => x.Name.Equals(HighscoreSkill, StringComparison.OrdinalIgnoreCase));
-        if (s != null)
+        int.TryParse(CharacterIndex, out var ci);
+        if (HighscoreSkill != null)
         {
-          Skills[0].Active = false;
-          s.Active = true;
-          activeSkill = s;
+            highscores = await HighscoreService.GetHighscoreAsync(HighscoreSkill, 0, Top, ci);
+            var s = Skills.FirstOrDefault(x => x.Name.Equals(HighscoreSkill, StringComparison.OrdinalIgnoreCase));
+            if (s != null)
+            {
+                Skills[0].Active = false;
+                s.Active = true;
+                activeSkill = s;
+            }
         }
-      }
-      else
-      {
-        highscores = await HighscoreService.GetHighscoreAsync(0, Top, ci);
-      }
-      StateHasChanged();
+        else
+        {
+            highscores = await HighscoreService.GetHighscoreAsync(0, Top, ci);
+        }
+        StateHasChanged();
     }
 
     private Skill[] Skills { get; } =
@@ -148,8 +148,6 @@
         new Skill("Defense"),
         new Skill("Strength"),
         new Skill("Health"),
-        new Skill("Magic"),
-        new Skill("Ranged"),
         new Skill("Woodcutting"),
         new Skill("Fishing"),
         new Skill("Mining"),
@@ -157,21 +155,23 @@
         new Skill("Cooking"),
         new Skill("Farming"),
         new Skill("Slayer"),
+        new Skill("Magic"),
+        new Skill("Ranged"),
         new Skill("Sailing"),
         new Skill("Healing"),
-                              };
+                                  };
 
     private class Skill
     {
-      public Skill() { }
-      public Skill(string name, bool active = false)
-      {
-        Name = name;
-        Active = active;
-      }
+        public Skill() { }
+        public Skill(string name, bool active = false)
+        {
+            Name = name;
+            Active = active;
+        }
 
-      public string Link => this.Name == "All" ? "/leaderboard/All/{0}" : "/leaderboard/" + this.Name + "/{0}";
-      public string Name { get; set; }
-      public bool Active { get; set; }
+        public string Link => this.Name == "All" ? "/leaderboard/All/{0}" : "/leaderboard/" + this.Name + "/{0}";
+        public string Name { get; set; }
+        public bool Active { get; set; }
     }
 }

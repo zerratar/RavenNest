@@ -5,6 +5,7 @@ using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.DataModels;
 using RavenNest.Models;
+using RavenNest.Models.TcpApi;
 
 namespace RavenNest.BusinessLogic.Game
 {
@@ -32,6 +33,7 @@ namespace RavenNest.BusinessLogic.Game
         IReadOnlyList<WebsitePlayer> GetWebsitePlayers(Guid userId);
         bool SendRemovePlayerFromSessionToGame(DataModels.Character character, DataModels.GameSession joiningSession = null);
         void UpdateUserLoyalty(SessionToken sessionToken, UserLoyaltyUpdate update);
+        bool UpdateCharacter(SessionToken token, CharacterUpdate data);
         void UpdatePlayerActivity(SessionToken sessionToken, PlayerSessionActivity update);
         bool UpdatePlayerState(SessionToken sessionToken, CharacterStateUpdate update);
 
