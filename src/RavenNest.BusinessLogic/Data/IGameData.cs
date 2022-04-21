@@ -65,6 +65,8 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Get
         User GetUser(Guid userId);
+        Pet GetActivePet(Guid characterId);
+        IReadOnlyList<Pet> GetPets(Guid characterId);
         IReadOnlyList<DataModels.User> GetUsers();
         IReadOnlyList<DataModels.Character> GetCharacters(Func<Character, bool> predicate);
         IReadOnlyList<DataModels.Character> GetCharacters();
@@ -138,6 +140,7 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Add
         //void Add(VendorTransaction entity);
+        void Add(Pet pet);
         void Add(DataModels.UserBankItem item);
         void Add(CharacterSkillRecord item);
         void Add(Agreements item);
@@ -184,6 +187,7 @@ namespace RavenNest.BusinessLogic.Data
         #region Remove
 
         void Remove(DataModels.UserBankItem item);
+        void Remove(Pet pet);
         void Remove(Agreements item);
         void Remove(RedeemableItem item);
         void Remove(UserNotification ev);
