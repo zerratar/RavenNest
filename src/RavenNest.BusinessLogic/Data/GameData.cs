@@ -61,6 +61,8 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<ExpMultiplierEvent, Guid> expMultiplierEvents;
         private readonly EntitySet<GameEvent, Guid> gameEvents;
 
+        private readonly EntitySet<Pet, Guid> pets;
+
         private readonly EntitySet<UserBankItem, Guid> userBankItems;
         private readonly EntitySet<InventoryItem, Guid> inventoryItems;
 
@@ -144,6 +146,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(User),
                         typeof(ItemAttribute),
                         typeof(RedeemableItem),
+                        typeof(Pet),
                         //typeof(UserNotification),
                         typeof(MarketItemTransaction),
                         //typeof(VendorTransaction),
@@ -175,6 +178,10 @@ namespace RavenNest.BusinessLogic.Data
                     loyalty = new EntitySet<UserLoyalty, Guid>(restorePoint?.Get<UserLoyalty>() ?? ctx.UserLoyalty.ToList(), i => i.Id);
                     loyalty.RegisterLookupGroup(nameof(User), x => x.UserId);
                     loyalty.RegisterLookupGroup("Streamer", x => x.StreamerUserId);
+
+
+                    pets = new EntitySet<Pet, Guid>(restorePoint?.Get<Pet>() ?? ctx.Pet.ToList(), i => i.Id);
+                    pets.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
                     redeemableItems = new EntitySet<RedeemableItem, Guid>(restorePoint?.Get<RedeemableItem>() ?? ctx.RedeemableItem.ToList(), i => i.Id);
                     redeemableItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
@@ -343,6 +350,7 @@ namespace RavenNest.BusinessLogic.Data
                     {
                         redeemableItems,
                         itemAttributes,
+                        pets,
                         patreons, loyalty, loyaltyRewards, loyaltyRanks, claimedLoyaltyRewards,
                         expMultiplierEvents, notifications,
                         appearances, syntyAppearances, characters, characterStates,
@@ -921,6 +929,8 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Add Methods
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(Pet item) => Update(() => pets.Add(item));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(CharacterSkillRecord item) => Update(() => characterSkillRecords.Add(item));
 
@@ -1589,6 +1599,14 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public User GetUser(Guid userId) => users[userId];
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Pet GetActivePet(Guid characterId) => pets[nameof(Character), characterId].FirstOrDefault(x => x.Active);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<Pet> GetPets(Guid characterId) => pets[nameof(Character), characterId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Pet GetPet(Guid id) => pets[id];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public User GetUserByTwitchId(string twitchUserId)
@@ -1764,6 +1782,9 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Remove Entities
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(Pet item) => pets.Remove(item);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(UserBankItem item) => userBankItems.Remove(item);

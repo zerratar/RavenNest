@@ -21,8 +21,9 @@ namespace RavenNest.Models
         public Skills Skills { get; set; }
 
         public CharacterState State { get; set; }
-
+        public Guid? ActiveBattlePet { get; set; }
         public IReadOnlyList<InventoryItem> InventoryItems { get; set; }
+        public IReadOnlyList<BattlePet> BattlePets { get; set; }
         public Clan Clan { get; set; }
         public ClanRole ClanRole { get; set; }
         public bool IsAdmin { get; set; }

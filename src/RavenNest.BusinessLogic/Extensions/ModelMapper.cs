@@ -270,6 +270,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 gameData.Add(characterState);
             }
 
+            (var battlePets, var activeBattlePet) = character.MapBattlePets(gameData);
+
             return new Player
             {
                 Id = character.Id,
@@ -285,6 +287,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 State = Map(characterState),
                 InventoryItems = invItems,
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
+                ActiveBattlePet = activeBattlePet,
+                BattlePets = battlePets,
                 Clan = clan,
                 ClanRole = clanRole,
                 OriginUserId = character.OriginUserId,
@@ -294,6 +298,22 @@ namespace RavenNest.BusinessLogic.Extensions
                 PatreonTier = user.PatreonTier.GetValueOrDefault(),
                 IsHiddenInHighscore = user.IsHiddenInHighscore.GetValueOrDefault()
             };
+        }
+
+        private static (IReadOnlyList<BattlePet>, Guid?) MapBattlePets(this Character character, IGameData gameData)
+        {
+            Guid? activeBattlePet = null;
+            var pets = gameData.GetPets(character.Id);
+            var battlePets = new List<BattlePet>();
+            foreach (var p in pets)
+            {
+                battlePets.Add(DataMapper.Map<BattlePet>(p));
+                if (p.Active)
+                {
+                    activeBattlePet = p.Id;
+                }
+            }
+            return (battlePets, activeBattlePet);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -312,7 +332,7 @@ namespace RavenNest.BusinessLogic.Extensions
             var clanMembership = gameData.GetClanMembership(character.Id);
             var clan = clanMembership != null ? Map(gameData, gameData.GetClan(clanMembership.ClanId)) : null;
             var clanRole = clanMembership != null ? Map(gameData.GetClanRole(clanMembership.ClanRoleId), clanMembership) : null;
-
+            (var battlePets, var activeBattlePet) = character.MapBattlePets(gameData);
             return new WebsiteAdminPlayer
             {
                 Created = user.Created,
@@ -329,6 +349,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 State = Map(gameData.GetCharacterState(character.StateId)),
                 InventoryItems = Map(gameData.GetAllPlayerItems(character.Id)),
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
+                ActiveBattlePet = activeBattlePet,
+                BattlePets = battlePets,
                 Clan = clan,
                 ClanRole = clanRole,
                 OriginUserId = character.OriginUserId,
@@ -351,7 +373,7 @@ namespace RavenNest.BusinessLogic.Extensions
             var clanRole = clanMembership != null ? Map(gameData.GetClanRole(clanMembership.ClanRoleId), clanMembership) : null;
 
             var sessionInfo = GetCharacterSessionInfo(gameData, character);
-
+            (var battlePets, var activeBattlePet) = character.MapBattlePets(gameData);
             return new WebsitePlayer
             {
                 Id = character.Id,
@@ -367,6 +389,8 @@ namespace RavenNest.BusinessLogic.Extensions
                 State = Map(gameData.GetCharacterState(character.StateId)),
                 InventoryItems = Map(items),
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
+                ActiveBattlePet = activeBattlePet,
+                BattlePets = battlePets,
                 Clan = clan,
                 ClanRole = clanRole,
                 Identifier = character.Identifier,

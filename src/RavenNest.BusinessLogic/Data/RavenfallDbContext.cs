@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RavenNest.DataModels;
+using System;
 
 namespace RavenNest.BusinessLogic.Data
 {
@@ -21,6 +22,7 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<UserNotification> UserNotification { get; set; }
         public virtual DbSet<UserProperty> UserProperty { get; set; }
         public virtual DbSet<UserLoyalty> UserLoyalty { get; set; }
+        public virtual DbSet<Pet> Pet { get; set; }
         public virtual DbSet<RedeemableItem> RedeemableItem { get; set; }
         public virtual DbSet<UserLoyaltyRank> UserLoyaltyRank { get; set; }
         public virtual DbSet<UserLoyaltyReward> UserLoyaltyReward { get; set; }
@@ -81,6 +83,14 @@ namespace RavenNest.BusinessLogic.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<Pet>(entity =>
+            {
+                entity.Property(e => e.Type).HasConversion(v => (int)v, v => (PetType)v);
+                entity.Property(e => e.Tier).HasConversion(v => (int)v, v => (PetTier)v);
+                entity.Property(e => e.DateOfBirth).HasColumnType("datetime");
+                entity.Property(e => e.PlayTime).HasConversion<long>();
+            });
+
             modelBuilder.Entity<Agreements>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserProperty>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserClaimedLoyaltyReward>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
