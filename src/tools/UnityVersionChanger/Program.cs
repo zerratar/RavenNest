@@ -3,10 +3,13 @@
 
 using UnityVersionChanger;
 
-var targetFile = @"C:\git\Ravenfall Legacy\Build\Ravenfall_Data\globalgamemanagers";
+//var targetFile = @"C:\git\Ravenfall Legacy\Build\Ravenfall_Data\globalgamemanagers";
+
+var targetFile = @"C:\git\Ravenfall Legacy\Debug Build\Ravenfall Legacy_Data\globalgamemanagers";
 //var targetFile = @"C:\Users\kaaru\Downloads\Ravenfall.v0.7.8.10a-alpha\Ravenfall_Data\globalgamemanagers";
 
 var expectedVersion = "0.7.8.8a";
+//var expectedVersion = "0.1.0";
 //var expectedVersion = "0.7.8.10a";
 var replacementVersion = "0.7.8.11a";
 

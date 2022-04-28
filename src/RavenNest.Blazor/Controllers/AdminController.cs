@@ -86,6 +86,20 @@ namespace RavenNest.Controllers
         }
 
 
+        [HttpGet("state-data/{streamer}")]
+        public async Task<GameSessionPlayerCache> DownloadStreamerStateCache(string streamer)
+        {
+            try
+            {
+                await AssertAdminAccessAsync();
+                return adminManager.GetStreamerStateCache(streamer);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
 
         [HttpGet("backup/download")]
         public async Task<ActionResult> DownloadGameState()
