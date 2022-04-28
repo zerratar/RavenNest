@@ -5,6 +5,7 @@ using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.DataModels;
@@ -374,10 +375,16 @@ namespace RavenNest.BusinessLogic.Data
 
                 RemoveBadUsers(users);
                 RemoveBadInventoryItems(inventoryItems);
+
+                RemoveEmptyPlayers();
+
                 EnsureClanLevels(clans);
                 EnsureExpMultipliersWithinBounds(expMultiplierEvents);
                 EnsureCraftingRequirements(items);
                 MergeLoyaltyData(loyalty);
+
+
+                RewardRollbackPlayers();
 
                 #endregion
 
@@ -395,6 +402,81 @@ namespace RavenNest.BusinessLogic.Data
                 System.IO.File.WriteAllText("ravenfall-error.log", exc.ToString());
             }
 
+        }
+
+        private void RewardRollbackPlayers()
+        {
+            string[] data = null;
+            if (System.IO.File.Exists("changes.txt"))
+            {
+                // rename this shit.
+                var dt = DateTime.UtcNow;
+                data = System.IO.File.ReadAllLines("changes.txt");
+                System.IO.File.Move("changes.txt", $"restored-changes_{dt:yyyy-MM-dd_hhMMss}.txt", true);
+            }
+
+            if (data == null)
+                return;
+
+
+            Guid[] rewardItems = new Guid[] {
+                Guid.Parse("AD431ADB-9001-4BAF-8125-1D0D0525A247"),
+                Guid.Parse("9C364DAF-7985-42DB-A116-2D58139D14A3"),
+                Guid.Parse("1E9D818D-6EEE-46D5-B47F-2E2ECDC2FEDE"),
+                Guid.Parse("D28DC33E-E256-4DAF-B0A7-3487E7E1532A"),
+                Guid.Parse("704D9F4D-7CF5-4491-8950-7383F81B5F30"),
+                Guid.Parse("F927197A-5DDF-4CA4-95F1-871FA3A49BE6"),
+                Guid.Parse("BF4F3CD5-B126-4588-9F35-885B94C240A0"),
+                Guid.Parse("9ABF2A4B-9D6F-4893-8FEC-8F17C28CD4CD"),
+                Guid.Parse("C35032FB-79E4-4DEB-ADD3-9E3AAEA27060"),
+                Guid.Parse("79C1E673-93D3-4DA3-A48E-A58E4A2FD1AD"),
+                Guid.Parse("AC8DBEC9-3D49-4294-88D2-B820BA7393D5"),
+                Guid.Parse("35EC855D-EEC7-4737-BF04-B8AFD6051E41"),
+                Guid.Parse("B18A15B1-629F-4B8C-920E-BAB3DDBE877B"),
+                Guid.Parse("41A8E82D-3DE3-45D9-967B-BC93C447406D"),
+                Guid.Parse("B8DE84CE-1C1F-4509-A505-D3A893398138"),
+                Guid.Parse("EFCE022C-54E3-42ED-8F7B-E34C46F0187E"),
+                Guid.Parse("612A99C9-8AE6-4422-AFDC-EA58056F7FAA"),
+                Guid.Parse("E40AFF21-A40C-4013-99A4-F4DB5AB6296A"),
+                Guid.Parse("B2DD7C43-9F9F-4A77-A702-F9DD23CBDF2D")
+            };
+            var random = new Random();
+
+            var rewardCount = 0;
+
+            for (var i = 0; i < data.Length; ++i)
+            {
+                // go through each line, check which player affected. Reward random item out of latest hats.
+                var line = data[i];
+                if (line.IndexOf('#') > 0)
+                {
+                    var d = line.Split('#');
+                    var name = d[0];
+                    var index = d[1];
+                    var c = GetCharacterByName(name, index);
+                    if (c != null)
+                    {
+                        var itemId = rewardItems[random.Next(0, rewardItems.Length)];
+
+                        var ii = new InventoryItem
+                        {
+                            Amount = 1,
+                            CharacterId = c.Id,
+                            Id = Guid.NewGuid(),
+                            ItemId = itemId,
+                        };
+
+                        rewardCount++;
+
+                        Add(ii);
+                    }
+                }
+            }
+
+            if (rewardCount > 0)
+            {
+                logger.LogError("(Not actual error) " + rewardCount + " items was rewarded to various players.");
+            }
         }
 
         private void EnsureMagicAttributes()
@@ -844,12 +926,120 @@ namespace RavenNest.BusinessLogic.Data
             var toRemove = new List<InventoryItem>();
             foreach (var ii in inventoryItems.Entities)
             {
-                if (ii.Amount <= 0) toRemove.Add(ii);
+                if (ii.Amount <= 0 || GetCharacter(ii.CharacterId) == null)
+                {
+                    toRemove.Add(ii);
+                }
             }
 
             foreach (var bad in toRemove)
             {
                 Remove(bad);
+            }
+
+            if (toRemove.Count > 0)
+            {
+                logger.LogError("(Not actual error) Remove " + toRemove.Count + " inventory items of characters that dont exist.");
+            }
+        }
+
+        private void RemoveEmptyPlayers()
+        {
+            var now = DateTime.UtcNow;
+            List<Character> characterToRemove = new List<Character>();
+            foreach (var c in this.characters.Entities)
+            {
+                if (c.LastUsed == null || (now - c.LastUsed) >= TimeSpan.FromDays(365 / 2))
+                {
+                    // check if the player has any data associated with it. Inventory Items
+                    // Skills, etc.
+
+                    var chars = GetCharactersByUserId(c.UserId);
+
+                    // if chars == null, user does not exist anymore.
+                    if (chars != null && chars.Count > 1)
+                    {
+                        continue;
+                    }
+
+                    var s = GetCharacterSkills(c.SkillsId);
+                    if (s == null || s.GetSkills().All(x => x.Level == 1 || (x.Name == "Health" && x.Level == 10)))
+                    {
+                        var items = GetInventoryItems(c.Id);
+                        if (items != null && items.Count > 0)
+                        {
+                            continue;
+                        }
+
+                        characterToRemove.Add(c);
+
+                        if (s != null)
+                        {
+                            Remove(s);
+                        }
+
+                        var appearance = GetAppearance(c.AppearanceId);
+                        if (appearance != null)
+                        {
+                            Remove(appearance);
+                        }
+
+                        var statistics = GetStatistics(c.StatisticsId);
+                        if (statistics != null)
+                        {
+                            Remove(statistics);
+                        }
+
+                        var mem = GetClanMembership(c.Id);
+                        if (mem != null)
+                        {
+                            Remove(mem);
+                        }
+
+                        var invites = GetClanInvitesByCharacter(c.Id);
+                        if (invites != null && invites.Count > 0)
+                        {
+                            foreach (var i in invites)
+                                Remove(i);
+                        }
+                    }
+                }
+            }
+
+            var str = new StringBuilder();
+
+            var removedUserCount = 0;
+            foreach (var c in characterToRemove)
+            {
+                Remove(c);
+
+                str.AppendLine("c\t" + c.Id + "\t" + c.Name);
+
+                var user = GetUser(c.UserId);
+                // just in case, we will do another check.
+
+                if (user != null)
+                {
+                    if (GetCharactersByUserId(c.UserId)?.Count > 1)
+                    {
+                        continue;
+                    }
+
+                    ++removedUserCount;
+                    Remove(user);
+                    str.AppendLine("u\t" + user.Id + "\t" + user.UserName);
+                }
+            }
+
+            if (characterToRemove.Count > 0)
+            {
+                logger.LogError("(Not actual error) Remove " + characterToRemove.Count + " characters and " + removedUserCount + " users removed as they have starting stats, no items and not played for over 6 months.");
+                try
+                {
+                    var dt = DateTime.UtcNow;
+                    System.IO.File.WriteAllText($"removed__{dt:yyyy-MM-dd_hhMMss}.txt", str.ToString());
+                }
+                catch { }
             }
         }
 
@@ -1530,6 +1720,11 @@ namespace RavenNest.BusinessLogic.Data
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<Character> GetCharactersByUserLock(System.Guid userIdLock)
+        {
+            return characters[nameof(GameSession), userIdLock].AsList(x => GetUser(x.UserId) != null);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetUserProperty(Guid userId, string propertyKey, string propertyValue)
@@ -1823,6 +2018,9 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(User user) => users.Remove(user);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(SyntyAppearance entity) => syntyAppearances.Remove(entity);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(Skills skill) => characterSkills.Remove(skill);

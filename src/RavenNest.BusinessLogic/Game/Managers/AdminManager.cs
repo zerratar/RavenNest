@@ -91,14 +91,12 @@ namespace RavenNest.BusinessLogic.Game
                         continue;
                     }
 
-
                     players.Add(new GameSessionPlayerCache.GameCachePlayerItem
                     {
                         CharacterId = character.Id,
                         CharacterIndex = character.CharacterIndex,
                         TwitchUser = new GameSessionPlayerCache.GameCachePlayerItem.TwitchPlayerInfo(
-                                user.UserId, user.UserName, user.DisplayName, "", false, false, false, false, character.Identifier
-                            )
+                                user.UserId, user.UserName, user.DisplayName, "", false, false, false, false, character.Identifier)
                     });
                 }
 
@@ -111,6 +109,50 @@ namespace RavenNest.BusinessLogic.Game
                 Created = DateTime.UtcNow,
                 Players = players
             };
+        }
+
+        public GameSessionPlayerCache GetStreamerStateCache(string streamer)
+        {
+            // 1., resolve the streamer, is it username, twitch user id or user id guid
+            var streamerUser = GetUser(streamer);
+            if (streamerUser == null)
+            {
+                return new GameSessionPlayerCache();
+            }
+
+            var players = new List<GameSessionPlayerCache.GameCachePlayerItem>();
+            var characters = gameData.GetCharactersByUserLock(streamerUser.Id);
+            foreach (var character in characters)
+            {
+                var user = gameData.GetUser(character.UserId);
+                players.Add(new GameSessionPlayerCache.GameCachePlayerItem
+                {
+                    CharacterId = character.Id,
+                    CharacterIndex = character.CharacterIndex,
+                    TwitchUser = new GameSessionPlayerCache.GameCachePlayerItem.TwitchPlayerInfo(
+                            user.UserId, user.UserName, user.DisplayName, "", false, false, false, false, character.Identifier)
+                });
+            }
+
+            return new GameSessionPlayerCache()
+            {
+                Created = DateTime.UtcNow,
+                Players = players
+            };
+        }
+
+        private User GetUser(string streamer)
+        {
+            if (Guid.TryParse(streamer, out var userId))
+            {
+                var user = gameData.GetUser(userId);
+                if (user != null)
+                {
+                    return user;
+                }
+            }
+
+            return gameData.GetUsers().FirstOrDefault(x => x.UserId == streamer || x.UserName != null && x.UserName.Equals(streamer, StringComparison.OrdinalIgnoreCase));
         }
 
         public bool AddCoins(string query, string identifier)

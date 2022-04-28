@@ -15,7 +15,7 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var versionToLower = input.ToLower();
-            var versionString = versionToLower.Replace("a", "");
+            var versionString = versionToLower.Replace("a", "").Replace("b", "");
             return System.Version.TryParse(versionString, out version);
         }
 
@@ -62,7 +62,7 @@ namespace RavenNest.BusinessLogic.Game
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsExpectedVersion(this IGameData gameData, Version version)
         {
-            return version == gameData.GetClientVersion();
+            return version >= gameData.GetClientVersion();
         }
     }
 }
