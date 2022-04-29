@@ -95,6 +95,27 @@ namespace RavenNest.Blazor.Services
             return playerManager.GetWebsitePlayer(characterId);
         }
 
+        public Task<bool> ResetPlayerSkillsAsync(Guid characterId)
+        {
+            return playerManager.ResetPlayerSkillsAsync(characterId);
+        }
+
+        public async Task<bool> UnstuckPlayerAsync(Guid fromCharacterId)
+        {
+            var session = GetSession();
+            if (session == null) return false;
+            return await playerManager.UnstuckPlayerAsync(fromCharacterId);
+        }
+
+        public async Task<bool> CloneSkillsAndStateToMainAsync(Guid fromCharacterId)
+        {
+            var session = GetSession();
+            if (session == null) return false;
+            var mainCharacter = gameData.GetCharacterByUserId(session.AccountId);
+            if (mainCharacter == null) return false;
+            return await playerManager.CloneSkillsAndStateAsync(fromCharacterId, mainCharacter.Id);
+        }
+
         public async Task<WebsitePlayer> GetPlayerAsync(Guid characterId)
         {
             return await Task.Run(() =>

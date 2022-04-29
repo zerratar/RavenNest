@@ -76,6 +76,19 @@
         <div class="last-updated">@GetLastUpdateString(Player.SessionInfo.SkillsUpdated)</div>
     }
 
+
+    @if (CanModify)
+    {
+        <div class="admin-controls">
+            <button @onclick="()=> Unstuck()" class="btn-icon">Unstucks the player&nbsp;<i class="fa-solid fa-person-falling-burst"></i></button>
+            @if (Player.UserId != session.UserId)
+            {
+                <button @onclick="()=> CloneSkillsAndStateToMain()" class="btn-icon">Clone stats to Main&nbsp;<i class="fa fa-arrow-to-bottom"></i></button>
+            }
+            <button @onclick="()=> ResetSkills()" class="btn-icon">Reset skills&nbsp;<i class="fa-regular fa-repeat"></i></button>
+        </div>
+    }
+
     @foreach (var skill in Player.Skills.AsList())
     {
         var isActive = IsTrainingSkill(skill);
@@ -146,6 +159,7 @@
 
     private bool CanModify => session != null && session.Administrator;
 
+
     public string GetLastUpdateString(DateTime update)
     {
         var elapsed = DateTime.UtcNow - update;
@@ -209,6 +223,34 @@
             modifyingSkillExperiencePercent = newExpPercent;
         }
     }
+
+    public async void ResetSkills()
+    {
+        var result = await PlayerService.ResetPlayerSkillsAsync(Player.Id);
+
+        if (result)
+        {
+            this.Player = await PlayerService.GetPlayerAsync(Player.Id);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public async void CloneSkillsAndStateToMain()
+    {
+        var result = await PlayerService.CloneSkillsAndStateToMainAsync(Player.Id);
+
+        if (result)
+        {
+            this.Player = await PlayerService.GetPlayerAsync(Player.Id);
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public async void Unstuck()
+    {
+        await PlayerService.UnstuckPlayerAsync(Player.Id);
+    }
+
 
     public async void ApplyModifySkill()
     {

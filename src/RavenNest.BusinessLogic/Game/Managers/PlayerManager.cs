@@ -2422,6 +2422,7 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
+
         public bool UpdateExperience(SessionToken token, int skillIndex, int level, double experience, Guid characterId)
         {
             try
@@ -2507,7 +2508,6 @@ namespace RavenNest.BusinessLogic.Game
                     }
                 }
 
-
                 if (existingLevel != level)
                 {
                     UpdateCharacterSkillRecord(character.Id, skillIndex, level, experience);
@@ -2537,12 +2537,165 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+
+        public async Task<bool> UnstuckPlayerAsync(Guid characterId)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null)
+            {
+                return false;
+            }
+
+            await SendRejoinAsync(character, "Unstuck used by admin.", async () =>
+            {
+                var state = gameData.GetCharacterState(character.StateId);
+                if (state == null)
+                    return;
+
+                if (state.Island == null)
+                    return;
+
+                switch (state.Island)
+                {
+                    case "Home":
+                        state.X = 119.6936f;
+                        state.Y = -2.073665f;
+                        state.Z = 62.14654f;
+                        break;
+
+                    case "Away":
+                        state.X = 223.13f;
+                        state.Y = -2.324998f;
+                        state.Z = -263.5f;
+                        break;
+
+                    case "Kyo":
+                        state.X = -364.4747f;
+                        state.Y = -1.838f;
+                        state.Z = 75.62f;
+                        break;
+
+                    case "Ironhill":
+                        state.X = 29.53798f;
+                        state.Y = -1.868665f;
+                        state.Z = 294.4587f;
+                        break;
+
+                    case "Heim":
+                        state.X = -285.842f;
+                        state.Y = -1.918666f;
+                        state.Z = -398.4614f;
+                        break;
+
+                    default:
+                        state.Y = state.Y + 5f;
+                        break;
+                }
+            });
+
+            return true;
+        }
+
+        public async Task<bool> CloneSkillsAndStateAsync(Guid fromCharacterId, Guid toCharacterId)
+        {
+            var charTo = gameData.GetCharacter(toCharacterId);
+            var charFrom = gameData.GetCharacter(fromCharacterId);
+            if (charFrom == null || charTo == null)
+            {
+                return false;
+            }
+
+            var skillsFrom = gameData.GetCharacterSkills(charFrom.SkillsId);
+            var skillsTo = gameData.GetCharacterSkills(charTo.SkillsId);
+            if (skillsFrom == null || skillsTo == null)
+            {
+                return false;
+            }
+
+            await SendRejoinAsync(charTo, "Stats has been modified by admin.", async () =>
+            {
+
+                /*
+                    We will also clone state.
+                 */
+
+                var fromState = gameData.GetCharacterState(charFrom.StateId);
+                var toState = gameData.GetCharacterState(charTo.StateId);
+                if (fromState != null && toState != null)
+                {
+                    toState.Task = fromState.TaskArgument;
+                    toState.Task = fromState.Task;
+                    toState.RestedTime = fromState.RestedTime;
+                    toState.Island = fromState.Island;
+                    toState.InOnsen = fromState.InOnsen;
+                    toState.X = fromState.X;
+                    toState.Y = fromState.Y;
+                    toState.Z = fromState.Z;
+                    toState.Health = fromState.Health;
+                }
+
+                foreach (var s0 in skillsFrom.GetSkills())
+                {
+                    var s1 = skillsTo.GetSkill(s0.Name);
+                    s1.Experience = s0.Experience;
+                    s1.Level = s0.Level;
+                }
+            });
+
+            return true;
+        }
+
+        public async Task<bool> ResetPlayerSkillsAsync(Guid characterId)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null)
+            {
+                return false;
+            }
+
+            string reason = "Stats has been reset by admin";
+
+            await SendRejoinAsync(character, reason, async () =>
+            {
+                var characterSkills = gameData.GetCharacterSkills(character.SkillsId);
+                if (characterSkills == null)
+                {
+                    return;
+                }
+
+                var state = gameData.GetCharacterState(character.StateId);
+                if (state != null)
+                {
+                    state.Health = 10;
+                }
+
+                foreach (var s in characterSkills.GetSkills())
+                {
+                    if (s.Name == nameof(Skills.Health))
+                    {
+                        s.Experience = 1000;
+                        s.Level = 10;
+                    }
+                    else
+                    {
+                        s.Level = 1;
+                        s.Experience = 0;
+                    }
+                }
+
+            });
+
+            return true;
+        }
+
+
         public async Task<bool> UpdatePlayerSkillAsync(Guid characterId, string skillName, int level, float levelProgress)
         {
             if (levelProgress > 1)
             {
                 levelProgress /= 100f;
             }
+
             if (level <= 0 || level > GameMath.MaxLevel)
             {
                 return false;
@@ -2553,50 +2706,32 @@ namespace RavenNest.BusinessLogic.Game
             {
                 return false;
             }
-
             var characterSkills = gameData.GetCharacterSkills(character.SkillsId);
-            var skill = characterSkills.GetSkill(skillName);
-            if (skill == null)
+            if (characterSkills == null)
             {
                 return false;
             }
 
-
-            var gameSession = gameData.GetSessionByCharacterId(characterId);
-            if (gameSession != null)
+            await SendRejoinAsync(character, "Experience has been modified by admin", async () =>
             {
-                //SendRemovePlayerFromSession(character, gameSession);
-                var characterSessionState = gameData.GetCharacterSessionState(gameSession.Id, character.Id);
-                if (characterSessionState != null)
+                var skill = characterSkills.GetSkill(skillName);
+                if (skill == null)
                 {
-                    characterSessionState.Compromised = true;
-                    characterSessionState.LastSkillUpdate = DateTime.UtcNow;
+                    return;
                 }
-            }
 
+                skill.Level = level;
+                skill.Experience = levelProgress * GameMath.ExperienceForLevel(level + 1);
 
-            skill.Level = level;
-            skill.Experience = levelProgress * GameMath.ExperienceForLevel(level + 1);
-
-            await TrySendToExtensionAsync(character, new CharacterExpUpdate
-            {
-                CharacterId = character.Id,
-                SkillIndex = skill.Index,
-                Experience = skill.Experience,
-                Level = level,
+                await TrySendToExtensionAsync(character, new CharacterExpUpdate
+                {
+                    CharacterId = character.Id,
+                    SkillIndex = skill.Index,
+                    Experience = skill.Experience,
+                    Level = level,
+                });
             });
 
-
-            if (gameSession != null)
-            {
-                // Try and remove the player from the session and then add them back
-                if (await RemovePlayerFromActiveSession(gameSession, characterId))
-                {
-                    SendRemovePlayerFromSession(character, gameSession, "Experience has been modified by admin");
-                    await Task.Delay(100);
-                    SendPlayerAddToSession(character, gameSession);
-                }
-            }
 
             // Right now: 
             //  1. Lock future updates untill player leave/join a game.
@@ -2612,8 +2747,39 @@ namespace RavenNest.BusinessLogic.Game
             // After the #4; stop accepting new exp changes to that skill until the client has sent an update with similar level and exp
             // if the save still tries to save a higher exp. Then kick the player from their game session and add them back. Repeat until OK
 
-
             return true;
+        }
+
+        private async Task SendRejoinAsync(Character character, string reason, Func<Task> onLockAsync = null)
+        {
+            Guid characterId = character.Id;
+            var gameSession = gameData.GetSessionByCharacterId(characterId);
+            if (gameSession != null)
+            {
+                //SendRemovePlayerFromSession(character, gameSession);
+                var characterSessionState = gameData.GetCharacterSessionState(gameSession.Id, character.Id);
+                if (characterSessionState != null)
+                {
+                    characterSessionState.Compromised = true;
+                    characterSessionState.LastSkillUpdate = DateTime.UtcNow;
+                }
+            }
+
+            if (onLockAsync != null)
+            {
+                await onLockAsync();
+            }
+
+            if (gameSession != null)
+            {
+                // Try and remove the player from the session and then add them back
+                if (await RemovePlayerFromActiveSession(gameSession, characterId))
+                {
+                    SendRemovePlayerFromSession(character, gameSession, reason);
+                    await Task.Delay(100);
+                    SendPlayerAddToSession(character, gameSession);
+                }
+            }
         }
 
         public bool UpdateExperience(
