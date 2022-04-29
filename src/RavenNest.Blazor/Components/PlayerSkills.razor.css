@@ -15,6 +15,15 @@
     border-bottom: 1px solid #f3f3f3;
 }
 
+.admin-controls button.btn-icon {
+    padding: 10px 15px 10px 15px;
+    background-color: #141414;
+    color: white;
+    margin-bottom: 10px;
+    margin-left: 0;
+    margin-right: 10px;
+}
+
 .training-skill {
     margin-bottom: 10px;
     padding: 5px;
