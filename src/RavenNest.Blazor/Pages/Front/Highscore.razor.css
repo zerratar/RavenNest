@@ -1,4 +1,87 @@
-﻿h1 {
+﻿i.fa-solid.fa-medal.first,
+i.fa-solid.fa-award.second,
+i.fa-solid.fa-award-simple.third {
+    position: relative;
+    left: -10px;
+    top: -1px;
+}
+
+i.fa-solid.fa-medal.first {
+    color: #d4af37;
+    text-shadow: #f3d25e -1px 1px 1px, #846539 0 2px 0, #7f6034 0 2px 0, #7a5b2f 0 3px 0, #75562a 0 3px 0, #705125 0 2px 0, #6b4c20 0 3px 0, #66471b 0 3px 0, rgb(0 0 0 / 80%) 0 5px 3px;
+}
+i.fa-solid.fa-award.second {
+    color: #b5b5bd;
+    text-shadow: #e4e4e4 -1px 1px 1px, #6b6b6b 0 2px 0, #7e7e7e 0 2px 0, #7b7b7b 0 3px 0, #6d6d6d 0 3px 0, #606060 0 2px 0, #4e4e4e 0 3px 0, #3f3f3f 0 3px 0, rgb(0 0 0 / 80%) 0 3px 3px;
+}
+
+i.fa-solid.fa-award-simple.third {
+    color: #9c5221;
+    text-shadow: #f3865e -1px 1px 1px, #846539 0 2px 0, #7f6034 0 2px 0, #7a5b2f 0 3px 0, #75562a 0 3px 0, #705125 0 2px 0, #6b4c20 0 3px 0, #66471b 0 3px 0, rgb(0 0 0 / 80%) 0 4px 3px;
+}
+
+.skill-max-container {
+    display: block;
+    position: relative;
+    margin: 0;
+    padding: 0;
+    display: inline-block;
+}
+
+.skill-max, .skill-max::after {
+    /* width: 150px; */
+    margin: auto;
+    font-size: 16pt;
+    font-variant: small-caps;
+    font-weight: bold;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-align: center;
+}
+
+.skill-max::after {
+    content: attr(data-content);
+    position: absolute;
+    left: 0;
+    right: 0;
+    /*background: -webkit-linear-gradient(top, #e99a3b 2%, #e99a3b 45%, #f8bd5f 65%, #e99a3b 78%, #e99a3b 100%);*/
+    /*background: #d4af37;*/
+    background: linear-gradient(45deg, #0087ff, #19dbe7);
+    -webkit-background-clip: text;
+    color: #e99a3b;
+    -webkit-text-fill-color: transparent;
+    text-shadow: none;
+}
+
+.skill-max {
+    text-shadow: #add1ff -1px 1px 1px, #396384 0 2px 0, #346a7f 0 2px 0, #2f3e7a 0 3px 0, #2a4d75 0 3px 0, #253c70 0 2px 0, #20246b 0 3px 0, #1b3d66 0 3px 0, rgb(0 0 0 / 80%) 0 5px 3px;
+}
+.skill-max.bronze {
+    text-shadow: #f3865e -1px 1px 1px, #846539 0 2px 0, #7f6034 0 2px 0, #7a5b2f 0 3px 0, #75562a 0 3px 0, #705125 0 2px 0, #6b4c20 0 3px 0, #66471b 0 3px 0, rgb(0 0 0 / 80%) 0 3px 3px;
+}
+.skill-max.silver {
+    text-shadow: #e4e4e4 -1px 1px 1px, #6b6b6b 0 2px 0, #7e7e7e 0 2px 0, #7b7b7b 0 3px 0, #6d6d6d 0 3px 0, #606060 0 2px 0, #4e4e4e 0 3px 0, #3f3f3f 0 3px 0, rgb(0 0 0 / 80%) 0 4px 3px;
+}
+.skill-max.gold {
+    text-shadow: #f3d25e -1px 1px 1px, #846539 0 2px 0, #7f6034 0 2px 0, #7a5b2f 0 3px 0, #75562a 0 3px 0, #705125 0 2px 0, #6b4c20 0 3px 0, #66471b 0 3px 0, rgb(0 0 0 / 80%) 0 5px 3px;
+}
+
+.skill-max.gold::after {
+    background: #d4af37;
+    -webkit-background-clip: text;
+}
+
+.skill-max.silver::after {
+    background: #b5b5bd;
+    -webkit-background-clip: text;
+}
+
+.skill-max.bronze::after {
+    background: #9c5221;
+    -webkit-background-clip: text;
+}
+
+h1 {
     color: white;
     text-shadow: 4px 4px 10px rgba(0,0,0,0.5);
 }

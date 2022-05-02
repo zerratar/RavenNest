@@ -846,7 +846,6 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
-
         private void MergeLoyaltyData(EntitySet<UserLoyalty, Guid> loyalty)
         {
             var toRemove = new List<UserLoyalty>();
@@ -1808,7 +1807,7 @@ namespace RavenNest.BusinessLogic.Data
         {
             twitchUserId = twitchUserId?.ToLower()?.Trim();
             if (string.IsNullOrEmpty(twitchUserId)) return null;
-            return users.Entities.FirstOrDefault(x => x.UserId != null
+            return users.Entities.FirstOrDefault(x => x != null && x.UserId != null
                 && x.UserId.Equals(twitchUserId, StringComparison.OrdinalIgnoreCase));
         }
 
@@ -1817,7 +1816,8 @@ namespace RavenNest.BusinessLogic.Data
         {
             username = username?.ToLower()?.Trim();
             if (string.IsNullOrEmpty(username)) return null;
-            return users.Entities.FirstOrDefault(x => x.UserName != null && x.UserName.Equals(username, StringComparison.OrdinalIgnoreCase));
+            return users.Entities.FirstOrDefault(x =>
+                x != null && x.UserName != null && x.UserName.Equals(username, StringComparison.OrdinalIgnoreCase));
         }
 
         //.OrderBy(x => x.Created)
@@ -1893,6 +1893,18 @@ namespace RavenNest.BusinessLogic.Data
         public CharacterSkillRecord GetCharacterSkillRecord(Guid id, int skillIndex)
         {
             return characterSkillRecords[nameof(Character), id].FirstOrDefault(x => x.SkillIndex == skillIndex);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<CharacterSkillRecord> GetSkillRecords(int skillIndex)
+        {
+            return characterSkillRecords.Entities.AsList(x => x.SkillIndex == skillIndex);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<CharacterSkillRecord> GetSkillRecords(int skillIndex, int level)
+        {
+            return characterSkillRecords.Entities.AsList(x => x.SkillIndex == skillIndex && x.SkillLevel == level);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -161,6 +161,7 @@ namespace RavenNest.BusinessLogic.Game
                 var userId = playerData.UserId;
                 var userName = playerData.UserName;
                 var identifier = playerData.Identifier;
+
                 if (string.IsNullOrEmpty(identifier))
                 {
                     identifier = "0";
@@ -975,17 +976,18 @@ namespace RavenNest.BusinessLogic.Game
             if (session == null)
                 return false;
 
-            var joinData = new PlayerJoinData
-            {
-                UserId = data.UserId,
-                UserName = data.UserName,
-                Identifier = "0",
-            };
+            //var joinData = new PlayerJoinData
+            //{
+            //    UserId = data.UserId,
+            //    UserName = data.UserName,
+            //    Identifier = "0",
+            //};
 
             var user = gameData.GetUserByTwitchId(data.UserId);
             if (user == null)
             {
-                user = CreateUser(session, joinData);
+                return false;
+                //user = CreateUser(session, joinData);
                 //return false;
             }
 
@@ -3072,35 +3074,35 @@ namespace RavenNest.BusinessLogic.Game
             gameData.Add(gameEvent);
         }
 
-        private User CreateUser(DataModels.GameSession session, PlayerJoinData playerData)
-        {
-            var user = gameData.GetUserByTwitchId(playerData.UserId);
-            if (user == null)
-            {
-                if (string.IsNullOrEmpty(playerData.UserId))
-                {
-                    logger.LogError("Trying to create a new user but twitch user id is null.");
-                    return null;
-                }
+        //private User CreateUser(DataModels.GameSession session, PlayerJoinData playerData)
+        //{
+        //    var user = gameData.GetUserByTwitchId(playerData.UserId);
+        //    if (user == null)
+        //    {
+        //        if (string.IsNullOrEmpty(playerData.UserId))
+        //        {
+        //            logger.LogError("Trying to create a new user but twitch user id is null.");
+        //            return null;
+        //        }
 
-                if (string.IsNullOrEmpty(playerData.UserName))
-                {
-                    logger.LogError("Trying to create a new user but username is null.");
-                    return null;
-                }
+        //        if (string.IsNullOrEmpty(playerData.UserName))
+        //        {
+        //            logger.LogError("Trying to create a new user but username is null.");
+        //            return null;
+        //        }
 
-                user = new User
-                {
-                    Id = Guid.NewGuid(),
-                    UserId = playerData.UserId,
-                    UserName = playerData.UserName,
-                    Created = DateTime.UtcNow
-                };
-                gameData.Add(user);
-            }
-            CreateUserLoyalty(session, user, playerData);
-            return user;
-        }
+        //        user = new User
+        //        {
+        //            Id = Guid.NewGuid(),
+        //            UserId = playerData.UserId,
+        //            UserName = playerData.UserName,
+        //            Created = DateTime.UtcNow
+        //        };
+        //        gameData.Add(user);
+        //    }
+        //    CreateUserLoyalty(session, user, playerData);
+        //    return user;
+        //}
 
         private Task<Player> CreateUserAndPlayer(
             DataModels.GameSession session,

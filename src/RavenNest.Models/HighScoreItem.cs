@@ -11,5 +11,7 @@ namespace RavenNest.Models
         public string Skill { get; set; }
         public double Experience { get; set; }
         public int Level { get; set; }
+        public DateTime DateReached { get; set; }
+        public int OrderAchieved { get; set; }
     }
 }

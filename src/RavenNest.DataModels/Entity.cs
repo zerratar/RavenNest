@@ -27,6 +27,13 @@ namespace RavenNest.DataModels
 
     public static class EnumerableExtensions
     {
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOf<T>(this T[] items, T value)
+        {
+            return Array.IndexOf<T>(items, value);
+        }
+
         /// <summary>
         /// Gets a list of the enumeration with the least allocation possible.
         /// </summary>

@@ -9,6 +9,7 @@
 @using RavenNest.Blazor.Services.Models
 @using Microsoft.AspNetCore.WebUtilities
 @using RavenNest.Blazor.Services
+@using RavenNest.BusinessLogic
 @inject NavigationManager NavigationManager
 @inject HighscoreService HighscoreService
 @inject AuthService AuthService
@@ -70,7 +71,43 @@
                         <tr class="highscore-item" @onclick="(() => DisplayPlayer(item))">
                             <td class='player-rank'>@item.Rank</td>
                             <td class='player-name'>@item.PlayerName<span class='player-character-index' alt='Character Number'>#@item.CharacterIndex</span></td>
-                            <td class='player-level'>@item.Level</td>
+                            <td class='player-level'>
+
+                                @if (item.Level == GameMath.MaxLevel)
+                                {
+                                    @if (item.OrderAchieved == 1)
+                                    {
+                                        <i class="fa-solid fa-medal first" title="@("This player reached max level first, " + item.DateReached.ToString("D"))"></i>
+                                        <div class="skill-max-container" title="This player has reached the max level in this skill!">
+                                            <p class="skill-max gold" data-content="999">999</p>
+                                        </div>
+                                    }
+                                    else if (item.OrderAchieved == 2)
+                                    {
+                                        <i class="fa-solid fa-award second" title="@("This player reached max level in second place, " + item.DateReached.ToString("D"))"></i>
+                                        <div class="skill-max-container" title="This player has reached the max level in this skill!">
+                                            <p class="skill-max silver" data-content="999">999</p>
+                                        </div>
+                                    }
+                                    else if (item.OrderAchieved == 3)
+                                    {
+                                        <i class="fa-solid fa-award-simple third" title="@("This player reached max level in third place, " + item.DateReached.ToString("D"))"></i>
+                                        <div class="skill-max-container" title="This player has reached the max level in this skill!">
+                                            <p class="skill-max bronze" data-content="999">999</p>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="skill-max-container" title="This player has reached the max level in this skill!">
+                                            <p class="skill-max" data-content="999">999</p>
+                                        </div>
+                                    }
+                                }
+                                else
+                                {
+                                    @item.Level
+                                }
+                            </td>
                             <td class='player-experience'>@item.Experience</td>
                         </tr>
                     }
@@ -159,7 +196,7 @@
         new Skill("Ranged"),
         new Skill("Sailing"),
         new Skill("Healing"),
-                                  };
+                                              };
 
     private class Skill
     {

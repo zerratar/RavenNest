@@ -238,5 +238,7 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<Clan> GetClans();
         UserBankItem GetUserBankItem(Guid id);
         CharacterSkillRecord GetCharacterSkillRecord(Guid id, int skillIndex);
+        IReadOnlyList<CharacterSkillRecord> GetSkillRecords(int skillIndex);
+        IReadOnlyList<CharacterSkillRecord> GetSkillRecords(int skillIndex, int level);
     }
 }
