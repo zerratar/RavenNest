@@ -41,14 +41,17 @@ namespace RavenNest.BusinessLogic.Game
                     skill = null;
 
                 //var players = playerManager.GetPlayers().Where(x => !x.IsAdmin && x.CharacterIndex == 0).ToList();
-                var items =
-                    players
-                        .OrderByDescending(x => OrderByLevel(skill, x))
-                        .ThenByDescending(x => OrderByExp(skill, x))
-                    .Skip(skip)
-                    .Take(take)
-                    .Select((x, y) => Map(y + 1, skill, x))
-                    .ToList();
+                var playerSelection = players
+                    .OrderByDescending(x => OrderByLevel(skill, x))
+                    .ThenByDescending(x => OrderByExp(skill, x))
+                .Skip(skip)
+                .Take(take).ToList();
+
+                var existingRecords = skill != null
+                    ? GetSkillRecords(gameData.GetSkillRecords(DataModels.Skills.SkillNames.IndexOf(skill), GameMath.MaxLevel), playerSelection)
+                    : new List<CharacterSkillRecord>();
+
+                var items = playerSelection.Select((x, y) => Map(y + 1, skill, x, existingRecords)).ToList();
 
                 return new HighScoreCollection
                 {
@@ -63,6 +66,12 @@ namespace RavenNest.BusinessLogic.Game
                 logger.LogError("Unable to load highscore: " + exc.ToString());
                 return new HighScoreCollection();
             }
+        }
+
+        private IReadOnlyList<CharacterSkillRecord> GetSkillRecords(IReadOnlyList<CharacterSkillRecord> characterSkillRecords, List<Player> playerSelection)
+        {
+            if (characterSkillRecords == null || characterSkillRecords.Count == 0) return characterSkillRecords;
+            return characterSkillRecords.Where(x => playerSelection.Any(y => y.Id == x.CharacterId)).OrderBy(x => x.DateReached).ToList();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -83,12 +92,13 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private HighScoreItem Map(int rank, string skill, Player player)
+        private HighScoreItem Map(int rank, string skill, Player player, IReadOnlyList<CharacterSkillRecord> skillRecords)
         {
             TryGetSkillExperience(
                 skill,
                 player.Id,
                 player.Skills,
+                skillRecords,
                 out var exp,
                 out var level,
                 out var dateReached,
@@ -155,7 +165,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryGetSkillExperience(string skill, Guid characterId, Skills skills, out double exp, out int level, out DateTime dateReached, out int order)
+        private bool TryGetSkillExperience(string skill, Guid characterId, Skills skills, IReadOnlyList<CharacterSkillRecord> skillRecords, out double exp, out int level, out DateTime dateReached, out int order)
         {
             dateReached = DateTime.UtcNow;
             order = -1;
@@ -170,10 +180,9 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     dateReached = record.DateReached;
                     order = 1;
-                    var existingRecords = gameData.GetSkillRecords(skillIndex, GameMath.MaxLevel);
-                    if (existingRecords.Count > 0)
+                    if (skillRecords.Count > 0)
                     {
-                        foreach (var r in existingRecords.OrderBy(x => x.DateReached))
+                        foreach (var r in skillRecords)
                         {
                             if (r.Id == record.Id)
                             {
