@@ -13,11 +13,11 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
     public abstract class PlayerTaskProcessor : ITaskProcessor
     {
-        protected readonly Random Random = new Random();
+        public readonly Random Random = new Random();
         public IExtensionWebSocketConnectionProvider ExtensionConnectionProvider { get; private set; }
         public ITcpSocketApiConnectionProvider TcpConnectionProvider { get; private set; }
 
-        protected void IncrementItemStack(
+        public void IncrementItemStack(
             IGameData gameData,
             IPlayerInventoryProvider inventoryProvider,
             DataModels.GameSession session,

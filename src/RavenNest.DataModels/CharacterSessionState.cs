@@ -20,6 +20,7 @@ namespace RavenNest.DataModels
         public DateTime LastSkillUpdate { get; set; } = DateTime.UtcNow.AddSeconds(-10);
         public DateTime LastEnchantmentTryAt { get; set; }
         public DateTime EnchantmentCooldown { get; set; }
+        public DateTime SailingRewardAttempted { get; set; }
     }
 
     public class SessionState

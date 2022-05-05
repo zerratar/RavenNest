@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.DataModels;
 
 namespace RavenNest.BusinessLogic.Data
@@ -66,9 +67,7 @@ namespace RavenNest.BusinessLogic.Data
 
         private readonly EntitySet<UserBankItem, Guid> userBankItems;
         private readonly EntitySet<InventoryItem, Guid> inventoryItems;
-
-
-
+        private readonly EntitySet<ResourceItemDrop, Guid> resourceItemDrops;
 
         private readonly EntitySet<ItemAttribute, Guid> itemAttributes;
 
@@ -148,6 +147,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(ItemAttribute),
                         typeof(RedeemableItem),
                         typeof(Pet),
+                        typeof(ResourceItemDrop),
                         //typeof(UserNotification),
                         typeof(MarketItemTransaction),
                         //typeof(VendorTransaction),
@@ -175,6 +175,8 @@ namespace RavenNest.BusinessLogic.Data
                 using (var ctx = this.db.Get())
                 {
                     agreements = new EntitySet<Agreements, Guid>(restorePoint?.Get<Agreements>() ?? ctx.Agreements.ToList(), i => i.Id);
+
+                    resourceItemDrops = new EntitySet<ResourceItemDrop, Guid>(restorePoint?.Get<ResourceItemDrop>() ?? ctx.ResourceItemDrop.ToList(), i => i.Id);
 
                     loyalty = new EntitySet<UserLoyalty, Guid>(restorePoint?.Get<UserLoyalty>() ?? ctx.UserLoyalty.ToList(), i => i.Id);
                     loyalty.RegisterLookupGroup(nameof(User), x => x.UserId);
@@ -358,6 +360,7 @@ namespace RavenNest.BusinessLogic.Data
                         userProperties, /*vendorTransaction,*/
                         userBankItems,
                         characterSkillRecords,
+                        resourceItemDrops,
                         items, // so we can update items
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems, marketTransactions,
                         resources, statistics, characterSkills, clanSkills, users, villages, villageHouses,
@@ -544,6 +547,23 @@ namespace RavenNest.BusinessLogic.Data
 
         private void EnsureResources()
         {
+
+            if (resourceItemDrops.Entities.Count == 0)
+            {
+                foreach (var drop in ResourceTaskProcessor.DefaultDroppableResources)
+                {
+                    Add(new ResourceItemDrop
+                    {
+                        Id = Guid.NewGuid(),
+                        DropChance = drop.DropChance,
+                        ItemId = drop.Id,
+                        ItemName = drop.Name,
+                        LevelRequirement = drop.SkillLevel,
+
+                    });
+                }
+            }
+
             foreach (var character in this.characters.Entities)
             {
                 var resources = this.GetResourcesByCharacterId(character.Id);
@@ -1119,6 +1139,9 @@ namespace RavenNest.BusinessLogic.Data
         #region Add Methods
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(ResourceItemDrop item) => Update(() => resourceItemDrops.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(Pet item) => Update(() => pets.Add(item));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(CharacterSkillRecord item) => Update(() => characterSkillRecords.Add(item));
@@ -1386,6 +1409,8 @@ namespace RavenNest.BusinessLogic.Data
             if (!states.TryGetValue(characterId, out state))
             {
                 state = new CharacterSessionState();
+                state.LastTaskUpdate = DateTime.UtcNow;
+                state.SailingRewardAttempted = DateTime.MinValue;
                 states[characterId] = state;
                 characterSessionStates[sessionId] = states;
             }
@@ -1873,8 +1898,6 @@ namespace RavenNest.BusinessLogic.Data
             return characterSessionActivities[nameof(Character), characterId].FirstOrDefault(x => x.SessionId == sessionId);
         }
 
-
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Resources GetResources(Guid resourcesId) => resources[resourcesId];
 
@@ -1957,6 +1980,10 @@ namespace RavenNest.BusinessLogic.Data
             clanRoles[nameof(Clan), clanId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<ResourceItemDrop> GetResourceItemDrops()
+            => resourceItemDrops.Entities;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CharacterState GetCharacterState(Guid? stateId) => stateId == null ? null : characterStates[stateId.Value];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1989,6 +2016,9 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Remove Entities
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(ResourceItemDrop item) => resourceItemDrops.Remove(item);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(Pet item) => pets.Remove(item);

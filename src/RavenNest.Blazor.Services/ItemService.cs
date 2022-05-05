@@ -53,6 +53,30 @@ namespace RavenNest.Blazor.Services
             return await Task.Run(() => itemManager.GetAllItems());
         }
 
+        public async Task<bool> AddResourceDropAsync(RavenNest.DataModels.ResourceItemDrop dropToAdd)
+        {
+            if (dropToAdd == null || string.IsNullOrEmpty(dropToAdd.ItemName) || Guid.Empty == dropToAdd.ItemId)
+            {
+                return false;
+            }
+
+            await Task.Run(() => gameData.Add(dropToAdd));
+
+            return true;
+        }
+
+        public bool RemoveResourceDrop(RavenNest.DataModels.ResourceItemDrop toDelete)
+        {
+            if (toDelete == null) return false;
+            gameData.Remove(toDelete);
+            return true;
+        }
+
+        public async Task<IReadOnlyList<RavenNest.DataModels.ResourceItemDrop>> GetResourceItemDrops()
+        {
+            return await Task.Run(() => gameData.GetResourceItemDrops().OrderBy(x => x.LevelRequirement).ToList());
+        }
+
         public async Task<bool> AddOrUpdateItemAsync(Item item)
         {
             return await Task.Run(() =>

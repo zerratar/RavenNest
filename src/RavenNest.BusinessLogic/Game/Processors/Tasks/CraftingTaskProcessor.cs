@@ -31,6 +31,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             {
                 session.Updated = DateTime.UtcNow;
                 state.LastTaskUpdate = DateTime.UtcNow;
+                state.SailingRewardAttempted = DateTime.MinValue;
 
                 if (resources.Ore >= OrePerIngot)
                 {

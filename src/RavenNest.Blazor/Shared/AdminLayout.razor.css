@@ -2,6 +2,12 @@ a.nav-link.login {
     color: black;
 }
 
+.nav-item .fas,
+.nav-item .fa-solid,
+.nav-item .fa-brands {
+    width: 2rem;
+}
+
 .page {
     position: relative;
     display: flex;

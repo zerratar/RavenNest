@@ -100,6 +100,41 @@ namespace RavenNest.Controllers
             }
         }
 
+        [HttpGet("ravenbot-logs/{file}")]
+        public async Task<ActionResult> DownloadRavenbotLogsAsync(string file)
+        {
+            if (string.IsNullOrEmpty(file))
+                return NotFound();
+
+            try
+            {
+                await AssertAdminAccessAsync();
+            }
+            catch
+            {
+                return NotFound();
+            }
+
+
+            try
+            {
+                var currentDir = new System.IO.DirectoryInfo(System.IO.Directory.GetCurrentDirectory());
+                var logsFolder = new System.IO.DirectoryInfo(System.IO.Path.Combine(currentDir.Parent.FullName, "logs"));
+                if (!logsFolder.Exists)
+                    return NotFound();
+
+                var fi = new System.IO.FileInfo(System.IO.Path.Combine(logsFolder.FullName, file));
+                if (!fi.Exists)
+                    return NotFound();
+
+                return File(fi.OpenRead(), "text/plain", file);
+            }
+            catch (Exception exc)
+            {
+                return Content(exc.ToString());
+            }
+        }
+
 
         [HttpGet("backup/download")]
         public async Task<ActionResult> DownloadGameState()

@@ -95,12 +95,11 @@ namespace RavenNest.DataModels
         public int SailingLevel { get => sailingLevel; set => Set(ref sailingLevel, value); }
         public int HealingLevel { get => healingLevel; set => Set(ref healingLevel, value); }
 
-
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //private static string AsLower(string input)
-        //{
-        //    return char.IsUpper(input[0]) ? input.ToLower() : input;
-        //}
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOf(string skillName)
+        {
+            return SkillNames.IndexOf(skillName, StringComparison.OrdinalIgnoreCase);
+        }
 
         public int GetLevel(int skillIndex)
         {

@@ -106,6 +106,19 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
+        internal bool ContainsItem(Guid itemId)
+        {
+            lock (mutex)
+            {
+                foreach (var i in GetAllItems())
+                {
+                    if (i.ItemId == itemId)
+                        return true;
+                }
+            }
+            return false;
+        }
+
         internal void AddPatreonTierRewards(int? tierReward = null)
         {
             lock (mutex)

@@ -1,0 +1,70 @@
+﻿@layout AdminLayout
+@page "/admin/ravenbot-logs"
+@using System.ComponentModel.DataAnnotations
+@using RavenNest.BusinessLogic.Data
+@using RavenNest.DataModels
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.Blazor.Services.ServerService ServerService
+
+
+@if (isAdmin)
+{
+    if (logFiles == null)
+    {
+        <p>Loading logs.. Hold on to your horses.</p>
+    }
+    else
+    {
+        <h1>Available Ravenbot Logs</h1>
+        <table class="items-list">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Size</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in logFiles)
+                {
+                    <tr class="item-row">
+                        <td class='item'>@(FormatDate(item.Date))</td>
+                        <td class='item'>@item.FileName</td>
+                        <td class='item'>@(FormatSize(item.FileSize))</td>
+                        <td class='item'>
+                            <a href="@(item.DownloadUrl)" target="_blank"><i class="fa-solid fa-download"></i></a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+
+    private RavenNest.Sessions.SessionInfo session;
+    private IReadOnlyList<RavenNest.Blazor.Services.RavenbotLogFile> logFiles;
+    private bool isAdmin;
+
+    protected override async Task OnInitializedAsync()
+    {
+        session = AuthService.GetSession();
+        isAdmin = session != null && session.Administrator;
+        logFiles = await ServerService.GetLogFilesAsync();
+    }
+
+    private string FormatDate(DateTime input)
+    {
+        return input.ToString("yyyy-MM-dd");
+    }
+
+    private string FormatSize(long bytes)
+    {
+        if (bytes < 1000) return bytes + " bytes";
+        if (bytes / 1000 < 1000) return (bytes / 1000) + " kb";
+        if (bytes / 1000_000 < 1000) return (bytes / 1000_000) + " mb";
+        return "very big";
+    }
+}

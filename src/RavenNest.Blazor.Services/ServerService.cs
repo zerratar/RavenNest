@@ -26,6 +26,35 @@ namespace RavenNest.Blazor.Services
             this.serverManager = serverManager;
         }
 
+        public async Task<IReadOnlyList<RavenbotLogFile>> GetLogFilesAsync()
+        {
+            return await Task.Run(() =>
+            {
+                var currentDir = new System.IO.DirectoryInfo(System.IO.Directory.GetCurrentDirectory());
+                var logsFolder = new System.IO.DirectoryInfo(System.IO.Path.Combine(currentDir.Parent.FullName, "logs"));
+
+                if (!logsFolder.Exists)
+                {
+                    return new List<RavenbotLogFile>();
+                }
+
+                var result = new List<RavenbotLogFile>();
+
+                foreach (var file in logsFolder.GetFiles("*.log").OrderByDescending(x => x.CreationTime))
+                {
+                    DateTime.TryParse(file.Name.Replace(".log", ""), out var date);
+                    result.Add(new RavenbotLogFile
+                    {
+                        FileSize = file.Length,
+                        FileName = file.Name,
+                        Date = date,
+                        DownloadUrl = "/api/admin/ravenbot-logs/" + file.Name
+                    });
+                }
+                return result;
+            });
+        }
+
         public BotStats GetBotStats()
         {
             return gameData.Bot;
@@ -111,5 +140,13 @@ namespace RavenNest.Blazor.Services
         public string Title { get; set; }
         public string Message { get; set; }
         public bool VisibleInClient { get; set; }
+    }
+
+    public class RavenbotLogFile
+    {
+        public string DownloadUrl { get; set; }
+        public string FileName { get; set; }
+        public DateTime Date { get; set; }
+        public long FileSize { get; set; }
     }
 }
