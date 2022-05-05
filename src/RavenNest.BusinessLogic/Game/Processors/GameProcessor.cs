@@ -76,6 +76,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             RegisterPlayerTask<MiningTaskProcessor>("Mining");
             RegisterPlayerTask<FishingTaskProcessor>("Fishing");
             RegisterPlayerTask<FarmingTaskProcessor>("Farming");
+            RegisterPlayerTask<SailingTaskProcessor>("Sailing");
             RegisterPlayerTask<WoodcuttingTaskProcessor>("Woodcutting");
             RegisterPlayerTask<CraftingTaskProcessor>("Crafting");
             RegisterPlayerTask<CookingTaskProcessor>("Cooking");
@@ -229,11 +230,9 @@ namespace RavenNest.BusinessLogic.Game.Processors
             session.Status = (int)SessionStatus.Active;
             session.Updated = utcNow;
 
-
             var village = GetTaskProcessor(VillageProcessorName);
             if (village != null)
                 village.Process(integrityChecker, gameData, inventoryProvider, session, null, null);
-
 
             var characters = gameData.GetSessionCharacters(session);
             if (characters.Count > 0)
@@ -270,14 +269,19 @@ namespace RavenNest.BusinessLogic.Game.Processors
                         || (state.InDungeon ?? false)
                         || state.InArena
                         || state.InRaid
-                        || string.IsNullOrEmpty(state.Island)
                         || state.Island == "War"
                         || !string.IsNullOrEmpty(state.DuelOpponent))
                     {
                         continue;
                     }
 
-                    var task = GetTaskProcessor(state.Task);
+                    var taskName = state.Task;
+                    if (string.IsNullOrEmpty(state.Island))
+                    {
+                        taskName = "Sailing";
+                    }
+
+                    var task = GetTaskProcessor(taskName);
                     if (task != null)
                         task.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
                 }

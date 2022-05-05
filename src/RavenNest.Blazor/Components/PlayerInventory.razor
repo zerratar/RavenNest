@@ -131,8 +131,7 @@
                         <h2>Search for item to add</h2>
                         <button class="close" @onclick="HideAddItem">x</button>
                     </div>
-                    <BlazoredTypeahead SearchMethod="SearchItem"
-                               @bind-Value="selectedItem">
+                    <BlazoredTypeahead SearchMethod="SearchItem" @bind-Value="selectedItem">
                         <SelectedTemplate>
                             @context.Name
                         </SelectedTemplate>

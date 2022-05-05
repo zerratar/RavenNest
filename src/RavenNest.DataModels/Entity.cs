@@ -34,6 +34,16 @@ namespace RavenNest.DataModels
             return Array.IndexOf<T>(items, value);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int IndexOf(this string[] items, string value, StringComparison comparison)
+        {
+            for (var i = 0; i < items.Length; i++)
+            {
+                if (string.Compare(items[i], value, comparison) == 0) return i;
+            }
+            return -1;
+        }
+
         /// <summary>
         /// Gets a list of the enumeration with the least allocation possible.
         /// </summary>

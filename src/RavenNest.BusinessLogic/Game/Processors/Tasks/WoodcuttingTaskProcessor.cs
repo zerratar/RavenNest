@@ -6,6 +6,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
     public class WoodcuttingTaskProcessor : ResourceTaskProcessor
     {
+        public static readonly SimpleDropHandler Drops = new SimpleDropHandler(nameof(Skills.Woodcutting));
+
         public override void Process(
             IIntegrityChecker integrityChecker,
             IGameData gameData,
@@ -22,6 +24,12 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 {
                     ++villageResources.Wood;
                 }
+
+                var skills = gameData.GetCharacterSkills(character.SkillsId);
+                if (skills == null)
+                    return;
+
+                Drops.TryDropItem(this, gameData, inventoryProvider, session, character, skills.WoodcuttingLevel);
             });
         }
     }

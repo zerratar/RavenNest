@@ -6,6 +6,12 @@
     background-color: rgba(255, 255, 255, 0.1);
 }
 
+.nav-item .fas,
+.nav-item .fa-solid,
+.nav-item .fa-brands {
+    width: 2rem;
+}
+
 .top-row {
     height: 3.5rem;
 }

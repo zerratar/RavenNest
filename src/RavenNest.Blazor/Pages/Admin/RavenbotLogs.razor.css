@@ -1,0 +1,110 @@
+﻿.experience-multiplier,
+.server-notification {
+    margin-top: 20px;
+}
+
+.input-fields {
+    display: flex;
+    flex-flow: column;
+}
+
+.experience-multiplier form,
+.server-notification form {
+    display: flex;
+    flex-flow: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+}
+
+.experience-multiplier form button.btn.btn-primary,
+.server-notification form button.btn.btn-primary {
+    margin-bottom: 35px;
+}
+
+.experience-multiplier form .input-fields input,
+.server-notification form .input-fields input {
+    padding: 5px 15px;
+    margin: 5px;
+    margin-bottom: 10px;
+    max-width: 100%;
+    width: 350px;
+}
+.bot-detail-row {
+    padding: 5px;
+}
+
+.bot-value {
+    max-width: 100%;
+    width: 380px;
+    text-align: right;
+    word-break: break-all;
+}
+.bot-details {
+    width: 780px;
+    max-width: 100%;
+}
+.bot-detail-row:nth-of-type(odd) {
+    background-color: #f6f6f6;
+}
+input-fields input.input {
+    margin-bottom: 10px;
+}
+
+.server-notification form {
+    flex-flow: row;
+    justify-content: start;
+    margin-bottom: 35px;
+}
+
+.experience-multiplier form {
+    flex-flow: row;
+    justify-content: start;
+    margin-bottom: 35px;
+    align-items: baseline;
+}
+
+.bot-detail-row {
+    display: flex;
+    justify-content: space-between;
+}
+
+
+
+table.items-list {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.item-stat {
+    margin-right: 5px;
+    white-space: nowrap;
+}
+
+th, td {
+    text-align: right;
+    padding: 10px 15px;
+    border: 1px solid #eeeeee;
+}
+
+table.items-list tr {
+    border: none;
+}
+
+table.items-list th:nth-of-type(2),
+table.items-list td:nth-of-type(2) {
+    text-align: left;
+}
+
+table.items-list tr:nth-of-type(even) {
+    background-color: #f6f6f6;
+}
+
+table.items-list tr:nth-of-type(even).selected,
+.item-row.selected {
+    background-color: aquamarine;
+}
+
+table.items-list tr.isMe {
+    background-color: #6acc91;
+    color: white;
+}

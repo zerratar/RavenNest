@@ -56,9 +56,9 @@ namespace GameDataSimulation
             Console.WriteLine("Total drops: " + totalDrops);
             Console.WriteLine("");
             Console.WriteLine(result.Inventory.Count + " kinds of drops");
-            foreach (var item in result.Inventory.OrderByDescending(x => ResourceTaskProcessor.DroppableResources.FirstOrDefault(y => y.Name == x.Key).SkillLevel))
+            foreach (var item in result.Inventory.OrderByDescending(x => ResourceTaskProcessor.DefaultDroppableResources.FirstOrDefault(y => y.Name == x.Key).SkillLevel))
             {
-                var i = ResourceTaskProcessor.DroppableResources.FirstOrDefault(y => y.Name == item.Key);
+                var i = ResourceTaskProcessor.DefaultDroppableResources.FirstOrDefault(y => y.Name == item.Key);
                 var dropChance = i.GetDropChance(miningLevel);
                 Console.ForegroundColor = ConsoleColor.Gray;
                 Console.Write(" * " + item.Key.PadRight(20, ' '));
@@ -132,7 +132,7 @@ namespace GameDataSimulation
             var chance = Random.NextDouble();
             if (chance <= ItemDropRateSettings.InitDropChance)
             {
-                foreach (var res in ResourceTaskProcessor.DroppableResources.OrderByDescending(x => x.SkillLevel))
+                foreach (var res in ResourceTaskProcessor.DefaultDroppableResources.OrderByDescending(x => x.SkillLevel))
                 {
                     chance = Random.NextDouble();
                     if (miningLevel >= res.SkillLevel && (chance <= res.GetDropChance(miningLevel)))

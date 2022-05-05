@@ -1,4 +1,10 @@
-﻿.twitch-play-sessions {
+﻿.twitch-play-sessions.closed {
+    opacity: 0.1;
+}
+.twitch-play-sessions:hover {
+    opacity: 1;
+}
+.twitch-play-sessions {
     position: fixed;
     right: 25px;
     bottom: 15px;

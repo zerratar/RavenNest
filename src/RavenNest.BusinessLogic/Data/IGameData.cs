@@ -141,6 +141,7 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Add
         //void Add(VendorTransaction entity);
+        void Add(ResourceItemDrop item);
         void Add(Pet pet);
         void Add(DataModels.UserBankItem item);
         void Add(CharacterSkillRecord item);
@@ -186,7 +187,7 @@ namespace RavenNest.BusinessLogic.Data
 
 
         #region Remove
-
+        void Remove(ResourceItemDrop item);
         void Remove(DataModels.UserBankItem item);
         void Remove(Pet pet);
         void Remove(Agreements item);
@@ -215,7 +216,7 @@ namespace RavenNest.BusinessLogic.Data
         DataModels.ClanRole GetClanRole(Guid roleId);
         IReadOnlyList<DataModels.ClanRole> GetClanRoles(Guid clanId);
         DataModels.CharacterClanMembership GetClanMembership(Guid characterId);
-
+        IReadOnlyList<ResourceItemDrop> GetResourceItemDrops();
         DataModels.SyntyAppearance GetAppearance(Guid? syntyAppearanceId);
         DataModels.Skills GetCharacterSkills(Guid skillsId);
         DataModels.CharacterState GetCharacterState(Guid? stateId);

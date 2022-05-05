@@ -1,45 +1,45 @@
 ﻿@if (IsPlaying)
 {
-  <div class="twitch-play-sessions">
-    <button class="btn-toggle-streams" @onclick="ToggleTwitchStreams">
-      <span class="fas fa-chevron-@(showTwitchStreams ? "right" : "left")"></span>
-      @if (!showTwitchStreams)
-      {
-        <span>&nbsp;Show Streams</span>
-      }
-    </button>
-    @if (showTwitchStreams)
-    {
-      foreach (var play in Session.PlaySessions)
-      {
-        <div class="twitch-play">
-          <div class="stream-name">
-            <div class="--character-name">@play.CharacterName</div>
-            <div class="--character-index">@play.CharacterIndex</div>
-            <div class="--character-level">@play.CharacterCombatLevel</div>
-          </div>          
-          <iframe src="https://player.twitch.tv/?channel=@(play.SessionTwitchUserName)&parent=www.ravenfall.stream&parent=ravenfall.stream&parent=www.ravenfall.gg&parent=ravenfall.gg&parent=localhost"
-                  height="200"
-                  width="360"
-                  frameborder="0"
-                  scrolling="no"
-                  allowfullscreen="true">
-          </iframe>
-        </div>
-      }
-    }
-  </div>
+    <div class="twitch-play-sessions @(showTwitchStreams ? "open" : "closed")">
+        <button class="btn-toggle-streams" @onclick="ToggleTwitchStreams">
+            <span class="fas fa-chevron-@(showTwitchStreams ? "right" : "left")"></span>
+            @if (!showTwitchStreams)
+            {
+                <span>&nbsp;Show Streams</span>
+            }
+        </button>
+        @if (showTwitchStreams)
+        {
+            foreach (var play in Session.PlaySessions)
+            {
+                <div class="twitch-play">
+                    <div class="stream-name">
+                        <div class="--character-name">@play.CharacterName</div>
+                        <div class="--character-index">@play.CharacterIndex</div>
+                        <div class="--character-level">@play.CharacterCombatLevel</div>
+                    </div>
+                    <iframe src="https://player.twitch.tv/?channel=@(play.SessionTwitchUserName)&parent=www.ravenfall.stream&parent=ravenfall.stream&parent=www.ravenfall.gg&parent=ravenfall.gg&parent=localhost"
+                height="200"
+                width="360"
+                frameborder="0"
+                scrolling="no"
+                allowfullscreen="true">
+                    </iframe>
+                </div>
+            }
+        }
+    </div>
 }
 
 @code {
-  [Parameter]
-  public RavenNest.Sessions.SessionInfo Session { get; set; }
+    [Parameter]
+    public RavenNest.Sessions.SessionInfo Session { get; set; }
 
-  private bool IsPlaying => Session.UserId != null && Session?.PlaySessions?.Count > 0;
-  private bool showTwitchStreams = false;
+    private bool IsPlaying => Session.UserId != null && Session?.PlaySessions?.Count > 0;
+    private bool showTwitchStreams = false;
 
-  private void ToggleTwitchStreams()
-  {
-    showTwitchStreams = !showTwitchStreams;
-  }
+    private void ToggleTwitchStreams()
+    {
+        showTwitchStreams = !showTwitchStreams;
+    }
 }

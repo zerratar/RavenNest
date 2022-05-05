@@ -1,0 +1,206 @@
+﻿.modal-actions {
+    display: flex;
+}
+.item-editor-header h2 {
+    font-size: 16pt;
+    margin-bottom: 20px;
+}
+.form-group-header {
+    font-weight: bold;
+}
+.form-row {
+    display: flex;
+    flex-grow: 1;
+    width: 100%;
+    margin: 0;
+    margin-top: 7px;
+    justify-content: space-between;
+}
+.modal-input {
+    flex-grow: 1;
+    max-width: 60%;
+}
+.form-group {
+    width: 100%;
+    background-color: #f2f9f6;
+    padding: 13px;
+    margin-top: 10px;
+}
+
+button.btn:hover, button.btn:active {
+    background-color: #e0f1ff;
+}
+
+button.btn {
+    font-weight: 300;
+    font-size: 10pt;
+    box-shadow: 0px 2px 4px rgb(0 0 0 / 25%);
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.item-editor-modal button.btn {
+    background-color: white;
+    cursor: pointer;
+}
+
+button.btn.cancel {
+}
+
+.confirm-modal button.btn.ok,
+.item-editor-modal button.btn.ok {
+    background: #c31432;
+    background: -webkit-linear-gradient(to bottom, #65189d, #c31432);
+    background: linear-gradient(to bottom, #65189d, #c31432);
+    color: white;
+    border: 0;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+button.btn.ok:hover, button.btn.ok:active {
+    background: #961027;
+    background: -webkit-linear-gradient(to bottom, #470f6f, #8b0f24);
+    background: linear-gradient(to bottom, #470f6f, #8b0f24);
+}
+
+button.btn.cancel:hover, button.btn.cancel:active {
+}
+
+.confirm-modal-background,
+.item-editor-background {
+    display: flex;
+    position: absolute;
+    background-color: rgba(0,0,0,0.2);
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    flex-direction: row;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+}
+
+.confirm-modal .modal-actions {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.item-editor-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-content: center;
+    align-items: flex-start;
+}
+
+.confirm-modal {
+    max-width: 100%;
+    max-height: 100%;
+    height: fit-content;
+    display: flex;
+    flex-flow: column;
+    width: 410px;
+    background-color: white;
+    padding: 20px;    
+}
+
+.item-editor-modal {
+    max-width: 100%;
+    width: 500px;
+    display: flex;
+    flex-flow: column;
+    background-color: white;
+    height: 430px;
+    height: fit-content;
+    max-height: 100%;
+    padding: 20px;
+}
+
+.item-create {
+    display: flex;
+    flex-flow: column;
+    padding: 20px;
+}
+
+.item-create #name {
+    /* width: 100%; */
+    flex-grow: 1;
+}
+
+.item-create form {
+    flex-flow: row;
+}
+
+.item-create button {
+    margin-left: 15px;
+}
+
+table.items-list {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 160px;
+}
+
+.item-stat {
+    margin-right: 5px;
+    white-space: nowrap;
+}
+
+th, td {
+    text-align: right;
+    padding: 10px 15px;
+    border: 1px solid #eeeeee;
+}
+
+.items-list th {
+    cursor: pointer;
+    user-select: none;
+}
+
+table.items-list tr {
+    border: none;
+}
+
+table.items-list th:nth-of-type(2),
+table.items-list td:nth-of-type(2) {
+    text-align: left;
+}
+
+table.items-list tr:nth-of-type(even) {
+    background-color: #f6f6f6;
+}
+
+table.items-list tr:nth-of-type(even).selected,
+.item-row.selected {
+    background-color: aquamarine;
+}
+
+table.items-list tr.isMe {
+    background-color: #6acc91;
+    color: white;
+}
+
+.items {
+    margin-top: 140px;
+    flex-grow: 1;
+}
+
+.ravenCoins {
+    margin-bottom: 5.5px;
+    /* height: 100%; */
+    height: 22px;
+    margin-right: 1px;
+}
+
+@media screen and (max-width: 800px) {
+    .section {
+        padding: 20px 30px 50px 20px;
+    }
+}
