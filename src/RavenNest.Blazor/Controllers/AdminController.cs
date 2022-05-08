@@ -6,6 +6,7 @@ using RavenNest.BusinessLogic.Net;
 using RavenNest.Models;
 using RavenNest.Sessions;
 using System;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -115,19 +116,21 @@ namespace RavenNest.Controllers
                 return NotFound();
             }
 
-            //TODO Switch to FileStream ReadOnly
             try
             {
-                var currentDir = new System.IO.DirectoryInfo(System.IO.Directory.GetCurrentDirectory());
-                var logsFolder = new System.IO.DirectoryInfo(System.IO.Path.Combine(currentDir.Parent.FullName, "logs"));
+                var currentDir = new DirectoryInfo(Directory.GetCurrentDirectory());
+                var logsFolder = new DirectoryInfo(Path.Combine(currentDir.Parent.FullName, "logs"));
+                var fullFileNamePath = Path.Combine(logsFolder.FullName, file);
                 if (!logsFolder.Exists)
                     return NotFound();
 
-                var fi = new System.IO.FileInfo(System.IO.Path.Combine(logsFolder.FullName, file));
-                if (!fi.Exists)
+                if (System.IO.File.Exists(fullFileNamePath))
                     return NotFound();
-
-                return File(fi.OpenRead(), "text/plain", file);
+                using (var inStream = new FileStream(fullFileNamePath, FileMode.Open,
+                              FileAccess.Read, FileShare.ReadWrite))
+                {
+                    return File(inStream, "text/plain",file);
+                }
             }
             catch (Exception exc)
             {
