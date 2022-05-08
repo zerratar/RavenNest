@@ -38,7 +38,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GameDataSimulation", "GameD
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StateDataRefresher", "StateDataRefresher\StateDataRefresher.csproj", "{AFA368A3-B1D0-4B28-BD61-A75A15311DA9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnityVersionChanger", "src\tools\UnityVersionChanger\UnityVersionChanger.csproj", "{2230B21C-23E7-4575-B80A-F5357FC6BA6A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnityVersionChanger", "src\tools\UnityVersionChanger\UnityVersionChanger.csproj", "{2230B21C-23E7-4575-B80A-F5357FC6BA6A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

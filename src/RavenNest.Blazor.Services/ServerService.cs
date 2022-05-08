@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 
 namespace RavenNest.Blazor.Services
 {
@@ -53,6 +54,10 @@ namespace RavenNest.Blazor.Services
                 }
                 return result;
             });
+        }
+        public async Task<IReadOnlyList<RavenbotLogLine>> GetLogDataAsync()
+        {
+            return null;
         }
 
         public BotStats GetBotStats()
@@ -149,4 +154,15 @@ namespace RavenNest.Blazor.Services
         public DateTime Date { get; set; }
         public long FileSize { get; set; }
     }
+
+    public class RavenbotLogLine
+    {
+        public string Timestamp { get; set; }
+        public LogLevel LogLevel { get; set; }
+        public string Services { get; set; }
+        public string Message { get; set; }
+        public string Args { get; set; }
+    }
+
+
 }
