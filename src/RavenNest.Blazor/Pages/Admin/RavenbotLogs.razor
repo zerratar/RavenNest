@@ -30,7 +30,9 @@
                 {
                     <tr class="item-row">
                         <td class='item'>@(FormatDate(item.Date))</td>
-                        <td class='item'>@item.FileName</td>
+                        <td class='item'>
+                            <a href="/admin/display-ravenbot-log/@item.FileName">@item.FileName</a>
+                        </td>
                         <td class='item'>@(FormatSize(item.FileSize))</td>
                         <td class='item'>
                             <a href="@(item.DownloadUrl)" target="_blank"><i class="fa-solid fa-download"></i></a>

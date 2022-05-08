@@ -115,7 +115,7 @@ namespace RavenNest.Controllers
                 return NotFound();
             }
 
-
+            //TODO Switch to FileStream ReadOnly
             try
             {
                 var currentDir = new System.IO.DirectoryInfo(System.IO.Directory.GetCurrentDirectory());
