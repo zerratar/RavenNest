@@ -41,6 +41,19 @@ namespace RavenNest.Blazor.Services
             });
         }
 
+
+        public Task UpdateUserRemarkAsync(Guid userId, string remark)
+        {
+
+            return Task.Run(() =>
+            {
+                var user = gameData.GetUser(userId);
+                if (user == null)
+                    return;
+
+                gameData.SetUserProperty(userId, UserProperties.Comment, remark);
+            });
+        }
         public Task UpdateUserPatreonAsync(Guid userId, int patreonTier)
         {
             return Task.Run(() =>
@@ -194,6 +207,7 @@ namespace RavenNest.Blazor.Services
             }
 
             var bankItems = DataMapper.MapMany<RavenNest.Models.UserBankItem>(gameData.GetUserBankItems(userData.Id));
+            var commentProperty = gameData.GetUserProperty(userData.Id, UserProperties.Comment);
 
             return new WebsiteAdminUser
             {
@@ -211,6 +225,7 @@ namespace RavenNest.Blazor.Services
                 Clan = websiteClan,
                 HasClan = websiteClan != null,
                 Stash = bankItems,
+                Comment = commentProperty
             };
         }
     }

@@ -68,30 +68,14 @@
                                     if (user.PatreonTier == i)
                                     {
                                         <option id="@i" value="@i" selected>
-                                            @if (i >= patreonNames.Length)
-                                                @patreonNames[patreonNames.Length - 1]
-                                            else
-                                                @patreonNames[i]
-
-
-
-
-
-                                            </option>
+                                            @(i >= patreonNames.Length ? patreonNames[patreonNames.Length - 1] : patreonNames[i])
+                                        </option>
                                     }
                                     else
                                     {
                                         <option id="@i" value="@i">
-                                            @if (i >= patreonNames.Length)
-                                                @patreonNames[patreonNames.Length - 1]
-                                            else
-                                                @patreonNames[i]
-
-
-
-
-
-                                            </option>
+                                            @(i >= patreonNames.Length?@patreonNames[patreonNames.Length - 1]:patreonNames[i])
+                                        </option>
                                     }
                                 }
                             </select>
@@ -114,6 +98,14 @@
                         <input type="checkbox" value="@user.IsHiddenInHighscore" @onchange="ev => IsHiddenInHighscoreChanged(user, ev.Value)"></input>
                     </td>
                     <td>
+                        @if (!string.IsNullOrEmpty(user.Comment))
+                        {
+                            <button class="link-button edit" @onclick="(()=> EditRemark(user))"><i class="fa-solid fa-comment-pen"></i></button>
+                        }
+                        else
+                        {
+                            <button class="link-button" @onclick="(()=> EditRemark(user))"><i class="fa-solid fa-comment-plus"></i></button>
+                        }
                         @if (user.HasClan && !user.Clan.CanChangeName)
                         {
                             <button class="link-button" @onclick="(()=> ResetClanNameChangeCounter(user))">Allow Clan Rename</button>
@@ -134,6 +126,29 @@
     </tbody>
 </table>
 
+@if (editUserRemarkUser != null)
+{
+    <div class="modal-background">
+        <div class="modal-window">
+
+            <div class="modal-header">
+                <h2>Edit Comment</h2>
+                <button class="close" @onclick="CancelEditRemark">x</button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-row">
+                    <input type="text" class="modal-input" @bind-value="editUserRemarkComment" />
+                </div>
+                <div class="modal-actions">
+                    <button @onclick="ApplyUserRemark" class="btn ok">Save</button>
+                    <button @onclick="CancelEditRemark" class="btn cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private bool loading = false;
     private PlayerSearchModel searchModel = new PlayerSearchModel();
@@ -143,6 +158,9 @@
     private int pageSize = 50;
     private int pageCount = 1;
     private long totalCount = 0;
+
+    private string editUserRemarkComment;
+    private Models.WebsiteAdminUser editUserRemarkUser;
     private Guid? editingPatreonUserId;
     private int? targetPatreonTier;
 
@@ -179,6 +197,28 @@
             user.Clan.NameChangeCount = 0;
             InvokeAsync(StateHasChanged);
         }
+    }
+
+    private void EditRemark(Models.WebsiteAdminUser user)
+    {
+        editUserRemarkUser = user;
+        editUserRemarkComment = user.Comment;
+    }
+
+    private void CancelEditRemark()
+    {
+        editUserRemarkUser = null;
+    }
+
+    private async void ApplyUserRemark()
+    {
+        if (editUserRemarkUser != null)
+        {
+            await UserService.UpdateUserRemarkAsync(editUserRemarkUser.Id, editUserRemarkComment);
+            editUserRemarkUser.Comment = editUserRemarkComment;
+        }
+        editUserRemarkUser = null;
+        await InvokeAsync(StateHasChanged);
     }
 
     private void EditPatreon(Models.WebsiteAdminUser user)
