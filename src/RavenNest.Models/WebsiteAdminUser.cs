@@ -19,6 +19,7 @@ namespace RavenNest.Models
         public bool HasClan { get; set; }
         public WebsiteClan Clan { get; set; }
         public List<RavenNest.Models.UserBankItem> Stash { get; set; }
+        public string Comment { get; set; }
     }
 
     public class WebsiteClan
