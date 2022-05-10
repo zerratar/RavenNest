@@ -13,31 +13,33 @@
     {
         <p>Loading log</p>
         <LoadIndicator></LoadIndicator>
+    } else if (logData.Count == 0)
+    {
+        <p>No logs found</p>
+    } else 
+    {
+        <h1>Ravenbot Log: @Filename</h1>
+        <table class=items-list>
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Log Level</th>
+                    <th>Message</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var logLine in logData)
+                {
+                    <DisplayRavenbotLogLine RavenbotLogLine="logLine"></DisplayRavenbotLogLine>
+                }
+            </tbody>
+        </table>
     }
-
-    <h1>Ravenbot Log: @Filename</h1>
-    <table class=items-list>
-      <thead>
-        <tr>
-          <th>Timestamp</th>
-          <th>Log Level</th>
-          <th>Services</th>
-          <th>Message</th>
-          <th>Args</th>
-        </tr>
-      </thead>
-      <tbody>
-        @foreach (var logLine in logData)
-            {
-                <DisplayRavenbotLogLine RavenbotLogLine="logLine"></DisplayRavenbotLogLine>
-            }
-        </tbody>
-    </table>
 }
 
 @code {
     private RavenNest.Sessions.SessionInfo session;
-    private IReadOnlyList<RavenNest.Blazor.Services.RavenbotLogLine> logData;
+    private IReadOnlyList<RavenNest.Blazor.Services.LogObj> logData;
     private bool isAdmin;
     [Parameter]
     public string Filename { get; set; }
