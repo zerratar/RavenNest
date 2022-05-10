@@ -82,6 +82,7 @@ namespace RavenNest.Controllers
             var reqState = HttpContext.Request.Query["state"];
 #if DEBUG
             var requestUrl = $"https://{HttpContext.Request.Host}/login/twitch";
+            Console.WriteLine(requestUrl);
 #else 
             var requestUrl = "https://www.ravenfall.stream/login/twitch";
 #endif
