@@ -13,34 +13,28 @@
     <tr class="logline-row @cssRowTag">
         <td class="logline @cssRowTag">
             @*Timestamp*@
-            @RavenbotLogLine.Timestamp
+            @RavenbotLogLine.LogDateTime.Value.ToString("yyyy-MM-dd HH:mm:ss K")
         </td>
         <td class="logline @cssRowTag">
             @*Log Level*@
-            @LogLevelTag
-        </td>
-        <td class="logline @cssRowTag">
-            @*Services*@
-            @RavenbotLogLine.Services
+            <div class=""></div>
+            <div class="log-row @cssLogLevelClass"> @str </div>
         </td>
         <td class="logline @cssRowTag">
             @*Message*@
             @RavenbotLogLine.Message
-        </td>
-        <td class="logline @cssRowTag">
-            @*Args*@
-            @RavenbotLogLine.Args
         </td>
     </tr>
 }
 
 @code {
     private string cssRowTag = "";
-    private string LogLevelTag = "";
+    private string cssLogLevelClass = "";
+    private string str = "";
     private RavenNest.Sessions.SessionInfo session;
     private bool isAdmin;
     [Parameter]
-    public RavenbotLogLine RavenbotLogLine { get; set; }
+    public LogObj RavenbotLogLine { get; set; }
 
 
     protected override async Task OnInitializedAsync()
@@ -50,47 +44,45 @@
         FormatLogLevel(RavenbotLogLine.LogLevel);
     }
 
-    private void FormatLogLevel(LogLevel level)
+    private void FormatLogLevel(LogLevel? level)
     {
-        string cssClass = "";
-        string message = "";
+        if (level is null)
+            level = LogLevel.None;
 
         switch (@RavenbotLogLine.LogLevel)
         {
             case LogLevel.Trace:
-                cssClass = "none";
-                message = "Trace";
+                cssLogLevelClass = "none";
+                str = "Trace";
                 break;
             case LogLevel.Debug:
-                cssClass = "none";
-                message = "Debug";
+                cssLogLevelClass = "none";
+                str = "Debug";
                 break;
             case LogLevel.Information:
-                cssClass = "none";
-                message = "Information";
+                cssLogLevelClass = "none";
+                str = "Information";
                 break;
             case LogLevel.Warning:
-                cssClass = "warning";
-                message = "WARNING";
+                cssLogLevelClass = "warning";
+                str = "WARNING";
                 cssRowTag = "highlight";
                 break;
             case LogLevel.Error:
-                cssClass = "error";
-                message = "ERROR";
+                cssLogLevelClass = "error";
+                str = "ERROR";
                 cssRowTag = "err";
                 break;
             case LogLevel.Critical:
-                cssClass = "critical";
-                message = "!!CRITICAL!!";
+                cssLogLevelClass = "critical";
+                str = "!!CRITICAL!!";
                 cssRowTag = "err";
                 break;
             default:
-                cssClass = "default";
-                message = "warning";
+                cssLogLevelClass = "default";
+                str = "warning";
                 cssRowTag = "highlight";
                 break;
         }
-
-        LogLevelTag = $"<div class=\"log-row {cssClass}\"> {message} </div>";
     }
 }
