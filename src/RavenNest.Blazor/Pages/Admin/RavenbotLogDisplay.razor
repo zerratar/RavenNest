@@ -19,7 +19,7 @@
     } else 
     {
         <h1>Ravenbot Log: @Filename</h1>
-        <table class=items-list>
+        <table class=loglines-list>
             <thead>
                 <tr>
                     <th>Timestamp</th>
@@ -30,7 +30,7 @@
             <tbody>
                 @foreach (var logLine in logData)
                 {
-                    <DisplayRavenbotLogLine RavenbotLogLine="logLine"></DisplayRavenbotLogLine>
+                    <RavenbotLogDisplayLine RavenbotLogLine="logLine"></RavenbotLogDisplayLine>
                 }
             </tbody>
         </table>
