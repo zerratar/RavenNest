@@ -10,15 +10,14 @@
 @if (isAdmin)
 {
 
-    <tr class="logline-row @cssRowTag">
+    <tr class="loglines-list-row @cssRowTag">
         <td class="logline @cssRowTag">
             @*Timestamp*@
             @RavenbotLogLine.LogDateTime.Value.ToString("yyyy-MM-dd HH:mm:ss K")
         </td>
         <td class="logline @cssRowTag">
             @*Log Level*@
-            <div class=""></div>
-            <div class="log-row @cssLogLevelClass"> @str </div>
+            <div class="item-highlight @cssLogLevelClass">@str</div>
         </td>
         <td class="logline @cssRowTag">
             @*Message*@
