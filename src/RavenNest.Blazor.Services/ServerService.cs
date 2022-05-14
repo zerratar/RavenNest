@@ -78,6 +78,7 @@ namespace RavenNest.Blazor.Services
                 return LogLines;
             }
 
+            var lastReadLine = "";
             try
             {
                 using (var inStream = new FileStream(fullFileNamePath.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -85,14 +86,19 @@ namespace RavenNest.Blazor.Services
                 {
                     do
                     {
-                        var line = await read.ReadLineAsync();
-                        LogLines.Add(JsonSerializer.Deserialize<LogEntry>(line));
+                        lastReadLine = await read.ReadLineAsync();
+                        LogLines.Add(JsonSerializer.Deserialize<LogEntry>(lastReadLine));
                     } while (!read.EndOfStream);
                 }
             }
             catch (Exception exc)
             {
-                LogLines.Add(LogEntry.Error("Reading log '" + file + "' threw an exception: " + exc.Message));
+                if (!string.IsNullOrEmpty(lastReadLine))
+                {
+                    lastReadLine = " When parsing the following content '" + lastReadLine + "'";
+                }
+
+                LogLines.Add(LogEntry.Error("Reading log '" + file + "' threw an exception: " + exc.Message + lastReadLine));
             }
 
             return LogLines;
