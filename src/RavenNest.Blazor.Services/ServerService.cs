@@ -4,9 +4,13 @@ using RavenNest.BusinessLogic.Game;
 using RavenNest.DataModels;
 using RavenNest.Sessions;
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using System.Text.Json;
+using System.Text;
 
 namespace RavenNest.Blazor.Services
 {
@@ -30,8 +34,8 @@ namespace RavenNest.Blazor.Services
         {
             return await Task.Run(() =>
             {
-                var currentDir = new System.IO.DirectoryInfo(System.IO.Directory.GetCurrentDirectory());
-                var logsFolder = new System.IO.DirectoryInfo(System.IO.Path.Combine(currentDir.Parent.FullName, "logs"));
+                var currentDir = new DirectoryInfo(Directory.GetCurrentDirectory());
+                var logsFolder = new DirectoryInfo(Path.Combine(currentDir.Parent.FullName, "logs"));
 
                 if (!logsFolder.Exists)
                 {
@@ -53,6 +57,54 @@ namespace RavenNest.Blazor.Services
                 }
                 return result;
             });
+        }
+
+        public async Task<IReadOnlyList<LogObj>> GetLogDataAsync(string file)
+        {
+            var currentDir = new DirectoryInfo(Directory.GetCurrentDirectory());
+            var logsFolder = new DirectoryInfo(Path.Combine(currentDir.Parent.FullName, "logs"));
+            FileInfo fullFileNamePath = null;
+            byte[] data;
+            List<LogObj> LogLines = new();
+
+            if (logsFolder.Exists)
+                fullFileNamePath = new FileInfo(Path.Combine(logsFolder.FullName, file));
+
+            if (fullFileNamePath is null)
+                return LogLines; //return blank list;
+
+            using (var inStream = new FileStream(fullFileNamePath.FullName, FileMode.Open,
+                          FileAccess.Read, FileShare.ReadWrite))
+            {
+                data = new byte[inStream.Length];
+                await inStream.ReadAsync(data.AsMemory(0, (int)data.Length));
+            }
+            string text = new UTF8Encoding(true).GetString(data);
+            string delimiter = "}" + Environment.NewLine; ;
+            var jsonObjects = text.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var json in jsonObjects)
+            {
+                try
+                {
+                    LogLines.Add(JsonSerializer.Deserialize<LogObj>(json + "}"));
+                }
+                catch (Exception ex)
+                {
+                    LogLines.Add(new LogObj
+                    {
+                        LogDateTime = DateTime.UtcNow,
+                        LogLevel = LogLevel.Error,
+                        Message = ex.Message
+                    });
+                    LogLines.Add(new LogObj
+                    {
+                        LogDateTime = DateTime.UtcNow,
+                        LogLevel = LogLevel.Error,
+                        Message = json
+                    });
+                }
+            }
+            return LogLines;
         }
 
         public BotStats GetBotStats()
@@ -149,4 +201,14 @@ namespace RavenNest.Blazor.Services
         public DateTime Date { get; set; }
         public long FileSize { get; set; }
     }
+
+    //TODO - Move to Model, code copy also exisit in PersistedConsoleLogger in RavenBot.ROBot
+    public class LogObj
+    {
+        public DateTime? LogDateTime { get; set; }
+        public LogLevel? LogLevel { get; set; }
+        public string Message { get; set; } = "";
+    }
+
+
 }
