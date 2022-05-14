@@ -59,51 +59,42 @@ namespace RavenNest.Blazor.Services
             });
         }
 
-        public async Task<IReadOnlyList<LogObj>> GetLogDataAsync(string file)
+        public async Task<IReadOnlyList<LogEntry>> GetRavenbotLogEntriesAsync(string file)
         {
             var currentDir = new DirectoryInfo(Directory.GetCurrentDirectory());
             var logsFolder = new DirectoryInfo(Path.Combine(currentDir.Parent.FullName, "logs"));
+
             FileInfo fullFileNamePath = null;
-            byte[] data;
-            List<LogObj> LogLines = new();
+            List<LogEntry> LogLines = new();
 
             if (logsFolder.Exists)
+            {
                 fullFileNamePath = new FileInfo(Path.Combine(logsFolder.FullName, file));
+            }
 
             if (fullFileNamePath is null)
-                return LogLines; //return blank list;
+            {
+                LogLines.Add(LogEntry.Error("Unable to find a logfile of name '" + file + "'."));
+                return LogLines;
+            }
 
-            using (var inStream = new FileStream(fullFileNamePath.FullName, FileMode.Open,
-                          FileAccess.Read, FileShare.ReadWrite))
+            try
             {
-                data = new byte[inStream.Length];
-                await inStream.ReadAsync(data.AsMemory(0, (int)data.Length));
-            }
-            string text = new UTF8Encoding(true).GetString(data);
-            string delimiter = "}" + Environment.NewLine; ;
-            var jsonObjects = text.Split(delimiter, StringSplitOptions.RemoveEmptyEntries);
-            foreach (var json in jsonObjects)
-            {
-                try
+                using (var inStream = new FileStream(fullFileNamePath.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var read = new StreamReader(inStream))
                 {
-                    LogLines.Add(JsonSerializer.Deserialize<LogObj>(json + "}"));
-                }
-                catch (Exception ex)
-                {
-                    LogLines.Add(new LogObj
+                    do
                     {
-                        LogDateTime = DateTime.UtcNow,
-                        LogLevel = LogLevel.Error,
-                        Message = ex.Message
-                    });
-                    LogLines.Add(new LogObj
-                    {
-                        LogDateTime = DateTime.UtcNow,
-                        LogLevel = LogLevel.Error,
-                        Message = json
-                    });
+                        var line = await read.ReadLineAsync();
+                        LogLines.Add(JsonSerializer.Deserialize<LogEntry>(line));
+                    } while (!read.EndOfStream);
                 }
             }
+            catch (Exception exc)
+            {
+                LogLines.Add(LogEntry.Error("Reading log '" + file + "' threw an exception: " + exc.Message));
+            }
+
             return LogLines;
         }
 
@@ -203,12 +194,20 @@ namespace RavenNest.Blazor.Services
     }
 
     //TODO - Move to Model, code copy also exisit in PersistedConsoleLogger in RavenBot.ROBot
-    public class LogObj
+    public class LogEntry
     {
-        public DateTime? LogDateTime { get; set; }
-        public LogLevel? LogLevel { get; set; }
-        public string Message { get; set; } = "";
+        public DateTime LogDateTime { get; set; }
+        public LogLevel LogLevel { get; set; }
+        public string Message { get; set; }
+
+        public static LogEntry Error(string message)
+        {
+            return new LogEntry
+            {
+                LogLevel = LogLevel.Error,
+                LogDateTime = DateTime.UtcNow,
+                Message = message
+            };
+        }
     }
-
-
 }

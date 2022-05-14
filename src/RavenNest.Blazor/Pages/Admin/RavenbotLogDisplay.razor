@@ -9,14 +9,16 @@
 
 @if (isAdmin)
 {
-    if (logData == null)
+    if (entries == null)
     {
         <p>Loading log</p>
         <LoadIndicator></LoadIndicator>
-    } else if (logData.Count == 0)
+    }
+    else if (entries.Count == 0)
     {
         <p>No logs found</p>
-    } else 
+    }
+    else
     {
         <h1>Ravenbot Log: @Filename</h1>
         <table class=loglines-list>
@@ -28,9 +30,9 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach (var logLine in logData)
+                @foreach (var entry in entries)
                 {
-                    <RavenbotLogDisplayLine RavenbotLogLine="logLine"></RavenbotLogDisplayLine>
+                    <RavenbotLogDisplayLine DataContext="entry"></RavenbotLogDisplayLine>
                 }
             </tbody>
         </table>
@@ -39,7 +41,8 @@
 
 @code {
     private RavenNest.Sessions.SessionInfo session;
-    private IReadOnlyList<RavenNest.Blazor.Services.LogObj> logData;
+    private IReadOnlyList<RavenNest.Blazor.Services.LogEntry> entries;
+
     private bool isAdmin;
     [Parameter]
     public string Filename { get; set; }
@@ -48,6 +51,6 @@
     {
         session = AuthService.GetSession();
         isAdmin = session != null && session.Administrator;
-        logData = await ServerService.GetLogDataAsync(Filename);
+        entries = await ServerService.GetRavenbotLogEntriesAsync(Filename);
     }
 }
