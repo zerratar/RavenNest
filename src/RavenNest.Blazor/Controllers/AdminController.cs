@@ -126,8 +126,8 @@ namespace RavenNest.Controllers
 
                 if (System.IO.File.Exists(fullFileNamePath))
                     return NotFound();
-                using (var inStream = new FileStream(fullFileNamePath, FileMode.Open,
-                              FileAccess.Read, FileShare.ReadWrite))
+
+                using (var inStream = new FileStream(fullFileNamePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
                     return File(inStream, "text/plain",file);
                 }
