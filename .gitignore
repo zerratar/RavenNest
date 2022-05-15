@@ -236,7 +236,7 @@ Generated_Code/
 # to a newer Visual Studio version. Backup files are not needed,
 # because we have git ;-)
 _UpgradeReport_Files/
-Backup*/
+#Backup*/
 UpgradeLog*.XML
 UpgradeLog*.htm
 ServiceFabricBackup/
@@ -331,5 +331,3 @@ ASALocalRun/
 
 *appsettings.json
 appsettings.json
-/src/RavenNest.Blazor/cache/user_images/clan_logo_39575045.png
-/src/RavenNest.Blazor/cache/user_images/logo_39575045.png
