@@ -1056,7 +1056,11 @@ namespace RavenNest.BusinessLogic.Data
                 try
                 {
                     var dt = DateTime.UtcNow;
-                    System.IO.File.WriteAllText($"removed__{dt:yyyy-MM-dd_hhMMss}.txt", str.ToString());
+                    string GeneratedFileStorage = "GeneratedData";
+                    var fileName = $"removed__{dt:yyyy-MM-dd_hhMMss}.txt";
+
+                    var fullPathToFile = System.IO.Path.Combine(GeneratedFileStorage, fileName);
+                    System.IO.File.WriteAllText(fullPathToFile, str.ToString());
                 }
                 catch { }
             }

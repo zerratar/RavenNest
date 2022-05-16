@@ -25,25 +25,30 @@ namespace RavenNest.BusinessLogic.Data
     public class GameDataBackupProvider : IGameDataBackupProvider
     {
         //#if RELEASE || Linux
+        private const string GeneratedFileStorage = @"GeneratedData";
         private const string RestorePointFolder = @"restorepoints";
-        //#else
-        //        private const string RestorePointFolder = @"C:\git\RavenNest\src\RavenNest.Blazor\restorepoints";
-        //#endif
         private const string BackupFolder = "backups";
         private const string FileTypeExt = ".json";
+        private readonly string FullBackupsPath = System.IO.Path.Combine(GeneratedFileStorage, BackupFolder);
+        private readonly string FullRestorePointPath = System.IO.Path.Combine(GeneratedFileStorage, RestorePointFolder);
+        //#else
+        //        private const string fullRestorePointPath = @"C:\git\RavenNest\src\RavenNest.Blazor\restorepoints";
+        //#endif
+        
 
         private readonly object ioMutex = new object();
 
         public GameDataBackupProvider()
         {
-            if (!System.IO.Directory.Exists(RestorePointFolder))
+
+            if (!System.IO.Directory.Exists(FullRestorePointPath))
             {
-                System.IO.Directory.CreateDirectory(RestorePointFolder);
+                System.IO.Directory.CreateDirectory(FullRestorePointPath);
             }
 
-            if (!System.IO.Directory.Exists(BackupFolder))
+            if (!System.IO.Directory.Exists(FullBackupsPath))
             {
-                System.IO.Directory.CreateDirectory(BackupFolder);
+                System.IO.Directory.CreateDirectory(FullBackupsPath);
             }
         }
 
@@ -51,9 +56,14 @@ namespace RavenNest.BusinessLogic.Data
         {
             lock (ioMutex)
             {
-                if (System.IO.Directory.Exists(RestorePointFolder))
+                //delete files in restorepoints folder. Don't need it anymore
+                var restorePointFilesToDelete = System.IO.Directory.GetFiles(FullRestorePointPath, "*" + FileTypeExt);
+                if (restorePointFilesToDelete.Length > 0)
                 {
-                    System.IO.Directory.Delete(RestorePointFolder, true);
+                    foreach (var old in restorePointFilesToDelete)
+                    {
+                        System.IO.File.Delete(old);
+                    }
                 }
             }
         }
@@ -81,7 +91,7 @@ namespace RavenNest.BusinessLogic.Data
         {
             try
             {
-                var backupFolders = System.IO.Directory.GetDirectories(BackupFolder);
+                var backupFolders = System.IO.Directory.GetDirectories(FullBackupsPath);
                 if (backupFolders.Length > 10)
                 {
                     var toDelete = backupFolders.OrderByDescending(x => new System.IO.DirectoryInfo(x).CreationTime).Skip(10);
@@ -101,13 +111,13 @@ namespace RavenNest.BusinessLogic.Data
         {
             lock (ioMutex)
             {
-                if (!System.IO.Directory.Exists(RestorePointFolder))
+                if (!System.IO.Directory.Exists(FullRestorePointPath))
                 {
-                    System.IO.Directory.CreateDirectory(RestorePointFolder);
+                    System.IO.Directory.CreateDirectory(FullRestorePointPath);
                 }
             }
 
-            StoreData(entitySets, RestorePointFolder);
+            StoreData(entitySets, FullRestorePointPath);
         }
 
         public byte[] GetCompressedEntityStream(IEntitySet[] entitySets)
@@ -174,7 +184,7 @@ namespace RavenNest.BusinessLogic.Data
         {
             lock (ioMutex)
             {
-                var restorePointFiles = System.IO.Directory.GetFiles(RestorePointFolder, "*" + FileTypeExt);
+                var restorePointFiles = System.IO.Directory.GetFiles(FullRestorePointPath, "*" + FileTypeExt);
                 if (restorePointFiles.Length == 0)
                 {
                     return null;
@@ -186,7 +196,7 @@ namespace RavenNest.BusinessLogic.Data
             {
                 foreach (var type in types)
                 {
-                    var entities = LoadEntities(type, RestorePointFolder);
+                    var entities = LoadEntities(type, FullRestorePointPath);
                     if (entities != null && entities.Count > 0)
                         restorePoint.AddEntities(type, entities);
                 }
@@ -202,7 +212,7 @@ namespace RavenNest.BusinessLogic.Data
         private string GetBackupFolder()
         {
             var timeNow = DateTime.UtcNow;
-            var backupFolder = System.IO.Path.Combine(BackupFolder, timeNow.Ticks.ToString());
+            var backupFolder = System.IO.Path.Combine(FullBackupsPath, timeNow.Ticks.ToString());
             lock (ioMutex)
             {
                 if (!System.IO.Directory.Exists(backupFolder))

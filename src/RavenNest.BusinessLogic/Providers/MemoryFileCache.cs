@@ -8,12 +8,16 @@ namespace RavenNest.BusinessLogic.Providers
         private readonly string relativePath;
         private readonly string extension;
         private readonly IMemoryCache memoryCache;
+        private const string CacheName = "cache";
+        private const string GeneratedFileStore = "GeneratedData";
 
         public MemoryFileCache(IMemoryCache memoryCache, string relativePath, string extension = ".bin")
         {
             this.extension = extension;
             this.memoryCache = memoryCache;
-            this.relativePath = System.IO.Path.Combine("cache", relativePath);
+
+            var cacheFolder = System.IO.Path.Combine(GeneratedFileStore, CacheName);
+            this.relativePath = System.IO.Path.Combine(cacheFolder, relativePath);
 
             EnsureCacheFolder();
             LoadCache();
@@ -58,13 +62,15 @@ namespace RavenNest.BusinessLogic.Providers
 
         public bool TryGetValue(string key, out byte[] fileContent)
         {
-            return memoryCache.TryGetValue(key, out fileContent);
+            var result = memoryCache.TryGetValue(key, out fileContent); ;
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private string GetKey(string path)
         {
-            return System.IO.Path.GetFileNameWithoutExtension(path);
+            var result =  System.IO.Path.GetFileNameWithoutExtension(path);
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
