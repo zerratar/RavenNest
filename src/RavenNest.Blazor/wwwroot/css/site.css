@@ -22,8 +22,6 @@ a.nav-link.login {
     font-size: 10pt;
 }
 
-
-
 span.notification-count {
     color: white;
     background-color: red;
@@ -37,6 +35,7 @@ span.notification-count {
     margin-left: -7px;
     position: relative;
 }
+
 td.item.link {
     cursor: pointer;
     text-decoration: underline;
@@ -520,47 +519,4 @@ button.btn.btn-primary.reload {
         top: 0;
         left: 0;
     }
-}
-
-table.loglines-list {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.item-stat {
-    margin-right: 5px;
-    white-space: nowrap;
-}
-
-th, td {
-    text-align: right;
-    padding: 1px 15px;
-    border: 1px solid #eeeeee;
-}
-
-table.loglines-list tr {
-    border: none;
-}
-
-table.loglines-list th:nth-of-type(3),
-table.loglines-list td:nth-of-type(3) {
-    text-align: left;
-}
-table.loglines-list th:nth-of-type(2),
-table.loglines-list td:nth-of-type(2) {
-    text-align: center;
-}
-
-table.loglines-list tr:nth-of-type(even) {
-    background-color: #f6f6f6;
-}
-
-    table.loglines-list tr:nth-of-type(even).selected,
-    .loglines-row.selected {
-        background-color: aquamarine;
-    }
-
-table.loglines-list tr.isMe {
-    background-color: #6acc91;
-    color: white;
 }

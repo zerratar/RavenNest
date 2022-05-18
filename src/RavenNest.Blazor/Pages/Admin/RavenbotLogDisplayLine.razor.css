@@ -1,1 +1,73 @@
-﻿
+﻿td, th {
+    text-align: right;
+    border-bottom: 1px dashed #9d9d9d;
+}
+
+table.loglines-list tr {
+    
+}
+
+table.loglines-list th:nth-of-type(1),
+table.loglines-list td:nth-of-type(1) {
+    text-align: right;
+    min-width: 165px;
+    width: 165px;
+    max-width: 170px;
+}
+
+table.loglines-list th:nth-of-type(3),
+table.loglines-list td:nth-of-type(3) {
+    text-align: left;
+    width: 100%
+}
+
+table.loglines-list th:nth-of-type(2),
+table.loglines-list td:nth-of-type(2) {
+    text-align: center;
+    width: 132px;
+}
+
+tr.loglines-list-row:nth-of-type(even) {
+    background-color: #3D3D3D;
+}
+
+table.loglines-list tr:nth-of-type(even).selected,
+.loglines-row.selected {
+    background-color: aquamarine;
+}
+
+tr.loglines-list-row.highlight {
+    background-color: #7a4f00;
+}
+
+    tr.loglines-list-row.highlight:nth-of-type(even) {
+        background-color: #684402;
+    }
+
+tr.loglines-list-row.err {
+    background-color: #780000;
+}
+
+    tr.loglines-list-row.err:nth-of-type(even) {
+        background-color: #660101;
+    }
+
+.item-highlight.warning {
+    color:white;
+}
+
+.item-highlight.error {
+    font-weight: bold;
+    color: white;
+}
+
+.item-highlight.critical {
+    font-weight: bolder;
+    color: white;
+    background-color: #d70000;
+}
+
+table.loglines-list tr.isMe {
+    background-color: #6acc91;
+    color: white;
+}

@@ -1,0 +1,61 @@
+﻿@inherits LayoutComponentBase
+@using RavenNest.Blazor.Components
+@inject NavigationManager NavigationManager
+@inject RavenNest.Blazor.Services.AuthService AuthService
+<style>
+  a.nav-link.login {
+    color: #3ba4eb;
+}
+
+span.notification-count {
+    /*background-color: #dc3545;*/
+    background-color: #69C33B;
+}
+</style>
+<div class="page">
+  @if (IsAdministrator)
+  {
+    <div class="sidebar">
+      <NavMenu Dashboard="true" Administrator="true" Admin="true" />
+    </div>
+
+    <div class="main">
+      <div class="top-row px-4">
+        <NotificationIcon UserId="@session.UserId"></NotificationIcon>
+        <NavLink class="nav-link login" href="/logout" Match="NavLinkMatch.All">
+          <span class="oi oi-account-logout" aria-hidden="true"></span> logout
+        </NavLink>
+      </div>
+
+      <div class="content px-4">
+        @Body
+      </div>
+    </div>
+  }
+</div>
+
+@code {
+    public static DarkAdminDashboardLayout Instance { get; private set; }
+    private RavenNest.Sessions.SessionInfo session;
+    protected override void OnInitialized()
+    {
+      Instance = this;
+      session = AuthService.GetSession();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+      if (!IsAdministrator)
+      {
+        NavigationManager.NavigateTo("/");
+      }
+    }
+
+    public void UpdateSession()
+    {
+      session = AuthService.GetSession();
+    }
+
+    private bool IsAuthenticated => session != null && session.UserId != null;
+    private bool IsAdministrator => IsAuthenticated && session.Administrator;
+}

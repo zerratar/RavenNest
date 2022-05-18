@@ -1,1 +1,51 @@
-﻿
+﻿table.loglines-list {
+    table-layout: fixed;
+    width: 100%;
+    border-collapse: collapse;
+    color: #d5d5d5;
+    
+}
+
+th, td {
+    text-align: right;
+    padding: 1px 15px;
+    border-bottom: 1px dashed #9d9d9d;
+}
+
+table.loglines-list th:nth-of-type(1),
+table.loglines-list td:nth-of-type(1) {
+    text-align: right;
+    min-width: 165px;
+    width: 165px;
+    max-width: 170px;
+}
+
+table.loglines-list th:nth-of-type(3),
+table.loglines-list td:nth-of-type(3) {
+    text-align: left;
+    width: 100%
+    
+}
+
+table.loglines-list th:nth-of-type(2),
+table.loglines-list td:nth-of-type(2) {
+    text-align: center;
+    width: 132px;
+}
+
+table.loglines-list tr:nth-of-type(even) {
+    background-color: #3D3D3D;
+}
+
+    table.loglines-list tr:nth-of-type(even).selected,
+    .loglines-row.selected {
+        background-color: aquamarine;
+    }
+
+
+h1 {
+    color: #8c9dc9;
+}
+
+
+
