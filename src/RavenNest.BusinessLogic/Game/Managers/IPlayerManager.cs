@@ -81,7 +81,7 @@ namespace RavenNest.BusinessLogic.Game
         ItemCollection GetAllItems(SessionToken token, string userId);
         IReadOnlyList<Player> GetPlayers();
         IReadOnlyList<Player> GetHighscorePlayers();
-        IReadOnlyList<RavenNest.Models.WebsiteAdminPlayer> GetFullPlayers();
+        IReadOnlyList<WebsiteAdminPlayer> GetFullPlayers();
         void EquipBestItems(DataModels.Character character);
         bool AcquiredUserLock(SessionToken token, DataModels.Character character);
         bool AddTokens(SessionToken sessionToken, string userId, int amount);

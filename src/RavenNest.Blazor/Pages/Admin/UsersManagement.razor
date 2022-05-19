@@ -1,5 +1,6 @@
 ﻿@layout AdminLayout
 @page "/admin/users"
+@using RavenNest.BusinessLogic.Extended
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.UserService UserService
 @inject RavenNest.Blazor.Services.ClanService ClanService
@@ -153,14 +154,14 @@
     private bool loading = false;
     private PlayerSearchModel searchModel = new PlayerSearchModel();
     private RavenNest.Sessions.SessionInfo session;
-    private IReadOnlyList<Models.WebsiteAdminUser> users;
+    private IReadOnlyList<WebsiteAdminUser> users;
     private int pageIndex = 0;
     private int pageSize = 50;
     private int pageCount = 1;
     private long totalCount = 0;
 
     private string editUserRemarkComment;
-    private Models.WebsiteAdminUser editUserRemarkUser;
+    private WebsiteAdminUser editUserRemarkUser;
     private Guid? editingPatreonUserId;
     private int? targetPatreonTier;
 
@@ -174,7 +175,7 @@
         LoadUserPageAsync(pageIndex, pageSize);
     }
 
-    private void IsHiddenInHighscoreChanged(Models.WebsiteAdminUser user, object? newValue)
+    private void IsHiddenInHighscoreChanged(WebsiteAdminUser user, object? newValue)
     {
         var boolValue = newValue != null && newValue is bool b ? b : false;
         UserService.SetUserHiddenInHighscore(user.Id, boolValue);
@@ -189,7 +190,7 @@
             targetPatreonTier = tier;
     }
 
-    private void ResetClanNameChangeCounter(Models.WebsiteAdminUser user)
+    private void ResetClanNameChangeCounter(WebsiteAdminUser user)
     {
         if (ClanService.ResetNameChangeCounter(user.Clan.Id))
         {
@@ -199,7 +200,7 @@
         }
     }
 
-    private void EditRemark(Models.WebsiteAdminUser user)
+    private void EditRemark(WebsiteAdminUser user)
     {
         editUserRemarkUser = user;
         editUserRemarkComment = user.Comment;
@@ -221,7 +222,7 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private void EditPatreon(Models.WebsiteAdminUser user)
+    private void EditPatreon(WebsiteAdminUser user)
     {
         editingPatreonUserId = user.Id;
         targetPatreonTier = user.PatreonTier ?? 0;
@@ -285,7 +286,7 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task BanUser(Models.WebsiteAdminUser user)
+    private async Task BanUser(WebsiteAdminUser user)
     {
         if (await UserService.SetUserStatusAsync(user.Id, BusinessLogic.Data.AccountStatus.PermanentlySuspended))
         {
@@ -294,7 +295,7 @@
         }
     }
 
-    private async Task UnbanUser(Models.WebsiteAdminUser user)
+    private async Task UnbanUser(WebsiteAdminUser user)
     {
         if (await UserService.SetUserStatusAsync(user.Id, BusinessLogic.Data.AccountStatus.OK))
         {

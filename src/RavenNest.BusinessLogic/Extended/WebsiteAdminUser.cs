@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using RavenNest.Models;
 
-namespace RavenNest.Models
+namespace RavenNest.BusinessLogic.Extended
 {
     public class WebsiteAdminUser
     {
@@ -18,7 +19,7 @@ namespace RavenNest.Models
         public DateTime Created { get; set; }
         public bool HasClan { get; set; }
         public WebsiteClan Clan { get; set; }
-        public List<RavenNest.Models.UserBankItem> Stash { get; set; }
+        public List<UserBankItem> Stash { get; set; }
         public string Comment { get; set; }
     }
 

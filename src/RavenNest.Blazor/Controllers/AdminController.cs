@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.Models;

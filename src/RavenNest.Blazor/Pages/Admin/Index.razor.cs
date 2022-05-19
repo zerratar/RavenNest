@@ -1,5 +1,6 @@
 ﻿using ChartJs.Blazor.Common.Axes;
 using ChartJs.Blazor.LineChart;
+using RavenNest.BusinessLogic.Extended;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -138,7 +139,7 @@ namespace RavenNest.Blazor.Pages.Admin
         }
 
         public int[] GetChartData(
-          IReadOnlyList<Models.WebsiteAdminUser> source,
+          IReadOnlyList<WebsiteAdminUser> source,
           DateTime start,
           int steps,
           ChartTimeFrame tf,
@@ -146,7 +147,7 @@ namespace RavenNest.Blazor.Pages.Admin
         {
             var outputData = new int[steps];
 
-            IEnumerable<IGrouping<DateTime, Models.WebsiteAdminUser>> grouped = null;
+            IEnumerable<IGrouping<DateTime, WebsiteAdminUser>> grouped = null;
 
             if (avgUserPerHour)
             {

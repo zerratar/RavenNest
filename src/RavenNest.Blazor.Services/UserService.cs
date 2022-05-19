@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using RavenNest.BusinessLogic;
+using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.DataModels;

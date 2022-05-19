@@ -1,5 +1,6 @@
 ﻿@layout AdminLayout
 @page "/admin/players"
+@using RavenNest.BusinessLogic.Extended
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject NavigationManager NavigationManager
@@ -78,7 +79,7 @@
   private bool loading = false;
   private PlayerSearchModel searchModel = new PlayerSearchModel();
   private RavenNest.Sessions.SessionInfo session;
-  private IReadOnlyList<Models.WebsiteAdminPlayer> players;
+  private IReadOnlyList<WebsiteAdminPlayer> players;
   private int pageIndex = 0;
   private int pageSize = 50;
   private int pageCount = 1;
@@ -90,7 +91,7 @@
     LoadPlayerPageAsync(pageIndex, pageSize);
   }
 
-  private void DisplayPlayer(Models.WebsiteAdminPlayer player)
+  private void DisplayPlayer(WebsiteAdminPlayer player)
   {
     NavigationManager.NavigateTo("/inspect/" + player.Id);
   }

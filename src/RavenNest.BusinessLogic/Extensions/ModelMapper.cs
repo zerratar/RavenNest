@@ -317,7 +317,7 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Models.WebsiteAdminPlayer MapForAdmin(this User user, IGameData gameData, Character character)
+        public static WebsiteAdminPlayer MapForAdmin(this User user, IGameData gameData, Character character)
         {
             var sessionName = "";
             if (character.UserIdLock != null)
@@ -333,7 +333,7 @@ namespace RavenNest.BusinessLogic.Extensions
             var clan = clanMembership != null ? Map(gameData, gameData.GetClan(clanMembership.ClanId)) : null;
             var clanRole = clanMembership != null ? Map(gameData.GetClanRole(clanMembership.ClanRoleId), clanMembership) : null;
             (var battlePets, var activeBattlePet) = character.MapBattlePets(gameData);
-            return new Models.WebsiteAdminPlayer
+            return new WebsiteAdminPlayer
             {
                 Created = user.Created,
                 Id = character.Id,
@@ -345,7 +345,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 IsModerator = user.IsModerator.GetValueOrDefault(),
                 Appearance = Map(gameData.GetAppearance(character.SyntyAppearanceId)),
                 Resources = Map(gameData.GetResources(character.ResourcesId)),
-                Skills = Map(gameData.GetCharacterSkills(character.SkillsId)),
+                Skills = MapForWebsite(gameData.GetCharacterSkills(character.SkillsId)),
                 State = Map(gameData.GetCharacterState(character.StateId)),
                 InventoryItems = Map(gameData.GetAllPlayerItems(character.Id)),
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),

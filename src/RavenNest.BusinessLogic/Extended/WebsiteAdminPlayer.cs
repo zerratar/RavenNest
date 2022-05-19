@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RavenNest.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,4 +13,6 @@ namespace RavenNest.BusinessLogic.Extended
         public DateTime Created { get; set; }
         public string SessionName { get; set; }
     }
+
+    public class PagedPlayerCollection : PagedCollection<WebsiteAdminPlayer> { }
 }

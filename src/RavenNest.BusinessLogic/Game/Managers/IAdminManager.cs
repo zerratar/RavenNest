@@ -5,7 +5,7 @@ namespace RavenNest.BusinessLogic.Game
 {
     public interface IAdminManager
     {
-        PagedPlayerCollection GetPlayersPaged(int offset, int size, string sortOrder, string query);
+        Extended.PagedPlayerCollection GetPlayersPaged(int offset, int size, string sortOrder, string query);
         PagedSessionCollection GetSessionsPaged(int offset, int size, string sortOrder, string query);
         bool SetCraftingRequirements(string itemQuery, string requirementQuery);
         bool MergePlayerAccounts(string userId);

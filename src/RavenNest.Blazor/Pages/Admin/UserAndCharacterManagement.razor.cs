@@ -26,8 +26,8 @@ namespace RavenNest.Blazor.Pages.Admin
 
 
         private WebsiteAdminUser selectedUser { get; set; }
-        private BusinessLogic.Extended.WebsiteAdminPlayer selectedPlayer { get; set; }
-        private RavenNest.Sessions.SessionInfo session { get; set; }
+        private WebsiteAdminPlayer selectedPlayer { get; set; }
+        private Sessions.SessionInfo session { get; set; }
 
         protected override async Task OnInitializedAsync()
         {

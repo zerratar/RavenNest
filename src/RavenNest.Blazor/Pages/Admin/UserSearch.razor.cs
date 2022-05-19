@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
-
+using RavenNest.BusinessLogic.Extended;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,11 +18,11 @@ namespace RavenNest.Blazor.Pages.Admin
         public bool loading { get; set; } = false;
         private PlayerSearchModel searchModel { get; set; } = new PlayerSearchModel();
         private Sessions.SessionInfo session { get; set; }
-        private IReadOnlyList<Models.WebsiteAdminUser> users { get; set; }
+        private IReadOnlyList<WebsiteAdminUser> users { get; set; }
         private int pageSize { get; set; } = 25;
         private long totalCount { get; set; } = 0;
         private string editUserRemarkComment { get; set; }
-        private Models.WebsiteAdminUser editUserRemarkUser { get; set; }
+        private WebsiteAdminUser editUserRemarkUser { get; set; }
         private Guid? editingPatreonUserId { get; set; }
         private int? targetPatreonTier { get; set; }
         private string[] patreonNames { get; set; } = new string[] {
@@ -34,7 +34,7 @@ namespace RavenNest.Blazor.Pages.Admin
             session = AuthService.GetSession();
         }
 
-        private void IsHiddenInHighscoreChanged(Models.WebsiteAdminUser user, object? newValue)
+        private void IsHiddenInHighscoreChanged(WebsiteAdminUser user, object? newValue)
         {
             var boolValue = newValue != null && newValue is bool b ? b : false;
             UserService.SetUserHiddenInHighscore(user.Id, boolValue);
@@ -49,7 +49,7 @@ namespace RavenNest.Blazor.Pages.Admin
                 targetPatreonTier = tier;
         }
 
-        private void ResetClanNameChangeCounter(Models.WebsiteAdminUser user)
+        private void ResetClanNameChangeCounter(WebsiteAdminUser user)
         {
             if (ClanService.ResetNameChangeCounter(user.Clan.Id))
             {
@@ -59,7 +59,7 @@ namespace RavenNest.Blazor.Pages.Admin
             }
         }
 
-        private void EditRemark(Models.WebsiteAdminUser user)
+        private void EditRemark(WebsiteAdminUser user)
         {
             editUserRemarkUser = user;
             editUserRemarkComment = user.Comment;
@@ -81,7 +81,7 @@ namespace RavenNest.Blazor.Pages.Admin
             await InvokeAsync(StateHasChanged);
         }
 
-        private void EditPatreon(Models.WebsiteAdminUser user)
+        private void EditPatreon(WebsiteAdminUser user)
         {
             editingPatreonUserId = user.Id;
             targetPatreonTier = user.PatreonTier ?? 0;
@@ -128,7 +128,7 @@ namespace RavenNest.Blazor.Pages.Admin
             await InvokeAsync(StateHasChanged);
         }
 
-        private async Task BanUser(Models.WebsiteAdminUser user)
+        private async Task BanUser(WebsiteAdminUser user)
         {
             if (await UserService.SetUserStatusAsync(user.Id, BusinessLogic.Data.AccountStatus.PermanentlySuspended))
             {
@@ -137,7 +137,7 @@ namespace RavenNest.Blazor.Pages.Admin
             }
         }
 
-        private async Task UnbanUser(Models.WebsiteAdminUser user)
+        private async Task UnbanUser(WebsiteAdminUser user)
         {
             if (await UserService.SetUserStatusAsync(user.Id, BusinessLogic.Data.AccountStatus.OK))
             {
