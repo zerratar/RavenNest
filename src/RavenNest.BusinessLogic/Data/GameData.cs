@@ -130,6 +130,7 @@ namespace RavenNest.BusinessLogic.Data
                 IEntityRestorePoint restorePoint = backupProvider.GetRestorePoint(new[] {
                         typeof(UserLoyalty),
                         typeof(ClanRole),
+                        typeof(Clan),
                         //typeof(CharacterClanInvite),
                         typeof(CharacterClanMembership),
                         typeof(CharacterSkillRecord),
