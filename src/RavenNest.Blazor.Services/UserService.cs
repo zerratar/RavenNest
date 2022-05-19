@@ -120,6 +120,43 @@ namespace RavenNest.Blazor.Services
             });
         }
 
+        public async Task<IReadOnlyList<WebsiteAdminUser>> SearchForUserByUserOrPlayersLimitedAsync(string searchText, int pageSize)
+        {
+            return await Task.Run(() =>
+            {
+                var players = playerManager.GetFullPlayers();
+                var users = GetUsers(players);
+                if (string.IsNullOrEmpty(searchText))
+                {
+                    return users;
+                }
+                var result = new List<WebsiteAdminUser>();
+                var count = 0;
+                foreach (var x in users)
+                {
+                    var matchedCharacter = x.Characters.FirstOrDefault(c => c.UserName == searchText);
+                    if (
+                        Contains(x.UserId, searchText) ||
+                        Contains(x.UserName, searchText) ||
+                        Contains(x.Email, searchText))
+                    {
+                        result.Add(x);
+                        count++;
+                    }
+                    else if (matchedCharacter != null)
+                    {
+                        result.Add(x);
+                        count++;
+                    }
+                    if(count >= pageSize)
+                    {
+                        break;
+                    }
+                }
+
+                return result;
+            });
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool Contains(string a, string b)

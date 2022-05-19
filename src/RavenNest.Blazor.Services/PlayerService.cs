@@ -33,6 +33,11 @@ namespace RavenNest.Blazor.Services
             var session = GetSession();
             sessionInfoProvider.SetActiveCharacter(session, player.Id);
         }
+        public void SetActiveCharacter(BusinessLogic.Extended.WebsiteAdminPlayer player)
+        {
+            var session = GetSession();
+            sessionInfoProvider.SetActiveCharacter(session, player.Id);
+        }
 
         public Task<bool> UpdatePlayerSkillAsync(Guid characterId, string skillName, int level, float levelProgress)
         {
@@ -143,29 +148,29 @@ namespace RavenNest.Blazor.Services
             });
         }
 
-        public async Task<PagedCollection<WebsiteAdminPlayer>> GetPlayerPageAsync(string search, int pageIndex, int pageSize)
+        public async Task<PagedCollection<RavenNest.Models.WebsiteAdminPlayer>> GetPlayerPageAsync(string search, int pageIndex, int pageSize)
         {
             var players = await SearchForPlayersAsync(search, false, true);
             var pageItems = players.Skip(pageSize * pageIndex).Take(pageSize).ToList();
-            return new PagedCollection<WebsiteAdminPlayer>(pageItems, players.Count);
+            return new PagedCollection<RavenNest.Models.WebsiteAdminPlayer>(pageItems, players.Count);
         }
 
-        public Task<IReadOnlyList<WebsiteAdminPlayer>> SearchForPlayersAsync(string searchText)
+        public Task<IReadOnlyList<RavenNest.Models.WebsiteAdminPlayer>> SearchForPlayersAsync(string searchText)
         {
             return SearchForPlayersAsync(searchText, false);
         }
 
-        public async Task<IReadOnlyList<WebsiteAdminPlayer>> SearchForPlayersAsync(string searchText, bool ignoreClanInvitedPlayers = true, bool allOnEmptySearch = false)
+        public async Task<IReadOnlyList<RavenNest.Models.WebsiteAdminPlayer>> SearchForPlayersAsync(string searchText, bool ignoreClanInvitedPlayers = true, bool allOnEmptySearch = false)
         {
             return await Task.Run(() =>
             {
-                IEnumerable<WebsiteAdminPlayer> players = playerManager.GetFullPlayers();
+                IEnumerable<RavenNest.Models.WebsiteAdminPlayer> players = playerManager.GetFullPlayers();
                 if (ignoreClanInvitedPlayers)
                 {
                     var session = GetSession();
                     var user = gameData.GetUser(session.AccountId);
                     if (user == null)
-                        return new List<WebsiteAdminPlayer>();
+                        return new List<RavenNest.Models.WebsiteAdminPlayer>();
 
                     var clan = gameData.GetClanByUser(user.Id);
                     players = players.Where(x => x.Clan == null &&
@@ -177,7 +182,7 @@ namespace RavenNest.Blazor.Services
                     if (allOnEmptySearch)
                         return players.AsList();
 
-                    return new List<WebsiteAdminPlayer>();
+                    return new List<RavenNest.Models.WebsiteAdminPlayer>();
                 }
 
                 return players.AsList(x =>

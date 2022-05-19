@@ -2070,7 +2070,7 @@ namespace RavenNest.BusinessLogic.Game
             return itemCollection;
         }
 
-        public IReadOnlyList<WebsiteAdminPlayer> GetFullPlayers()
+        public IReadOnlyList<RavenNest.Models.WebsiteAdminPlayer> GetFullPlayers()
         {
             var chars = gameData.GetCharacters();
             return chars.Select(x => new

@@ -1,0 +1,254 @@
+﻿.modal-actions {
+    display: flex;
+}
+
+.modal-header h2 {
+    font-size: 16pt;
+}
+
+.form-group-header {
+    font-weight: bold;
+}
+
+.form-row {
+    display: flex;
+    flex-grow: 1;
+    width: 100%;
+    margin: 0;
+    margin-top: 7px;
+    justify-content: space-between;
+}
+
+.modal-input {
+    flex-grow: 1;
+}
+
+.form-group {
+    width: 100%;
+    background-color: #f2f9f6;
+    padding: 13px;
+    margin-top: 10px;
+}
+
+button.btn:hover, button.btn:active {
+    background-color: #e0f1ff;
+}
+
+button.btn {
+    font-weight: 300;
+    font-size: 10pt;
+    box-shadow: 0px 2px 4px rgb(0 0 0 / 25%);
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.modal-window button.btn {
+    background-color: white;
+    cursor: pointer;
+}
+
+button.btn.cancel {
+}
+
+.modal-window button.btn.ok {
+    background: #c31432;
+    background: -webkit-linear-gradient(to bottom, #65189d, #c31432);
+    background: linear-gradient(to bottom, #65189d, #c31432);
+    color: white;
+    border: 0;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+button.btn.ok:hover, button.btn.ok:active {
+    background: #961027;
+    background: -webkit-linear-gradient(to bottom, #470f6f, #8b0f24);
+    background: linear-gradient(to bottom, #470f6f, #8b0f24);
+}
+
+button.btn.cancel:hover, button.btn.cancel:active {
+}
+
+.modal-background {
+    display: flex;
+    position: absolute;
+    background-color: rgba(0,0,0,0.2);
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    flex-direction: row;
+    align-content: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+}
+
+.modal-window {
+    max-width: 100%;
+    width: 500px;
+    display: flex;
+    flex-flow: column;
+    background-color: white;
+    height: 430px;
+    height: fit-content;
+    max-height: 100%;
+    padding: 20px;
+    margin-top: 70px;
+}
+
+button.link-button.edit {
+    background-color: #0045c1;
+}
+
+
+.modal-actions {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.profile-picture {
+    width: 32px;
+    height: 32px;
+}
+
+.player-character-index {
+    margin-left: 5px;
+    display: inline-block;
+    color: #a2a2a2;
+    font-size: 9pt;
+}
+
+input.table-edit {
+    padding: 3px;
+    margin: 2px;
+}
+
+button.link-button {
+    background-color: #0e0e0f;
+    color: #fff;
+    border: 0;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin: 2px;
+}
+
+input.search-input {
+    padding: 10px 15px;
+    border-radius: 10px;
+    border: 1px solid #d5d5d5;
+    width: 500px;
+    max-width: 100%;
+    box-sizing: border-box;
+    outline: none;
+    font-size: 13pt;
+}
+
+.pagenation {
+    display: flex;
+    flex-flow: row;
+    justify-content: space-between;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    margin-left: 25px;
+    margin-right: 25px;
+}
+
+.page-navigation {
+    display: flex;
+    flex-flow: row;
+    align-items: flex-end;
+    height: 35px;
+}
+
+.pages {
+    display: flex;
+    line-height: 17px;
+    margin: 5px;
+}
+
+table.player-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    cursor: pointer;
+    user-select: none;
+}
+
+th,
+td {
+    text-align: right;
+    padding: 10px 15px;
+    border: 1px solid #eeeeee;
+}
+
+table.player-table tr {
+    border: none;
+}
+
+table.player-table th:nth-of-type(2),
+table.player-table td:nth-of-type(2) {
+    text-align: left;
+}
+
+table.player-table tr:nth-of-type(even) {
+    background-color: #f6f6f6;
+}
+
+.stats-row {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    padding: 10px 25px;
+    -webkit-box-pack: space-evenly;
+    -ms-flex-pack: space-evenly;
+    justify-content: space-evenly;
+    max-width: 100%;
+    width: 800px;
+    box-sizing: border-box;
+    margin-left: auto;
+    margin-right: auto;
+    border-bottom: 1px solid #f3f3f3;
+}
+
+.stats-combat-level {
+    font-size: 14pt;
+    margin-bottom: 10px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #e6e6e6;
+    display: block;
+    width: 100%;
+}
+
+.stats-row:nth-of-type(2n+2) {
+    background-color: #fafafa;
+}
+
+.stats-label {
+    width: 190px;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.stats-progress {
+    text-align: right;
+    min-width: 120px;
+    text-align: center;
+    background-color: #f4f4f4;
+}
+
+.stats-value {
+    width: 190px;
+    text-align: right;
+}
+
+.stats-progress-value {
+    height: 23px;
+    position: absolute;
+    background-color: #81a1f829;
+}

@@ -1,0 +1,32 @@
+﻿@layout AdminLayout
+@page "/admin/user/{id}"
+
+@if (selectedUser == null)
+{
+  <LoadIndicator></LoadIndicator>
+}
+else
+{
+  <div class="tab-view character-selection">
+    @foreach (var p in selectedUser.Characters)
+    {
+      <button class="tab-link @(p.Id == selectedPlayer?.Id ? "active" : "")" @onclick="(()=> SelectPlayer(p))">
+        <div class="character-name">
+          @p.Name
+        </div>
+        <div class="character-index">
+          @p.CharacterIndex  @(p.Identifier != null ? $"({p.Identifier})" : "")
+        </div>
+        <div class="character-level">
+          @PlayerService.GetCombatLevel(p)
+        </div>
+      </button>
+    }
+  </div>
+  <AdminUserControl SelectedUser="selectedUser"></AdminUserControl>
+
+  if (selectedUser != null)
+  {
+    <PlayerAdminView SelectedPlayer="selectedPlayer" CanManage="true"></PlayerAdminView>
+  }
+}

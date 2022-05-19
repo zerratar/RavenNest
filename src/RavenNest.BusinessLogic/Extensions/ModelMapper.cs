@@ -317,7 +317,7 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static WebsiteAdminPlayer MapForAdmin(this User user, IGameData gameData, Character character)
+        public static Models.WebsiteAdminPlayer MapForAdmin(this User user, IGameData gameData, Character character)
         {
             var sessionName = "";
             if (character.UserIdLock != null)
@@ -333,7 +333,7 @@ namespace RavenNest.BusinessLogic.Extensions
             var clan = clanMembership != null ? Map(gameData, gameData.GetClan(clanMembership.ClanId)) : null;
             var clanRole = clanMembership != null ? Map(gameData.GetClanRole(clanMembership.ClanRoleId), clanMembership) : null;
             (var battlePets, var activeBattlePet) = character.MapBattlePets(gameData);
-            return new WebsiteAdminPlayer
+            return new Models.WebsiteAdminPlayer
             {
                 Created = user.Created,
                 Id = character.Id,
