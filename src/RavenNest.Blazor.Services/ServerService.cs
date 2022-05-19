@@ -59,7 +59,7 @@ namespace RavenNest.Blazor.Services
             });
         }
 
-        public async Task<IReadOnlyList<LogEntry>> GetRavenbotLogEntriesAsync(string file)
+        public async Task<LogEntryCollection> GetRavenbotLogEntriesAsync(string file, int offset, int take)
         {
             var currentDir = new DirectoryInfo(Directory.GetCurrentDirectory());
             var logsFolder = new DirectoryInfo(Path.Combine(currentDir.Parent.FullName, "logs"));
@@ -75,9 +75,9 @@ namespace RavenNest.Blazor.Services
             if (fullFileNamePath is null)
             {
                 LogLines.Add(LogEntry.Error("Unable to find a logfile of name '" + file + "'."));
-                return LogLines;
+                return new LogEntryCollection { TotalCount = 1, LogEntries = LogLines, Offset = 0 };
             }
-
+            var rowIndex = 0;
             var lastReadLine = "";
             try
             {
@@ -86,7 +86,39 @@ namespace RavenNest.Blazor.Services
                 {
                     do
                     {
+                        // Normally, we should be able to break out
+                        // from here and don't continue reading at this point
+                        // but we need to know the total amount of rows.
+                        // So we will just skip adding to the list instead.
+                        //if (LogLines.Count >= take)
+                        //{
+                        //    break;
+                        //}
+
                         lastReadLine = await read.ReadLineAsync();
+
+                        if (rowIndex++ < offset)
+                        {
+                            continue;
+                        }
+
+                        if (LogLines.Count >= take)
+                        {
+                            continue;
+                        }
+
+                        // check if its a legacy line. then parse it as such.
+                        if (!string.IsNullOrEmpty(lastReadLine) && lastReadLine.StartsWith("["))
+                        {
+                            LogLines.Add(ParseLegacyLogLine(lastReadLine));
+                            continue;
+                        }
+
+                        if (string.IsNullOrEmpty(lastReadLine))
+                        {
+                            continue;
+                        }
+
                         LogLines.Add(JsonSerializer.Deserialize<LogEntry>(lastReadLine));
                     } while (!read.EndOfStream);
                 }
@@ -101,7 +133,54 @@ namespace RavenNest.Blazor.Services
                 LogLines.Add(LogEntry.Error("Reading log '" + file + "' threw an exception: " + exc.Message + lastReadLine));
             }
 
-            return LogLines;
+            return new LogEntryCollection
+            {
+                LogEntries = LogLines,
+                Offset = offset,
+                TotalCount = rowIndex
+            };
+        }
+
+        private LogEntry ParseLegacyLogLine(string line)
+        {
+            // anything that happens in this function, let it throw an exception. It will be caught by GetRavenbotLogEntriesAsync
+            var msg = line;
+            var dateTime = DateTime.Parse(line.Substring(1, line.IndexOf(']') - 1));
+            var logLevel = LogLevel.Information;
+
+            var logLevelStart = line.IndexOf('{');
+
+            if (logLevelStart >= 0)
+            {
+                var logLevelEnd = line.IndexOf('}');
+                var logLevelValue = line.Substring(logLevelStart + 1, logLevelEnd - logLevelStart - 1);
+
+                // Enum.TryParse<LogLevel> not supported with Span?
+
+                if (logLevelValue.StartsWith("d", StringComparison.OrdinalIgnoreCase))
+                    logLevel = LogLevel.Debug;
+                if (logLevelValue.StartsWith("t", StringComparison.OrdinalIgnoreCase))
+                    logLevel = LogLevel.Trace;
+                if (logLevelValue.StartsWith("e", StringComparison.OrdinalIgnoreCase))
+                    logLevel = LogLevel.Error;
+                if (logLevelValue.StartsWith("c", StringComparison.OrdinalIgnoreCase))
+                    logLevel = LogLevel.Critical;
+                if (logLevelValue.StartsWith("w", StringComparison.OrdinalIgnoreCase))
+                    logLevel = LogLevel.Warning;
+
+                msg = msg.Substring(logLevelEnd + 1);
+                if (msg.StartsWith(": "))
+                {
+                    msg = msg.Replace(": ", "");
+                }
+            }
+
+            return new LogEntry
+            {
+                LogLevel = logLevel,
+                Message = msg.Trim(),
+                LogDateTime = dateTime,
+            };
         }
 
         public BotStats GetBotStats()
@@ -197,6 +276,13 @@ namespace RavenNest.Blazor.Services
         public string FileName { get; set; }
         public DateTime Date { get; set; }
         public long FileSize { get; set; }
+    }
+
+    public class LogEntryCollection
+    {
+        public List<LogEntry> LogEntries { get; set; }
+        public int Offset { get; set; }
+        public int TotalCount { get; set; }
     }
 
     //TODO - Move to Model, code copy also exisit in PersistedConsoleLogger in RavenBot.ROBot

@@ -3,7 +3,6 @@
     width: 100%;
     border-collapse: collapse;
     color: #d5d5d5;
-    
 }
 
 th, td {
@@ -24,7 +23,6 @@ table.loglines-list th:nth-of-type(3),
 table.loglines-list td:nth-of-type(3) {
     text-align: left;
     width: 100%
-    
 }
 
 table.loglines-list th:nth-of-type(2),
@@ -37,15 +35,35 @@ table.loglines-list tr:nth-of-type(even) {
     background-color: #3D3D3D;
 }
 
-    table.loglines-list tr:nth-of-type(even).selected,
-    .loglines-row.selected {
-        background-color: aquamarine;
-    }
+table.loglines-list tr:nth-of-type(even).selected,
+.loglines-row.selected {
+    background-color: aquamarine;
+}
 
 
 h1 {
     color: #8c9dc9;
 }
 
+table.loglines-list td.full-row {
+    text-align: center;
+    vertical-align: middle;
+    background-color: #1e1e1e;
+    border-bottom: 0;
+}
 
+button.btn.btn-load-more,
+button.btn.btn-refresh {
+    font-weight: 300;
+    font-size: 10pt;
+    box-shadow: 0px 2px 4px rgb(0 0 0 / 25%);
+    margin: 5px;
+    cursor: pointer;
+    background-color: white;
+    text-align: center;
+}
 
+button.btn.btn-load-more:hover,
+button.btn.btn-refresh:hover {
+    background-color: #d5d5d5;
+}

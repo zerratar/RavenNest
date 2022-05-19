@@ -1,5 +1,7 @@
 ﻿@layout DarkAdminDashboardLayout
 @page "/admin/display-ravenbot-log/{filename}"
+@page "/admin/display-ravenbot-log/{filename}/{pageSize}"
+@page "/admin/display-ravenbot-log/{filename}/{offset}/{pageSize}"
 @using System.ComponentModel.DataAnnotations
 @using RavenNest.BusinessLogic.Data
 @using RavenNest.DataModels
@@ -34,6 +36,27 @@
                 {
                     <RavenbotLogDisplayLine DataContext="entry"></RavenbotLogDisplayLine>
                 }
+                <tr>
+                    <td colspan="3" class="full-row">
+
+                        @if (!hasReadAll)
+                        {
+                            @if (loadingEntries)
+                            {
+                                <p>Loading... Please wait</p>
+                            }
+                            else
+                            {
+                                <button class="btn btn-load-more" @onclick="() => LoadMoreAsync()">Load More (@LoadMoreCount)</button>
+                                <button class="btn btn-load-more" @onclick="() => LoadAllAsync()">Load Rest (@LoadAllCount)</button>
+                            }
+                        }
+                        else
+                        {
+                            <button class="btn btn-refresh" @onclick="() => LoadMoreAsync()">Refresh</button>
+                        }
+                    </td>
+                </tr>
             </tbody>
         </table>
     }
@@ -41,16 +64,82 @@
 
 @code {
     private RavenNest.Sessions.SessionInfo session;
-    private IReadOnlyList<RavenNest.Blazor.Services.LogEntry> entries;
+    private List<RavenNest.Blazor.Services.LogEntry> entries;
 
     private bool isAdmin;
+
     [Parameter]
     public string Filename { get; set; }
 
+    [Parameter]
+    public int Offset { get; set; }
+
+    [Parameter]
+    public int PageSize { get; set; }
+
+    private bool loadingEntries;
+
+    private int totalCount = 0;
+    private bool hasReadAll = false;
+
+    private int LoadAllCount
+    {
+        get
+        {
+            return totalCount - Offset;
+        }
+    }
+
+    private int LoadMoreCount
+    {
+        get
+        {
+            var delta = totalCount - Offset;
+            if (delta > PageSize) return PageSize;
+            return PageSize - delta;
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
+        if (PageSize == 0) PageSize = 100;
         session = AuthService.GetSession();
         isAdmin = session != null && session.Administrator;
-        entries = await ServerService.GetRavenbotLogEntriesAsync(Filename);
+        entries = new List<RavenNest.Blazor.Services.LogEntry>();
+        await LoadMoreAsync();
+    }
+
+    private async Task LoadAllAsync()
+    {
+        loadingEntries = true;
+        await InvokeAsync(StateHasChanged);
+        await LoadAsync(Offset, int.MaxValue);
+        loadingEntries = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadMoreAsync()
+    {
+        loadingEntries = true;
+        await InvokeAsync(StateHasChanged);
+        await LoadAsync(Offset, PageSize);
+        loadingEntries = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LoadAsync(int offset, int pageSize)
+    {
+        var collection = await ServerService.GetRavenbotLogEntriesAsync(Filename, offset, pageSize);
+        if (collection.LogEntries.Count > 0)
+        {
+            entries.AddRange(collection.LogEntries);
+            Offset += entries.Count;
+            totalCount = collection.TotalCount;
+            hasReadAll = Offset >= totalCount;
+        }
+        else
+        {
+            hasReadAll = true;
+        }
     }
 }
