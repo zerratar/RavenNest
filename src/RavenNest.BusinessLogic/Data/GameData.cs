@@ -386,9 +386,11 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureExpMultipliersWithinBounds(expMultiplierEvents);
                 EnsureCraftingRequirements(items);
                 MergeLoyaltyData(loyalty);
-
+                MergeClans();
 
                 RewardRollbackPlayers();
+
+
 
                 #endregion
 
@@ -407,7 +409,6 @@ namespace RavenNest.BusinessLogic.Data
             }
 
         }
-
         private void RewardRollbackPlayers()
         {
             string[] data = null;
@@ -865,6 +866,68 @@ namespace RavenNest.BusinessLogic.Data
                 if (clan.Level == 0)
                     clan.Level = 1;
             }
+        }
+
+        private void MergeClans()
+        {
+            var toRemove = new List<Clan>();
+            foreach (var u in users.Entities)
+            {
+                var userClans = clans[nameof(User), u.Id];
+                if (userClans.Count > 1)
+                {
+                    var highestLevelFirst = userClans.OrderByDescending(x => x.Level).ToArray();
+                    var clanToKeep = highestLevelFirst[0];
+
+                    var expToAdd = 0d;
+                    // calculate the total amount of exp needed to be added as we merge.
+                    // and update clan references between users
+
+                    for (var i = 1; i < highestLevelFirst.Length; ++i)
+                    {
+                        var clan = highestLevelFirst[i];
+
+                        var memberships = GetClanMemberships(clan.Id);
+
+                        // transfer clan members
+                        foreach (var membership in memberships)
+                        {
+                            membership.ClanId = clanToKeep.Id;
+                        }
+
+                        expToAdd += clan.Experience;
+
+                        for (var lv = 1; lv < clan.Level; lv++)
+                        {
+                            expToAdd += GameMath.ExperienceForLevel(lv + 1);
+                        }
+
+                        toRemove.Add(clan);
+                        // ignore clan skills as we don't have it available just yet.
+                        // ...
+                    }
+
+                    // apply the exp
+                    clanToKeep.Experience += expToAdd;
+
+                    var nextLevel = GameMath.ExperienceForLevel(clanToKeep.Level + 1);
+                    var oldLevel = clanToKeep.Level;
+
+                    while (clanToKeep.Experience >= nextLevel)
+                    {
+                        clanToKeep.Experience -= nextLevel;
+                        ++clanToKeep.Level;
+                        nextLevel = GameMath.ExperienceForLevel(clanToKeep.Level + 1);
+                    }
+                }
+            }
+
+            foreach (var r in toRemove)
+            {
+                Remove(r);
+            }
+
+            logger.LogInformation(toRemove.Count + " clans was merged.");
         }
 
         private void MergeLoyaltyData(EntitySet<UserLoyalty, Guid> loyalty)
