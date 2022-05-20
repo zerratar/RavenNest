@@ -131,8 +131,11 @@ namespace RavenNest.Controllers
                     return NotFound();
 
                 using (var inStream = new FileStream(fullFileNamePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var sr = new StreamReader(inStream))
                 {
-                    return File(inStream, "text/plain", file);
+                    var content = await sr.ReadToEndAsync();
+                    var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+                    return File(bytes, "text/plain", file);
                 }
             }
             catch (Exception exc)
