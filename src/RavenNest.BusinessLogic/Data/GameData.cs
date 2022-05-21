@@ -11,6 +11,7 @@ using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.DataModels;
 
+
 namespace RavenNest.BusinessLogic.Data
 {
     public class GameData : IGameData
@@ -387,6 +388,7 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureCraftingRequirements(items);
                 MergeLoyaltyData(loyalty);
                 MergeClans();
+                RemoveDuplicatedClanMembers();
 
                 RewardRollbackPlayers();
 
@@ -409,6 +411,7 @@ namespace RavenNest.BusinessLogic.Data
             }
 
         }
+
         private void RewardRollbackPlayers()
         {
             string[] data = null;
@@ -873,24 +876,26 @@ namespace RavenNest.BusinessLogic.Data
             var toRemove = new List<Clan>();
             foreach (var u in users.Entities)
             {
-                var userClans = clans[nameof(User), u.Id];
-                if (userClans.Count > 1)
+                var userClans = clans[nameof(User), u.Id]; //get list of clans on that this user is in
+
+                if (userClans.Count > 1) //If this user is in more than one clan
                 {
-                    var highestLevelFirst = userClans.OrderByDescending(x => x.Level).ToArray();
-                    var clanToKeep = highestLevelFirst[0];
+                    var highestClanLevelFirst = userClans.OrderByDescending(x => x.Level).ToArray(); //Order Clan By Highest level
+                    var clanToKeep = highestClanLevelFirst[0]; //Keeping the highest rank
+                    var clanToKeepMembership = GetClanMemberships(clanToKeep.Id).AsList(); //Abby: Get list CharacterClan on clan to keep id
 
                     var expToAdd = 0d;
                     // calculate the total amount of exp needed to be added as we merge.
                     // and update clan references between users
 
-                    for (var i = 1; i < highestLevelFirst.Length; ++i)
+                    for (var i = 1; i < highestClanLevelFirst.Length; ++i) //skip first element, loop each clan
                     {
-                        var clan = highestLevelFirst[i];
+                        var clan = highestClanLevelFirst[i]; //this clan
 
-                        var memberships = GetClanMemberships(clan.Id);
+                        var memberships = GetClanMemberships(clan.Id).AsList(); //Get List of members
+                        var missingMemberships = memberships.Where(y => !clanToKeepMembership.Any(x => y.CharacterId == x.CharacterId)); //List of missing members
 
-                        // transfer clan members
-                        foreach (var membership in memberships)
+                        foreach (var membership in missingMemberships)
                         {
                             membership.ClanId = clanToKeep.Id;
                         }
@@ -928,6 +933,25 @@ namespace RavenNest.BusinessLogic.Data
             }
 
             logger.LogInformation(toRemove.Count + " clans was merged.");
+        }
+
+        private void RemoveDuplicatedClanMembers()
+        {
+            var memberToRemove = new List<CharacterClanMembership>();
+            foreach (var clan in clans.Entities)
+            {
+                var clanMemberships = GetClanMemberships(clan.Id);
+                var repeatingMember = clanMemberships.GroupBy(x => x.CharacterId).Where(count => count.Count() > 1).Select(y => y.Key).ToList(); //get list of characterId that repeats
+
+                //TODO: each repeated Characters in List
+                //Check duplicated characters for different clanId
+                //If in different clans - use latest joined, add rejected characterclanmembership to memberToRemove
+
+                //If count still >1
+                //Since there's no way to check what is the newest updated rank, we default to lowest rank for safety (more annoying but safest)
+                //Select lowest rank to keep
+                //Add memberToRemove for the rest.
+            }
         }
 
         private void MergeLoyaltyData(EntitySet<UserLoyalty, Guid> loyalty)
