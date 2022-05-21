@@ -105,16 +105,18 @@ namespace RavenNest.Controllers
         [HttpGet("ravenbot-logs/{file}")]
         public async Task<ActionResult> DownloadRavenbotLogsAsync(string file)
         {
-            if (string.IsNullOrEmpty(file))
-                return NotFound();
-
             try
             {
                 await AssertAdminAccessAsync();
             }
             catch
             {
-                return NotFound();
+                return Unauthorized();
+            }
+
+            if (string.IsNullOrEmpty(file))
+            {
+                return Content("Bad file name.");
             }
 
             try
@@ -122,15 +124,19 @@ namespace RavenNest.Controllers
                 var currentDir = new DirectoryInfo(Directory.GetCurrentDirectory());
                 var logsFolder = new DirectoryInfo(Path.Combine(currentDir.Parent.FullName, "logs"));
                 var fullFileNamePath = Path.Combine(logsFolder.FullName, file);
+
                 if (!logsFolder.Exists)
                     return NotFound();
 
-                if (System.IO.File.Exists(fullFileNamePath))
+                if (!System.IO.File.Exists(fullFileNamePath))
                     return NotFound();
 
                 using (var inStream = new FileStream(fullFileNamePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var sr = new StreamReader(inStream))
                 {
-                    return File(inStream, "text/plain",file);
+                    var content = await sr.ReadToEndAsync();
+                    var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+                    return File(bytes, "text/plain", file);
                 }
             }
             catch (Exception exc)
