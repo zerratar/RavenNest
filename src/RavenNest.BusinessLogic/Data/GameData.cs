@@ -11,6 +11,7 @@ using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.DataModels;
 
+
 namespace RavenNest.BusinessLogic.Data
 {
     public class GameData : IGameData
@@ -387,6 +388,7 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureCraftingRequirements(items);
                 MergeLoyaltyData(loyalty);
                 MergeClans();
+                RemoveDuplicatedClanMembers();
 
                 RewardRollbackPlayers();
 
@@ -409,6 +411,7 @@ namespace RavenNest.BusinessLogic.Data
             }
 
         }
+
         private void RewardRollbackPlayers()
         {
             string[] data = null;
@@ -873,26 +876,60 @@ namespace RavenNest.BusinessLogic.Data
             var toRemove = new List<Clan>();
             foreach (var u in users.Entities)
             {
-                var userClans = clans[nameof(User), u.Id];
-                if (userClans.Count > 1)
+                var userClans = clans[nameof(User), u.Id]; //get list of clans on that this user is in
+
+                if (userClans.Count > 1) //If this user is in more than one clan
                 {
-                    var highestLevelFirst = userClans.OrderByDescending(x => x.Level).ToArray();
-                    var clanToKeep = highestLevelFirst[0];
+                    var highestClanLevelFirst = userClans.OrderByDescending(x => x.Level).ToArray(); //Order Clan By Highest level
+                    var clanToKeep = highestClanLevelFirst[0]; //Keeping the highest rank
+                    var clanToKeepMembership = GetClanMemberships(clanToKeep.Id).ToDictionary(x => x.CharacterId); //Abby: Get list CharacterClan on clan to keep id
+
+                    var availableClanRoles = GetClanRoles(clanToKeep.Id);
 
                     var expToAdd = 0d;
                     // calculate the total amount of exp needed to be added as we merge.
-                    // and update clan references between users
+                    // and update clan references between users                    
 
-                    for (var i = 1; i < highestLevelFirst.Length; ++i)
+                    for (var i = 1; i < highestClanLevelFirst.Length; ++i) //skip first element, loop each clan
                     {
-                        var clan = highestLevelFirst[i];
+                        var clan = highestClanLevelFirst[i]; //this clan
 
-                        var memberships = GetClanMemberships(clan.Id);
-
-                        // transfer clan members
-                        foreach (var membership in memberships)
+                        var memberships = GetClanMemberships(clan.Id).ToDictionary(x => x.CharacterId); //Get List of members
+                        foreach (var membershipKeyValue in memberships)
                         {
-                            membership.ClanId = clanToKeep.Id;
+                            var value = membershipKeyValue.Value;
+                            if (clanToKeepMembership.TryGetValue(membershipKeyValue.Key, out var membershipToKeep))
+                            {
+                                if (membershipToKeep.ClanRoleId == value.ClanRoleId)
+                                {
+                                    // remove this one and continue. since we already have the same member of same role.
+                                    Remove(value);
+                                    continue;
+                                }
+
+                                // we have the same member, but the role is different. 
+                                var roleA = GetClanRole(membershipToKeep.ClanRoleId);
+                                var roleB = GetClanRole(value.ClanRoleId);
+
+                                // take the highest ranked one and then remove the membership.
+                                if (roleA.Level < roleB.Level)
+                                {
+                                    var matchingRole = availableClanRoles.FirstOrDefault(x => x.Level == roleB.Level);
+                                    if (matchingRole != null)
+                                        membershipToKeep.ClanRoleId = matchingRole.Id;
+                                }
+
+                                Remove(value);
+                            }
+                            else
+                            {
+                                membershipKeyValue.Value.ClanId = clanToKeep.Id;
+                                var roleB = GetClanRole(value.ClanRoleId);
+                                var matchingRole = availableClanRoles.FirstOrDefault(x => x.Level == roleB.Level);
+
+                                // take give the clan role of same level or lower level if non matching exists.
+                                membershipToKeep.ClanRoleId = matchingRole != null ? matchingRole.Id : availableClanRoles.OrderByDescending(x => x.Level).FirstOrDefault(x => x.Level <= roleB.Level).Id;
+                            }
                         }
 
                         expToAdd += clan.Experience;
@@ -928,6 +965,27 @@ namespace RavenNest.BusinessLogic.Data
             }
 
             logger.LogInformation(toRemove.Count + " clans was merged.");
+        }
+
+        private void RemoveDuplicatedClanMembers()
+        {
+            var memberToRemove = new List<CharacterClanMembership>();
+            foreach (var clan in clans.Entities)
+            {
+                var clanMemberships = GetClanMemberships(clan.Id);
+
+                foreach (var group in clanMemberships.Select(x => new { Member = x, Role = GetClanRole(x.ClanRoleId) }).GroupBy(x => x.Member.CharacterId))
+                {
+                    var duplicates = group.OrderByDescending(x => x.Role.Level).ToArray();
+                    if (duplicates.Length == 1) continue;
+
+                    // remove the rest of the memberships as they are lower or same level but with same character.
+                    for (var i = 1; i < duplicates.Length; i++)
+                    {
+                        Remove(duplicates[i].Member);
+                    }
+                }
+            }
         }
 
         private void MergeLoyaltyData(EntitySet<UserLoyalty, Guid> loyalty)
