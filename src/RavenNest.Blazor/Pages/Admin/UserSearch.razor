@@ -21,8 +21,6 @@
             <th>Characters</th>
             <th>Admin</th>
             <th>Mod</th>
-            <th>Hidden in Highscore</th>
-            <th></th>
         </tr>
     </thead>
     <tbody>
@@ -53,103 +51,33 @@
                         @user.Email
                     </td>
                     <td>
-                        @if (editingPatreonUserId == user.Id)
+                      @if(user.PatreonTier != null && user.PatreonTier >= patreonNames.Length)
+                      {
+                        @patreonNames[patreonNames.Length - 1]
+                      } else {
+                        @patreonNames[user.PatreonTier?? 0]
+                      }
+            </td>
+            <td>
+                @if (@user.Characters.Count > 0)
                         {
-                            <select class="clan-role-selector" @onchange="SelectedPatreonChanged">
-                                @for (var i = 0; i < patreonNames.Length; ++i)
+                            <ul>
+                                @foreach (var character in @user.Characters)
                                 {
-                                    if (user.PatreonTier == i)
-                                    {
-                                        <option id="@i" value="@i" selected>
-                                            @(i >= patreonNames.Length ? patreonNames[patreonNames.Length - 1] : patreonNames[i])
-                                        </option>
-                                    }
-                                    else
-                                    {
-                                        <option id="@i" value="@i">
-                                            @(i >= patreonNames.Length?@patreonNames[patreonNames.Length - 1]:patreonNames[i])
-                                        </option>
-                                    }
+                                    <li class="character-list">
+                                        <div class=character-session><span class=player-character>@character.UserName<span class='player-character-index' alt='Character Number'>@character.CharacterIndex</span></span> <span class=session>@character.SessionName</span></div>
+                                    </li>
                                 }
-                            </select>
-                            <span class="fas fa-check" @onclick="UpdateUserPatreon"></span>
-                            <span class="fas fa-times" @onclick="CancelEditUserPatreon"></span>
-                        }
-                        else
-                        {
-                            var i = user.PatreonTier ?? 0;
-                            if (i >= patreonNames.Length)
-                                @patreonNames[patreonNames.Length - 1]
-                            else
-                                @patreonNames[i]
-                        }
-                    </td>
-                    <td>
-                        @if(@user.Characters.Count > 0)
-                        {
-                          <ul>
-                          @foreach(var character in @user.Characters)
-                          {
-                            <li class="character-list">
-                              <div class=character-session><span class=player-character>@character.UserName<span class='player-character-index' alt='Character Number'>@character.CharacterIndex</span></span> <span class=session>@character.SessionName</span></div>
-                            </li>
-                          }
-                          </ul>
+                            </ul>
                         }
                     </td>
                     <td>@user.IsAdmin</td>
                     <td>@user.IsModerator</td>
                     <td>
-                        <input type="checkbox" value="@user.IsHiddenInHighscore" @onchange="ev => IsHiddenInHighscoreChanged(user, ev.Value)"></input>
-                    </td>
-                    <td>
-                        @if (!string.IsNullOrEmpty(user.Comment))
-                        {
-                            <button class="link-button edit" @onclick="(()=> EditRemark(user))"><i class="fa-solid fa-comment-pen"></i></button>
-                        }
-                        else
-                        {
-                            <button class="link-button" @onclick="(()=> EditRemark(user))"><i class="fa-solid fa-comment-plus"></i></button>
-                        }
-                        @if (user.HasClan && !user.Clan.CanChangeName)
-                        {
-                            <button class="link-button" @onclick="(()=> ResetClanNameChangeCounter(user))">Allow Clan Rename</button>
-                        }
-                        <button class="link-button" @onclick="(()=> EditPatreon(user))">Patreon</button>
-                        @if (user.Status >= 1)
-                        {
-                            <button class="link-button" @onclick="(()=> UnbanUser(user))">Unban</button>
-                        }
-                        else
-                        {
-                            <button class="link-button" @onclick="(()=> BanUser(user))">Ban</button>
-                        }
+                        @user.IsHiddenInHighscore
                     </td>
                 </tr>
             }
         }
     </tbody>
 </table>
-
-@if (editUserRemarkUser != null)
-{
-    <div class="modal-background">
-        <div class="modal-window">
-
-            <div class="modal-header">
-                <h2>Edit Comment</h2>
-                <button class="close" @onclick="CancelEditRemark">x</button>
-            </div>
-
-            <div class="modal-body">
-                <div class="form-row">
-                    <input type="text" class="modal-input" @bind-value="editUserRemarkComment" />
-                </div>
-                <div class="modal-actions">
-                    <button @onclick="ApplyUserRemark" class="btn ok">Save</button>
-                    <button @onclick="CancelEditRemark" class="btn cancel">Cancel</button>
-                </div>
-            </div>
-        </div>
-    </div>
-}

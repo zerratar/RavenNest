@@ -25,26 +25,26 @@ namespace RavenNest.Blazor.Pages.Admin
         public string Id { get; set; }
 
 
-        private WebsiteAdminUser selectedUser { get; set; }
-        private WebsiteAdminPlayer selectedPlayer { get; set; }
-        private Sessions.SessionInfo session { get; set; }
+        private WebsiteAdminUser SelectedUser { get; set; }
+        private WebsiteAdminPlayer SelectedPlayer { get; set; }
+        private Sessions.SessionInfo Session { get; set; }
 
         protected override async Task OnInitializedAsync()
         {
-            session = AuthService.GetSession();
+            Session = AuthService.GetSession();
 
             if (Id != null)
             {
-                selectedUser = UserService.GetUser(Id);
+                SelectedUser = UserService.GetUser(Id);
             }
-            if (selectedUser == null || session == null)
+            if (SelectedUser == null || Session == null)
                 return;
-            selectedPlayer = selectedUser.Characters.FirstOrDefault();
+            SelectedPlayer = SelectedUser.Characters.FirstOrDefault();
         }
 
         protected override void OnAfterRender(bool firstRender)
         {
-            if (session == null || session.UserId == null && selectedUser == null)
+            if (Session == null || Session.UserId == null && SelectedUser == null)
             {
                 NavigationManager.NavigateTo("/login");
             }
@@ -52,7 +52,7 @@ namespace RavenNest.Blazor.Pages.Admin
 
         private async void SelectPlayer(BusinessLogic.Extended.WebsiteAdminPlayer player)
         {
-            selectedPlayer = selectedUser.Characters.FirstOrDefault(c=> c.Id == player.Id);
+            SelectedPlayer = SelectedUser.Characters.FirstOrDefault(c=> c.Id == player.Id);
             await InvokeAsync(StateHasChanged);
         }
 

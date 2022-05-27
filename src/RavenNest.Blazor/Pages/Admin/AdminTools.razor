@@ -1,0 +1,21 @@
+﻿@layout AdminLayout
+@page "/admin/others"
+@using System.Threading
+
+<h3>Other Admin Controls</h3>
+
+<ul>
+    <li>
+        <NavLink class="" href="/api/admin/backup/download" Match="NavLinkMatch.All">
+            <span class="oi oi-arrow-left" aria-hidden="true"></span> Download Latest Backup
+        </NavLink>
+    </li>
+    <li>
+        https://www.ravenfall.stream/api/admin/state-data/{username}
+    </li>
+</ul>
+
+@code {
+  //TODO Search box on user names
+    
+}

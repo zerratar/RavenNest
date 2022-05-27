@@ -1,32 +1,33 @@
 ﻿@layout AdminLayout
 @page "/admin/user/{id}"
 
-@if (selectedUser == null)
+@if (SelectedUser == null)
 {
-  <LoadIndicator></LoadIndicator>
+    <LoadIndicator></LoadIndicator>
 }
 else
 {
-  <div class="tab-view character-selection">
-    @foreach (var p in selectedUser.Characters)
-    {
-      <button class="tab-link @(p.Id == selectedPlayer?.Id ? "active" : "")" @onclick="(()=> SelectPlayer(p))">
-        <div class="character-name">
-          @p.Name
-        </div>
-        <div class="character-index">
-          @p.CharacterIndex  @(p.Identifier != null ? $"({p.Identifier})" : "")
-        </div>
-        <div class="character-level">
-          @PlayerService.GetCombatLevel(p)
-        </div>
-      </button>
-    }
-  </div>
-  <AdminUserControl SelectedUser="selectedUser"></AdminUserControl>
+    <AdminUserControl SelectedUser="SelectedUser"></AdminUserControl>
+    <div class="tab-view character-selection">
+        @foreach (var p in SelectedUser.Characters)
+        {
+            <button class="tab-link @(p.Id == SelectedPlayer?.Id ? "active" : "")" @onclick="(()=> SelectPlayer(p))">
+                <div class="character-name">
+                    @p.Name
+                </div>
+                <div class="character-index">
+                    @p.CharacterIndex  @(p.Identifier != null ? $"({p.Identifier})" : "")
+                </div>
+                <div class="character-level">
+                    @PlayerService.GetCombatLevel(p)
+                </div>
+            </button>
+        }
+    </div>
 
-  if (selectedUser != null)
-  {
-    <PlayerAdminView SelectedPlayer="selectedPlayer" CanManage="true"></PlayerAdminView>
-  }
+
+    if (SelectedPlayer != null)
+    {
+        <PlayerAdminView SelectedPlayer="SelectedPlayer" CanManage="true"></PlayerAdminView>
+    }
 }
