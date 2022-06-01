@@ -2070,15 +2070,17 @@ namespace RavenNest.BusinessLogic.Game
             return itemCollection;
         }
 
-        public IReadOnlyList<WebsiteAdminPlayer> GetFullPlayers()
+        public IReadOnlyList<WebsiteAdminPlayer> GetWebsiteAdminPlayers()
         {
             var chars = gameData.GetCharacters();
-            return chars.Select(x => new
+            var result = chars.Select(x => new
             {
                 User = gameData.GetUser(x.UserId),
                 Character = x
             })
             .SelectWhere(x => x.Character != null && x.User != null, x => x.User.MapForAdmin(gameData, x.Character));
+
+            return result;
         }
         public IReadOnlyList<WebsiteAdminPlayer> GetAdminWebsitePlayers(Guid userId)
         {

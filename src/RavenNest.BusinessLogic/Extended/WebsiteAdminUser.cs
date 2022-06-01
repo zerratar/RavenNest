@@ -27,7 +27,12 @@ namespace RavenNest.BusinessLogic.Extended
     {
         public Guid Id { get; set; }
         public int Level { get; set; }
+        public double Experience { get; set; }
+        public string Name { get; set; }
+        public string Logo { get; set; }
         public int NameChangeCount { get; set; }
         public bool CanChangeName { get; set; }
+        public DateTime Created { get; set; }
     }
+
 }

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace RavenNest.Blazor.Components
 {
-    public partial class AdminUserControl : ComponentBase
+    public partial class AdminUserView : ComponentBase
     {
         [Parameter]
         public WebsiteAdminUser SelectedUser { get; set; }
@@ -19,7 +19,10 @@ namespace RavenNest.Blazor.Components
         UserService UserService { get; set; }
         [Inject]
         ClanService ClanService { get; set; }
-        private bool EditingUserPatreon {  get; set; }
+        [Inject]
+        LogoService LogoService { get; set; }
+        private bool EditingUserPatreon { get; set; }
+        private bool reloadingClanLogo { get; set; }
 
         private string[] patreonNames { get; set; } = new string[] {
             "None", "Mithril", "Rune", "Dragon", "Abraxas", "Phantom", "Above Phantom"
@@ -52,6 +55,7 @@ namespace RavenNest.Blazor.Components
 
         private void EditRemark()
         {
+            EditingUserRemark = true;
             editUserRemarkComment = SelectedUser.Comment;
         }
 
@@ -88,7 +92,7 @@ namespace RavenNest.Blazor.Components
 
             SelectedUser.PatreonTier = patreonTier;
 
-            CancelEditUserPatreon();
+            EditingUserPatreon = false;
             await InvokeAsync(StateHasChanged);
 
             //await LoadUserPageAsync(pageIndex, pageSize);
@@ -112,6 +116,19 @@ namespace RavenNest.Blazor.Components
             if (await UserService.SetUserStatusAsync(SelectedUser.Id, BusinessLogic.Data.AccountStatus.OK))
             {
                 SelectedUser.Status = 0;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        private async void ReloadClanLogo()
+        {
+            reloadingClanLogo = true;
+            await InvokeAsync(StateHasChanged);
+
+            if (SelectedUser.HasClan)
+            {
+                await LogoService.UpdateClanLogoAsync(SelectedUser.UserId);
+
+                reloadingClanLogo = false;
                 await InvokeAsync(StateHasChanged);
             }
         }

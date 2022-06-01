@@ -115,7 +115,7 @@ namespace RavenNest.BusinessLogic.Extensions
             {
                 var s0 = s[i];
                 var s1 = gameData.GetSkill(s0.SkillId);
-                if(s1 == null)
+                if (s1 == null)
                 {
                     s1 = new Skill
                     {

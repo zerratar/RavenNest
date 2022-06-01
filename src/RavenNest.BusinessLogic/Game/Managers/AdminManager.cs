@@ -475,7 +475,7 @@ namespace RavenNest.BusinessLogic.Game
 
         public PagedPlayerCollection GetPlayersPaged(int offset, int size, string sortOrder, string query)
         {
-            var allPlayers = playerManager.GetFullPlayers();
+            var allPlayers = playerManager.GetWebsiteAdminPlayers();
 
             allPlayers = FilterByQuery(query, allPlayers);
             allPlayers = OrderBy(sortOrder, allPlayers);

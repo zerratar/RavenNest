@@ -7,27 +7,8 @@
 }
 else
 {
-    <AdminUserControl SelectedUser="SelectedUser"></AdminUserControl>
-    <div class="tab-view character-selection">
-        @foreach (var p in SelectedUser.Characters)
-        {
-            <button class="tab-link @(p.Id == SelectedPlayer?.Id ? "active" : "")" @onclick="(()=> SelectPlayer(p))">
-                <div class="character-name">
-                    @p.Name
-                </div>
-                <div class="character-index">
-                    @p.CharacterIndex  @(p.Identifier != null ? $"({p.Identifier})" : "")
-                </div>
-                <div class="character-level">
-                    @PlayerService.GetCombatLevel(p)
-                </div>
-            </button>
-        }
-    </div>
+    <AdminUserView SelectedUser="SelectedUser"></AdminUserView>
 
-
-    if (SelectedPlayer != null)
-    {
-        <PlayerAdminView SelectedPlayer="SelectedPlayer" CanManage="true"></PlayerAdminView>
-    }
+    <AdminCharactersView Characters="SelectedUser.Characters"></AdminCharactersView>
+    
 }

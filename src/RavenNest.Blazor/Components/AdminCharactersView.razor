@@ -1,0 +1,55 @@
+﻿<div class="characters">
+
+    <div class="character-details-tabs">
+        <button class="tab-link @SelectedClass(CharacterViewState.Skills)" @onclick="ShowSkills">Skills</button>
+        <button class="tab-link @SelectedClass(CharacterViewState.Inventory)" @onclick="ShowInventory">Inventory</button>
+
+        @if (CanManage)
+        {
+            @*<button class="tab-link @SelectedClass(CharacterViewState.Customization)" @onclick="ShowCustomization">Customise</button>*@
+        }
+        <button class="tab-link @SelectedClass(CharacterViewState.Clan)" @onclick="ShowClan">Clan</button>
+        @*<button class="tab-link @SelectedClass(CharacterViewState.Map)" @onclick="ShowMap">Map</button>*@
+    </div>
+
+    @foreach (var character in @Characters)
+    {
+        <div class="character">
+            <h1>
+                <span> Character: </span> <span>@character.Name </span>
+                <span class="character-index">
+                    @character.CharacterIndex @(character.Identifier != null ? $"({character.Identifier})" : "")
+                </span>
+                <span class="character-level">
+                    @PlayerService.GetCombatLevel(character)
+                </span>
+            </h1>
+
+            @switch (viewState)
+            {
+                case CharacterViewState.Inventory:
+                    <PlayerInventory Player="@character" CanManage="CanManage"></PlayerInventory>
+                    break;
+                case CharacterViewState.Skills:
+                    <PlayerSkills Player="@character" CanManage="CanManage"></PlayerSkills>
+                    break;
+                case CharacterViewState.Clan:
+                    <PlayerClan Player="@character" CanManage="CanManage"></PlayerClan>
+                    break;
+                case CharacterViewState.Customization:
+                    <PlayerCustomization Player="@character" CanManage="CanManage"></PlayerCustomization>
+                    break;
+                case CharacterViewState.Map:
+                    <PlayerMap Player="@character" CanManage="CanManage"></PlayerMap>
+                    break;
+            }
+        </div>
+    }
+
+
+
+
+</div>
+
+
+

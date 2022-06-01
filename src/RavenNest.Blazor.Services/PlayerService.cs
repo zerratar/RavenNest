@@ -150,21 +150,53 @@ namespace RavenNest.Blazor.Services
 
         public async Task<PagedCollection<WebsiteAdminPlayer>> GetPlayerPageAsync(string search, int pageIndex, int pageSize)
         {
-            var players = await SearchForPlayersAsync(search, false, true);
+            var players = await SearchForWebsiteAdminPlayersAsync(search, false, true);
             var pageItems = players.Skip(pageSize * pageIndex).Take(pageSize).ToList();
             return new PagedCollection<WebsiteAdminPlayer>(pageItems, players.Count);
         }
 
-        public Task<IReadOnlyList<WebsiteAdminPlayer>> SearchForPlayersAsync(string searchText)
+        public Task<IReadOnlyList<Player>> SearchForPlayersAsync(string searchText)
         {
             return SearchForPlayersAsync(searchText, false);
         }
-
-        public async Task<IReadOnlyList<WebsiteAdminPlayer>> SearchForPlayersAsync(string searchText, bool ignoreClanInvitedPlayers = true, bool allOnEmptySearch = false)
+        public async Task<IReadOnlyList<Player>> SearchForPlayersAsync(string searchText, bool ignoreClanInvitedPlayers = true, bool allOnEmptySearch = false)
         {
             return await Task.Run(() =>
             {
-                IEnumerable<WebsiteAdminPlayer> players = playerManager.GetFullPlayers();
+                IEnumerable<Player> players = playerManager.GetPlayers();
+                if (ignoreClanInvitedPlayers)
+                {
+                    var session = GetSession();
+                    var user = gameData.GetUser(session.AccountId);
+                    if (user == null)
+                        return new List<Player>();
+
+                    var clan = gameData.GetClanByUser(user.Id);
+                    players = players.Where(x => x.Clan == null &&
+                        gameData.GetClanInvitesByCharacter(x.Id).All(y => y.ClanId != clan.Id));
+                }
+
+                if (string.IsNullOrEmpty(searchText))
+                {
+                    if (allOnEmptySearch)
+                        return players.AsList();
+
+                    return new List<Player>();
+                }
+
+                return players.AsList(x =>
+                    x.UserId.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) ||
+                    x.UserName.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) ||
+                    x.Name.Contains(searchText, System.StringComparison.OrdinalIgnoreCase)
+                );
+            });
+        }
+
+        public async Task<IReadOnlyList<WebsiteAdminPlayer>> SearchForWebsiteAdminPlayersAsync(string searchText, bool ignoreClanInvitedPlayers = true, bool allOnEmptySearch = false)
+        {
+            return await Task.Run(() =>
+            {
+                IEnumerable<WebsiteAdminPlayer> players = playerManager.GetWebsiteAdminPlayers();
                 if (ignoreClanInvitedPlayers)
                 {
                     var session = GetSession();

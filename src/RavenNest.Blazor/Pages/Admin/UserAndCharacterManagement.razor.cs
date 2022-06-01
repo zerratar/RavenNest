@@ -26,7 +26,6 @@ namespace RavenNest.Blazor.Pages.Admin
 
 
         private WebsiteAdminUser SelectedUser { get; set; }
-        private WebsiteAdminPlayer SelectedPlayer { get; set; }
         private Sessions.SessionInfo Session { get; set; }
 
         protected override async Task OnInitializedAsync()
@@ -37,9 +36,6 @@ namespace RavenNest.Blazor.Pages.Admin
             {
                 SelectedUser = UserService.GetUser(Id);
             }
-            if (SelectedUser == null || Session == null)
-                return;
-            SelectedPlayer = SelectedUser.Characters.FirstOrDefault();
         }
 
         protected override void OnAfterRender(bool firstRender)
@@ -49,12 +45,5 @@ namespace RavenNest.Blazor.Pages.Admin
                 NavigationManager.NavigateTo("/login");
             }
         }
-
-        private async void SelectPlayer(BusinessLogic.Extended.WebsiteAdminPlayer player)
-        {
-            SelectedPlayer = SelectedUser.Characters.FirstOrDefault(c=> c.Id == player.Id);
-            await InvokeAsync(StateHasChanged);
-        }
-
     }
 }

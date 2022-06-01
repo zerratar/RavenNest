@@ -1,0 +1,144 @@
+﻿<div class="user">
+    <h1>
+        
+        @if (SelectedUser.Status >= 1)
+        {
+            <span style="color: white; background-color:red;">BANNED</span>
+        }
+        <span> User: </span>
+        <span>@SelectedUser.UserName</span> <span><img src="/api/twitch/logo/@(SelectedUser.UserId)" class="profile-picture" /></span>
+
+    </h1>
+
+    <div class="user-details">
+        <div class="user-detail-row">
+            <div class="user-profile">
+                
+            </div>
+        </div>
+        <div class="user-detail-row">
+            <span>Twitch User Id: </span><span>@SelectedUser.UserId</span>
+        </div>
+        <div class="user-detail-row">
+            <span>Email:</span> <span>@SelectedUser.Email</span>
+        </div>
+        <div class="user-detail-row">
+            <span>Patreon:</span>
+            @if (EditingUserPatreon)
+            {
+                <select class="clan-role-selector" @onchange="SelectedPatreonChanged">
+                    @for (var i = 0; i < patreonNames.Length; ++i)
+                    {
+                        if (SelectedUser.PatreonTier == i)
+                        {
+                            <option id="@i" value="@i" selected>
+                                @(i >= patreonNames.Length ? patreonNames[patreonNames.Length - 1] : patreonNames[i])
+                            </option>
+                        }
+                        else
+                        {
+                            <option id="@i" value="@i">
+                                @(i >= patreonNames.Length?@patreonNames[patreonNames.Length - 1]:patreonNames[i])
+                            </option>
+                        }
+                    }
+                </select>
+                <span class="fas fa-check" @onclick="UpdateUserPatreon"></span>
+                <span class="fas fa-times" @onclick="CancelEditUserPatreon"></span>
+            }
+            else
+            {
+                var i = SelectedUser.PatreonTier ?? 0;
+                if (i >= patreonNames.Length)
+                {
+                    <span>@patreonNames[patreonNames.Length - 1]</span>
+                }
+                else
+                {
+                    <span>@patreonNames[i]</span>
+                    <button class="link-button" @onclick="(()=> EditPatreon())">Edit</button>
+                }
+            }
+        </div>
+        <div class="user-detail-row">
+            <span>Admin: </span><span>@SelectedUser.IsAdmin</span>
+        </div>
+        <div class="user-detail-row">
+            <span>Moderator: </span><span>@SelectedUser.IsModerator</span>
+        </div>
+        <div class="user-detail-row">
+            <span>Hidden In HighScore:</span> <input type="checkbox" value="@SelectedUser.IsHiddenInHighscore" @onchange="ev => IsHiddenInHighscoreChanged(ev.Value)"></input>
+        </div>
+        <div class="user-detail-row">
+            <div class="clan">
+                <span>Clan:</span>
+                <div class="clan-detail">
+                    @if (SelectedUser.HasClan)
+                    {
+                        @if (!string.IsNullOrEmpty(SelectedUser.Clan.Logo))
+                        {
+                            <img src="@SelectedUser.Clan.Logo" class="clan-logo" />
+                        }
+                        else
+                        {
+                            <img src="/api/twitch/logo/@SelectedUser.UserId" class="clan-logo" />
+                        }
+                        @if (!reloadingClanLogo)
+                        {
+                            <a class="refresh-logo" @onclick="ReloadClanLogo"><i class="fas fa-sync"></i></a>
+                        }
+                        <div class="clan-created">
+                            <span>Created on:</span> @SelectedUser.Clan.Created
+                        </div>
+                        <div class="clan-name">
+                            <span>Name:</span>
+                            <span>@SelectedUser.Clan.Name</span>
+                        </div>
+                        <div class="clan-exp">
+                            <span>Exp:</span> @SelectedUser.Clan.Experience
+                        </div>
+                        <p class="clan-level">Level <span>@SelectedUser.Clan.Level</span></p>
+                    }
+                </div>
+                @if (SelectedUser.HasClan && !SelectedUser.Clan.CanChangeName)
+                {
+                    <button class="link-button" @onclick="(()=> ResetClanNameChangeCounter())">Allow Clan Rename</button>
+                }
+
+            </div>
+        </div>
+        <div class="user-detail-row">
+            <span>Remarks/Comments: </span>
+            @if (EditingUserRemark)
+            {
+                <input type="text" class="form-inline" @bind-value="editUserRemarkComment" />
+                <button @onclick="ApplyUserRemark" class="btn ok">Save</button>
+                <button @onclick="CancelEditRemark" class="btn cancel">Cancel</button>
+            }
+            else
+            {
+                @if (!string.IsNullOrEmpty(SelectedUser.Comment))
+                {
+                    <span>@SelectedUser.Comment</span>
+                    <button class="link-button edit" @onclick="(()=> EditRemark())"><i class="fa-solid fa-comment-pen"></i></button>
+                }
+                else
+                {
+                    <button class="link-button" @onclick="(()=> EditRemark())"><i class="fa-solid fa-comment-plus"></i></button>
+                }
+            }
+        </div>
+    </div>
+    <br />
+    <div class="admin-controls">
+        @if (SelectedUser.Status >= 1)
+        {
+            <button class="link-button" @onclick="(()=> UnbanUser())">Unban</button>
+        }
+        else
+        {
+            <button class="link-button" @onclick="(()=> BanUser())">Ban</button>
+        }
+    </div>
+</div>
+

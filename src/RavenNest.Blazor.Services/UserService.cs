@@ -71,7 +71,7 @@ namespace RavenNest.Blazor.Services
         {
             return await Task.Run(() =>
             {
-                var players = playerManager.GetFullPlayers();
+                var players = playerManager.GetWebsiteAdminPlayers();
                 var users = GetUsers(players);
                 return users.AsList(x => x.Created >= start && x.Created <= end);
             });
@@ -105,7 +105,7 @@ namespace RavenNest.Blazor.Services
         {
             return await Task.Run(() =>
             {
-                var players = playerManager.GetFullPlayers();
+                var players = playerManager.GetWebsiteAdminPlayers();
                 var users = GetUsers(players);
                 if (string.IsNullOrEmpty(searchText))
                 {
@@ -125,7 +125,7 @@ namespace RavenNest.Blazor.Services
         {
             return await Task.Run(() =>
             {
-                var players = playerManager.GetFullPlayers();
+                var players = playerManager.GetWebsiteAdminPlayers();
                 var users = GetUsers(players);
                 if (string.IsNullOrEmpty(searchText))
                 {
@@ -252,6 +252,10 @@ namespace RavenNest.Blazor.Services
                     CanChangeName = clan.CanChangeName,
                     NameChangeCount = clan.NameChangeCount,
                     Level = clan.Level,
+                    Name = clan.Name,
+                    Created = clan.Created,
+                    Logo = clan.Logo,
+                    Experience = clan.Experience
                 };
             }
 

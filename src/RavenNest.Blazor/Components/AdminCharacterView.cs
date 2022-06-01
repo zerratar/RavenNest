@@ -3,7 +3,7 @@ using RavenNest.BusinessLogic.Extended;
 
 namespace RavenNest.Blazor.Components
 {
-    public partial class PlayerAdminView : ComponentBase
+    public partial class AdminCharacterView : ComponentBase
     {
         [Inject]
         Services.PlayerService PlayerService { get; set; }

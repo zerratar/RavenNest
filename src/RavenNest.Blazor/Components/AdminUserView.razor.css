@@ -1,0 +1,27 @@
+﻿/*a.refresh-logo {
+    position: absolute;
+    margin-top: 53px;
+    background-color: black;
+    color: white !important;
+    padding: 0 5px 0 5px;
+    margin-left: 50px;
+    cursor: pointer;
+}*/
+
+.clan-logo {
+    width: 64px;
+    height: 64px;
+}
+
+.profile-picture {
+    width: 64px;
+    height: 64px;
+}
+
+button.tab-link {
+    border: 0;
+    padding: 10px;
+    outline: 0;
+    display: flex;
+    margin: 5px;
+}

@@ -10,31 +10,33 @@
     </div>
     <div class="total-players"><span>@totalCount</span> users</div>
 </div>
-<table class="player-table">
-    <thead>
-        <tr>
-            <th></th>
-            <th>UserId</th>
-            <th>UserName</th>
-            <th>Email</th>
-            <th>Patreon</th>
-            <th>Characters</th>
-            <th>Admin</th>
-            <th>Mod</th>
-        </tr>
-    </thead>
-    <tbody>
 
-        @if (string.IsNullOrEmpty(searchModel.Query))
-        {
-            <div>Enter search for ID, username, email, or character name</div>
-        }
-        else if (users == null || loading)
-        {
-            <LoadIndicator></LoadIndicator>
-        }
-        else
-        {
+
+@if (string.IsNullOrEmpty(searchModel.Query))
+{
+    <div>Enter search for ID, username, email, or character name</div>
+}
+else if (users == null || loading)
+{
+    <LoadIndicator></LoadIndicator>
+}
+else
+{
+    <table class="player-table">
+        <thead>
+            <tr>
+                <th></th>
+                <th>UserId</th>
+                <th>UserName</th>
+                <th>Email</th>
+                <th>Patreon</th>
+                <th>Characters</th>
+                <th>Admin</th>
+                <th>Mod</th>
+                <th>Hidden Highscore</th>
+            </tr>
+        </thead>
+        <tbody>
             @foreach (var user in users)
             {
                 <tr class="player-row">
@@ -51,15 +53,17 @@
                         @user.Email
                     </td>
                     <td>
-                      @if(user.PatreonTier != null && user.PatreonTier >= patreonNames.Length)
-                      {
-                        @patreonNames[patreonNames.Length - 1]
-                      } else {
-                        @patreonNames[user.PatreonTier?? 0]
-                      }
-            </td>
-            <td>
-                @if (@user.Characters.Count > 0)
+                        @if (user.PatreonTier != null && user.PatreonTier >= patreonNames.Length)
+                        {
+                            @patreonNames[patreonNames.Length - 1]
+                        }
+                        else
+                        {
+                            @patreonNames[user.PatreonTier?? 0]
+                        }
+                    </td>
+                    <td>
+                        @if (@user.Characters.Count > 0)
                         {
                             <ul>
                                 @foreach (var character in @user.Characters)
@@ -78,6 +82,6 @@
                     </td>
                 </tr>
             }
-        }
-    </tbody>
-</table>
+        </tbody>
+    </table>
+}
