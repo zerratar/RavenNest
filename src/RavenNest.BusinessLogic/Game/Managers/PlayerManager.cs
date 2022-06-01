@@ -2093,6 +2093,17 @@ namespace RavenNest.BusinessLogic.Game
             })
             .SelectWhere(x => x.Character != null && x.User != null, x => x.User.MapForAdmin(gameData, x.Character));
         }
+        public IReadOnlyList<WebsiteAdminPlayer> GetAdminWebsitePlayers(Guid userId)
+        {
+            var user = gameData.GetUser(userId);
+            var chars = gameData.GetCharactersByUserId(user.Id);
+            return chars.Select(x => new
+            {
+                User = user,
+                Character = x
+            })
+            .SelectWhere(x => x.Character != null && x.User != null, x => x.User.MapForAdmin(gameData, x.Character));
+        }
 
         public IReadOnlyList<Player> GetPlayerWithoutAdmins()
         {
