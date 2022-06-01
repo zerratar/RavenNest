@@ -90,5 +90,6 @@ namespace RavenNest.BusinessLogic.Game
         int GetHighscore(SessionToken sessionToken, Guid characterId, string skillName);
         void SendPlayerTaskToGame(DataModels.GameSession activeSession, Character character, string task, string taskArgument);
         void RemoveUserFromSessions(User user);
+        IReadOnlyList<WebsiteAdminPlayer> GetAdminWebsitePlayers(Guid userId);
     }
 }

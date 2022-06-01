@@ -1,0 +1,57 @@
+﻿@layout AdminLayout
+@page "/admin/others"
+@using System.Threading
+@using Blazored.Typeahead
+@using RavenNest.Models
+@using RavenNest.Blazor.Services
+@inject RavenNest.Blazor.Services.UserService UserService
+@inject NavigationManager NavigationManager
+
+<h3>Other Admin Tools</h3>
+
+<ul>
+    <li>
+        <NavLink class="link" href="/api/admin/backup/download" Match="NavLinkMatch.All">
+            <span class="oi oi-arrow-left" aria-hidden="true"></span> Download Latest Backup
+        </NavLink>
+    </li>
+    <li>
+        <span>Generate New State_Data.Json</span> <BlazoredTypeahead SearchMethod="SearchUser"
+                           @bind-Value="selectedUser"
+                           @onselectionchange="SelectedUserChanged">
+            <SelectedTemplate>
+                @context.UserName
+            </SelectedTemplate>
+            <ResultTemplate>
+                @context.UserName
+            </ResultTemplate>
+        </BlazoredTypeahead>
+
+        @if (selectedUser != null)
+        {
+            <button @onclick="GenerateStateData" class="btn btn-primary">Generate</button>
+        }
+    </li>
+</ul>
+
+@code {
+    private WebsiteAdminUser selectedUser;
+
+    private void SelectedUserChanged()
+    {
+    }
+    private void GenerateStateData()
+    {
+
+        if (selectedUser == null)
+            return;
+
+        NavigationManager.NavigateTo("/api/admin/state-data/" + selectedUser.UserName, true);
+    }
+
+    private async Task<IEnumerable<WebsiteAdminUser>> SearchUser(string searchText)
+    {
+        var result = (await UserService.SearchForPlayersAsync(searchText));
+        return result.ToList();
+    }
+}

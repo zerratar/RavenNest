@@ -85,12 +85,13 @@ namespace RavenNest.Blazor.Services
 
         public WebsiteAdminUser GetUser(Guid accountId)
         {
-            return GetUser(gameData.GetUser(accountId));
+            return GetUserAndCharacters(gameData.GetUser(accountId));
+
         }
 
         public WebsiteAdminUser GetUser(string twitchUserId)
         {
-            return GetUser(gameData.GetUserByTwitchId(twitchUserId));
+            return GetUserAndCharacters(gameData.GetUserByTwitchId(twitchUserId));
         }
 
         public async Task<PagedCollection<WebsiteAdminUser>> GetUserPageAsync(string search, int pageIndex, int pageSize)
@@ -187,6 +188,16 @@ namespace RavenNest.Blazor.Services
             }
 
             return output.Values.ToList();
+        }
+
+        private WebsiteAdminUser GetUserAndCharacters(DataModels.User userData)
+        {
+            var user = GetUser(userData);
+            var characters = playerManager.GetAdminWebsitePlayers(userData.Id);
+
+            user.Characters = characters.ToList();
+
+            return user;
         }
 
         private WebsiteAdminUser GetUser(DataModels.User userData)
