@@ -1,0 +1,48 @@
+﻿@layout AdminLayout
+@page "/admin/others"
+@using System.Threading
+
+<h3>Other Admin Controls</h3>
+
+<ul>
+    <li>
+        <NavLink class="nav-link" href="/backup/download" Match="NavLinkMatch.All">
+            <span class="oi oi-arrow-left" aria-hidden="true"></span> Download Latest Backup
+        </NavLink>
+    </li>
+    <li>
+        <div class="dropdown">
+            <button class="dropdown-button dropdown-toggle" @onclick=HandleClick @onfocus=HandleFocus @onblur=HandleBlur></button>
+            <div class="dropdown-menu @(show ? "show" : "")" @onfocusin=HandleFocus @onfocusout=HandleBlur tabindex="-1">
+                <input class="form-control form-control-sm" placeholder="type filter..." />
+                <div class="scrollable-menu">
+                    <table>
+                        ...
+                    </table>
+                </div>
+            </div>
+        </div>
+        https://www.ravenfall.stream/api/admin/state-data/
+    </li>
+</ul>
+
+@code {
+    bool show;
+    CancellationTokenSource tokenSource;
+    void HandleClick() => show = !show;
+    async Task HandleBlur(FocusEventArgs a)
+    {
+        tokenSource = new CancellationTokenSource();
+        await Task.Factory.StartNew(async () =>
+        {
+            await Task.Delay(100);
+            show = false;
+            await InvokeAsync(StateHasChanged);
+        }, tokenSource.Token);
+    }
+    void HandleFocus(FocusEventArgs a)
+    {
+        if (tokenSource is CancellationTokenSource)
+            tokenSource.Cancel();
+    }
+}
