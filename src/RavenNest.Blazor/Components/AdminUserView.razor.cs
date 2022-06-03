@@ -101,36 +101,5 @@ namespace RavenNest.Blazor.Components
         {
             EditingUserPatreon = false;
         }
-
-        private async Task BanUser()
-        {
-            if (await UserService.SetUserStatusAsync(SelectedUser.Id, BusinessLogic.Data.AccountStatus.PermanentlySuspended))
-            {
-                SelectedUser.Status = 2;
-                await InvokeAsync(StateHasChanged);
-            }
-        }
-
-        private async Task UnbanUser()
-        {
-            if (await UserService.SetUserStatusAsync(SelectedUser.Id, BusinessLogic.Data.AccountStatus.OK))
-            {
-                SelectedUser.Status = 0;
-                await InvokeAsync(StateHasChanged);
-            }
-        }
-        private async void ReloadClanLogo()
-        {
-            reloadingClanLogo = true;
-            await InvokeAsync(StateHasChanged);
-
-            if (SelectedUser.HasClan)
-            {
-                await LogoService.UpdateClanLogoAsync(SelectedUser.UserId);
-
-                reloadingClanLogo = false;
-                await InvokeAsync(StateHasChanged);
-            }
-        }
     }
 }

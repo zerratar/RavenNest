@@ -38,7 +38,9 @@ button.tab-link.active {
 }
 span.character-index:before {
     content: "#";
+    padding-left: 0px;
 }
 span.character-level:before {
     content: "level ";
 }
+

@@ -1,0 +1,217 @@
+﻿.dialog-header {
+    display: flex;
+    justify-content: space-between;
+}
+.item-soulbound {
+    color: rgba(0,0,0,0.5);
+    font-style: italic;
+    font-size: 10pt;
+}
+.enchantment .item-stat-name, .enchantment .item-stat-value {
+    color: #27ae60;
+}
+span.item-stat-enchantment {
+    margin-left: 5px;
+    color: #27ae60;
+}
+.item-enchantment-header {
+    font-weight: bold;
+    margin-top: 10px;
+    font-size: 10pt;
+    color: #27ae60;
+}
+
+.item-stat, .item-requirement {
+    display: flex;
+    justify-content: space-between;
+}
+
+.item-stat-value {
+    font-weight: bold;
+}
+
+.item-details-dialog-back {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.7);
+}
+
+.item-actions {
+    display: flex;
+    justify-content: space-evenly;
+    margin-top: 5px;
+    background-color: #f4f4f4;
+    padding: 15px;
+}
+
+.item-actions button.btn {
+    font-weight: 300;
+    font-size: 10pt;
+    box-shadow: 0px 2px 4px rgb(0 0 0 / 25%);
+}
+
+button.btn.btn-action {
+    background-color: white;
+    cursor: pointer;
+}
+
+button.btn.btn-action:hover,
+button.btn.btn-action:active {
+    background-color: #e0f1ff;
+}
+
+.item-details-content {
+    padding: 25px;
+    padding-top: 0;
+}
+
+.item-details-dialog .item-name {
+    font-size: 17pt;
+}
+
+.item-details-dialog .dialog-header {
+    padding: 25px 25px 0px 25px;
+}
+
+.item-details-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    background-color: white;
+    /*padding: 25px;*/
+    transform: translate(-50%, -50%);
+    box-shadow: 5px 5px 10px rgb(0 0 0 / 25%);
+    max-width: 100%;
+    width: 520px;
+    z-index: 10;
+}
+
+.item-details-dialog .item-image {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    justify-items: center;
+    width: 100%;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.item-details-dialog .item-image img {
+    width: 100px;
+    /* height: 100px; */
+    margin-left: auto;
+    margin-right: auto;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+}
+
+
+.player-inventory {
+    padding-top: 25px;
+    margin-top: 25px;
+    padding-bottom: 25px;
+}
+
+.inventory-items {
+    display: flex;
+    flex-flow: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.inventory .inventory-item {
+    margin: 10px;
+    margin-bottom: -15px;
+    cursor: pointer;
+}
+
+.inventory-item.equipped {
+    margin: 10px;
+    cursor: pointer;
+}
+
+.item-amount {
+    position: relative;
+    top: -28px;
+    right: -46px;
+    background-color: rgba(255,255,255,0.7);
+    width: 30px;
+    color: #353535;
+    border: 1px solid #ffffff;
+    padding: 0;
+    line-height: 2;
+    text-align: center;
+    font-weight: 500;
+    font-size: 10pt;
+}
+
+.inventory-item .item-image img {
+    width: 75px;
+    height: 75px;
+    max-width: 100%;
+    padding: 5px;
+    background-color: whitesmoke;
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
+}
+
+.inventory-item.equipped .item-image img {
+}
+
+
+button.btn.btn-secondary {
+    margin-left: 10px;
+}
+
+.clan-member-invite {
+    position: absolute;
+    background-color: #ffffff;
+    width: 100%;
+    left: 50%;
+    width: 620px;
+    max-width: 100%;
+    transform: translateX(-50%);
+    padding: 15px;
+    box-shadow: 5px 5px 20px rgba(0,0,0,0.25);
+    display: flex;
+    flex-flow: column;
+    top: 50%;
+}
+
+.clan-member-invite-controls {
+    display: flex;
+    flex-flow: row;
+    justify-content: flex-end;
+    margin-top: 15px;
+}
+
+.clan-member-invite-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.clan-member-invite-header h2 {
+    font-weight: 300;
+    font-size: 18pt;
+    text-align: center;
+    width: 100%;
+    position: relative;
+    top: 5px;
+    margin-bottom: 25px;
+}
+
+.clan-member-invite-header button.close {
+    margin-top: -20px;
+}
+
+input.blazored-typeahead__input {
+    border-radius: 0;
+}
+
+.blazored-typeahead {
+    border-radius: 0;
+    margin-top: 15px;
+}

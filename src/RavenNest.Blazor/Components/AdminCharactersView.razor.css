@@ -1,0 +1,129 @@
+﻿.characters-table {
+    display: flex;
+    align-items: flex-start;
+}
+
+    .characters-table .character-col {
+        flex: 1;
+    }
+
+@media screen and (max-width: 400px) {
+
+    .character-col {
+        width: 100%;
+        margin: 0 0 10px 0;
+    }
+}
+
+.character-index {
+    font-size: 14pt;
+    font-weight: 300;
+}
+
+.character-level {
+    font-size: 14pt;
+}
+
+span.character-index:before {
+    content: "#";
+    padding-left: 0px;
+}
+
+span.character-level:before {
+    content: "level ";
+}
+
+.character-control button.btn-icon {
+    background-color: #141414;
+    color: white;
+    max-height: 30px;
+}
+
+.training-skill {
+    margin-bottom: 10px;
+    padding: 5px;
+    background-color: #f6f6f6;
+    border: 2px solid #ebebeb;
+    text-align: center;
+}
+
+.skill-label {
+    text-align: left;
+    text-transform: uppercase;
+}
+
+button.btn-icon {
+    background-color: transparent;
+    border: 0;
+    color: #333;
+    margin-left: 10px;
+}
+
+
+.character-skill-row.active button.btn-icon {
+    color: white;
+}
+
+button.btn-icon:active,
+button.btn-icon:focus {
+    outline: 0;
+    background-color: rgba(0,0,0,0.15);
+}
+
+.last-updated {
+    text-align: center;
+    font-size: 9pt;
+}
+
+.character-header.char-row {
+    padding: 0px;
+    min-height: 100px;
+}
+
+.character-control.char-row {
+    padding: 0px;
+    min-height: 70px;
+    
+}
+
+.char-row {
+    BOX-SIZING: border-box;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 10px 10px;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-pack: space-evenly;
+    -ms-flex-pack: space-evenly;
+    justify-content: space-evenly;
+    content: "";
+    clear: both;
+    max-height: 47px;
+    min-height: 47px;
+    border-right: 1px solid #f3f3f3;
+}
+
+.character-skill-row {
+    border-bottom: 1px solid #f3f3f3;
+}
+
+    .character-skill-row.active {
+        color: white;
+        background-image: linear-gradient(90deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    }
+
+        .character-skill-row.active .skill-progress {
+            background-color: rgba(244,244,244, 0.05);
+        }
+
+
+    .character-skill-row:nth-of-type(2n+1) {
+        background-color: #fafafa;
+    }
+
+@media screen and (max-width: 400px) {
+    .character-col {
+        width: 100%;
+    }
+}

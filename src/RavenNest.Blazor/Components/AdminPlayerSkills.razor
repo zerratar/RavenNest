@@ -1,0 +1,50 @@
+﻿@foreach (var skill in Player.Skills.AsList())
+{
+    var isActive = IsTrainingSkill(skill);
+    <div class="character-skill-row char-row@(isActive ? " active" : "")" title="@(isActive?"You're currently training this skill." : "")">
+        <div class="skill-progress" title="@ExpDisplay(skill.Experience)">
+            <div class="skill-progress-value" style="@StyleWidth((int)(skill.Percent*120))"></div>
+            <div class="skill-progress-percent">@Math.Round(skill.Percent * 100, 2)%</div>
+        </div>
+
+        @if (skill.Name == "Health")
+        {
+            <div class="skill-value"><span class="current-health" title="Current Health">@currentHealth</span> / <span class="max-health">@skill.Level</span></div>
+        }
+        else
+        {
+            <div class="skill-value">@skill.Level</div>
+        }
+
+        @if (CanModify)
+        {
+            <div class="skill-management">
+                <button @onclick="()=> ShowModifySkill(skill)" class="btn-icon"><i class="fa fa-pen"></i></button>
+            </div>
+        }
+    </div>
+}
+
+
+@if (modifySkillDialogVisible && modifyingSkill != null)
+{
+    <div class="skill-modify-modal">
+        <div class="skill-modify-modal-header">
+            <h2>@modifyingSkill.Name</h2>
+            <button class="close" @onclick="HideModifySkill">x</button>
+        </div>
+
+        <label for="skill-level" class="input-label">Set the new <b>Level</b></label>
+        <input name="skill-level" type="number" class="input" value="@modifyingSkill.Level" @onchange="OnLevelModified" />
+
+        <label for="skill-experience" class="input-label">Set the new <b>Experience</b>%</label>
+        <input name="skill-experience" type="number" class="input" value="@((int)(modifyingSkill.Percent * 100))" @onchange="OnExperienceModified" />
+
+        <div class="skill-modify-modal-controls">
+            <button @onclick="ApplyModifySkill" class="btn btn-primary">Save</button>
+            <button @onclick="HideModifySkill" class="btn btn-secondary">Cancel</button>
+        </div>
+    </div>
+}
+
+

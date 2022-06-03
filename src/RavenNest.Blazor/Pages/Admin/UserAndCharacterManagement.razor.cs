@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.Models;
+using static RavenNest.Blazor.Components.AdminCharactersView;
 
 namespace RavenNest.Blazor.Pages.Admin
 {
@@ -23,6 +24,7 @@ namespace RavenNest.Blazor.Pages.Admin
 
         [Parameter]
         public string Id { get; set; }
+        private CharacterViewState ViewState { get; set; }
 
 
         private WebsiteAdminUser SelectedUser { get; set; }
@@ -45,5 +47,59 @@ namespace RavenNest.Blazor.Pages.Admin
                 NavigationManager.NavigateTo("/login");
             }
         }
+        private async Task BanUser()
+        {
+            if (await UserService.SetUserStatusAsync(SelectedUser.Id, BusinessLogic.Data.AccountStatus.PermanentlySuspended))
+            {
+                SelectedUser.Status = 2;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+        private async Task UnbanUser()
+        {
+            if (await UserService.SetUserStatusAsync(SelectedUser.Id, BusinessLogic.Data.AccountStatus.OK))
+            {
+                SelectedUser.Status = 0;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+        private void ShowInventory()
+        {
+            ViewState = CharacterViewState.Inventory;
+        }
+
+        private void ShowSkills()
+        {
+            ViewState = CharacterViewState.Skills;
+        }
+
+        private void ShowClan()
+        {
+            ViewState = CharacterViewState.Clan;
+        }
+
+        private void ShowMap()
+        {
+            ViewState = CharacterViewState.Map;
+        }
+
+        private void ShowCustomization()
+        {
+            ViewState = CharacterViewState.Customization;
+        }
+        private string SelectedClass(CharacterViewState state)
+        {
+            return ViewState == state ? "active" : "";
+        }
+        /*        protected override void OnParametersSet()
+                {
+                    if (SelectedPlayer != null && CanManage)
+                    {
+                        PlayerService.SetActiveCharacter(SelectedPlayer);
+                    }
+                }*/
+
     }
 }

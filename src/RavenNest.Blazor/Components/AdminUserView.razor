@@ -1,21 +1,19 @@
-﻿<div class="user">
-    <h1>
-        
+﻿<div class="user-header">
+<h1>
+
         @if (SelectedUser.Status >= 1)
         {
             <span style="color: white; background-color:red;">BANNED</span>
         }
         <span> User: </span>
-        <span>@SelectedUser.UserName</span> <span><img src="/api/twitch/logo/@(SelectedUser.UserId)" class="profile-picture" /></span>
+        <span>@SelectedUser.UserName</span> 
 
     </h1>
-
-    <div class="user-details">
-        <div class="user-detail-row">
-            <div class="user-profile">
-                
-            </div>
-        </div>
+</div>
+<div class="user-row">
+    <div class="user-col">
+        <h2>Details</h2>
+        <div class="user-detail-row"><span><img src="/api/twitch/logo/@(SelectedUser.UserId)" class="profile-picture" /></span></div>
         <div class="user-detail-row">
             <span>Twitch User Id: </span><span>@SelectedUser.UserId</span>
         </div>
@@ -70,44 +68,6 @@
             <span>Hidden In HighScore:</span> <input type="checkbox" value="@SelectedUser.IsHiddenInHighscore" @onchange="ev => IsHiddenInHighscoreChanged(ev.Value)"></input>
         </div>
         <div class="user-detail-row">
-            <div class="clan">
-                <span>Clan:</span>
-                <div class="clan-detail">
-                    @if (SelectedUser.HasClan)
-                    {
-                        @if (!string.IsNullOrEmpty(SelectedUser.Clan.Logo))
-                        {
-                            <img src="@SelectedUser.Clan.Logo" class="clan-logo" />
-                        }
-                        else
-                        {
-                            <img src="/api/twitch/logo/@SelectedUser.UserId" class="clan-logo" />
-                        }
-                        @if (!reloadingClanLogo)
-                        {
-                            <a class="refresh-logo" @onclick="ReloadClanLogo"><i class="fas fa-sync"></i></a>
-                        }
-                        <div class="clan-created">
-                            <span>Created on:</span> @SelectedUser.Clan.Created
-                        </div>
-                        <div class="clan-name">
-                            <span>Name:</span>
-                            <span>@SelectedUser.Clan.Name</span>
-                        </div>
-                        <div class="clan-exp">
-                            <span>Exp:</span> @SelectedUser.Clan.Experience
-                        </div>
-                        <p class="clan-level">Level <span>@SelectedUser.Clan.Level</span></p>
-                    }
-                </div>
-                @if (SelectedUser.HasClan && !SelectedUser.Clan.CanChangeName)
-                {
-                    <button class="link-button" @onclick="(()=> ResetClanNameChangeCounter())">Allow Clan Rename</button>
-                }
-
-            </div>
-        </div>
-        <div class="user-detail-row">
             <span>Remarks/Comments: </span>
             @if (EditingUserRemark)
             {
@@ -129,16 +89,53 @@
             }
         </div>
     </div>
-    <br />
-    <div class="admin-controls">
-        @if (SelectedUser.Status >= 1)
+    <div class="user-col">
+        <h2>Clan</h2>
+
+        @if (SelectedUser.HasClan)
         {
-            <button class="link-button" @onclick="(()=> UnbanUser())">Unban</button>
+            <div class="clan-detail-row">
+                @if (!string.IsNullOrEmpty(SelectedUser.Clan.Logo))
+                {
+                    <img src="@SelectedUser.Clan.Logo" class="clan-logo" />
+                }
+                else
+                {
+                    <img src="/api/twitch/logo/@SelectedUser.UserId" class="clan-logo" />
+                }
+            </div>
+            <div class="clan-detail-row">
+                <div class="clan-created">
+                    <span>Created on:</span> @SelectedUser.Clan.Created
+                </div>
+            </div>
+            <div class="clan-detail-row">
+                <div class="clan-name">
+                    <span>Name:</span>
+                    <span>@SelectedUser.Clan.Name</span>
+                </div>
+            </div>
+            <div class="clan-detail-row">
+                <div class="clan-exp">
+                    <span>Exp:</span> @SelectedUser.Clan.Experience
+
+                </div>
+            </div>
+            <div class="clan-detail-row">
+                <p class="clan-level">Level <span>@SelectedUser.Clan.Level</span></p>
+            </div>
         }
         else
         {
-            <button class="link-button" @onclick="(()=> BanUser())">Ban</button>
+            <div class="clan-detail-row">
+                <span>Does not own a clan</span>
+            </div>
         }
+
     </div>
+    @if (SelectedUser.HasClan && !SelectedUser.Clan.CanChangeName)
+    {
+        <button class="link-button" @onclick="(()=> ResetClanNameChangeCounter())">Allow Clan Rename</button>
+    }
 </div>
 

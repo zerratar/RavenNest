@@ -16,6 +16,7 @@
 .profile-picture {
     width: 64px;
     height: 64px;
+    padding-top: 3px;
 }
 
 button.tab-link {
@@ -24,4 +25,55 @@ button.tab-link {
     outline: 0;
     display: flex;
     margin: 5px;
+}
+.user-col {
+    float: left;
+    width: 50%;
+    padding: 10px;
+}
+.user-row {
+    content: "";
+    display: flex;
+    clear: both;
+    justify-content: space-evenly;
+    align-items: stretch;
+}
+@media screen and (max-width: 400px) {
+    .user-col {
+        width: 100%;
+    }
+}
+
+button.btn:hover, button.btn:active {
+    background-color: #e0f1ff;
+}
+
+button.btn {
+    font-weight: 300;
+    font-size: 10pt;
+    box-shadow: 0px 2px 4px rgb(0 0 0 / 25%);
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+button.btn.ok:hover, button.btn.ok:active {
+    background: #961027;
+    background: -webkit-linear-gradient(to bottom, #470f6f, #8b0f24);
+    background: linear-gradient(to bottom, #470f6f, #8b0f24);
+}
+
+button.btn.cancel:hover, button.btn.cancel:active {
+}
+
+button.link-button.edit {
+    background-color: #0045c1;
+}
+
+button.link-button {
+    background-color: #0e0e0f;
+    color: #fff;
+    border: 0;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin: 2px;
 }
