@@ -60,6 +60,29 @@ namespace RavenNest.BusinessLogic.Extended
             return skills;
         }
 
+        public IReadOnlyDictionary<string, PlayerSkill> AsDirectionary()
+        {
+            var props = GetProperties();
+            var skills = new Dictionary<string, PlayerSkill>();
+            var names = props.Values.Where(x => x.Property.Name.EndsWith("Level")).OrderBy(x => x.SortIndex).Select(x => x.Property.Name.Replace("Level", ""));
+            foreach (var name in names)
+            {
+                var n = name;
+                var experience = (double)props[n].Property.GetValue(this);
+                var level = (int)props[n + "Level"].Property.GetValue(this);
+                var percent = (float)props[n + "Procent"].Property.GetValue(this);
+                skills.Add(n, new PlayerSkill
+                {
+                    Name = n,
+                    Experience = experience,
+                    Level = level,
+                    Percent = percent
+                });
+            }
+
+            return skills;
+        }
+
         private static ConcurrentDictionary<string, SkillPropertyInfo> propertyCache = new ConcurrentDictionary<string, SkillPropertyInfo>();
         private static ConcurrentDictionary<string, SkillPropertyInfo> GetProperties()
         {

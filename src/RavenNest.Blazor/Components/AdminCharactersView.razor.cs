@@ -24,6 +24,12 @@ namespace RavenNest.Blazor.Components
         private bool CanModify { get => session != null && session.Administrator; }
         private string TrainingSkill { get; set; }
 
+        private bool modifySkillDialogVisible { get; set; }
+        private int modifyingSkillLevel { get; set; } = 0;
+        private int modifyingSkillExperiencePercent { get; set; } = 0;
+        private WebsiteAdminPlayer modifyingPlayer { get; set; }
+
+        private PlayerSkill modifyingSkill;
 
         public enum CharacterViewState
         {
@@ -141,8 +147,71 @@ namespace RavenNest.Blazor.Components
 
             return false;
         }
+        private string ExpDisplay(double value)
+        {
+            return value + " exp";
+        }
+        private string StyleWidth(int value)
+        {
+            return $"width: {value}px";
+        }
 
+        public async void ApplyModifySkill()
+        {
 
+            var result = await PlayerService.UpdatePlayerSkillAsync(modifyingPlayer.Id, modifyingSkill.Name, modifyingSkillLevel, modifyingSkillExperiencePercent / 100f);
+
+            HideModifySkill();
+
+            if (result)
+            {
+                //this.player = await PlayerService.GetPlayerAsync(player.Id);
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+        public void HideModifySkill()
+        {
+            modifySkillDialogVisible = false;
+            modifyingSkill = null;
+            modifyingPlayer = null;
+        }
+
+        public void ShowModifySkill(WebsiteAdminPlayer player, PlayerSkill skill)
+        {
+            modifySkillDialogVisible = true;
+            modifyingSkill = skill;
+            modifyingSkillLevel = skill.Level;
+            modifyingSkillExperiencePercent = (int)(skill.Percent * 100);
+            modifyingPlayer = player;
+        }
+        private void OnLevelModified(ChangeEventArgs evt)
+        {
+            if (evt.Value != null && int.TryParse(evt.Value?.ToString() ?? modifyingSkill.Level.ToString(), out var newLevel))
+            {
+                modifyingSkillLevel = newLevel;
+            }
+        }
+
+        private void OnExperienceModified(ChangeEventArgs evt)
+        {
+            if (evt.Value != null && int.TryParse(evt.Value?.ToString() ?? "0", out var newExpPercent))
+            {
+                modifyingSkillExperiencePercent = newExpPercent;
+            }
+        }
+
+        private int currentHealth(WebsiteAdminPlayer player)
+        {
+            if (player.State != null)
+            {
+                return player.State.Health;
+            }
+            else
+            {
+                return player.Skills.HealthLevel;
+            }
+        }
     }
 
 }
