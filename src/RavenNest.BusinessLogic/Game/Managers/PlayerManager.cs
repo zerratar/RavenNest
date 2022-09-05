@@ -1593,6 +1593,37 @@ namespace RavenNest.BusinessLogic.Game
 
             await TrySendToExtensionAsync(character, data);
         }
+        public AddItemInstanceResult AddItemInstanceDetailed(SessionToken token, string userId, Models.InventoryItem instance)
+        {
+            var item = gameData.GetItem(instance.ItemId);
+            if (item == null)
+                return AddItemInstanceResult.NoSuchItem(instance.ItemId);
+
+            var character = GetCharacter(token, userId);
+            if (character == null)
+                return AddItemInstanceResult.BadCharacter(userId);
+
+            if (!integrityChecker.VerifyPlayer(token.SessionId, character.Id, 0))
+                return AddItemInstanceResult.Failed;
+
+            var session = gameData.GetSession(token.SessionId);
+            if (session == null)
+                return AddItemInstanceResult.NoSuchSession();
+
+            var sessionOwner = gameData.GetUser(session.UserId);
+            if (sessionOwner == null || sessionOwner.Status >= 1)
+                return AddItemInstanceResult.NoSuchSession();
+
+            string tag = null;
+            if (item.Category == (int)DataModels.ItemCategory.StreamerToken)
+                tag = sessionOwner.UserId;
+
+            var inventory = inventoryProvider.Get(character.Id);
+            var addedItem = inventory.AddItemInstance(instance, 1);
+            //inventory.EquipBestItems();
+
+            return AddItemInstanceResult.ItemAdded(addedItem.Id);
+        }
 
         public Guid AddItemInstance(SessionToken token, string userId, Models.InventoryItem instance)
         {
@@ -1620,7 +1651,6 @@ namespace RavenNest.BusinessLogic.Game
                 tag = sessionOwner.UserId;
 
             var inventory = inventoryProvider.Get(character.Id);
-
             var addedItem = inventory.AddItemInstance(instance, 1);
             //inventory.EquipBestItems();
 

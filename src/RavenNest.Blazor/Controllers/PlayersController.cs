@@ -211,6 +211,13 @@ namespace RavenNest.Controllers
         {
             return playerManager.AddItemInstance(AssertGetSessionToken(), userId, instance);
         }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{userId}/item-instance-detailed")]
+        public AddItemInstanceResult AddItemInstanceDetailed(string userId, [FromBody] Models.InventoryItem instance)
+        {
+            return playerManager.AddItemInstanceDetailed(AssertGetSessionToken(), userId, instance);
+        }
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/toggle-helmet")]
         public bool UnEquipItem(string userId)
