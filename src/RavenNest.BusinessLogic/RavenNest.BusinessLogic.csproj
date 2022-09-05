@@ -1,33 +1,66 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+
+
   <PropertyGroup>
+
     <TargetFramework>net5.0</TargetFramework>
+
     <LangVersion>7.1</LangVersion>
+
   </PropertyGroup>
 
+
+
   <ItemGroup>
+
     <PackageReference Include="DotNetZip" Version="1.15.0" />
+
     <PackageReference Include="MessagePack" Version="2.4.14-alpha" />
+
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
+
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="5.0.11" />
+
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="5.0.11" />
+
 	<PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="5.0.11" />
+
 	<PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="5.0.12" />
+
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+
 	<PackageReference Include="System.Data.SqlClient" Version="4.8.3" />
-	<PackageReference Include="TwitchLib.Api" Version="3.2.4" />
+
+	<PackageReference Include="TwitchLib.Api" Version="3.6.1" />
+
 	<PackageReference Include="TwitchLib.Api.Helix" Version="3.6.1" />
+
   </ItemGroup>
 
+
+
   <ItemGroup>
+
     <ProjectReference Include="..\RavenNest.DataModels\RavenNest.DataModels.csproj" />
+
     <ProjectReference Include="..\RavenNest.Models\RavenNest.Models.csproj" />
+
   </ItemGroup>
 
+
+
   <ItemGroup>
+
     <Folder Include="Game\Achievements\" />
+
     <Folder Include="Game\Quests\" />
+
     <Folder Include="Telepathy\" />
+
   </ItemGroup>
+
+
 
 </Project>
+
