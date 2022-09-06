@@ -595,19 +595,21 @@ namespace RavenNest.BusinessLogic.Data
                 return items.Entities.FirstOrDefault(x => (ItemCategory)x.Category == ItemCategory.Resource && x.Name.Contains(containsName, StringComparison.OrdinalIgnoreCase));
             }
 
-            var etherCraftingLevel = 280;
-            var lionCraftingLevel = 240;
             var phantomCraftingLevel = 200; // change to 210 ?
-
+            var lionCraftingLevel = 240;
+            var etherCraftingLevel = 280;
+            var atlarusCraftingLevel = 420;//etherCraftingLevel * 1.75;
 
             var ingot = GetItemByCategory(ItemCategory.Resource, "ore ingot");
             var wood = GetItemByCategory(ItemCategory.Resource, "wood plank");
             var gold = GetItemByCategory(ItemCategory.Resource, "gold");
             foreach (var item in items.Entities)
             {
+                var isResource = item.Category == (int)ItemCategory.Resource || item.Type == (int)ItemType.Ore;
+                if (item.Category == (int)ItemCategory.Resource)
+                    continue;
 
                 // Make lionsbane craftable
-
                 var nl = item.Name.ToLower();
                 if (item.RequiredCraftingLevel >= 1000)
                 {
@@ -615,7 +617,9 @@ namespace RavenNest.BusinessLogic.Data
                     item.Craftable = false;
                 }
 
-                if (item.RequiredCraftingLevel < 1000)
+                var isAtlarus = nl.StartsWith("atlarus");
+
+                if (item.RequiredCraftingLevel < 1000 || isAtlarus)
                 {
                     item.Craftable = true;
                     var requirements = GetCraftingRequirements(item.Id) ?? new List<ItemCraftingRequirement>();
@@ -631,7 +635,6 @@ namespace RavenNest.BusinessLogic.Data
                                 }
                             }
                         }
-
                         //continue;
                     }
 
@@ -727,6 +730,16 @@ namespace RavenNest.BusinessLogic.Data
                         resCount = 5;
                         item.RequiredCraftingLevel = etherCraftingLevel;
                     }
+
+                    if (isAtlarus)
+                    {
+                        resType = GetItemByCategory(ItemCategory.Resource, "atlarus light");
+                        ingotCount = 210;
+                        woodCount = woodCount * 42;
+                        //resCount = 2;
+                        item.RequiredCraftingLevel = atlarusCraftingLevel;
+                    }
+
                     switch (type)
                     {
                         case ItemType.Amulet:
