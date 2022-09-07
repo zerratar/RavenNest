@@ -15,7 +15,7 @@ namespace RavenNest.BusinessLogic.Game
         Task<Player> CreatePlayer(string userId, string userName, string identifier);
         Task<bool> RemovePlayerFromActiveSession(SessionToken token, Guid characterId);
         Task<bool> RemovePlayerFromActiveSession(DataModels.GameSession session, Guid characterId);
-        Task<PlayerRestoreResult> AddManyPlayers(SessionToken sessionToken, PlayerRestoreData players);
+        Task<PlayerRestoreResult> RestorePlayersToGame(SessionToken sessionToken, PlayerRestoreData players);
         Task<Player> AddPlayer(SessionToken token, Guid characterId);
         Task<PlayerJoinResult> AddPlayer(SessionToken token, PlayerJoinData playerJoinData);
         Task<PlayerJoinResult> AddPlayer(SessionToken token, string userId, string userName, string identifier = null);

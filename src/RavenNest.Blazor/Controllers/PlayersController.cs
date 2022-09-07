@@ -109,7 +109,7 @@ namespace RavenNest.Controllers
             //{
             //    NullValueHandling = NullValueHandling.Ignore
             //});
-            return playerManager.AddManyPlayers(AssertGetSessionToken(), players);
+            return playerManager.RestorePlayersToGame(AssertGetSessionToken(), players);
         }
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpDelete("{characterId}")]

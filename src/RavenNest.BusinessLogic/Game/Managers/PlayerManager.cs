@@ -353,7 +353,7 @@ namespace RavenNest.BusinessLogic.Game
             return result;
         }
 
-        public async Task<PlayerRestoreResult> AddManyPlayers(SessionToken sessionToken, PlayerRestoreData players)
+        public async Task<PlayerRestoreResult> RestorePlayersToGame(SessionToken sessionToken, PlayerRestoreData players)
         {
             var result = new PlayerRestoreResult();
             var session = gameData.GetSession(sessionToken.SessionId);
@@ -366,8 +366,19 @@ namespace RavenNest.BusinessLogic.Game
             try
             {
                 result.Success = true;
+                var chars = players.Characters ?? new Guid[0];
+                var charactersToAdd = new HashSet<Guid>(players.Characters);
+                var currentCharacters = gameData.GetSessionCharacters(session);
+                foreach (var c in currentCharacters)
+                {
+                    if (charactersToAdd.Contains(c.Id))
+                    {
+                        continue;
+                    }
+                    await RemovePlayerFromActiveSession(session, c.Id);
+                }
 
-                if (players.Characters == null)
+                if (chars.Length == 0)
                 {
                     result.Players = new PlayerJoinResult[0];
                     return result;
