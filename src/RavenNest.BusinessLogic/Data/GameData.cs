@@ -589,7 +589,6 @@ namespace RavenNest.BusinessLogic.Data
 
         private void EnsureCraftingRequirements(EntitySet<Item, Guid> items)
         {
-
             Item GetItemByCategory(ItemCategory category, string containsName)
             {
                 return items.Entities.FirstOrDefault(x => (ItemCategory)x.Category == ItemCategory.Resource && x.Name.Contains(containsName, StringComparison.OrdinalIgnoreCase));
