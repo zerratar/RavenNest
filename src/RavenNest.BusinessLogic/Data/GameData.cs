@@ -407,7 +407,7 @@ namespace RavenNest.BusinessLogic.Data
             catch (Exception exc)
             {
                 InitializedSuccessful = false;
-                System.IO.File.WriteAllText("ravenfall-error.log", exc.ToString());
+                System.IO.File.WriteAllText("ravenfall-error.log", "[" + DateTime.UtcNow + "] " + exc.ToString());
             }
 
         }
