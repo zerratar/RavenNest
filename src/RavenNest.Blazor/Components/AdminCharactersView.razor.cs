@@ -123,6 +123,7 @@ namespace RavenNest.Blazor.Components
             var training = player.Skills.AsList().FirstOrDefault(IsTrainingSkill);
             return training?.Name;
         }
+
         private bool IsTrainingSkill(PlayerSkill skill)
         {
             if (string.IsNullOrEmpty(TrainingSkill))
@@ -201,7 +202,7 @@ namespace RavenNest.Blazor.Components
             }
         }
 
-        private int currentHealth(WebsiteAdminPlayer player)
+        private int GetCurrentHealth(WebsiteAdminPlayer player)
         {
             if (player.State != null)
             {

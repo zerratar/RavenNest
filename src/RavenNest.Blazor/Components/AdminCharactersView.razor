@@ -25,21 +25,19 @@
 
                                 @if (character.State != null && character.State.InOnsen)
                                 {
-                                    <span>You're currently resting and have</span>
+                                    <span>Currently resting and have</span>
                                     <b>@GetRestedTime(character)</b>
                                     <span>of rested time</span>
                                 }
                                 else if (!string.IsNullOrEmpty(TrainingSkill))
                                 {
-                                    <span>You're currently training&nbsp;</span>
-
+                                    <span>Currently training&nbsp;</span>
                                     <b>@GetTrainingSkillName(character)</b>
-
                                     <span>&nbsp;</span>
                                 }
                                 else
                                 {
-                                    <span>You're currently </span>
+                                    <span>Currently </span>
                                 }
 
                                 @if (character.State != null)
@@ -141,7 +139,7 @@
                                         @if (skill.Name == "Health")
                                         {
                                             <div class="stats-value">
-                                                <span class="current-health" title="Current Health">@currentHealth(character)</span> /
+                                                <span class="current-health" title="Current Health">@GetCurrentHealth(character)</span> /
                                                 <span class="max-health">@skill.Level</span>
                                             </div>
                                         }
