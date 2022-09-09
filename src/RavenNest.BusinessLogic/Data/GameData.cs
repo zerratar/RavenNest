@@ -163,7 +163,8 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(ItemCraftingRequirement),
                         typeof(CharacterSessionActivity),
                         typeof(Agreements),
-                        typeof(UserBankItem)
+                        typeof(UserBankItem),
+                        typeof(ExpMultiplierEvent)
                 });
 
                 if (restorePoint != null)
