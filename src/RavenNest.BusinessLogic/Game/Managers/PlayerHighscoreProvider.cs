@@ -35,23 +35,15 @@ namespace RavenNest.BusinessLogic.Game
 
         public HighScoreCollection GetSkillHighScore(IReadOnlyList<Player> players, string skill, int skip = 0, int take = 100)
         {
-            try
+            if(skill== "All" || skill == null)
             {
-                if (skill == "All")
-                    skill = null;
-
-                //var players = playerManager.GetPlayers().Where(x => !x.IsAdmin && x.CharacterIndex == 0).ToList();
                 var playerSelection = players
-                    .OrderByDescending(x => OrderByLevel(skill, x))
-                    .ThenByDescending(x => OrderByExp(skill, x))
+                    .OrderByDescending(x => OrderByLevel(null, x))
+                   .ThenByDescending(x => OrderByExp(null, x))
                 .Skip(skip)
                 .Take(take).ToList();
 
-                var existingRecords = skill != null
-                    ? GetSkillRecords(gameData.GetSkillRecords(DataModels.Skills.SkillNames.IndexOf(skill), GameMath.MaxLevel), playerSelection)
-                    : new List<CharacterSkillRecord>();
-
-                var items = playerSelection.Select((x, y) => Map(y + 1, skill, x, existingRecords)).ToList();
+                var items = playerSelection.Select((x, y) => Map(y + 1, null, x, new List<CharacterSkillRecord>())).ToList();
 
                 return new HighScoreCollection
                 {
@@ -61,17 +53,35 @@ namespace RavenNest.BusinessLogic.Game
                     Total = players.Count
                 };
             }
-            catch (Exception exc)
+            else
             {
-                logger.LogError("Unable to load highscore: " + exc.ToString());
-                return new HighScoreCollection();
-            }
-        }
 
-        private IReadOnlyList<CharacterSkillRecord> GetSkillRecords(IReadOnlyList<CharacterSkillRecord> characterSkillRecords, List<Player> playerSelection)
-        {
-            if (characterSkillRecords == null || characterSkillRecords.Count == 0) return characterSkillRecords;
-            return characterSkillRecords.Where(x => playerSelection.Any(y => y.Id == x.CharacterId)).OrderBy(x => x.DateReached).ToList();
+                var charactersSkillRecords = gameData.GetSkillRecords(DataModels.Skills.SkillNames.IndexOf(skill))
+                    .OrderByDescending(level=> level.SkillLevel)
+                    .ThenBy(reached => reached.DateReached)
+                    .Skip(skip)
+                    .Take(take).ToList();
+                var rank = 1;
+                var items = new List<HighScoreItem>();
+
+                foreach(var skillRecords in charactersSkillRecords)
+                {
+                    var player = players.FirstOrDefault(e => e.Id == skillRecords.CharacterId);
+                    if (player != null)
+                    {
+                        items.Add(Map(rank, skill, player, charactersSkillRecords));
+                        rank++;
+                    }
+                }
+
+                return new HighScoreCollection
+                {
+                    Players = items,
+                    Skill = skill,
+                    Offset = skip,
+                    Total = players.Count
+                };
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
