@@ -57,19 +57,23 @@ namespace RavenNest.BusinessLogic.Game
             {
 
                 var charactersSkillRecords = gameData.GetSkillRecords(DataModels.Skills.SkillNames.IndexOf(skill))
-                    .OrderByDescending(level=> level.SkillLevel)
+                    .OrderByDescending(level => level.SkillLevel)
                     .ThenBy(reached => reached.DateReached)
                     .Skip(skip)
                     .Take(take).ToList();
                 var rank = 1;
                 var items = new List<HighScoreItem>();
 
-                foreach(var skillRecords in charactersSkillRecords)
+                foreach(var skillRecord in charactersSkillRecords)
                 {
-                    var player = players.FirstOrDefault(e => e.Id == skillRecords.CharacterId);
+                    var player = players.FirstOrDefault(e => e.Id == skillRecord.CharacterId);
                     if (player != null)
                     {
-                        items.Add(Map(rank, skill, player, charactersSkillRecords));
+                        var item = Map(rank, skill, player, charactersSkillRecords);
+                        if(skillRecord.SkillLevel != GameMath.MaxLevel)
+                            item.DateReached = skillRecord.DateReached; //keeping the dateReached when it's not max level
+                        items.Add(item);
+
                         rank++;
                     }
                 }
@@ -113,6 +117,7 @@ namespace RavenNest.BusinessLogic.Game
                 out var level,
                 out var dateReached,
                 out var order);
+
 
             return new HighScoreItem
             {
@@ -177,7 +182,7 @@ namespace RavenNest.BusinessLogic.Game
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool TryGetSkillExperience(string skill, Guid characterId, Skills skills, IReadOnlyList<CharacterSkillRecord> skillRecords, out double exp, out int level, out DateTime dateReached, out int order)
         {
-            dateReached = DateTime.UtcNow;
+            dateReached = DateTime.UnixEpoch; //Make it more obvious it's an incorrect date            
             order = -1;
 
             var ok = TryGetExperience(skill, skills, out exp) & TryGetLevel(skill, skills, out level);

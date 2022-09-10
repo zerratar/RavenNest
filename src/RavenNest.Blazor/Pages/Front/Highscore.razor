@@ -59,7 +59,7 @@
             <thead>
                 <tr>
                     <th>Rank</th>
-                    <th>Player</th>
+                    <th>Character</th>
                     <th>Level</th>
                     <th>Experience</th>
                 </tr>
@@ -89,35 +89,35 @@
                                 {
                                     @if (item.OrderAchieved == 1)
                                     {
-                                        <i class="fa-solid fa-medal first" title="@("This player reached max level first, " + item.DateReached.ToString("D"))"></i>
-                                        <div class="skill-max-container" title="This player has reached the max level in this skill!">
+                                        <i class="fa-solid fa-medal first" title="@("Awarded to " + item.PlayerName + " for reaching max level first in the skill " + item.Skill)"></i>
+                                        <div class="skill-max-container" title="@("This character reached max level first on " + item.DateReached.ToString("D"))">
                                             <p class="skill-max gold" data-content="999">999</p>
                                         </div>
                                     }
                                     else if (item.OrderAchieved == 2)
                                     {
-                                        <i class="fa-solid fa-award second" title="@("This player reached max level in second place, " + item.DateReached.ToString("D"))"></i>
-                                        <div class="skill-max-container" title="This player has reached the max level in this skill!">
+                                        <i class="fa-solid fa-award second" title="@("Awarded to " + item.PlayerName + " for reaching max level second in the skill " + item.Skill)"></i>
+                                        <div class="skill-max-container" title="@("This character reached max level in second place on " + item.DateReached.ToString("D"))">
                                             <p class="skill-max silver" data-content="999">999</p>
                                         </div>
                                     }
                                     else if (item.OrderAchieved == 3)
                                     {
-                                        <i class="fa-solid fa-award-simple third" title="@("This player reached max level in third place, " + item.DateReached.ToString("D"))"></i>
-                                        <div class="skill-max-container" title="This player has reached the max level in this skill!">
+                                        <i class="fa-solid fa-award-simple third" title="@("Awarded to " + item.PlayerName + " for reaching max level third in the skill " + item.Skill)"></i>
+                                        <div class="skill-max-container" title="@("This character reached max level in third place on " + item.DateReached.ToString("D"))">
                                             <p class="skill-max bronze" data-content="999">999</p>
                                         </div>
                                     }
                                     else
                                     {
-                                        <div class="skill-max-container" title="@("This player has reached the max level on " + item.DateReached.ToString("D"))">
+                                        <div class="skill-max-container" title="@("This character has reached "+ item.Level + " on " + item.DateReached.ToString("D"))">
                                             <p class="skill-max" data-content="999">999</p>
                                         </div>
                                     }
                                 }
                                 else
                                 {
-                                    <div class="skill-current-level-container" title="@("This player has reached "+ item.Level + " on " + item.DateReached.ToString("D"))">
+                                    <div class="skill-current-level-container" title="@("This character has reached "+ item.Level + " on " + item.DateReached.ToString("D"))">
                                         <p class="skill-current-level" data-content="@item.Level">@item.Level</p>
                                     </div>
                                 }
@@ -153,8 +153,8 @@
         base.OnParametersSet();
 
         //Clean Input a little so server can't be overloaded fetching 100,000 records and make it a little fail safe to mistakes in url'
-        CharacterIndex = DirtyCharacterIndex ?? 0;
-        if (CharacterIndex < -1 || CharacterIndex > 2) CharacterIndex = 0;
+        CharacterIndex = DirtyCharacterIndex ?? -1;
+        if (CharacterIndex < -1 || CharacterIndex > 2) CharacterIndex = -1;
         Top = DirtyTop ?? 100;
         if (Top < 1) Top = 100;
         if (Top > 1000) Top = 1000;
