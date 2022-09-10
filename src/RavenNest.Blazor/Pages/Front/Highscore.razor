@@ -22,14 +22,12 @@
 
 <div class="top-section">
     <div class="hero-text">
-        @if (activeSkill != null)
-        {
-            <h1>Highscore Top @Top players - @activeSkill.Name</h1>
-        }
-        else
-        {
-            <h1>Highscore Top @Top players</h1>
-        }
+        <h1>
+            Highscore Top @Top characters
+            @if (activeSkill != null) {
+                <text>- @activeSkill.Name</text>;                ;
+            }
+        </h1>
     </div>
 </div>
 
