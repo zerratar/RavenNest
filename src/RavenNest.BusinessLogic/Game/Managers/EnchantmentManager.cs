@@ -146,8 +146,8 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     GainedExperience = gainedExp,
                     GainedLevels = gainedLevels,
-                    EnchantedItem = DataMapper.Map<Models.InventoryItem, DataModels.InventoryItem>(enchantedItem),
-                    OldItemStack = DataMapper.Map<Models.InventoryItem, DataModels.InventoryItem>(invItem),
+                    EnchantedItem = DataMapper.Map<RavenNest.Models.InventoryItem, DataModels.InventoryItem>(enchantedItem),
+                    OldItemStack = DataMapper.Map<RavenNest.Models.InventoryItem, DataModels.InventoryItem>(invItem),
                     Result = ItemEnchantmentResultValue.Success,
                     Cooldown = characterSessionState.EnchantmentCooldown
                 };

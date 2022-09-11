@@ -138,7 +138,7 @@ namespace RavenNest.Blazor.Pages.Admin
         }
 
         public int[] GetChartData(
-          IReadOnlyList<Models.WebsiteAdminUser> source,
+          IReadOnlyList<RavenNest.Models.WebsiteAdminUser> source,
           DateTime start,
           int steps,
           ChartTimeFrame tf,

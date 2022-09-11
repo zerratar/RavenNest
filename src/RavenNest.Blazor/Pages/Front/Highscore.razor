@@ -1,11 +1,17 @@
-﻿@page "/highscore"
-@page "/leaderboard"
-@page "/highscore/{highscoreSkill}"
-@page "/leaderboard/{highscoreSkill}"
-@page "/leaderboard/{highscoreSkill}/{characterIndex}"
-@page "/highscore/{highscoreSkill}/{characterIndex}"
-@page "/leaderboard/{highscoreSkill}/{characterIndex}/{top}"
-@page "/highscore/{highscoreSkill}/{characterIndex}/{top}"
+﻿@*@page "/highscore"
+    @page "/leaderboard"
+    @page "/highscore/{highscoreSkill}"
+    @page "/leaderboard/{highscoreSkill}"
+    @page "/leaderboard/{highscoreSkill}/{characterIndex:int}"
+    @page "/highscore/{highscoreSkill}/{characterIndex:int}"
+    @page "/leaderboard/{highscoreSkill}/{characterIndex:int}/{top:int}"
+    @page "/highscore/{highscoreSkill}/{characterIndex:int}/{top:int}"*@
+
+@* Optional Parameters - Not the bug I was fixing but it tidier!
+  *@
+@page "/leaderboard/{HighscoreSkill?}/{dirtyCharacterIndex:int?}/{dirtyTop:int?}"
+@page "/highscore/{HighscoreSkill?}/{dirtyCharacterIndex:int?}/{dirtyTop:int?}"
+
 @using RavenNest.Blazor.Services.Models
 @using Microsoft.AspNetCore.WebUtilities
 @using RavenNest.Blazor.Services
@@ -16,14 +22,13 @@
 
 <div class="top-section">
     <div class="hero-text">
-        @if (activeSkill != null)
-        {
-            <h1>Highscore Top 100 players - @activeSkill.Name</h1>
-        }
-        else
-        {
-            <h1>Highscore Top 100 players</h1>
-        }
+        <h1>
+            Highscore Top @Top characters
+            @if (activeSkill != null)
+            {
+                <text>- @activeSkill.Name</text>
+            }
+        </h1>
     </div>
 </div>
 
@@ -31,41 +36,47 @@
 <div class="page-content">
     <div class="section">
 
-        @if (highscores == null)
-        {
-            <h2>Loading highscores...</h2>
-            <LoadIndicator></LoadIndicator>
-        }
-        else
-        {
-            <div class="skill-selector">
-                @for (var i = 0; i < characterIndexNames.Length; ++i)
-                {
-                    var name = characterIndexNames[i];
-                    var index = characterIndices[i];
-                    int.TryParse(CharacterIndex, out var selectedIndex);
-                    {
-                        <button @onclick="(() => SelectIndex(index))" class="btn @(selectedIndex == index ? "active" : "")">@name</button>
-                    }
-                }
-            </div>
 
-            <div class="skill-selector">
-                @foreach (var skill in Skills)
+        <div class="skill-selector">
+            @for (var i = 0; i < characterIndexNames.Length; ++i)
+            {
+                var name = characterIndexNames[i];
+                var index = characterIndices[i];
                 {
-                    <button @onclick="(() => SelectSkill(skill))" class="btn @(skill.Active ? "active" : "")">@skill.Name</button>
+                    <button @onclick="(() => SelectIndex(index))" class="btn @(CharacterIndex == index ? "active" : "")">@name</button>
                 }
-            </div>
-            <table class="highscore-list">
-                <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Player</th>
-                        <th>Level</th>
-                        <th>Experience</th>
+            }
+        </div>
+
+        <div class="skill-selector">
+            @foreach (var skill in Skills)
+            {
+                <button @onclick="(() => SelectSkill(skill))" class="btn @(skill.Active ? "active" : "")">@skill.Name</button>
+            }
+        </div>
+        <table class="highscore-list">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Character</th>
+                    <th>Level</th>
+                    <th>Experience</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (highscores == null)
+                {
+                    <LoadIndicator></LoadIndicator>
+
+                    <tr class="highscore-item">
+                        <td class='player-rank'>**</td>
+                        <td class='player-name'>Loading</td>
+                        <td class='player-level'>**</td>
+                        <td class='player-experience'>**</td>
                     </tr>
-                </thead>
-                <tbody>
+                }
+                else
+                {
                     @foreach (var item in highscores.Players)
                     {
                         <tr class="highscore-item" @onclick="(() => DisplayPlayer(item))">
@@ -77,52 +88,58 @@
                                 {
                                     @if (item.OrderAchieved == 1)
                                     {
-                                        <i class="fa-solid fa-medal first" title="@("This player reached max level first, " + item.DateReached.ToString("D"))"></i>
-                                        <div class="skill-max-container" title="This player has reached the max level in this skill!">
+                                        <i class="fa-solid fa-medal first" title="@("Awarded to " + item.PlayerName + " for reaching max level first in the skill " + item.Skill)"></i>
+                                        <div class="skill-max-container" title="@("This character reached max level first on " + item.DateReached.ToString("D"))">
                                             <p class="skill-max gold" data-content="999">999</p>
                                         </div>
                                     }
                                     else if (item.OrderAchieved == 2)
                                     {
-                                        <i class="fa-solid fa-award second" title="@("This player reached max level in second place, " + item.DateReached.ToString("D"))"></i>
-                                        <div class="skill-max-container" title="This player has reached the max level in this skill!">
+                                        <i class="fa-solid fa-award second" title="@("Awarded to " + item.PlayerName + " for reaching max level second in the skill " + item.Skill)"></i>
+                                        <div class="skill-max-container" title="@("This character reached max level in second place on " + item.DateReached.ToString("D"))">
                                             <p class="skill-max silver" data-content="999">999</p>
                                         </div>
                                     }
                                     else if (item.OrderAchieved == 3)
                                     {
-                                        <i class="fa-solid fa-award-simple third" title="@("This player reached max level in third place, " + item.DateReached.ToString("D"))"></i>
-                                        <div class="skill-max-container" title="This player has reached the max level in this skill!">
+                                        <i class="fa-solid fa-award-simple third" title="@("Awarded to " + item.PlayerName + " for reaching max level third in the skill " + item.Skill)"></i>
+                                        <div class="skill-max-container" title="@("This character reached max level in third place on " + item.DateReached.ToString("D"))">
                                             <p class="skill-max bronze" data-content="999">999</p>
                                         </div>
                                     }
                                     else
                                     {
-                                        <div class="skill-max-container" title="This player has reached the max level in this skill!">
+                                        <div class="skill-max-container" title="@("This character has reached "+ item.Level + " on " + item.DateReached.ToString("D"))">
                                             <p class="skill-max" data-content="999">999</p>
                                         </div>
                                     }
                                 }
                                 else
                                 {
-                                    @item.Level
+                                    <div class="skill-current-level-container" title="@("This character has reached "+ item.Level + " on " + item.DateReached.ToString("D"))">
+                                        <p class="skill-current-level" data-content="@item.Level">@item.Level</p>
+                                    </div>
                                 }
                             </td>
                             <td class='player-experience'>@item.Experience</td>
                         </tr>
                     }
-                </tbody>
-            </table>
-        }
+                }
+            </tbody>
+        </table>
     </div>
 </div>
 
 @code {
     [Parameter]
-    public string CharacterIndex { get; set; }
+    public int? DirtyCharacterIndex { get; set; }
     [Parameter]
     public string HighscoreSkill { get; set; }
     [Parameter]
+    public int? DirtyTop { get; set; }
+
+    public int CharacterIndex { get; set; }
+    //public string? HighscoreSkill { get; set; }
     public int Top { get; set; }
 
     private Models.HighScoreCollection highscores;
@@ -130,17 +147,22 @@
     private string[] characterIndexNames = new string[] { "All Characters", "Main", "Second", "Third" };
     private int[] characterIndices = new int[] { -1, 0, 1, 2 };
 
-    protected override void OnInitialized()
+    protected override async Task OnParametersSetAsync()
     {
-        if (Top == 0) Top = 100;
-        LoadHighscoreAsync();
+        base.OnParametersSet();
+
+        //Clean Input a little so server can't be overloaded fetching 100,000 records and make it a little fail safe to mistakes in url'
+        CharacterIndex = DirtyCharacterIndex ?? -1;
+        Top = Math.Max(1, Math.Min(1000, DirtyTop?? 100));
+
+        await LoadHighscoreAsync();
     }
 
     private void SelectIndex(int index)
     {
         if (activeSkill != null)
         {
-            NavigationManager.NavigateTo(string.Format(activeSkill.Link, index), true);
+            NavigationManager.NavigateTo(string.Format(activeSkill.Link, index, Top), true);
         }
         else
         {
@@ -150,7 +172,7 @@
 
     private void SelectSkill(Skill skill)
     {
-        NavigationManager.NavigateTo(string.Format(skill.Link, CharacterIndex), true);
+        NavigationManager.NavigateTo(string.Format(skill.Link, CharacterIndex, Top), true);
     }
     private void DisplayPlayer(Models.HighScoreItem player)
     {
@@ -159,23 +181,35 @@
 
     private async Task LoadHighscoreAsync()
     {
-        int.TryParse(CharacterIndex, out var ci);
+        // OnParemetersSet is being called twice
+        // return if we have a highscores already. As this should be reset upon new page load
+        if (highscores != null)
+        {
+            return;
+        }
+
         if (HighscoreSkill != null)
         {
-            highscores = await HighscoreService.GetHighscoreAsync(HighscoreSkill, 0, Top, ci);
-            var s = Skills.FirstOrDefault(x => x.Name.Equals(HighscoreSkill, StringComparison.OrdinalIgnoreCase));
-            if (s != null)
-            {
-                Skills[0].Active = false;
-                s.Active = true;
-                activeSkill = s;
-            }
+            UpdateActiveSkillButtons();
+            highscores = await HighscoreService.GetHighscoreAsync(HighscoreSkill, 0, Top, CharacterIndex);
         }
         else
         {
-            highscores = await HighscoreService.GetHighscoreAsync(0, Top, ci);
+            highscores = await HighscoreService.GetHighscoreAsync(0, Top, CharacterIndex);
         }
+
         StateHasChanged();
+    }
+
+    private void UpdateActiveSkillButtons()
+    {
+        var s = Skills.FirstOrDefault(x => x.Name.Equals(HighscoreSkill, StringComparison.OrdinalIgnoreCase));
+        if (s != null)
+        {
+            Skills[0].Active = false;
+            s.Active = true;
+            activeSkill = s;
+        }
     }
 
     private Skill[] Skills { get; } =
@@ -196,7 +230,7 @@
         new Skill("Ranged"),
         new Skill("Sailing"),
         new Skill("Healing"),
-                                              };
+                };
 
     private class Skill
     {
@@ -207,7 +241,7 @@
             Active = active;
         }
 
-        public string Link => this.Name == "All" ? "/leaderboard/All/{0}" : "/leaderboard/" + this.Name + "/{0}";
+        public string Link => this.Name == "All" ? "/leaderboard/All/{0}" : "/leaderboard/" + this.Name + "/{0}/{1}";
         public string Name { get; set; }
         public bool Active { get; set; }
     }

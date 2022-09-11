@@ -68,6 +68,11 @@ namespace RavenNest.DataModels
             return entities.TryGetValue(key, out entity);
         }
 
+        public bool Contains(TKey key)
+        {
+            return entities.ContainsKey(key);
+        }
+
         public TModel this[TKey key]
         {
             get

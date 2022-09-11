@@ -37,7 +37,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             return new RedeemableItemCollection(gameData
                 .GetRedeemableItems()
-                .Select(x => DataMapper.Map<Models.RedeemableItem, DataModels.RedeemableItem>(x)));
+                .Select(x => DataMapper.Map<RavenNest.Models.RedeemableItem, DataModels.RedeemableItem>(x)));
         }
 
         public ItemCollection GetAllItems()
