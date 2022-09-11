@@ -152,8 +152,8 @@
         base.OnParametersSet();
 
         //Clean Input a little so server can't be overloaded fetching 100,000 records and make it a little fail safe to mistakes in url'
-        CharacterIndex = DirtyCharacterIndex ?? -1;
-        Top = Math.Max(1, Math.Min(1000, DirtyTop ?? 100));
+        CharacterIndex = Math.Max(-1, Math.Min(2, DirtyCharacterIndex ?? -1));
+        Top = Math.Max(1, Math.Min(1000, DirtyTop ?? 100)); //DirtyTop makes me whimper
 
         LoadHighscoreAsync();
     }
