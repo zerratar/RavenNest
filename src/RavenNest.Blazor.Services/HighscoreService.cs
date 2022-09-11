@@ -9,6 +9,7 @@ namespace RavenNest.Blazor.Services
 {
     public class HighscoreService
     {
+        private readonly TimeSpan cacheLifeTime = TimeSpan.FromSeconds(10);
         private readonly IHighScoreManager highScoreManager;
         private readonly ConcurrentDictionary<CacheKey, CacheItem<HighScoreCollection>> cache
             = new ConcurrentDictionary<CacheKey, CacheItem<HighScoreCollection>>();
@@ -58,7 +59,7 @@ namespace RavenNest.Blazor.Services
         {
             result = null;
             var key = GetCacheKey(skill, offset, take, characterIndex);
-            if (cache.TryGetValue(key, out var res) && (DateTime.UtcNow - res.Created) < TimeSpan.FromSeconds(2))
+            if (cache.TryGetValue(key, out var res) && (DateTime.UtcNow - res.Created) <= cacheLifeTime)
             {
                 result = res.Data;
                 return true;

@@ -334,7 +334,7 @@ namespace Telepathy
             {
                 // just close it. send thread will take care of the rest.
                 connection.client.Close();
-                Log.Info("Server.Disconnect connectionId:" + connectionId);
+                //Log.Info("Server.Disconnect connectionId:" + connectionId);
                 return true;
             }
             return false;
