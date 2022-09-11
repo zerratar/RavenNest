@@ -488,6 +488,42 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
+        private void EnsureCharacterSkillRecords()
+        {
+            var addedRecords = 0;
+            foreach (var c in this.characters.Entities)
+            {
+                var records = GetCharacterSkillRecords(c.Id);
+                var skills = GetCharacterSkills(c.SkillsId);
+                foreach (var skill in skills.GetSkills())
+                {
+                    if (skill.Level == 1)
+                        continue;
+
+                    var existingRecord = records.FirstOrDefault(x => x.SkillIndex == skill.Index);
+                    if (existingRecord == null)
+                    {
+                        Add(new CharacterSkillRecord
+                        {
+                            CharacterId = c.Id,
+                            Id = Guid.NewGuid(),
+                            SkillExperience = skill.Experience,
+                            SkillIndex = skill.Index,
+                            SkillLevel = skill.Level,
+                            SkillName = skill.Name,
+                            DateReached = DateTime.UtcNow // since they didnt have one before, at least we can pretend it was added now.
+                        });
+                        addedRecords++;
+                    }
+                }
+            }
+
+            if (addedRecords > 0)
+            {
+                logger.LogError("(Not actual error) " + addedRecords + " character skill records added.");
+            }
+        }
+
         private void EnsureMagicAttributes()
         {
             if (this.itemAttributes.Entities.Count > 0)

@@ -252,8 +252,10 @@ namespace RavenNest.BusinessLogic.Extensions
             var user = gameData.GetUser(character.UserId);
             if (user == null
                 || user.Status > 0
+#if !DEBUG
                 || user.IsAdmin.GetValueOrDefault()
                 || user.IsModerator.GetValueOrDefault()
+#endif
                 || user.IsHiddenInHighscore.GetValueOrDefault())
             {
                 return null;

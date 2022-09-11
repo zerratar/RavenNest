@@ -60,15 +60,24 @@ namespace RavenNest.BusinessLogic.Game
         {
             if (skillName == "all")
                 skillName = null;
+
             var c = gameData.GetCharacter(characterId);
             if (c == null) return int.MaxValue;
+
             var u = gameData.GetUser(c.UserId);
             if (u == null) return int.MaxValue;
 
+#if DEBUG
+            if (u.IsHiddenInHighscore.GetValueOrDefault())
+            {
+                return -2;
+            }
+#else
             if (u.IsModerator.GetValueOrDefault() || u.IsAdmin.GetValueOrDefault() || u.IsHiddenInHighscore.GetValueOrDefault())
             {
                 return -2;
             }
+#endif
 
             var player = GetPlayer(characterId);
             var item = highscoreProvider.GetSkillHighScore(player, GetHighscorePlayers(), skillName);

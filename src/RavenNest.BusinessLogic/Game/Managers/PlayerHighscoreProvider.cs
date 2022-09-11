@@ -43,7 +43,8 @@ namespace RavenNest.BusinessLogic.Game
             }
             else
             {
-                var skillIndex = DataModels.Skills.SkillNames.IndexOf(skill);
+                var skillName = DataModels.Skills.SkillNames.FirstOrDefault(x => x.StartsWith(skill, StringComparison.OrdinalIgnoreCase));
+                var skillIndex = DataModels.Skills.SkillNames.IndexOf(skillName);
                 var skillRecords = gameData.GetSkillRecords(skillIndex, (ICollection<Guid>)playerLookup.Keys).ToSpan();
 
                 var size = Math.Min(take, skillRecords.Length - skip);
