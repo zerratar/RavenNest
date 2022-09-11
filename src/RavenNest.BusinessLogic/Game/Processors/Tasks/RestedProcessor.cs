@@ -73,7 +73,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 {
                     var restedPercent = restedTime / MaxRestTime.TotalSeconds;
 
-                    var data = new Models.PlayerRestedUpdate
+                    var data = new RavenNest.Models.PlayerRestedUpdate
                     {
                         CharacterId = character.Id,
                         ExpBoost = isRested ? ExpBoost : 0,

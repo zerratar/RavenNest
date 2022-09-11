@@ -1,11 +1,11 @@
 ﻿@*@page "/highscore"
-@page "/leaderboard"
-@page "/highscore/{highscoreSkill}"
-@page "/leaderboard/{highscoreSkill}"
-@page "/leaderboard/{highscoreSkill}/{characterIndex:int}"
-@page "/highscore/{highscoreSkill}/{characterIndex:int}"
-@page "/leaderboard/{highscoreSkill}/{characterIndex:int}/{top:int}"
-@page "/highscore/{highscoreSkill}/{characterIndex:int}/{top:int}"*@
+    @page "/leaderboard"
+    @page "/highscore/{highscoreSkill}"
+    @page "/leaderboard/{highscoreSkill}"
+    @page "/leaderboard/{highscoreSkill}/{characterIndex:int}"
+    @page "/highscore/{highscoreSkill}/{characterIndex:int}"
+    @page "/leaderboard/{highscoreSkill}/{characterIndex:int}/{top:int}"
+    @page "/highscore/{highscoreSkill}/{characterIndex:int}/{top:int}"*@
 
 @* Optional Parameters - Not the bug I was fixing but it tidier!
   *@
@@ -24,8 +24,9 @@
     <div class="hero-text">
         <h1>
             Highscore Top @Top characters
-            @if (activeSkill != null) {
-                <text>- @activeSkill.Name</text>;                ;
+            @if (activeSkill != null)
+            {
+                <text>- @activeSkill.Name</text>
             }
         </h1>
     </div>
@@ -146,18 +147,15 @@
     private string[] characterIndexNames = new string[] { "All Characters", "Main", "Second", "Third" };
     private int[] characterIndices = new int[] { -1, 0, 1, 2 };
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         base.OnParametersSet();
 
         //Clean Input a little so server can't be overloaded fetching 100,000 records and make it a little fail safe to mistakes in url'
         CharacterIndex = DirtyCharacterIndex ?? -1;
-        if (CharacterIndex < -1 || CharacterIndex > 2) CharacterIndex = -1;
-        Top = DirtyTop ?? 100;
-        if (Top < 1) Top = 100;
-        if (Top > 1000) Top = 1000;
+        Top = Math.Max(1, Math.Min(1000, DirtyTop?? 100));
 
-        LoadHighscoreAsync();
+        await LoadHighscoreAsync();
     }
 
     private void SelectIndex(int index)
@@ -183,22 +181,35 @@
 
     private async Task LoadHighscoreAsync()
     {
+        // OnParemetersSet is being called twice
+        // return if we have a highscores already. As this should be reset upon new page load
+        if (highscores != null)
+        {
+            return;
+        }
+
         if (HighscoreSkill != null)
         {
+            UpdateActiveSkillButtons();
             highscores = await HighscoreService.GetHighscoreAsync(HighscoreSkill, 0, Top, CharacterIndex);
-            var s = Skills.FirstOrDefault(x => x.Name.Equals(HighscoreSkill, StringComparison.OrdinalIgnoreCase));
-            if (s != null)
-            {
-                Skills[0].Active = false;
-                s.Active = true;
-                activeSkill = s;
-            }
         }
         else
         {
             highscores = await HighscoreService.GetHighscoreAsync(0, Top, CharacterIndex);
         }
+
         StateHasChanged();
+    }
+
+    private void UpdateActiveSkillButtons()
+    {
+        var s = Skills.FirstOrDefault(x => x.Name.Equals(HighscoreSkill, StringComparison.OrdinalIgnoreCase));
+        if (s != null)
+        {
+            Skills[0].Active = false;
+            s.Active = true;
+            activeSkill = s;
+        }
     }
 
     private Skill[] Skills { get; } =
@@ -219,7 +230,7 @@
         new Skill("Ranged"),
         new Skill("Sailing"),
         new Skill("Healing"),
-       };
+                };
 
     private class Skill
     {

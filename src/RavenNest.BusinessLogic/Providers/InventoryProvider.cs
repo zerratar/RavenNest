@@ -347,7 +347,7 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
-        public DataModels.InventoryItem AddItemInstance(Models.InventoryItem itemInstanceToCopy, long amount = 1)
+        public DataModels.InventoryItem AddItemInstance(RavenNest.Models.InventoryItem itemInstanceToCopy, long amount = 1)
         {
             lock (mutex)
             {
@@ -449,7 +449,7 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
-        private InventoryItem Copy(Models.InventoryItem itemToCopy, long amount)
+        private InventoryItem Copy(RavenNest.Models.InventoryItem itemToCopy, long amount)
         {
             return new InventoryItem
             {
@@ -647,17 +647,17 @@ namespace RavenNest.BusinessLogic.Providers
             var maxValue = GetValue(attr.MaxValue, out var maxAttrValType);
             var ran = random.NextDouble();
             var value = Math.Max(minValue, (double)ran * maxValue);
-            return maxAttrValType == Models.AttributeValueType.Percent ? $"{value}%" : value.ToString();
+            return maxAttrValType == RavenNest.Models.AttributeValueType.Percent ? $"{value}%" : value.ToString();
         }
 
-        public static double GetValue(string val, out Models.AttributeValueType valueType)
+        public static double GetValue(string val, out RavenNest.Models.AttributeValueType valueType)
         {
             if (val.Contains(':'))
             {
                 val = val.Split(':')[1];
             }
 
-            valueType = Models.AttributeValueType.Number;
+            valueType = RavenNest.Models.AttributeValueType.Number;
             val = val.Replace(',', '.');
             if (string.IsNullOrEmpty(val))
             {
@@ -669,7 +669,7 @@ namespace RavenNest.BusinessLogic.Providers
                 {
                     if (TryParse(val.Replace("%", ""), out var value))
                     {
-                        valueType = Models.AttributeValueType.Percent;
+                        valueType = RavenNest.Models.AttributeValueType.Percent;
                         //return value / 100d;
                         return value;
                     }
@@ -830,7 +830,7 @@ namespace RavenNest.BusinessLogic.Providers
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private InventoryItem GetUnequipped(Models.InventoryItem i)
+        private InventoryItem GetUnequipped(RavenNest.Models.InventoryItem i)
         {
             lock (mutex) return items.FirstOrDefault(x => CanBeStacked(x, i) && !x.Equipped);
         }
@@ -977,9 +977,9 @@ namespace RavenNest.BusinessLogic.Providers
             if (item == null)
                 return false;
 
-            return item.Category != Models.ItemCategory.Resource &&
-                   item.Category != Models.ItemCategory.StreamerToken &&
-                   item.Category != Models.ItemCategory.Scroll &&
+            return item.Category != RavenNest.Models.ItemCategory.Resource &&
+                   item.Category != RavenNest.Models.ItemCategory.StreamerToken &&
+                   item.Category != RavenNest.Models.ItemCategory.Scroll &&
                    item.RequiredSlayerLevel <= skills.Skills.SlayerLevel &&
                    (item.RequiredMagicLevel <= skills.Skills.MagicLevel || item.RequiredMagicLevel <= skills.Skills.HealingLevel) &&
                    item.RequiredRangedLevel <= skills.Skills.RangedLevel &&
@@ -1020,12 +1020,12 @@ namespace RavenNest.BusinessLogic.Providers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool CanBeStacked(DataModels.UserBankItem a, Models.InventoryItem b)
+        public static bool CanBeStacked(DataModels.UserBankItem a, RavenNest.Models.InventoryItem b)
         {
             return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool CanBeStacked(DataModels.InventoryItem a, Models.InventoryItem b)
+        public static bool CanBeStacked(DataModels.InventoryItem a, RavenNest.Models.InventoryItem b)
         {
             return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
         }
@@ -1065,7 +1065,7 @@ namespace RavenNest.BusinessLogic.Providers
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool CanBeStacked(Models.InventoryItem item)
+        public static bool CanBeStacked(RavenNest.Models.InventoryItem item)
         {
             return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment) && !item.Soulbound.GetValueOrDefault();
         }

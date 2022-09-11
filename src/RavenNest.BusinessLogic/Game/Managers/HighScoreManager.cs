@@ -17,7 +17,13 @@ namespace RavenNest.BusinessLogic.Game
 
         public HighScoreCollection GetSkillHighScore(string skill, int skip = 0, int take = 100, int characterIndex = 0)
         {
-            var players = playerManager.GetHighscorePlayers().Where(x => (characterIndex == -1 || x.CharacterIndex == characterIndex)).ToList();
+            var players = playerManager.GetHighscorePlayers(characterIndex);
+
+            if (string.IsNullOrEmpty(skill) || skill.ToLower() == "all")
+            {
+                return highscoreProvider.GetHighScoreAllSkills(players, skip, take);
+            }
+
             return highscoreProvider.GetSkillHighScore(players, skill, skip, take);
         }
 
