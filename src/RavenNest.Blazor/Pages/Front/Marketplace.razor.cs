@@ -26,7 +26,7 @@ namespace RavenNest.Blazor.Pages.Front
             return CanCancelItem(items.FirstOrDefault(x => x.Id == itemListing));
         }
 
-        private bool CanCancelItem(Models.MarketItem listedItem)
+        private bool CanCancelItem(RavenNest.Models.MarketItem listedItem)
         {
             if (isAdmin) return true;
             if (session == null || listedItem == null)

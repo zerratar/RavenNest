@@ -195,7 +195,7 @@ namespace RavenNest.DataModels
 
         public void AddRange(IEnumerable<TModel> models) => models.ForEach(Add);
         public void RemoveRange(IEnumerable<TModel> models) => models.ForEach(Remove);
-        //public void UpdateRange(IEnumerable<TModel> models) => models.ForEach(Update);        
+        //public void UpdateRange(IEnumerable<TModel> models) => RavenNest.Models.ForEach(Update);        
 
         //public ConcurrentQueue<EntityChangeSet<TModel>> BuildAddQueue()
         //{

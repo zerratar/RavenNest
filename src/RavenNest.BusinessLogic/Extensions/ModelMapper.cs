@@ -126,7 +126,7 @@ namespace RavenNest.BusinessLogic.Extensions
                     Console.Error.WriteLine("gameData.GetSkill(s0.SkillId) returns null");
 
                 }
-                skills[i] = new Models.ClanSkill
+                skills[i] = new RavenNest.Models.ClanSkill
                 {
                     Id = s0.Id,
                     Experience = s0.Experience,

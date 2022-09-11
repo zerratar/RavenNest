@@ -87,7 +87,7 @@ namespace RavenNest.BusinessLogic.Net
             // send a separate packet first with the incoming model type name?
             // or just let it be?
 
-            // currently we should only be sending Models.PlayerRestedUpdate, but this may change in the future.
+            // currently we should only be sending RavenNest.Models.PlayerRestedUpdate, but this may change in the future.
             server.Send(connectionId, MessagePackSerializer.Serialize(model, MessagePack.Resolvers.ContractlessStandardResolver.Options));
         }
     }
