@@ -25,6 +25,7 @@ namespace RavenNest.Models.TcpApi
         public float Y { get; set; }
         public float Z { get; set; }
         public Dictionary<string, SkillUpdate> Skills { get; set; }
+        public string SessionToken { get; set; }
     }
 
     public class SkillUpdate

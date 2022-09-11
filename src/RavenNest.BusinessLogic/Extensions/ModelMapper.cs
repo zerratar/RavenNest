@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extended;
+using RavenNest.BusinessLogic.Models;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using Appearance = RavenNest.DataModels.Appearance;
@@ -17,15 +18,15 @@ namespace RavenNest.BusinessLogic.Extensions
     public static class ModelMapper
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Models.Appearance Map(Appearance data)
+        public static RavenNest.Models.Appearance Map(Appearance data)
         {
-            return DataMapper.Map<Models.Appearance>(data);
+            return DataMapper.Map<RavenNest.Models.Appearance>(data);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Models.GameSession Map(IGameData gameData, DataModels.GameSession data)
+        public static RavenNest.Models.GameSession Map(IGameData gameData, DataModels.GameSession data)
         {
-            var session = DataMapper.Map<Models.GameSession>(data);
+            var session = DataMapper.Map<RavenNest.Models.GameSession>(data);
             var user = gameData.GetUser(session.UserId);
             if (user == null)
                 return null;
@@ -51,7 +52,7 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Models.GameSessionPlayer Map(IGameData gameData, DataModels.Character character)
+        public static RavenNest.Models.GameSessionPlayer Map(IGameData gameData, DataModels.Character character)
         {
             var user = gameData.GetUser(character.UserId);
             if (user == null) return null;
@@ -65,12 +66,12 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Models.CharacterState Map(DataModels.CharacterState data)
+        public static RavenNest.Models.CharacterState Map(DataModels.CharacterState data)
         {
-            var state = DataMapper.Map<Models.CharacterState>(data);
+            var state = DataMapper.Map<RavenNest.Models.CharacterState>(data);
             if (state == null)
             {
-                state = new Models.CharacterState();
+                state = new RavenNest.Models.CharacterState();
                 if (data != null)
                 {
                     state.Id = data.Id;
@@ -97,20 +98,20 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Models.Statistics Map(DataModels.Statistics data)
+        public static RavenNest.Models.Statistics Map(DataModels.Statistics data)
         {
-            return DataMapper.Map<Models.Statistics>(data);
+            return DataMapper.Map<RavenNest.Models.Statistics>(data);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Models.Clan Map(IGameData gameData, DataModels.Clan data)
+        public static RavenNest.Models.Clan Map(IGameData gameData, DataModels.Clan data)
         {
             if (data == null) return null;
             var user = gameData.GetUser(data.UserId);
             if (user == null) return null;
 
             var s = gameData.GetClanSkills(data.Id);
-            var skills = new Models.ClanSkill[s.Count];
+            var skills = new RavenNest.Models.ClanSkill[s.Count];
             for (var i = 0; i < s.Count; ++i)
             {
                 var s0 = s[i];
@@ -135,7 +136,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 };
             }
 
-            return new Models.Clan()
+            return new RavenNest.Models.Clan()
             {
                 Id = data.Id,
                 Logo = data.Logo,
@@ -148,9 +149,9 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Models.ClanRole Map(DataModels.ClanRole data, DataModels.CharacterClanMembership membership = null)
+        public static RavenNest.Models.ClanRole Map(DataModels.ClanRole data, DataModels.CharacterClanMembership membership = null)
         {
-            return new Models.ClanRole
+            return new RavenNest.Models.ClanRole
             {
                 Id = data.Id,
                 Level = data.Level,
@@ -160,9 +161,9 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Models.Skills Map(Skills data)
+        public static RavenNest.Models.Skills Map(Skills data)
         {
-            return DataMapper.Map<Models.Skills>(data);
+            return DataMapper.Map<RavenNest.Models.Skills>(data);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -172,46 +173,46 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Models.GameEvent Map(DataModels.GameEvent data)
+        public static RavenNest.Models.GameEvent Map(DataModels.GameEvent data)
         {
-            return DataMapper.Map<Models.GameEvent>(data);
+            return DataMapper.Map<RavenNest.Models.GameEvent>(data);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Models.Resources Map(Resources data)
+        public static RavenNest.Models.Resources Map(Resources data)
         {
-            return DataMapper.Map<Models.Resources>(data);
+            return DataMapper.Map<RavenNest.Models.Resources>(data);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Models.Item Map(IGameData gameData, Item item)
+        public static RavenNest.Models.Item Map(IGameData gameData, Item item)
         {
             if (item == null) return null;
-            var mapped = DataMapper.Map<Models.Item>(item);
+            var mapped = DataMapper.Map<RavenNest.Models.Item>(item);
             mapped.CraftingRequirements = gameData.GetCraftingRequirements(item.Id)
-                .Select(x => DataMapper.Map<Models.ItemCraftingRequirement>(x))
+                .Select(x => DataMapper.Map<RavenNest.Models.ItemCraftingRequirement>(x))
                 .ToList();
 
             return mapped;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Item Map(Models.Item itemsItem)
+        public static Item Map(RavenNest.Models.Item itemsItem)
         {
             return DataMapper.Map<Item>(itemsItem);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Models.SyntyAppearance Map(DataModels.SyntyAppearance appearance)
+        public static RavenNest.Models.SyntyAppearance Map(DataModels.SyntyAppearance appearance)
         {
-            if (appearance == null) return new Models.SyntyAppearance();
-            return DataMapper.Map<Models.SyntyAppearance>(appearance);
+            if (appearance == null) return new RavenNest.Models.SyntyAppearance();
+            return DataMapper.Map<RavenNest.Models.SyntyAppearance>(appearance);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Models.InventoryItem Map(InventoryItem items)
+        public static RavenNest.Models.InventoryItem Map(InventoryItem items)
         {
-            return new Models.InventoryItem
+            return new RavenNest.Models.InventoryItem
             {
                 Id = items.Id,
                 Amount = items.Amount.GetValueOrDefault(),
@@ -227,7 +228,7 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IReadOnlyList<Models.InventoryItem> Map(IEnumerable<InventoryItem> items)
+        public static IReadOnlyList<RavenNest.Models.InventoryItem> Map(IEnumerable<InventoryItem> items)
         {
             return items.Select(Map).ToList();
         }
@@ -242,6 +243,32 @@ namespace RavenNest.BusinessLogic.Extensions
         public static WebsitePlayer MapForWebsite(this Character character, IGameData gameData, User user)
         {
             return user.MapForWebsite(gameData, character);
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static HighscorePlayer MapForHighscore(this Character character, IGameData gameData)
+        {
+            var user = gameData.GetUser(character.UserId);
+            if (user == null
+                || user.Status > 0
+                || user.IsAdmin.GetValueOrDefault()
+                || user.IsModerator.GetValueOrDefault()
+                || user.IsHiddenInHighscore.GetValueOrDefault())
+            {
+                return null;
+            }
+
+            return new HighscorePlayer
+            {
+                CharacterIndex = character.CharacterIndex,
+                Id = character.Id,
+                Name = character.Name,
+                Skills = gameData.GetCharacterSkills(character.SkillsId)
+                // either replace this with a that maps the skills one by one and not use reflection
+                // or use DataModels.Skills instead.
+                //Skills = Map(gameData.GetCharacterSkills(character.SkillsId))
+            };
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

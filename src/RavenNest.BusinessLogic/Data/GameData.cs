@@ -163,7 +163,8 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(ItemCraftingRequirement),
                         typeof(CharacterSessionActivity),
                         typeof(Agreements),
-                        typeof(UserBankItem)
+                        typeof(UserBankItem),
+                        typeof(ExpMultiplierEvent)
                 });
 
                 if (restorePoint != null)
@@ -407,7 +408,7 @@ namespace RavenNest.BusinessLogic.Data
             catch (Exception exc)
             {
                 InitializedSuccessful = false;
-                System.IO.File.WriteAllText("ravenfall-error.log", exc.ToString());
+                System.IO.File.WriteAllText("ravenfall-error.log", "[" + DateTime.UtcNow + "] " + exc.ToString());
             }
 
         }
@@ -589,25 +590,26 @@ namespace RavenNest.BusinessLogic.Data
 
         private void EnsureCraftingRequirements(EntitySet<Item, Guid> items)
         {
-
             Item GetItemByCategory(ItemCategory category, string containsName)
             {
                 return items.Entities.FirstOrDefault(x => (ItemCategory)x.Category == ItemCategory.Resource && x.Name.Contains(containsName, StringComparison.OrdinalIgnoreCase));
             }
 
-            var etherCraftingLevel = 280;
-            var lionCraftingLevel = 240;
             var phantomCraftingLevel = 200; // change to 210 ?
-
+            var lionCraftingLevel = 240;
+            var etherCraftingLevel = 280;
+            var atlarusCraftingLevel = 420;//etherCraftingLevel * 1.75;
 
             var ingot = GetItemByCategory(ItemCategory.Resource, "ore ingot");
             var wood = GetItemByCategory(ItemCategory.Resource, "wood plank");
             var gold = GetItemByCategory(ItemCategory.Resource, "gold");
             foreach (var item in items.Entities)
             {
+                var isResource = item.Category == (int)ItemCategory.Resource || item.Type == (int)ItemType.Ore;
+                if (item.Category == (int)ItemCategory.Resource)
+                    continue;
 
                 // Make lionsbane craftable
-
                 var nl = item.Name.ToLower();
                 if (item.RequiredCraftingLevel >= 1000)
                 {
@@ -615,7 +617,9 @@ namespace RavenNest.BusinessLogic.Data
                     item.Craftable = false;
                 }
 
-                if (item.RequiredCraftingLevel < 1000)
+                var isAtlarus = nl.StartsWith("atlarus");
+
+                if (item.RequiredCraftingLevel < 1000 || isAtlarus)
                 {
                     item.Craftable = true;
                     var requirements = GetCraftingRequirements(item.Id) ?? new List<ItemCraftingRequirement>();
@@ -631,7 +635,6 @@ namespace RavenNest.BusinessLogic.Data
                                 }
                             }
                         }
-
                         //continue;
                     }
 
@@ -727,6 +730,16 @@ namespace RavenNest.BusinessLogic.Data
                         resCount = 5;
                         item.RequiredCraftingLevel = etherCraftingLevel;
                     }
+
+                    if (isAtlarus)
+                    {
+                        resType = GetItemByCategory(ItemCategory.Resource, "atlarus light");
+                        ingotCount = 210;
+                        woodCount = woodCount * 42;
+                        //resCount = 2;
+                        item.RequiredCraftingLevel = atlarusCraftingLevel;
+                    }
+
                     switch (type)
                     {
                         case ItemType.Amulet:
@@ -1088,6 +1101,18 @@ namespace RavenNest.BusinessLogic.Data
         {
             var now = DateTime.UtcNow;
             List<Character> characterToRemove = new List<Character>();
+
+            List<CharacterSkillRecord> recordsToRemove = new List<CharacterSkillRecord>();
+            // check if we have character skill records that no longer has a character :o
+
+            foreach (var s in this.characterSkillRecords.Entities)
+            {
+                if (!this.characters.Contains(s.CharacterId))
+                {
+                    recordsToRemove.Add(s);
+                }
+            }
+
             foreach (var c in this.characters.Entities)
             {
                 if (c.LastUsed == null || (now - c.LastUsed) >= TimeSpan.FromDays(365 / 2))
@@ -1119,6 +1144,12 @@ namespace RavenNest.BusinessLogic.Data
                             Remove(s);
                         }
 
+                        var records = GetCharacterSkillRecords(c.Id);
+                        foreach (var r in records)
+                        {
+                            Remove(r);
+                        }
+
                         var appearance = GetAppearance(c.AppearanceId);
                         if (appearance != null)
                         {
@@ -1148,7 +1179,6 @@ namespace RavenNest.BusinessLogic.Data
             }
 
             var str = new StringBuilder();
-
             var removedUserCount = 0;
             foreach (var c in characterToRemove)
             {
@@ -1170,6 +1200,11 @@ namespace RavenNest.BusinessLogic.Data
                     Remove(user);
                     str.AppendLine("u\t" + user.Id + "\t" + user.UserName);
                 }
+            }
+
+            foreach (var r in recordsToRemove)
+            {
+                Remove(r);
             }
 
             if (characterToRemove.Count > 0)
@@ -2043,11 +2078,21 @@ namespace RavenNest.BusinessLogic.Data
         {
             return characterSkillRecords[nameof(Character), id].FirstOrDefault(x => x.SkillIndex == skillIndex);
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<CharacterSkillRecord> GetCharacterSkillRecords(Guid characterId)
+        {
+            return characterSkillRecords[nameof(Character), characterId];
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<CharacterSkillRecord> GetSkillRecords(int skillIndex)
         {
             return characterSkillRecords.Entities.AsList(x => x.SkillIndex == skillIndex);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<CharacterSkillRecord> GetSkillRecords(int skillIndex, ICollection<Guid> characterIds)
+        {
+            return characterSkillRecords.Entities.AsList(x => characterIds.Contains(x.CharacterId) && x.SkillIndex == skillIndex);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2142,6 +2187,9 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Remove Entities
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Remove(CharacterSkillRecord item) => characterSkillRecords.Remove(item);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Remove(ResourceItemDrop item) => resourceItemDrops.Remove(item);

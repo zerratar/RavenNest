@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using RavenNest.BusinessLogic.Data;
 using System.Runtime.CompilerServices;
 
 namespace RavenNest.BusinessLogic.Providers
@@ -8,15 +9,13 @@ namespace RavenNest.BusinessLogic.Providers
         private readonly string relativePath;
         private readonly string extension;
         private readonly IMemoryCache memoryCache;
-        private const string CacheName = "cache";
-        private const string GeneratedFileStore = "GeneratedData";
 
         public MemoryFileCache(IMemoryCache memoryCache, string relativePath, string extension = ".bin")
         {
             this.extension = extension;
             this.memoryCache = memoryCache;
 
-            var cacheFolder = System.IO.Path.Combine(GeneratedFileStore, CacheName);
+            var cacheFolder = System.IO.Path.Combine(FolderPaths.GeneratedData, FolderPaths.BinaryCache);
             this.relativePath = System.IO.Path.Combine(cacheFolder, relativePath);
 
             EnsureCacheFolder();

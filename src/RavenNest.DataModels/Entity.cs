@@ -50,12 +50,35 @@ namespace RavenNest.DataModels
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
         /// <returns></returns>
+        public static Span<T> ToSpan<T>(this IEnumerable<T> items)
+        {
+            return new Span<T>(items.AsArray());
+        }
+
+        /// <summary>
+        /// Gets a list of the enumeration with the least allocation possible.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public static T[] AsArray<T>(this IEnumerable<T> items)
+        {
+            if (items is T[] list) return list;
+            return items.ToArray();
+        }
+
+
+        /// <summary>
+        /// Gets a list of the enumeration with the least allocation possible.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items"></param>
+        /// <returns></returns>
         public static List<T> AsList<T>(this IEnumerable<T> items)
         {
             if (items is List<T> list) return list;
             return items.ToList();
         }
-
 
         public static List<T> AsList<T>(this IEnumerable<T> items, Func<T, bool> predicateWhere)
         {

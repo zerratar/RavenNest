@@ -15,7 +15,7 @@ namespace RavenNest.BusinessLogic.Game
         Task<Player> CreatePlayer(string userId, string userName, string identifier);
         Task<bool> RemovePlayerFromActiveSession(SessionToken token, Guid characterId);
         Task<bool> RemovePlayerFromActiveSession(DataModels.GameSession session, Guid characterId);
-        Task<PlayerRestoreResult> AddManyPlayers(SessionToken sessionToken, PlayerRestoreData players);
+        Task<PlayerRestoreResult> RestorePlayersToGame(SessionToken sessionToken, PlayerRestoreData players);
         Task<Player> AddPlayer(SessionToken token, Guid characterId);
         Task<PlayerJoinResult> AddPlayer(SessionToken token, PlayerJoinData playerJoinData);
         Task<PlayerJoinResult> AddPlayer(SessionToken token, string userId, string userName, string identifier = null);
@@ -39,12 +39,12 @@ namespace RavenNest.BusinessLogic.Game
 
         bool UpdateStatistics(SessionToken token, string userId, double[] statistics, Guid? characterId = null);
 
-        bool UpdateAppearance(SessionToken token, string userId, Models.SyntyAppearance appearance);
-        bool UpdateAppearance(Guid characterId, Models.SyntyAppearance appearance);
-        bool SendToCharacter(Guid characterId, Models.UserBankItem item, long amount);
-        bool UpdateAppearance(string userId, string identifier, Models.SyntyAppearance appearance);
+        bool UpdateAppearance(SessionToken token, string userId, RavenNest.Models.SyntyAppearance appearance);
+        bool UpdateAppearance(Guid characterId, RavenNest.Models.SyntyAppearance appearance);
+        bool SendToCharacter(Guid characterId, RavenNest.Models.UserBankItem item, long amount);
+        bool UpdateAppearance(string userId, string identifier, RavenNest.Models.SyntyAppearance appearance);
         bool ReturnMarketplaceItem(DataModels.MarketItem item);
-        bool UpdateAppearance(AuthToken token, string userId, string identifier, Models.SyntyAppearance appearance);
+        bool UpdateAppearance(AuthToken token, string userId, string identifier, RavenNest.Models.SyntyAppearance appearance);
         Task<bool> UpdatePlayerSkillAsync(Guid characterId, string skillName, int level, float levelProgress);
         bool UpdateExperience(SessionToken token, string userId, int[] level, double[] experience, Guid? characterId = null);
         bool UpdateExperience(SessionToken token, int skillIndex, int level, double experience, Guid characterId);
@@ -53,7 +53,8 @@ namespace RavenNest.BusinessLogic.Game
         //bool[] UpdateMany(SessionToken token, PlayerState[] states);
         bool LoyaltyGift(string gifterTwitchUserIdOrName, string streamerTwitchUserIdOrName, int bitsAmount, int subsAmount);
         void AddItem(Guid characterId, Guid itemId, int amount = 1);
-        Guid AddItemInstance(SessionToken token, string userId, Models.InventoryItem instance);
+        Guid AddItemInstance(SessionToken token, string userId, RavenNest.Models.InventoryItem instance);
+        AddItemInstanceResult AddItemInstanceDetailed(SessionToken token, string userId, RavenNest.Models.InventoryItem instance);
         AddItemResult AddItem(SessionToken token, string userId, Guid itemId);
         Task<bool> ResetPlayerSkillsAsync(Guid characterId);
         AddItemResult CraftItem_Old(SessionToken token, string userId, Guid itemId, int amount = 1);
@@ -66,12 +67,12 @@ namespace RavenNest.BusinessLogic.Game
         long VendorItem(SessionToken token, string userId, Guid itemId, long amount);
         bool EquipItemInstance(SessionToken token, string userId, Guid inventoryItemId);
         bool EquipItem(SessionToken token, string userId, Guid itemId);
-        bool EquipItem(Guid characterId, Models.InventoryItem item);
+        bool EquipItem(Guid characterId, RavenNest.Models.InventoryItem item);
         bool UnequipItemInstance(SessionToken token, string userId, Guid inventoryItemId);
         bool UnequipItem(SessionToken token, string userId, Guid itemId);
-        bool UnequipItem(Guid characterId, Models.InventoryItem item);
-        bool SendToStash(Guid characterId, Models.InventoryItem item, long amount);
-        bool SendToCharacter(Guid characterId, Guid otherCharacterId, Models.InventoryItem item, long amount);
+        bool UnequipItem(Guid characterId, RavenNest.Models.InventoryItem item);
+        bool SendToStash(Guid characterId, RavenNest.Models.InventoryItem item, long amount);
+        bool SendToCharacter(Guid characterId, Guid otherCharacterId, RavenNest.Models.InventoryItem item, long amount);
         bool EquipBestItems(SessionToken token, string userId);
         bool UnequipAllItems(SessionToken token, string userId);
 
@@ -80,7 +81,8 @@ namespace RavenNest.BusinessLogic.Game
         ItemCollection GetEquippedItems(SessionToken token, string userId);
         ItemCollection GetAllItems(SessionToken token, string userId);
         IReadOnlyList<Player> GetPlayers();
-        IReadOnlyList<Player> GetHighscorePlayers();
+        IReadOnlyDictionary<System.Guid, RavenNest.BusinessLogic.Models.HighscorePlayer> GetHighscorePlayers();
+        IReadOnlyDictionary<System.Guid, RavenNest.BusinessLogic.Models.HighscorePlayer> GetHighscorePlayers(int characterIndex);
         IReadOnlyList<WebsiteAdminPlayer> GetWebsiteAdminPlayers();
         void EquipBestItems(DataModels.Character character);
         bool AcquiredUserLock(SessionToken token, DataModels.Character character);

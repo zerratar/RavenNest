@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Models;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
 using RavenNest.Models;
@@ -7,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Skills = RavenNest.Models.Skills;
 
 namespace RavenNest.BusinessLogic.Game
@@ -27,75 +29,157 @@ namespace RavenNest.BusinessLogic.Game
             this.propertyProvider = propertyProvider;
         }
 
-        public HighScoreItem GetSkillHighScore(Player player, IReadOnlyList<Player> players, string skill)
+        public HighScoreItem GetSkillHighScore(Player player, IReadOnlyDictionary<Guid, HighscorePlayer> players, string skill)
         {
             var allHighscorePlayers = GetSkillHighScore(players, skill, 0, int.MaxValue);
             return allHighscorePlayers.Players.FirstOrDefault(x => x.CharacterId == player.Id);
         }
 
-        public HighScoreCollection GetSkillHighScore(IReadOnlyList<Player> players, string skill, int skip = 0, int take = 100)
+        public HighScoreCollection GetSkillHighScore(IReadOnlyDictionary<Guid, HighscorePlayer> playerLookup, string skill, int skip = 0, int take = 100)
         {
-            try
+            if (skill == "All" || skill == null)
             {
-                if (skill == "All")
-                    skill = null;
+                return GetHighScoreAllSkills(playerLookup, skip, take);
+            }
+            else
+            {
+                var skillIndex = DataModels.Skills.SkillNames.IndexOf(skill);
+                var skillRecords = gameData.GetSkillRecords(skillIndex, (ICollection<Guid>)playerLookup.Keys).ToSpan();
 
-                //var players = playerManager.GetPlayers().Where(x => !x.IsAdmin && x.CharacterIndex == 0).ToList();
-                var playerSelection = players
-                    .OrderByDescending(x => OrderByLevel(skill, x))
-                    .ThenByDescending(x => OrderByExp(skill, x))
-                .Skip(skip)
-                .Take(take).ToList();
+                var size = Math.Min(take, skillRecords.Length - skip);
+                var items = new HighScoreItem[size];
 
-                var existingRecords = skill != null
-                    ? GetSkillRecords(gameData.GetSkillRecords(DataModels.Skills.SkillNames.IndexOf(skill), GameMath.MaxLevel), playerSelection)
-                    : new List<CharacterSkillRecord>();
+                var sortedRecords = SortRecords(skillRecords, skip, take);
+                for (int i = 0; i < sortedRecords.Length; i++)
+                {
+                    var skillRecord = sortedRecords[i];
+                    var player = playerLookup[skillRecord.CharacterId];
+                    var experience = player.Skills.GetExperience(skillIndex);
+                    var rank = i + 1;
 
-                var items = playerSelection.Select((x, y) => Map(y + 1, skill, x, existingRecords)).ToList();
+                    items[i] = new HighScoreItem
+                    {
+                        CharacterId = player.Id,
+                        PlayerName = player.Name,
+                        CharacterIndex = player.CharacterIndex,
+                        Skill = skill,
+                        Experience = experience,
+                        Level = skillRecord.SkillLevel,
+                        DateReached = skillRecord.DateReached,
+                        OrderAchieved = rank,
+                        Rank = rank,
+                    };
+                }
 
                 return new HighScoreCollection
                 {
                     Players = items,
                     Skill = skill,
                     Offset = skip,
-                    Total = players.Count
+                    Total = playerLookup.Count
                 };
             }
-            catch (Exception exc)
+        }
+
+        public HighScoreCollection GetHighScoreAllSkills(IReadOnlyDictionary<Guid, HighscorePlayer> players, int skip, int take)
+        {
+            var playerSelection = players.Values
+                .OrderByDescending(x => OrderByLevel(-1, x))
+                .ThenByDescending(x => OrderByExp(-1, x))
+                .Skip(skip)
+                .Take(take).ToList();
+
+            var items = playerSelection.Select((x, y) => Map(y + 1, -1, x, new List<CharacterSkillRecord>())).ToList();
+
+            return new HighScoreCollection
             {
-                logger.LogError("Unable to load highscore: " + exc.ToString());
-                return new HighScoreCollection();
+                Players = items,
+                Skill = "All",
+                Offset = skip,
+                Total = players.Count
+            };
+        }
+
+        private Span<CharacterSkillRecord> SortRecords(Span<CharacterSkillRecord> input, int skip, int take)
+        {
+            int Sort(CharacterSkillRecord a, CharacterSkillRecord b)
+            {
+                if (a.SkillLevel < b.SkillLevel)
+                {
+                    return 1;
+                }
+                else if (a.SkillLevel == b.SkillLevel)
+                {
+
+                    if (a.DateReached > b.DateReached)
+                    {
+                        return 1;
+                    }
+                    else if (a.DateReached == b.DateReached)
+                    {
+                        return 0;
+                    }
+                    else if (a.DateReached < b.DateReached)
+                    {
+                        return -1;
+                    }
+                }
+                return -1;
             }
+
+            input.Sort(new Comparison<CharacterSkillRecord>(Sort));
+            var size = Math.Min(take, input.Length - skip);
+            return input.Slice(skip, size);
+
+            //    var size = Math.Min(take, input.Count - skip); // size is not guaranteed to be correct, but will be a maximum possible
+            //    var items = new List<CharacterSkillRecord>(size);
+            //    var takeIndex = 0;
+            //    var skipIndex = 0;
+
+            //    foreach (var item in input
+            //        .OrderByDescending(level => level.SkillLevel)
+            //        .ThenBy(reached => reached.DateReached))
+            //    {
+            //        if (!filter.ContainsKey(item.CharacterId))
+            //            continue;
+
+            //        if (skipIndex >= skip)
+            //        {
+            //            items.Add(item);
+            //            takeIndex++;
+            //        }
+
+            //        skipIndex++;
+
+            //        if (takeIndex >= take)
+            //        {
+            //            break;
+            //        }
+            //    }
+
+            //    return items;
         }
 
-        private IReadOnlyList<CharacterSkillRecord> GetSkillRecords(IReadOnlyList<CharacterSkillRecord> characterSkillRecords, List<Player> playerSelection)
+
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private int OrderByLevel(int skillIndex, HighscorePlayer x)
         {
-            if (characterSkillRecords == null || characterSkillRecords.Count == 0) return characterSkillRecords;
-            return characterSkillRecords.Where(x => playerSelection.Any(y => y.Id == x.CharacterId)).OrderBy(x => x.DateReached).ToList();
+            return TryGetLevel(skillIndex, x.Skills, out var level) ? level : 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int OrderByLevel(string skill, Player x)
+        private double OrderByExp(int skillIndex, HighscorePlayer x)
         {
-            return TryGetLevel(skill, x.Skills, out var level) ? level : 0;
+            return TryGetExperience(skillIndex, x.Skills, out var exp) ? exp : 0;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private double OrderByExp(string skill, Player x)
-        {
-            return TryGetExperience(skill, x.Skills, out var exp) ? exp : 0;
-        }
-
-        public HighScoreCollection GetHighScore(IReadOnlyList<Player> players, int skip = 0, int take = 100)
-        {
-            return GetSkillHighScore(players, null, skip, take);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private HighScoreItem Map(int rank, string skill, Player player, IReadOnlyList<CharacterSkillRecord> skillRecords)
+        private HighScoreItem Map(int rank, int skillIndex, HighscorePlayer player, IReadOnlyList<CharacterSkillRecord> skillRecords)
         {
             TryGetSkillExperience(
-                skill,
+                skillIndex,
                 player.Id,
                 player.Skills,
                 skillRecords,
@@ -114,67 +198,57 @@ namespace RavenNest.BusinessLogic.Game
                 OrderAchieved = order == 0 ? rank : order,
                 Experience = Math.Floor(exp),
                 Rank = rank,
-                Skill = skill
+                Skill = skillIndex >= 0 ? DataModels.Skills.SkillNames[skillIndex] : "all"
             };
         }
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryGetLevel(string skill, Skills skills, out int level)
+        private bool TryGetLevel(int skillIndex, DataModels.Skills skills, out int level)
         {
-            var lvlProps = propertyProvider.GetProperties<Skills, int>();
             level = 0;
-            if (string.IsNullOrEmpty(skill))
+            if (skillIndex < 0)
             {
-                foreach (var prop in lvlProps)
+                foreach (var skill in skills.GetSkills())
                 {
-                    level += (int)prop.GetValue(skills);
+                    level += skill.Level;
                 }
                 return true;
             }
 
-            var lvlProp = lvlProps.FirstOrDefault(x => x.Name.IndexOf(skill, StringComparison.OrdinalIgnoreCase) >= 0);
-            if (lvlProp == null)
-                return false;
-
-            level = (int)lvlProp.GetValue(skills);
+            level = skills.GetLevel(skillIndex);
             return true;
         }
 
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryGetExperience(string skill, Skills skills, out double exp)
+        private bool TryGetExperience(int skillIndex, DataModels.Skills skills, out double exp)
         {
-            var expProps = propertyProvider.GetProperties<Skills, double>();
             exp = 0;
 
-            if (string.IsNullOrEmpty(skill))
+            if (skillIndex < 0)
             {
-                foreach (var prop in expProps)
+                foreach (var skill in skills.GetSkills())
                 {
-                    exp += (double)prop.GetValue(skills);
+                    exp += skill.Experience;
                 }
                 return true;
             }
 
-            var expProp = expProps.FirstOrDefault(x => x.Name.Equals(skill, StringComparison.OrdinalIgnoreCase));
-            if (expProp == null)
-                return false;
-
-            exp = Math.Floor((double)expProp.GetValue(skills));
+            exp = skills.GetExperience(skillIndex);
             return true;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryGetSkillExperience(string skill, Guid characterId, Skills skills, IReadOnlyList<CharacterSkillRecord> skillRecords, out double exp, out int level, out DateTime dateReached, out int order)
+        private bool TryGetSkillExperience(int skillIndex, Guid characterId, DataModels.Skills skills, IReadOnlyList<CharacterSkillRecord> skillRecords, out double exp, out int level, out DateTime dateReached, out int order)
         {
-            dateReached = DateTime.UtcNow;
+            dateReached = DateTime.UnixEpoch; //Make it more obvious it's an incorrect date            
             order = -1;
 
-            var ok = TryGetExperience(skill, skills, out exp) & TryGetLevel(skill, skills, out level);
+            var ok = TryGetExperience(skillIndex, skills, out exp) & TryGetLevel(skillIndex, skills, out level);
 
             if (level == GameMath.MaxLevel)
             {
-                var skillIndex = DataModels.Skills.SkillNames.IndexOf(skill);
                 var record = gameData.GetCharacterSkillRecord(characterId, skillIndex);
                 if (record != null)
                 {

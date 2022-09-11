@@ -109,7 +109,7 @@ namespace RavenNest.Controllers
             //{
             //    NullValueHandling = NullValueHandling.Ignore
             //});
-            return playerManager.AddManyPlayers(AssertGetSessionToken(), players);
+            return playerManager.RestorePlayersToGame(AssertGetSessionToken(), players);
         }
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpDelete("{characterId}")]
@@ -210,6 +210,13 @@ namespace RavenNest.Controllers
         public Guid AddItemInstance(string userId, [FromBody] Models.InventoryItem instance)
         {
             return playerManager.AddItemInstance(AssertGetSessionToken(), userId, instance);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{userId}/item-instance-detailed")]
+        public AddItemInstanceResult AddItemInstanceDetailed(string userId, [FromBody] Models.InventoryItem instance)
+        {
+            return playerManager.AddItemInstanceDetailed(AssertGetSessionToken(), userId, instance);
         }
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/toggle-helmet")]
