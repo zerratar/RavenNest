@@ -228,12 +228,13 @@ namespace RavenNest.BusinessLogic.Net
 
         private void OnData(int connectionId, ReadOnlyMemory<byte> packetData)
         {
+            TcpSocketApiConnection connection = null;
             try
             {
                 lock (clientMutex)
                 {
                     // we always have one, but don't always have a session token
-                    if (!connectionProvider.TryGet(connectionId, out var connection))
+                    if (!connectionProvider.TryGet(connectionId, out connection))
                     {
                         return;
                     }
@@ -260,8 +261,17 @@ namespace RavenNest.BusinessLogic.Net
                     {
                         // we will expect authentication
                         // if it isnt, we will disconnect the client.
-                        //var auth = BinaryPack.BinaryConverter.Deserialize<AuthenticationRequest>(packetData);
+                        // var auth = BinaryPack.BinaryConverter.Deserialize<AuthenticationRequest>(packetData);
+
                         var auth = MessagePackSerializer.Deserialize<AuthenticationRequest>(packetData, MessagePack.Resolvers.ContractlessStandardResolver.Options);
+
+                        if (string.IsNullOrEmpty(auth.SessionToken))
+                        {
+                            logger.LogDebug("Connection trying to authenticate with empty session token. Most likely reconnection without sending session token.");
+                            server.Disconnect(connectionId);
+                            return;
+                        }
+
                         var sessionToken = sessionManager.Get(auth.SessionToken);
                         if (!CheckSessionTokenValidity(sessionToken))
                         {
@@ -278,7 +288,15 @@ namespace RavenNest.BusinessLogic.Net
             }
             catch (Exception exc)
             {
-                logger.LogError("Failed to handle data from connectionId (" + connectionId + "): " + exc.ToString());
+                if (connection != null)
+                {
+                    logger.LogError("Failed to handle data from connectionId (" + connectionId + ", session token: " + connection.SessionToken + ") len=" + packetData.Length + ": " + exc.ToString());
+                    server.Disconnect(connectionId);
+                    return;
+                }
+
+                logger.LogError("Failed to handle data from connectionId (" + connectionId + ") len=" + packetData.Length + ": " + exc.ToString());
+                server.Disconnect(connectionId);
             }
         }
 
