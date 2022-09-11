@@ -2,8 +2,8 @@
 @using RavenNest.Models
 @using RavenNest.BusinessLogic.Extended
 @page "/characters"
-@page "/characters/{index}"
-@page "/character/{characterId}"
+@page "/characters/{index:int?}"
+@page "/character/{characterId?}"
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject NavigationManager NavigationManager
@@ -11,74 +11,84 @@
 
 @if (players == null && selectedPlayer == null)
 {
-  <LoadIndicator></LoadIndicator>
+    <LoadIndicator></LoadIndicator>
 }
 else
 {
-  <div class="tab-view character-selection">
-    @foreach (var p in players)
-    {
-      <button class="tab-link @(p.Id == selectedPlayer?.Id ? "active" : "")" @onclick="(()=> SelectPlayer(p))">
-        <div class="character-name">
-          @p.Name
-        </div>
-        <div class="character-index">
-          @p.CharacterIndex  @(p.Identifier != null ? $"({p.Identifier})" : "")
-        </div>
-        <div class="character-level">
-          @PlayerService.GetCombatLevel(p)
-        </div>
-      </button>
-    }
-  </div>
+    <div class="tab-view character-selection">
+        @foreach (var p in players)
+        {
+            <button class="tab-link @(p.Id == selectedPlayer?.Id ? "active" : "")" @onclick="(()=> SelectPlayer(p))">
+                <div class="character-name">
+                    @p.Name
+                </div>
+                <div class="character-index">
+                    @p.CharacterIndex  @(p.Identifier != null ? $"({p.Identifier})" : "")
+                </div>
+                <div class="character-level">
+                    @PlayerService.GetCombatLevel(p)
+                </div>
+            </button>
+        }
+    </div>
 
-  if (selectedPlayer != null)
-  {
-    <PlayerView SelectedPlayer="selectedPlayer" CanManage="true"></PlayerView>
-  }
+    if (selectedPlayer != null)
+    {
+        <PlayerView SelectedPlayer="selectedPlayer" CanManage="true"></PlayerView>
+    }
 }
 
 @code {
 
-	[Parameter]
-  public string Index { get; set; }
+    [Parameter]
+    public int? Index { get; set; }
 
-  [Parameter]
-  public string CharacterId { get; set; }
+    [Parameter]
+    public string CharacterId { get; set; }
 
-  private WebsitePlayer selectedPlayer;
-  private IReadOnlyList<WebsitePlayer> players;
-  private RavenNest.Sessions.SessionInfo session;
+    private WebsitePlayer selectedPlayer;
+    private IReadOnlyList<WebsitePlayer> players;
+    private RavenNest.Sessions.SessionInfo session;
 
-  protected override async Task OnInitializedAsync()
-  {
-    session = AuthService.GetSession();
-    if (session == null || session.UserId == null)
-      return;
-
-    if (CharacterId != null && Guid.TryParse(CharacterId, out var guid))
+    protected override void OnInitialized()
     {
-      selectedPlayer = await PlayerService.GetPlayerAsync(guid);
+        session = AuthService.GetSession();
     }
-    else if (Index != null && int.TryParse(Index, out var i))
-    {
-      selectedPlayer = await PlayerService.GetMyPlayerByIndexAsync(i);
-    }
-    players = await PlayerService.GetMyPlayersAsync();
-    selectedPlayer = players.FirstOrDefault();
-  }
 
-  protected override void OnAfterRender(bool firstRender)
-  {
-    if (session == null || session.UserId == null && selectedPlayer == null)
+    protected override async Task OnParametersSetAsync()
     {
-      NavigationManager.NavigateTo("/login");
-    }
-  }
+        await base.OnParametersSetAsync();
 
-  private async void SelectPlayer(WebsitePlayer player)
-  {	  
-     selectedPlayer = await PlayerService.GetPlayerAsync(player.Id);
-	 await InvokeAsync(StateHasChanged);
-  }
+        if (session == null || session.UserId == null)
+            return;
+
+        players = await PlayerService.GetMyPlayersAsync();
+
+        if (CharacterId != null && Guid.TryParse(CharacterId, out var guid))
+        {
+            selectedPlayer = await PlayerService.GetPlayerAsync(guid);
+        }
+        else if (Index != null)
+        {
+            selectedPlayer = await PlayerService.GetMyPlayerByIndexAsync(Index ?? 0);
+        } 
+        if(selectedPlayer == null)
+        {
+           selectedPlayer = players.FirstOrDefault(); 
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (session == null || session.UserId == null && selectedPlayer == null)
+        {
+            NavigationManager.NavigateTo("/login/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
+        }
+    }
+
+    private async void SelectPlayer(WebsitePlayer player)
+    {
+        selectedPlayer = await PlayerService.GetPlayerAsync(player.Id);
+        await InvokeAsync(StateHasChanged);
+    }
 }
