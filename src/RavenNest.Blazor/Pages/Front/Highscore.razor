@@ -147,15 +147,15 @@
     private string[] characterIndexNames = new string[] { "All Characters", "Main", "Second", "Third" };
     private int[] characterIndices = new int[] { -1, 0, 1, 2 };
 
-    protected override async Task OnParametersSetAsync()
+    protected override void OnParametersSet()
     {
         base.OnParametersSet();
 
         //Clean Input a little so server can't be overloaded fetching 100,000 records and make it a little fail safe to mistakes in url'
         CharacterIndex = DirtyCharacterIndex ?? -1;
-        Top = Math.Max(1, Math.Min(1000, DirtyTop?? 100));
+        Top = Math.Max(1, Math.Min(1000, DirtyTop ?? 100));
 
-        await LoadHighscoreAsync();
+        LoadHighscoreAsync();
     }
 
     private void SelectIndex(int index)
@@ -230,7 +230,7 @@
         new Skill("Ranged"),
         new Skill("Sailing"),
         new Skill("Healing"),
-                };
+                    };
 
     private class Skill
     {
