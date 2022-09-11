@@ -111,7 +111,7 @@ namespace RavenNest.BusinessLogic.Game
                 else if (a.SkillLevel == b.SkillLevel)
                 {
 
-                    if (a.DateReached < b.DateReached)
+                    if (a.DateReached > b.DateReached)
                     {
                         return 1;
                     }
@@ -119,7 +119,7 @@ namespace RavenNest.BusinessLogic.Game
                     {
                         return 0;
                     }
-                    else if (a.DateReached > b.DateReached)
+                    else if (a.DateReached < b.DateReached)
                     {
                         return -1;
                     }
