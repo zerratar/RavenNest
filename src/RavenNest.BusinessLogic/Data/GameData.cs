@@ -374,6 +374,8 @@ namespace RavenNest.BusinessLogic.Data
                 #endregion
 
                 #region Post Data Load - Transformations
+
+                EnsureCharacterSkillRecords();
                 EnsureMagicAttributes();
                 EnsureResources();
 
