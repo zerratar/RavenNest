@@ -2130,7 +2130,34 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<CharacterSkillRecord> GetSkillRecords(int skillIndex, ICollection<Guid> characterIds)
         {
-            return characterSkillRecords.Entities.AsList(x => characterIds.Contains(x.CharacterId) && x.SkillIndex == skillIndex);
+            var records = new List<CharacterSkillRecord>();
+            foreach (var characterId in characterIds)
+            {
+                var sr = GetCharacterSkillRecord(characterId, skillIndex);
+                if (sr == null)
+                {
+                    var character = GetCharacter(characterId);
+                    var skills = GetCharacterSkills(character.SkillsId);
+                    var skill = skills[skillIndex];
+                    // slow. But add it.
+                    sr = new CharacterSkillRecord
+                    {
+                        CharacterId = characterId,
+                        DateReached = DateTime.UtcNow,
+                        Id = Guid.NewGuid(),
+                        SkillExperience = skill.Experience,
+                        SkillLevel = skill.Level,
+                        SkillIndex = skillIndex,
+                        SkillName = skill.Name
+                    };
+
+                    Add(sr);
+                }
+
+                records.Add(sr);
+            }
+            return records;
+            //return characterSkillRecords.Entities.AsList(x => characterIds.Contains(x.CharacterId) && x.SkillIndex == skillIndex);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
