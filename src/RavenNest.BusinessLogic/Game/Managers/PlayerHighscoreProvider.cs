@@ -106,7 +106,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 if (a.SkillLevel < b.SkillLevel)
                 {
-                    return -1;
+                    return 1;
                 }
 
                 else if (a.SkillLevel == b.SkillLevel)
@@ -114,14 +114,14 @@ namespace RavenNest.BusinessLogic.Game
 
                     if (a.DateReached < b.DateReached)
                     {
-                        return -1;
+                        return 1;
                     }
 
                     // no need to compare with dates being same time. This will most likely never happen.
                     // and since we return 1 per default already, code-wise this is not necessary
                     // return 1;
                 }
-                return 1;
+                return -1;
             }
 
             input.Sort(new Comparison<CharacterSkillRecord>(Sort));
