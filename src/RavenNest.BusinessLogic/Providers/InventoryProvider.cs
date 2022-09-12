@@ -83,7 +83,7 @@ namespace RavenNest.BusinessLogic.Providers
                 for (var i = 0; i < items.Count; i++)
                 {
                     var invItem = items[i];
-                    if (!knownPlayerItems.TryGetValue(characterId, out var dbItem))
+                    if (!knownPlayerItems.TryGetValue(invItem.Id, out var dbItem))
                     {
                         if (missingItems == null) missingItems = new List<InventoryItem>();
                         missingItems.Add(invItem);
