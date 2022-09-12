@@ -161,21 +161,18 @@ namespace RavenNest.DataModels
             return (skills ?? (skills = SkillNames.Select(GetSkill).ToList()));
         }
 
-        public StatsUpdater this[int skillIndex]
+        public StatsUpdater GetSkill(int skillIndex)
         {
-            get
-            {
-                return GetSkill(SkillNames[skillIndex]);
-            }
+            return GetSkill(SkillNames[skillIndex]);
         }
 
-        public StatsUpdater this[string skillName]
-        {
-            get
-            {
-                return GetSkill(skillName);
-            }
-        }
+        //public StatsUpdater this[string skillName]
+        //{
+        //    get
+        //    {
+        //        return GetSkill(skillName);
+        //    }
+        //}
 
         public StatsUpdater GetSkill(string name)
         {

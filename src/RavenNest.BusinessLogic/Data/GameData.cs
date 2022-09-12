@@ -2138,7 +2138,7 @@ namespace RavenNest.BusinessLogic.Data
                 {
                     var character = GetCharacter(characterId);
                     var skills = GetCharacterSkills(character.SkillsId);
-                    var skill = skills[skillIndex];
+                    var skill = skills.GetSkill(skillIndex);
                     // slow. But add it.
                     sr = new CharacterSkillRecord
                     {
