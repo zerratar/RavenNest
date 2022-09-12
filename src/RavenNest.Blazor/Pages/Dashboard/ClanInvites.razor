@@ -79,7 +79,7 @@ else
   {
     if (session == null || session.UserId == null)
     {
-      NavigationManager.NavigateTo("/login");
+            NavigationManager.NavigateTo("/login/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
     }
   }
 }
