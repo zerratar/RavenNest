@@ -4,6 +4,7 @@ using RavenNest.BusinessLogic.Extended;
 using RavenNest.DataModels;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
@@ -15,7 +16,7 @@ namespace RavenNest.BusinessLogic.Providers
         private readonly ILogger logger;
         private readonly IGameData gameData;
         private readonly object mutex = new object();
-        private List<InventoryItem> items;
+        private InventoryItemCollection items;
 
         private static readonly TimeSpan PatreonRewardFrequency = TimeSpan.FromDays(1);
         private static readonly Random random = new Random();
@@ -24,9 +25,132 @@ namespace RavenNest.BusinessLogic.Providers
             this.logger = logger;
             this.gameData = gameData;
             this.characterId = characterId;
-            items = GetInventoryItems(characterId);
+            items = new InventoryItemCollection(gameData, GetInventoryItems(characterId));
             //AddPatreonTierRewards();
             //MergeItems(this.items.ToList());
+        }
+
+        /// <summary>
+        /// Called to check if the inventory items in this inventory matches with gameData
+        /// </summary>
+        private void ValidateInventory()
+        {
+            try
+            {
+                List<InventoryItem> missingItems = null;
+                List<InventoryItem> emptyStacks = null;
+                List<InventoryItem> duplicateStacks = null;
+                List<InventoryItem> itemsWithBadAmount = null;
+
+                var emptyStackCount = 0;
+                var duplicatedStackCount = 0;
+                var errorMessage = new System.Text.StringBuilder();
+                var knownPlayerItems = gameData.GetAllPlayerItems(characterId).ToDictionary(x => x.Id, x => x);
+                var itemCountDelta = 0;
+                if (knownPlayerItems.Count != items.Count)
+                {
+                    itemCountDelta = knownPlayerItems.Count - items.Count;
+                    errorMessage.AppendLine($"Item count mismatch '{items.Count}' found, expected {knownPlayerItems.Count}.");
+
+                    // check if there are duplicate unequipped stacks
+                    // and if there are any unequipped stacks with 0 amount
+
+                    var unequippedStacks = new Dictionary<System.Guid, int>();
+                    foreach (var item in knownPlayerItems)
+                    {
+                        if (item.Value.Equipped) continue;
+                        if (unequippedStacks.TryGetValue(item.Value.ItemId, out var i))
+                        {
+                            unequippedStacks[item.Value.ItemId] = i + 1;
+                            if (duplicateStacks == null) duplicateStacks = new List<InventoryItem>();
+                            duplicateStacks.Add(item.Value);
+                            duplicatedStackCount++;
+                        }
+                        else
+                        {
+                            unequippedStacks[item.Value.ItemId] = 1;
+                        }
+
+                        if (item.Value.Amount == 0)
+                        {
+                            emptyStackCount++;
+                            if (emptyStacks == null) emptyStacks = new List<InventoryItem>();
+                            emptyStacks.Add(item.Value);
+                        }
+                    }
+                }
+
+                for (var i = 0; i < items.Count; i++)
+                {
+                    var invItem = items[i];
+                    if (!knownPlayerItems.TryGetValue(characterId, out var dbItem))
+                    {
+                        if (missingItems == null) missingItems = new List<InventoryItem>();
+                        missingItems.Add(invItem);
+                        continue;
+                    }
+
+                    if (dbItem.Amount != invItem.Amount)
+                    {
+                        if (itemsWithBadAmount == null) itemsWithBadAmount = new List<InventoryItem>();
+                        itemsWithBadAmount.Add(invItem);
+                    }
+                }
+
+                if (missingItems != null)
+                {
+                    errorMessage.AppendLine("======== " + missingItems.Count + " Missing Items =======");
+                    errorMessage.AppendLine(Newtonsoft.Json.JsonConvert.SerializeObject(missingItems));
+                    errorMessage.AppendLine();
+                }
+
+                if (duplicateStacks != null)
+                {
+                    errorMessage.AppendLine("======== " + duplicateStacks.Count + " Duplicate Items =======");
+                    errorMessage.AppendLine(Newtonsoft.Json.JsonConvert.SerializeObject(duplicateStacks));
+                    errorMessage.AppendLine();
+                }
+
+                if (emptyStacks != null)
+                {
+                    errorMessage.AppendLine("======== " + emptyStacks.Count + " Empty Items =======");
+                    errorMessage.AppendLine(Newtonsoft.Json.JsonConvert.SerializeObject(emptyStacks));
+                    errorMessage.AppendLine();
+                }
+
+                if (itemsWithBadAmount != null)
+                {
+                    errorMessage.AppendLine("======== " + itemsWithBadAmount.Count + " Items with wrong amount =======");
+                    errorMessage.AppendLine(Newtonsoft.Json.JsonConvert.SerializeObject(itemsWithBadAmount));
+                    errorMessage.AppendLine();
+                }
+                if (errorMessage.Length > 0)
+                {
+                    var error = errorMessage.ToString();
+
+                    var folder = System.IO.Path.Combine(FolderPaths.GeneratedData, FolderPaths.BadInventory);
+                    var dataFolder = new DirectoryInfo(folder);
+                    if (!System.IO.Directory.Exists(folder))
+                    {
+                        dataFolder = Directory.CreateDirectory(folder);
+                    }
+                    var c = gameData.GetCharacter(characterId);
+
+                    System.IO.File.WriteAllText(Path.Combine(dataFolder.FullName, c.Name + "-" + c.CharacterIndex + ".txt"), error);
+
+                    var badAmountCount = itemsWithBadAmount?.Count ?? 0;
+                    var missingItemCount = missingItems?.Count ?? 0;
+
+                    logger.LogError(c.Name + "#" + c.CharacterIndex + " inventory validation failed. Item Stack Delta: " + itemCountDelta + ", " + duplicatedStackCount + " duplicate stacks, " + emptyStackCount + " empty stacks, " + badAmountCount + " mismatch amount, " + missingItemCount + " missing stacks");
+                }
+            }
+            catch (Exception exc)
+            {
+                var c = gameData.GetCharacter(characterId);
+
+                logger.LogError(c.Name + "#" + c.CharacterIndex + " inventory validation threw an exception: " + exc);
+            }
+            // log a short message to db, but save full list to disk.
         }
 
         private List<InventoryItem> GetInventoryItems(Guid characterId)
@@ -42,67 +166,74 @@ namespace RavenNest.BusinessLogic.Providers
 
         public void EquipBestItems()
         {
-            lock (mutex)
+            try
             {
-                var character = gameData.GetCharacter(characterId);
-                var equippedPetInventoryItem = GetEquippedItem(ItemCategory.Pet);
-
-                UnequipAllItems();
-
-                var skills = gameData.GetCharacterSkills(character.SkillsId);
-                var inventoryItems = GetUnequippedItems()
-                    //.Select(x => new { InventoryItem = x, Item = x.Item })
-                    .Where(x => CanEquipItem(x.Item, skills))
-                    .OrderByDescending(x => GetItemValue(x.Item))
-                    .ToList();
-
-                var meleeWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && (x.Item.Type == (int)ItemType.OneHandedSword || x.Item.Type == (int)ItemType.TwoHandedSword || x.Item.Type == (int)ItemType.TwoHandedAxe));
-                if (meleeWeaponToEquip.IsNotNull())
-                    EquipItem(meleeWeaponToEquip);
-
-                var rangedWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && x.Item.Type == (int)ItemType.TwoHandedBow);
-                if (rangedWeaponToEquip.IsNotNull())
-                    EquipItem(rangedWeaponToEquip);
-
-                var magicWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && x.Item.Type == (int)ItemType.TwoHandedStaff);
-                if (magicWeaponToEquip.IsNotNull())
-                    EquipItem(magicWeaponToEquip);
-
-                ReadOnlyInventoryItem equippedPet;
-                if (equippedPetInventoryItem.IsNotNull())
+                lock (mutex)
                 {
-                    equippedPet = GetUnequippedItem(equippedPetInventoryItem.ItemId);
-                    if (equippedPet.IsNotNull())
-                    {
-                        EquipItem(equippedPet);
-                    }
-                }
-                else
-                {
-                    var petToEquip = GetUnequippedItem(ItemCategory.Pet);
-                    if (petToEquip.IsNotNull())
-                    {
-                        EquipItem(petToEquip);
-                    }
-                }
+                    var character = gameData.GetCharacter(characterId);
+                    var equippedPetInventoryItem = GetEquippedItem(ItemCategory.Pet);
 
-                foreach (var itemGroup in inventoryItems
-                    .Where(x =>
-                        x.Item.Category != (int)ItemCategory.Weapon &&
-                        x.Item.Category != (int)ItemCategory.Pet &&
-                        x.Item.Category != (int)ItemCategory.StreamerToken &&
-                        x.Item.Category != (int)ItemCategory.Scroll)
-                    .GroupBy(x => x.Item.Type))
-                {
-                    var itemToEquip = itemGroup
+                    UnequipAllItems();
+
+                    var skills = gameData.GetCharacterSkills(character.SkillsId);
+                    var inventoryItems = GetUnequippedItems()
+                        //.Select(x => new { InventoryItem = x, Item = x.Item })
+                        .Where(x => CanEquipItem(x.Item, skills))
                         .OrderByDescending(x => GetItemValue(x.Item))
-                        .FirstOrDefault();
+                        .ToList();
 
-                    if (itemToEquip.IsNotNull())
+                    var meleeWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && (x.Item.Type == (int)ItemType.OneHandedSword || x.Item.Type == (int)ItemType.TwoHandedSword || x.Item.Type == (int)ItemType.TwoHandedAxe));
+                    if (meleeWeaponToEquip.IsNotNull())
+                        EquipItem(meleeWeaponToEquip);
+
+                    var rangedWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && x.Item.Type == (int)ItemType.TwoHandedBow);
+                    if (rangedWeaponToEquip.IsNotNull())
+                        EquipItem(rangedWeaponToEquip);
+
+                    var magicWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && x.Item.Type == (int)ItemType.TwoHandedStaff);
+                    if (magicWeaponToEquip.IsNotNull())
+                        EquipItem(magicWeaponToEquip);
+
+                    ReadOnlyInventoryItem equippedPet;
+                    if (equippedPetInventoryItem.IsNotNull())
                     {
-                        EquipItem(itemToEquip);
+                        equippedPet = GetUnequippedItem(equippedPetInventoryItem.ItemId);
+                        if (equippedPet.IsNotNull())
+                        {
+                            EquipItem(equippedPet);
+                        }
+                    }
+                    else
+                    {
+                        var petToEquip = GetUnequippedItem(ItemCategory.Pet);
+                        if (petToEquip.IsNotNull())
+                        {
+                            EquipItem(petToEquip);
+                        }
+                    }
+
+                    foreach (var itemGroup in inventoryItems
+                        .Where(x =>
+                            x.Item.Category != (int)ItemCategory.Weapon &&
+                            x.Item.Category != (int)ItemCategory.Pet &&
+                            x.Item.Category != (int)ItemCategory.StreamerToken &&
+                            x.Item.Category != (int)ItemCategory.Scroll)
+                        .GroupBy(x => x.Item.Type))
+                    {
+                        var itemToEquip = itemGroup
+                            .OrderByDescending(x => GetItemValue(x.Item))
+                            .FirstOrDefault();
+
+                        if (itemToEquip.IsNotNull())
+                        {
+                            EquipItem(itemToEquip);
+                        }
                     }
                 }
+            }
+            finally
+            {
+                ValidateInventory();
             }
         }
 
@@ -121,53 +252,60 @@ namespace RavenNest.BusinessLogic.Providers
 
         internal void AddPatreonTierRewards(int? tierReward = null)
         {
-            lock (mutex)
+            try
             {
-                var character = gameData.GetCharacter(characterId);
-                if (character == null || character.CharacterIndex > 0) return;
-                var user = gameData.GetUser(character.UserId);
-                if (user == null) return;
-
-                var lastReward = user.LastReward.GetValueOrDefault();
-                var elapsedSinceLastReward = DateTime.UtcNow - lastReward;
-                // in case you update your tier, we also give you the reward right away.
-                if (elapsedSinceLastReward < PatreonRewardFrequency && tierReward <= user.PatreonTier)
-                    return;
-
-                var tier = tierReward ?? user.PatreonTier ?? 0;
-                if (tier >= 3)
+                lock (mutex)
                 {
-                    var expScroll = Guid.Parse("DA0179BE-2EF0-412D-8E18-D0EE5A9510C7");
-                    // tier 3 (dragon)  = 2 exp scroll per day
-                    // tier 4 (abraxas) = 4 exp scrolls per day
-                    // tier 5 (phantom) = 6 exp scrolls per day
-                    var scrollAmount = (tier - 2) * 2;
-                    AddItem(expScroll, scrollAmount, soulbound: true);
-                }
+                    var character = gameData.GetCharacter(characterId);
+                    if (character == null || character.CharacterIndex > 0) return;
+                    var user = gameData.GetUser(character.UserId);
+                    if (user == null) return;
 
-                if (tier >= 2)
-                {
-                    var dungeonScroll = Guid.Parse("C95AC1D6-108E-4B2F-9DB2-2EF00C092BFE");
-                    // tier 2 (rune)    = 2 dungeon scrolls per day
-                    // tier 3 (dragon)  = 4 dungeon scrolls per day
-                    // tier 4 (abraxas) = 6 dungeon scrolls per day
-                    // tier 5 (phantom) = 8 dungeon scrolls per day
-                    var scrollAmount = 2 + ((tier - 2) * 2);
-                    AddItem(dungeonScroll, scrollAmount, soulbound: true);
-                }
+                    var lastReward = user.LastReward.GetValueOrDefault();
+                    var elapsedSinceLastReward = DateTime.UtcNow - lastReward;
+                    // in case you update your tier, we also give you the reward right away.
+                    if (elapsedSinceLastReward < PatreonRewardFrequency && tierReward <= user.PatreonTier)
+                        return;
 
-                if (tier >= 1)
-                {
-                    var raidScroll = Guid.Parse("061BAA06-5B73-4BBB-A9E1-AEA4907CD309");
-                    // tier 1 (mithril) = 2 raid scrolls per day
-                    // tier 2 (rune)    = 4 raid scrolls per day
-                    // tier 3 (dragon)  = 6 raid scrolls per day
-                    // tier 4 (abraxas) = 8 raid scrolls per day
-                    // tier 5 (phantom) = 10 raid scrolls per day
-                    var scrollAmount = tier * 2;
-                    AddItem(raidScroll, scrollAmount, soulbound: true);
-                    user.LastReward = DateTime.UtcNow;
+                    var tier = tierReward ?? user.PatreonTier ?? 0;
+                    if (tier >= 3)
+                    {
+                        var expScroll = Guid.Parse("DA0179BE-2EF0-412D-8E18-D0EE5A9510C7");
+                        // tier 3 (dragon)  = 2 exp scroll per day
+                        // tier 4 (abraxas) = 4 exp scrolls per day
+                        // tier 5 (phantom) = 6 exp scrolls per day
+                        var scrollAmount = (tier - 2) * 2;
+                        AddItem(expScroll, scrollAmount, soulbound: true);
+                    }
+
+                    if (tier >= 2)
+                    {
+                        var dungeonScroll = Guid.Parse("C95AC1D6-108E-4B2F-9DB2-2EF00C092BFE");
+                        // tier 2 (rune)    = 2 dungeon scrolls per day
+                        // tier 3 (dragon)  = 4 dungeon scrolls per day
+                        // tier 4 (abraxas) = 6 dungeon scrolls per day
+                        // tier 5 (phantom) = 8 dungeon scrolls per day
+                        var scrollAmount = 2 + ((tier - 2) * 2);
+                        AddItem(dungeonScroll, scrollAmount, soulbound: true);
+                    }
+
+                    if (tier >= 1)
+                    {
+                        var raidScroll = Guid.Parse("061BAA06-5B73-4BBB-A9E1-AEA4907CD309");
+                        // tier 1 (mithril) = 2 raid scrolls per day
+                        // tier 2 (rune)    = 4 raid scrolls per day
+                        // tier 3 (dragon)  = 6 raid scrolls per day
+                        // tier 4 (abraxas) = 8 raid scrolls per day
+                        // tier 5 (phantom) = 10 raid scrolls per day
+                        var scrollAmount = tier * 2;
+                        AddItem(raidScroll, scrollAmount, soulbound: true);
+                        user.LastReward = DateTime.UtcNow;
+                    }
                 }
+            }
+            finally
+            {
+                ValidateInventory();
             }
         }
 
@@ -191,90 +329,102 @@ namespace RavenNest.BusinessLogic.Providers
 
         public bool EquipItem(InventoryItem item)
         {
-            lock (mutex)
+            try
             {
-                // No stack exists. That means we dont own that item.
-                var existingStacks = items.Where(x => CanBeStacked(x, item)).ToArray();
-                if (existingStacks == null || existingStacks.Length == 0)
+                lock (mutex)
                 {
-                    return false;
+                    // No stack exists. That means we dont own that item.
+                    var existingStacks = items.Where(x => CanBeStacked(x, item)).ToArray();
+                    if (existingStacks == null || existingStacks.Length == 0)
+                    {
+                        return false;
+                    }
+
+                    if (item.Equipped)
+                    {
+                        return false;
+                    }
+
+                    var dbItem = gameData.GetItem(item.ItemId);
+                    if (dbItem == null) return false;
+
+                    var character = gameData.GetCharacter(characterId);
+                    var skills = gameData.GetCharacterSkills(character.SkillsId);
+
+                    if (!CanEquipItem(dbItem, skills)) return false;
+
+                    var equipmentSlot = ReadOnlyInventoryItem.GetEquipmentSlot((ItemType)dbItem.Type);
+                    var alreadyEquippedItem = GetEquippedItem(equipmentSlot);
+
+                    // Equip first, then unequipped any already equipped items
+                    // this will allow us to update the correct stack, otherwise we may
+                    // try to update the stack we currently equipping with if the item id are the same.
+                    if (item.Amount == 1)
+                    {
+                        item.Equipped = true;
+                    }
+                    else
+                    {
+                        item.Amount--;
+
+                        var newStack = Copy(item, 1);
+                        newStack.Equipped = true;
+                        this.items.Add(newStack);
+                    }
+
+                    // Finally, unequip.
+                    if (alreadyEquippedItem.IsNotNull())
+                    {
+                        UnequipItem(alreadyEquippedItem);
+                    }
+
+                    return true;
                 }
-
-                if (item.Equipped)
-                {
-                    return false;
-                }
-
-                var dbItem = gameData.GetItem(item.ItemId);
-                if (dbItem == null) return false;
-
-                var character = gameData.GetCharacter(characterId);
-                var skills = gameData.GetCharacterSkills(character.SkillsId);
-
-                if (!CanEquipItem(dbItem, skills)) return false;
-
-                var equipmentSlot = ReadOnlyInventoryItem.GetEquipmentSlot((ItemType)dbItem.Type);
-                var alreadyEquippedItem = GetEquippedItem(equipmentSlot);
-
-                // Equip first, then unequipped any already equipped items
-                // this will allow us to update the correct stack, otherwise we may
-                // try to update the stack we currently equipping with if the item id are the same.
-                if (item.Amount == 1)
-                {
-                    item.Equipped = true;
-                }
-                else
-                {
-                    item.Amount--;
-
-                    var newStack = Copy(item, 1);
-                    newStack.Equipped = true;
-
-                    this.gameData.Add(newStack);
-                    this.items.Add(newStack);
-                }
-
-                // Finally, unequip.
-                if (alreadyEquippedItem.IsNotNull())
-                {
-                    UnequipItem(alreadyEquippedItem);
-                }
-
-                return true;
+            }
+            finally
+            {
+                ValidateInventory();
             }
         }
 
         public bool UnequipItem(InventoryItem item)
         {
-            lock (mutex)
+            try
             {
-                // No stack exists. That means we dont own that item.
-                var existingStacks = items.AsList(x => CanBeStacked(x, item));
-                if (existingStacks == null || existingStacks.Count == 0)
+                lock (mutex)
                 {
-                    return false;
-                }
+                    // No stack exists. That means we dont own that item.
+                    var existingStacks = items.AsList(x => CanBeStacked(x, item));
+                    if (existingStacks == null || existingStacks.Count == 0)
+                    {
+                        return false;
+                    }
 
-                if (!item.Equipped)
-                {
-                    return false;
-                }
+                    if (!item.Equipped)
+                    {
+                        return false;
+                    }
 
-                item.Equipped = false;
+                    item.Equipped = false;
 
-                if (!string.IsNullOrEmpty(item.Enchantment))
-                {
+                    if (!string.IsNullOrEmpty(item.Enchantment))
+                    {
+                        return true;
+                    }
+
+                    var otherStack = existingStacks.FirstOrDefault(x => x.Id != item.Id);
+                    if (otherStack != null)
+                    {
+                        otherStack.Amount++;
+                        RemoveStack(item);
+                    }
+
                     return true;
                 }
-
-                var otherStack = existingStacks.FirstOrDefault(x => x.Id != item.Id);
-                if (otherStack != null)
-                {
-                    otherStack.Amount++;
-                    RemoveStack(item);
-                }
-
-                return true;
+            }
+            finally
+            {
+                ValidateInventory();
             }
         }
 
@@ -349,29 +499,35 @@ namespace RavenNest.BusinessLogic.Providers
 
         public DataModels.InventoryItem AddItemInstance(RavenNest.Models.InventoryItem itemInstanceToCopy, long amount = 1)
         {
-            lock (mutex)
+            try
             {
-                var i = itemInstanceToCopy;
-                // in this case, unless its Id is Empty guid, we even want to use the ID. GIven, there is no such id already present in the game.
-                InventoryItem resultStack = null;
-                if (CanBeStacked(i))
+                lock (mutex)
                 {
-                    var existing = GetUnequipped(i);
-                    if (existing != null)
+                    var i = itemInstanceToCopy;
+                    // in this case, unless its Id is Empty guid, we even want to use the ID. GIven, there is no such id already present in the game.
+                    InventoryItem resultStack = null;
+                    if (CanBeStacked(i))
                     {
-                        existing.Amount += amount;
-                        resultStack = existing;
-                        return resultStack;
+                        var existing = GetUnequipped(i);
+                        if (existing != null)
+                        {
+                            existing.Amount += amount;
+                            resultStack = existing;
+                            return resultStack;
+                        }
                     }
+                    resultStack = Copy(i, amount);
+                    if (gameData.GetInventoryItem(i.Id) == null)
+                    {
+                        resultStack.Id = i.Id;
+                    }
+                    this.items.Add(resultStack);
+                    return resultStack;
                 }
-                resultStack = Copy(i, amount);
-                if (gameData.GetInventoryItem(i.Id) == null)
-                {
-                    resultStack.Id = i.Id;
-                }
-                this.gameData.Add(resultStack);
-                this.items.Add(resultStack);
-                return resultStack;
+            }
+            finally
+            {
+                ValidateInventory();
             }
         }
 
@@ -392,7 +548,6 @@ namespace RavenNest.BusinessLogic.Providers
                 }
 
                 resultStack = Copy(itemToCopy, amount);
-                this.gameData.Add(resultStack);
                 this.items.Add(resultStack);
                 return resultStack;
             }
@@ -415,7 +570,6 @@ namespace RavenNest.BusinessLogic.Providers
                 }
 
                 resultStack = Copy(itemToCopy, amount);
-                this.gameData.Add(resultStack);
                 this.items.Add(resultStack);
                 return resultStack;
             }
@@ -443,7 +597,6 @@ namespace RavenNest.BusinessLogic.Providers
             lock (mutex)
             {
                 var resultStack = Copy(itemToCopy, amount);
-                this.gameData.Add(resultStack);
                 this.items.Add(resultStack);
                 return resultStack;
             }
@@ -525,7 +678,6 @@ namespace RavenNest.BusinessLogic.Providers
             {
                 var s = CreateInventoryItem(itemId, amount, false, null, soulbound);
                 items.Add(s);
-                gameData.Add(s);
                 return s.AsReadOnly(gameData);
             }
         }
@@ -557,7 +709,6 @@ namespace RavenNest.BusinessLogic.Providers
                     var invItem = CreateInventoryItem(itemId, amount, true, tag, soulbound);
                     output.Add(invItem);
                     items.Add(invItem);
-                    gameData.Add(invItem);
                 }
                 else
                 {
@@ -575,7 +726,6 @@ namespace RavenNest.BusinessLogic.Providers
                         var invItem = CreateInventoryItem(itemId, amount, false, tag, soulbound);
                         output.Add(invItem);
                         items.Add(invItem);
-                        gameData.Add(invItem);
                     }
                 }
 
@@ -715,7 +865,6 @@ namespace RavenNest.BusinessLogic.Providers
         //        {
         //            var i = CreateInventoryItem(invItem, amount, eq, soulbound);
         //            items.Add(i);
-        //            gameData.Add(i);
         //            stack = i;
         //        }
         //        return stack.AsReadOnly(gameData);
@@ -926,7 +1075,6 @@ namespace RavenNest.BusinessLogic.Providers
             lock (mutex)
             {
                 items.Remove(stack);
-                gameData.Remove(stack);
             }
         }
 

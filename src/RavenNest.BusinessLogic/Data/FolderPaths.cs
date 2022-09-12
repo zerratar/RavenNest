@@ -12,5 +12,7 @@
 
         public const string Restorepoints = "restorepoints";
         public const string Backups = "backups";
+
+        public const string BadInventory = "bad-inventory";
     }
 }
