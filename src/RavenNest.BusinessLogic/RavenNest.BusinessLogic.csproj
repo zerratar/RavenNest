@@ -14,7 +14,7 @@
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
 	<PackageReference Include="System.Data.SqlClient" Version="4.8.3" />
 	<PackageReference Include="TwitchLib.Api" Version="3.7.0-preview-866c0c2ccf1fb2d03f55c5167929ba98782e9427" />
-	<PackageReference Include="TwitchLib.Api.Helix" Version="3.7.0-preview-866c0c2ccf1fb2d03f55c5167929ba98782e9427" />
+	<PackageReference Include="TwitchLib.Api.Helix" Version="3.7.0-preview-a94174c89adcd8169c8f95c8d0ab9be33f31d83b" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\RavenNest.DataModels\RavenNest.DataModels.csproj" />
