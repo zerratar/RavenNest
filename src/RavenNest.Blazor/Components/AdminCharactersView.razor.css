@@ -34,6 +34,9 @@ span.character-level:after {
 }
 
 /*  Buttons Styling  */
+button {
+    border-radius: 8px;
+}
 
 .character-control button.btn-icon {
     background-color: #141414;
@@ -207,6 +210,7 @@ input.blazored-typeahead__input {
 th, td {
     padding: 0.25rem;
     text-align: center;
+    vertical-align: top;
     /*border: 1px solid #ccc;*/
 }
 
@@ -265,6 +269,108 @@ th.character-skill-header-cell {
     text-align: right;
 }
 
+/* Inventory Styling */
+
+.player-inventory {
+    /* padding-top: 15px;
+    margin-top: 15px;
+    padding-bottom: 15px;*/
+}
+
+.inventory-items {
+    display: flex;
+    flex-flow: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.inventory-item.inventory {
+    margin: 10px;
+    margin-bottom: -15px;
+    cursor: pointer;
+}
+
+.inventory-item.equipped {
+    margin: 5px;
+    cursor: pointer;
+}
+
+.inventory-item .item-image img {
+    width: 60px;
+    height: 60px;
+    max-width: 100%;
+    padding: 3px;
+    border-radius: 8px;
+    background-color: whitesmoke;
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
+}
+
+.item-amount {
+    position: relative;
+    top: -23px;
+    right: -35px;
+    border-radius: 8px;
+    background-color: rgb(246 223 255 / 80%);
+    width: 25px;
+    color: #353535;
+    border: 1px solid #ffffff;
+    padding: 0;
+    line-height: 2;
+    text-align: center;
+    font-weight: 500;
+    font-size: 8pt;
+}
+.character-inventory-equipped-header-row {
+    display: none;
+}
+/* Add Items Styling*/
+button.btn.btn-secondary {
+    margin-left: 10px;
+}
+
+.add-item-window {
+    position: absolute;
+    background-color: #ffffff;
+    width: 100%;
+    left: 50%;
+    width: 620px;
+    max-width: 100%;
+    transform: translateX(-50%);
+    padding: 15px;
+    box-shadow: 5px 5px 20px rgba(0,0,0,0.25);
+    display: flex;
+    flex-flow: column;
+    top: 50%;
+}
+
+.add-item-window-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+    .add-item-window-header h2 {
+        font-weight: 300;
+        font-size: 18pt;
+        text-align: center;
+        width: 100%;
+        position: relative;
+        top: 5px;
+        margin-bottom: 25px;
+    }
+
+    .add-item-window-header button.close {
+        margin-top: -20px;
+    }
+
+input.blazored-typeahead__input {
+    border-radius: 0;
+}
+
+.blazored-typeahead {
+    border-radius: 0;
+    margin-top: 15px;
+}
+
 /* Reponsive Design */
 @media screen and (max-width: 880px) {
     th.blank {
@@ -274,9 +380,11 @@ th.character-skill-header-cell {
     table {
         font-size: .8em;
     }
-    table.characters-table {
-        min-width:634px;
-    }
+
+        table.characters-table {
+            min-width: 634px;
+        }
+
     .stats-value {
         min-width: 70px;
     }
@@ -301,7 +409,7 @@ th.character-skill-header-cell {
     .stats-value {
         display: table-cell;
         width: 100px;
-        text-align:left;
+        text-align: left;
         padding-left: 3px;
         float: none;
     }
@@ -328,7 +436,7 @@ th.character-skill-header-cell {
     }
 
     i.fa {
-        color:#333;
+        color: #333;
     }
 
     .modify-skill {
@@ -337,6 +445,7 @@ th.character-skill-header-cell {
         float: none;
         text-align: right;
     }
+
         .modify-skill.active i.fa {
             color: #333;
         }

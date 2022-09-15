@@ -1,12 +1,12 @@
 ﻿<div class="user-header">
-<h1>
+    <h1>
 
         @if (SelectedUser.Status >= 1)
         {
             <span style="color: white; background-color:red;">BANNED</span>
         }
         <span> User: </span>
-        <span>@SelectedUser.UserName</span> 
+        <span>@SelectedUser.UserName</span>
 
     </h1>
 </div>
@@ -36,7 +36,7 @@
                         else
                         {
                             <option id="@i" value="@i">
-                                @(i >= patreonNames.Length?@patreonNames[patreonNames.Length - 1]:patreonNames[i])
+                                @(i >= patreonNames.Length ? @patreonNames[patreonNames.Length - 1] : patreonNames[i])
                             </option>
                         }
                     }
@@ -54,7 +54,7 @@
                 else
                 {
                     <span>@patreonNames[i]</span>
-                    <button class="link-button" @onclick="(()=> EditPatreon())">Edit</button>
+                    <button class="link-button" @onclick="(()=> EditPatreon())"><i class="fa fa-pen" title="Edit"></i></button>
                 }
             }
         </div>
@@ -137,5 +137,32 @@
     {
         <button class="link-button" @onclick="(()=> ResetClanNameChangeCounter())">Allow Clan Rename</button>
     }
+</div>
+<div class=user-inventory>
+    <h2>Stash</h2>
+    <div class="stash-status">
+        @if (Stash != null)
+        {
+            if (Stash.Count == 0)
+            {
+                <span>No Items in Stash</span>
+            }
+        }
+    </div>
+    <div class="inventory-items">
+
+        @foreach (var entry in Stash)
+        {
+            var item = itemLookup[entry.ItemId];
+            <div class="inventory-item stash">
+                @*@onclick="(()=>ShowItemDetails(character, item))"*@
+                <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(entry.ItemId, entry.Tag)" /></div>
+
+
+                <div class="item-amount @(entry.Amount == 1 ? "invisible" : "")">@GetItemAmount(entry.Amount)</div>
+
+            </div>
+        }
+    </div>"
 </div>
 

@@ -1,8 +1,18 @@
-﻿<div class="characters">
+﻿@using Blazored.Typeahead
+<div class="characters">
     <h1>Character's @ViewState.ToString()</h1>
     <table class="characters-table">
         <tr>
-            <th class="blank"></th>
+            @switch (ViewState)
+            {
+                case CharacterViewState.Skills:
+                    <th class="blank"></th>
+                    break;
+                case CharacterViewState.Inventory:
+                    <th class="character-inventory-equipped-header-row"></th>
+                    break;
+            }
+
             @foreach (var character in @Characters)
             {
                 <th class="character-header">
@@ -14,7 +24,7 @@
                             </span>
                         </div>
                         <div class="character-combat-level">
-                            <span class="character-level">@PlayerService.GetCombatLevel(character)</span>
+                            <span class="character-level">@CharacterService.GetCombatLevel(character)</span>
                         </div>
                     </div>
                     <div class="character-currently">
@@ -90,19 +100,44 @@
 
                         @if (CanModify)
                         {
-                            <button @onclick="()=> Unstuck(character)" class="btn-icon">Unstuck&nbsp;<i class="fa-solid fa-person-falling-burst"></i></button>
+                            <button @onclick="()=> Unstuck(character)" class="btn-icon"><i class="fa-solid fa-person-falling-burst" title="Unstuck"></i></button>
                             @switch (ViewState)
                             {
                                 case CharacterViewState.Inventory:
+                                    <button @onclick="@(x=> ShowAddItem(character.CharacterIndex))" class="btn-icon"><i class="fa-solid fa-grid-2-plus" title="Add Item"></i></button>
+                                    if (AddItemDialogVisible[character.CharacterIndex])
+                                    {
+                                        <div class="add-item-window">
+                                            <div class="add-item-window-header">
+                                                <h2>Search for item to add</h2>
+                                                <button class="btn close" @onclick="@(x=> HideAddItem(character.CharacterIndex))">x</button>
+                                            </div>
+                                            <BlazoredTypeahead SearchMethod="SearchItem" @bind-Value="SelectedItem">
+                                                <SelectedTemplate>
+                                                    @context.Name
+                                                </SelectedTemplate>
+                                                <ResultTemplate>
+                                                    @context.Name
+                                                </ResultTemplate>
+                                            </BlazoredTypeahead>
 
+                                            <div class="item-add-window-controls">
+                                                @if (SelectedItem != null)
+                                                {
+                                                    <button @onclick="@(x=> AddItem(character))" class="btn btn-primary">Add</button>
+                                                }
+                                                <button @onclick="@(x=> HideAddItem(character.CharacterIndex))" class="btn btn-secondary">Cancel</button>
+                                            </div>
+                                        </div>
+                                    }
                                     break;
                                 case CharacterViewState.Skills:
 
-                                    @if (character.UserId != session.UserId)
+                                    @if (character.UserId != Session.UserId)
                                     {
-                                        <button @onclick="()=> CloneSkillsAndStateToMain(character)" class="btn-icon">Clone stats&nbsp;<i class="fa fa-arrow-to-bottom"></i></button>
+                                        <button @onclick="()=> CloneSkillsAndStateToMain(character)" class="btn-icon"><i class="fa fa-arrow-to-bottom" title="Clone Stats to Main"></i></button>
                                     }
-                                    <button @onclick="()=> ResetSkills(character)" class="btn-icon">Reset&nbsp;<i class="fa-regular fa-repeat"></i></button>
+                                    <button @onclick="()=> ResetSkills(character)" class="btn-icon"><i class="fa-regular fa-repeat" title="Reset Character's Skills"></i></button>
                                     break;
                             }
                         }
@@ -114,10 +149,56 @@
         @switch (ViewState)
         {
             case CharacterViewState.Inventory:
+                <tr class="character-inventory-equipped">
+                    <th class="character-inventory-equipped-header-row"></th>
+                    @foreach (var character in Characters)
+                    {
+                        <td class="character-inventory-equipped-row">
+
+                            <div>
+                                <h2>Equipped</h2>
+                                <div class="inventory-items">
+                                    @foreach (var item in GetEquippedItems(character))
+                                    {
+                                        <div class="inventory-item equipped">
+                                            @*@onclick="(()=>ShowItemDetails(item))"*@
+                                            <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+                        </td>
+                    }
+
+                </tr>
+                <tr class="character-inventory-items">
+                    <th class="character-inventory-equipped-header-row"></th>
+                    @foreach (var character in Characters)
+                    {
+                        <td class="character-inventory-on-char-row">
+                            <div class="inventory-items">
+                                @foreach (var item in GetInventoryItems(character))
+                                {
+                                    <div class="inventory-item inventory">
+                                        @*@onclick="(()=>ShowItemDetails(character, item))"*@
+                                        <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
+
+
+                                        <div class="item-amount @(item.Amount == 1 ? "invisible" : "")">@GetItemAmount(item)</div>
+                                        
+                                    </div>
+                                }
+                            </div>
+                        </td>
+                    }
+                </tr>
+
                 break;
             case CharacterViewState.Skills:
                 foreach (var skillName in RavenNest.DataModels.Skills.SkillNames)
                 {
+
                     <tr class="character-skill-row">
                         <th class="character-skill-header-cell">
                             <SkillDisplay SkillName=@skillName></SkillDisplay>
@@ -129,7 +210,7 @@
                             dirSkills.TryGetValue(skillName, out skill);
                             @if (skill != null)
                             {
-                              
+
                                 var isActive = IsTrainingSkill(skill, character.TrainingSkill);
                                 <td character-row="@(character.Identifier != null ? $"#{character.Identifier}" : $"{character.Alias ?? "1"}" )" class="character-skill-cell @(isActive ? " active" : "")" title="@(isActive?"You're currently training this skill." : "")">
                                     <div class="character-stats-row">
@@ -153,8 +234,10 @@
                                             <div class="modify-skill @(isActive ? " active" : "")">
                                                 <button @onclick="()=> ShowModifySkill(character, skill)" class="btn-icon"><i class="fa fa-pen"></i></button>
                                             </div>
-                                        } else if(isActive) {
-                                              <div class="modify-skill @(isActive ? " active" : "")">
+                                        }
+                                        else if (isActive)
+                                        {
+                                            <div class="modify-skill @(isActive ? " active" : "")">
                                                 <i class="fa fa-gears"></i>
                                             </div>
                                         }
@@ -164,19 +247,19 @@
                         }
                     </tr>
                 }
-                @if (modifySkillDialogVisible && modifyingSkill != null)
+                @if (ModifySkillDialogVisible && ModifyingSkill != null)
                 {
                     <div class="skill-modify-modal">
                         <div class="skill-modify-modal-header">
-                            <h2>@modifyingSkill.Name</h2>
+                            <h2>@ModifyingSkill.Name</h2>
                             <button class="close" @onclick="HideModifySkill">x</button>
                         </div>
 
                         <label for="skill-level" class="input-label">Set the new <b>Level</b></label>
-                        <input name="skill-level" type="number" class="input" value="@modifyingSkill.Level" @onchange="OnLevelModified" />
+                        <input name="skill-level" type="number" class="input" value="@ModifyingSkill.Level" @onchange="OnLevelModified" />
 
                         <label for="skill-experience" class="input-label">Set the new <b>Experience</b>%</label>
-                        <input name="skill-experience" type="number" class="input" value="@((int)(modifyingSkill.Percent * 100))" @onchange="OnExperienceModified" />
+                        <input name="skill-experience" type="number" class="input" value="@((int)(ModifyingSkill.Percent * 100))" @onchange="OnExperienceModified" />
 
                         <div class="skill-modify-modal-controls">
                             <button @onclick="ApplyModifySkill" class="btn btn-primary">Save</button>
@@ -194,192 +277,5 @@
         }
     </table>
 </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-@*<div class="characters">
-    <h1>Character's @ViewState.ToString()</h1>
-    <div class="characters-table">
-        @if (ViewState == CharacterViewState.Inventory || ViewState == CharacterViewState.Skills)
-        {
-            <div class="character-col row-header">
-                <div class="character-header  char-row">
-                </div>
-                <div class="character-combat-level char-row">
-                </div>
-                <div class="character-control  char-row">
-                </div>
-                <div class="character-currently  char-row">
-                </div>
-                @switch (ViewState)
-                {
-                    case CharacterViewState.Inventory:
-                        <div class="character-inv-equip char-row">
-                            <span>Currently Equipped</span>
-                        </div>
-                        <div class="character-inv-equip char-row">
-                            <span>Inventory</span>
-                        </div>
-
-                        break;
-                    case CharacterViewState.Skills:
-                        foreach (var skills in Characters.FirstOrDefault().Skills.AsList())
-                        {
-                            <div class="character-skill-row skill-label char-row">
-                                @skills.Name
-                            </div>
-                        }
-                        break;
-                    default:
-                        <div class="character-body char-row">
-                        </div>
-                        break;
-                }
-            </div>
-        }
-        @foreach (var character in @Characters)
-        {
-            <div class="character-col">
-                <div class="character-header  char-row">
-                    <div class="character-name">
-                        <span>@character.Name</span>
-                        <span class="character-index">
-                            @(character.Identifier != null ? $"#{character.Identifier}" : "")
-                        </span>
-                    </div>
-                </div>
-                                <div class="character-combat-level char-row">
-                    <span class="character-level">@PlayerService.GetCombatLevel(character)</span>
-                </div>
-
-                <div class="character-currently  char-row">
-                    @if (character != null && character.Skills != null && character.SessionInfo != null)
-                    {
-
-                        <span>
-
-                            @if (character.State != null && character.State.InOnsen)
-                            {
-                                <span>You're currently resting and have</span>
-                                <b>@GetRestedTime(character)</b>
-                                <span>of rested time</span>
-                            }
-                            else if (!string.IsNullOrEmpty(TrainingSkill))
-                            {
-                                <span>You're currently training&nbsp;</span>
-
-                                <b>@GetTrainingSkillName(character)</b>
-
-                                <span>&nbsp;</span>
-                            }
-                            else
-                            {
-                                <span>You're currently </span>
-                            }
-
-                            @if (character.State != null)
-                            {
-                                if (character.State.InDungeon)
-                                {
-                                    <span>in the dungeon </span>
-                                }
-                                else if (character.State.InArena)
-                                {
-                                    <span>in the Arena </span>
-                                }
-                                else if (character.State.InRaid)
-                                {
-                                    <span>in a Raid </span>
-                                }
-                                else if (!string.IsNullOrEmpty(character.State.DuelOpponent))
-                                {
-                                    <span>in a duel with&nbsp;</span>
-
-                                    <b>Player.State.DuelOpponent </b>
-                                }
-                                else if (!string.IsNullOrEmpty(character.State?.Island))
-                                {
-                                    <span>at&nbsp;</span>
-
-                                    <b>@character.State.Island </b>
-                                }
-                                else
-                                {
-                                    <span>sailing </span>
-                                }
-                            }
-
-                            @if (!string.IsNullOrEmpty(character.SessionInfo.OwnerUserName))
-                            {
-                                <span>&nbsp;on&nbsp;</span>
-
-                                <b>@character.SessionInfo.OwnerUserName</b>
-
-                                <span>'s stream.</span>
-                            }
-                        </span>
-
-                        <div class="last-updated">@GetLastUpdateString(character.SessionInfo.SkillsUpdated)</div>
-                    }
-
-
-                </div>      </div>
-                <div class="character-control">
-
-                    @if (CanModify)
-                    {
-                        @switch (ViewState)
-                        {
-                            case CharacterViewState.Inventory:
-
-                                break;
-                            case CharacterViewState.Skills:
-                                <button @onclick="()=> Unstuck(character)" class="btn-icon">Unstuck&nbsp;<i class="fa-solid fa-person-falling-burst"></i></button>
-                                @if (character.UserId != session.UserId)
-                                {
-                                    <button @onclick="()=> CloneSkillsAndStateToMain(character)" class="btn-icon">Clone stats to Main&nbsp;<i class="fa fa-arrow-to-bottom"></i></button>
-                                }
-                                <button @onclick="()=> ResetSkills(character)" class="btn-icon">Reset&nbsp;<i class="fa-regular fa-repeat"></i></button>
-                                break;
-                        }
-                    }
-                </div>
-                <div class="character-body-row">
-                    @switch (ViewState)
-                    {
-                        case CharacterViewState.Inventory:
-                            <AdminPlayerInventory Player="@character" CanManage="CanManage"></AdminPlayerInventory>
-                            break;
-                        case CharacterViewState.Skills:
-                            <AdminPlayerSkills Player="@character" CanManage="CanManage"></AdminPlayerSkills>
-                            break;
-                        case CharacterViewState.Clan:
-                            <PlayerClan Player="@character" CanManage="CanManage"></PlayerClan>
-                            break;
-                        case CharacterViewState.Customization:
-                            <PlayerCustomization Player="@character" CanManage="CanManage"></PlayerCustomization>
-                            break;
-                        case CharacterViewState.Map:
-                            <PlayerMap Player="@character" CanManage="CanManage"></PlayerMap>
-                            break;
-                    }
-            </div>
-        }
-    </div>
-</div>*@
-
 
 

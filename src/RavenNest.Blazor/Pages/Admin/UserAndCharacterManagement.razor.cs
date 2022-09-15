@@ -24,6 +24,8 @@ namespace RavenNest.Blazor.Pages.Admin
 
         [Parameter]
         public string Id { get; set; }
+        [Parameter]
+        public int? View { get; set; }
         private CharacterViewState ViewState { get; set; }
 
 

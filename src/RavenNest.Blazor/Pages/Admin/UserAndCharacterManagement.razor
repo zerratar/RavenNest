@@ -1,5 +1,5 @@
 ﻿@layout AdminLayout
-@page "/admin/user/{id}"
+@page "/admin/user/{id}/{view:int?}"
 @using static RavenNest.Blazor.Components.AdminCharactersView
 
 @if (SelectedUser == null)
@@ -8,7 +8,7 @@
 }
 else
 {
-    <AdminUserView SelectedUser="SelectedUser"></AdminUserView>
+    <AdminUserView SelectedUser="SelectedUser" ViewState="ViewState"></AdminUserView>
 
     <AdminCharactersView Characters="SelectedUser.Characters" ViewState="ViewState"></AdminCharactersView>
 }

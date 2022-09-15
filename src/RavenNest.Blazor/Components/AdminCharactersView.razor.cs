@@ -1,17 +1,22 @@
 ﻿using Microsoft.AspNetCore.Components;
+using RavenNest.Blazor.Services;
 using RavenNest.BusinessLogic.Extended;
+using RavenNest.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace RavenNest.Blazor.Components
 {
     public partial class AdminCharactersView : ComponentBase
     {
         [Inject]
-        Services.PlayerService PlayerService { get; set; }
+        Services.PlayerService CharacterService { get; set; }
         [Inject]
         Services.AuthService AuthService { get; set; }
+        [Inject]
+        Services.ItemService ItemService { get; set; }
         [Parameter]
         public List<WebsiteAdminPlayer> Characters { get; set; }
 
@@ -20,14 +25,21 @@ namespace RavenNest.Blazor.Components
 
         [Parameter]
         public CharacterViewState ViewState { get; set; }
-        private Sessions.SessionInfo session { get; set; }
-        private bool CanModify { get => session != null && session.Administrator; }
-        private bool modifySkillDialogVisible { get; set; }
-        private int modifyingSkillLevel { get; set; } = 0;
-        private int modifyingSkillExperiencePercent { get; set; } = 0;
-        private WebsiteAdminPlayer modifyingCharacter { get; set; }
+        private Sessions.SessionInfo Session { get; set; }
+        private bool CanModify { get => Session != null && Session.Administrator; }
+        private bool ModifySkillDialogVisible { get; set; }
+        private int ModifyingSkillLevel { get; set; } = 0;
+        private int ModifyingSkillExperiencePercent { get; set; } = 0;
+        private WebsiteAdminPlayer ModifyingCharacter { get; set; }
 
-        private PlayerSkill modifyingSkill;
+        private PlayerSkill ModifyingSkill;
+
+        private bool ItemDetailDialogVisible;
+        private Models.InventoryItem ItemDetailsDialogItem;
+        private long GiftOrSendAmount;
+
+        private Item SelectedItem { get; set; }
+        private bool[] AddItemDialogVisible = new bool[3];
 
         public enum CharacterViewState
         {
@@ -39,12 +51,12 @@ namespace RavenNest.Blazor.Components
         }
         protected override void OnInitialized()
         {
-            session = AuthService.GetSession();
+            Session = AuthService.GetSession();
         }
 
         public async void CloneSkillsAndStateToMain(WebsiteAdminPlayer character)
         {
-            var result = await PlayerService.CloneSkillsAndStateToMainAsync(character.Id);
+            var result = await CharacterService.CloneSkillsAndStateToMainAsync(character.Id);
 
             if (result)
             {
@@ -54,11 +66,11 @@ namespace RavenNest.Blazor.Components
 
         public async void Unstuck(WebsiteAdminPlayer character)
         {
-            await PlayerService.UnstuckPlayerAsync(character.Id);
+            await CharacterService.UnstuckPlayerAsync(character.Id);
         }
         public async void ResetSkills(WebsiteAdminPlayer character)
         {
-            var result = await PlayerService.ResetPlayerSkillsAsync(character.Id);
+            var result = await CharacterService.ResetPlayerSkillsAsync(character.Id);
 
             if (result)
             {
@@ -103,7 +115,6 @@ namespace RavenNest.Blazor.Components
 
             return $"{time.Hours} hours, {time.Minutes} minutes";
         }
-
         private string GetTrainingSkillName(WebsiteAdminPlayer character)
         {
             var trainingSkill = character.TrainingSkill;
@@ -159,7 +170,7 @@ namespace RavenNest.Blazor.Components
         public async void ApplyModifySkill()
         {
 
-            var result = await PlayerService.UpdatePlayerSkillAsync(modifyingCharacter.Id, modifyingSkill.Name, modifyingSkillLevel, modifyingSkillExperiencePercent / 100f);
+            var result = await CharacterService.UpdatePlayerSkillAsync(ModifyingCharacter.Id, ModifyingSkill.Name, ModifyingSkillLevel, ModifyingSkillExperiencePercent / 100f);
 
             HideModifySkill();
 
@@ -172,24 +183,24 @@ namespace RavenNest.Blazor.Components
 
         public void HideModifySkill()
         {
-            modifySkillDialogVisible = false;
-            modifyingSkill = null;
-            modifyingCharacter = null;
+            ModifySkillDialogVisible = false;
+            ModifyingSkill = null;
+            ModifyingCharacter = null;
         }
 
-        public void ShowModifySkill(WebsiteAdminPlayer player, PlayerSkill skill)
+        public void ShowModifySkill(WebsiteAdminPlayer character, PlayerSkill skill)
         {
-            modifySkillDialogVisible = true;
-            modifyingSkill = skill;
-            modifyingSkillLevel = skill.Level;
-            modifyingSkillExperiencePercent = (int)(skill.Percent * 100);
-            modifyingCharacter = player;
+            ModifySkillDialogVisible = true;
+            ModifyingSkill = skill;
+            ModifyingSkillLevel = skill.Level;
+            ModifyingSkillExperiencePercent = (int)(skill.Percent * 100);
+            ModifyingCharacter = character;
         }
         private void OnLevelModified(ChangeEventArgs evt)
         {
-            if (evt.Value != null && int.TryParse(evt.Value?.ToString() ?? modifyingSkill.Level.ToString(), out var newLevel))
+            if (evt.Value != null && int.TryParse(evt.Value?.ToString() ?? ModifyingSkill.Level.ToString(), out var newLevel))
             {
-                modifyingSkillLevel = newLevel;
+                ModifyingSkillLevel = newLevel;
             }
         }
 
@@ -197,21 +208,79 @@ namespace RavenNest.Blazor.Components
         {
             if (evt.Value != null && int.TryParse(evt.Value?.ToString() ?? "0", out var newExpPercent))
             {
-                modifyingSkillExperiencePercent = newExpPercent;
+                ModifyingSkillExperiencePercent = newExpPercent;
             }
         }
 
-        private int GetCurrentHealth(WebsiteAdminPlayer player)
+        private int GetCurrentHealth(WebsiteAdminPlayer character)
         {
-            if (player.State != null)
+            if (character.State != null)
             {
-                return player.State.Health;
+                return character.State.Health;
             }
             else
             {
-                return player.Skills.HealthLevel;
+                return character.Skills.HealthLevel;
             }
         }
-    }
+        public void HideAddItem(int characterIndex)
+        {
+            AddItemDialogVisible[characterIndex] = false;
+        }
 
+        public void ShowAddItem(int characterIndex)
+        {
+            AddItemDialogVisible[characterIndex] = true;
+        }
+
+        public void AddItem(WebsiteAdminPlayer character)
+        {
+            if (SelectedItem == null)
+                return;
+
+            HideAddItem(character.CharacterIndex);
+
+            CharacterService.AddItem(character.Id, SelectedItem);
+            StateHasChanged();
+            SelectedItem = null;
+        }
+        public string GetItemImage(Guid itemId, string tag) //TODO refactor - code used in AdminUserView.razor also
+        {
+            if (tag != null)
+            {
+                return $"/api/twitch/logo/{tag}";
+            }
+            return $"/imgs/items/{itemId}.png";
+        }
+        public async Task<IEnumerable<Item>> SearchItem(string searchText)
+        {
+            return await ItemService.SearchAsync(searchText);
+        }
+        public IReadOnlyList<Models.InventoryItem> GetEquippedItems(WebsiteAdminPlayer character)
+        {
+            return character.InventoryItems.Where(x => x.Equipped).ToList();
+        }
+        public IReadOnlyList<Models.InventoryItem> GetInventoryItems(WebsiteAdminPlayer character)
+        {
+            return character.InventoryItems.Where(x => !x.Equipped).ToList();
+        }
+        public string GetItemAmount(InventoryItem item)
+        {
+            var value = item.Amount;
+            if (value >= 1000_000)
+            {
+                var mils = value / 1000000.0;
+                return Math.Round(mils) + "M";
+            }
+            else if (value > 1000)
+            {
+                var ks = value / 1000m;
+                return Math.Round(ks) + "K";
+            }
+
+            return item.Amount.ToString();
+        }
+
+
+    }
 }
