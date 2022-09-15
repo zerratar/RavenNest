@@ -15,7 +15,7 @@ span.character-name {
     padding-right: 0px;
 }
 
-span.character-index:before {
+span.character-index:after {
     content: " ";
     padding-left: 0px;
 }
@@ -41,18 +41,35 @@ span.character-level:after {
     max-height: 30px;
 }
 
-button.btn-icon {
-    background-color: transparent;
-    border: 0;
+i.fa {
     color: #333;
     margin-left: 10px;
 }
 
-    button.btn-icon:active,
-    button.btn-icon:focus {
-        outline: 0;
-        background-color: rgba(0,0,0,0.15);
-    }
+button.btn-icon {
+    background-color: transparent;
+    border: 0;
+    margin-left: 10px;
+}
+
+.modify-skill button.btn-icon {
+    min-width: 20px;
+    max-width: 30px;
+    padding: 0px;
+    margin: 0px;
+}
+
+.modify-skill {
+    min-width: 1px;
+    padding: 0px;
+    margin: 0px;
+}
+
+button.btn-icon:active,
+button.btn-icon:focus {
+    outline: 0;
+    background-color: rgba(0,0,0,0.15);
+}
 
 /* Skill modal/window Styling */
 
@@ -127,25 +144,25 @@ input.blazored-typeahead__input {
 .stats-progress {
     height: 23px;
     text-align: right;
-    min-width: 120px;
+    min-width: 100px;
     text-align: center;
-    background-color: #f4f4f4;
 }
 
 .stats-value {
-    width: 120px;
+    min-width: 90px;
+    max-width: 120px;
     text-align: right;
 }
 
 .stats-progress-value {
     height: 23px;
     position: absolute;
-    background-color: #81a1f829;
+    background-color: #81a1f849;
 }
 
 .stats-progress-percent {
     height: 23px;
-    min-width: 120px;
+    min-width: 100px;
     text-align: center;
     background-color: #f4f4f4;
 }
@@ -166,6 +183,25 @@ input.blazored-typeahead__input {
     justify-content: space-between;
 }
 
+/* Active Skill Styling*/
+
+.character-skill-cell.active {
+    color: white;
+    background-image: linear-gradient(90deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+}
+
+.stats-progress-percent.active {
+    background-color: rgba(0,0,0, 0.05);
+}
+
+..stats-progress-value.active {
+    background-color: rgba(0,0,0, 0.05);
+}
+
+.modify-skill.active i.fa {
+    color: #ddd;
+}
+
 /*  Characters Table Styling  */
 
 th, td {
@@ -177,12 +213,13 @@ th, td {
 
 table.characters-table {
     width: 100%;
+    min-width: 820px;
     table-layout: fixed;
     border-collapse: collapse;
 }
 
 th.blank {
-    width: 120px;
+    width: 147px;
 }
 
 th.character-header {
@@ -219,122 +256,154 @@ th.character-header {
     border-right-width: 1px;
     border-right-style: dotted;
     border-right-color: #a4a4a4;
+    width: auto;
+    min-width: 250px;
 }
 
 th.character-skill-header-cell {
     text-transform: uppercase;
-    text-align: center;
+    text-align: right;
 }
 
-td.characters-table {
-    width: auto;
-}
-
-.character-skill-cell.active {
-    color: white;
-    background-image: linear-gradient(90deg, rgb(5, 39, 103) 0%, #3a0647 70%);
-}
-
-    .character-skill-cell.active .stats-progress {
-        background-color: rgba(244,244,244, 0.05);
+/* Reponsive Design */
+@media screen and (max-width: 880px) {
+    th.blank {
+        width: 30px;
     }
 
-
-    /* Reponsive Design */
-
-/* change header*/
-@media screen and (max-width: 1100px) {
-    .character-control button.btn-icon {
-        background-color: #141414;
-        color: white;
-        max-height: 30px;
+    table {
+        font-size: .8em;
     }
-    .character-index {
-        font-size: 14pt;
-        font-weight: 300;
-    }
-
-    .character-level {
-        font-size: 18pt;
-    }
-
-    span.character-name {
-        font-size: 18pt;
-        font-weight: 500;
-        padding-right: 0px;
-    }
-
-    span.character-index:before {
-        content: "";
-        padding-left: 0px;
-    }
-
-    span.character-level:before {
-        content: "";
-    }
-
-    span.character-level:after {
-        content: "";
-    }
-
-    .last-updated {
-        text-align: center;
-        font-size: 9pt;
+    table.characters-table {
+        min-width:634px;
     }
     .stats-value {
-        float:left;
-    }
-    .modify-skill{
-        float:right;
-    }
-    .character-stats-row {
-        display: block;
-        box-sizing: border-box;
-        width: 100%;
-        justify-content: space-between;
+        min-width: 70px;
     }
 }
 
 /* Change table formatting */
 @media screen and (max-width: 660px) {
+    .stats-progress-percent.active {
+        color: white;
+        background-image: linear-gradient(90deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    }
+
+    .stats-progress-value.active {
+        background-color: rgb(147, 247, 254, 0.50)
+    }
+
+    .character-skill-cell.active {
+        background-image: unset;
+        color: black;
+    }
+
+    .stats-value {
+        display: table-cell;
+        width: 100px;
+        text-align:left;
+        padding-left: 3px;
+        float: none;
+    }
+
+    .stats-progress {
+        height: 23px;
+        text-align: right;
+        display: table-cell;
+        float: none;
+    }
+
+    .skill-level::before {
+        content: "Lv:";
+    }
+
+    .character-stats-row {
+        display: table-cell;
+    }
+
+    button.btn-icon {
+        border: 0;
+        margin: 0px 0px 0px 10px;
+        padding: 1px 1px 1px 1px;
+    }
+
+    i.fa {
+        color:#333;
+    }
+
+    .modify-skill {
+        width: 20px;
+        display: table-cell;
+        float: none;
+        text-align: right;
+    }
+        .modify-skill.active i.fa {
+            color: #333;
+        }
+
+    .character-name {
+        display: none;
+    }
+
+    table.characters-table {
+        max-width: 350px;
+        min-width: 300px;
+    }
+
     table {
         border: 0;
     }
 
-        table th.character-header {
-            border: none;
-            clip: rect(0 0 0 0);
-            height: 1px;
-            margin: -1px;
-            overflow: hidden;
-            padding: 0;
-            position: absolute;
-            width: 1px;
-        }
+    .characters-table td {
+        padding: 1px;
+        border-left: none;
+        border-right: none;
+    }
 
-        table tr {
-            border-bottom: 3px solid #ddd;
-            display: block;
-            margin-bottom: .625em;
-        }
+    .characters-table th.character-header {
+        clip: rect(0 0 0 0);
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+    }
 
-        table td {
-            border-left: none;
-            border-right: none;
-            border-bottom: 1px solid #ddd;
-            display: block;
-            font-size: .8em;
+    table tr {
+        display: block;
+        margin-bottom: .625em;
+    }
+
+    table td {
+        border-bottom: 1px solid #ddd;
+        display: block;
+        font-size: 1em;
+    }
+
+        table td::before {
+            content: attr(character-row);
+            display: table-cell;
+            min-width: 120px;
+            max-width: 120px;
+            padding-right: 6px;
             text-align: right;
+            font-weight: bold;
+            text-transform: uppercase;
         }
 
-            table td::before {
-                content: attr(character-row);
-                float: left;
-                font-weight: bold;
-                text-transform: uppercase;
-            }
+        table td:last-child {
+            border-bottom: 0;
+        }
 
-            table td:last-child {
-                border-bottom: 0;
-            }
+    .characters-table tr:not(:first-child) {
+        border-bottom: 1px solid #ddd;
+    }
+
+    .characters-table tr:not(:first-child) {
+        border-top: 1px dotted #ddd;
+        border-left: 1px dotted #ddd;
+        border-right: 1px dotted #ddd;
+        border-bottom: 1px solid #ddd;
+    }
 }

@@ -19,5 +19,15 @@ namespace RavenNest.BusinessLogic.Extended
                 return (int)(((Skills.AttackLevel + Skills.DefenseLevel + Skills.HealthLevel + Skills.StrengthLevel) / 4f) + ((Skills.RangedLevel + Skills.MagicLevel + Skills.HealingLevel) / 8f));
             }
         }
+
+        public string TrainingSkill
+        {
+            get
+            {
+                if (State != null)
+                    return State.TaskArgument ?? State.Task;
+                return null;
+            }
+        }
     }
 }

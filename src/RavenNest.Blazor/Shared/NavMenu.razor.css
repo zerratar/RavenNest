@@ -87,7 +87,7 @@
     display: none;
 }
 
-@media (max-width: 640.98px) {
+@media (max-width: 1100.98px) {
 
     .notifications,
     .login {
@@ -95,7 +95,7 @@
     }
 }
 
-@media (min-width: 641px) {
+@media (min-width: 1101px) {
     .navbar-toggler {
         display: none;
     }

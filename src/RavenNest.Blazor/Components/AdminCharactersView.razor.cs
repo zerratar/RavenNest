@@ -22,12 +22,10 @@ namespace RavenNest.Blazor.Components
         public CharacterViewState ViewState { get; set; }
         private Sessions.SessionInfo session { get; set; }
         private bool CanModify { get => session != null && session.Administrator; }
-        private string TrainingSkill { get; set; }
-
         private bool modifySkillDialogVisible { get; set; }
         private int modifyingSkillLevel { get; set; } = 0;
         private int modifyingSkillExperiencePercent { get; set; } = 0;
-        private WebsiteAdminPlayer modifyingPlayer { get; set; }
+        private WebsiteAdminPlayer modifyingCharacter { get; set; }
 
         private PlayerSkill modifyingSkill;
 
@@ -44,9 +42,9 @@ namespace RavenNest.Blazor.Components
             session = AuthService.GetSession();
         }
 
-        public async void CloneSkillsAndStateToMain(WebsiteAdminPlayer player)
+        public async void CloneSkillsAndStateToMain(WebsiteAdminPlayer character)
         {
-            var result = await PlayerService.CloneSkillsAndStateToMainAsync(player.Id);
+            var result = await PlayerService.CloneSkillsAndStateToMainAsync(character.Id);
 
             if (result)
             {
@@ -54,13 +52,13 @@ namespace RavenNest.Blazor.Components
             }
         }
 
-        public async void Unstuck(WebsiteAdminPlayer player)
+        public async void Unstuck(WebsiteAdminPlayer character)
         {
-            await PlayerService.UnstuckPlayerAsync(player.Id);
+            await PlayerService.UnstuckPlayerAsync(character.Id);
         }
-        public async void ResetSkills(WebsiteAdminPlayer player)
+        public async void ResetSkills(WebsiteAdminPlayer character)
         {
-            var result = await PlayerService.ResetPlayerSkillsAsync(player.Id);
+            var result = await PlayerService.ResetPlayerSkillsAsync(character.Id);
 
             if (result)
             {
@@ -93,9 +91,9 @@ namespace RavenNest.Blazor.Components
 
             return prefix + (int)elapsed.TotalSeconds + " seconds ago";
         }
-        private string GetRestedTime(WebsiteAdminPlayer player)
+        private string GetRestedTime(WebsiteAdminPlayer character)
         {
-            return FormatTime(System.TimeSpan.FromSeconds(player.State.RestedTime));
+            return FormatTime(System.TimeSpan.FromSeconds(character.State.RestedTime));
         }
         private string FormatTime(TimeSpan time)
         {
@@ -106,44 +104,45 @@ namespace RavenNest.Blazor.Components
             return $"{time.Hours} hours, {time.Minutes} minutes";
         }
 
-        private string GetTrainingSkillName(WebsiteAdminPlayer player)
+        private string GetTrainingSkillName(WebsiteAdminPlayer character)
         {
-            if (string.IsNullOrEmpty(TrainingSkill))
+            var trainingSkill = character.TrainingSkill;
+            if (string.IsNullOrEmpty(trainingSkill))
                 return null;
 
-            if (TrainingSkill.Equals("all", StringComparison.OrdinalIgnoreCase))
+            if (trainingSkill.Equals("all", StringComparison.OrdinalIgnoreCase))
                 return "All";
 
-            if (TrainingSkill.Equals("heal", StringComparison.OrdinalIgnoreCase))
+            if (trainingSkill.Equals("heal", StringComparison.OrdinalIgnoreCase))
                 return "Healing";
 
-            if (player == null || player.Skills == null)
+            if (character == null || character.Skills == null)
                 return null;
 
-            var training = player.Skills.AsList().FirstOrDefault(IsTrainingSkill);
+            var training = character.Skills.AsList().FirstOrDefault(x => IsTrainingSkill(x, trainingSkill));
             return training?.Name;
         }
 
-        private bool IsTrainingSkill(PlayerSkill skill)
+        private bool IsTrainingSkill(PlayerSkill skill, String trainingSkill)
         {
-            if (string.IsNullOrEmpty(TrainingSkill))
+            if (string.IsNullOrEmpty(trainingSkill))
                 return false;
 
-            if (skill.Name.StartsWith(TrainingSkill, StringComparison.OrdinalIgnoreCase))
+            if (skill.Name.Equals(trainingSkill, StringComparison.OrdinalIgnoreCase))
                 return true;
 
-            if (TrainingSkill == "heal")
+            if (trainingSkill == "heal")
                 return skill.Name.Equals("healing", StringComparison.OrdinalIgnoreCase);
 
-            if (TrainingSkill.ToLower() == "all")
+            if (trainingSkill.ToLower() == "all")
                 return skill.Name.Equals("attack", StringComparison.OrdinalIgnoreCase) ||
                                 skill.Name.Equals("defense", StringComparison.OrdinalIgnoreCase) ||
                                 skill.Name.Equals("strength", StringComparison.OrdinalIgnoreCase);
 
-            if (skill.Name.ToLower() == "attack" && TrainingSkill.ToLower() == "atk")
+            if (skill.Name.ToLower() == "attack" && trainingSkill.ToLower() == "atk")
                 return true;
 
-            if (TrainingSkill.ToLower() == "mine" && skill.Name.Equals("mining", StringComparison.OrdinalIgnoreCase))
+            if (trainingSkill.ToLower() == "mine" && skill.Name.Equals("mining", StringComparison.OrdinalIgnoreCase))
                 return true;
 
             return false;
@@ -160,7 +159,7 @@ namespace RavenNest.Blazor.Components
         public async void ApplyModifySkill()
         {
 
-            var result = await PlayerService.UpdatePlayerSkillAsync(modifyingPlayer.Id, modifyingSkill.Name, modifyingSkillLevel, modifyingSkillExperiencePercent / 100f);
+            var result = await PlayerService.UpdatePlayerSkillAsync(modifyingCharacter.Id, modifyingSkill.Name, modifyingSkillLevel, modifyingSkillExperiencePercent / 100f);
 
             HideModifySkill();
 
@@ -175,7 +174,7 @@ namespace RavenNest.Blazor.Components
         {
             modifySkillDialogVisible = false;
             modifyingSkill = null;
-            modifyingPlayer = null;
+            modifyingCharacter = null;
         }
 
         public void ShowModifySkill(WebsiteAdminPlayer player, PlayerSkill skill)
@@ -184,7 +183,7 @@ namespace RavenNest.Blazor.Components
             modifyingSkill = skill;
             modifyingSkillLevel = skill.Level;
             modifyingSkillExperiencePercent = (int)(skill.Percent * 100);
-            modifyingPlayer = player;
+            modifyingCharacter = player;
         }
         private void OnLevelModified(ChangeEventArgs evt)
         {

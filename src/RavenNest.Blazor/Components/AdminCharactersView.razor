@@ -29,7 +29,7 @@
                                     <b>@GetRestedTime(character)</b>
                                     <span>of rested time</span>
                                 }
-                                else if (!string.IsNullOrEmpty(TrainingSkill))
+                                else if (!string.IsNullOrEmpty(character.TrainingSkill))
                                 {
                                     <span>Currently training&nbsp;</span>
                                     <b>@GetTrainingSkillName(character)</b>
@@ -116,25 +116,26 @@
             case CharacterViewState.Inventory:
                 break;
             case CharacterViewState.Skills:
-                foreach (var skills in Characters.FirstOrDefault().Skills.AsList())
+                foreach (var skillName in RavenNest.DataModels.Skills.SkillNames)
                 {
                     <tr class="character-skill-row">
                         <th class="character-skill-header-cell">
-                            @skills.Name
+                            <SkillDisplay SkillName=@skillName></SkillDisplay>
                         </th>
                         @foreach (var character in Characters)
                         {
                             var dirSkills = character.Skills.AsDirectionary();
                             RavenNest.BusinessLogic.Extended.PlayerSkill skill;
-                            dirSkills.TryGetValue(skills.Name, out skill);
+                            dirSkills.TryGetValue(skillName, out skill);
                             @if (skill != null)
                             {
-                                var isActive = IsTrainingSkill(skill);
-                                <td character-row="@character.Name @(character.Identifier != null ? $"#{character.Identifier}" : "")" class="character-skill-cell @(isActive ? " active" : "")" title="@(isActive?"You're currently training this skill." : "")">
+                              
+                                var isActive = IsTrainingSkill(skill, character.TrainingSkill);
+                                <td character-row="@(character.Identifier != null ? $"#{character.Identifier}" : $"{character.Alias ?? "1"}" )" class="character-skill-cell @(isActive ? " active" : "")" title="@(isActive?"You're currently training this skill." : "")">
                                     <div class="character-stats-row">
                                         <div class="stats-progress" title="@ExpDisplay(skill.Experience)">
-                                            <div class="stats-progress-value" style="@StyleWidth((int)(skill.Percent*120))"></div>
-                                            <div class="stats-progress-percent">@Math.Round(skill.Percent * 100, 2)%</div>
+                                            <div class="stats-progress-value @(isActive ? " active" : "")" style="@StyleWidth((int)(skill.Percent*100))"></div>
+                                            <div class="stats-progress-percent @(isActive ? " active" : "")">@Math.Round(skill.Percent * 100, 2)%</div>
                                         </div>
                                         @if (skill.Name == "Health")
                                         {
@@ -145,12 +146,16 @@
                                         }
                                         else
                                         {
-                                            <div class="stats-value">@skill.Level</div>
+                                            <div class="stats-value"><span class="skill-level">@skill.Level</span></div>
                                         }
                                         @if (CanModify)
                                         {
-                                            <div class="modify-skill">
+                                            <div class="modify-skill @(isActive ? " active" : "")">
                                                 <button @onclick="()=> ShowModifySkill(character, skill)" class="btn-icon"><i class="fa fa-pen"></i></button>
+                                            </div>
+                                        } else if(isActive) {
+                                              <div class="modify-skill @(isActive ? " active" : "")">
+                                                <i class="fa fa-gears"></i>
                                             </div>
                                         }
                                     </div>

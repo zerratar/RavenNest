@@ -101,7 +101,7 @@ td.item.link {
     left: 50%;
     transform: translate(-50%, -50%);
     padding: 20px;
-    background-color: white;5
+    background-color: white;
     display: flex;
     flex-flow: column;
     box-shadow: 3px 3px 6px rgba(0,0,0,0.125);
@@ -474,7 +474,7 @@ button.btn.btn-primary.reload {
     font-size: 9pt;
     margin-left: 15px;
 }
-@media (max-width: 640.98px) {
+@media (max-width: 880.98px) {
     .section {
         padding: 30px 20px 50px 20px !important;
     }

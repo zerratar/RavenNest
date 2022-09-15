@@ -1,0 +1,14 @@
+﻿@media screen and (max-width: 880px) {
+    .skill-name {
+        display: none;
+    }
+    .skill-display {
+        text-align: center;
+    }
+}
+
+@media screen and (max-width: 660px) {
+    .skill-name {
+        display: unset;
+    }
+}
