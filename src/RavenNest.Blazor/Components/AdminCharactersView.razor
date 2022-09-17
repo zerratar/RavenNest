@@ -203,16 +203,22 @@
                                         {
                                             <div class="inventory-item equipped" title="@slot.Key">
                                                 @*@onclick="(()=>ShowItemDetails(item))"*@
-                                                <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
+                                                <div class="put-me-in-the-middle">
+                                                    <div class="item-image" data-item="@item.Id">
+                                                        <img src="@GetItemImage(item.ItemId, item.Tag)" />
+                                                    </div>
+                                                </div>
                                             </div>
                                         }
                                         else
                                         {
                                             <div class="inventory-item empty" title="@slot.Key">
-                                                <div>
-                                                    @*@onclick="(()=>ShowItemDetails(item))"*@
-                                                    @*<div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>*@
-                                                    <div class="item-image" date-item="@slot.Key"><i class="fa fa-circle"></i></div>
+                                                @*@onclick="(()=>ShowItemDetails(item))"*@
+                                                @*<div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>*@
+                                                <div class="put-me-in-the-middle">
+                                                    <div class="item-image" date-item="@slot.Key">
+                                                        <i class="fa fa-circle"></i>
+                                                    </div>
                                                 </div>
                                             </div>
                                         }

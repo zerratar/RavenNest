@@ -46,7 +46,6 @@ button {
 
 i.fa {
     color: #333;
-    margin-left: 10px;
 }
 
 button.btn-icon {
@@ -297,6 +296,7 @@ th.character-skill-header-cell {
 .inventory-item.empty {
     margin: 5px;
     cursor: not-allowed;
+    
 }
 
 .inventory-item.equipped {
@@ -304,20 +304,23 @@ th.character-skill-header-cell {
     cursor: pointer;
 }
 
-.inventory-item .item-image img {
-    width: 60px;
-    height: 60px;
+.inventory-item .item-image i, .inventory-item .item-image img {
+    width: 65px;
+    height: 65px;
     max-width: 100%;
-    padding: 3px;
+    padding: 0px;
     border-radius: 8px;
     background-color: whitesmoke;
     box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .item-amount {
     position: relative;
-    top: -23px;
-    right: -35px;
+    top: -22px;
+    right: -40px;
     border-radius: 8px;
     background-color: rgb(246 223 255 / 80%);
     width: 25px;
@@ -331,6 +334,11 @@ th.character-skill-header-cell {
 }
 .character-inventory-equipped-header-row {
     display: none;
+}
+.inventory-item .put-me-in-the-middle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 /* Add Items Styling*/
 button.btn.btn-secondary {
