@@ -285,9 +285,18 @@ th.character-skill-header-cell {
 }
 
 .inventory-item.inventory {
-    margin: 10px;
+    margin: 5px;
     margin-bottom: -15px;
     cursor: pointer;
+}
+.inventory-item.stash {
+    margin: 5px;
+    margin-bottom: -15px;
+    cursor: pointer;
+}
+.inventory-item.empty {
+    margin: 5px;
+    cursor: not-allowed;
 }
 
 .inventory-item.equipped {

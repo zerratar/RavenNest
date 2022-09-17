@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Components;
+using RavenNest.Blazor.Pages.Admin;
 using RavenNest.Blazor.Services;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.Models;
+using RavenNest.BusinessLogic.Providers;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,12 +14,13 @@ namespace RavenNest.Blazor.Components
     public partial class AdminCharactersView : ComponentBase
     {
         [Inject]
-        Services.PlayerService CharacterService { get; set; }
+        PlayerService CharacterService { get; set; }
         [Inject]
-        Services.AuthService AuthService { get; set; }
+        AuthService AuthService { get; set; }
         [Inject]
-        Services.ItemService ItemService { get; set; }
+        ItemService ItemService { get; set; }
         [Parameter]
+        public WebsiteAdminUser SelectedUser { get; set; }
         public List<WebsiteAdminPlayer> Characters { get; set; }
 
         [Parameter]
@@ -35,23 +38,39 @@ namespace RavenNest.Blazor.Components
         private PlayerSkill ModifyingSkill;
 
         private bool ItemDetailDialogVisible;
-        private Models.InventoryItem ItemDetailsDialogItem;
+        private InventoryItem ItemDetailsDialogItem;
         private long GiftOrSendAmount;
 
         private Item SelectedItem { get; set; }
         private bool[] AddItemDialogVisible = new bool[3];
 
-        public enum CharacterViewState
+        private IReadOnlyList<UserBankItem> _stash;
+
+        private IReadOnlyList<UserBankItem> Stash
         {
-            Skills,
-            Inventory,
-            Clan,
-            Customization,
-            Map
+            get { return _stash ?? new List<UserBankItem>(); }
+            set { _stash = value; }
         }
+        private Dictionary<Guid, Item> itemLookup;
+        [Inject]
+        IPlayerInventoryProvider PlayerInventoryProvider { get; set; }
+
         protected override void OnInitialized()
         {
             Session = AuthService.GetSession();
+        }
+        protected override Task OnParametersSetAsync()
+        {
+            Characters = SelectedUser.Characters;
+
+            var stash = SelectedUser.Stash;
+            if (stash != null)
+            {
+                Stash = stash;
+                this.itemLookup = stash.Select(x => x.ItemId).Distinct().Select(ItemService.GetItem).ToDictionary(x => x.Id, x => x);
+            }
+
+            return base.OnParametersSetAsync();
         }
 
         public async void CloneSkillsAndStateToMain(WebsiteAdminPlayer character)
@@ -244,7 +263,7 @@ namespace RavenNest.Blazor.Components
             StateHasChanged();
             SelectedItem = null;
         }
-        public string GetItemImage(Guid itemId, string tag) //TODO refactor - code used in AdminUserView.razor also
+        public string GetItemImage(Guid itemId, string tag)
         {
             if (tag != null)
             {
@@ -256,17 +275,26 @@ namespace RavenNest.Blazor.Components
         {
             return await ItemService.SearchAsync(searchText);
         }
-        public IReadOnlyList<Models.InventoryItem> GetEquippedItems(WebsiteAdminPlayer character)
+        public Dictionary<BusinessLogic.Providers.EquipmentSlot, InventoryItem> GetEquipmentSlotAndItems(WebsiteAdminPlayer character)
         {
-            return character.InventoryItems.Where(x => x.Equipped).ToList();
+            Dictionary<BusinessLogic.Providers.EquipmentSlot, InventoryItem> equipmentSlotItems = new();
+            foreach (BusinessLogic.Providers.EquipmentSlot slot in Enum.GetValues(typeof(BusinessLogic.Providers.EquipmentSlot)))
+            {
+                var ReadOnlyItem = PlayerInventoryProvider.Get(character.Id).GetEquippedItem(slot);
+                var item = character.InventoryItems.FirstOrDefault(x => x.ItemId == ReadOnlyItem.ItemId);
+                equipmentSlotItems.Add(slot, item);
+            }
+
+            return equipmentSlotItems;
         }
-        public IReadOnlyList<Models.InventoryItem> GetInventoryItems(WebsiteAdminPlayer character)
+
+        public IReadOnlyList<InventoryItem> GetInventoryItems(WebsiteAdminPlayer character)
         {
             return character.InventoryItems.Where(x => !x.Equipped).ToList();
         }
-        public string GetItemAmount(InventoryItem item)
+        public string GetItemAmount(long item)
         {
-            var value = item.Amount;
+            var value = item;
             if (value >= 1000_000)
             {
                 var mils = value / 1000000.0;
@@ -278,7 +306,7 @@ namespace RavenNest.Blazor.Components
                 return Math.Round(ks) + "K";
             }
 
-            return item.Amount.ToString();
+            return item.ToString();
         }
 
 

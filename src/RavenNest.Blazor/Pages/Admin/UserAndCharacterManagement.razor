@@ -1,6 +1,5 @@
 ﻿@layout AdminLayout
 @page "/admin/user/{id}/{view:int?}"
-@using static RavenNest.Blazor.Components.AdminCharactersView
 
 @if (SelectedUser == null)
 {
@@ -10,7 +9,7 @@ else
 {
     <AdminUserView SelectedUser="SelectedUser" ViewState="ViewState"></AdminUserView>
 
-    <AdminCharactersView Characters="SelectedUser.Characters" ViewState="ViewState"></AdminCharactersView>
+    <AdminCharactersView SelectedUser="SelectedUser" ViewState="ViewState"></AdminCharactersView>
 }
 <div class="control-floating">
     <div class="control-tabs">
@@ -22,8 +21,8 @@ else
         {
             <button class="tab-link" @onclick="(()=> BanUser())">Ban</button>
         }
-        <button class="tab-link @SelectedClass(CharacterViewState.Skills)" @onclick="ShowSkills">Skills</button>
-        <button class="tab-link @SelectedClass(CharacterViewState.Inventory)" @onclick="ShowInventory">Inventory</button>
-        <button class="tab-link @SelectedClass(CharacterViewState.Clan)" @onclick="ShowClan">Clan</button>
+        <button class="tab-link @SelectedClassStyling(CharacterViewState.Skills)" @onclick="ShowSkills">Skills</button>
+        <button class="tab-link @SelectedClassStyling(CharacterViewState.Inventory)" @onclick="ShowInventory">Inventory</button>
+        <button class="tab-link @SelectedClassStyling(CharacterViewState.Clan)" @onclick="ShowClan">Clan</button>
     </div>
 </div>

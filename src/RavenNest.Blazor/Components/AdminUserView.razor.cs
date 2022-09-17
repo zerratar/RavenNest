@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Components;
-using RavenNest.Blazor.Pages.Front;
 using RavenNest.Blazor.Services;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.Models;
@@ -7,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using static RavenNest.Blazor.Components.AdminCharactersView;
+using RavenNest.Blazor.Pages.Admin;
 
 namespace RavenNest.Blazor.Components
 {
@@ -30,26 +29,6 @@ namespace RavenNest.Blazor.Components
         RavenNest.Blazor.Services.ItemService ItemService { get; set; }
         private bool EditingUserPatreon { get; set; }
         private bool reloadingClanLogo { get; set; }
-
-        private IReadOnlyList<UserBankItem> _stash;
-
-        private IReadOnlyList<UserBankItem> Stash
-        {
-            get { return _stash ?? new List<RavenNest.Models.UserBankItem>(); }
-            set { _stash = value; }
-        }
-        private Dictionary<Guid, RavenNest.Models.Item> itemLookup;
-
-        protected override Task OnParametersSetAsync()
-        {
-            var stash = SelectedUser.Stash;
-            if (stash != null)
-            {
-                Stash = stash;
-                this.itemLookup = stash.Select(x => x.ItemId).Distinct().Select(ItemService.GetItem).ToDictionary(x => x.Id, x => x);
-            }
-            return base.OnParametersSetAsync();
-        }
 
         private string[] patreonNames { get; set; } = new string[] {
             "None", "Mithril", "Rune", "Dragon", "Abraxas", "Phantom", "Above Phantom"
@@ -128,30 +107,6 @@ namespace RavenNest.Blazor.Components
         {
             EditingUserPatreon = false;
         }
-        public string GetItemImage(Guid itemId, string tag)
-        {
-            if (tag != null)
-            {
-                return $"/api/twitch/logo/{tag}";
-            }
-            return $"/imgs/items/{itemId}.png";
-        }
 
-        public string GetItemAmount(long amount)
-        {
-            var value = amount;
-            if (value >= 1000_000)
-            {
-                var mils = value / 1000000.0;
-                return Math.Round(mils) + "M";
-            }
-            else if (value > 1000)
-            {
-                var ks = value / 1000m;
-                return Math.Round(ks) + "K";
-            }
-
-            return amount.ToString();
-        }
     }
 }

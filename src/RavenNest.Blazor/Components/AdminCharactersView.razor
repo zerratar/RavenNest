@@ -1,4 +1,38 @@
 ﻿@using Blazored.Typeahead
+@using RavenNest.Blazor.Pages.Admin
+@using EquipmentSlots = RavenNest.BusinessLogic.Providers.EquipmentSlot;
+@if (ViewState == CharacterViewState.Inventory)
+{
+    //Add User State before player inventory
+    <div class=user-inventory>
+        <h2>Stash</h2>
+        <div class="stash-status">
+            @if (Stash != null)
+            {
+                if (Stash.Count == 0)
+                {
+                    <span>No Items in Stash</span>
+                }
+            }
+        </div>
+        <div class="inventory-items">
+
+            @foreach (var entry in Stash)
+            {
+                var item = itemLookup[entry.ItemId];
+                <div class="inventory-item stash">
+                    @*@onclick="(()=>ShowItemDetails(character, item))"*@
+                    <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(entry.ItemId, entry.Tag)" /></div>
+
+
+                    <div class="item-amount @(entry.Amount == 1 ? "invisible" : "")">@GetItemAmount(entry.Amount)</div>
+
+                </div>
+            }
+        </div>"
+    </div>
+}
+
 <div class="characters">
     <h1>Character's @ViewState.ToString()</h1>
     <table class="characters-table">
@@ -158,19 +192,35 @@
                             <div>
                                 <h2>Equipped</h2>
                                 <div class="inventory-items">
-                                    @foreach (var item in GetEquippedItems(character))
+                                    @{
+                                        var slots = GetEquipmentSlotAndItems(character);
+                                    }
+
+                                    @foreach (var slot in slots)
                                     {
-                                        <div class="inventory-item equipped">
-                                            @*@onclick="(()=>ShowItemDetails(item))"*@
-                                            <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
-                                        </div>
+                                        var item = slot.Value;
+                                        if (item != null)
+                                        {
+                                            <div class="inventory-item equipped" title="@slot.Key">
+                                                @*@onclick="(()=>ShowItemDetails(item))"*@
+                                                <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="inventory-item empty" title="@slot.Key">
+                                                <div>
+                                                    @*@onclick="(()=>ShowItemDetails(item))"*@
+                                                    @*<div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>*@
+                                                    <div class="item-image" date-item="@slot.Key"><i class="fa fa-circle"></i></div>
+                                                </div>
+                                            </div>
+                                        }
                                     }
                                 </div>
                             </div>
-
                         </td>
                     }
-
                 </tr>
                 <tr class="character-inventory-items">
                     <th class="character-inventory-equipped-header-row"></th>
@@ -185,8 +235,8 @@
                                         <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
 
 
-                                        <div class="item-amount @(item.Amount == 1 ? "invisible" : "")">@GetItemAmount(item)</div>
-                                        
+                                        <div class="item-amount @(item.Amount == 1 ? "invisible" : "")">@GetItemAmount(item.Amount)</div>
+
                                     </div>
                                 }
                             </div>
@@ -269,10 +319,6 @@
                 }
                 break;
             case CharacterViewState.Clan:
-                break;
-            case CharacterViewState.Customization:
-                break;
-            case CharacterViewState.Map:
                 break;
         }
     </table>

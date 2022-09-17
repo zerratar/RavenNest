@@ -1,14 +1,18 @@
 ﻿using Microsoft.AspNetCore.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using RavenNest.BusinessLogic.Extended;
-using RavenNest.Models;
-using static RavenNest.Blazor.Components.AdminCharactersView;
+using System;
+using System.Linq;
 
 namespace RavenNest.Blazor.Pages.Admin
 {
+    public enum CharacterViewState
+    {
+        Skills,
+        Inventory,
+        Clan
+    }
+
     public partial class UserAndCharacterManagement : ComponentBase
     {
         [Inject]
@@ -16,11 +20,7 @@ namespace RavenNest.Blazor.Pages.Admin
         [Inject]
         Services.UserService UserService { get; set; }
         [Inject]
-        Services.ClanService ClanService { get; set; }
-        [Inject]
         NavigationManager NavigationManager { get; set; }
-        [Inject]
-        Services.PlayerService PlayerService { get; set; }
 
         [Parameter]
         public string Id { get; set; }
@@ -32,7 +32,8 @@ namespace RavenNest.Blazor.Pages.Admin
         private WebsiteAdminUser SelectedUser { get; set; }
         private Sessions.SessionInfo Session { get; set; }
 
-        protected override async Task OnInitializedAsync()
+
+        protected override Task OnInitializedAsync()
         {
             Session = AuthService.GetSession();
 
@@ -40,6 +41,26 @@ namespace RavenNest.Blazor.Pages.Admin
             {
                 SelectedUser = UserService.GetUser(Id);
             }
+
+            return base.OnInitializedAsync();
+        }
+
+        protected override void OnParametersSet()
+        {
+            //Memorize valid ViewState so when page is refreshed, we can stay on the same page
+            View = View ?? 0;
+            if (Enum.IsDefined(typeof(CharacterViewState), View))
+            {
+                ViewState = (CharacterViewState)View;
+            }
+            else
+            {
+                View = 0;
+                ViewState = (CharacterViewState)View;
+                ViewStateNavigation(CharacterViewState.Skills);
+            }
+
+            base.OnParametersSet();
         }
 
         protected override void OnAfterRender(bool firstRender)
@@ -70,28 +91,29 @@ namespace RavenNest.Blazor.Pages.Admin
         private void ShowInventory()
         {
             ViewState = CharacterViewState.Inventory;
+            ViewStateNavigation(ViewState);
         }
 
         private void ShowSkills()
         {
             ViewState = CharacterViewState.Skills;
+            ViewStateNavigation(ViewState);
         }
 
         private void ShowClan()
         {
             ViewState = CharacterViewState.Clan;
+            ViewStateNavigation(ViewState);
         }
 
-        private void ShowMap()
+        private void ViewStateNavigation(CharacterViewState view)
         {
-            ViewState = CharacterViewState.Map;
+            var relativeNavURL = "/admin/user/" + Id;
+            if (view > 0)
+                relativeNavURL.Concat("/" + ((int)view).ToString());
+            NavigationManager.NavigateTo(relativeNavURL);
         }
-
-        private void ShowCustomization()
-        {
-            ViewState = CharacterViewState.Customization;
-        }
-        private string SelectedClass(CharacterViewState state)
+        private string SelectedClassStyling(CharacterViewState state)
         {
             return ViewState == state ? "active" : "";
         }
