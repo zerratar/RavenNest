@@ -169,12 +169,13 @@ namespace RavenNest.Blazor
                         //However, we're moving away from including patch number and only doing major.minor.build, instead of major.minor.build.patch
                         string rebuild = major + "." + minor + "a";
                         redirectUrl = redirectUrl.Replace("update.7z", $"Ravenfall.v{rebuild}-alpha.7z");
-                    } else
+                    }
+                    else
                     {
                         redirectUrl = redirectUrl.Replace("update.7z", $"Ravenfall.v{client.ClientVersion}-alpha.7z");
                     }
 
-                   
+
                     context.Response.Redirect(redirectUrl);
                 });
             });
