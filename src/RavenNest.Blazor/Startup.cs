@@ -155,7 +155,26 @@ namespace RavenNest.Blazor
                 {
                     var gameData = app.ApplicationServices.GetService<IGameData>();
                     var client = gameData.Client;
-                    var redirectUrl = gameData.Client.DownloadLink.Replace("update.7z", $"Ravenfall.v{client.ClientVersion}-alpha.7z");
+
+                    string[] versions = client.ClientVersion.Split('.');
+                    string major = versions[0];
+                    string minor = versions[1];
+                    string build = versions[2];
+                    //string patch = versions[3]; //No longer being used
+                    var redirectUrl = gameData.Client.DownloadLink;
+
+                    if (minor == "8")
+                    {
+                        //v0.8.0.0a version is tagged as 0.8a - this is a workaround fix. Correct solution would be to rename the tag: https://phoenixnap.com/kb/git-rename-tag
+                        //However, we're moving away from including patch number and only doing major.minor.build, instead of major.minor.build.patch
+                        string rebuild = major + "." + minor + "a";
+                        redirectUrl = redirectUrl.Replace("update.7z", $"Ravenfall.v{rebuild}-alpha.7z");
+                    } else
+                    {
+                        redirectUrl = redirectUrl.Replace("update.7z", $"Ravenfall.v{client.ClientVersion}-alpha.7z");
+                    }
+
+                   
                     context.Response.Redirect(redirectUrl);
                 });
             });
