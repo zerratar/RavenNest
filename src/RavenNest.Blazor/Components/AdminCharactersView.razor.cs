@@ -8,11 +8,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.JSInterop;
 
 namespace RavenNest.Blazor.Components
 {
     public partial class AdminCharactersView : ComponentBase
     {
+        [Inject]
+        IJSRuntime JS { get; set; }
         [Inject]
         PlayerService CharacterService { get; set; }
         [Inject]
@@ -71,6 +74,12 @@ namespace RavenNest.Blazor.Components
             }
 
             return base.OnParametersSetAsync();
+        }
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            await JS.InvokeVoidAsync("dragAndDrop", ".draggable");
+
+            await base.OnAfterRenderAsync(firstRender);
         }
 
         public async void CloneSkillsAndStateToMain(WebsiteAdminPlayer character)

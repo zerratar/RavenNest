@@ -1,6 +1,7 @@
 ﻿@using Blazored.Typeahead
 @using RavenNest.Blazor.Pages.Admin
 @using EquipmentSlots = RavenNest.BusinessLogic.Providers.EquipmentSlot;
+
 @if (ViewState == CharacterViewState.Inventory)
 {
     //Add User State before player inventory
@@ -20,13 +21,15 @@
             @foreach (var entry in Stash)
             {
                 var item = itemLookup[entry.ItemId];
-                <div class="inventory-item stash">
-                    @*@onclick="(()=>ShowItemDetails(character, item))"*@
-                    <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(entry.ItemId, entry.Tag)" /></div>
+                <div class="draggable">
+                    <div class="inventory-item stash">
+                        @*@onclick="(()=>ShowItemDetails(character, item))"*@
+                        <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(entry.ItemId, entry.Tag)" /></div>
 
 
-                    <div class="item-amount @(entry.Amount == 1 ? "invisible" : "")">@GetItemAmount(entry.Amount)</div>
+                        <div class="item-amount @(entry.Amount == 1 ? "invisible" : "")">@GetItemAmount(entry.Amount)</div>
 
+                    </div>
                 </div>
             }
         </div>"
@@ -201,23 +204,27 @@
                                         var item = slot.Value;
                                         if (item != null)
                                         {
-                                            <div class="inventory-item equipped" title="@slot.Key">
-                                                @*@onclick="(()=>ShowItemDetails(item))"*@
-                                                <div class="put-me-in-the-middle">
-                                                    <div class="item-image" data-item="@item.Id">
-                                                        <img src="@GetItemImage(item.ItemId, item.Tag)" />
+                                            <div class="draggable">
+                                                <div class="inventory-item equipped" title="@slot.Key">
+                                                    @*@onclick="(()=>ShowItemDetails(item))"*@
+                                                    <div class="put-me-in-the-middle">
+                                                        <div class="item-image" data-item="@item.Id">
+                                                            <img src="@GetItemImage(item.ItemId, item.Tag)" />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         }
                                         else
                                         {
-                                            <div class="inventory-item empty" title="@slot.Key">
-                                                @*@onclick="(()=>ShowItemDetails(item))"*@
-                                                @*<div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>*@
-                                                <div class="put-me-in-the-middle">
-                                                    <div class="item-image" date-item="@slot.Key">
-                                                        <i class="fa fa-circle"></i>
+                                            <div class="draggable">
+                                                <div class="inventory-item empty" title="@slot.Key">
+                                                    @*@onclick="(()=>ShowItemDetails(item))"*@
+                                                    @*<div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>*@
+                                                    <div class="put-me-in-the-middle">
+                                                        <div class="item-image" date-item="@slot.Key">
+                                                            <i class="fa fa-circle"></i>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -236,13 +243,15 @@
                             <div class="inventory-items">
                                 @foreach (var item in GetInventoryItems(character))
                                 {
-                                    <div class="inventory-item inventory">
-                                        @*@onclick="(()=>ShowItemDetails(character, item))"*@
-                                        <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
+                                    <div class="draggable">
+                                        <div class="inventory-item inventory">
+                                            @*@onclick="(()=>ShowItemDetails(character, item))"*@
+                                            <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
 
 
-                                        <div class="item-amount @(item.Amount == 1 ? "invisible" : "")">@GetItemAmount(item.Amount)</div>
+                                            <div class="item-amount @(item.Amount == 1 ? "invisible" : "")">@GetItemAmount(item.Amount)</div>
 
+                                        </div>
                                     </div>
                                 }
                             </div>
