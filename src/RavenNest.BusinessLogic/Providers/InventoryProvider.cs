@@ -33,7 +33,7 @@ namespace RavenNest.BusinessLogic.Providers
         /// <summary>
         /// Called to check if the inventory items in this inventory matches with gameData
         /// </summary>
-        private void ValidateInventory()
+        private void ValidateInventory([CallerMemberName] string callerMemberName = null)
         {
             try
             {
@@ -141,7 +141,11 @@ namespace RavenNest.BusinessLogic.Providers
                     var badAmountCount = itemsWithBadAmount?.Count ?? 0;
                     var missingItemCount = missingItems?.Count ?? 0;
 
-                    logger.LogError(c.Name + "#" + c.CharacterIndex + " inventory validation failed. Item Stack Delta: " + itemCountDelta + ", " + duplicatedStackCount + " duplicate stacks, " + emptyStackCount + " empty stacks, " + badAmountCount + " mismatch amount, " + missingItemCount + " missing stacks");
+                    logger.LogError(callerMemberName + " - (Add: " + items.LastAddResult + " Remove: " + items.LastRemoveResult + ")" + c.Name + "#" + c.CharacterIndex + " inventory validation failed. Item Stack Delta: " + itemCountDelta + ", "
+                        + duplicatedStackCount + " duplicate stacks, "
+                        + emptyStackCount + " empty stacks, "
+                        + badAmountCount + " mismatch amount, "
+                        + missingItemCount + " missing stacks");
                 }
             }
             catch (Exception exc)

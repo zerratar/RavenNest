@@ -5,7 +5,6 @@ namespace RavenNest.DataModels
 
     public partial class Appearance : Entity<Appearance>
     {
-        private Guid id;
         private Gender gender;
         private SkinColor skinColor;
         private HairColor hairColor;
@@ -30,12 +29,6 @@ namespace RavenNest.DataModels
         private int feetMaterial;
         private int handMaterial;
         private bool helmetVisible;
-
-        public Guid Id
-        {
-            get => id;
-            set => Set(ref id, value);
-        }
 
         public Gender Gender
         {

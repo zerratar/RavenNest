@@ -5,7 +5,6 @@ namespace RavenNest.DataModels
 {
     public partial class Resources : Entity<Resources>
     {
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         private double wood; public double Wood { get => wood; set => Set(ref wood, value); }
         private double ore; public double Ore { get => ore; set => Set(ref ore, value); }
         private double fish; public double Fish { get => fish; set => Set(ref fish, value); }

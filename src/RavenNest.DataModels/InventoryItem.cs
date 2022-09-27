@@ -6,7 +6,6 @@ namespace RavenNest.DataModels
     // Want to rename this to ItemInstance
     public partial class InventoryItem : Entity<InventoryItem>
     {
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         private Guid characterId; public Guid CharacterId { get => characterId; set => Set(ref characterId, value); }
         private Guid itemId; public Guid ItemId { get => itemId; set => Set(ref itemId, value); }
         private string name; public string Name { get => name; set => Set(ref name, value); }

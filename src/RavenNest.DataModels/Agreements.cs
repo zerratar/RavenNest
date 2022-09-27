@@ -4,7 +4,6 @@ namespace RavenNest.DataModels
 {
     public partial class Agreements : Entity<Agreements>
     {
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         private string type; public string Type { get => type; set => Set(ref type, value); }
         private string title; public string Title { get => title; set => Set(ref title, value); }
         private string message; public string Message { get => message; set => Set(ref message, value); }

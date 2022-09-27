@@ -4,7 +4,6 @@ namespace RavenNest.DataModels
 {
     public class UserPatreon : Entity<UserPatreon>
     {
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         private Guid? userId; public Guid? UserId { get => userId; set => Set(ref userId, value); }
         private string twitchUserId; public string TwitchUserId { get => twitchUserId; set => Set(ref twitchUserId, value); }
         private string pledgeTitle; public string PledgeTitle { get => pledgeTitle; set => Set(ref pledgeTitle, value); }

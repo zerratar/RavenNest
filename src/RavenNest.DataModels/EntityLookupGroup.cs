@@ -4,20 +4,18 @@ using System.Collections.Generic;
 
 namespace RavenNest.DataModels
 {
-    public class EntityLookupGroup<TModel, TKey>
+    public class EntityLookupGroup<TModel> where TModel : IEntity
     {
-        private readonly ConcurrentDictionary<TKey, ConcurrentDictionary<TKey, TModel>> entities;
-        private readonly Func<TModel, TKey> lookupKey;
-        private readonly Func<TModel, TKey> itemKey;
+        private readonly ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, TModel>> entities;
+        private readonly Func<TModel, Guid> lookupKey;
 
-        public EntityLookupGroup(ConcurrentDictionary<TKey, ConcurrentDictionary<TKey, TModel>> entities, Func<TModel, TKey> lookupKey, Func<TModel, TKey> itemKey)
+        public EntityLookupGroup(ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, TModel>> entities, Func<TModel, Guid> lookupKey)
         {
             this.entities = entities;
             this.lookupKey = lookupKey;
-            this.itemKey = itemKey;
         }
 
-        public ConcurrentDictionary<TKey, TModel> this[TKey key]
+        public ConcurrentDictionary<Guid, TModel> this[Guid key]
         {
             get
             {
@@ -26,16 +24,16 @@ namespace RavenNest.DataModels
             }
         }
 
-        public TModel this[TKey group, TKey item] => entities[group][item];
+        public TModel this[Guid group, Guid item] => entities[group][item];
 
         public void Add(TModel entity)
         {
             var groupKey = lookupKey(entity);
-            var key = itemKey(entity);
+            var key = entity.Id;
 
             if (!entities.ContainsKey(groupKey))
             {
-                entities[groupKey] = new ConcurrentDictionary<TKey, TModel>();
+                entities[groupKey] = new ConcurrentDictionary<Guid, TModel>();
             }
 
             if (entities.TryGetValue(groupKey, out var dict))
@@ -47,14 +45,14 @@ namespace RavenNest.DataModels
         public void Remove(TModel entity)
         {
             var groupKey = lookupKey(entity);
-            var key = itemKey(entity);
+            var key = entity.Id;
             entities[groupKey].Remove(key, out _);
         }
 
         public void Update(TModel entity)
         {
             var groupKey = lookupKey(entity);
-            var key = itemKey(entity);
+            var key = entity.Id;
             if (!entities.ContainsKey(groupKey) || !entities[groupKey].ContainsKey(key))
             {
                 MoveEntitySlow(entity);
@@ -64,7 +62,7 @@ namespace RavenNest.DataModels
         private void MoveEntitySlow(TModel entity)
         {
             var groupFound = false;
-            var oldKey = default(TKey);
+            var oldKey = Guid.Empty;
             foreach (var groups in entities)
             {
                 foreach (var value in groups.Value)

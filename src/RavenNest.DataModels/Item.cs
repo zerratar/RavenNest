@@ -23,7 +23,6 @@ namespace RavenNest.DataModels
 
     public partial class Pet : Entity<Pet>
     {
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         private Guid characterId; public Guid CharacterId { get => characterId; set => Set(ref characterId, value); }
         private PetType type; public PetType Type { get => type; set => Set(ref type, value); }
         private PetTier tier; public PetTier Tier { get => tier; set => Set(ref tier, value); }
@@ -45,7 +44,6 @@ namespace RavenNest.DataModels
 
     public partial class Item : Entity<Item>
     {
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         private string name; public string Name { get => name; set => Set(ref name, value); }
         private int category; public int Category { get => category; set => Set(ref category, value); }
         private int type; public int Type { get => type; set => Set(ref type, value); }

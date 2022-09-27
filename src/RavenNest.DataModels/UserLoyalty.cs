@@ -14,7 +14,6 @@ namespace RavenNest.DataModels
         public const int PointsPerGiftedSub = 200;
         public const int PointsPerLevel = 100;
 
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         private Guid userId; public Guid UserId { get => userId; set => Set(ref userId, value); }
         private Guid streamerUserId; public Guid StreamerUserId { get => streamerUserId; set => Set(ref streamerUserId, value); }
         private Guid? rankId; public Guid? RankId { get => rankId; set => Set(ref rankId, value); }

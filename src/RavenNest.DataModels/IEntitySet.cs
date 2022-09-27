@@ -15,18 +15,16 @@ namespace RavenNest.DataModels
         Type GetEntityType();
     }
 
-    public interface IEntitySet<TModel, TKey> : IEntitySet
+    public interface IEntitySet<TModel> : IEntitySet
     {
         IReadOnlyList<TModel> Entities { get; }
-
-        void Add(TModel model);
-        void Remove(TModel model);
+        AddEntityResult Add(TModel model);
+        RemoveEntityResult Remove(TModel model);
         //void Update(TModel model); // handle updates automatically, requires Entity<T> to be used.
 
         void AddRange(IEnumerable<TModel> models);
         void RemoveRange(IEnumerable<TModel> models);
-        bool TryGet(TKey key, out TModel entity);
-
-        TModel this[TKey key] { get; }
+        bool TryGet(Guid key, out TModel entity);
+        TModel this[Guid key] { get; }
     }
 }

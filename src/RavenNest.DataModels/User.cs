@@ -11,7 +11,6 @@ namespace RavenNest.DataModels
         //          WITH: private $1 _$2; public $1 $2 { get => _$2; set => Set(ref _$2, value); }
         // To save some time. uggah
 
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         private string userId; public string UserId { get => userId; set => Set(ref userId, value); }
         private string userName; public string UserName { get => userName; set => Set(ref userName, value); }
         private string displayName; public string DisplayName { get => displayName; set => Set(ref displayName, value); }

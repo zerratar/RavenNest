@@ -4,7 +4,6 @@ namespace RavenNest.DataModels
 {
     public partial class CharacterClanInvite : Entity<CharacterClanInvite>
     {
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         private Guid characterId; public Guid CharacterId { get => characterId; set => Set(ref characterId, value); }
         private Guid clanId; public Guid ClanId { get => clanId; set => Set(ref clanId, value); }
         private Guid? inviterUserId; public Guid? InviterUserId { get => inviterUserId; set => Set(ref inviterUserId, value); }

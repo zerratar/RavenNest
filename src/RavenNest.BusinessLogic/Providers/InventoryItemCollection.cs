@@ -10,6 +10,8 @@ namespace RavenNest.BusinessLogic.Providers
     {
         private readonly IGameData gameData;
         private readonly List<InventoryItem> items;
+        public AddEntityResult LastAddResult { get; private set; }
+        public RemoveEntityResult LastRemoveResult { get; private set; }
         public InventoryItemCollection(IGameData gameData, List<InventoryItem> items)
         {
             this.gameData = gameData;
@@ -25,7 +27,7 @@ namespace RavenNest.BusinessLogic.Providers
         public void Add(InventoryItem item)
         {
             items.Add(item);
-            gameData.Add(item);
+            LastAddResult = gameData.Add(item);
         }
 
         public void Clear()
@@ -66,8 +68,8 @@ namespace RavenNest.BusinessLogic.Providers
         public bool Remove(InventoryItem item)
         {
             var res = items.Remove(item);
-            gameData.Remove(item);
-            return res;
+            LastRemoveResult = gameData.Remove(item);
+            return res && LastRemoveResult == RemoveEntityResult.Success;
         }
 
         public void RemoveAt(int index)

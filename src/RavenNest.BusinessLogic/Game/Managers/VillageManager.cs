@@ -1,5 +1,6 @@
 ﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Net;
+using RavenNest.DataModels;
 using RavenNest.Models;
 using System;
 using System.Linq;
@@ -136,7 +137,7 @@ namespace RavenNest.BusinessLogic.Game
                 Name = village.Name,
                 Level = villageLevel,
                 Experience = village.Experience,
-                Houses = villageHouses.Select(x =>
+                Houses = villageHouses.AsList(x =>
                 {
                     RavenNest.DataModels.User owner = null;
                     var uid = x.UserId;
@@ -150,7 +151,7 @@ namespace RavenNest.BusinessLogic.Game
                         Slot = x.Slot,
                         Type = x.Type
                     };
-                }).ToList()
+                })
             };
         }
         public bool RemoveHouse(Guid sessionId, int slot)
