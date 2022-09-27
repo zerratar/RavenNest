@@ -4,7 +4,6 @@ namespace RavenNest.DataModels
 {
     public partial class Village : Entity<Village>
     {
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         private Guid userId; public Guid UserId { get => userId; set => Set(ref userId, value); }
         private string name; public string Name { get => name; set => Set(ref name, value); }
         private int level; public int Level { get => level; set => Set(ref level, value); }

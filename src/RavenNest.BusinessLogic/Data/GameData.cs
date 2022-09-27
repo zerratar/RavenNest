@@ -269,12 +269,10 @@ namespace RavenNest.BusinessLogic.Data
                         ctx.ItemCraftingRequirement.ToList());
                     itemCraftingRequirements.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
-                    clans = new EntitySet<Clan>(
-                        restorePoint?.Get<Clan>() ?? ctx.Clan.ToList());
+                    clans = new EntitySet<Clan>(restorePoint?.Get<Clan>() ?? ctx.Clan.ToList());
                     clans.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                    clanRoles = new EntitySet<ClanRole>(
-                        restorePoint?.Get<ClanRole>() ?? ctx.ClanRole.ToList());
+                    clanRoles = new EntitySet<ClanRole>(restorePoint?.Get<ClanRole>() ?? ctx.ClanRole.ToList());
                     clanRoles.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
 
                     clanMemberships = new EntitySet<CharacterClanMembership>(
@@ -282,9 +280,7 @@ namespace RavenNest.BusinessLogic.Data
                     clanMemberships.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
                     clanMemberships.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
-                    villages = new EntitySet<Village>(
-                        restorePoint?.Get<Village>() ??
-                        ctx.Village.ToList());
+                    villages = new EntitySet<Village>(restorePoint?.Get<Village>() ?? ctx.Village.ToList());
                     villages.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     villageHouses = new EntitySet<VillageHouse>(
@@ -369,11 +365,15 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureCraftingRequirements(items);
                 MergeLoyaltyData(loyalty);
                 MergeClans();
+
+
+
                 RemoveDuplicatedClanMembers();
 
                 //RewardRollbackPlayers();
 
                 UpgradeVillageLevels();
+                MergeVillages();
 
                 #endregion
 
@@ -1261,6 +1261,65 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
+        private void MergeVillages()
+        {
+            // slow process.
+            foreach (var user in users.Entities)
+            {
+                var userId = user.Id;
+                var userVillages = villages[nameof(User), userId];
+                if (userVillages.Count > 1)
+                {
+                    var toKeep = userVillages.OrderByDescending(x => x.Level).FirstOrDefault();
+                    var resourceToKeep = GetResources(toKeep.ResourcesId);
+
+                    foreach (var village in userVillages)
+                    {
+                        if (village == toKeep)
+                        {
+                            continue;
+                        }
+
+                        toKeep.Experience += village.Experience;
+
+                        for (var i = 1; i < village.Level; ++i)
+                        {
+                            toKeep.Experience += (long)GameMath.ExperienceForLevel(i);
+                        }
+
+                        var resources0 = GetResources(village.ResourcesId);
+                        if (resourceToKeep != null && resources0 != null)
+                        {
+                            resourceToKeep.Wheat += resources0.Wheat;
+                            resourceToKeep.Arrows += resources0.Arrows;
+                            resourceToKeep.Ore += resources0.Ore;
+                            resourceToKeep.Coins += resources0.Coins;
+                            resourceToKeep.Fish += resources0.Fish;
+                            resourceToKeep.Wood += resources0.Wood;
+                        }
+
+                        var houses = GetVillageHouses(village);
+                        foreach (var house in houses)
+                        {
+                            Remove(house);
+                        }
+
+                        Remove(resources0);
+                        Remove(village);
+                    }
+
+                    var expForNext = GameMath.ExperienceForLevel(toKeep.Level + 1);
+                    while (toKeep.Experience > expForNext)
+                    {
+                        toKeep.Experience -= (long)expForNext;
+                        toKeep.Level++;
+
+                        expForNext = GameMath.ExperienceForLevel(toKeep.Level + 1);
+                    }
+                }
+            }
+        }
+
         private void UpgradeVillageLevels()
         {
             var updated = false;
@@ -1275,19 +1334,30 @@ namespace RavenNest.BusinessLogic.Data
                 if (village.Level >= GameMath.MaxVillageLevel)
                 {
                     village.Level = GameMath.MaxVillageLevel;
+                    village.Experience = (long)GameMath.ExperienceForLevel(village.Level + 1) - 1;
                     continue;
                 }
 
                 var nextLevel = village.Level + 1;
                 var expForLevel = GameMath.ExperienceForLevel(nextLevel);
-                while (village.Experience >= expForLevel || village.Level >= GameMath.MaxVillageLevel)
+                while (village.Experience >= expForLevel)
                 {
                     var expLeft = (long)(village.Experience - expForLevel);
 
                     village.Experience = expLeft;
                     village.Level++;
                     updated = true;
-                    expForLevel = GameMath.ExperienceForLevel(++nextLevel);
+                    expForLevel = GameMath.ExperienceForLevel(village.Level + 1);
+                }
+
+                // ensure village houses are within limits
+                var houses = GetOrCreateVillageHouses(village);
+                var maxHouses = GameMath.MaxVillageLevel / 10;
+                var houseCount = houses.Count;
+                while (houseCount > maxHouses)
+                {
+                    Remove(houses[houseCount - 1]);
+                    houseCount--;
                 }
             }
             if (updated)
@@ -1542,7 +1612,7 @@ namespace RavenNest.BusinessLogic.Data
                 return new VillageHouse[0];
             }
 
-            var houseCount = village.Level / 10;
+            var houseCount = System.Math.Min(village.Level / 10, GameMath.MaxVillageLevel / 10);
 
             if ((houses == null || houses.Count == 0) && houseCount > 0)
             {
@@ -2268,6 +2338,9 @@ namespace RavenNest.BusinessLogic.Data
         #region Remove Entities
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(VillageHouse item) => villageHouses.Remove(item);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(CharacterSkillRecord item) => characterSkillRecords.Remove(item);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2327,6 +2400,8 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(Resources res) => resources.Remove(res);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(Village res) => villages.Remove(res);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(MarketItem marketItem) => marketItems.Remove(marketItem);

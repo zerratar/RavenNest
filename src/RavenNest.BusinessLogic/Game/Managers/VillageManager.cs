@@ -130,28 +130,37 @@ namespace RavenNest.BusinessLogic.Game
             var villageHouses = gameData.GetOrCreateVillageHouses(village);
 
             var state = gameData.GetSessionState(session.Id);
-            var villageLevel = Math.Min(village.Level, GameVersion.IsLessThanOrEquals(state.ClientVersion, "0.8.0.0a") ? 170 : GameMath.MaxVillageLevel);
+            var beforeUpgrade = GameVersion.IsLessThanOrEquals(state.ClientVersion, "0.8.0.0a");
+            var villageLevel = Math.Min(village.Level, beforeUpgrade ? 170 : GameMath.MaxVillageLevel);
+
+            // since we can only have limited amount of houses.
+            // we have to ensure we don't go beyond certain limit for the different versions of the game clients.
+
+            var maxHouseCount = beforeUpgrade ? 17 : (GameMath.MaxVillageLevel / 10);
 
             return new VillageInfo
             {
                 Name = village.Name,
                 Level = villageLevel,
                 Experience = village.Experience,
-                Houses = villageHouses.AsList(x =>
-                {
-                    RavenNest.DataModels.User owner = null;
-                    var uid = x.UserId;
-                    if (uid != null)
+                Houses = villageHouses
+                    .OrderBy(x => x.Slot)
+                    .Take(maxHouseCount)
+                    .AsList(x =>
                     {
-                        owner = gameData.GetUser(uid.Value);
-                    }
-                    return new VillageHouseInfo
-                    {
-                        Owner = owner?.UserId,
-                        Slot = x.Slot,
-                        Type = x.Type
-                    };
-                })
+                        RavenNest.DataModels.User owner = null;
+                        var uid = x.UserId;
+                        if (uid != null)
+                        {
+                            owner = gameData.GetUser(uid.Value);
+                        }
+                        return new VillageHouseInfo
+                        {
+                            Owner = owner?.UserId,
+                            Slot = x.Slot,
+                            Type = x.Type
+                        };
+                    })
             };
         }
         public bool RemoveHouse(Guid sessionId, int slot)
