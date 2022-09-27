@@ -1,4 +1,5 @@
 ﻿using Ionic.Zip;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using RavenNest.DataModels;
 using System;
@@ -23,10 +24,10 @@ namespace RavenNest.BusinessLogic.Data
 
 
         private readonly object ioMutex = new object();
+        private readonly ILogger<GameDataBackupProvider> logger;
 
-        public GameDataBackupProvider()
+        public GameDataBackupProvider(ILogger<GameDataBackupProvider> logger)
         {
-
             if (!System.IO.Directory.Exists(FullRestorePointPath))
             {
                 System.IO.Directory.CreateDirectory(FullRestorePointPath);
@@ -36,6 +37,8 @@ namespace RavenNest.BusinessLogic.Data
             {
                 System.IO.Directory.CreateDirectory(FullBackupsPath);
             }
+
+            this.logger = logger;
         }
 
         public void ClearRestorePoint()
@@ -173,6 +176,7 @@ namespace RavenNest.BusinessLogic.Data
                 var restorePointFiles = System.IO.Directory.GetFiles(FullRestorePointPath, "*" + FileTypeExt);
                 if (restorePointFiles.Length == 0)
                 {
+                    logger?.LogInformation("No restore point available. Skipping");
                     return null;
                 }
             }
@@ -180,6 +184,7 @@ namespace RavenNest.BusinessLogic.Data
             var restorePoint = new EntityRestorePoint();
             try
             {
+                logger?.LogError("Restore point found, data will be restored to the files found.");
                 foreach (var type in types)
                 {
                     var entities = LoadEntities(type, FullRestorePointPath);

@@ -25,6 +25,7 @@ namespace RavenNest.BusinessLogic.Data
         {
             try
             {
+                logger.LogWarning("Restoring data from restorepoint..");
                 var sw = new Stopwatch();
                 sw.Start();
                 var queryBuilder = new QueryBuilder();
@@ -48,6 +49,8 @@ namespace RavenNest.BusinessLogic.Data
                             {
                                 continue;
                             }
+
+                            logger.LogWarning("Restoring " + restoreType.Name + " with " + entities.Count + " records.");
 
                             using (var cmd = con.CreateCommand())
                             {
@@ -76,6 +79,8 @@ namespace RavenNest.BusinessLogic.Data
                     }
                     con.Close();
                 }
+
+                logger.LogWarning("Data restore completed in " + sw.Elapsed.TotalSeconds + " seconds.");
 
                 sw.Stop();
             }
