@@ -43,6 +43,117 @@ namespace RavenNest.BusinessLogic.Game
             this.extWsConnectionProvider = extWsConnectionProvider;
         }
 
+        public bool IsExpectedVersion(string clientVersion)
+        {
+            var game = gameData.Client;
+
+            if (!string.Equals(clientVersion, game.ClientVersion, StringComparison.OrdinalIgnoreCase))
+            {
+                // this shouldnt happen, but you never know.
+                if (!GameVersion.TryParse(clientVersion, out var version))
+                {
+                    return false;
+                }
+
+                if (!GameVersion.TryParse(game.ClientVersion, out var expectedVersion))
+                {
+                    return false;
+                }
+
+                return version >= expectedVersion;
+            }
+
+            return true;
+        }
+
+        public Task<BeginSessionResult> BeginSessionAsync(AuthToken token, string clientVersion, string accessKey, float gameTime)
+        {
+            var game = gameData.Client;
+            var user = gameData.GetUser(token.UserId);
+
+            if (game.AccessKey != accessKey || !IsExpectedVersion(clientVersion))
+            {
+                var invalidAccessKey = BeginSessionResult.InvalidVersion;
+                invalidAccessKey.ExpectedClientVersion = game.ClientVersion;
+                return Task.FromResult(invalidAccessKey);
+            }
+
+            var userId = token.UserId;
+
+            gameData.ClearAllCharacterSessionStates(userId);
+
+            var activeSession = gameData.GetSessionByUserId(userId);
+
+            var oldSessionExpired = false;
+            var oldSession = activeSession;
+            if (activeSession != null)
+            {
+                oldSessionExpired = DateTime.UtcNow - activeSession.Updated.GetValueOrDefault() >= TimeSpan.FromMinutes(30);
+                if (oldSessionExpired)
+                {
+                    activeSession.Status = (int)SessionStatus.Inactive;
+                    activeSession.Stopped = DateTime.UtcNow;
+                    activeSession = null;
+                }
+            }
+
+            var newGameSession = activeSession ?? gameData.CreateSession(userId);
+            if (activeSession == null)
+            {
+                gameData.Add(newGameSession);
+            }
+
+            if (oldSession != null && !oldSessionExpired)
+            {
+                logger.LogError("BeginSessionAsync was called while an existing session is active. User: " + user.UserName + ". Previous players will not be cleared.");
+            }
+            else
+            {
+                var activeChars = gameData.GetSessionCharacters(newGameSession);
+                if (activeChars != null)
+                {
+                    foreach (var c in activeChars)
+                    {
+                        c.UserIdLock = null;
+                    }
+                }
+            }
+
+            newGameSession.Revision = 0;
+
+            var sessionState = gameData.GetSessionState(newGameSession.Id);
+            sessionState.SyncTime = gameTime;
+            sessionState.ClientVersion = clientVersion;
+
+            var sessionToken = GenerateSessionToken(token, user, newGameSession, clientVersion);
+
+            return Task.FromResult(new BeginSessionResult
+            {
+                ExpectedClientVersion = game.ClientVersion,
+                SessionToken = sessionToken,
+                State = BeginSessionResultState.Success,
+                ExpMultiplier = GetExpMultiplier(),
+                Permissions = GetUserPermissions(user),
+                Village = villageManager.GetVillageInfo(newGameSession),
+            });
+        }
+
+        private ExpMultiplier GetExpMultiplier()
+        {
+            var activeEvent = gameData.GetActiveExpMultiplierEvent();
+            if (activeEvent == null)
+                return new ExpMultiplier();
+
+            return new ExpMultiplier
+            {
+                EndTime = activeEvent.EndTime,
+                EventName = activeEvent.EventName,
+                StartedByPlayer = activeEvent.StartedByPlayer,
+                Multiplier = activeEvent.Multiplier,
+                StartTime = activeEvent.StartTime
+            };
+        }
+
         public async Task<SessionToken> BeginSessionAsync(
             AuthToken token,
             string clientVersion,
@@ -115,9 +226,6 @@ namespace RavenNest.BusinessLogic.Game
                         c.UserIdLock = null;
                     }
                 }
-                //#if DEBUG
-                //                logger.LogDebug(user.UserName + " game session started. " + activeChars.Count + " characters cleared.");
-                //#endif
             }
 
             newGameSession.Revision = 0;
@@ -156,16 +264,22 @@ namespace RavenNest.BusinessLogic.Game
 
         public void SendExpMultiplier(DataModels.GameSession session)
         {
+            DataModels.GameEvent expEvent = CreateExpMultiplierEvent(session);
+            if (expEvent != null)
+                gameData.Add(expEvent);
+            //}
+        }
+
+        private DataModels.GameEvent CreateExpMultiplierEvent(DataModels.GameSession session)
+        {
             var activeEvent = gameData.GetActiveExpMultiplierEvent();
             if (activeEvent == null)
-                return;
+                return null;
 
             var userId = session.UserId;
             var user = gameData.GetUser(userId);
             var patreonTier = user.PatreonTier.GetValueOrDefault();
             var multiplier = MaxMultiplier[patreonTier];
-            //if (multiplier >= 0)
-            //{
             var expMulti = Math.Min(multiplier, activeEvent.Multiplier);
             var expEvent = gameData.CreateSessionEvent(GameEventType.ExpMultiplier,
                   session,
@@ -177,17 +291,12 @@ namespace RavenNest.BusinessLogic.Game
                       StartTime = activeEvent.StartTime
                   }
               );
-            gameData.Add(expEvent);
-            //}
+            return expEvent;
         }
 
         public void SendVillageInfo(DataModels.GameSession newGameSession)
         {
-            var villageInfo = villageManager.GetVillageInfo(newGameSession.Id);
-            var villageInfoEvent = gameData.CreateSessionEvent(GameEventType.VillageInfo,
-                newGameSession,
-                villageInfo
-            );
+            DataModels.GameEvent villageInfoEvent = CreateVillageInfoEvent(newGameSession);
             gameData.Add(villageInfoEvent);
         }
 
@@ -206,6 +315,31 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             user = user ?? gameData.GetUser(gameSession.UserId);
+
+            DataModels.GameEvent permissionEvent = CreatePermissionChangeEvent(gameSession, user);
+
+            gameData.Add(permissionEvent);
+        }
+
+        private DataModels.GameEvent CreateVillageInfoEvent(DataModels.GameSession newGameSession)
+        {
+            var villageInfo = villageManager.GetVillageInfo(newGameSession.Id);
+            var villageInfoEvent = gameData.CreateSessionEvent(GameEventType.VillageInfo,
+                newGameSession,
+                villageInfo
+            );
+            return villageInfoEvent;
+        }
+
+        private DataModels.GameEvent CreatePermissionChangeEvent(DataModels.GameSession gameSession, DataModels.User user)
+        {
+            var data = GetUserPermissions(user);
+            var permissionEvent = gameData.CreateSessionEvent(GameEventType.PermissionChange, gameSession, data);
+            return permissionEvent;
+        }
+
+        private Permissions GetUserPermissions(DataModels.User user)
+        {
             var isAdmin = user.IsAdmin.GetValueOrDefault();
             var isModerator = user.IsModerator.GetValueOrDefault();
             //var subInfo = await twitchClient.GetSubscriberAsync(user.UserId);
@@ -225,19 +359,15 @@ namespace RavenNest.BusinessLogic.Game
                 subscriptionTier = 3;
                 expMultiplierLimit = 50000000;
             }
-
-            var permissionEvent = gameData.CreateSessionEvent(GameEventType.PermissionChange,
-                gameSession,
-                new Permissions
-                {
-                    IsAdministrator = user.IsAdmin ?? false,
-                    IsModerator = user.IsModerator ?? false,
-                    SubscriberTier = subscriptionTier,
-                    ExpMultiplierLimit = expMultiplierLimit,
-                    StrictLevelRequirements = true,
-                });
-
-            gameData.Add(permissionEvent);
+            var data = new Permissions
+            {
+                IsAdministrator = user.IsAdmin ?? false,
+                IsModerator = user.IsModerator ?? false,
+                SubscriberTier = subscriptionTier,
+                ExpMultiplierLimit = expMultiplierLimit,
+                StrictLevelRequirements = true,
+            };
+            return data;
         }
 
         public bool EndSessionAndRaid(

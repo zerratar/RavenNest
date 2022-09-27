@@ -4,7 +4,6 @@ namespace RavenNest.DataModels
 {
     public partial class CharacterSessionActivity : Entity<CharacterSessionActivity>
     {
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         private Guid sessionId; public Guid SessionId { get => sessionId; set => Set(ref sessionId, value); }
         private Guid userId; public Guid UserId { get => userId; set => Set(ref userId, value); }
         private Guid characterId; public Guid CharacterId { get => characterId; set => Set(ref characterId, value); }

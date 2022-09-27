@@ -4,7 +4,6 @@ namespace RavenNest.DataModels
 {
     public class VendorTransaction : Entity<VendorTransaction>
     {
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         private Guid itemId; public Guid ItemId { get => itemId; set => Set(ref itemId, value); }
         private long amount; public long Amount { get => amount; set => Set(ref amount, value); }
         private double pricePerItem; public double PricePerItem { get => pricePerItem; set => Set(ref pricePerItem, value); }
@@ -15,7 +14,6 @@ namespace RavenNest.DataModels
 
     public class GiftTransaction : Entity<GiftTransaction>
     {
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         private Guid fromCharacterId; public Guid FromCharacterId { get => fromCharacterId; set => Set(ref fromCharacterId, value); }
         private Guid toCharacterId; public Guid ToCharacterId { get => toCharacterId; set => Set(ref toCharacterId, value); }
         private Guid itemId; public Guid ItemId { get => itemId; set => Set(ref itemId, value); }

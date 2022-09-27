@@ -22,24 +22,6 @@ namespace RavenNest.UnitTests
         }
 
         [TestMethod]
-        public void GetExpForLev()
-        {
-            var exp = GameMath.OLD_LevelToExperience(126);
-        }
-
-        [TestMethod]
-        public void TestStrangeProcent()
-        {
-            decimal exp = 995303420;
-            int level = GameMath.OLD_ExperienceToLevel(exp);
-            decimal thisLevel = GameMath.OLD_LevelToExperience(level);
-            decimal nextLevel = GameMath.OLD_LevelToExperience(level + 1);
-            decimal deltaExp = exp - thisLevel;
-            decimal deltaNextLevel = nextLevel - thisLevel;
-            float procent = (float)(deltaExp / deltaNextLevel);
-        }
-
-        [TestMethod]
         public void FormatValue()
         {
             var

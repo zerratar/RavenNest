@@ -4,7 +4,7 @@ namespace RavenNest.DataModels
 {
     public partial class ClanBankItem : Entity<ClanBankItem>
     {
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
+
         private Guid userId; public Guid UserId { get => userId; set => Set(ref userId, value); }
         private Guid itemId; public Guid ItemId { get => itemId; set => Set(ref itemId, value); }
         private long amount; public long Amount { get => amount; set => Set(ref amount, value); }

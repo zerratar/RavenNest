@@ -31,7 +31,6 @@ namespace RavenNest.DataModels
         private static ConcurrentDictionary<string, PropertyInfo> levelProperties = new ConcurrentDictionary<string, PropertyInfo>();
         private List<StatsUpdater> skills;
 
-        private Guid id;
         private double attack;
         private double defense;
         private double strength;
@@ -63,7 +62,6 @@ namespace RavenNest.DataModels
         private int sailingLevel;
         private int healingLevel;
 
-        public Guid Id { get => id; set => Set(ref id, value); }
         public double Attack { get => attack; set => Set(ref attack, value); }
         public double Defense { get => defense; set => Set(ref defense, value); }
         public double Strength { get => strength; set => Set(ref strength, value); }
@@ -160,6 +158,19 @@ namespace RavenNest.DataModels
         {
             return (skills ?? (skills = SkillNames.Select(GetSkill).ToList()));
         }
+
+        public StatsUpdater GetSkill(int skillIndex)
+        {
+            return GetSkill(SkillNames[skillIndex]);
+        }
+
+        //public StatsUpdater this[string skillName]
+        //{
+        //    get
+        //    {
+        //        return GetSkill(skillName);
+        //    }
+        //}
 
         public StatsUpdater GetSkill(string name)
         {

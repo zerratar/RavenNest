@@ -99,6 +99,34 @@ namespace RavenNest.Controllers
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{clientVersion}/{accessKey}/{gameTime}")]
+        public async Task<BeginSessionResult> BeginSessionAsync(string clientVersion, string accessKey, float gameTime)
+        {
+            var authToken = GetAuthToken();
+            AssertAuthTokenValidity(authToken);
+
+            BeginSessionResult session = await this.sessionManager.BeginSessionAsync(
+                authToken,
+                clientVersion,
+                accessKey,
+                gameTime);
+
+            if (session == null)
+            {
+                HttpContext.Response.StatusCode = 403;
+                return null;
+            }
+
+            if (session.SessionToken?.AuthToken == null)
+            {
+                return null;
+            }
+
+
+            return session;
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpDelete("raid/{username}")]
         public bool EndSessionAndRaid(string username, Single<bool> war)
         {

@@ -82,12 +82,15 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                         RestedPercent = restedPercent,
                     };
 
-                    if (TcpConnectionProvider.TryGet(session.Id, out var connection))
+                    var sessionState = gameData.GetSessionState(session.Id);
+
+                    if (/*sessionState.ClientVersion == "0.8.0.0a" && */TcpConnectionProvider.TryGet(session.Id, out var connection))
                     {
                         connection.Send(data);
                     }
                     else
                     {
+                        // we will now pass all events via the tcp connection and not web socket one.
                         var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRestedUpdate, session, data);
                         gameData.Add(gameEvent);
                     }

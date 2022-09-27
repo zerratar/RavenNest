@@ -4,7 +4,6 @@ namespace RavenNest.DataModels
 {
     public partial class ItemAttribute : Entity<ItemAttribute>
     {
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         private string name; public string Name { get => name; set => Set(ref this.name, value); }
         private string description; public string Description { get => description; set => Set(ref this.description, value); }
         private int attributeIndex; public int AttributeIndex { get => attributeIndex; set => Set(ref this.attributeIndex, value); }

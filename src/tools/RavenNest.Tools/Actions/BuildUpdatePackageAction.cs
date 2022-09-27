@@ -202,7 +202,7 @@ namespace RavenNest.Tools.Actions
         private bool FilterFiles(string x)
         {
             var lower = x.ToLower();
-            var test = NotContains(lower, ".7z", "settings.json", "autologin.conf", "tmpautologin.conf", "pubsub-tokens.json", "game-settings.json", "state-data.json", "__DEBUG__", "_DoNotShip");
+            var test = NotContains(lower, ".7z", "settings.json", "autologin.conf", "tmpautologin.conf", "pubsub-tokens.json", "game-settings.json", "state-data.json", "__DEBUG__", "_DoNotShip", "_ButDontShipItWithYourGame");
             if (buildState == BuildState.Update)
             {
                 test &= NotContains(lower, "\\data\\", "/data/", "fonts\\", "fonts/", "RavenWeave");

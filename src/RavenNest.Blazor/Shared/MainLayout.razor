@@ -66,13 +66,11 @@
                     <a class="nav-link" href="https://discord.gg/gtfDts7" target="_blank">
                         COMMUNITY
                     </a>
-
+                    <NavLink class="nav-link dd-item" href="/characters" Match="NavLinkMatch.All">
+                        DASHBOARD
+                    </NavLink>
                     @if (IsAuthenticated)
                     {
-                        //todo: jump to /dashboard, not /characters
-                        <NavLink class="nav-link dd-item" href="/characters" Match="NavLinkMatch.All">
-                            DASHBOARD
-                        </NavLink>
                         if (IsAdministrator)
                         {
                             <NavLink class="nav-link dd-item" href="/admin" Match="NavLinkMatch.All">ADMIN</NavLink>

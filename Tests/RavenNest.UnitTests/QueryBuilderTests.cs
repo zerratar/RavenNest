@@ -15,7 +15,7 @@ namespace RavenNest.UnitTests
         public void TestQueryBuild()
         {
             GameDataMigration migration = new GameDataMigration(null);
-            IGameDataBackupProvider backupProvider = new GameDataBackupProvider();
+            IGameDataBackupProvider backupProvider = new GameDataBackupProvider(null);
 
             IEntityRestorePoint restorePoint = backupProvider.GetRestorePoint(new[] {
                         typeof(Appearance),

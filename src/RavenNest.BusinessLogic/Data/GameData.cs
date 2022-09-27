@@ -30,66 +30,64 @@ namespace RavenNest.BusinessLogic.Data
         private readonly IKernel kernel;
         private readonly IQueryBuilder queryBuilder;
 
-        private readonly ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, CharacterSessionState>> characterSessionStates
-            = new ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, CharacterSessionState>>();
+        private readonly ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, CharacterSessionState>> characterSessionStates = new ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, CharacterSessionState>>();
 
-        private readonly ConcurrentDictionary<Guid, SessionState> sessionStates
-            = new ConcurrentDictionary<Guid, SessionState>();
+        private readonly ConcurrentDictionary<Guid, SessionState> sessionStates = new ConcurrentDictionary<Guid, SessionState>();
 
-        private readonly EntitySet<Agreements, Guid> agreements;
+        private readonly EntitySet<Agreements> agreements;
 
-        private readonly EntitySet<UserLoyalty, Guid> loyalty;
-        private readonly EntitySet<UserProperty, Guid> userProperties;
-        private readonly EntitySet<UserLoyaltyRank, Guid> loyaltyRanks;
-        private readonly EntitySet<UserLoyaltyReward, Guid> loyaltyRewards;
-        private readonly EntitySet<UserClaimedLoyaltyReward, Guid> claimedLoyaltyRewards;
-        private readonly EntitySet<UserNotification, Guid> notifications;
+        private readonly EntitySet<UserLoyalty> loyalty;
+        private readonly EntitySet<UserProperty> userProperties;
+        private readonly EntitySet<UserLoyaltyRank> loyaltyRanks;
+        private readonly EntitySet<UserLoyaltyReward> loyaltyRewards;
+        private readonly EntitySet<UserClaimedLoyaltyReward> claimedLoyaltyRewards;
+        private readonly EntitySet<UserNotification> notifications;
 
-        private readonly EntitySet<CharacterClanInvite, Guid> clanInvites;
-        private readonly EntitySet<Clan, Guid> clans;
-        private readonly EntitySet<ClanRole, Guid> clanRoles;
-        private readonly EntitySet<ClanSkill, Guid> clanSkills;
-        private readonly EntitySet<MarketItemTransaction, Guid> marketTransactions;
-        //private readonly EntitySet<VendorTransaction, Guid> vendorTransaction;
+        private readonly EntitySet<CharacterClanInvite> clanInvites;
+        private readonly EntitySet<Clan> clans;
+        private readonly EntitySet<ClanRole> clanRoles;
+        private readonly EntitySet<ClanSkill> clanSkills;
+        private readonly EntitySet<MarketItemTransaction> marketTransactions;
+        //private readonly EntitySet<VendorTransaction> vendorTransaction;
 
-        private readonly EntitySet<CharacterClanMembership, Guid> clanMemberships;
+        private readonly EntitySet<CharacterClanMembership> clanMemberships;
 
-        private readonly EntitySet<UserPatreon, Guid> patreons;
-        private readonly EntitySet<CharacterSessionActivity, Guid> characterSessionActivities;
-        private readonly EntitySet<Appearance, Guid> appearances;
-        private readonly EntitySet<SyntyAppearance, Guid> syntyAppearances;
-        private readonly EntitySet<Character, Guid> characters;
-        private readonly EntitySet<CharacterState, Guid> characterStates;
-        private readonly EntitySet<GameSession, Guid> gameSessions;
-        private readonly EntitySet<ExpMultiplierEvent, Guid> expMultiplierEvents;
-        private readonly EntitySet<GameEvent, Guid> gameEvents;
+        private readonly EntitySet<UserPatreon> patreons;
+        private readonly EntitySet<CharacterSessionActivity> characterSessionActivities;
+        private readonly EntitySet<Appearance> appearances;
+        private readonly EntitySet<SyntyAppearance> syntyAppearances;
+        private readonly EntitySet<Character> characters;
+        private readonly EntitySet<CharacterState> characterStates;
+        private readonly EntitySet<GameSession> gameSessions;
+        private readonly EntitySet<ExpMultiplierEvent> expMultiplierEvents;
+        private readonly EntitySet<GameEvent> gameEvents;
 
-        private readonly EntitySet<Pet, Guid> pets;
+        private readonly EntitySet<Pet> pets;
 
-        private readonly EntitySet<UserBankItem, Guid> userBankItems;
-        private readonly EntitySet<InventoryItem, Guid> inventoryItems;
-        private readonly EntitySet<ResourceItemDrop, Guid> resourceItemDrops;
+        private readonly EntitySet<UserBankItem> userBankItems;
+        private readonly EntitySet<InventoryItem> inventoryItems;
+        private readonly EntitySet<ResourceItemDrop> resourceItemDrops;
 
-        private readonly EntitySet<ItemAttribute, Guid> itemAttributes;
+        private readonly EntitySet<ItemAttribute> itemAttributes;
 
-        private readonly EntitySet<RedeemableItem, Guid> redeemableItems;
+        private readonly EntitySet<RedeemableItem> redeemableItems;
 
-        private readonly EntitySet<MarketItem, Guid> marketItems;
-        private readonly EntitySet<Item, Guid> items;
-        private readonly EntitySet<NPC, Guid> npcs;
-        private readonly EntitySet<NPCItemDrop, Guid> npcItemDrops;
-        private readonly EntitySet<NPCSpawn, Guid> npcSpawns;
-        private readonly EntitySet<ItemCraftingRequirement, Guid> itemCraftingRequirements;
-        private readonly EntitySet<Resources, Guid> resources;
-        private readonly EntitySet<Statistics, Guid> statistics;
-        private readonly EntitySet<CharacterSkillRecord, Guid> characterSkillRecords;
-        private readonly EntitySet<Skills, Guid> characterSkills;
-        private readonly EntitySet<Skill, Guid> skills;
+        private readonly EntitySet<MarketItem> marketItems;
+        private readonly EntitySet<Item> items;
+        private readonly EntitySet<NPC> npcs;
+        private readonly EntitySet<NPCItemDrop> npcItemDrops;
+        private readonly EntitySet<NPCSpawn> npcSpawns;
+        private readonly EntitySet<ItemCraftingRequirement> itemCraftingRequirements;
+        private readonly EntitySet<Resources> resources;
+        private readonly EntitySet<Statistics> statistics;
+        private readonly EntitySet<CharacterSkillRecord> characterSkillRecords;
+        private readonly EntitySet<Skills> characterSkills;
+        private readonly EntitySet<Skill> skills;
 
-        private readonly EntitySet<User, Guid> users;
-        private readonly EntitySet<GameClient, Guid> gameClients;
-        private readonly EntitySet<Village, Guid> villages;
-        private readonly EntitySet<VillageHouse, Guid> villageHouses;
+        private readonly EntitySet<User> users;
+        private readonly EntitySet<GameClient> gameClients;
+        private readonly EntitySet<Village> villages;
+        private readonly EntitySet<VillageHouse> villageHouses;
 
 
         private readonly IEntitySet[] entitySets;
@@ -177,178 +175,154 @@ namespace RavenNest.BusinessLogic.Data
                 #region Data Load
                 using (var ctx = this.db.Get())
                 {
-                    agreements = new EntitySet<Agreements, Guid>(restorePoint?.Get<Agreements>() ?? ctx.Agreements.ToList(), i => i.Id);
+                    agreements = new EntitySet<Agreements>(restorePoint?.Get<Agreements>() ?? ctx.Agreements.ToList());
 
-                    resourceItemDrops = new EntitySet<ResourceItemDrop, Guid>(restorePoint?.Get<ResourceItemDrop>() ?? ctx.ResourceItemDrop.ToList(), i => i.Id);
+                    resourceItemDrops = new EntitySet<ResourceItemDrop>(restorePoint?.Get<ResourceItemDrop>() ?? ctx.ResourceItemDrop.ToList());
 
-                    loyalty = new EntitySet<UserLoyalty, Guid>(restorePoint?.Get<UserLoyalty>() ?? ctx.UserLoyalty.ToList(), i => i.Id);
+                    loyalty = new EntitySet<UserLoyalty>(restorePoint?.Get<UserLoyalty>() ?? ctx.UserLoyalty.ToList());
                     loyalty.RegisterLookupGroup(nameof(User), x => x.UserId);
                     loyalty.RegisterLookupGroup("Streamer", x => x.StreamerUserId);
 
-
-                    pets = new EntitySet<Pet, Guid>(restorePoint?.Get<Pet>() ?? ctx.Pet.ToList(), i => i.Id);
+                    pets = new EntitySet<Pet>(restorePoint?.Get<Pet>() ?? ctx.Pet.ToList());
                     pets.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
-                    redeemableItems = new EntitySet<RedeemableItem, Guid>(restorePoint?.Get<RedeemableItem>() ?? ctx.RedeemableItem.ToList(), i => i.Id);
+                    redeemableItems = new EntitySet<RedeemableItem>(restorePoint?.Get<RedeemableItem>() ?? ctx.RedeemableItem.ToList());
                     redeemableItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
-                    userProperties = new EntitySet<UserProperty, Guid>(restorePoint?.Get<UserProperty>() ?? ctx.UserProperty.ToList(), i => i.Id);
+                    userProperties = new EntitySet<UserProperty>(restorePoint?.Get<UserProperty>() ?? ctx.UserProperty.ToList());
                     userProperties.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                    loyaltyRanks = new EntitySet<UserLoyaltyRank, Guid>(ctx.UserLoyaltyRank.ToList(), i => i.Id);
+                    loyaltyRanks = new EntitySet<UserLoyaltyRank>(ctx.UserLoyaltyRank.ToList());
 
-                    loyaltyRewards = new EntitySet<UserLoyaltyReward, Guid>(ctx.UserLoyaltyReward.ToList(), i => i.Id);
+                    loyaltyRewards = new EntitySet<UserLoyaltyReward>(ctx.UserLoyaltyReward.ToList());
                     //loyaltyRewards.RegisterLookupGroup(nameof(UserLoyaltyRank), x => x.RankId);
 
-                    claimedLoyaltyRewards = new EntitySet<UserClaimedLoyaltyReward, Guid>(
-                        restorePoint?.Get<UserClaimedLoyaltyReward>() ?? ctx.UserClaimedLoyaltyReward.ToList(), i => i.Id);
+                    claimedLoyaltyRewards = new EntitySet<UserClaimedLoyaltyReward>(restorePoint?.Get<UserClaimedLoyaltyReward>() ?? ctx.UserClaimedLoyaltyReward.ToList());
                     claimedLoyaltyRewards.RegisterLookupGroup(nameof(User), x => x.UserId);
                     claimedLoyaltyRewards.RegisterLookupGroup(nameof(UserLoyaltyReward), x => x.RewardId);
                     claimedLoyaltyRewards.RegisterLookupGroup(nameof(Character), x => x.CharacterId.GetValueOrDefault());
 
-                    characterSessionActivities = new EntitySet<CharacterSessionActivity, Guid>(restorePoint?.Get<CharacterSessionActivity>() ?? ctx.CharacterSessionActivity.ToList(), i => i.Id);
+                    characterSessionActivities = new EntitySet<CharacterSessionActivity>(restorePoint?.Get<CharacterSessionActivity>() ?? ctx.CharacterSessionActivity.ToList());
                     characterSessionActivities.RegisterLookupGroup(nameof(GameSession), x => x.SessionId);
                     characterSessionActivities.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
                     characterSessionActivities.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                    clanInvites = new EntitySet<CharacterClanInvite, Guid>(
-                        restorePoint?.Get<CharacterClanInvite>() ?? ctx.CharacterClanInvite.ToList(), i => i.Id);
+                    clanInvites = new EntitySet<CharacterClanInvite>(
+                        restorePoint?.Get<CharacterClanInvite>() ?? ctx.CharacterClanInvite.ToList());
                     clanInvites.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
                     clanInvites.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
                     clanInvites.RegisterLookupGroup(nameof(User), x => x.InviterUserId.GetValueOrDefault());
 
-                    patreons = new EntitySet<UserPatreon, Guid>(
-                        restorePoint?.Get<UserPatreon>() ??
-                        ctx.UserPatreon.ToList(), i => i.Id);
+                    patreons = new EntitySet<UserPatreon>(restorePoint?.Get<UserPatreon>() ?? ctx.UserPatreon.ToList());
                     patreons.RegisterLookupGroup(nameof(User), x => x.UserId.GetValueOrDefault());
 
-                    notifications = new EntitySet<UserNotification, Guid>(
+                    notifications = new EntitySet<UserNotification>(
                         restorePoint?.Get<UserNotification>() ??
-                        ctx.UserNotification.ToList(), i => i.Id);
+                        ctx.UserNotification.ToList());
                     notifications.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                    expMultiplierEvents = new EntitySet<ExpMultiplierEvent, Guid>(
-                        ctx.ExpMultiplierEvent.ToList(), i => i.Id);
+                    expMultiplierEvents = new EntitySet<ExpMultiplierEvent>(
+                        ctx.ExpMultiplierEvent.ToList());
 
-                    appearances = new EntitySet<Appearance, Guid>(
+                    appearances = new EntitySet<Appearance>(
                         restorePoint?.Get<Appearance>() ??
-                        ctx.Appearance.ToList(), i => i.Id);
+                        ctx.Appearance.ToList());
 
-                    syntyAppearances = new EntitySet<SyntyAppearance, Guid>(
-                        restorePoint?.Get<SyntyAppearance>() ??
-                        ctx.SyntyAppearance.ToList(), i => i.Id);
-
-                    characters = new EntitySet<Character, Guid>(
-                        restorePoint?.Get<Character>() ??
-                        ctx.Character.ToList(), i => i.Id);
+                    syntyAppearances = new EntitySet<SyntyAppearance>(restorePoint?.Get<SyntyAppearance>() ?? ctx.SyntyAppearance.ToList());
+                    characters = new EntitySet<Character>(restorePoint?.Get<Character>() ?? ctx.Character.ToList());
 
                     characters.RegisterLookupGroup(nameof(User), x => x.UserId);
                     characters.RegisterLookupGroup(nameof(GameSession), x => x.UserIdLock.GetValueOrDefault());
 
-                    characterStates = new EntitySet<CharacterState, Guid>(restorePoint?.Get<CharacterState>() ?? ctx.CharacterState.ToList(), i => i.Id);
-                    gameSessions = new EntitySet<GameSession, Guid>(restorePoint?.Get<GameSession>() ?? ctx.GameSession.ToList(), i => i.Id);
+                    characterStates = new EntitySet<CharacterState>(restorePoint?.Get<CharacterState>() ?? ctx.CharacterState.ToList());
+                    gameSessions = new EntitySet<GameSession>(restorePoint?.Get<GameSession>() ?? ctx.GameSession.ToList());
                     gameSessions.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     // we can still store the game events, but no need to load them on startup as the DB will quickly be filled.
                     // and take a long time to load
-                    gameEvents = new EntitySet<GameEvent, Guid>(new List<GameEvent>() /*ctx.GameEvent.ToList()*/, i => i.Id, false);
+                    gameEvents = new EntitySet<GameEvent>(new List<GameEvent>(), false);
                     //gameEvents.RegisterLookupGroup(nameof(GameSession), x => x.GameSessionId);
                     gameEvents.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                    userBankItems = new EntitySet<UserBankItem, Guid>(restorePoint?.Get<UserBankItem>() ?? ctx.UserBankItem.ToList(), i => i.Id);
+                    userBankItems = new EntitySet<UserBankItem>(restorePoint?.Get<UserBankItem>() ?? ctx.UserBankItem.ToList());
                     userBankItems.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                    inventoryItems = new EntitySet<InventoryItem, Guid>(restorePoint?.Get<InventoryItem>() ?? ctx.InventoryItem.ToList(), i => i.Id);
+                    inventoryItems = new EntitySet<InventoryItem>(restorePoint?.Get<InventoryItem>() ?? ctx.InventoryItem.ToList());
                     inventoryItems.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
-                    itemAttributes = new EntitySet<ItemAttribute, Guid>(restorePoint?.Get<ItemAttribute>() ?? ctx.ItemAttribute.ToList(), i => i.Id);
+                    itemAttributes = new EntitySet<ItemAttribute>(restorePoint?.Get<ItemAttribute>() ?? ctx.ItemAttribute.ToList());
 
-                    marketItems = new EntitySet<MarketItem, Guid>(restorePoint?.Get<MarketItem>() ?? ctx.MarketItem.ToList(), i => i.Id);
+                    marketItems = new EntitySet<MarketItem>(restorePoint?.Get<MarketItem>() ?? ctx.MarketItem.ToList());
                     marketItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
-                    items = new EntitySet<Item, Guid>(restorePoint?.Get<Item>() ?? ctx.Item.ToList(), i => i.Id);
+                    items = new EntitySet<Item>(restorePoint?.Get<Item>() ?? ctx.Item.ToList());
 
-                    npcs = new EntitySet<NPC, Guid>(ctx.NPC.ToList(), i => i.Id);
-                    npcSpawns = new EntitySet<NPCSpawn, Guid>(ctx.NPCSpawn.ToList(), i => i.Id);
+                    npcs = new EntitySet<NPC>(ctx.NPC.ToList());
+                    npcSpawns = new EntitySet<NPCSpawn>(ctx.NPCSpawn.ToList());
                     npcSpawns.RegisterLookupGroup(nameof(NPC), x => x.NpcId);
 
-                    npcItemDrops = new EntitySet<NPCItemDrop, Guid>(ctx.NPCItemDrop.ToList(), i => i.Id);
+                    npcItemDrops = new EntitySet<NPCItemDrop>(ctx.NPCItemDrop.ToList());
                     npcItemDrops.RegisterLookupGroup(nameof(NPC), x => x.NpcId);
 
-                    itemCraftingRequirements = new EntitySet<ItemCraftingRequirement, Guid>(
+                    itemCraftingRequirements = new EntitySet<ItemCraftingRequirement>(
                         restorePoint?.Get<ItemCraftingRequirement>() ??
-                        ctx.ItemCraftingRequirement.ToList(), i => i.Id);
+                        ctx.ItemCraftingRequirement.ToList());
                     itemCraftingRequirements.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
-                    clans = new EntitySet<Clan, Guid>(
-                        restorePoint?.Get<Clan>() ?? ctx.Clan.ToList(), i => i.Id);
+                    clans = new EntitySet<Clan>(restorePoint?.Get<Clan>() ?? ctx.Clan.ToList());
                     clans.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                    clanRoles = new EntitySet<ClanRole, Guid>(
-                        restorePoint?.Get<ClanRole>() ?? ctx.ClanRole.ToList(), i => i.Id);
+                    clanRoles = new EntitySet<ClanRole>(restorePoint?.Get<ClanRole>() ?? ctx.ClanRole.ToList());
                     clanRoles.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
 
-                    clanMemberships = new EntitySet<CharacterClanMembership, Guid>(
-                        restorePoint?.Get<CharacterClanMembership>() ?? ctx.CharacterClanMembership.ToList(), i => i.Id);
+                    clanMemberships = new EntitySet<CharacterClanMembership>(
+                        restorePoint?.Get<CharacterClanMembership>() ?? ctx.CharacterClanMembership.ToList());
                     clanMemberships.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
                     clanMemberships.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
-                    villages = new EntitySet<Village, Guid>(
-                        restorePoint?.Get<Village>() ??
-                        ctx.Village.ToList(), i => i.Id);
+                    villages = new EntitySet<Village>(restorePoint?.Get<Village>() ?? ctx.Village.ToList());
                     villages.RegisterLookupGroup(nameof(User), x => x.UserId);
 
-                    villageHouses = new EntitySet<VillageHouse, Guid>(
+                    villageHouses = new EntitySet<VillageHouse>(
                         restorePoint?.Get<VillageHouse>() ??
-                        ctx.VillageHouse.ToList(), i => i.Id);
+                        ctx.VillageHouse.ToList());
 
                     villageHouses.RegisterLookupGroup(nameof(Village), x => x.VillageId);
 
-                    resources = new EntitySet<Resources, Guid>(
+                    resources = new EntitySet<Resources>(
                         restorePoint?.Get<Resources>() ??
-                        ctx.Resources.ToList(), i => i.Id);
+                        ctx.Resources.ToList());
 
-                    statistics = new EntitySet<Statistics, Guid>(
+                    statistics = new EntitySet<Statistics>(
                         restorePoint?.Get<Statistics>() ??
-                        ctx.Statistics.ToList(), i => i.Id);
+                        ctx.Statistics.ToList());
 
-                    characterSkillRecords = new EntitySet<CharacterSkillRecord, Guid>(
+                    characterSkillRecords = new EntitySet<CharacterSkillRecord>(
                         restorePoint?.Get<CharacterSkillRecord>() ??
-                        ctx.CharacterSkillRecord.ToList(), i => i.Id);
+                        ctx.CharacterSkillRecord.ToList());
 
                     characterSkillRecords.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
-                    characterSkills = new EntitySet<Skills, Guid>(
-                        restorePoint?.Get<Skills>() ??
-                        ctx.Skills.ToList(), i => i.Id);
-
-                    clanSkills = new EntitySet<ClanSkill, Guid>(
-                        restorePoint?.Get<ClanSkill>() ??
-                        ctx.ClanSkill.ToList(), i => i.Id);
+                    characterSkills = new EntitySet<Skills>(restorePoint?.Get<Skills>() ?? ctx.Skills.ToList());
+                    clanSkills = new EntitySet<ClanSkill>(restorePoint?.Get<ClanSkill>() ?? ctx.ClanSkill.ToList());
                     clanSkills.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
 
 
-
-                    //vendorTransaction = new EntitySet<VendorTransaction, Guid>(
+                    //vendorTransaction = new EntitySet<VendorTransaction>(
                     //    restorePoint?.Get<VendorTransaction>() ??
-                    //    ctx.VendorTransaction.ToList(), i => i.Id);
+                    //    ctx.VendorTransaction.ToList());
                     //vendorTransaction.RegisterLookupGroup(nameof(Item), x => x.ItemId);
                     //vendorTransaction.RegisterLookupGroup(nameof(Character) + "Seller", x => x.SellerCharacterId);
 
-                    marketTransactions = new EntitySet<MarketItemTransaction, Guid>(
-                        restorePoint?.Get<MarketItemTransaction>() ??
-                        ctx.MarketItemTransaction.ToList(), i => i.Id);
+                    marketTransactions = new EntitySet<MarketItemTransaction>(restorePoint?.Get<MarketItemTransaction>() ?? ctx.MarketItemTransaction.ToList());
                     marketTransactions.RegisterLookupGroup(nameof(Item), x => x.ItemId);
                     marketTransactions.RegisterLookupGroup(nameof(Character) + "Seller", x => x.SellerCharacterId);
                     marketTransactions.RegisterLookupGroup(nameof(Character) + "Buyer", x => x.BuyerCharacterId);
 
 
-                    skills = new EntitySet<Skill, Guid>(
-                        ctx.Skill.ToList(), i => i.Id);
-
-                    users = new EntitySet<User, Guid>(restorePoint?.Get<User>() ?? ctx.User.ToList(), i => i.Id);
-
-                    gameClients = new EntitySet<GameClient, Guid>(ctx.GameClient.ToList(), i => i.Id);
+                    skills = new EntitySet<Skill>(ctx.Skill.ToList());
+                    users = new EntitySet<User>(restorePoint?.Get<User>() ?? ctx.User.ToList());
+                    gameClients = new EntitySet<GameClient>(ctx.GameClient.ToList());
 
                     Client = gameClients.Entities.First();
 
@@ -374,26 +348,32 @@ namespace RavenNest.BusinessLogic.Data
                 #endregion
 
                 #region Post Data Load - Transformations
+
+                EnsureCharacterSkillRecords();
                 EnsureMagicAttributes();
                 EnsureResources();
 
                 //UpgradeSkillLevels(characterSkills);
+                //RemoveBadUsers(users);
 
-                RemoveBadUsers(users);
                 RemoveBadInventoryItems(inventoryItems);
 
-                RemoveEmptyPlayers();
+                //RemoveEmptyPlayers();
 
                 EnsureClanLevels(clans);
                 EnsureExpMultipliersWithinBounds(expMultiplierEvents);
                 EnsureCraftingRequirements(items);
                 MergeLoyaltyData(loyalty);
                 MergeClans();
+
+
+
                 RemoveDuplicatedClanMembers();
 
-                RewardRollbackPlayers();
+                //RewardRollbackPlayers();
 
-
+                UpgradeVillageLevels();
+                MergeVillages();
 
                 #endregion
 
@@ -624,7 +604,7 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Data Transformations
 
-        private void EnsureCraftingRequirements(EntitySet<Item, Guid> items)
+        private void EnsureCraftingRequirements(EntitySet<Item> items)
         {
             Item GetItemByCategory(ItemCategory category, string containsName)
             {
@@ -890,7 +870,7 @@ namespace RavenNest.BusinessLogic.Data
             Add(itemCraftingRequirement);
         }
 
-        private void EnsureExpMultipliersWithinBounds(EntitySet<ExpMultiplierEvent, Guid> expMultiplierEvents)
+        private void EnsureExpMultipliersWithinBounds(EntitySet<ExpMultiplierEvent> expMultiplierEvents)
         {
             foreach (var multi in expMultiplierEvents.Entities)
             {
@@ -911,7 +891,7 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
-        private void EnsureClanLevels(EntitySet<Clan, Guid> clans)
+        private void EnsureClanLevels(EntitySet<Clan> clans)
         {
             foreach (var clan in clans.Entities)
             {
@@ -1037,7 +1017,7 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
-        private void MergeLoyaltyData(EntitySet<UserLoyalty, Guid> loyalty)
+        private void MergeLoyaltyData(EntitySet<UserLoyalty> loyalty)
         {
             var toRemove = new List<UserLoyalty>();
             foreach (var u in users.Entities)
@@ -1111,7 +1091,7 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
-        private void RemoveBadInventoryItems(EntitySet<InventoryItem, Guid> inventoryItems)
+        private void RemoveBadInventoryItems(EntitySet<InventoryItem> inventoryItems)
         {
             var toRemove = new List<InventoryItem>();
             foreach (var ii in inventoryItems.Entities)
@@ -1259,7 +1239,7 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
-        private void RemoveBadUsers(EntitySet<User, Guid> users)
+        private void RemoveBadUsers(EntitySet<User> users)
         {
             var toRemove = new List<User>();
             foreach (var user in users.Entities)
@@ -1281,7 +1261,112 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
-        private void UpgradeSkillLevels(EntitySet<Skills, Guid> skills)
+        private void MergeVillages()
+        {
+            // slow process.
+            foreach (var user in users.Entities)
+            {
+                var userId = user.Id;
+                var userVillages = villages[nameof(User), userId];
+                if (userVillages.Count > 1)
+                {
+                    var toKeep = userVillages.OrderByDescending(x => x.Level).FirstOrDefault();
+                    var resourceToKeep = GetResources(toKeep.ResourcesId);
+
+                    foreach (var village in userVillages)
+                    {
+                        if (village == toKeep)
+                        {
+                            continue;
+                        }
+
+                        toKeep.Experience += village.Experience;
+
+                        for (var i = 1; i < village.Level; ++i)
+                        {
+                            toKeep.Experience += (long)GameMath.ExperienceForLevel(i);
+                        }
+
+                        var resources0 = GetResources(village.ResourcesId);
+                        if (resourceToKeep != null && resources0 != null)
+                        {
+                            resourceToKeep.Wheat += resources0.Wheat;
+                            resourceToKeep.Arrows += resources0.Arrows;
+                            resourceToKeep.Ore += resources0.Ore;
+                            resourceToKeep.Coins += resources0.Coins;
+                            resourceToKeep.Fish += resources0.Fish;
+                            resourceToKeep.Wood += resources0.Wood;
+                        }
+
+                        var houses = GetVillageHouses(village);
+                        foreach (var house in houses)
+                        {
+                            Remove(house);
+                        }
+
+                        Remove(resources0);
+                        Remove(village);
+                    }
+
+                    var expForNext = GameMath.ExperienceForLevel(toKeep.Level + 1);
+                    while (toKeep.Experience > expForNext)
+                    {
+                        toKeep.Experience -= (long)expForNext;
+                        toKeep.Level++;
+
+                        expForNext = GameMath.ExperienceForLevel(toKeep.Level + 1);
+                    }
+                }
+            }
+        }
+
+        private void UpgradeVillageLevels()
+        {
+            var updated = false;
+            foreach (var village in villages.Entities)
+            {
+                var targetLevel = 170;
+                if (village.Level != targetLevel)
+                {
+                    continue;
+                }
+
+                if (village.Level >= GameMath.MaxVillageLevel)
+                {
+                    village.Level = GameMath.MaxVillageLevel;
+                    village.Experience = (long)GameMath.ExperienceForLevel(village.Level + 1) - 1;
+                    continue;
+                }
+
+                var nextLevel = village.Level + 1;
+                var expForLevel = GameMath.ExperienceForLevel(nextLevel);
+                while (village.Experience >= expForLevel)
+                {
+                    var expLeft = (long)(village.Experience - expForLevel);
+
+                    village.Experience = expLeft;
+                    village.Level++;
+                    updated = true;
+                    expForLevel = GameMath.ExperienceForLevel(village.Level + 1);
+                }
+
+                // ensure village houses are within limits
+                var houses = GetOrCreateVillageHouses(village);
+                var maxHouses = GameMath.MaxVillageLevel / 10;
+                var houseCount = houses.Count;
+                while (houseCount > maxHouses)
+                {
+                    Remove(houses[houseCount - 1]);
+                    houseCount--;
+                }
+            }
+            if (updated)
+            {
+                ScheduleNextSave();
+            }
+        }
+
+        private void UpgradeSkillLevels(EntitySet<Skills> skills)
         {
             // total exp 170: 0
             // 170 + overflow
@@ -1301,7 +1386,6 @@ namespace RavenNest.BusinessLogic.Data
                     if (lv > GameMath.MaxLevel)
                     {
                         s.Level = GameMath.MaxLevel;
-                        //s.Experience = 0;
                         skillsChanged = true;
                         continue;
                     }
@@ -1336,110 +1420,110 @@ namespace RavenNest.BusinessLogic.Data
         #region Add Methods
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(ResourceItemDrop item) => Update(() => resourceItemDrops.Add(item));
+        public AddEntityResult Add(ResourceItemDrop item) => Update(() => resourceItemDrops.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(Pet item) => Update(() => pets.Add(item));
+        public AddEntityResult Add(Pet item) => Update(() => pets.Add(item));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(CharacterSkillRecord item) => Update(() => characterSkillRecords.Add(item));
+        public AddEntityResult Add(CharacterSkillRecord item) => Update(() => characterSkillRecords.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(ItemAttribute item) => Update(() => itemAttributes.Add(item));
+        public AddEntityResult Add(ItemAttribute item) => Update(() => itemAttributes.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(Agreements item) => Update(() => agreements.Add(item));
+        public AddEntityResult Add(Agreements item) => Update(() => agreements.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(UserBankItem item) => Update(() => userBankItems.Add(item));
+        public AddEntityResult Add(UserBankItem item) => Update(() => userBankItems.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(RedeemableItem item) => Update(() => redeemableItems.Add(item));
+        public AddEntityResult Add(RedeemableItem item) => Update(() => redeemableItems.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(UserNotification entity) => Update(() => notifications.Add(entity));
+        public AddEntityResult Add(UserNotification entity) => Update(() => notifications.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(ClanSkill entity) => Update(() => clanSkills.Add(entity));
+        public AddEntityResult Add(ClanSkill entity) => Update(() => clanSkills.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(MarketItemTransaction entity) => Update(() => marketTransactions.Add(entity));
+        public AddEntityResult Add(MarketItemTransaction entity) => Update(() => marketTransactions.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //public void Add(VendorTransaction entity) => Update(() => vendorTransaction.Add(entity));
+        //public AddEntityResult Add(VendorTransaction entity) => Update(() => vendorTransaction.Add(entity));
         //[MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(CharacterClanInvite entity) => Update(() => this.clanInvites.Add(entity));
+        public AddEntityResult Add(CharacterClanInvite entity) => Update(() => this.clanInvites.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(Clan entity) => Update(() => this.clans.Add(entity));
+        public AddEntityResult Add(Clan entity) => Update(() => this.clans.Add(entity));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(ClanRole entity) => Update(() => this.clanRoles.Add(entity));
+        public AddEntityResult Add(ClanRole entity) => Update(() => this.clanRoles.Add(entity));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(CharacterClanMembership entity) => Update(() => this.clanMemberships.Add(entity));
+        public AddEntityResult Add(CharacterClanMembership entity) => Update(() => this.clanMemberships.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(UserLoyalty loyalty) => Update(() => this.loyalty.Add(loyalty));
+        public AddEntityResult Add(UserLoyalty loyalty) => Update(() => this.loyalty.Add(loyalty));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(UserLoyaltyRank loyaltyRank) => Update(() => loyaltyRanks.Add(loyaltyRank));
+        public AddEntityResult Add(UserLoyaltyRank loyaltyRank) => Update(() => loyaltyRanks.Add(loyaltyRank));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(UserLoyaltyReward loyaltyRankReward) => Update(() => loyaltyRewards.Add(loyaltyRankReward));
+        public AddEntityResult Add(UserLoyaltyReward loyaltyRankReward) => Update(() => loyaltyRewards.Add(loyaltyRankReward));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(UserPatreon ev) => Update(() => patreons.Add(ev));
+        public AddEntityResult Add(UserPatreon ev) => Update(() => patreons.Add(ev));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(ExpMultiplierEvent ev) => Update(() => expMultiplierEvents.Add(ev));
+        public AddEntityResult Add(ExpMultiplierEvent ev) => Update(() => expMultiplierEvents.Add(ev));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(CharacterSessionActivity ev) => Update(() => characterSessionActivities.Add(ev));
+        public AddEntityResult Add(CharacterSessionActivity ev) => Update(() => characterSessionActivities.Add(ev));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(ItemCraftingRequirement entity) => Update(() => itemCraftingRequirements.Add(entity));
+        public AddEntityResult Add(ItemCraftingRequirement entity) => Update(() => itemCraftingRequirements.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(VillageHouse house) => Update(() => villageHouses.Add(house));
+        public AddEntityResult Add(VillageHouse house) => Update(() => villageHouses.Add(house));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(Village entity) => Update(() => villages.Add(entity));
+        public AddEntityResult Add(Village entity) => Update(() => villages.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(Item entity) => Update(() => items.Add(entity));
+        public AddEntityResult Add(Item entity) => Update(() => items.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(CharacterState entity) => Update(() => characterStates.Add(entity));
+        public AddEntityResult Add(CharacterState entity) => Update(() => characterStates.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(SyntyAppearance entity) => Update(() => syntyAppearances.Add(entity));
+        public AddEntityResult Add(SyntyAppearance entity) => Update(() => syntyAppearances.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(Statistics entity) => Update(() => statistics.Add(entity));
+        public AddEntityResult Add(Statistics entity) => Update(() => statistics.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(Skills entity) => Update(() => characterSkills.Add(entity));
+        public AddEntityResult Add(Skills entity) => Update(() => characterSkills.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(Appearance entity) => Update(() => appearances.Add(entity));
+        public AddEntityResult Add(Appearance entity) => Update(() => appearances.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(Resources entity) => Update(() => resources.Add(entity));
+        public AddEntityResult Add(Resources entity) => Update(() => resources.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(Character entity) => Update(() => characters.Add(entity));
+        public AddEntityResult Add(Character entity) => Update(() => characters.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(User entity) => Update(() => users.Add(entity));
+        public AddEntityResult Add(User entity) => Update(() => users.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(InventoryItem entity) => Update(() => inventoryItems.Add(entity));
+        public AddEntityResult Add(InventoryItem entity) => Update(() => inventoryItems.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(GameSession entity) => Update(() => gameSessions.Add(entity));
+        public AddEntityResult Add(GameSession entity) => Update(() => gameSessions.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(MarketItem entity) => Update(() => marketItems.Add(entity));
+        public AddEntityResult Add(MarketItem entity) => Update(() => marketItems.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(GameEvent entity) => gameEvents.Add(entity);//Update(() => gameEvents.Add(entity));
+        public AddEntityResult Add(GameEvent entity) => gameEvents.Add(entity);//Update(() => gameEvents.Add(entity));
 
         public GameSession CreateSession(Guid userId)
         {
@@ -1493,13 +1577,15 @@ namespace RavenNest.BusinessLogic.Data
             Add(villageResources);
 
             var user = GetUser(userId);
-            var villageExp = user.IsAdmin.GetValueOrDefault() ? GameMath.OLD_LevelToExperience(30) : 0;
-            var villageLevel = GameMath.OLD_ExperienceToLevel(villageExp);
+            var minAdminVillageLevel = 30;
+            var isAdmin = user.IsAdmin.GetValueOrDefault();
+            var villageExp = isAdmin ? (long)GameMath.ExperienceForLevel(minAdminVillageLevel) : 0;
+            var villageLevel = isAdmin ? GameMath.ExperienceForLevel(minAdminVillageLevel) : 1;
             var village = new Village()
             {
                 Id = Guid.NewGuid(),
                 ResourcesId = villageResources.Id,
-                Level = villageLevel,
+                Level = (int)villageLevel,
                 Experience = (long)villageExp,
                 Name = "Village",
                 UserId = userId
@@ -1526,7 +1612,7 @@ namespace RavenNest.BusinessLogic.Data
                 return new VillageHouse[0];
             }
 
-            var houseCount = village.Level / 10;
+            var houseCount = System.Math.Min(village.Level / 10, GameMath.MaxVillageLevel / 10);
 
             if ((houses == null || houses.Count == 0) && houseCount > 0)
             {
@@ -2128,7 +2214,34 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<CharacterSkillRecord> GetSkillRecords(int skillIndex, ICollection<Guid> characterIds)
         {
-            return characterSkillRecords.Entities.AsList(x => characterIds.Contains(x.CharacterId) && x.SkillIndex == skillIndex);
+            var records = new List<CharacterSkillRecord>();
+            foreach (var characterId in characterIds)
+            {
+                var sr = GetCharacterSkillRecord(characterId, skillIndex);
+                if (sr == null)
+                {
+                    var character = GetCharacter(characterId);
+                    var skills = GetCharacterSkills(character.SkillsId);
+                    var skill = skills.GetSkill(skillIndex);
+                    // slow. But add it.
+                    sr = new CharacterSkillRecord
+                    {
+                        CharacterId = characterId,
+                        DateReached = DateTime.UtcNow,
+                        Id = Guid.NewGuid(),
+                        SkillExperience = skill.Experience,
+                        SkillLevel = skill.Level,
+                        SkillIndex = skillIndex,
+                        SkillName = skill.Name
+                    };
+
+                    Add(sr);
+                }
+
+                records.Add(sr);
+            }
+            return records;
+            //return characterSkillRecords.Entities.AsList(x => characterIds.Contains(x.CharacterId) && x.SkillIndex == skillIndex);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2225,74 +2338,79 @@ namespace RavenNest.BusinessLogic.Data
         #region Remove Entities
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(CharacterSkillRecord item) => characterSkillRecords.Remove(item);
+        public RemoveEntityResult Remove(VillageHouse item) => villageHouses.Remove(item);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(ResourceItemDrop item) => resourceItemDrops.Remove(item);
+        public RemoveEntityResult Remove(CharacterSkillRecord item) => characterSkillRecords.Remove(item);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(Pet item) => pets.Remove(item);
+        public RemoveEntityResult Remove(ResourceItemDrop item) => resourceItemDrops.Remove(item);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(UserBankItem item) => userBankItems.Remove(item);
+        public RemoveEntityResult Remove(Pet item) => pets.Remove(item);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(Agreements item) => agreements.Remove(item);
+        public RemoveEntityResult Remove(UserBankItem item) => userBankItems.Remove(item);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(RedeemableItem entity) => redeemableItems.Remove(entity);
+        public RemoveEntityResult Remove(Agreements item) => agreements.Remove(item);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(UserNotification entity) => notifications.Remove(entity);
+        public RemoveEntityResult Remove(RedeemableItem entity) => redeemableItems.Remove(entity);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(UserLoyalty entity) => loyalty.Remove(entity);
+        public RemoveEntityResult Remove(UserNotification entity) => notifications.Remove(entity);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(Clan entity) => this.clans.Remove(entity);
+        public RemoveEntityResult Remove(UserLoyalty entity) => loyalty.Remove(entity);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(CharacterClanInvite entity) => this.clanInvites.Remove(entity);
+        public RemoveEntityResult Remove(Clan entity) => this.clans.Remove(entity);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(ClanRole entity) => this.clanRoles.Remove(entity);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(CharacterClanMembership entity) => this.clanMemberships.Remove(entity);
+        public RemoveEntityResult Remove(CharacterClanInvite entity) => this.clanInvites.Remove(entity);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(CharacterSessionActivity ev) => characterSessionActivities.Remove(ev);
+        public RemoveEntityResult Remove(ClanRole entity) => this.clanRoles.Remove(entity);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(CharacterClanMembership entity) => this.clanMemberships.Remove(entity);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(GameEvent ev) => gameEvents.Remove(ev);
+        public RemoveEntityResult Remove(CharacterSessionActivity ev) => characterSessionActivities.Remove(ev);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(ItemCraftingRequirement entity) => itemCraftingRequirements.Remove(entity);
+        public RemoveEntityResult Remove(GameEvent ev) => gameEvents.Remove(ev);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(User user) => users.Remove(user);
+        public RemoveEntityResult Remove(ItemCraftingRequirement entity) => itemCraftingRequirements.Remove(entity);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(SyntyAppearance entity) => syntyAppearances.Remove(entity);
+        public RemoveEntityResult Remove(User user) => users.Remove(user);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(Skills skill) => characterSkills.Remove(skill);
+        public RemoveEntityResult Remove(SyntyAppearance entity) => syntyAppearances.Remove(entity);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(Statistics stat) => statistics.Remove(stat);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(Character character) => characters.Remove(character);
+        public RemoveEntityResult Remove(Skills skill) => characterSkills.Remove(skill);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(Resources res) => resources.Remove(res);
+        public RemoveEntityResult Remove(Statistics stat) => statistics.Remove(stat);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(Character character) => characters.Remove(character);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(MarketItem marketItem) => marketItems.Remove(marketItem);
+        public RemoveEntityResult Remove(Resources res) => resources.Remove(res);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(Village res) => villages.Remove(res);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Remove(InventoryItem invItem) => inventoryItems.Remove(invItem);
+        public RemoveEntityResult Remove(MarketItem marketItem) => marketItems.Remove(marketItem);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void RemoveRange(IReadOnlyList<InventoryItem> items) => items.ForEach(Remove);
+        public RemoveEntityResult Remove(InventoryItem invItem) => inventoryItems.Remove(invItem);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void RemoveRange(IReadOnlyList<InventoryItem> items) => items.ForEach(x => Remove(x));
 
         #endregion
 
@@ -2313,6 +2431,13 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private T Update<T>(Func<T> update)
+        {
+            if (update == null) return default;
+            var result = update.Invoke();
+            ScheduleNextSave();
+            return result;
+        }
         private void Update(Action update)
         {
             if (update == null) return;
@@ -2388,13 +2513,6 @@ namespace RavenNest.BusinessLogic.Data
                             var command = con.CreateCommand();
                             command.CommandText = query.Command;
                             var result = command.ExecuteNonQuery();
-                            //if (result < saveData.Entities.Count)
-                            //{
-                            //    logger.LogError($"Unable to save all data in batch: {result} / {saveData.Entities.Count}. Creating restore point.");
-                            //    CreateBackup();
-                            //    backupProvider.CreateRestorePoint(entitySets);
-                            //    return;
-                            //}
 
                             ClearChangeSetState(saveData);
                             queue.Dequeue();
@@ -2505,9 +2623,6 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private IReadOnlyList<EntityChangeSet> JoinChangeSets(params IEnumerable<EntityChangeSet>[] changesets) =>
             changesets.SelectMany(x => x).OrderBy(x => x.LastModified).AsReadOnlyList();
-
-
-
 
         public bool RemoveFromStash(UserBankItem bankItemScroll, int amount)
         {

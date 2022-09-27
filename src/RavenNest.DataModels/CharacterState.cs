@@ -5,7 +5,7 @@ namespace RavenNest.DataModels
 {
     public partial class CharacterState : Entity<CharacterState>
     {
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
+
         private int health; public int Health { get => health; set => Set(ref health, value); }
         private string duelOpponent; public string DuelOpponent { get => duelOpponent; set => Set(ref duelOpponent, value); }
         private bool inRaid; public bool InRaid { get => inRaid; set => Set(ref inRaid, value); }
