@@ -380,11 +380,11 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureResources();
 
                 //UpgradeSkillLevels(characterSkills);
+                //RemoveBadUsers(users);
 
-                RemoveBadUsers(users);
                 RemoveBadInventoryItems(inventoryItems);
 
-                RemoveEmptyPlayers();
+                //RemoveEmptyPlayers();
 
                 EnsureClanLevels(clans);
                 EnsureExpMultipliersWithinBounds(expMultiplierEvents);
@@ -393,9 +393,9 @@ namespace RavenNest.BusinessLogic.Data
                 MergeClans();
                 RemoveDuplicatedClanMembers();
 
-                RewardRollbackPlayers();
+                //RewardRollbackPlayers();
 
-
+                UpgradeVillageLevels();
 
                 #endregion
 
@@ -1283,6 +1283,41 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
+        private void UpgradeVillageLevels()
+        {
+            var updated = false;
+            foreach (var village in villages.Entities)
+            {
+                var targetLevel = 170;
+                if (village.Level != targetLevel)
+                {
+                    continue;
+                }
+
+                if (village.Level >= GameMath.MaxVillageLevel)
+                {
+                    village.Level = GameMath.MaxVillageLevel;
+                    continue;
+                }
+
+                var nextLevel = village.Level + 1;
+                var expForLevel = GameMath.ExperienceForLevel(nextLevel);
+                while (village.Experience >= expForLevel || village.Level >= GameMath.MaxVillageLevel)
+                {
+                    var expLeft = (long)(village.Experience - expForLevel);
+
+                    village.Experience = expLeft;
+                    village.Level++;
+                    updated = true;
+                    expForLevel = GameMath.ExperienceForLevel(++nextLevel);
+                }
+            }
+            if (updated)
+            {
+                ScheduleNextSave();
+            }
+        }
+
         private void UpgradeSkillLevels(EntitySet<Skills, Guid> skills)
         {
             // total exp 170: 0
@@ -1303,7 +1338,6 @@ namespace RavenNest.BusinessLogic.Data
                     if (lv > GameMath.MaxLevel)
                     {
                         s.Level = GameMath.MaxLevel;
-                        //s.Experience = 0;
                         skillsChanged = true;
                         continue;
                     }
@@ -1495,13 +1529,15 @@ namespace RavenNest.BusinessLogic.Data
             Add(villageResources);
 
             var user = GetUser(userId);
-            var villageExp = user.IsAdmin.GetValueOrDefault() ? GameMath.OLD_LevelToExperience(30) : 0;
-            var villageLevel = GameMath.OLD_ExperienceToLevel(villageExp);
+            var minAdminVillageLevel = 30;
+            var isAdmin = user.IsAdmin.GetValueOrDefault();
+            var villageExp = isAdmin ? (long)GameMath.ExperienceForLevel(minAdminVillageLevel) : 0;
+            var villageLevel = isAdmin ? GameMath.ExperienceForLevel(minAdminVillageLevel) : 1;
             var village = new Village()
             {
                 Id = Guid.NewGuid(),
                 ResourcesId = villageResources.Id,
-                Level = villageLevel,
+                Level = (int)villageLevel,
                 Experience = (long)villageExp,
                 Name = "Village",
                 UserId = userId

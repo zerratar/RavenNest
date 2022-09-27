@@ -98,13 +98,13 @@ namespace RavenNest.Tools.Actions
                             var totalExp = exp;
                             var level = sb.Level;
 
-                            if (sb.Level == 0)
-                            {
-                                ++zeroSkills;
-                                level = GameMath.OLD_ExperienceToLevel((decimal)sb.Experience);
-                                totalExp = sb.Experience;
-                                exp = totalExp - (double)GameMath.OLD_LevelToExperience(level);
-                            }
+                            //if (sb.Level == 0)
+                            //{
+                            //    ++zeroSkills;
+                            //    level = GameMath.OLD_ExperienceToLevel((decimal)sb.Experience);
+                            //    totalExp = sb.Experience;
+                            //    exp = totalExp - (double)GameMath.OLD_LevelToExperience(level);
+                            //}
 
                             if (level == 1 && exp == 0)
                             {

@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Net;
+using RavenNest.Models;
 using RavenNest.Sessions;
 using System;
 
@@ -69,7 +70,6 @@ namespace RavenNest.Controllers
             return villageManager.RemoveHouse(sessionToken.SessionId, slot);
         }
 
-        
         [HttpGet]
         public VillageInfo GetVillageInfo()
         {

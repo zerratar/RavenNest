@@ -1,5 +1,6 @@
 ﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Net;
+using RavenNest.Models;
 using System;
 using System.Linq;
 
@@ -118,13 +119,22 @@ namespace RavenNest.BusinessLogic.Game
         public VillageInfo GetVillageInfo(Guid sessionId)
         {
             var session = gameData.GetSession(sessionId);
+            return GetVillageInfo(session);
+        }
+
+        public VillageInfo GetVillageInfo(DataModels.GameSession session)
+        {
             if (session == null) return null;
             var village = gameData.GetOrCreateVillageBySession(session);
             var villageHouses = gameData.GetOrCreateVillageHouses(village);
+
+            var state = gameData.GetSessionState(session.Id);
+            var villageLevel = Math.Min(village.Level, GameVersion.IsLessThanOrEquals(state.ClientVersion, "0.8.0.0a") ? 170 : GameMath.MaxVillageLevel);
+
             return new VillageInfo
             {
                 Name = village.Name,
-                Level = village.Level,
+                Level = villageLevel,
                 Experience = village.Experience,
                 Houses = villageHouses.Select(x =>
                 {
@@ -143,7 +153,6 @@ namespace RavenNest.BusinessLogic.Game
                 }).ToList()
             };
         }
-
         public bool RemoveHouse(Guid sessionId, int slot)
         {
             var session = gameData.GetSession(sessionId);
