@@ -138,45 +138,44 @@ namespace RavenNest.BusinessLogic.Data
         DataModels.GameSession CreateSession(Guid userId);
         DataModels.GameEvent CreateSessionEvent<T>(GameEventType type, DataModels.GameSession session, T data);
         #endregion
+        IReadOnlyList<CharacterClanMembership> GetClanMemberships(Guid clanId);
 
         #region Add
         //void Add(VendorTransaction entity);
-        void Add(ResourceItemDrop item);
-        void Add(Pet pet);
-        void Add(DataModels.UserBankItem item);
-        void Add(CharacterSkillRecord item);
-        void Add(Agreements item);
-        void Add(RedeemableItem item);
-        void Add(ClanSkill entity);
-        void Add(MarketItemTransaction transaction);
-        void Add(UserNotification ev);
-        void Add(CharacterClanMembership ev);
-        void Add(CharacterClanInvite ev);
-        void Add(ClanRole ev);
-        void Add(Clan ev);
-        void Add(UserLoyalty loyalty);
-        void Add(UserLoyaltyRank loyaltyRank);
-        void Add(UserLoyaltyReward loyaltyRankReward);
-
-        void Add(UserPatreon pat);
-        IReadOnlyList<CharacterClanMembership> GetClanMemberships(Guid clanId);
-        void Add(ExpMultiplierEvent ev);
-        void Add(CharacterSessionActivity ev);
-        void Add(DataModels.Item entity);
-        void Add(DataModels.ItemCraftingRequirement entity);
-        void Add(DataModels.CharacterState entity);
-        void Add(DataModels.SyntyAppearance entity);
-        void Add(DataModels.Statistics entity);
-        void Add(DataModels.Skills entity);
-        void Add(DataModels.Appearance entity);
-        void Add(DataModels.Resources entity);
-        void Add(Character entity);
-        void Add(User entity);
-        void Add(DataModels.InventoryItem entity);
-        void Add(DataModels.GameSession entity);
-        void Add(DataModels.MarketItem entity);
-        void Add(DataModels.GameEvent entity);
-        void Add(DataModels.Village village);
+        AddEntityResult Add(ResourceItemDrop item);
+        AddEntityResult Add(Pet pet);
+        AddEntityResult Add(DataModels.UserBankItem item);
+        AddEntityResult Add(CharacterSkillRecord item);
+        AddEntityResult Add(Agreements item);
+        AddEntityResult Add(RedeemableItem item);
+        AddEntityResult Add(ClanSkill entity);
+        AddEntityResult Add(MarketItemTransaction transaction);
+        AddEntityResult Add(UserNotification ev);
+        AddEntityResult Add(CharacterClanMembership ev);
+        AddEntityResult Add(CharacterClanInvite ev);
+        AddEntityResult Add(ClanRole ev);
+        AddEntityResult Add(Clan ev);
+        AddEntityResult Add(UserLoyalty loyalty);
+        AddEntityResult Add(UserLoyaltyRank loyaltyRank);
+        AddEntityResult Add(UserLoyaltyReward loyaltyRankReward);
+        AddEntityResult Add(UserPatreon pat);
+        AddEntityResult Add(ExpMultiplierEvent ev);
+        AddEntityResult Add(CharacterSessionActivity ev);
+        AddEntityResult Add(DataModels.Item entity);
+        AddEntityResult Add(DataModels.ItemCraftingRequirement entity);
+        AddEntityResult Add(DataModels.CharacterState entity);
+        AddEntityResult Add(DataModels.SyntyAppearance entity);
+        AddEntityResult Add(DataModels.Statistics entity);
+        AddEntityResult Add(DataModels.Skills entity);
+        AddEntityResult Add(DataModels.Appearance entity);
+        AddEntityResult Add(DataModels.Resources entity);
+        AddEntityResult Add(Character entity);
+        AddEntityResult Add(User entity);
+        AddEntityResult Add(DataModels.InventoryItem entity);
+        AddEntityResult Add(DataModels.GameSession entity);
+        AddEntityResult Add(DataModels.MarketItem entity);
+        AddEntityResult Add(DataModels.GameEvent entity);
+        AddEntityResult Add(DataModels.Village village);
 
         /// <summary>
         ///     Force save the current state to the database.
@@ -187,26 +186,26 @@ namespace RavenNest.BusinessLogic.Data
 
 
         #region Remove
-        void Remove(ResourceItemDrop item);
-        void Remove(DataModels.UserBankItem item);
-        void Remove(Pet pet);
-        void Remove(Agreements item);
-        void Remove(RedeemableItem item);
-        void Remove(UserNotification ev);
-        void Remove(CharacterClanMembership ev);
-        void Remove(CharacterClanInvite ev);
-        void Remove(ClanRole ev);
-        void Remove(Clan ev);
-        void Remove(CharacterSessionActivity ev);
-        void Remove(DataModels.GameEvent gameEvent);
-        void Remove(DataModels.ItemCraftingRequirement craftingRequirement);
-        void Remove(DataModels.User user);
-        void Remove(DataModels.Skills skills);
-        void Remove(DataModels.Statistics statistics);
-        void Remove(DataModels.Character character);
-        void Remove(DataModels.Resources resources);
-        void Remove(DataModels.MarketItem marketItem);
-        void Remove(DataModels.InventoryItem invItem);
+        RemoveEntityResult Remove(ResourceItemDrop item);
+        RemoveEntityResult Remove(DataModels.UserBankItem item);
+        RemoveEntityResult Remove(Pet pet);
+        RemoveEntityResult Remove(Agreements item);
+        RemoveEntityResult Remove(RedeemableItem item);
+        RemoveEntityResult Remove(UserNotification ev);
+        RemoveEntityResult Remove(CharacterClanMembership ev);
+        RemoveEntityResult Remove(CharacterClanInvite ev);
+        RemoveEntityResult Remove(ClanRole ev);
+        RemoveEntityResult Remove(Clan ev);
+        RemoveEntityResult Remove(CharacterSessionActivity ev);
+        RemoveEntityResult Remove(DataModels.GameEvent gameEvent);
+        RemoveEntityResult Remove(DataModels.ItemCraftingRequirement craftingRequirement);
+        RemoveEntityResult Remove(DataModels.User user);
+        RemoveEntityResult Remove(DataModels.Skills skills);
+        RemoveEntityResult Remove(DataModels.Statistics statistics);
+        RemoveEntityResult Remove(DataModels.Character character);
+        RemoveEntityResult Remove(DataModels.Resources resources);
+        RemoveEntityResult Remove(DataModels.MarketItem marketItem);
+        RemoveEntityResult Remove(DataModels.InventoryItem invItem);
         void RemoveRange(IReadOnlyList<DataModels.InventoryItem> items);
         DataModels.Resources GetResources(Guid resourcesId);
         DataModels.Resources GetResourcesByCharacterId(Guid sellerCharacterId);

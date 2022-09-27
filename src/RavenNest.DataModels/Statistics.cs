@@ -6,8 +6,6 @@ namespace RavenNest.DataModels
     public partial class Statistics : Entity<Statistics>
     {
 
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
-
         private int raidsWon; public int RaidsWon { get => raidsWon; set => Set(ref raidsWon, value); }
         private int raidsLost; public int RaidsLost { get => raidsLost; set => Set(ref raidsLost, value); }
         private int raidsJoined; public int RaidsJoined { get => raidsJoined; set => Set(ref raidsJoined, value); }

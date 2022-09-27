@@ -5,7 +5,6 @@ namespace RavenNest.DataModels
 {
     public class SyntyAppearance : Entity<SyntyAppearance>
     {
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         private Gender gender; public Gender Gender { get => gender; set => Set(ref gender, value); }
         private int hair; public int Hair { get => hair; set => Set(ref hair, value); }
         private int head; public int Head { get => head; set => Set(ref head, value); }

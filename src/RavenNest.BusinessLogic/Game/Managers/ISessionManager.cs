@@ -14,6 +14,7 @@ namespace RavenNest.BusinessLogic.Game
             bool isLocal,
             float syncTime);
 
+        Task<BeginSessionResult> BeginSessionAsync(AuthToken token, string clientVersion, string accessKey, float gameTime);
         SessionToken Get(string sessionToken);
         void SendVillageInfo(DataModels.GameSession newGameSession);
         void SendPermissionData(DataModels.GameSession gameSession, DataModels.User user = null);

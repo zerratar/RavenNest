@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace RavenNest.Models
 {
@@ -13,6 +14,59 @@ namespace RavenNest.Models
         public string TwitchUserName { get; set; }
         public string TwitchDisplayName { get; set; }
         public string ClientVersion { get; set; }
+    }
+
+    public class BeginSessionResult
+    {
+        public SessionToken SessionToken { get; set; }
+        public ExpMultiplier ExpMultiplier { get; set; }
+        public VillageInfo Village { get; set; }
+        public Permissions Permissions { get; set; }
+        public string ExpectedClientVersion { get; set; }
+        public BeginSessionResultState State { get; set; }
+        public static BeginSessionResult InvalidVersion { get; set; } = new BeginSessionResult
+        {
+            State = BeginSessionResultState.UpdateRequired
+        };
+    }
+
+    public class VillageInfo
+    {
+        public int Level { get; set; }
+        public long Experience { get; set; }
+        public string Name { get; set; }
+        public IReadOnlyList<VillageHouseInfo> Houses { get; set; }
+    }
+
+    public class VillageHouseInfo
+    {
+        public string Owner { get; set; }
+        public int Type { get; set; }
+        public int Slot { get; set; }
+    }
+    public class Permissions
+    {
+        public bool IsAdministrator { get; set; }
+        public bool IsModerator { get; set; }
+        public int SubscriberTier { get; set; }
+        public int ExpMultiplierLimit { get; set; }
+        public bool StrictLevelRequirements { get; set; }
+    }
+    public class ExpMultiplier
+    {
+        public string EventName { get; set; }
+        public int Multiplier { get; set; }
+        public bool StartedByPlayer { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+    }
+
+    public enum BeginSessionResultState
+    {
+        Success,
+        UpdateRequired,
+        AccountDisabled,
+        UnknownError
     }
 
     public class RedeemableItem

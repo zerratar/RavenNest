@@ -41,11 +41,10 @@ namespace RavenNest.Tools.Actions
             ToolStatus.Text = "Exp Adjustment has been disabled.";
             return;
 
-
             ToolStatus.Text = "Loading backup files...";
             Task.Run(() =>
             {
-                var backupProvider = new GameDataBackupProvider();
+                var backupProvider = new GameDataBackupProvider(null);
                 var rpBefore = backupProvider.GetRestorePoint(@"C:\backup\637367260672779696", typeof(Character), typeof(Skills));
                 var rpAfter = backupProvider.GetRestorePoint(@"C:\backup\637369626496299730", typeof(Character), typeof(Skills));
 
@@ -98,13 +97,13 @@ namespace RavenNest.Tools.Actions
                             var totalExp = exp;
                             var level = sb.Level;
 
-                            if (sb.Level == 0)
-                            {
-                                ++zeroSkills;
-                                level = GameMath.OLD_ExperienceToLevel((decimal)sb.Experience);
-                                totalExp = sb.Experience;
-                                exp = totalExp - (double)GameMath.OLD_LevelToExperience(level);
-                            }
+                            //if (sb.Level == 0)
+                            //{
+                            //    ++zeroSkills;
+                            //    level = GameMath.OLD_ExperienceToLevel((decimal)sb.Experience);
+                            //    totalExp = sb.Experience;
+                            //    exp = totalExp - (double)GameMath.OLD_LevelToExperience(level);
+                            //}
 
                             if (level == 1 && exp == 0)
                             {

@@ -64,5 +64,15 @@ namespace RavenNest.BusinessLogic.Game
         {
             return version >= gameData.GetClientVersion();
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsLessThanOrEquals(string version, string comparison)
+        {
+            if (!TryParse(version, out var src))
+                return false;
+            if (!TryParse(comparison, out var dst))
+                return false;
+            return src <= dst;
+        }
     }
 }

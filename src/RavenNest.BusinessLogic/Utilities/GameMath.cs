@@ -5,26 +5,11 @@ namespace RavenNest.BusinessLogic
     public static class GameMath
     {
         public const int MaxLevel = 999;
-
-        [Obsolete]
-        private const int OLD_MaxLevel = 170;
-
-        [Obsolete]
-        private static decimal[] OLD_TotalExperienceArray = new decimal[OLD_MaxLevel];
-
+        public const int MaxVillageLevel = 300;
         private static double[] ExperienceArray = new double[MaxLevel];
 
         static GameMath()
         {
-            var l = 0L;
-            for (var i1 = 0; i1 < OLD_MaxLevel; i1++)
-            {
-                var j1 = i1 + 1M;
-                var l1 = (long)(j1 + (decimal)(300D * Math.Pow(2D, (double)(j1 / 7M))));
-                l += l1;
-                OLD_TotalExperienceArray[i1] = (decimal)((l & 0xffffffffc) / 4d);
-            }
-
             for (var levelIndex = 0; levelIndex < MaxLevel; levelIndex++)
             {
                 var level = levelIndex + 1M;
@@ -77,32 +62,6 @@ namespace RavenNest.BusinessLogic
             }
 
             return value;
-        }
-
-        [Obsolete]
-        public static int OLD_ExperienceToLevel(decimal exp)
-        {
-            for (int level = 0; level < OLD_MaxLevel - 1; level++)
-            {
-                if (exp >= OLD_TotalExperienceArray[level])
-                    continue;
-                return (level + 1);
-            }
-            return OLD_MaxLevel;
-        }
-
-        [Obsolete]
-        public static decimal OLD_LevelToExperience(int level)
-        {
-            try
-            {
-                return level - 2 < 0 ? 0 : OLD_TotalExperienceArray[level - 2];
-            }
-            catch (Exception exc)
-            {
-                // not good, someone been naughty.
-                return OLD_TotalExperienceArray[OLD_TotalExperienceArray.Length - 1];
-            }
         }
 
         public static double GetFishingExperience(int level)

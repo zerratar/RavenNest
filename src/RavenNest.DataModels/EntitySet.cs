@@ -6,16 +6,14 @@ using System.Linq;
 
 namespace RavenNest.DataModels
 {
-    public class EntitySet<TModel, TKey> : IEntitySet<TModel, TKey> where TModel : Entity<TModel>
+    public class EntitySet<TModel> : IEntitySet<TModel> where TModel : Entity<TModel>
     {
-        private readonly ConcurrentDictionary<TKey, TModel> entities;
-        private readonly ConcurrentDictionary<TKey, EntityChangeSet> addedEntities;
-        private readonly ConcurrentDictionary<TKey, EntityChangeSet> updatedEntities;
-        private readonly ConcurrentDictionary<TKey, EntityChangeSet> removedEntities;
-        private readonly Func<TModel, TKey> keySelector;
+        private readonly ConcurrentDictionary<Guid, TModel> entities;
+        private readonly ConcurrentDictionary<Guid, EntityChangeSet> addedEntities;
+        private readonly ConcurrentDictionary<Guid, EntityChangeSet> updatedEntities;
+        private readonly ConcurrentDictionary<Guid, EntityChangeSet> removedEntities;
         private readonly bool trackChanges;
-        private readonly ConcurrentDictionary<string, EntityLookupGroup<TModel, TKey>> groupLookup
-            = new ConcurrentDictionary<string, EntityLookupGroup<TModel, TKey>>();
+        private readonly ConcurrentDictionary<string, EntityLookupGroup<TModel>> groupLookup = new();
 
         public IReadOnlyList<TModel> Entities => entities.Values.AsReadOnlyList();
         public IReadOnlyList<EntityChangeSet> Added => addedEntities.Values.AsReadOnlyList();
@@ -24,14 +22,13 @@ namespace RavenNest.DataModels
 
         public DateTime LastModified { get; private set; }
 
-        public EntitySet(IEnumerable<TModel> collection, Func<TModel, TKey> keySelector, bool trackChanges = true)
+        public EntitySet(IEnumerable<TModel> collection, bool trackChanges = true)
         {
-            this.keySelector = keySelector;
             this.trackChanges = trackChanges;
-            this.entities = new ConcurrentDictionary<TKey, TModel>();
-            this.addedEntities = new ConcurrentDictionary<TKey, EntityChangeSet>();
-            this.updatedEntities = new ConcurrentDictionary<TKey, EntityChangeSet>();
-            this.removedEntities = new ConcurrentDictionary<TKey, EntityChangeSet>();
+            this.entities = new ConcurrentDictionary<Guid, TModel>();
+            this.addedEntities = new ConcurrentDictionary<Guid, EntityChangeSet>();
+            this.updatedEntities = new ConcurrentDictionary<Guid, EntityChangeSet>();
+            this.removedEntities = new ConcurrentDictionary<Guid, EntityChangeSet>();
 
             foreach (var entity in collection)
             {
@@ -40,15 +37,14 @@ namespace RavenNest.DataModels
                     entity.PropertyChanged += OnEntityPropertyChanged;
                 }
 
-                var key = keySelector(entity);
-                entities[key] = entity;
+                entities[entity.Id] = entity;
             }
         }
 
         // This is okay, its only used for saving backups or restoring from a backup.        
         public IReadOnlyList<IEntity> GetEntities()
         {
-            return Entities.Cast<IEntity>().ToList();
+            return Entities.AsList(x => (IEntity)x);
         }
 
         public Type GetEntityType()
@@ -63,17 +59,17 @@ namespace RavenNest.DataModels
             removedEntities.Clear();
         }
 
-        public bool TryGet(TKey key, out TModel entity)
+        public bool TryGet(Guid key, out TModel entity)
         {
             return entities.TryGetValue(key, out entity);
         }
 
-        public bool Contains(TKey key)
+        public bool Contains(Guid key)
         {
             return entities.ContainsKey(key);
         }
 
-        public TModel this[TKey key]
+        public TModel this[Guid key]
         {
             get
             {
@@ -87,7 +83,7 @@ namespace RavenNest.DataModels
             }
         }
 
-        public IReadOnlyList<TModel> this[string group, TKey groupKey]
+        public IReadOnlyList<TModel> this[string group, Guid groupKey]
         {
             get
             {
@@ -104,7 +100,7 @@ namespace RavenNest.DataModels
             }
         }
 
-        public TModel this[string group, TKey groupKey, TKey itemKey]
+        public TModel this[string group, Guid groupKey, Guid itemKey]
         {
             get
             {
@@ -118,15 +114,18 @@ namespace RavenNest.DataModels
             }
         }
 
-        public void Add(TModel model)
+        public AddEntityResult Add(TModel model)
         {
-            var key = keySelector(model);
+            var key = model.Id;
+
+            if (addedEntities.ContainsKey(key) || updatedEntities.ContainsKey(key))
+                return AddEntityResult.AlreadyAdded;
+
+            if (removedEntities.ContainsKey(key))
+                return AddEntityResult.AlreadyRemoved;
 
             if (entities.ContainsKey(key))
-                return;
-
-            if (addedEntities.ContainsKey(key) || updatedEntities.ContainsKey(key) || removedEntities.ContainsKey(key))
-                return;
+                return AddEntityResult.AlreadyExists;
 
 
             LastModified = DateTime.UtcNow;
@@ -150,11 +149,13 @@ namespace RavenNest.DataModels
                     Entity = model
                 };
             }
+
+            return AddEntityResult.Success;
         }
 
-        public void Remove(TModel model)
+        public RemoveEntityResult Remove(TModel model)
         {
-            var key = keySelector(model);
+            var key = model.Id;
             if (entities.TryRemove(key, out _))
             {
                 LastModified = DateTime.UtcNow;
@@ -169,7 +170,7 @@ namespace RavenNest.DataModels
                 {
                     if (addedEntities.TryRemove(key, out _))
                     {
-                        return;
+                        return RemoveEntityResult.Success;
                     }
 
                     updatedEntities.TryRemove(key, out _);
@@ -180,7 +181,11 @@ namespace RavenNest.DataModels
                         Entity = model
                     };
                 }
+
+                return RemoveEntityResult.Success;
             }
+
+            return RemoveEntityResult.DoesNotExist;
         }
 
         //public void Update(TModel model)
@@ -193,8 +198,8 @@ namespace RavenNest.DataModels
         //    updatedEntities
         //}
 
-        public void AddRange(IEnumerable<TModel> models) => models.ForEach(Add);
-        public void RemoveRange(IEnumerable<TModel> models) => models.ForEach(Remove);
+        public void AddRange(IEnumerable<TModel> models) => models.ForEach(x => { Add(x); });
+        public void RemoveRange(IEnumerable<TModel> models) => models.ForEach(x => { Remove(x); });
         //public void UpdateRange(IEnumerable<TModel> models) => RavenNest.Models.ForEach(Update);        
 
         //public ConcurrentQueue<EntityChangeSet<TModel>> BuildAddQueue()
@@ -208,7 +213,7 @@ namespace RavenNest.DataModels
             LastModified = DateTime.UtcNow;
             var entity = sender as TModel;
             //var property = e.PropertyName;
-            var key = keySelector(entity);
+            var key = entity.Id;
 
             // check if a group key has changed and if so, re-evaluate which group it should contain to.
             foreach (var group in groupLookup)
@@ -235,17 +240,16 @@ namespace RavenNest.DataModels
             }
         }
 
-        public void RegisterLookupGroup(string name, Func<TModel, TKey> lookupKey)
+        public void RegisterLookupGroup(string name, Func<TModel, Guid> lookupKey)
         {
-            this.groupLookup[name] = new EntityLookupGroup<TModel, TKey>(
-                new ConcurrentDictionary<TKey, ConcurrentDictionary<TKey, TModel>>(
+            this.groupLookup[name] = new EntityLookupGroup<TModel>(
+                new ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, TModel>>(
                     entities.Values.GroupBy(lookupKey).ToDictionary(x => x.Key, x =>
                     {
-                        var dictionary = x.ToDictionary(y => keySelector(y), y => y);
-                        return new ConcurrentDictionary<TKey, TModel>(dictionary);
+                        var dictionary = x.ToDictionary(y => y.Id, y => y);
+                        return new ConcurrentDictionary<Guid, TModel>(dictionary);
                     })),
-                lookupKey,
-                keySelector);
+                lookupKey);
         }
 
         public void Clear(IReadOnlyList<IEntity> entities)
@@ -253,12 +257,28 @@ namespace RavenNest.DataModels
             foreach (var entity in entities)
             {
                 if (!(entity is TModel model)) continue;
-                var key = keySelector(model);
+                var key = model.Id;
                 this.addedEntities.TryRemove(key, out _);
                 this.updatedEntities.TryRemove(key, out _);
                 this.removedEntities.TryRemove(key, out _);
             }
         }
+    }
+
+    public enum AddEntityResult
+    {
+        Success,
+        AlreadyAdded,
+        AlreadyExists,
+        AlreadyRemoved,
+        Error
+    }
+    public enum RemoveEntityResult
+    {
+        Success,
+        AlreadyRemoved,
+        DoesNotExist,
+        Error
     }
     public enum EntityState
     {

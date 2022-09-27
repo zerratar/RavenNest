@@ -5,7 +5,6 @@ namespace RavenNest.DataModels
 {
     public partial class GameSession : Entity<GameSession>
     {
-        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         private Guid userId; public Guid UserId { get => userId; set => Set(ref userId, value); }
         private DateTime started; public DateTime Started { get => started; set => Set(ref started, value); }
         private DateTime? stopped; public DateTime? Stopped { get => stopped; set => Set(ref stopped, value); }

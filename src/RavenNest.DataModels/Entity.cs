@@ -6,11 +6,15 @@ using System.Runtime.CompilerServices;
 
 namespace RavenNest.DataModels
 {
-    public interface IEntity { }
+    public interface IEntity
+    {
+        Guid Id { get; set; }
+    }
+
     public class Entity<TModel> : IEntity, INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
-
+        private Guid id; public Guid Id { get => id; set => Set(ref id, value); }
         protected bool Set<TProp>(ref TProp item, TProp value, [CallerMemberName] string propertyName = null)
         {
             if (object.Equals(item, value) || object.ReferenceEquals(item, value)) return false;
@@ -50,6 +54,8 @@ namespace RavenNest.DataModels
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
         /// <returns></returns>
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<T> ToSpan<T>(this IEnumerable<T> items)
         {
             return new Span<T>(items.AsArray());
@@ -61,6 +67,8 @@ namespace RavenNest.DataModels
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
         /// <returns></returns>
+        /// 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T[] AsArray<T>(this IEnumerable<T> items)
         {
             if (items is T[] list) return list;
@@ -74,12 +82,15 @@ namespace RavenNest.DataModels
         /// <typeparam name="T"></typeparam>
         /// <param name="items"></param>
         /// <returns></returns>
+        /// 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<T> AsList<T>(this IEnumerable<T> items)
         {
             if (items is List<T> list) return list;
             return items.ToList();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<T> AsList<T>(this IEnumerable<T> items, Func<T, bool> predicateWhere)
         {
             var result = new List<T>();
@@ -93,6 +104,19 @@ namespace RavenNest.DataModels
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static List<T2> AsList<T, T2>(this IEnumerable<T> items, Func<T, T2> select)
+        {
+            var result = new List<T2>();
+            foreach (var item in items)
+            {
+                result.Add(select(item));
+            }
+            return result;
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<T2> SelectWhere<T, T2>(this IEnumerable<T> items, Func<T, bool> predicateWhere, Func<T, T2> select)
         {
             var result = new List<T2>();
@@ -106,6 +130,7 @@ namespace RavenNest.DataModels
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<T> Slice<T>(this T[] src, int skip, int take)
         {
             var result = new List<T>();
@@ -116,6 +141,7 @@ namespace RavenNest.DataModels
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<T> Slice<T>(this IReadOnlyList<T> src, int skip, int take)
         {
             var result = new List<T>();
@@ -126,6 +152,7 @@ namespace RavenNest.DataModels
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<T> Slice<T>(this IEnumerable<T> src, int skip, int take)
         {
             var result = new List<T>();
@@ -145,6 +172,7 @@ namespace RavenNest.DataModels
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static List<T> SliceAs<T, T2>(this IReadOnlyList<T2> src, int skip, int take, Func<T2, T> select)
         {
             var result = new List<T>();
@@ -154,6 +182,7 @@ namespace RavenNest.DataModels
             }
             return result;
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T[] SelectAsArray<T, T2>(this IReadOnlyList<T2> src, Func<T2, T> select)
         {
             var result = new T[src.Count];
@@ -164,6 +193,7 @@ namespace RavenNest.DataModels
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IReadOnlyList<T> SelectAsReadOnly<T, T2>(this IReadOnlyList<T2> src, Func<T2, T> select)
         {
             var result = new List<T>(src.Count);
@@ -174,6 +204,7 @@ namespace RavenNest.DataModels
             return result;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IReadOnlyList<T> AsReadOnlyList<T>(this IEnumerable<T> items)
         {
             if (items is T[] array) return array;
@@ -181,6 +212,7 @@ namespace RavenNest.DataModels
             return items.AsList();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ForEach<T>(this IEnumerable<T> items, Action<T> forEach)
         {
             foreach (var item in items)
@@ -189,6 +221,7 @@ namespace RavenNest.DataModels
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IEnumerable<KeyValuePair<TKey, TValue>> ToKeyValuePair<TKey, TValue>(this IEnumerable<TValue> values, Func<TValue, TKey> keySelector, Func<TValue, TValue> valueSelector)
         {
             return values.Select(x => new KeyValuePair<TKey, TValue>(keySelector(x), valueSelector(x)));

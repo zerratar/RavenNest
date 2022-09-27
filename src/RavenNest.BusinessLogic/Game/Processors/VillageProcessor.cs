@@ -29,10 +29,15 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             village.Experience += players.Count * 20;
 
-            var newLevel = GameMath.OLD_ExperienceToLevel(village.Experience);
-            var levelDelta = newLevel - village.Level;
-
-            village.Level = newLevel;
+            var expForNextLevel = GameMath.ExperienceForLevel(village.Level + 1);
+            var levelDelta = 0;
+            while (village.Experience >= expForNextLevel)
+            {
+                village.Experience -= (long)expForNextLevel;
+                village.Level++;
+                levelDelta++;
+                expForNextLevel = GameMath.ExperienceForLevel(village.Level + 1);
+            }
 
             var villageHouses = gameData.GetOrCreateVillageHouses(village);
 

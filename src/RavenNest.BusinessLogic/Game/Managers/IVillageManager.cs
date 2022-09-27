@@ -1,4 +1,5 @@
 ﻿using RavenNest.BusinessLogic.Net;
+using RavenNest.Models;
 using System;
 
 namespace RavenNest.BusinessLogic.Game
@@ -11,5 +12,6 @@ namespace RavenNest.BusinessLogic.Game
         bool BuildHouse(Guid sessionId, int slot, int type);
         bool RemoveHouse(Guid sessionId, int slot);
         VillageInfo GetVillageInfo(Guid sessionId);
+        VillageInfo GetVillageInfo(DataModels.GameSession session);
     }
 }
