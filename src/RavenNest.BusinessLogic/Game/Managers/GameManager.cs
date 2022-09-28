@@ -11,6 +11,7 @@ namespace RavenNest.BusinessLogic.Game
     public class GameManager : IGameManager
     {
         private readonly IServerManager serverManager;
+        private readonly ISessionManager sessionManager;
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly IGameData gameData;
 
@@ -20,10 +21,12 @@ namespace RavenNest.BusinessLogic.Game
 
         public GameManager(
             IServerManager serverManager,
+            ISessionManager sessionManager,
             IPlayerInventoryProvider inventoryProvider,
             IGameData gameData)
         {
             this.serverManager = serverManager;
+            this.sessionManager = sessionManager;
             this.inventoryProvider = inventoryProvider;
             this.gameData = gameData;
 
@@ -39,14 +42,14 @@ namespace RavenNest.BusinessLogic.Game
             return null;
         }
 
-        public int UseExpScroll(SessionToken sessionToken, Guid characterId, int count)
+        public UseExpScrollResult UseExpScroll(SessionToken sessionToken, Guid characterId, int count)
         {
             if (count <= 0)
-                return -1;
+                return UseExpScrollResult.Error(sessionManager.GetExpMultiplier());
 
             var session = gameData.GetSession(sessionToken.SessionId);
             if (session == null)
-                return -1;
+                return UseExpScrollResult.Error(sessionManager.GetExpMultiplier());
 
             var character = gameData.GetCharacter(characterId);
             var inventory = inventoryProvider.Get(characterId);
@@ -61,7 +64,7 @@ namespace RavenNest.BusinessLogic.Game
                 bankItemScroll = bankItems.FirstOrDefault(x => IsScrollOfType(x, ScrollType.Experience));
                 if (bankItemScroll == null)
                 {
-                    return -2;
+                    return UseExpScrollResult.InsufficientScrolls(sessionManager.GetExpMultiplier());
                 }
             }
 
@@ -80,7 +83,7 @@ namespace RavenNest.BusinessLogic.Game
             usageCount = (int)Math.Min(count, Math.Min(usageCount, left));
             if (left <= 0 || usageCount <= 0)
             {
-                return 0;
+                return UseExpScrollResult.Success(0, sessionManager.GetExpMultiplier());
             }
 
             var user = gameData.GetUser(character.UserId);
@@ -95,10 +98,10 @@ namespace RavenNest.BusinessLogic.Game
                     inventory.RemoveItem(scroll, usageCount);
                 }
 
-                return usageCount;
+                return UseExpScrollResult.Success(usageCount, sessionManager.GetExpMultiplier());
             }
 
-            return 0;
+            return UseExpScrollResult.Success(0, sessionManager.GetExpMultiplier());
         }
 
         public ScrollUseResult UseScroll(SessionToken sessionToken, Guid characterId, ScrollType scrollType)
