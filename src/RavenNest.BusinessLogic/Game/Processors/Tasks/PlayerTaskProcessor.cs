@@ -35,12 +35,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             }));
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static DataModels.InventoryItem CreateInventoryItem(Character character, Guid itemId)
-        {
-            return new DataModels.InventoryItem { Id = Guid.NewGuid(), Amount = 1, CharacterId = character.Id, Equipped = false, ItemId = itemId };
-        }
-
         public abstract void Process(
             IIntegrityChecker integrityChecker,
             IGameData gameData,
@@ -61,23 +55,23 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
         internal async Task<bool> TrySendToExtensionAsync<T>(Character character, T data)
         {
-            if (character == null || data == null)
+            if (character == null || data == null || ExtensionConnectionProvider == null)
             {
                 return false;
             }
-            if (ExtensionConnectionProvider.TryGet(character.Id, out var connection))
+
+            try
             {
-                try
+                if (ExtensionConnectionProvider.TryGet(character.Id, out var connection))
                 {
                     await connection.SendAsync(data);
                     return true;
                 }
-                catch
-                {
-                }
+                return false;
             }
-
-            return false;
+            catch
+            {
+            }
         }
 
     }
