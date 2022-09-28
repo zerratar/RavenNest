@@ -67,11 +67,12 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     await connection.SendAsync(data);
                     return true;
                 }
-                return false;
             }
             catch
             {
             }
+
+            return false;
         }
 
     }
