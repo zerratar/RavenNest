@@ -1,11 +1,16 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using RavenNest.Blazor.Services.Models;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Sessions;
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace RavenNest.Blazor.Services
@@ -133,21 +138,62 @@ namespace RavenNest.Blazor.Services
             return result.SessionInfo;
         }
 
-        public string GetTwitchLoginUrl()
+        public string GetTwitchLoginUrl(string redirectToAfterLogin = "")
         {
+            //could move List to parameters for passing more parameters for twitch to give back. This is an odd way of doing it but bonus effect
+            //of adding some protection against CSRF
+            List<StateParameters> StateParametersList = new();
+            if (!string.IsNullOrEmpty(redirectToAfterLogin))
+                StateParametersList.Add(new("redirect", redirectToAfterLogin));
+
             if (Context == null || Context.Request == null || Context.Request.Host == null)
             {
                 return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
                     + "https://www.ravenfall.stream/login/twitch"
-                    + "&response_type=token&scope=user:read:email";
+                    + "&response_type=token&scope=user:read:email"
+                    + "&state=" + GetRandomizedBase64EncodedStateParameters(StateParametersList);
             }
 
             return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
-                   + $"https://{Context.Request.Host}/login/twitch"
-                   + "&response_type=token&scope=user:read:email";
+                    + $"https://{Context.Request.Host}/login/twitch"
+                    + "&response_type=token&scope=user:read:email"
+                    + "&state=" + GetRandomizedBase64EncodedStateParameters(StateParametersList);
         }
+
+        //Create a 64BaseEncodedString of a JSON Object for Twitch to return back to us
+        public string GetRandomizedBase64EncodedStateParameters(List<StateParameters> stateParameters)
+        {
+            // TODO Should store this in a cookie or session to be compared to state response to prevent CSRF: https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
+            string randomSeed = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Replace("=", "");
+            StateParameters randomizedStateParamater = new("state_token", randomSeed);
+            stateParameters.Add(randomizedStateParamater);
+
+            var serializedJSON = JsonConvert.SerializeObject(stateParameters);
+            var encodedString = Base64UrlEncoder.Encode(serializedJSON);
+            return encodedString;
+        }
+
+        
+        public List<StateParameters> GetDecodedObjectFromState(string encodedState)
+        {
+            //TODO Decode - add check in to compare returned values and cause an error if different
+            var decodedJSONString = Base64UrlEncoder.Decode(encodedState);
+            return JsonConvert.DeserializeObject<List<StateParameters>>(decodedJSONString);
+        }
+
+
     }
 
+    public class StateParameters
+    {
+        public string ParametersName { get; set; }
+        public string ParametersValue { get; set; }
 
+        public StateParameters(string parametersName, string parametersValue)
+        {
+            ParametersName = parametersName;
+            ParametersValue = parametersValue;
+        }
 
+    }
 }

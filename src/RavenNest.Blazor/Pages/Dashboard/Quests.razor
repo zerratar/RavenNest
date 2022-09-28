@@ -25,7 +25,7 @@ else
   {
     if (session == null || session.UserId == null)
     {
-            NavigationManager.NavigateTo("/login/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
+            NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
     }
   }
 }

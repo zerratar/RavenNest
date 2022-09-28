@@ -1,6 +1,6 @@
 ﻿@page "/login"
-@page "/login/{*redirectUrl}"
-@page "/login/twitch"
+@page "/login/redirect/{*redirectUrl}"
+@page "/login/twitch/{*redirectUrl}"
 @using RavenNest.Blazor.Services.Models
 @using Microsoft.AspNetCore.WebUtilities
 @inject NavigationManager NavigationManager
@@ -9,200 +9,229 @@
 
 <div class="top-section">
 
-	@if (IsTwitchLogin)
-	{
-		if (tokenGenerationComplete)
-		{
-		 <p class="login-message">You may close this window now. </p>
-		}
-		else
-		{
-		 <p class="login-message">Logging in using Twitch... </p>
-		}
-	}
-	else if (IsLoggingIn)
-	{
-	 <p class="login-message">Logging in... Hold on to your horses!</p>
-	}
-	else
-	{
-		if (session.UserId == null)
-		{
-		 <h1 class="login-header">LOGIN TO YOUR ACCOUNT</h1>
-		 <h4 class="login-slogan">Get access to all the features<br />Ravenfall has to offer.</h4>
+    @if (IsTwitchLogin)
+    {
+        if (tokenGenerationComplete)
+        {
+            <p class="login-message">You may close this window now. </p>
+        }
+        else
+        {
+            <p class="login-message">Logging in using Twitch... </p>
+        }
+    }
+    else if (IsLoggingIn)
+    {
+        if (loginFailed)
+        {
+            <p class="invalid">Twitch returned an error: @loginFailedError</p>
+        }
+        else
+        {
+            <p class="login-message">Logging in... Hold on to your horses!</p>
+        }
+    }
+    else
+    {
+        if (session.UserId == null)
+        {
+            <h1 class="login-header">LOGIN TO YOUR ACCOUNT</h1>
+            <h4 class="login-slogan">Get access to all the features<br />Ravenfall has to offer.</h4>
 
-		 <EditForm Model="@loginModel" OnValidSubmit="@HandleValidSubmit">
-		  <DataAnnotationsValidator />
+            <EditForm Model="@loginModel" OnValidSubmit="@HandleValidSubmit">
+                <DataAnnotationsValidator />
 
-		  <div class="input-fields">
-		   <InputText class="raven-input" placeholder="USERNAME" id="username" @bind-Value="loginModel.Username" />
-		   <InputText class="raven-input" type="password" placeholder="PASSWORD" id="password" @bind-Value="loginModel.Password" />
-		  </div>
+                <div class="input-fields">
+                    <InputText class="raven-input" placeholder="USERNAME" id="username" @bind-Value="loginModel.Username" />
+                    <InputText class="raven-input" type="password" placeholder="PASSWORD" id="password" @bind-Value="loginModel.Password" />
+                </div>
 
-		  <ValidationSummary />
-		  <RavenButton CssClass="blue login-btn" Type="submit"><i class="fas fa-key"></i> Login</RavenButton>
-		 </EditForm>
+                <ValidationSummary />
+                <RavenButton CssClass="blue login-btn" Type="submit"><i class="fas fa-key"></i> Login</RavenButton>
+            </EditForm>
 
-		 <div class="login-separator"></div>
-		 <RavenButton CssClass="twitch twitch-login-btn" OnClick="LoginWithTwitch"><i class="fab fa-twitch"></i>&nbsp;Signup/signin with Twitch</RavenButton>
-		}
-		else
-		{
-		 <p>Welcome back, @session.UserName</p>
-		}
+            <div class="login-separator"></div>
+            <RavenButton CssClass="twitch twitch-login-btn" OnClick="LoginWithTwitch"><i class="fab fa-twitch"></i>&nbsp;Signup/signin with Twitch</RavenButton>
+        }
+        else
+        {
+            <p>Welcome back, @session.UserName</p>
+        }
 
-		if (loginFailed)
-		{
-		 <p class="invalid">Whops. Wrong username or password.</p>
-		}
-	}
+        if (loginFailed)
+        {
+            <p class="invalid">Whops. Wrong username or password.</p>
+        }
+    }
 </div>
 
 @code {
-	[Parameter]
-	public string RedirectUrl { get; set; }
+    [Parameter]
+    public string RedirectUrl { get; set; }
 
-	private string message;
-	private UserLoginModel loginModel = new UserLoginModel();
-	private RavenNest.Sessions.SessionInfo session;
-	private bool loginFailed = false;
-	private bool userInitiatedLogin = false;
-	private bool twitchLoginInitiated = false;
-	private bool IsAuthenticated => session != null && session.UserId != null;
-	private bool IsLoggingIn => !IsAuthenticated && (userInitiatedLogin || HasQueryParams());
+    private string message;
+    private UserLoginModel loginModel = new UserLoginModel();
+    private RavenNest.Sessions.SessionInfo session;
+    private bool loginFailed = false;
+    private string loginFailedError = "";
+    private bool userInitiatedLogin = false;
+    private bool twitchLoginInitiated = false;
+    private bool IsAuthenticated => session != null && session.UserId != null;
+    private bool IsLoggingIn => !IsAuthenticated && (userInitiatedLogin || HasQueryParams());
 
-	private bool IsTwitchLogin => twitchLoginInitiated || NavigationManager.Uri.Contains("login/twitch", StringComparison.OrdinalIgnoreCase);
-	private bool tokenGenerationComplete = false;
+    private bool IsTwitchLogin => twitchLoginInitiated || NavigationManager.Uri.Contains("login/twitch", StringComparison.OrdinalIgnoreCase);
+    private bool tokenGenerationComplete = false;
 
-	protected override void OnInitialized()
-	{
-		HandleTwitchTokens();
-	}
+    protected override void OnInitialized()
+    {
+        HandleTwitchTokens();
+    }
 
-	protected override Task OnAfterRenderAsync(bool firstRender)
-	{
-		NavigateToHomeIfAuthenticated();
-		UpdateGameClientLoginStateAsync();
-		return base.OnAfterRenderAsync(firstRender);
-	}
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        NavigateToLastPageOrHomeIfAuthenticated();
+        UpdateGameClientLoginStateAsync();
+        return base.OnAfterRenderAsync(firstRender);
+    }
 
-	private bool HasQueryParams()
-	{
-		return NavigationManager.ToAbsoluteUri(NavigationManager.Uri).ToString().Contains("=");
-	}
+    private bool HasQueryParams()
+    {
+        string fragment = NavigationManager.ToAbsoluteUri(NavigationManager.Uri).Fragment;
+        if (!string.IsNullOrEmpty(fragment))
+            return fragment.Substring(0, 1).Contains("?") || fragment.Substring(0, 1).Contains("#");
 
-	private async void UpdateGameClientLoginStateAsync()
-	{
-		if (await JS.InvokeAsync<bool>("updateGameClientLoginStateAsync", new object[] { }))
-		{
-			await CloseWindow();
-		}
-	}
+        return false;
+    }
 
-	private async Task CloseWindow()
-	{
-		try
-		{
-			await JS.InvokeVoidAsync("window.close");
-		}
-		catch { }
-		try
-		{
-			tokenGenerationComplete = true;
-			this.StateHasChanged();
-		}
-		catch { }
-	}
+    private async void UpdateGameClientLoginStateAsync()
+    {
+        if (await JS.InvokeAsync<bool>("updateGameClientLoginStateAsync", new object[] { }))
+        {
+            await CloseWindow();
+        }
+    }
 
-	private bool IsTwitchGameClientLogin()
-	{
-		var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-		var strUri = uri.ToString();
-		return !strUri.Contains("access") && strUri.Contains("token=");
-	}
+    private async Task CloseWindow()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("window.close");
+        }
+        catch { }
+        try
+        {
+            tokenGenerationComplete = true;
+            this.StateHasChanged();
+        }
+        catch { }
+    }
 
-	private async void HandleTwitchTokens()
-	{
-		if (IsTwitchGameClientLogin())
-		{
-			return;
-		}
+    private async void HandleTwitchTokens()
+    {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var atn = "access_token";
+        var queryString = uri.Fragment;
 
-		var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-		var atn = "access_token";
-		userInitiatedLogin = true;
+        if (string.IsNullOrEmpty(queryString))
+        {
+            session = AuthService.GetSession();
+            userInitiatedLogin = false;
+            return;
+        }
+        queryString = queryString.Substring(1);
+        var parsedQuery = System.Web.HttpUtility.ParseQueryString(queryString);
 
-		var url = uri.ToString();
+        userInitiatedLogin = true;
+        var token = parsedQuery.Get(atn);
+        var state = parsedQuery.Get("state");
+        var error = parsedQuery.Get("error");
+        var error_description = parsedQuery.Get("error_description");
 
-		if (!url.Contains(atn + "="))
-		{
-			session = AuthService.GetSession();
-			userInitiatedLogin = false;
-			return;
-		}
-		loginFailed = false;
 
-		var token = url
-			.Split(new string[] { "=" }, StringSplitOptions.RemoveEmptyEntries)[1]
-			.Split('&')[0];
+        loginFailed = false;
+        loginFailedError = "";
 
-		if (url.Contains("pubsub"))
-		{
-			await AuthService.GrantPubSubAccessAsync(token);
-			CloseWindow();
-			return;
-		}
+        if (!string.IsNullOrEmpty(error))
+        {
+            loginFailed = true;
+            loginFailedError = error_description;
+            session = AuthService.GetSession();
+            return;
+        }
 
-		session = await AuthService.TwitchLoginAsync(token);
-		userInitiatedLogin = false;
-		loginFailed = !IsAuthenticated;
+        if (!string.IsNullOrEmpty(state))
+        {
 
-		NavigateToHomeIfAuthenticated();
-	}
+            foreach (var parameter in AuthService.GetDecodedObjectFromState(state))
+            {
+                switch (parameter.ParametersName)
+                {
+                    case "redirect":
+                        RedirectUrl = parameter.ParametersValue;
+                        break;
+                    case "state_token":
+                        break;
+                }
+            }
+        }
 
-	private async void HandleValidSubmit()
-	{
-		userInitiatedLogin = true;
-		session = await AuthService.LoginAsync(loginModel);
-		if (string.IsNullOrEmpty(session.UserId))
-		{
-			userInitiatedLogin = false;
-			loginFailed = true;
-			return;
-		}
-		NavigateToHomeIfAuthenticated();
-	}
+        if (uri.AbsoluteUri.ToString().Contains("pubsub"))
+        {
+            await AuthService.GrantPubSubAccessAsync(token);
+            CloseWindow();
+            return;
+        }
 
-	private void LoginWithTwitch()
-	{
-		userInitiatedLogin = true;
-		twitchLoginInitiated = true;
-		var url = AuthService.GetTwitchLoginUrl();
-		if (!string.IsNullOrEmpty(url))
-		{
-			NavigationManager.NavigateTo(url, true);
-		}
-	}
+        session = await AuthService.TwitchLoginAsync(token);
+        userInitiatedLogin = false;
+        loginFailed = !IsAuthenticated;
 
-	private void NavigateToHomeIfAuthenticated()
-	{
-		if (!IsAuthenticated)
-			return;
+        NavigateToLastPageOrHomeIfAuthenticated();
+    }
 
-		try
-		{
-			loginFailed = false;
-			userInitiatedLogin = false;
-			MainLayout.Instance.UpdateSession();
-			if (!string.IsNullOrEmpty(RedirectUrl))
-				NavigationManager.NavigateTo(RedirectUrl);
-			else if (session.UserNameChanged)
-				NavigationManager.NavigateTo("/username-changed");
-			else if (session.RequiresPasswordChange)
-				NavigationManager.NavigateTo("/password");
-			else
-				NavigationManager.NavigateTo(""); // "/"
-		}
-		catch { }
-	}
+    private async void HandleValidSubmit()
+    {
+        userInitiatedLogin = true;
+        session = await AuthService.LoginAsync(loginModel);
+        if (string.IsNullOrEmpty(session.UserId))
+        {
+            userInitiatedLogin = false;
+            loginFailed = true;
+            return;
+        }
+        NavigateToLastPageOrHomeIfAuthenticated();
+    }
+
+    private void LoginWithTwitch()
+    {
+        userInitiatedLogin = true;
+        twitchLoginInitiated = true;
+        var url = AuthService.GetTwitchLoginUrl(RedirectUrl ?? "");
+        if (!string.IsNullOrEmpty(url))
+        {
+            NavigationManager.NavigateTo(url, true);
+        }
+    }
+
+    private void NavigateToLastPageOrHomeIfAuthenticated()
+    {
+        if (!IsAuthenticated)
+            return;
+
+        try
+        {
+            loginFailed = false;
+            userInitiatedLogin = false;
+            MainLayout.Instance.UpdateSession();
+            if (!string.IsNullOrEmpty(RedirectUrl))
+                NavigationManager.NavigateTo(RedirectUrl);
+            else if (session.UserNameChanged)
+                NavigationManager.NavigateTo("/username-changed");
+            else if (session.RequiresPasswordChange)
+                NavigationManager.NavigateTo("/password");
+            else
+                NavigationManager.NavigateTo(""); // "/"
+        }
+        catch { }
+    }
 }
