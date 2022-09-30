@@ -16,6 +16,7 @@ namespace RavenNest.BusinessLogic.Game
 
         Task<BeginSessionResult> BeginSessionAsync(AuthToken token, string clientVersion, string accessKey, float gameTime);
         SessionToken Get(string sessionToken);
+        ExpMultiplier GetExpMultiplier();
         void SendVillageInfo(DataModels.GameSession newGameSession);
         void SendPermissionData(DataModels.GameSession gameSession, DataModels.User user = null);
         void UpdateSessionState(SessionToken sessionToken, ClientSyncUpdate update);

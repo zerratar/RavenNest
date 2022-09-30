@@ -9,7 +9,7 @@ namespace RavenNest.BusinessLogic.Game
         GameInfo GetGameInfo(SessionToken session);
         EventCollection GetGameEvents(SessionToken session);
         ScrollUseResult UseScroll(SessionToken session, Guid characterId, ScrollType scrollType);
-        int UseExpScroll(SessionToken session, Guid characterId, int count);
+        UseExpScrollResult UseExpScroll(SessionToken session, Guid characterId, int count);
         ScrollInfoCollection GetScrolls(SessionToken session, Guid characterId);
 
         //bool Join(string userId, string targetUserId);

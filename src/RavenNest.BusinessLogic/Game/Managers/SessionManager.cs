@@ -138,7 +138,7 @@ namespace RavenNest.BusinessLogic.Game
             });
         }
 
-        private ExpMultiplier GetExpMultiplier()
+        public ExpMultiplier GetExpMultiplier()
         {
             var activeEvent = gameData.GetActiveExpMultiplierEvent();
             if (activeEvent == null)
