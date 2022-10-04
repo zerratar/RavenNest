@@ -66,15 +66,20 @@
                     <a class="nav-link" href="https://discord.gg/gtfDts7" target="_blank">
                         COMMUNITY
                     </a>
-                    <NavLink class="nav-link dd-item" href="/characters" Match="NavLinkMatch.All">
-                        DASHBOARD
-                    </NavLink>
                     @if (IsAuthenticated)
                     {
+                        <NavLink class="nav-link dd-item" href="/characters" Match="NavLinkMatch.All">
+                            DASHBOARD
+                        </NavLink>
                         if (IsAdministrator)
                         {
                             <NavLink class="nav-link dd-item" href="/admin" Match="NavLinkMatch.All">ADMIN</NavLink>
                         }
+                    } else 
+                    {
+                        <NavLink class="nav-link dd-item" href="/login/characters" Match="NavLinkMatch.All">
+                            DASHBOARD
+                        </NavLink>
                     }
 
                 </div>
