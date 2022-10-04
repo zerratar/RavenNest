@@ -2404,8 +2404,13 @@ namespace RavenNest.BusinessLogic.Game
         /// <returns></returns>
         public bool UpdateCharacter(SessionToken token, CharacterUpdate data)
         {
+            // seem to happen on server restarts.
+            if (data == null || data.CharacterId == Guid.Empty)
+                return false;
+
             var gameSession = gameData.GetSession(token.SessionId);
             var character = gameData.GetCharacter(data.CharacterId);
+
             if (character == null)
                 throw new Exception("Unable to update character with ID " + data.CharacterId + ". No such character could be found.");
 
