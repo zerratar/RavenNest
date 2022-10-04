@@ -366,16 +366,11 @@ namespace RavenNest.BusinessLogic.Data
                 MergeLoyaltyData(loyalty);
                 MergeClans();
 
-
-
                 RemoveDuplicatedClanMembers();
 
-                //RewardRollbackPlayers();
-
-                UpgradeVillageLevels();
-                MergeVillages();
-
-                ApplyVendorPrices();
+                //UpgradeVillageLevels();
+                //MergeVillages();
+                //ApplyVendorPrices();
 
                 #endregion
 
@@ -473,16 +468,32 @@ namespace RavenNest.BusinessLogic.Data
         private void EnsureCharacterSkillRecords()
         {
             var addedRecords = 0;
+
+            // seem like top 1000 currently is as low as 89 (min level), keeping it at 75 here
+            // will at least ensure that we don't build up too many Skill Records in the db, since these wont show up on the website anyway.
+
+            var minSkillRecordLevel = 75;
+
             foreach (var c in this.characters.Entities)
             {
                 var records = GetCharacterSkillRecords(c.Id);
                 var skills = GetCharacterSkills(c.SkillsId);
                 foreach (var skill in skills.GetSkills())
                 {
-                    if (skill.Level == 1)
-                        continue;
-
                     var existingRecord = records.FirstOrDefault(x => x.SkillIndex == skill.Index);
+
+                    if (skill.Level < minSkillRecordLevel)
+                    {
+                        if (existingRecord != null)
+                        {
+                            // this is a shitty move, but it will save us space in the db.
+                            // delete this.
+                            Remove(existingRecord);
+                        }
+
+                        continue;
+                    }
+
                     if (existingRecord == null)
                     {
                         Add(new CharacterSkillRecord
@@ -709,6 +720,7 @@ namespace RavenNest.BusinessLogic.Data
                 {
                     continue;
                 }
+
                 var itemMaterial = GetMaterial(item);
                 var lower = item.Name.ToLower();
                 var craftable = item.Craftable.GetValueOrDefault();
