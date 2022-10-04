@@ -779,7 +779,10 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (currencyItem.Amount > 0)
                 {
-                    SendItemRemoveEvent(new DataModels.InventoryItem { ItemId = redeemable.CurrencyItemId }, redeemable.Cost > currencyItem.Amount ? currencyItem.Amount : redeemable.Cost, character);
+                    SendItemRemoveEvent(new DataModels.InventoryItem
+                    {
+                        ItemId = redeemable.CurrencyItemId
+                    }, redeemable.Cost > currencyItem.Amount ? currencyItem.Amount : redeemable.Cost, character);
                 }
 
                 SendItemAddEvent(new DataModels.InventoryItem { ItemId = redeemable.ItemId }, redeemable.Amount, character);

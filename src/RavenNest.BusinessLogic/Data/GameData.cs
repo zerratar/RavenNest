@@ -375,6 +375,8 @@ namespace RavenNest.BusinessLogic.Data
                 UpgradeVillageLevels();
                 MergeVillages();
 
+                ApplyVendorPrices();
+
                 #endregion
 
                 stopWatch.Stop();
@@ -604,6 +606,171 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Data Transformations
 
+        private long GetResourceCost(ItemMaterial material)
+        {
+            switch (material)
+            {
+                case ItemMaterial.Bronze: return 10;
+                case ItemMaterial.Iron: return 150;
+                case ItemMaterial.Steel: return 500;
+                case ItemMaterial.Black: return 1000;
+                case ItemMaterial.Mithril: return 2000;
+                case ItemMaterial.Adamantite: return 3500;
+                case ItemMaterial.Rune: return 6000;
+                case ItemMaterial.Dragon: return 10000;
+                case ItemMaterial.Ultima: return 20000;
+                case ItemMaterial.Phantom: return 35000;
+                case ItemMaterial.Lionsbane: return 50000;
+                case ItemMaterial.Ether: return 60000;
+                case ItemMaterial.Ancient: return 75000;
+                case ItemMaterial.Atlarus: return 100_000;
+            }
+            return 1;
+        }
+
+        private ItemMaterial GetMaterial(RavenNest.DataModels.Item item)
+        {
+            var mat = (ItemMaterial)item.Material;
+            if (mat != ItemMaterial.None)
+                return mat;
+
+            if (item.Type == (int)ItemType.None || item.Material == (int)ItemMaterial.None)
+            {
+                var itemNameMaterial = "";
+                if (item.Name.EndsWith("Token"))
+                {
+                    return ItemMaterial.None;
+                }
+                if (item.Name.Contains(" "))
+                {
+                    itemNameMaterial = item.Name.Split(' ')[0];
+                }
+                if (itemNameMaterial == "Ethereum")
+                {
+                    return ItemMaterial.Ether;
+                }
+                if (itemNameMaterial.ToLower() == "lionite")
+                {
+                    return ItemMaterial.Lionsbane;
+                }
+
+                if (itemNameMaterial.ToLower() == "abraxas")
+                {
+                    return ItemMaterial.Ultima;
+                }
+
+                if (!string.IsNullOrEmpty(itemNameMaterial) && item.Material == (int)ItemMaterial.None)
+                {
+                    if (Enum.TryParse<ItemMaterial>(itemNameMaterial, true, out var res))
+                    {
+                        return res;
+                    }
+                }
+            }
+            return ItemMaterial.None;
+        }
+
+        private static long RoundTo1000(long value)
+        {
+            if (value < 10000L) return value;
+            return (value / 1000L) * 1000L;
+        }
+
+        private void ApplyVendorPrices()
+        {
+            const double resourceMargins = 1.25;
+            const double redeemableReduction = 0.5;
+            foreach (var item in items.Entities)
+            {
+                if (item.Category != (int)ItemCategory.Resource)
+                {
+                    continue;
+                }
+
+                var material = GetMaterial(item);
+                var resourceCost = GetResourceCost(material);
+                if (resourceCost > 1)
+                {
+                    item.ShopSellPrice = resourceCost;
+                }
+            }
+
+            foreach (var item in items.Entities)
+            {
+                // if items has crafting materials.
+                // calculate vendor price based that.
+
+                if (item.ShopSellPrice == 0)
+                {
+                    item.ShopSellPrice = 1; // minimum price.
+                }
+
+                if (item.Category == (int)ItemCategory.Resource)
+                {
+                    continue;
+                }
+                var itemMaterial = GetMaterial(item);
+                var lower = item.Name.ToLower();
+                var craftable = item.Craftable.GetValueOrDefault();
+                if (item.ShopSellPrice == 1 || craftable) // phantom is special case, as we want to adjust the price on this one.
+                {
+                    var requirements = craftable ? GetCraftingRequirements(item.Id) : null;
+
+                    // if craftable, use crafting resources to determine cost.
+                    if (requirements != null && requirements.Count > 0)
+                    {
+                        var newPrice = 0L;
+                        foreach (var r in requirements)
+                        {
+                            var targetItem = GetItem(r.ResourceItemId);
+                            if (targetItem != null)
+                            {
+                                newPrice += (targetItem.ShopSellPrice * r.Amount);
+                            }
+                        }
+                        item.ShopSellPrice = RoundTo1000((long)(newPrice * resourceMargins));
+                        continue;
+                    }
+                    else if (craftable && item.OreCost > 0)
+                    {
+                        // only using wood or ore.
+                        item.ShopSellPrice = RoundTo1000((long)(item.OreCost * GetResourceCost(itemMaterial) * resourceMargins));
+                    }
+
+                    // this one can only be redeemed
+                    if (lower.Contains("ancient"))
+                    {
+                        var redeemable = GetRedeemableItemByItemId(item.Id);
+                        if (redeemable != null)
+                        {
+                            item.ShopSellPrice = RoundTo1000((long)(redeemable.Cost * (GetItem(redeemable.CurrencyItemId)?.ShopSellPrice ?? 0) * resourceMargins * redeemableReduction));
+                        }
+                    }
+
+
+                    //var craftable = item.Craftable.GetValueOrDefault() || item.RequiredCraftingLevel > GameMath.MaxLevel;
+                    //switch ((ItemCategory)item.Category)
+                    //{
+                    //    case ItemCategory.Resource:
+                    //        // atlarus lights, etc.
+                    //        break;
+                    //    case ItemCategory.Pet:
+                    //    case ItemCategory.Scroll:
+                    //        break;
+                    //    default:
+                    //        // armor, weapons, etc.
+                    //        break;
+                    //}
+                    //if (item.RequiredCraftingLevel > GameMath.MaxLevel)
+                    //{
+                    //    // we can't craft this one
+                    //    // we would have to calculate vendor price
+                    //    // based on tier
+                    //}
+                }
+            }
+        }
+
         private void EnsureCraftingRequirements(EntitySet<Item> items)
         {
             Item GetItemByCategory(ItemCategory category, string containsName)
@@ -627,15 +794,15 @@ namespace RavenNest.BusinessLogic.Data
 
                 // Make lionsbane craftable
                 var nl = item.Name.ToLower();
-                if (item.RequiredCraftingLevel >= 1000)
+                if (item.RequiredCraftingLevel > GameMath.MaxLevel)
                 {
-                    item.RequiredCraftingLevel = 1000;
+                    item.RequiredCraftingLevel = GameMath.MaxLevel + 1;
                     item.Craftable = false;
                 }
 
                 var isAtlarus = nl.StartsWith("atlarus");
 
-                if (item.RequiredCraftingLevel < 1000 || isAtlarus)
+                if (item.RequiredCraftingLevel < GameMath.MaxLevel || isAtlarus)
                 {
                     item.Craftable = true;
                     var requirements = GetCraftingRequirements(item.Id) ?? new List<ItemCraftingRequirement>();
@@ -2526,6 +2693,9 @@ namespace RavenNest.BusinessLogic.Data
             catch (SqlException exc)
             {
                 CreateBackup();
+
+                //exc.
+
                 backupProvider.CreateRestorePoint(entitySets);
                 logger.LogError("ERROR SAVING DATA (CREATING RESTORE POINT!!) " + exc);
             }

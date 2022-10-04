@@ -1,4 +1,5 @@
-﻿using RavenNest.BusinessLogic.Data;
+﻿using RavenNest.BusinessLogic;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.DataModels;
 using System;
@@ -10,8 +11,7 @@ namespace RavenNest.Blazor.Services
     public class TownService
     {
         private readonly IGameData gameData;
-        private const int OldMaxLevel = 170;
-        private const float MaxExpBonusPerSlot = 50f;
+        private const float MaxExpBonusPerSlot = 200f;
 
         public TownService(IGameData gameData)
         {
@@ -22,12 +22,8 @@ namespace RavenNest.Blazor.Services
         {
             return await Task.Run(() =>
             {
-                List<TownData> result = new List<TownData>();
+                var result = new List<TownData>();
                 var activeSessions = this.gameData.GetActiveSessions();
-
-                //var vilages = this.gameData.GetVillages();
-                //foreach (var village in vilages)
-                //{
 
                 foreach (var sess in activeSessions)
                 {
@@ -134,8 +130,8 @@ namespace RavenNest.Blazor.Services
                 return 0;
             }
 
-            // up to 50% exp bonus
-            return (skill.Level / (float)OldMaxLevel) * MaxExpBonusPerSlot;
+            // up to 200% exp bonus
+            return (skill.Level / (float)GameMath.MaxLevel) * MaxExpBonusPerSlot;
         }
     }
     public struct SkillStat

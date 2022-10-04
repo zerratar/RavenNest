@@ -521,10 +521,6 @@ namespace RavenNest.BusinessLogic.Providers
                         }
                     }
                     resultStack = Copy(i, amount);
-                    if (gameData.GetInventoryItem(i.Id) == null)
-                    {
-                        resultStack.Id = i.Id;
-                    }
                     this.items.Add(resultStack);
                     return resultStack;
                 }
