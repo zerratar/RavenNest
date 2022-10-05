@@ -51,11 +51,13 @@ namespace RavenNest.BusinessLogic.Net
             {
                 toSend.Add(@event);
             }
-
-            Send(new EventList
+            if (toSend.Count > 0)
             {
-                Events = toSend
-            });
+                Send(new EventList
+                {
+                    Events = toSend
+                });
+            }
         }
     }
 }
