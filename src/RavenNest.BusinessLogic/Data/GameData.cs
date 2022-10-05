@@ -9,6 +9,7 @@ using System.Text;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Game.Processors.Tasks;
+using RavenNest.BusinessLogic.Net;
 using RavenNest.DataModels;
 
 
@@ -26,6 +27,7 @@ namespace RavenNest.BusinessLogic.Data
         #region Private members
 
         private readonly IRavenfallDbContextProvider db;
+        private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
         private readonly ILogger logger;
         private readonly IKernel kernel;
         private readonly IQueryBuilder queryBuilder;
@@ -106,13 +108,16 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Game Data Construction
+
+
         public GameData(
             IGameDataBackupProvider backupProvider,
             IGameDataMigration dataMigration,
             IRavenfallDbContextProvider db,
             ILogger<GameData> logger,
             IKernel kernel,
-            IQueryBuilder queryBuilder)
+            IQueryBuilder queryBuilder,
+            ITcpSocketApiConnectionProvider tcpConnectionProvider)
         {
             try
             {
@@ -121,6 +126,7 @@ namespace RavenNest.BusinessLogic.Data
                 this.kernel = kernel;
                 this.queryBuilder = queryBuilder;
                 this.backupProvider = backupProvider;
+                this.tcpConnectionProvider = tcpConnectionProvider;
 
                 var stopWatch = new Stopwatch();
                 stopWatch.Start();
@@ -2824,6 +2830,16 @@ namespace RavenNest.BusinessLogic.Data
             return true;
         }
 
+        public void EnqueueGameEvent(GameEvent entity)
+        {
+            if (tcpConnectionProvider.TryGet(entity.GameSessionId, out var connection) && connection.Connected)
+            {
+                connection.Enqueue(entity);
+                return;
+            }
+
+            Add(entity);
+        }
     }
 
     public class DataSaveError

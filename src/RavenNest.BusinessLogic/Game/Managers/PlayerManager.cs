@@ -126,7 +126,7 @@ namespace RavenNest.BusinessLogic.Game
                 state.TaskArgument = taskArgument;
             }
 
-            gameData.Add(gameData.CreateSessionEvent(GameEventType.PlayerTask, activeSession, new PlayerTask
+            gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.PlayerTask, activeSession, new PlayerTask
             {
                 Task = task,
                 TaskArgument = taskArgument,
@@ -646,7 +646,7 @@ namespace RavenNest.BusinessLogic.Game
                      CharacterId = character.Id
                  });
 
-                gameData.Add(gameEvent);
+                gameData.EnqueueGameEvent(gameEvent);
 
                 await this.TrySendToExtensionAsync(character, new PlayerRemove
                 {
@@ -690,7 +690,7 @@ namespace RavenNest.BusinessLogic.Game
                     CharacterId = character.Id
                 });
 
-            gameData.Add(gameEvent);
+            gameData.EnqueueGameEvent(gameEvent);
             return true;
         }
 
@@ -1559,7 +1559,7 @@ namespace RavenNest.BusinessLogic.Game
             var session = gameData.GetSessionByUserId(sessionUserId.Value);
             if (session != null)
             {
-                gameData.Add(gameData.CreateSessionEvent(equipped ? GameEventType.ItemEquip : GameEventType.ItemUnEquip, session, data));
+                gameData.EnqueueGameEvent(gameData.CreateSessionEvent(equipped ? GameEventType.ItemEquip : GameEventType.ItemUnEquip, session, data));
                 TrySendToExtensionAsync(character, data);
             }
         }
@@ -1587,7 +1587,7 @@ namespace RavenNest.BusinessLogic.Game
             var session = gameData.GetSessionByUserId(sessionUserId.Value);
             if (session != null)
             {
-                gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, session, data));
+                gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.ItemAdd, session, data));
                 TrySendToExtensionAsync(character, data);
             }
         }
@@ -1610,7 +1610,7 @@ namespace RavenNest.BusinessLogic.Game
                     var session = gameData.GetSessionByUserId(sessionUserId.Value);
                     if (session != null)
                     {
-                        gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemRemove, session, data));
+                        gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.ItemRemove, session, data));
                     }
                 }
             }
@@ -2289,7 +2289,7 @@ namespace RavenNest.BusinessLogic.Game
                         Value = appearance
                     });
 
-                gameData.Add(gameEvent);
+                gameData.EnqueueGameEvent(gameEvent);
             }
 
             return true;
@@ -2318,7 +2318,7 @@ namespace RavenNest.BusinessLogic.Game
                         Value = appearance
                     });
 
-                    gameData.Add(gameEvent);
+                    gameData.EnqueueGameEvent(gameEvent);
                 }
 
                 return true;
@@ -3157,7 +3157,7 @@ namespace RavenNest.BusinessLogic.Game
                     CharacterId = character.Id
                 });
 
-            gameData.Add(gameEvent);
+            gameData.EnqueueGameEvent(gameEvent);
         }
 
         private void SendPlayerAddToSession(Character character, DataModels.GameSession gameSession)
@@ -3173,7 +3173,7 @@ namespace RavenNest.BusinessLogic.Game
                     CharacterId = character.Id
                 });
 
-            gameData.Add(gameEvent);
+            gameData.EnqueueGameEvent(gameEvent);
         }
 
         //private User CreateUser(DataModels.GameSession session, PlayerJoinData playerData)
@@ -3538,7 +3538,7 @@ namespace RavenNest.BusinessLogic.Game
                     CoinsAmount = resources.Coins
                 });
 
-            gameData.Add(gameEvent);
+            gameData.EnqueueGameEvent(gameEvent);
         }
 
         private static DataModels.SyntyAppearance GenerateRandomSyntyAppearance()

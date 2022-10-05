@@ -148,20 +148,6 @@ namespace RavenNest.BusinessLogic.Game.Processors
             }
         }
 
-        private void PushExpMultiplier(DateTime utcNow)
-        {
-            var session = gameData.GetSession(sessionToken.SessionId);
-            if (session != null)
-            {
-                var elapsed = utcNow - lastExpMultiPush;
-                if (elapsed >= ExpMultiplierPushInterval)
-                {
-                    lastExpMultiPush = utcNow;
-                    sessionManager.SendExpMultiplier(session);
-                }
-            }
-        }
-
         private void PushServerTime()
         {
             var session = gameData.GetSession(sessionToken.SessionId);
@@ -192,21 +178,6 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
         private async Task PushGameEventsAsync(DateTime utcNow, CancellationTokenSource cts)
         {
-            //var events = gameManager.GetGameEvents(sessionToken);
-            //if (events.Count > 0)
-            //{
-            //    var allEvents = events.ToList();
-            //    var batchSize = 10;
-            //    for (var i = 0; i < allEvents.Count;)
-            //    {
-            //        var eventList = new EventList();
-            //        eventList.Revision = events.Revision;
-            //        eventList.Events = allEvents.Skip(batchSize * i).Take(batchSize).ToList();
-            //        await gameConnection.PushAsync("game_event", eventList, cts.Token);
-            //        i += allEvents.Count < batchSize ? allEvents.Count : batchSize;
-            //    }
-            //}
-
             var events = gameManager.GetGameEvents(sessionToken);
             if (events.Count > 0)
             {
@@ -221,6 +192,22 @@ namespace RavenNest.BusinessLogic.Game.Processors
                 connection.ProcessSendQueue();
             }
         }
+
+
+        private void PushExpMultiplier(DateTime utcNow)
+        {
+            var session = gameData.GetSession(sessionToken.SessionId);
+            if (session != null)
+            {
+                var elapsed = utcNow - lastExpMultiPush;
+                if (elapsed >= ExpMultiplierPushInterval)
+                {
+                    lastExpMultiPush = utcNow;
+                    sessionManager.SendExpMultiplier(session);
+                }
+            }
+        }
+
 
         private void UpdateSessionTasks(DateTime utcNow)
         {

@@ -21,7 +21,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         private readonly ConcurrentDictionary<Guid, PlayerRestedState> lastEvent
             = new ConcurrentDictionary<Guid, PlayerRestedState>();
 
-        private readonly TimeSpan RestedEventUpdateInterval = TimeSpan.FromSeconds(5);
+        private readonly TimeSpan RestedEventUpdateInterval = TimeSpan.FromSeconds(10);
         private readonly TimeSpan MaxRestTime = TimeSpan.FromHours(2);
 
         private const double RestedGainFactor = 2.0;
@@ -86,15 +86,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
                     var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRestedUpdate, session, data);
 
-                    if (TcpConnectionProvider.TryGet(session.Id, out var connection))
-                    {
-                        connection.Enqueue(gameEvent);
-                    }
-                    else
-                    {
-                        // we will now pass all events via the tcp connection and not web socket one.
-                        gameData.Add(gameEvent);
-                    }
+                    gameData.EnqueueGameEvent(gameEvent);
 
                     lastEventUpdate.RestedTime = restedTime;
                     lastEventUpdate.Resting = isResting;
