@@ -1288,7 +1288,7 @@ namespace RavenNest.BusinessLogic.Data
 
             if (toRemove.Count > 0)
             {
-                logger.LogError("(Not actual error) Remove " + toRemove.Count + " inventory items of characters that dont exist.");
+                logger.LogError("(Not actual error) Remove " + toRemove.Count + " inventory items of characters that dont exist. Most likely item reached 0 in stack size but was never removed, this can happen if ID of the stack has changed.");
             }
         }
 
