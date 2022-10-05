@@ -284,30 +284,45 @@ th.character-skill-header-cell {
 }
 
 .inventory-item {
-    margin: 5px;
-}
-
-.item {
     width: 65px;
     height: 65px;
     padding: 0px;
-    position: relative;
-    border-radius: 8px;
-    box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
+    margin: 5px;
     position: relative;
 }
 
-    .item .draggable {
-        cursor: grab;
-        background-color: whitesmoke;
-        z-index:4;
+.item-slot {
+    width: 65px;
+    height: 65px;
+    padding: 0px;
+    border-radius: 8px;
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
+}
+
+    .item-slot.empty {
+        background-color: rgba(114, 114, 114, 0.92);
     }
 
-    .item .slot {
-        cursor: auto;
-        background-color: rgb(114, 114, 114, 0.42);
-        z-index: 2;
+    .item-slot.item,  .item-slot.equipped
+    {
+        background-color: whitesmoke;
+
     }
+
+.equipped {
+    position:absolute;
+    top:0px;
+    left: 0px;
+}
+.item, .equipped {
+    cursor: grab;
+    z-index: 4;
+}
+
+.empty {
+    cursor: auto;
+    z-index: 2;
+}
 
 .item-image {
     width: 65px;
@@ -316,7 +331,7 @@ th.character-skill-header-cell {
     padding: 0px;
 }
 
-    .item-image .img {
+    .item-image img {
         width: 65px;
         height: 65px;
         padding: 0px;

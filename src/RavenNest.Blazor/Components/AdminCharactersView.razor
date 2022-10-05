@@ -22,7 +22,7 @@
                 var item = itemLookup[entry.ItemId];
                 <div class="inventory-item stash">
                     @*@onclick="(()=>ShowItemDetails(character, item))"*@
-                    <div class="item draggable">
+                    <div class="item-slot item draggable">
                         <div class="item-image" data-item="@item.Id">
                             <img src="@GetItemImage(entry.ItemId, entry.Tag)" />
                         </div>
@@ -203,14 +203,14 @@
                                     {
                                         var item = slot.Value;
                                         <div class="inventory-item equipment" title="@slot.Key">
-                                            <div class="item slot">
+                                            <div class="item-slot empty">
                                                 <div class="item-image" date-item="@slot.Key">
-                                                    <img src="@GetSlotImage(slot.Key)" />
+                                                    <img src="@GetSlotImageOrDefault(slot.Key)" />
                                                 </div>
                                             </div>
                                             @if (item != null)
                                             {
-                                                <div class="item draggable">
+                                                <div class="item-slot equipped draggable">
                                                     <div class="item-image item" data-item="@item.Id">
                                                         <img src="@GetItemImage(item.ItemId, item.Tag)" />
                                                     </div>
@@ -232,7 +232,7 @@
                                 @foreach (var item in GetInventoryItems(character))
                                 {
                                     <div class="inventory-item inventory">
-                                        <div class="item draggable">
+                                        <div class="item-slot item draggable">
                                             @*@onclick="(()=>ShowItemDetails(character, item))"*@
                                             <div class="item-image" data-item="@item.Id">
                                                 <img src="@GetItemImage(item.ItemId, item.Tag)" />

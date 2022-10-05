@@ -8,14 +8,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.JSInterop;
+using System.IO;
+using Microsoft.AspNetCore.Http;
+using System.Net.Http;
+using Microsoft.AspNetCore.Hosting;
 
 namespace RavenNest.Blazor.Components
 {
     public partial class AdminCharactersView : ComponentBase
     {
-        [Inject]
-        IJSRuntime JS { get; set; }
+
         [Inject]
         PlayerService CharacterService { get; set; }
         [Inject]
@@ -57,6 +59,8 @@ namespace RavenNest.Blazor.Components
         private Dictionary<Guid, Item> itemLookup;
         [Inject]
         IPlayerInventoryProvider PlayerInventoryProvider { get; set; }
+        [Inject]
+        IWebHostEnvironment WebHostEnv { get; set; }
 
         protected override void OnInitialized()
         {
@@ -279,11 +283,15 @@ namespace RavenNest.Blazor.Components
             return $"/imgs/items/{itemId}.png";
         }
 
-        public string GetSlotImage(BusinessLogic.Providers.EquipmentSlot slot)
+        public string GetSlotImageOrDefault(BusinessLogic.Providers.EquipmentSlot slot)
         {
-            string outputPng = slot.ToString().ToLower();
+            string path = "/imgs/icons/inventory_slot/";
+            string none = "none.png"; //Default
+            string outputSrc = path + slot.ToString().ToLower() + ".png";
+            var wwwroot = WebHostEnv.WebRootPath;
+            var testedSrc = File.Exists(wwwroot+outputSrc) ? outputSrc : path + none;
 
-            return $"/imgs/icons/inventory_slot/{outputPng}.png";
+            return testedSrc;
         }
 
         public async Task<IEnumerable<Item>> SearchItem(string searchText)
