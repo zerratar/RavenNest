@@ -4,7 +4,6 @@ namespace RavenNest.DataModels
 {
     public class NPC : Entity<NPC>
     {
-        private Guid _Id; public Guid Id { get => _Id; set => Set(ref _Id, value); }
         private string _Name; public string Name { get => _Name; set => Set(ref _Name, value); }
         private int _Attack; public int Attack { get => _Attack; set => Set(ref _Attack, value); }
         private int _Defense; public int Defense { get => _Defense; set => Set(ref _Defense, value); }

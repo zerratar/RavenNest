@@ -1625,7 +1625,7 @@ namespace RavenNest.BusinessLogic.Game
                 return AddItemInstanceResult.BadCharacter(userId);
 
             if (!integrityChecker.VerifyPlayer(token.SessionId, character.Id, 0))
-                return AddItemInstanceResult.Failed;
+                return AddItemInstanceResult.Failed();
 
             var session = gameData.GetSession(token.SessionId);
             if (session == null)

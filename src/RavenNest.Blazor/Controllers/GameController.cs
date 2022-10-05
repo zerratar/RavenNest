@@ -231,6 +231,16 @@ namespace RavenNest.Controllers
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
             if (count <= 0) count = 1;
+            return gameManager.UseExpScroll(session, characterId, count).Used;
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("use-exp-scroll-new/{characterId}/{count}")]
+        public UseExpScrollResult UseExpScrollNew(Guid characterId, int count)
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            if (count <= 0) count = 1;
             return gameManager.UseExpScroll(session, characterId, count);
         }
 
