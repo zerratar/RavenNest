@@ -215,6 +215,11 @@ namespace RavenNest.BusinessLogic.Game.Processors
                 eventList.Events = events.ToList();
                 await gameConnection.PushAsync("game_event", eventList, cts.Token);
             }
+
+            if (tcpConnectionProvider.TryGet(this.sessionToken.SessionId, out var connection) && connection.Connected)
+            {
+                connection.ProcessSendQueue();
+            }
         }
 
         private void UpdateSessionTasks(DateTime utcNow)

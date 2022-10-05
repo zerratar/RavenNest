@@ -365,7 +365,7 @@ namespace RavenNest.BusinessLogic.Net
                             await Task.Delay(500);
                         }
 
-                        await Task.Delay(10);
+                        await Task.Delay(16);
                     }
 
                     logger.LogWarning("[" + SessionToken.TwitchUserName + "] Session terminated game loop (" + sessionToken.SessionId + ")");
