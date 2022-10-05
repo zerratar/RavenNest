@@ -17,22 +17,22 @@
             }
         </div>
         <div class="inventory-items">
-
             @foreach (var entry in Stash)
             {
                 var item = itemLookup[entry.ItemId];
-                <div class="draggable">
-                    <div class="inventory-item stash">
-                        @*@onclick="(()=>ShowItemDetails(character, item))"*@
-                        <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(entry.ItemId, entry.Tag)" /></div>
-
-
-                        <div class="item-amount @(entry.Amount == 1 ? "invisible" : "")">@GetItemAmount(entry.Amount)</div>
-
+                <div class="inventory-item stash">
+                    @*@onclick="(()=>ShowItemDetails(character, item))"*@
+                    <div class="item draggable">
+                        <div class="item-image" data-item="@item.Id">
+                            <img src="@GetItemImage(entry.ItemId, entry.Tag)" />
+                        </div>
+                        <div class="item-amount @(entry.Amount == 1 ? "invisible" : "")">
+                            @GetItemAmount(entry.Amount)
+                        </div>
                     </div>
                 </div>
             }
-        </div>"
+        </div>
     </div>
 }
 
@@ -202,33 +202,21 @@
                                     @foreach (var slot in slots)
                                     {
                                         var item = slot.Value;
-                                        if (item != null)
-                                        {
-                                            <div class="draggable">
-                                                <div class="inventory-item equipped" title="@slot.Key">
-                                                    @*@onclick="(()=>ShowItemDetails(item))"*@
-                                                    <div class="put-me-in-the-middle">
-                                                        <div class="item-image" data-item="@item.Id">
-                                                            <img src="@GetItemImage(item.ItemId, item.Tag)" />
-                                                        </div>
-                                                    </div>
+                                        <div class="inventory-item equipment" title="@slot.Key">
+                                            <div class="item slot">
+                                                <div class="item-image" date-item="@slot.Key">
+                                                    <img src="@GetSlotImage(slot.Key)" />
                                                 </div>
                                             </div>
-                                        }
-                                        else
-                                        {
-                                            <div class="draggable">
-                                                <div class="inventory-item empty" title="@slot.Key">
-                                                    @*@onclick="(()=>ShowItemDetails(item))"*@
-                                                    @*<div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>*@
-                                                    <div class="put-me-in-the-middle">
-                                                        <div class="item-image" date-item="@slot.Key">
-                                                            <i class="fa fa-circle"></i>
-                                                        </div>
+                                            @if (item != null)
+                                            {
+                                                <div class="item draggable">
+                                                    <div class="item-image item" data-item="@item.Id">
+                                                        <img src="@GetItemImage(item.ItemId, item.Tag)" />
                                                     </div>
                                                 </div>
-                                            </div>
-                                        }
+                                            }
+                                        </div>
                                     }
                                 </div>
                             </div>
@@ -243,14 +231,15 @@
                             <div class="inventory-items">
                                 @foreach (var item in GetInventoryItems(character))
                                 {
-                                    <div class="draggable">
-                                        <div class="inventory-item inventory">
+                                    <div class="inventory-item inventory">
+                                        <div class="item draggable">
                                             @*@onclick="(()=>ShowItemDetails(character, item))"*@
-                                            <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
-
-
-                                            <div class="item-amount @(item.Amount == 1 ? "invisible" : "")">@GetItemAmount(item.Amount)</div>
-
+                                            <div class="item-image" data-item="@item.Id">
+                                                <img src="@GetItemImage(item.ItemId, item.Tag)" />
+                                            </div>
+                                            <div class="item-amount @(item.Amount == 1 ? "invisible" : "")">
+                                                @GetItemAmount(item.Amount)
+                                            </div>
                                         </div>
                                     </div>
                                 }

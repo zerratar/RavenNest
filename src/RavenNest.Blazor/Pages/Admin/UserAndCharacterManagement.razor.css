@@ -8,6 +8,7 @@
     right: 0;
     width: 300px;
     margin-bottom: 25px;
+    z-index: 100;
 }
 
 button.tab-link {

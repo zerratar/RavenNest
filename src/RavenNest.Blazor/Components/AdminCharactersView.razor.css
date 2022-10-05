@@ -283,39 +283,44 @@ th.character-skill-header-cell {
     justify-content: center;
 }
 
-.inventory-item.inventory {
+.inventory-item {
     margin: 5px;
-    margin-bottom: -15px;
-    cursor: pointer;
-}
-.inventory-item.stash {
-    margin: 5px;
-    margin-bottom: -15px;
-    cursor: pointer;
-}
-.inventory-item.empty {
-    margin: 5px;
-    cursor: not-allowed;
-    
 }
 
-.inventory-item.equipped {
-    margin: 5px;
-    cursor: pointer;
+.item {
+    width: 65px;
+    height: 65px;
+    padding: 0px;
+    position: relative;
+    border-radius: 8px;
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
+    position: relative;
 }
 
-.inventory-item .item-image i, .inventory-item .item-image img {
+    .item .draggable {
+        cursor: grab;
+        background-color: whitesmoke;
+        z-index:4;
+    }
+
+    .item .slot {
+        cursor: auto;
+        background-color: rgb(114, 114, 114, 0.42);
+        z-index: 2;
+    }
+
+.item-image {
     width: 65px;
     height: 65px;
     max-width: 100%;
     padding: 0px;
-    border-radius: 8px;
-    background-color: whitesmoke;
-    box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
-    display: flex;
-    justify-content: center;
-    align-items: center;
 }
+
+    .item-image .img {
+        width: 65px;
+        height: 65px;
+        padding: 0px;
+    }
 
 .item-amount {
     position: relative;
@@ -332,14 +337,11 @@ th.character-skill-header-cell {
     font-weight: 500;
     font-size: 8pt;
 }
+
 .character-inventory-equipped-header-row {
     display: none;
 }
-.inventory-item .put-me-in-the-middle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+
 /* Add Items Styling*/
 button.btn.btn-secondary {
     margin-left: 10px;

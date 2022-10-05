@@ -77,8 +77,6 @@ namespace RavenNest.Blazor.Components
         }
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
-            await JS.InvokeVoidAsync("dragAndDrop", ".draggable");
-
             await base.OnAfterRenderAsync(firstRender);
         }
 
@@ -280,6 +278,14 @@ namespace RavenNest.Blazor.Components
             }
             return $"/imgs/items/{itemId}.png";
         }
+
+        public string GetSlotImage(BusinessLogic.Providers.EquipmentSlot slot)
+        {
+            string outputPng = slot.ToString().ToLower();
+
+            return $"/imgs/icons/inventory_slot/{outputPng}.png";
+        }
+
         public async Task<IEnumerable<Item>> SearchItem(string searchText)
         {
             return await ItemService.SearchAsync(searchText);
