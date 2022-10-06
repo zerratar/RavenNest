@@ -14,8 +14,7 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
-            var versionToLower = input.ToLower();
-            var versionString = versionToLower.Replace("a", "").Replace("b", "");
+            var versionString = input.ToLower().Replace("a-alpha", "").Replace("v", "").Replace("a", "").Replace("b", "");
             return System.Version.TryParse(versionString, out version);
         }
 
