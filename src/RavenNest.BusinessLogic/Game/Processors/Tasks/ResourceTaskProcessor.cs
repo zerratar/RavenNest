@@ -123,7 +123,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     CoinsAmount = resources.Coins
                 });
 
-            gameData.Add(gameEvent);
+            gameData.EnqueueGameEvent(gameEvent);
         }
     }
 

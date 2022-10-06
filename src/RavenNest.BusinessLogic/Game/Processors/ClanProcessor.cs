@@ -19,7 +19,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         private static readonly StringTimeDictionary clanSkillAnnouncement = new StringTimeDictionary();
         private static readonly StateDictionary trainingState = new StateDictionary();
 
-        private readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(10);
+        private readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(20);
 
         //private static readonly Version ClientVersion_ClanLevel = new Version(0, 7, 1);
         public override void Process(
@@ -62,7 +62,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             // we then push info to the clients every N'th second regarding the exp update.
             // but only if the exp has actually changed.
 
-            return; // We don't have any skills that can be trained.
+            return; // We don't have any skills that can be trained over time. Only skills that is leveled when used.
 
             //if (!trainingState.TryGetValue(character.Id, out var ts))
             //    trainingState[character.Id] = (ts = new ClanSkillState());
@@ -114,7 +114,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             //if (now - lastAnnouncement > UpdateInterval)
             //{
-            //    gameData.Add(gameData.CreateSessionEvent(GameEventType.ClanLevelChanged, session, new ClanSkillLevelChanged
+            //    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.ClanLevelChanged, session, new ClanSkillLevelChanged
             //    {
             //        ClanId = clan.Id,
             //        SkillId = trainingSkill.Id,
@@ -164,7 +164,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             if (now - lastAnnouncement > UpdateInterval)
             {
-                gameData.Add(gameData.CreateSessionEvent(GameEventType.ClanLevelChanged, session, new ClanLevelChanged
+                gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.ClanLevelChanged, session, new ClanLevelChanged
                 {
                     ClanId = clan.Id,
                     Experience = (long)clan.Experience,

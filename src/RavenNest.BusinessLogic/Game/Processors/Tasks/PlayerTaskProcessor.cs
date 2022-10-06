@@ -26,7 +26,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             var inventory = inventoryProvider.Get(character.Id);
             var items = inventory.AddItem(itemId);
 
-            gameData.Add(gameData.CreateSessionEvent(GameEventType.ItemAdd, session, new ItemAdd
+            gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.ItemAdd, session, new ItemAdd
             {
                 UserId = gameData.GetUser(character.UserId).UserId,
                 Amount = 1,

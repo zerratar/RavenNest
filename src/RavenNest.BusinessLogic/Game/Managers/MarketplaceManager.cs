@@ -372,7 +372,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             var session = gameData.GetSession(sessionId);
             var gameEvent = gameData.CreateSessionEvent(type, session, model);
-            gameData.Add(gameEvent);
+            gameData.EnqueueGameEvent(gameEvent);
         }
 
     }

@@ -261,7 +261,7 @@ namespace RavenNest.BusinessLogic.Game
                     CharacterId = character.Id
                 });
 
-            gameData.Add(gameEvent);
+            gameData.EnqueueGameEvent(gameEvent);
             return true;
         }
 
@@ -537,7 +537,7 @@ namespace RavenNest.BusinessLogic.Game
                     Experience = experience
                 });
 
-            gameData.Add(gameEvent);
+            gameData.EnqueueGameEvent(gameEvent);
             return true;
         }
 
@@ -562,7 +562,7 @@ namespace RavenNest.BusinessLogic.Game
                     Name = name
                 });
 
-            gameData.Add(gameEvent);
+            gameData.EnqueueGameEvent(gameEvent);
             return true;
         }
 

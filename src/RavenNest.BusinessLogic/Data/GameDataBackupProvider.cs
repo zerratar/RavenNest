@@ -184,14 +184,18 @@ namespace RavenNest.BusinessLogic.Data
             var restorePoint = new EntityRestorePoint();
             try
             {
-                logger?.LogError("Restore point found, data will be restored to the files found.");
+                var entitiesToRestore = new List<string>();
                 foreach (var type in types)
                 {
                     var entities = LoadEntities(type, FullRestorePointPath);
                     if (entities != null && entities.Count > 0)
+                    {
                         restorePoint.AddEntities(type, entities);
+                        entitiesToRestore.Add(entities.Count + " " + type.Name);
+                    }
                 }
 
+                logger?.LogError("Restore point found, data will be restored to the files found: " + string.Join(", ", entitiesToRestore));
                 return restorePoint;
             }
             finally

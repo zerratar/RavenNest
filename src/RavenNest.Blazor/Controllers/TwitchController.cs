@@ -363,7 +363,7 @@ namespace RavenNest.Controllers
                         UserName = sessionInfo.UserName
                     });
 
-                gameData.Add(gameEvent);
+                gameData.EnqueueGameEvent(gameEvent);
             }
             else
             {
@@ -432,7 +432,7 @@ namespace RavenNest.Controllers
                         UserName = sessionInfo.UserName
                     });
 
-                gameData.Add(gameEvent);
+                gameData.EnqueueGameEvent(gameEvent);
             }
             else
             {
