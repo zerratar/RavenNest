@@ -35,14 +35,14 @@ namespace RavenNest.BusinessLogic.Github
 
                 using (var client = new HttpClient())
                 {
-                    var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{owner}/{repo}/releases");
+                    var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{owner}/{repo}/releases/latest");
                     request.Headers.Add("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
                     request.Headers.Add("user-agent", "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Mobile Safari/537.36");
 
                     using (var response = await client.SendAsync(request))
                     {
                         var data = await response.Content.ReadAsStringAsync();
-                        var result = new GameRelease(Newtonsoft.Json.JsonConvert.DeserializeObject<Root[]>(data).FirstOrDefault());
+                        var result = new GameRelease(Newtonsoft.Json.JsonConvert.DeserializeObject<Root>(data));
                         cachedVersion.Set(owner + "_" + repo, result, CacheDuration);
                         return result;
                     }
@@ -136,13 +136,22 @@ namespace RavenNest.BusinessLogic.Github
             {
                 Version = gameVersion;
             }
-
+            this.Description = ParseDescription(root.Body);
             this.UpdateDownloadUrl = root.Assets.FirstOrDefault(x => x.Name.StartsWith("update"))?.BrowserDownloadUrl;
             this.FullDownloadUrl = root.Assets.FirstOrDefault(x => x.Name.StartsWith("Ravenfall.v"))?.BrowserDownloadUrl;
             this.Published = root.PublishedAt;
         }
+
+        private string ParseDescription(string body)
+        {
+            // it is markdown formatted, maybe we should parse this to get changelog
+            // or just clean the markdown? for now return the whole body.
+            return body;
+        }
+
         public Version Version { get; }
         public string VersionString { get; }
+        public string Description { get; }
         public string UpdateDownloadUrl { get; }
         public string FullDownloadUrl { get; }
         public DateTime Published { get; }
@@ -160,9 +169,9 @@ namespace RavenNest.BusinessLogic.Github
 
     public class Root
     {
-
         [Newtonsoft.Json.JsonProperty("tag_name")]
         public string TagName { get; set; }
+        public string Body { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime PublishedAt { get; set; }
         public List<Asset> Assets { get; set; }

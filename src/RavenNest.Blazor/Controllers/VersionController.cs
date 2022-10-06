@@ -57,7 +57,8 @@ namespace RavenNest.Controllers
                     Version = release.VersionString,
                     DownloadUrl = release.UpdateDownloadUrl,
                     Released = DateTime.UtcNow,
-                    CodeOfConduct = codeOfConduct
+                    CodeOfConduct = codeOfConduct,
+                    Description = release.Description
                 };
             }
 
@@ -70,7 +71,8 @@ namespace RavenNest.Controllers
                 Version = client.ClientVersion,
                 DownloadUrl = downloadLink,
                 Released = DateTime.UtcNow,
-                CodeOfConduct = codeOfConduct
+                CodeOfConduct = codeOfConduct,
+                Description = string.Empty
             };
         }
     }
