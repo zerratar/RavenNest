@@ -344,6 +344,7 @@ namespace RavenNest.BusinessLogic.Data
                         userBankItems,
                         characterSkillRecords,
                         resourceItemDrops,
+                        gameClients,
                         items, // so we can update items
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems, marketTransactions,
                         resources, statistics, characterSkills, clanSkills, users, villages, villageHouses,

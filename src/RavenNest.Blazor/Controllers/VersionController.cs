@@ -2,8 +2,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Github;
 using RavenNest.Models;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace RavenNest.Controllers
@@ -13,49 +15,65 @@ namespace RavenNest.Controllers
     public class VersionController : ControllerBase
     {
         private readonly IWebHostEnvironment env;
-        private readonly IRavenfallDbContextProvider dbProvider;
+        private readonly IGameData gameData;
 
         public VersionController(
             IWebHostEnvironment env,
-            IRavenfallDbContextProvider dbProvider)
+            IGameData gameData)
         {
             this.env = env;
-            this.dbProvider = dbProvider;
+            this.gameData = gameData;
         }
 
         [HttpGet("check")]
         public async Task<UpdateData> GetLatestUpdateInfoAsync()
         {
-            using (var db = dbProvider.Get())
+            CodeOfConduct codeOfConduct = null;
+            var coc = gameData.GetAllAgreements().FirstOrDefault(x => x.Type.ToLower() == "coc");
+            if (coc != null)
             {
-                var clientInfo = await db.GameClient.FirstAsync();
-                var fileName = "downloads/" + clientInfo.ClientVersion + "/update.zip";
-                var path = env.WebRootPath + "\\" + fileName.Replace("/", "\\");
-                var downloadLink = clientInfo.DownloadLink ?? (System.IO.File.Exists(path) ? string.Format("https://{0}/{1}", HttpContext.Request.Host, fileName) : null);
-
-                CodeOfConduct codeOfConduct = null;
-
-                var coc = await db.Agreements.FirstOrDefaultAsync(x => x.Type.ToLower() == "coc");
-                if (coc != null)
+                codeOfConduct = new CodeOfConduct
                 {
-                    codeOfConduct = new CodeOfConduct
-                    {
-                        LastModified = coc.LastModified.GetValueOrDefault(),
-                        Message = coc.Message,
-                        Revision = coc.Revision,
-                        Title = coc.Title,
-                        VisibleInClient = coc.VisibleInClient
-                    };
+                    LastModified = coc.LastModified.GetValueOrDefault(),
+                    Message = coc.Message,
+                    Revision = coc.Revision,
+                    Title = coc.Title,
+                    VisibleInClient = coc.VisibleInClient
+                };
+            }
+
+            var client = gameData.Client;
+            var release = await Github.GetGithubReleaseAsync();
+            if (release != null)
+            {
+                if (client.ClientVersion != release.VersionString)
+                {
+                    client.ClientVersion = release.VersionString;
+                    client.DownloadLink = release.UpdateDownloadUrl;
                 }
 
                 return new UpdateData
                 {
-                    Version = clientInfo.ClientVersion,
-                    DownloadUrl = downloadLink,
+                    Version = release.VersionString,
+                    DownloadUrl = release.UpdateDownloadUrl,
                     Released = DateTime.UtcNow,
-                    CodeOfConduct = codeOfConduct
+                    CodeOfConduct = codeOfConduct,
+                    Description = release.Description
                 };
             }
+
+            var fileName = "downloads/" + client.ClientVersion + "/update.zip";
+            var path = env.WebRootPath + "\\" + fileName.Replace("/", "\\");
+            var downloadLink = client.DownloadLink ?? (System.IO.File.Exists(path) ? string.Format("https://{0}/{1}", HttpContext.Request.Host, fileName) : null);
+
+            return new UpdateData
+            {
+                Version = client.ClientVersion,
+                DownloadUrl = downloadLink,
+                Released = DateTime.UtcNow,
+                CodeOfConduct = codeOfConduct,
+                Description = string.Empty
+            };
         }
     }
 }
