@@ -20,6 +20,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly IPlayerManager playerManager;
         private readonly IVillageManager villageManager;
         private readonly IExtensionWebSocketConnectionProvider extWsConnectionProvider;
+        private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
         private readonly int[] MaxMultiplier = new int[]
         {
             //0, 10, 15, 20
@@ -33,7 +34,8 @@ namespace RavenNest.BusinessLogic.Game
             IGameData gameData,
             IPlayerManager playerManager,
             IVillageManager villageManager,
-            IExtensionWebSocketConnectionProvider extWsConnectionProvider)
+            IExtensionWebSocketConnectionProvider extWsConnectionProvider,
+            ITcpSocketApiConnectionProvider tcpConnectionProvider)
         {
             this.logger = logger;
             this.twitchClient = twitchClient;
@@ -41,6 +43,7 @@ namespace RavenNest.BusinessLogic.Game
             this.playerManager = playerManager;
             this.villageManager = villageManager;
             this.extWsConnectionProvider = extWsConnectionProvider;
+            this.tcpConnectionProvider = tcpConnectionProvider;
         }
 
         public bool IsExpectedVersion(string clientVersion)
@@ -266,8 +269,9 @@ namespace RavenNest.BusinessLogic.Game
         {
             DataModels.GameEvent expEvent = CreateExpMultiplierEvent(session);
             if (expEvent != null)
-                gameData.Add(expEvent);
-            //}
+            {
+                gameData.EnqueueGameEvent(expEvent);
+            }
         }
 
         private DataModels.GameEvent CreateExpMultiplierEvent(DataModels.GameSession session)
@@ -416,7 +420,7 @@ namespace RavenNest.BusinessLogic.Game
                     }).ToList()
                 });
 
-            gameData.Add(ge);
+            gameData.EnqueueGameEvent(ge);
             EndSession(token);
 
 #if DEBUG
@@ -535,7 +539,7 @@ namespace RavenNest.BusinessLogic.Game
                     Token = pubsubAccessToken
                 }
             );
-            gameData.Add(serverTime);
+            gameData.EnqueueGameEvent(serverTime);
         }
         public void SendServerTime(DataModels.GameSession session)
         {
@@ -546,7 +550,7 @@ namespace RavenNest.BusinessLogic.Game
                     TimeUtc = DateTime.UtcNow
                 }
             );
-            gameData.Add(serverTime);
+            gameData.EnqueueGameEvent(serverTime);
         }
 
         public void UpdateSessionState(SessionToken sessionToken, ClientSyncUpdate update)

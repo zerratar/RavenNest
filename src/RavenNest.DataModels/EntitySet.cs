@@ -12,9 +12,8 @@ namespace RavenNest.DataModels
         private readonly ConcurrentDictionary<Guid, EntityChangeSet> addedEntities;
         private readonly ConcurrentDictionary<Guid, EntityChangeSet> updatedEntities;
         private readonly ConcurrentDictionary<Guid, EntityChangeSet> removedEntities;
-        private readonly bool trackChanges;
         private readonly ConcurrentDictionary<string, EntityLookupGroup<TModel>> groupLookup = new();
-
+        private readonly bool trackChanges;
         public IReadOnlyList<TModel> Entities => entities.Values.AsReadOnlyList();
         public IReadOnlyList<EntityChangeSet> Added => addedEntities.Values.AsReadOnlyList();
         public IReadOnlyList<EntityChangeSet> Updated => updatedEntities.Values.AsReadOnlyList();
@@ -36,7 +35,6 @@ namespace RavenNest.DataModels
                 {
                     entity.PropertyChanged += OnEntityPropertyChanged;
                 }
-
                 entities[entity.Id] = entity;
             }
         }
@@ -122,7 +120,12 @@ namespace RavenNest.DataModels
                 return AddEntityResult.AlreadyAdded;
 
             if (removedEntities.ContainsKey(key))
+            {
+                // so item was removed but added again.
+                // could this be related to moving an item and trying to use the same ID?
+                // this is appearant when the "item missing bug" occurs.
                 return AddEntityResult.AlreadyRemoved;
+            }
 
             if (entities.ContainsKey(key))
                 return AddEntityResult.AlreadyExists;

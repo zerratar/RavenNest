@@ -68,7 +68,7 @@
                     </a>
                     @if (IsAuthenticated)
                     {
-                        <NavLink class="nav-link dd-item" href="/characters" Match="NavLinkMatch.All">
+                        <NavLink class="nav-link dd-item" href="characters" Match="NavLinkMatch.All">
                             DASHBOARD
                         </NavLink>
                         if (IsAdministrator)
@@ -77,7 +77,7 @@
                         }
                     } else 
                     {
-                        <NavLink class="nav-link dd-item" href="/login/characters" Match="NavLinkMatch.All">
+                        <NavLink class="nav-link dd-item" href="/login/redirect/characters" Match="NavLinkMatch.All">
                             DASHBOARD
                         </NavLink>
                     }

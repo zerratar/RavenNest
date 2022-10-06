@@ -101,6 +101,11 @@ namespace RavenNest.BusinessLogic.Providers
                 {
                     errorMessage.AppendLine("======== " + missingItems.Count + " Missing Items =======");
                     errorMessage.AppendLine(Newtonsoft.Json.JsonConvert.SerializeObject(missingItems));
+                    foreach (var stack in missingItems)
+                    {
+                        errorMessage.AppendLine("# " + gameData.GetItem(stack.ItemId).Name);
+                        errorMessage.AppendLine(Newtonsoft.Json.JsonConvert.SerializeObject(stack));
+                    }
                     errorMessage.AppendLine();
                 }
 
@@ -108,13 +113,22 @@ namespace RavenNest.BusinessLogic.Providers
                 {
                     errorMessage.AppendLine("======== " + duplicateStacks.Count + " Duplicate Items =======");
                     errorMessage.AppendLine(Newtonsoft.Json.JsonConvert.SerializeObject(duplicateStacks));
+                    foreach (var stack in duplicateStacks)
+                    {
+                        errorMessage.AppendLine("# " + gameData.GetItem(stack.ItemId).Name);
+                        errorMessage.AppendLine(Newtonsoft.Json.JsonConvert.SerializeObject(stack));
+                    }
                     errorMessage.AppendLine();
                 }
 
                 if (emptyStacks != null)
                 {
                     errorMessage.AppendLine("======== " + emptyStacks.Count + " Empty Items =======");
-                    errorMessage.AppendLine(Newtonsoft.Json.JsonConvert.SerializeObject(emptyStacks));
+                    foreach (var stack in emptyStacks)
+                    {
+                        errorMessage.AppendLine("# " + gameData.GetItem(stack.ItemId).Name);
+                        errorMessage.AppendLine(Newtonsoft.Json.JsonConvert.SerializeObject(stack));
+                    }
                     errorMessage.AppendLine();
                 }
 
@@ -122,6 +136,11 @@ namespace RavenNest.BusinessLogic.Providers
                 {
                     errorMessage.AppendLine("======== " + itemsWithBadAmount.Count + " Items with wrong amount =======");
                     errorMessage.AppendLine(Newtonsoft.Json.JsonConvert.SerializeObject(itemsWithBadAmount));
+                    foreach (var stack in itemsWithBadAmount)
+                    {
+                        errorMessage.AppendLine("# " + gameData.GetItem(stack.ItemId).Name);
+                        errorMessage.AppendLine(Newtonsoft.Json.JsonConvert.SerializeObject(stack));
+                    }
                     errorMessage.AppendLine();
                 }
                 if (errorMessage.Length > 0)
@@ -521,10 +540,6 @@ namespace RavenNest.BusinessLogic.Providers
                         }
                     }
                     resultStack = Copy(i, amount);
-                    if (gameData.GetInventoryItem(i.Id) == null)
-                    {
-                        resultStack.Id = i.Id;
-                    }
                     this.items.Add(resultStack);
                     return resultStack;
                 }

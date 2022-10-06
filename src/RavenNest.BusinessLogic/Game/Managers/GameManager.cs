@@ -258,7 +258,7 @@ namespace RavenNest.BusinessLogic.Game
         //    var character = gameData.GetCharacterByUserId(userId);
         //    if (character == null) return false;
 
-        //    gameData.Add(gameData.CreateSessionEvent(
+        //    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(
         //        GameEventType.PlayerMove,
         //        targetSession,
         //        new PlayerMove()
@@ -281,7 +281,7 @@ namespace RavenNest.BusinessLogic.Game
         //    var character = gameData.GetCharacterByUserId(userId);
         //    if (character == null) return false;
 
-        //    gameData.Add(gameData.CreateSessionEvent(
+        //    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(
         //        GameEventType.PlayerAttack,
         //        targetSession,
         //        new PlayerAttack()
@@ -303,7 +303,7 @@ namespace RavenNest.BusinessLogic.Game
         //    var character = gameData.GetCharacterByUserId(userId);
         //    if (character == null) return false;
 
-        //    gameData.Add(gameData.CreateSessionEvent(
+        //    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(
         //        GameEventType.PlayerAction,
         //        targetSession,
         //        new PlayerAction()
@@ -329,7 +329,7 @@ namespace RavenNest.BusinessLogic.Game
 
         //    // just push the event to the client
         //    // and make the client to try and add the player
-        //    gameData.Add(gameData.CreateSessionEvent(
+        //    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(
         //        GameEventType.PlayerAdd,
         //        targetSession,
         //        new PlayerAdd()
@@ -353,7 +353,7 @@ namespace RavenNest.BusinessLogic.Game
         //    var character = gameData.GetCharacterByUserId(userId);
         //    if (character == null) return false;
 
-        //    gameData.Add(gameData.CreateSessionEvent(
+        //    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(
         //        GameEventType.PlayerRemove,
         //        targetSession,
         //        new PlayerId { UserId = userId }
@@ -370,7 +370,7 @@ namespace RavenNest.BusinessLogic.Game
         //    var character = gameData.GetCharacterByUserId(userId);
         //    if (character == null) return false;
 
-        //    gameData.Add(gameData.CreateSessionEvent(
+        //    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(
         //        GameEventType.PlayerTask,
         //        targetSession,
         //        new PlayerTask()
@@ -392,7 +392,7 @@ namespace RavenNest.BusinessLogic.Game
         //    var character = gameData.GetCharacterByUserId(userId);
         //    if (character == null) return false;
 
-        //    gameData.Add(gameData.CreateSessionEvent(
+        //    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(
         //        GameEventType.PlayerJoinRaid,
         //        targetSession,
         //        new PlayerId { UserId = userId }
@@ -409,7 +409,7 @@ namespace RavenNest.BusinessLogic.Game
         //    var character = gameData.GetCharacterByUserId(userId);
         //    if (character == null) return false;
 
-        //    gameData.Add(gameData.CreateSessionEvent(
+        //    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(
         //        GameEventType.PlayerJoinDungeon,
         //        targetSession,
         //        new PlayerId { UserId = userId }
@@ -426,7 +426,7 @@ namespace RavenNest.BusinessLogic.Game
         //    var character = gameData.GetCharacterByUserId(userId);
         //    if (character == null) return false;
 
-        //    gameData.Add(gameData.CreateSessionEvent(
+        //    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(
         //        GameEventType.PlayerJoinArena,
         //        targetSession,
         //        new PlayerId { UserId = userId }
@@ -443,7 +443,7 @@ namespace RavenNest.BusinessLogic.Game
         //    var character = gameData.GetCharacterByUserId(userId);
         //    if (character == null) return false;
 
-        //    gameData.Add(gameData.CreateSessionEvent(
+        //    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(
         //        GameEventType.PlayerDuelAccept,
         //        targetSession,
         //        new PlayerId { UserId = userId }
@@ -460,7 +460,7 @@ namespace RavenNest.BusinessLogic.Game
         //    var character = gameData.GetCharacterByUserId(userId);
         //    if (character == null) return false;
 
-        //    gameData.Add(gameData.CreateSessionEvent(
+        //    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(
         //        GameEventType.PlayerDuelDecline,
         //        targetSession,
         //        new PlayerId { UserId = userId }
@@ -477,7 +477,7 @@ namespace RavenNest.BusinessLogic.Game
         //    var character = gameData.GetCharacterByUserId(userId);
         //    if (character == null) return false;
 
-        //    gameData.Add(gameData.CreateSessionEvent(
+        //    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(
         //        GameEventType.PlayerDuelRequest,
         //        targetSession,
         //        new DuelRequest { UserId = userId, TargetUserId = targetUserId }
@@ -494,7 +494,7 @@ namespace RavenNest.BusinessLogic.Game
         //    var character = gameData.GetCharacterByUserId(userId);
         //    if (character == null) return false;
 
-        //    gameData.Add(gameData.CreateSessionEvent(
+        //    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(
         //        GameEventType.PlayerTravel,
         //        targetSession,
         //        new PlayerTravel { UserId = userId, Island = island }

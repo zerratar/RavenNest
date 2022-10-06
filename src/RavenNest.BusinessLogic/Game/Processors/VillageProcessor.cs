@@ -8,7 +8,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
     public class VillageProcessor : PlayerTaskProcessor
     {
-        private TimeSpan updateInterval = TimeSpan.FromSeconds(20);
+        private TimeSpan updateInterval = TimeSpan.FromSeconds(30);
         private TimeSpan updateExpInterval = TimeSpan.FromSeconds(10);
         private DateTime lastUpdate = DateTime.MinValue;
         private DateTime lastExpSend = DateTime.MinValue;
@@ -51,7 +51,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     HouseSlots = villageHouses.Count
                 };
 
-                gameData.Add(gameData.CreateSessionEvent(GameEventType.VillageLevelUp, session, data));
+                gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.VillageLevelUp, session, data));
                 lastExpSend = DateTime.UtcNow;
             }
 

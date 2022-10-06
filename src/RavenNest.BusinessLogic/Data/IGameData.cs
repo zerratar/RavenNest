@@ -177,6 +177,8 @@ namespace RavenNest.BusinessLogic.Data
         AddEntityResult Add(DataModels.GameEvent entity);
         AddEntityResult Add(DataModels.Village village);
 
+        void EnqueueGameEvent(DataModels.GameEvent entity);
+
         /// <summary>
         ///     Force save the current state to the database.
         /// </summary>
