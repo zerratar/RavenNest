@@ -357,6 +357,11 @@ th.character-skill-header-cell {
     display: none;
 }
 
+.dropzone {
+    border: 1px dashed #438048;
+    border-radius: 10px;
+}
+
 /* Add Items Styling*/
 button.btn.btn-secondary {
     margin-left: 10px;
