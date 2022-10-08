@@ -142,7 +142,7 @@ namespace RavenNest.Blazor.Services
         {
             //could move List to parameters for passing more parameters for twitch to give back. This is an odd way of doing it but bonus effect
             //of adding some protection against CSRF
-            List<StateParameters> StateParametersList = new();
+            List<RavenNest.Models.StateParameters> StateParametersList = new();
             if (!string.IsNullOrEmpty(redirectToAfterLogin))
                 StateParametersList.Add(new("redirect", redirectToAfterLogin));
 
@@ -161,39 +161,15 @@ namespace RavenNest.Blazor.Services
         }
 
         //Create a 64BaseEncodedString of a JSON Object for Twitch to return back to us
-        public string GetRandomizedBase64EncodedStateParameters(List<StateParameters> stateParameters)
+        public string GetRandomizedBase64EncodedStateParameters(List<RavenNest.Models.StateParameters> stateParameters)
         {
-            // TODO Should store this in a cookie or session to be compared to state response to prevent CSRF: https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
-            string randomSeed = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Replace("=", "");
-            StateParameters randomizedStateParamater = new("state_token", randomSeed);
-            stateParameters.Add(randomizedStateParamater);
-
-            var serializedJSON = JsonConvert.SerializeObject(stateParameters);
-            var encodedString = Base64UrlEncoder.Encode(serializedJSON);
-            return encodedString;
+            return authManager.GetRandomizedBase64EncodedStateParameters(stateParameters);
         }
 
         
-        public List<StateParameters> GetDecodedObjectFromState(string encodedState)
+        public List<RavenNest.Models.StateParameters> GetDecodedObjectFromState(string encodedState)
         {
-            //TODO Decode - add check in to compare returned values and cause an error if different
-            var decodedJSONString = Base64UrlEncoder.Decode(encodedState);
-            return JsonConvert.DeserializeObject<List<StateParameters>>(decodedJSONString);
+            return authManager.GetDecodedObjectFromState(encodedState);
         }
-
-
-    }
-
-    public class StateParameters
-    {
-        public string ParametersName { get; set; }
-        public string ParametersValue { get; set; }
-
-        public StateParameters(string parametersName, string parametersValue)
-        {
-            ParametersName = parametersName;
-            ParametersValue = parametersValue;
-        }
-
     }
 }

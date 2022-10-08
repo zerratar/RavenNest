@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using RavenNest.Models;
@@ -116,6 +119,25 @@ namespace RavenNest.BusinessLogic.Game
         {
             var data = System.Convert.FromBase64String(str);
             return Encoding.UTF8.GetString(data);
+        }
+
+        public string GetRandomizedBase64EncodedStateParameters(List<StateParameters> stateParameters)
+        {
+            // TODO Should store this in a cookie or session to be compared to state response to prevent CSRF: https://datatracker.ietf.org/doc/html/rfc6749#section-10.12
+            string randomSeed = Convert.ToBase64String(Guid.NewGuid().ToByteArray()).Replace("=", "");
+            StateParameters randomizedStateParamater = new("state_token", randomSeed);
+            stateParameters.Add(randomizedStateParamater);
+
+            var serializedJSON = JsonConvert.SerializeObject(stateParameters);
+            var encodedString = Base64UrlEncoder.Encode(serializedJSON);
+            return encodedString;
+        }
+
+        public List<StateParameters> GetDecodedObjectFromState(string encodedState)
+        {
+            //TODO Decode - add check in to compare returned values and cause an error if different
+            var decodedJSONString = Base64UrlEncoder.Decode(encodedState.Trim());
+            return JsonConvert.DeserializeObject<List<StateParameters>>(decodedJSONString);
         }
 
     }
