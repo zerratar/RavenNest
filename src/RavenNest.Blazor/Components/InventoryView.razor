@@ -1,0 +1,132 @@
+﻿@using Blazored.Typeahead
+@using EquipmentSlots = RavenNest.BusinessLogic.Providers.EquipmentSlot;
+
+<div class=user-inventory>
+    <h2>Stash</h2>
+    <div class=dropzone>
+        <div class="stash-status">
+            @if (Stash != null)
+            {
+                if (Stash.Count == 0)
+                {
+                    <span>No Items in Stash</span>
+                }
+            }
+        </div>
+        <div class="inventory-items">
+            @foreach (var entry in Stash)
+            {
+                var item = itemLookup[entry.ItemId];
+                <div class="inventory-item stash">
+                    @*@onclick="(()=>ShowItemDetails(character, item))"*@
+                    <div class="item-slot item draggable">
+                        <div class="item-image" data-item="@item.Id">
+                            <img src="@GetItemImage(entry.ItemId, entry.Tag)" />
+                        </div>
+                        <div class="item-amount @(entry.Amount == 1 ? "invisible" : "")">
+                            @GetItemAmount(entry.Amount)
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+@foreach (var character in @Characters)
+{
+    <div class="character-control">
+        @if (CanModify)
+        {
+            <button @onclick="@(x=> ShowAddItem(character.CharacterIndex))" class="btn-icon"><i class="fa-solid fa-grid-2-plus" title="Add Item"></i></button>
+            @if (AddItemDialogVisible[character.CharacterIndex])
+            {
+                <div class="add-item-window">
+                    <div class="add-item-window-header">
+                        <h2>Search for item to add</h2>
+                        <button class="btn close" @onclick="@(x=> HideAddItem(character.CharacterIndex))">x</button>
+                    </div>
+                    <BlazoredTypeahead SearchMethod="SearchItem" @bind-Value="SelectedItem">
+                        <SelectedTemplate>
+                            @context.Name
+                        </SelectedTemplate>
+                        <ResultTemplate>
+                            @context.Name
+                        </ResultTemplate>
+                    </BlazoredTypeahead>
+
+                    <div class="item-add-window-controls">
+                        @if (SelectedItem != null)
+                        {
+                            <button @onclick="@(x=> AddItem(character))" class="btn btn-primary">Add</button>
+                        }
+                        <button @onclick="@(x=> HideAddItem(character.CharacterIndex))" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+}
+<tr class="character-inventory-equipped">
+    <th class="character-inventory-equipped-header-row"></th>
+    @foreach (var character in Characters)
+    {
+        <td class="character-inventory-equipped-row">
+            <div class=dropzone>
+                <div>
+                    <h2>Equipped</h2>
+                    <div class="inventory-items">
+                        @{
+                            var slots = GetEquipmentSlotAndItems(character);
+                        }
+
+                        @foreach (var slot in slots)
+                        {
+                            var item = slot.Value;
+                            <div class="inventory-item equipment" title="@slot.Key">
+                                <div class="item-slot empty">
+                                    <div class="item-image" date-item="@slot.Key">
+                                        <img src="@GetSlotImageOrDefault(slot.Key)" />
+                                    </div>
+                                </div>
+                                @if (item != null)
+                                {
+                                    <div class="item-slot equipped draggable">
+                                        <div class="item-image item" data-item="@item.Id">
+                                            <img src="@GetItemImage(item.ItemId, item.Tag)" />
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </td>
+    }
+</tr>
+<tr class="character-inventory-items">
+    <th class="character-inventory-equipped-header-row"></th>
+    @foreach (var character in Characters)
+    {
+        <td class="character-inventory-on-char-row">
+            <div class=dropzone>
+                <div class="inventory-items">
+                    @foreach (var item in GetInventoryItems(character))
+                    {
+                        <div class="inventory-item inventory">
+                            <div class="item-slot item draggable">
+                                @*@onclick="(()=>ShowItemDetails(character, item))"*@
+                                <div class="item-image" data-item="@item.Id">
+                                    <img src="@GetItemImage(item.ItemId, item.Tag)" />
+                                </div>
+                                <div class="item-amount @(item.Amount == 1 ? "invisible" : "")">
+                                    @GetItemAmount(item.Amount)
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </td>
+    }
+</tr>

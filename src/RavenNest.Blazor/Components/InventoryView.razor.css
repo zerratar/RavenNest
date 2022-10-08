@@ -1,0 +1,135 @@
+﻿/* Inventory Styling */
+
+.player-inventory {
+    /* padding-top: 15px;
+    margin-top: 15px;
+    padding-bottom: 15px;*/
+}
+
+.inventory-items {
+    display: flex;
+    flex-flow: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.inventory-item {
+    width: 65px;
+    height: 65px;
+    padding: 0px;
+    margin: 5px;
+    position: relative;
+}
+
+.item-slot {
+    width: 65px;
+    height: 65px;
+    padding: 0px;
+    border-radius: 8px;
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
+}
+
+    .item-slot.empty {
+        background-color: rgba(114, 114, 114, 0.92);
+    }
+
+    .item-slot.item, .item-slot.equipped {
+        background-color: whitesmoke;
+    }
+
+.equipped {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+}
+
+.item, .equipped {
+    cursor: grab;
+    z-index: 4;
+}
+
+.empty {
+    cursor: auto;
+    z-index: 2;
+}
+
+.item-image {
+    width: 65px;
+    height: 65px;
+    max-width: 100%;
+    padding: 0px;
+}
+
+    .item-image img {
+        width: 65px;
+        height: 65px;
+        padding: 0px;
+    }
+
+.item-amount {
+    position: relative;
+    top: -22px;
+    right: -40px;
+    border-radius: 8px;
+    background-color: rgb(246 223 255 / 80%);
+    width: 25px;
+    color: #353535;
+    border: 1px solid #ffffff;
+    padding: 0;
+    line-height: 2;
+    text-align: center;
+    font-weight: 500;
+    font-size: 8pt;
+}
+.dropzone {
+    border: 1px dashed #438048;
+    border-radius: 10px;
+}
+
+/* Add Items Styling*/
+button.btn.btn-secondary {
+    margin-left: 10px;
+}
+
+.add-item-window {
+    position: absolute;
+    background-color: #ffffff;
+    width: 100%;
+    left: 50%;
+    width: 620px;
+    max-width: 100%;
+    transform: translateX(-50%);
+    padding: 15px;
+    box-shadow: 5px 5px 20px rgba(0,0,0,0.25);
+    display: flex;
+    flex-flow: column;
+    top: 50%;
+}
+
+.add-item-window-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+    .add-item-window-header h2 {
+        font-weight: 300;
+        font-size: 18pt;
+        text-align: center;
+        width: 100%;
+        position: relative;
+        top: 5px;
+        margin-bottom: 25px;
+    }
+
+    .add-item-window-header button.close {
+        margin-top: -20px;
+    }
+
+input.blazored-typeahead__input {
+    border-radius: 0;
+}
+
+.blazored-typeahead {
+    border-radius: 0;
+    margin-top: 15px;
+}

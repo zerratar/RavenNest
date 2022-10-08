@@ -8,8 +8,18 @@
 else
 {
     <AdminUserView SelectedUser="SelectedUser" ViewState="ViewState"></AdminUserView>
+    @switch (ViewState)
+    {
+        case CharacterViewState.Skills:
+            <AdminCharactersView SelectedUser="SelectedUser"></AdminCharactersView>
+            break;
+        case CharacterViewState.Inventory:
+        <InventoryView SelectedUser="SelectedUser"></InventoryView>
+            break;
+        case CharacterViewState.Clan:
+            break;
+    }
 
-    <AdminCharactersView SelectedUser="SelectedUser" ViewState="ViewState"></AdminCharactersView>
 }
 <div class="control-floating">
     <div class="control-tabs">
