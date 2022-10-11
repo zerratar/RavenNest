@@ -11,23 +11,24 @@ namespace RavenNest.Blazor.Components
     public partial class InventoryView : ComponentBase
     {
         [Parameter] public WebsiteAdminUser SelectedUser { get; set; }
-        [Inject] ItemService ItemService { get; set; }
-        List<ItemInstance> ItemInstances = new();
+        [Inject] public ItemService ItemService { get; set; }
 
+        public List<ItemInstance> ItemInstances = new();
 
         protected override async Task OnParametersSetAsync()
         {
             await base.OnParametersSetAsync();
 
+
             var stash = SelectedUser.Stash;
-            foreach(var item in stash)
+            foreach (var item in stash)
             {
                 ItemInstances.Add(new ItemInstance(item, ItemService.GetItemEquipmentSlot(item.ItemId)));
             }
-            foreach(var character in SelectedUser.Characters)
+            foreach (var character in SelectedUser.Characters)
             {
 
-                foreach(var item in character.InventoryItems)
+                foreach (var item in character.InventoryItems)
                 {
                     ItemInstances.Add(new ItemInstance(item, ItemService.GetItemEquipmentSlot(item.ItemId)));
                 }

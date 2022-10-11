@@ -15,7 +15,7 @@ namespace RavenNest.Blazor.Components
         [Parameter] public List<ItemInstance> ItemInstances { get; set; }
         [Parameter] public WebsiteAdminUser User { get; set; }
         [Parameter] public EventCallback<ItemInstance> OnItemUpdate { get; set; }
-        [Parameter] public RenderFragment ItemContent { get; set; }
+        [Parameter] public RenderFragment ChildContent { get; set; }
         [Inject] ItemService ItemService { get; set; }
 
         public ItemInstance Payload { get; set; }

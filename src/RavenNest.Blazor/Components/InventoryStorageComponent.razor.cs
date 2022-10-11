@@ -62,8 +62,12 @@ namespace RavenNest.Blazor.Components
         {
             if (character == null) return "";
 
-            if(character.Identifier == null) return character.CharacterIndex.ToString();
+            if (character.Identifier == null) return character.CharacterIndex.ToString();
             return character.Alias;
+        }
+        private ItemInstance GetItemInstance(BusinessLogic.Providers.EquipmentSlot slot)
+        {
+            return ItemInstances.SingleOrDefault(x => x.EquipmentSlot.Equals(slot));
         }
     }
 }

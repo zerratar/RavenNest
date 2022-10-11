@@ -1,9 +1,7 @@
 ﻿@using RavenNest.BusinessLogic.Extended
 <div class="inventoryStorage @(StorageLocation.ToString())-@(OwnerId)">
     <span>
-        @(
-            CharactersBag != null ? GetIdentifier(CharactersBag) : "Stash";
-        )
+        @(CharactersBag != null ? GetIdentifier(CharactersBag) : "Stash")
     </span>
 
     <div class="container-of-items @dropClass"
@@ -15,18 +13,18 @@
 
         @if (StorageLocation.Equals(Location.Bank))
         {
-            foreach (var slot in Enum.GetValues(typeof(BusinessLogic.Providers.EquipmentSlot)))
+            @foreach (BusinessLogic.Providers.EquipmentSlot slot in Enum.GetValues(typeof(BusinessLogic.Providers.EquipmentSlot)))
             {
-                if (!slot.Equals(BusinessLogic.Providers.EquipmentSlot.None))
+                @if (!slot.Equals(BusinessLogic.Providers.EquipmentSlot.None))
                 {
-                    var itemInstance = ItemInstances.SingleOrDefault(x => x.EquipmentSlot.Equals(slot));
-                    <InventoryItemComponent Item="itemInstance" Slot="itemInstance.EquipmentSlot" />
+                    var itemInstance = GetItemInstance(slot);
+                    <InventoryItemComponent Item="itemInstance" Slot="slot" />
                 }
             }
         }
         else
         {
-            foreach (var itemInstance in ItemInstances)
+            @foreach (var itemInstance in ItemInstances)
             {
                 <InventoryItemComponent Item="itemInstance" />
             }
