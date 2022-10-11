@@ -7,14 +7,15 @@ namespace RavenNest.Models
     public class InventoryItem
     {
         public Guid Id { get; set; }
+        public Guid CharacterId { get; set; }
 
         public Guid ItemId { get; set; }
+        public string Name { get; set; }
+        public string Enchantment { get; set; }
         public long Amount { get; set; }
         public bool Equipped { get; set; }
         public string Tag { get; set; }
         public bool? Soulbound { get; set; }
-        public string Enchantment { get; set; }
-        public string Name { get; set; }
         public Guid? TransmogrificationId { get; set; }
         public int Flags { get; set; }
 

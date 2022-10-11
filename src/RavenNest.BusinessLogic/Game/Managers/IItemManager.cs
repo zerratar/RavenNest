@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.Extensions.Caching.Memory;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
+using RavenNest.BusinessLogic.Providers;
 using RavenNest.Models;
 
 namespace RavenNest.BusinessLogic.Game
@@ -16,6 +17,7 @@ namespace RavenNest.BusinessLogic.Game
         bool TryUpdateItem(Item item);
         bool RemoveItem(Guid itemId);
         RedeemableItemCollection GetRedeemableItems();
+        Providers.EquipmentSlot GetItemEquipmentSlot(Guid itemId);
     }
 
     public class ItemManager : IItemManager
@@ -187,5 +189,10 @@ namespace RavenNest.BusinessLogic.Game
             return memoryCache.Set("GetAllItems", collection, DateTime.UtcNow.AddSeconds(ItemCacheDurationSeconds));
         }
 
+        public Providers.EquipmentSlot GetItemEquipmentSlot(Guid itemId)
+        {
+            var dataItem = gameData.GetItem(itemId);
+            return ReadOnlyInventoryItem.GetEquipmentSlot((DataModels.ItemType)dataItem.Type);
+        }
     }
 }

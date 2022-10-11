@@ -215,15 +215,16 @@ namespace RavenNest.BusinessLogic.Extensions
             return new RavenNest.Models.InventoryItem
             {
                 Id = items.Id,
+                ItemId = items.ItemId,
+                CharacterId = items.CharacterId,
+                Name = items.Name,
+                Enchantment = items.Enchantment,
                 Amount = items.Amount.GetValueOrDefault(),
                 Equipped = items.Equipped,
-                ItemId = items.ItemId,
                 Tag = items.Tag,
-                Enchantment = items.Enchantment,
-                Flags = items.Flags ?? 0,
-                Name = items.Name,
                 Soulbound = items.Soulbound,
                 TransmogrificationId = items.TransmogrificationId,
+                Flags = items.Flags ?? 0
             };
         }
 

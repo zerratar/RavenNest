@@ -1,0 +1,24 @@
+﻿<div class="item-container @(Slot.HasValue ? "Equipment" : "Inventory")">
+    @if (Slot.HasValue)
+    {
+        <div class="slot-background" title="{@Slot.Value.ToString()}">
+            <div class="image-holder">
+                <img src="@SlotImageSrc" />
+            </div>
+        </div>
+    }
+    @if (Item != null)
+    {
+        <div class="item-background" data-item="@Item.Id" draggable="true" title="@Item.Name" @ondragstart=@(() => HandleDragStart(Item))>
+            <div class="image-holder">
+                <img src="@ItemImageSrc" />
+            </div>
+            @if (!Slot.HasValue)
+            {
+                <div class="item-amount@(Item.Amount < 2 ? " invisible" : "")">
+                    @ItemAmountFormatted
+                </div>
+            }
+        </div>
+    }
+</div>

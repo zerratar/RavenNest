@@ -4,6 +4,7 @@ using RavenNest.Models;
 
 namespace RavenNest.BusinessLogic.Extended
 {
+    //
     public class WebsiteAdminUser
     {
         public Guid Id { get; set; }

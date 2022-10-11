@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Data;
+using EquipmentSlot = RavenNest.BusinessLogic.Providers.EquipmentSlot;
 
 namespace RavenNest.Blazor.Services
 {
@@ -33,6 +34,11 @@ namespace RavenNest.Blazor.Services
         public Item GetItem(Guid itemId)
         {
             return itemManager.GetItem(itemId);
+        }
+
+        public EquipmentSlot GetItemEquipmentSlot(Guid itemId)
+        {
+            return itemManager.GetItemEquipmentSlot(itemId);
         }
 
         public ItemCollection GetItems()
