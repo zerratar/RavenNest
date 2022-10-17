@@ -19,6 +19,8 @@ namespace RavenNest.Blazor.Components
         {
             await base.OnParametersSetAsync();
 
+            if (ItemInstances.Count > 0)
+                ItemInstances.Clear();
 
             var stash = SelectedUser.Stash;
             foreach (var item in stash)

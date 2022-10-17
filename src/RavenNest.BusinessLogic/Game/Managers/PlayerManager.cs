@@ -1827,7 +1827,6 @@ namespace RavenNest.BusinessLogic.Game
             }
             return false;
         }
-
         public bool SendToCharacter(Guid characterId, RavenNest.Models.UserBankItem item, long amount)
         {
             var character = gameData.GetCharacter(characterId);
@@ -1882,6 +1881,62 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             return false;
+        }
+
+        public RavenNest.Models.InventoryItem SendToCharacterGetInventoryItemModel(Guid targetCharacterId, RavenNest.Models.UserBankItem item, long amount)
+        {
+            var character = gameData.GetCharacter(targetCharacterId);
+            if (character == null) return null;
+
+            if (item.Amount < amount)
+            {
+                return null;
+            }
+
+            var bankItem = gameData.GetUserBankItem(item.Id);
+            if (bankItem == null)
+            {
+                return null;
+            }
+
+            var inventory = inventoryProvider.Get(character.Id);
+            var left = bankItem.Amount - amount;
+            if (left == 0)
+            {
+                gameData.Remove(bankItem);
+            }
+            else
+            {
+                bankItem.Amount -= amount;
+            }
+
+            var newStack = inventory.AddItem(bankItem, amount);
+            SendItemAddEvent(newStack, (int)amount, character);
+            return ModelMapper.Map(newStack);
+        }
+
+        public RavenNest.Models.InventoryItem SendToCharacterGetInventoryItemModel(Guid sourceCharacterId, Guid targetCharacterId, RavenNest.Models.InventoryItem item, long amount)
+        {
+            var sourceCharacter = gameData.GetCharacter(sourceCharacterId);
+            if (sourceCharacter == null) return null;
+            var targetCharacter = gameData.GetCharacter(targetCharacterId);
+            if (targetCharacter == null) return null;
+            // only send directly between your own characters. This is not a gift.
+            if (targetCharacter.UserId != sourceCharacter.UserId) return null;
+
+            var sourceInventory = inventoryProvider.Get(sourceCharacter.Id);
+            var targetInventory = inventoryProvider.Get(targetCharacter.Id);
+            var stack = gameData.GetInventoryItem(item.Id);
+
+            if (sourceInventory.RemoveItem(stack, amount))
+            {
+                var newItemStack = targetInventory.AddItem(stack, amount);
+                SendItemRemoveEvent(stack, (int)amount, sourceCharacter, true);
+                SendItemAddEvent(newItemStack, (int)amount, targetCharacter);
+                return ModelMapper.Map(newItemStack);
+            }
+
+            return null;
         }
 
         public long GiftItem(
@@ -1941,12 +1996,18 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool SendToStash(Guid characterId, RavenNest.Models.InventoryItem item, long amount)
         {
+            var result = SendToStashAndGetBankItem(characterId, item, amount);
+            return result != null;
+        }
+
+        public RavenNest.Models.UserBankItem SendToStashAndGetBankItem(Guid characterId, RavenNest.Models.InventoryItem item, long amount)
+        {
             var character = gameData.GetCharacter(characterId);
-            if (character == null) return false;
+            if (character == null) return null;
             var inventory = inventoryProvider.Get(character.Id);
 
             var stack = gameData.GetInventoryItem(item.Id);
-            if (stack == null) return false;
+            if (stack == null) return null;
             if (inventory.RemoveItem(stack, amount))
             {
                 // Check whether or not this item can be stacked.
@@ -1963,12 +2024,13 @@ namespace RavenNest.BusinessLogic.Game
                         if (existing != null)
                         {
                             existing.Amount += amount;
-                            return true;
+                            return DataMapper.Map<RavenNest.Models.UserBankItem>(existing);
                         }
                     }
+                    var itemDataModel = CreateBankItem(character, item, amount);
+                    gameData.Add(itemDataModel);
+                    return DataMapper.Map<RavenNest.Models.UserBankItem>(itemDataModel);
 
-                    gameData.Add(CreateBankItem(character, item, amount));
-                    return true;
                 }
                 finally
                 {
@@ -1976,9 +2038,8 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
 
-            return false;
+            return null;
         }
-
         private static DataModels.UserBankItem CreateBankItem(Character character, RavenNest.Models.InventoryItem item, long amount)
         {
             return new DataModels.UserBankItem

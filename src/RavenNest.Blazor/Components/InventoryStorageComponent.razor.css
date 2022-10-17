@@ -1,0 +1,52 @@
+﻿.item-slot-holder {
+    height: 65px;
+    width: 65px;
+    padding: 0px;
+    margin: 5px;
+    position: relative;
+}
+.slot {
+    width: 65px;
+    height: 65px;
+    padding: 0px;
+    margin: 0px;
+    border-radius: 8px;
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.2);
+    z-index: 2;
+    background-color: rgba(114, 114, 114, 0.92);
+    position:relative;
+}
+    .slot img {
+        width: 65px;
+        height: 65px;
+        padding: 0px;
+        margin: 0px;
+    }
+
+.container-of-items {
+    min-height: 65px;
+    padding: 15px;
+    display: flex;
+    flex-flow: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding:0px;
+    margin:5px;
+}
+.no-drop {
+    border: 3px dashed rgba(0,0,0,0);
+    border-radius: 20px;
+}
+.cannot-drop {
+    border: 3px dashed red;
+    border-radius: 20px;
+}
+
+.can-drop {
+    border: 3px dashed green;
+    border-radius: 20px;
+}
+span {
+    margin-top: 20px;
+    margin-left: 5px;
+}

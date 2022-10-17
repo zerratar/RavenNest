@@ -1,12 +1,16 @@
 ﻿@using RavenNest.BusinessLogic.Extended
 <div class="user-inventory">
     <InventoryManagerComponent ItemInstances="ItemInstances" User="SelectedUser" OnItemUpdate="HandleItemUpdate">
+        <div class="user-stash"
         <InventoryStorageComponent StorageLocation="Location.Bank" OwnerId="SelectedUser.Id" />
-        <div class="character-inventory">
-            @foreach (var character in SelectedUser.Characters)
+        </div>
+        <div class="characters-inventory">
+            @foreach (var character in SelectedUser.Characters.OrderBy(x => x.CharacterIndex))
             {
-                <InventoryStorageComponent StorageLocation="Location.Equipment" OwnerId="character.Id" />
-                <InventoryStorageComponent StorageLocation="Location.CharactersBag" OwnerId="character.Id" />
+                <div class="character-inventory">
+                    <InventoryStorageComponent StorageLocation="Location.Equipment" OwnerId="character.Id" />
+                    <InventoryStorageComponent StorageLocation="Location.CharactersBag" OwnerId="character.Id" />
+                </div>
             }
         </div>
     </InventoryManagerComponent>

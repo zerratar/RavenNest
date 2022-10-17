@@ -1,35 +1,53 @@
 ﻿@using RavenNest.BusinessLogic.Extended
-<div class="inventoryStorage @(StorageLocation.ToString())-@(OwnerId)">
-    <span>
-        @(CharactersBag != null ? GetIdentifier(CharactersBag) : "Stash")
-    </span>
 
-    <div class="container-of-items @dropClass"
-         ondragover="event.preventDefault();"
-         ondragstart="event.dataTransfer.setData('', event.target.id);"
-         @ondrop="HandleDrop"
-         @ondragenter="HandleDragEnter"
-         @ondragleave="HandleDragLeave">
+@switch (StorageLocation)
+{
+    case Location.Bank:
+        <span>Stash</span>
+        break;
+    case Location.Equipment:
+        <span>@(CharactersBag != null ? $"{GetIdentifier(CharactersBag)} - Equipment" : "")</span>
+        break;
+    case Location.CharactersBag:
+        <span>@(CharactersBag != null ? $"{GetIdentifier(CharactersBag)} - Bag" : "")</span>
+        break;
+}
 
-        @if (StorageLocation.Equals(Location.Bank))
+<div class="container-of-items @dropClass"
+     ondragover="event.preventDefault();"
+     ondragstart="event.dataTransfer.setData('', event.target.id);"
+     @ondrop="HandleDrop"
+     @ondragenter="HandleDragEnter"
+     @ondragleave="HandleDragLeave">
+
+    @if (StorageLocation.Equals(Location.Equipment))
+    {
+        @foreach (BusinessLogic.Providers.EquipmentSlot slot in Enum.GetValues(typeof(BusinessLogic.Providers.EquipmentSlot)))
         {
-            @foreach (BusinessLogic.Providers.EquipmentSlot slot in Enum.GetValues(typeof(BusinessLogic.Providers.EquipmentSlot)))
+            @if (!slot.Equals(BusinessLogic.Providers.EquipmentSlot.None))
             {
-                @if (!slot.Equals(BusinessLogic.Providers.EquipmentSlot.None))
-                {
-                    var itemInstance = GetItemInstance(slot);
-                    <InventoryItemComponent Item="itemInstance" Slot="slot" />
-                }
+                var itemInstance = GetItemInstance(slot);
+                <div class="item-slot-holder equipment">
+                    <div class="slot" title="{@slot.ToString()}">
+                        <div class="image-holder">
+                            <img class="slot-image" src="@(SetEquipmentSlotSrc(slot) ?? "/imgs/icons/inventory_slot/none.png")" />
+                        </div>
+                    </div>
+                    @if (itemInstance != null)
+                    {
+                        <InventoryItemComponent Item="itemInstance" />
+                    }
+                </div>
             }
         }
-        else
+    }
+    else
+    {
+        @foreach (var itemInstance in ItemInstances)
         {
-            @foreach (var itemInstance in ItemInstances)
-            {
+            <div class="item-slot-holder inventory">
                 <InventoryItemComponent Item="itemInstance" />
-            }
+            </div>
         }
-    </div>
-
-
+    }
 </div>

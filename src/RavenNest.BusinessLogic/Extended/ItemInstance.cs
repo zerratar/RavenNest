@@ -20,6 +20,7 @@ namespace RavenNest.BusinessLogic.Extended
         public bool Equipped { get { return IsStashed ? false : InventoryItem.Equipped; } }
         public long? Amount { get { return IsStashed ? UserBankItem.Amount : InventoryItem.Amount; } }
         public string Tag { get { return IsStashed ? UserBankItem.Tag : InventoryItem.Tag; } }
+        public object GetItem { get { return IsStashed ? UserBankItem : InventoryItem; } }
         public Providers.EquipmentSlot EquipmentSlot { get { return _equipmentSlot ?? Providers.EquipmentSlot.None; } }
         public Location Location
         {
@@ -62,13 +63,26 @@ namespace RavenNest.BusinessLogic.Extended
             InventoryItem = null;
         }
 
+        public void setItemInstance(ItemInstance update)
+        {
+            if(update.IsStashed)
+            {
+                updatetItemInstance((UserBankItem)update.GetItem);
+            }
+            else
+            {
+                updatetItemInstance((InventoryItem)update.GetItem);
+            }
+            
+        }
+
         public void updatetItemInstance(InventoryItem inventoryItem)
         {
             InventoryItem = inventoryItem;
             UserBankItem = null;
         }
 
-        public void updateItemInstance(UserBankItem userBankItem)
+        public void updatetItemInstance(UserBankItem userBankItem)
         {
             UserBankItem = userBankItem;
             InventoryItem = null;

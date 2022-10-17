@@ -1,0 +1,15 @@
+﻿.characters-inventory {
+    display: grid;
+    grid-auto-flow:column;
+}
+.character-inventory {
+    flex-grow: 1;
+    flex-shrink: 0;
+    grid-auto-columns: 1fr;}
+
+.character-inventory, .user-stash {
+    padding: 0px;
+    margin: 5px;
+    border: 4px solid rgba(78, 78, 78, 0.64);
+    border-radius: 20px;
+}

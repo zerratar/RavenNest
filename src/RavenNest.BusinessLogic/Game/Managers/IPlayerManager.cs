@@ -93,5 +93,8 @@ namespace RavenNest.BusinessLogic.Game
         void SendPlayerTaskToGame(DataModels.GameSession activeSession, Character character, string task, string taskArgument);
         void RemoveUserFromSessions(User user);
         IReadOnlyList<WebsiteAdminPlayer> GetAdminWebsitePlayers(Guid userId);
+        RavenNest.Models.UserBankItem SendToStashAndGetBankItem(Guid characterId, RavenNest.Models.InventoryItem item, long amount);
+        RavenNest.Models.InventoryItem SendToCharacterGetInventoryItemModel(Guid characterId, Guid otherCharacterId, RavenNest.Models.InventoryItem item, long amount);
+        RavenNest.Models.InventoryItem SendToCharacterGetInventoryItemModel(Guid characterId, RavenNest.Models.UserBankItem item, long amount);
     }
 }

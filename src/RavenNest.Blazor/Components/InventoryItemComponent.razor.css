@@ -1,0 +1,50 @@
+﻿.item img {
+    width:65px;
+    height:65px;
+    padding: 0px;
+    margin: 0px;
+}
+
+.item {
+    width: 65px;
+    height: 65px;
+    padding: 0px;
+    margin: 0px;
+    border-radius: 8px;
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.2)
+}
+.item {
+    z-index: 4;
+    background-color: whitesmoke;
+    position:absolute;
+    top:0px;
+    left:0px;
+}
+
+.item-amount {
+    position: relative;
+    top: -22px;
+    right: -40px;
+    border-radius: 8px;
+    background-color: rgb(246 223 255 / 80%);
+    width: 25px;
+    color: #353535;
+    border: 1px solid #ffffff;
+    padding: 0;
+    line-height: 2;
+    text-align: center;
+    font-weight: 500;
+    font-size: 8pt;
+}
+
+.draggable {
+    cursor:grab;
+}
+
+.draggable:active {
+    cursor: grabbing;
+}
+
+.dragging {
+    cursor: grabbing;
+}

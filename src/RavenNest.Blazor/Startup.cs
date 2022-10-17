@@ -262,6 +262,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<LoyaltyService>();
             services.AddSingleton<CookieService>();
             services.AddSingleton<TownService>();
+            services.AddSingleton<InventoryService>();
 
             services.AddSingleton<IRavenBotApiClient, RavenBotApiClient>();
 
