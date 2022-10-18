@@ -1,5 +1,8 @@
 ﻿using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.JSInterop;
+using Newtonsoft.Json;
 using RavenNest.Blazor.Services;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Providers;
@@ -18,17 +21,22 @@ namespace RavenNest.Blazor.Components
         [Parameter] public Guid OwnerId { get; set; }
         [Inject]
         IWebHostEnvironment WebHostEnv { get; set; }
+        [Inject]
+        IJSRuntime JS { get; set; }
         List<ItemInstance> ItemInstances = new();
 
         string dropClass = "no-drop";
         WebsiteAdminPlayer CharactersBag;
+        private int dragEnterCount = 0;
+        private int dragLeaveCount = 0;
+        private int DragCount { get { return dragEnterCount - dragLeaveCount; } }
 
         protected override void OnParametersSet()
         {
             ItemInstances.Clear();
             ItemInstances.AddRange(InventoryManagerComp.ItemInstances.Where(x => x.Location == StorageLocation && x.OwnerId == OwnerId));
 
-            if(!StorageLocation.Equals(Location.Bank))
+            if (!StorageLocation.Equals(Location.Bank))
                 CharactersBag = InventoryManagerComp.User.Characters.SingleOrDefault(x => x.Id == OwnerId);
 
         }
@@ -43,12 +51,46 @@ namespace RavenNest.Blazor.Components
             return File.Exists(wwwroot + outputSrc) ? outputSrc : null;
         }
 
-        private void HandleDragEnter()
+        //Drag Events Handler
+        private void HandleDragEnter(DragEventArgs args)
         {
+            if (DragCount == 0)
+            {
+                if (!CheckSelf(InventoryManagerComp.Payload))
+                    dropClass = CanDrop(InventoryManagerComp.Payload) ? "can-drop" : "cannot-drop";
+            }
+            dragEnterCount++;
+        }
+
+        private void HandleDragOver(DragEventArgs args)
+        {
+            args.DataTransfer.DropEffect = "move";
+        }
+
+        private void HandleDragLeave(DragEventArgs args)
+        {
+            dragLeaveCount++;
+            if (DragCount == 0)
+                dropClass = "no-drop";
+        }
+        private void HandleDragEnd(DragEventArgs args)
+        {
+            dragLeaveCount = 0;
+            dragEnterCount = 0;
+        }
+
+
+        private async Task HandleDrop(DragEventArgs args)
+        {
+            dropClass = "no-drop";
+
             if (CheckSelf(InventoryManagerComp.Payload))
                 return;
-            dropClass = CanDrop(InventoryManagerComp.Payload) ? "can-drop" : "cannot-drop";
+
+            await InventoryManagerComp.UpdateItemLocationAsync(StorageLocation, OwnerId);
         }
+
+        //Helper Functions
 
         private bool CheckSelf(ItemInstance Payload)
         {
@@ -62,21 +104,6 @@ namespace RavenNest.Blazor.Components
                 return false;
 
             return InventoryManagerComp.CanDrop(StorageLocation, CharactersBag);
-        }
-
-        private void HandleDragLeave()
-        {
-            dropClass = "no-drop";
-        }
-
-        private async Task HandleDrop()
-        {
-            dropClass = "no-drop";
-
-            if (CheckSelf(InventoryManagerComp.Payload))
-                return;
-
-            await InventoryManagerComp.UpdateItemLocationAsync(StorageLocation, OwnerId);
         }
 
         private string GetIdentifier(WebsiteAdminPlayer character)

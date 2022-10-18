@@ -11,9 +11,7 @@
     padding: 0px;
     margin: 0px;
     border-radius: 8px;
-    box-shadow: 3px 3px 10px rgba(0,0,0,0.2)
-}
-.item {
+    box-shadow: 3px 3px 10px rgba(0,0,0,0.2);
     z-index: 4;
     background-color: whitesmoke;
     position:absolute;

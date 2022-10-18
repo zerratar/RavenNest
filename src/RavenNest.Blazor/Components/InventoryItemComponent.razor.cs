@@ -53,5 +53,10 @@ namespace RavenNest.Blazor.Components
         {
             InventoryManagerComponent.Payload = selectedItem;
         }
+
+        private void HandleClickEvent(ItemInstance selectedItem)
+        {
+
+        }
     }
 }

@@ -14,11 +14,17 @@
 }
 
 <div class="container-of-items @dropClass"
-     ondragover="event.preventDefault();"
-     ondragstart="event.dataTransfer.setData('', event.target.id);"
+     @ondragover:preventDefault="true"
+     @ondragover:stopPropagation="true"
+     @ondragover="HandleDragOver"
      @ondrop="HandleDrop"
+     @ondragenter:preventDefault="true"
+     @ondragenter:stopPropagation="true"
      @ondragenter="HandleDragEnter"
-     @ondragleave="HandleDragLeave">
+     @ondragleave:preventDefault="true"
+     @ondragleave:stopPropagation="true"
+     @ondragleave="HandleDragLeave"
+     @ondragend="HandleDragEnd">
 
     @if (StorageLocation.Equals(Location.Equipment))
     {

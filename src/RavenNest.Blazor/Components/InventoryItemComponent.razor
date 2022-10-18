@@ -1,4 +1,9 @@
-﻿<div class="item draggable" data-item="@Item.Id" draggable="true" title="@Item.Name" @ondragstart=@(() => HandleDragStart(Item))>
+﻿<div class="item draggable"
+     data-item="@Item.Id"
+     draggable="true"
+     title="@Item.Name"
+     @ondragstart=@(() => HandleDragStart(Item))
+     @onclick=@(() => HandleClickEvent(Item))>
     <div class="image-holder">
         <img class="item-image" src="@ItemImageSrc" />
     </div>
