@@ -23,16 +23,16 @@ namespace RavenNest.Blazor.Components
                 ItemInstances.Clear();
 
             var stash = SelectedUser.Stash;
-            foreach (var item in stash)
+            foreach (var invItem in stash)
             {
-                ItemInstances.Add(new ItemInstance(item, ItemService.GetItemEquipmentSlot(item.ItemId)));
+                ItemInstances.Add(new ItemInstance(ItemService.GetItem(invItem.ItemId), invItem, ItemService.GetItemEquipmentSlot(invItem.ItemId)));
             }
             foreach (var character in SelectedUser.Characters)
             {
 
-                foreach (var item in character.InventoryItems)
+                foreach (var invItem in character.InventoryItems)
                 {
-                    ItemInstances.Add(new ItemInstance(item, ItemService.GetItemEquipmentSlot(item.ItemId)));
+                    ItemInstances.Add(new ItemInstance(ItemService.GetItem(invItem.ItemId), invItem, ItemService.GetItemEquipmentSlot(invItem.ItemId)));
                 }
             }
             return;

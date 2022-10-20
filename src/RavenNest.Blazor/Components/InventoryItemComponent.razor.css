@@ -1,13 +1,13 @@
 ﻿.item img {
-    width:65px;
-    height:65px;
+    width:50px;
+    height:50px;
     padding: 0px;
     margin: 0px;
 }
 
 .item {
-    width: 65px;
-    height: 65px;
+    width: 50px;
+    height: 50px;
     padding: 0px;
     margin: 0px;
     border-radius: 8px;
@@ -21,8 +21,8 @@
 
 .item-amount {
     position: relative;
-    top: -22px;
-    right: -40px;
+    top: -23px;
+    right: -25px;
     border-radius: 8px;
     background-color: rgb(246 223 255 / 80%);
     width: 25px;

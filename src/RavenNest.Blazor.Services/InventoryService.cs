@@ -35,7 +35,7 @@ namespace RavenNest.Blazor.Services
             if (playerManager.UnequipItem(itemInstance.OwnerId, inventoryItem))
             {
                 inventoryItem.Equipped = false;
-                itemInstance.updatetItemInstance(inventoryItem);
+                itemInstance.UpdatetItemInstance(inventoryItem);
                 return true;
             }
 
@@ -51,12 +51,12 @@ namespace RavenNest.Blazor.Services
             {
                 var update = playerManager.SendToCharacterGetInventoryItemModel(newOwnerId, (UserBankItem)itemInstance.GetItem, itemInstance.Amount ?? 0);
                 if (update != null)
-                    itemInstance.updatetItemInstance(update);
+                    itemInstance.UpdatetItemInstance(update);
             }
             else
             {
                 var update = playerManager.SendToCharacterGetInventoryItemModel(itemInstance.OwnerId, newOwnerId, (InventoryItem)itemInstance.GetItem, itemInstance.Amount ?? 0);
-                itemInstance.updatetItemInstance(update);
+                itemInstance.UpdatetItemInstance(update);
             }
 
         }
@@ -65,7 +65,7 @@ namespace RavenNest.Blazor.Services
         {
             var result = playerManager.SendToStashAndGetBankItem(itemInstance.OwnerId, (InventoryItem)itemInstance.GetItem, itemInstance.Amount ?? 0);
             if(result != null)
-                itemInstance.updatetItemInstance(result);
+                itemInstance.UpdatetItemInstance(result);
         }
 
         public bool IsNewOwner(Guid newOwnerId, ItemInstance itemInstance)
@@ -80,7 +80,7 @@ namespace RavenNest.Blazor.Services
             if (result)
             {
                 inventoryItem.Equipped = true;
-                itemInstance.updatetItemInstance(inventoryItem);
+                itemInstance.UpdatetItemInstance(inventoryItem);
             }
 
         }

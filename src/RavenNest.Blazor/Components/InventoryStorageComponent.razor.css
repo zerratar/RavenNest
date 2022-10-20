@@ -1,13 +1,13 @@
 ﻿.item-slot-holder {
-    height: 65px;
-    width: 65px;
+    height: 50px;
+    width: 50px;
     padding: 0px;
-    margin: 5px;
+    margin: 3px;
     position: relative;
 }
 .slot {
-    width: 65px;
-    height: 65px;
+    width: 50px;
+    height: 50px;
     padding: 0px;
     margin: 0px;
     border-radius: 8px;
@@ -17,21 +17,21 @@
     position:relative;
 }
     .slot img {
-        width: 65px;
-        height: 65px;
+        width: 50px;
+        height: 50px;
         padding: 0px;
         margin: 0px;
     }
 
 .container-of-items {
-    min-height: 65px;
-    padding: 15px;
+    min-height: 60px;
+    padding: 10px;
     display: flex;
     flex-flow: row;
     flex-wrap: wrap;
     justify-content: center;
     padding:0px;
-    margin:5px;
+    margin:3px;
 }
 .no-drop {
     border: 3px dashed rgba(0,0,0,0);

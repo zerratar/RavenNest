@@ -11,6 +11,7 @@ namespace RavenNest.BusinessLogic.Extended
     {
         private InventoryItem InventoryItem { get; set; }
         private UserBankItem UserBankItem { get; set; }
+        public Item ItemInfo { get; set; }
         private bool IsStashed { get { return UserBankItem != null; } }
         private Providers.EquipmentSlot? _equipmentSlot;
         public Guid Id { get { return IsStashed ? UserBankItem.Id : InventoryItem.Id; } }
@@ -40,49 +41,51 @@ namespace RavenNest.BusinessLogic.Extended
                 }
             }
         }
-        public ItemInstance(InventoryItem inventoryItem, Providers.EquipmentSlot equipmentSlot)
+        public ItemInstance(Item item, InventoryItem inventoryItem, Providers.EquipmentSlot equipmentSlot)
         {
-            setItemInstance(inventoryItem, equipmentSlot);
+            ItemInfo = item;
+            SetItemInstance(inventoryItem, equipmentSlot);
         }
-        public ItemInstance(UserBankItem userBankItem, Providers.EquipmentSlot equipmentSlot)
+        public ItemInstance(Item item, UserBankItem userBankItem, Providers.EquipmentSlot equipmentSlot)
         {
-            setItemInstance(userBankItem, equipmentSlot);
+            ItemInfo = item;
+            SetItemInstance(userBankItem, equipmentSlot);
         }
 
-        public void setItemInstance(InventoryItem inventoryItem, Providers.EquipmentSlot equipmentSlot)
+        public void SetItemInstance(InventoryItem inventoryItem, Providers.EquipmentSlot equipmentSlot)
         {
             InventoryItem = inventoryItem;
             _equipmentSlot = equipmentSlot;
             UserBankItem = null;
         }
 
-        public void setItemInstance(UserBankItem userBankItem, Providers.EquipmentSlot equipmentSlot)
+        public void SetItemInstance(UserBankItem userBankItem, Providers.EquipmentSlot equipmentSlot)
         {
             UserBankItem = userBankItem;
             _equipmentSlot = equipmentSlot;
             InventoryItem = null;
         }
 
-        public void setItemInstance(ItemInstance update)
+        public void SetItemInstance(ItemInstance update)
         {
             if(update.IsStashed)
             {
-                updatetItemInstance((UserBankItem)update.GetItem);
+                UpdatetItemInstance((UserBankItem)update.GetItem);
             }
             else
             {
-                updatetItemInstance((InventoryItem)update.GetItem);
+                UpdatetItemInstance((InventoryItem)update.GetItem);
             }
             
         }
 
-        public void updatetItemInstance(InventoryItem inventoryItem)
+        public void UpdatetItemInstance(InventoryItem inventoryItem)
         {
             InventoryItem = inventoryItem;
             UserBankItem = null;
         }
 
-        public void updatetItemInstance(UserBankItem userBankItem)
+        public void UpdatetItemInstance(UserBankItem userBankItem)
         {
             UserBankItem = userBankItem;
             InventoryItem = null;

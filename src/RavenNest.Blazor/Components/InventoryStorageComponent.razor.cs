@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.JSInterop;
 using Newtonsoft.Json;
 using RavenNest.Blazor.Services;
@@ -35,6 +36,9 @@ namespace RavenNest.Blazor.Components
         {
             ItemInstances.Clear();
             ItemInstances.AddRange(InventoryManagerComp.ItemInstances.Where(x => x.Location == StorageLocation && x.OwnerId == OwnerId));
+
+            if (ItemInstances.Count > 2)
+                ItemInstances.Sort((e1, e2) => e1.ItemInfo.Name.CompareTo(e2.ItemInfo.Name));
 
             if (!StorageLocation.Equals(Location.Bank))
                 CharactersBag = InventoryManagerComp.User.Characters.SingleOrDefault(x => x.Id == OwnerId);
@@ -88,9 +92,17 @@ namespace RavenNest.Blazor.Components
                 return;
 
             await InventoryManagerComp.UpdateItemLocationAsync(StorageLocation, OwnerId);
+            ReSort();
         }
 
         //Helper Functions
+
+        private void ReSort()
+        {
+            if(ItemInstances.Count > 2)
+                ItemInstances.Sort((e1, e2) => e1.ItemInfo.Name.CompareTo(e2.ItemInfo.Name));
+            StateHasChanged();
+        }
 
         private bool CheckSelf(ItemInstance Payload)
         {
@@ -115,7 +127,18 @@ namespace RavenNest.Blazor.Components
         }
         private ItemInstance GetItemInstance(EquipmentSlot slot)
         {
-            return ItemInstances.SingleOrDefault(x => x.EquipmentSlot.Equals(slot));
+            var result = ItemInstances.Where(x => x.EquipmentSlot == slot);
+            if (result.Count() > 1)
+            {
+                Console.WriteLine("More than one item in a slot");
+                foreach(var res in result)
+                    Console.WriteLine(res.ItemId + " in slot: " + res.EquipmentSlot.ToString());
+            } else if (result.Count() == 0)
+            {
+                return null;
+            }
+
+            return result.First();
         }
     }
 }
