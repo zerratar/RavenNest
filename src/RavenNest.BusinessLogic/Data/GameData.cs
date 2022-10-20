@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
@@ -2664,6 +2665,18 @@ namespace RavenNest.BusinessLogic.Data
                 return null;
             }
         }
+        public class UserOptionsMsSql
+        {
+            public UserOptionsMsSql(string setOption, string value)
+            {
+                SetOption = setOption;
+                Value = value;
+            }
+
+            [Column("Set Option")]
+            public string SetOption { get; set; }
+            public string Value { get; set; }
+        }
 
         private void SaveChanges()
         {
@@ -2688,8 +2701,40 @@ namespace RavenNest.BusinessLogic.Data
                         using (var con = db.GetConnection())
                         {
                             con.Open();
+                            //The CORRECT solution to this is to use parameterized sql queries instead of creating a string based queries. 
+                            //As Passing the datetime type does not rely on the database USEROPTIONS, but does when datetime is passed on as a string
+                            //However I don't know how to batch parameters and reflect IEntity 
+                            //Maybe reflect and build with SqlParameter instead
+                            //Like, maybe In InsertMany, instead of returning string, return paramemters and build SqlParamater(Object object)
+                            //https://learn.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqlparameter.-ctor?view=dotnet-plat-ext-6.0#system-data-sqlclient-sqlparameter-ctor(system-string-system-object
+                            //This change seems like the least code change
+                            //Code Copy from GameDataMigration
+                            string SqlUserOptions = "DBCC USEROPTIONS;";
+                            var UserOptions = new SqlCommand(SqlUserOptions, con);
+                            var UserOptionsResults = new List<UserOptionsMsSql>();
 
-                            var query = queryBuilder.Build(saveData);
+                            using (var reader = UserOptions.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    UserOptionsResults.Add(new UserOptionsMsSql(reader.GetString(0), reader.GetString(1)));
+                                }
+                                reader.Close();
+                            }
+                            bool diffDateFormat = false;
+                            var SqlDataFormat = UserOptionsResults.SingleOrDefault(x => x.SetOption == "dateformat").Value;
+
+                            if (SqlDataFormat != null)
+                            {
+
+                                if (!String.Equals(SqlDataFormat, "ymd", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    diffDateFormat = true;
+                                    logger.LogError("Database DateTime format is different from yyyy-mm-day format.");
+                                }
+                            }
+
+                            var query = queryBuilder.Build(saveData, diffDateFormat);
                             if (query == null || string.IsNullOrEmpty(query.Command))
                             {
                                 queue.Dequeue();

@@ -2,6 +2,6 @@
 {
     public interface IQueryBuilder
     {
-        SqlSaveQuery Build(EntityStoreItems saveData);
+        SqlSaveQuery Build(EntityStoreItems saveData, bool DiffDateTimeFormat = false);
     }
 }

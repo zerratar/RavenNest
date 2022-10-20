@@ -3,10 +3,14 @@ using RavenNest.DataModels;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Data;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Text;
 using TwitchLib.Api.Helix.Models.Users.Internal;
 
@@ -16,9 +20,23 @@ namespace RavenNest.BusinessLogic.Data
     {
         private readonly ILogger<GameDataMigration> logger;
         private readonly HashSet<Guid> importedUsers = new HashSet<Guid>();
+        private List<UserOptionsMsSql> UserOptionsResults = new();
+       
         public GameDataMigration(ILogger<GameDataMigration> logger)
         {
             this.logger = logger;
+        }
+        public class UserOptionsMsSql
+        {
+            public UserOptionsMsSql(string setOption, string value)
+            {
+                SetOption = setOption;
+                Value = value;
+            }
+
+            [Column("Set Option")]
+            public string SetOption { get; set; }
+            public string Value { get; set; }
         }
 
         public void Migrate(IRavenfallDbContextProvider db, IEntityRestorePoint restorePoint)
@@ -28,12 +46,46 @@ namespace RavenNest.BusinessLogic.Data
                 logger.LogWarning("Restoring data from restorepoint..");
                 var sw = new Stopwatch();
                 sw.Start();
-                var queryBuilder = new QueryBuilder();
+                QueryBuilder queryBuilder;
+
                 using (var con = db.GetConnection())
                 {
                     con.Open();
 
                     logger.LogInformation("Truncating db...");
+
+                    //The CORRECT solution to this is to use parameterized sql queries instead of creating a string based queries. 
+                    //As Passing the datetime type does not rely on the database USEROPTIONS, but does when datetime is passed on as a string
+                    //However I don't know how to batch parameters and reflect IEntity 
+                    //Maybe reflect and build with SqlParameter instead
+                    //Like, maybe In InsertMany, instead of returning string, return paramemters and build SqlParamater(Object object)
+                    //https://learn.microsoft.com/en-us/dotnet/api/system.data.sqlclient.sqlparameter.-ctor?view=dotnet-plat-ext-6.0#system-data-sqlclient-sqlparameter-ctor(system-string-system-object
+                    //This change seems like the least code change
+                    string SqlUserOptions = "DBCC USEROPTIONS;";
+                    var UserOptions = new SqlCommand(SqlUserOptions, con);
+
+                    using (var reader = UserOptions.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            UserOptionsResults.Add(new UserOptionsMsSql(reader.GetString(0), reader.GetString(1)));
+                        }
+                        reader.Close();
+                    }
+                    bool diffDateFormat = false;
+                    var SqlDataFormat = UserOptionsResults.SingleOrDefault(x => x.SetOption == "dateformat").Value;
+
+                    if (SqlDataFormat != null)
+                    {
+                        
+                        if (!String.Equals(SqlDataFormat, "ymd", StringComparison.OrdinalIgnoreCase))
+                        {
+                            diffDateFormat = true;
+                            logger.LogError("Database DateTime format is different from yyyy-mm-day format.");
+                        }
+                    }
+
+                    queryBuilder = new QueryBuilder(diffDateFormat);
 
                     var restoreTypes = restorePoint.GetEntityTypes();
                     foreach (var restoreType in restoreTypes)
@@ -374,6 +426,8 @@ namespace RavenNest.BusinessLogic.Data
         };
             private readonly ConcurrentDictionary<Type, PropertyInfo[]> propertyCache = new ConcurrentDictionary<Type, PropertyInfo[]>();
 
+            public bool DiffDateFormat { get; }
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             private IEnumerable<string> GetSqlReadyPropertyValues(IEntity entity, PropertyInfo[] properties)
             {
@@ -386,16 +440,29 @@ namespace RavenNest.BusinessLogic.Data
                 return properties.Select(x => x.Name + "=" + GetSqlReadyPropertyValue(x.PropertyType, x.GetValue(entity)));
             }
 
+            public QueryBuilder()
+            {
+            }
+            public QueryBuilder(bool diffDateFormat)
+            {
+                DiffDateFormat = diffDateFormat;
+            }
             private string GetSqlReadyPropertyValue(Type type, object value)
             {
                 if (value == null) return "NULL";
-                if (type == typeof(string) || type == typeof(char)
-                    || type == typeof(DateTime) || type == typeof(TimeSpan)
-                    || type == typeof(DateTime?) || type == typeof(TimeSpan?)
+                if (type == typeof(string) || type == typeof(char) || type == typeof(TimeSpan)
+                     || type == typeof(TimeSpan?)
                     || type == typeof(Guid?) || type == typeof(Guid))
                 {
 
                     return $"'{Sanitize(value?.ToString())}'";
+                }
+                if (type == typeof(DateTime) || type == typeof(DateTime?))
+                {
+                    if(DiffDateFormat)
+                        return $"TRY_CAST('{Sanitize(FormatDateTime(value))}' AS datetime)";
+                    else
+                        return $"'{Sanitize(value?.ToString())}'";
                 }
 
                 if (type.IsEnum)
@@ -442,6 +509,17 @@ namespace RavenNest.BusinessLogic.Data
             {
                 return GetProperties(type).FirstOrDefault(x => x.Name == propertyName);
             }
+
+            private string FormatDateTime(object dateTime)
+            {
+                //To fix any issues where Database language is set to a lanaguage that uses a datetimeformat other than ymd
+                //The CORRECT solution to this is to use parameterized sql queries instead of creating a string based queries. 
+                //As Passing the datetime type does not rely on the database USEROPTIONS, but does when datetime is passed on as a string
+                DateTime dateTimeType = (DateTime?)dateTime ?? DateTime.MinValue;
+
+                return dateTimeType.ToString("yyyy-MM-ddTHH:mm:ss");
+            }
+
             internal string Insert<T>(T entity) where T : IEntity
             {
                 var type = entity.GetType();
@@ -458,6 +536,8 @@ namespace RavenNest.BusinessLogic.Data
 
             internal string InsertMany(IEnumerable<IEntity> entity)
             {
+
+
                 var e = entity.FirstOrDefault();
                 if (e == null)
                 {

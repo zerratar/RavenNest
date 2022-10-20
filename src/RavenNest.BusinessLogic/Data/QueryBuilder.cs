@@ -19,9 +19,11 @@ namespace RavenNest.BusinessLogic.Data
             typeof(byte), typeof(sbyte), typeof(ushort), typeof(short), typeof(uint), typeof(int), typeof(ulong), typeof(long), typeof(decimal), typeof(float), typeof(double),
             typeof(byte?), typeof(sbyte?), typeof(ushort?), typeof(short?), typeof(uint?), typeof(int?), typeof(ulong?), typeof(long?), typeof(decimal?), typeof(float?), typeof(double?)
         };
-
-        public SqlSaveQuery Build(EntityStoreItems saveData)
+        private bool DiffDataTimeFormat { get; set; }
+        public SqlSaveQuery Build(EntityStoreItems saveData, bool diffDateTimeFormat = false)
         {
+            DiffDataTimeFormat = diffDateTimeFormat;
+
             switch (saveData.State)
             {
                 case EntityState.Added: return BuildInsertQuery(saveData);
@@ -114,13 +116,19 @@ namespace RavenNest.BusinessLogic.Data
         private string GetSqlReadyPropertyValue(Type type, object value)
         {
             if (value == null) return "NULL";
-            if (type == typeof(string) || type == typeof(char)
-                || type == typeof(DateTime) || type == typeof(TimeSpan)
-                || type == typeof(DateTime?) || type == typeof(TimeSpan?)
+            if (type == typeof(string) || type == typeof(char) || type == typeof(TimeSpan)
+                 || type == typeof(TimeSpan?)
                 || type == typeof(Guid?) || type == typeof(Guid))
             {
 
                 return $"'{Sanitize(value?.ToString())}'";
+            }
+            if (type == typeof(DateTime) || type == typeof(DateTime?))
+            {
+                if (DiffDataTimeFormat)
+                    return $"TRY_CAST('{Sanitize(FormatDateTime(value))}' AS datetime)";
+                else
+                    return $"'{Sanitize(value?.ToString())}'";
             }
 
             if (type.IsEnum)
@@ -177,6 +185,15 @@ namespace RavenNest.BusinessLogic.Data
         private PropertyInfo GetProperty(Type type, string propertyName)
         {
             return GetProperties(type).FirstOrDefault(x => x.Name == propertyName);
+        }
+        private string FormatDateTime(object dateTime)
+        {
+            //To fix any issues where Database language is set to a lanaguage that uses a datetimeformat other than ymd
+            //The CORRECT solution to this is to use parameterized sql queries instead of creating a string based queries. 
+            //As Passing the datetime type does not rely on the database USEROPTIONS, but does when datetime is passed on as a string
+            DateTime dateTimeType = (DateTime?)dateTime ?? DateTime.MinValue;
+
+            return dateTimeType.ToString("yyyy-MM-ddTHH:mm:ss");
         }
     }
 }
