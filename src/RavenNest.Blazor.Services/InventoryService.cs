@@ -31,7 +31,7 @@ namespace RavenNest.Blazor.Services
             if (itemInstance.Location.Equals(Location.Bank))
                 return false;
 
-            InventoryItem inventoryItem = (InventoryItem)itemInstance.GetItem;
+            InventoryItem inventoryItem = (InventoryItem)itemInstance.InvItem;
             if (playerManager.UnequipItem(itemInstance.OwnerId, inventoryItem))
             {
                 inventoryItem.Equipped = false;
@@ -49,13 +49,13 @@ namespace RavenNest.Blazor.Services
 
             if (itemInstance.Location.Equals(Location.Bank))
             {
-                var update = playerManager.SendToCharacterGetInventoryItemModel(newOwnerId, (UserBankItem)itemInstance.GetItem, itemInstance.Amount ?? 0);
+                var update = playerManager.SendToCharacterGetInventoryItemModel(newOwnerId, (UserBankItem)itemInstance.InvItem, itemInstance.Amount ?? 0);
                 if (update != null)
                     itemInstance.UpdatetItemInstance(update);
             }
             else
             {
-                var update = playerManager.SendToCharacterGetInventoryItemModel(itemInstance.OwnerId, newOwnerId, (InventoryItem)itemInstance.GetItem, itemInstance.Amount ?? 0);
+                var update = playerManager.SendToCharacterGetInventoryItemModel(itemInstance.OwnerId, newOwnerId, (InventoryItem)itemInstance.InvItem, itemInstance.Amount ?? 0);
                 itemInstance.UpdatetItemInstance(update);
             }
 
@@ -63,7 +63,7 @@ namespace RavenNest.Blazor.Services
 
         public void SendToStash(Guid newOwnerId, ref ItemInstance itemInstance)
         {
-            var result = playerManager.SendToStashAndGetBankItem(itemInstance.OwnerId, (InventoryItem)itemInstance.GetItem, itemInstance.Amount ?? 0);
+            var result = playerManager.SendToStashAndGetBankItem(itemInstance.OwnerId, (InventoryItem)itemInstance.InvItem, itemInstance.Amount ?? 0);
             if(result != null)
                 itemInstance.UpdatetItemInstance(result);
         }
@@ -75,7 +75,7 @@ namespace RavenNest.Blazor.Services
 
         public void EquipItem(ref ItemInstance itemInstance)
         {
-            var inventoryItem = (InventoryItem)itemInstance.GetItem;
+            var inventoryItem = (InventoryItem)itemInstance.InvItem;
             var result = playerManager.EquipItem(itemInstance.OwnerId, inventoryItem);
             if (result)
             {

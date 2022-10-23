@@ -1,6 +1,6 @@
 ﻿@using RavenNest.BusinessLogic.Extended
 <div class="user-inventory">
-    <InventoryManagerComponent ItemInstances="ItemInstances" User="SelectedUser" OnItemUpdate="HandleItemUpdate">
+    <InventoryManagerComponent ItemInstances="ItemInstances" User="SelectedUser" CanManage="true" OnItemUpdate="HandleItemUpdate">
         <div class="user-stash"
         <InventoryStorageComponent StorageLocation="Location.Bank" OwnerId="SelectedUser.Id" />
         </div>

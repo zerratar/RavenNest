@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Components;
 using RavenNest.BusinessLogic.Extended;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace RavenNest.Blazor.Components
@@ -11,9 +12,16 @@ namespace RavenNest.Blazor.Components
         [Parameter] public ItemInstance Item { get; set; }
 
 
+        private ItemView ExtendedView = ItemView.None;
         private string ItemImageSrc;
         private string ItemAmountFormatted;
 
+        private enum ItemView
+        {
+            None,
+            Detailed,
+            Summary
+        }
         protected override async Task OnParametersSetAsync()
         {
             await base.OnParametersSetAsync();
@@ -54,9 +62,30 @@ namespace RavenNest.Blazor.Components
             InventoryManagerComponent.Payload = selectedItem;
         }
 
-        private void HandleClickEvent(ItemInstance selectedItem)
+        private void HandleClickEvent()
         {
 
         }
+
+        private void HandleMouseOver()
+        {
+
+        }
+
+        private void HandleMouseOut()
+        {
+
+        }
+
+        private void CloseItemDetails()
+        {
+
+        }
+
+        private void DoItemAction(Location newLocation, Guid newOwnerId)
+        {
+
+        }
+           
     }
 }

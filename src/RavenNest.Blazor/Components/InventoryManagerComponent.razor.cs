@@ -16,6 +16,7 @@ namespace RavenNest.Blazor.Components
         [Parameter] public WebsiteAdminUser User { get; set; }
         [Parameter] public EventCallback<ItemInstance> OnItemUpdate { get; set; }
         [Parameter] public RenderFragment ChildContent { get; set; }
+        [Parameter] public bool CanManage { get; set; }
         [Inject] ItemService ItemService { get; set; }
         [Inject] InventoryService InventoryService { get; set; }
 
@@ -44,13 +45,18 @@ namespace RavenNest.Blazor.Components
                     if (item == null)
                         return false;
 
-                    return RavenNest.BusinessLogic.Providers.PlayerInventory.CanEquipItem(item, charactersBag);
+                    return CanEquipItem(item, charactersBag);
                 case Location.Bank:
                 case Location.CharactersBag:
                     return true;
             }
             return false;
         }
+        public bool CanEquipItem(Item item, WebsiteAdminPlayer charactersBag)
+        {
+            return RavenNest.BusinessLogic.Providers.PlayerInventory.CanEquipItem(item, charactersBag);
+        }
+
         public ItemInstance SendToNewLocation(Location storageLocation, Guid newOwnerId, ref ItemInstance itemInstance)
         {
             if (itemInstance.Location.Equals(Location.Equipment))

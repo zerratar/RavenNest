@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Data;
 using EquipmentSlot = RavenNest.BusinessLogic.Providers.EquipmentSlot;
+using RavenNest.BusinessLogic.Extended;
 
 namespace RavenNest.Blazor.Services
 {
@@ -29,6 +30,11 @@ namespace RavenNest.Blazor.Services
             this.gameData = gameData;
             this.itemManager = itemManager;
             this.availableAttributes = this.gameData.GetItemAttributes();
+        }
+
+        public IReadOnlyList<DataModels.ItemAttribute> GetItemAttributes()
+        {
+            return availableAttributes;
         }
 
         public Item GetItem(Guid itemId)
@@ -137,9 +143,9 @@ namespace RavenNest.Blazor.Services
             return "";
         }
 
-        public IReadOnlyList<RavenNest.Blazor.Services.ItemEnchantment> GetItemEnchantments(InventoryItem item)
+        public IReadOnlyList<ItemEnchantmentInfo> GetItemEnchantments(InventoryItem item)
         {
-            var enchantments = new List<RavenNest.Blazor.Services.ItemEnchantment>();
+            var enchantments = new List<ItemEnchantmentInfo>();
             if (!string.IsNullOrEmpty(item.Enchantment))
             {
                 var en = item.Enchantment.Split(';');
@@ -167,7 +173,7 @@ namespace RavenNest.Blazor.Services
                         }
                     }
 
-                    enchantments.Add(new ItemEnchantment
+                    enchantments.Add(new ItemEnchantmentInfo
                     {
                         Name = key,
                         Value = value,
@@ -179,9 +185,9 @@ namespace RavenNest.Blazor.Services
             return enchantments;
         }
 
-        public IReadOnlyList<RavenNest.Blazor.Services.ItemStat> GetItemStats(InventoryItem item)
+        public IReadOnlyList<ItemStat> GetItemStats(InventoryItem item)
         {
-            var stats = new List<RavenNest.Blazor.Services.ItemStat>();
+            var stats = new List<ItemStat>();
             var i = GetItem(item.ItemId);
             if (i == null) return stats;
 
@@ -222,27 +228,5 @@ namespace RavenNest.Blazor.Services
 
             return stats;
         }
-    }
-
-    public class ItemEnchantment
-    {
-        public string Name { get; set; }
-        public string Description { get; set; }
-        public AttributeValueType ValueType { get; set; }
-        public double Value { get; set; }
-    }
-
-    public class ItemStat
-    {
-        public ItemStat() { }
-        public ItemStat(string name, int value, int enchantmentBonus)
-        {
-            this.Name = name;
-            this.Value = value;
-            this.Bonus = enchantmentBonus;
-        }
-        public string Name { get; set; }
-        public int Value { get; set; }
-        public int Bonus { get; set; }
     }
 }

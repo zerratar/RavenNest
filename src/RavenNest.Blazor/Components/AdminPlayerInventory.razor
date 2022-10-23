@@ -235,7 +235,7 @@
         return RavenNest.BusinessLogic.Providers.PlayerInventory.CanEquipItem(item, Player);
     }
 
-    public string GetEnchantmentValue(RavenNest.Blazor.Services.ItemEnchantment enchantment)
+    public string GetEnchantmentValue(RavenNest.BusinessLogic.Extended.ItemEnchantmentInfo enchantment)
     {
         var value = enchantment.Value;
         if (enchantment.ValueType == AttributeValueType.Percent)
@@ -246,17 +246,17 @@
         return ((int)value).ToString();
     }
 
-    public string GetEnchantmentName(RavenNest.Blazor.Services.ItemEnchantment enchantment)
+    public string GetEnchantmentName(RavenNest.BusinessLogic.Extended.ItemEnchantmentInfo enchantment)
     {
         return enchantment.Name[0] + enchantment.Name.ToLower().Substring(1);
     }
 
-    public IReadOnlyList<RavenNest.Blazor.Services.ItemEnchantment> GetItemEnchantments()
+    public IReadOnlyList<RavenNest.BusinessLogic.Extended.ItemEnchantmentInfo> GetItemEnchantments()
     {
         return ItemService.GetItemEnchantments(itemDetailsDialogItem);
     }
 
-    public IReadOnlyList<RavenNest.Blazor.Services.ItemStat> GetItemStats()
+    public IReadOnlyList<RavenNest.BusinessLogic.Extended.ItemStat> GetItemStats()
     {
         return ItemService.GetItemStats(itemDetailsDialogItem);
     }

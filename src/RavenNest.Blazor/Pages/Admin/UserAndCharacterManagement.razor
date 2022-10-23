@@ -11,10 +11,10 @@ else
     @switch (ViewState)
     {
         case CharacterViewState.Skills:
-            <AdminCharactersView SelectedUser="SelectedUser"></AdminCharactersView>
+            <AdminCharactersView SelectedUser="SelectedUser" CanManage="true"></AdminCharactersView>
             break;
         case CharacterViewState.Inventory:
-        <InventoryView SelectedUser="SelectedUser"></InventoryView>
+            <InventoryView SelectedUser="SelectedUser" CanManage="true"></InventoryView>
             break;
         case CharacterViewState.Clan:
             break;
