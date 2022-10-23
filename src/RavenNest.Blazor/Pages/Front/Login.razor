@@ -146,7 +146,7 @@
         var state = parsedQuery.Get("state");
         var error = parsedQuery.Get("error");
         var error_description = parsedQuery.Get("error_description");
-        bool pubstub = false;
+        bool pubsub = false;
 
         loginFailed = false;
         loginFailedError = "";
@@ -166,8 +166,8 @@
             {
                 switch (parameter.ParametersName)
                 {
-                    case "pubstub":
-                        pubstub = parameter.ParametersValue.Equals("true");
+                    case "pubsub":
+                        pubsub = parameter.ParametersValue.Equals("true");
                         break;
                     case "redirect":
                         RedirectUrl = parameter.ParametersValue;
@@ -178,7 +178,7 @@
             }
         }
 
-        if (pubstub)
+        if (pubsub)
         {
             await AuthService.GrantPubSubAccessAsync(token);
             CloseWindow();

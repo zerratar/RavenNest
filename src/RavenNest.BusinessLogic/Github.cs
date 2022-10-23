@@ -130,7 +130,7 @@ namespace RavenNest.BusinessLogic.Github
     {
         public GameRelease(Root root)
         {
-            this.VersionString = root.TagName.Replace("-alpha", "");
+            this.VersionString = root.TagName.Replace("-alpha", "").Replace("v", "");
 
             if (RavenNest.BusinessLogic.Game.GameVersion.TryParse(root.TagName, out var gameVersion))
             {

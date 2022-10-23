@@ -37,7 +37,7 @@ namespace RavenNest.Controllers
             const string TwitchRedirectUri = "https://id.twitch.tv/oauth2/authorize";
 
             List<StateParameters> stateParameters = new();
-            stateParameters.Add(new("pubstub", "true"));
+            stateParameters.Add(new("pubsub", "true"));
 
             var encodedState = authManager.GetRandomizedBase64EncodedStateParameters(stateParameters);
 
