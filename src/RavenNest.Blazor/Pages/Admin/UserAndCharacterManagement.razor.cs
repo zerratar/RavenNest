@@ -47,6 +47,8 @@ namespace RavenNest.Blazor.Pages.Admin
 
         protected override void OnParametersSet()
         {
+            base.OnParametersSet();
+
             //Memorize valid ViewState so when page is refreshed, we can stay on the same page
             View = View ?? 0;
             if (Enum.IsDefined(typeof(CharacterViewState), View))
@@ -60,7 +62,7 @@ namespace RavenNest.Blazor.Pages.Admin
                 ViewStateNavigation(CharacterViewState.Skills);
             }
 
-            base.OnParametersSet();
+
         }
 
         protected override void OnAfterRender(bool firstRender)
@@ -90,27 +92,27 @@ namespace RavenNest.Blazor.Pages.Admin
 
         private void ShowInventory()
         {
-            ViewState = CharacterViewState.Inventory;
-            ViewStateNavigation(ViewState);
+            ViewStateNavigation(CharacterViewState.Inventory);
         }
 
         private void ShowSkills()
         {
-            ViewState = CharacterViewState.Skills;
-            ViewStateNavigation(ViewState);
+            ViewStateNavigation(CharacterViewState.Skills);
         }
 
         private void ShowClan()
         {
-            ViewState = CharacterViewState.Clan;
-            ViewStateNavigation(ViewState);
+            ViewStateNavigation(CharacterViewState.Clan);
         }
 
-        private void ViewStateNavigation(CharacterViewState view)
+        private void ViewStateNavigation(CharacterViewState viewState)
         {
+            ViewState = viewState;
             var relativeNavURL = "/admin/user/" + Id;
-            if (view > 0)
-                relativeNavURL.Concat("/" + ((int)view).ToString());
+            if (ViewState > 0)
+                relativeNavURL = relativeNavURL + "/" + ((int)ViewState).ToString();
+
+            View = (int)ViewState;
             NavigationManager.NavigateTo(relativeNavURL);
         }
         private string SelectedClassStyling(CharacterViewState state)
