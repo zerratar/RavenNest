@@ -22,7 +22,7 @@ namespace RavenNest.BusinessLogic.Extended
         public Guid OwnerId { get { return IsStashed ? UserBankItem.UserId : InventoryItem.CharacterId; } }
         public string Name { get { return IsStashed ? UserBankItem.Name : InventoryItem.Name; } }
         public bool Equipped { get { return IsStashed ? false : InventoryItem.Equipped; } }
-        public long? Amount { get { return IsStashed ? UserBankItem.Amount : InventoryItem.Amount; } }
+        public long Amount { get { return IsStashed ? UserBankItem.Amount : InventoryItem.Amount; } }
         public string Tag { get { return IsStashed ? UserBankItem.Tag : InventoryItem.Tag; } }
         public bool? Soulbound { get { return IsStashed ? UserBankItem.Soulbound : InventoryItem.Soulbound; } }
         public string Enchantment { get { return IsStashed ? UserBankItem.Enchantment : InventoryItem.Enchantment; } }
@@ -61,6 +61,35 @@ namespace RavenNest.BusinessLogic.Extended
             if (ItemInfo.RequiredRangedLevel > 0) return "Requires Ranged Level";
             if (ItemInfo.RequiredMagicLevel > 0) return "Requires Magic Level";
             return "";
+        }
+        public string GetItemAmount()
+        {
+            var value = Amount;
+            if (value >= 1000_000)
+            {
+                var mils = value / 1000000.0;
+                return Math.Round(mils) + "M";
+            }
+            else if (value > 1000)
+            {
+                var ks = value / 1000m;
+                return Math.Round(ks) + "K";
+            }
+            else if (value > 1)
+            {
+
+                return Amount.ToString();
+            }
+
+            return "";
+        }
+        public string GetItemImageSrc()
+        {
+            if (Tag != null)
+            {
+                return $"/api/twitch/logo/{Tag}";
+            }
+            return $"/imgs/items/{ItemId}.png";
         }
         public string GetItemTier()
         {

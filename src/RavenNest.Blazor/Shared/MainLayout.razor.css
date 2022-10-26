@@ -21,6 +21,7 @@ a, i, p, b, h1, h2, h3, h4, span {
 
 .main {
     flex: 1;
+    overflow: hidden;
 }
 
 /*.top-row.corner .nav-link {

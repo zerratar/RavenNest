@@ -49,13 +49,13 @@ namespace RavenNest.Blazor.Services
 
             if (itemInstance.Location.Equals(Location.Bank))
             {
-                var update = playerManager.SendToCharacterGetInventoryItemModel(newOwnerId, (UserBankItem)itemInstance.InvItem, itemInstance.Amount ?? 0);
+                var update = playerManager.SendToCharacterGetInventoryItemModel(newOwnerId, (UserBankItem)itemInstance.InvItem, itemInstance.Amount);
                 if (update != null)
                     itemInstance.UpdatetItemInstance(update);
             }
             else
             {
-                var update = playerManager.SendToCharacterGetInventoryItemModel(itemInstance.OwnerId, newOwnerId, (InventoryItem)itemInstance.InvItem, itemInstance.Amount ?? 0);
+                var update = playerManager.SendToCharacterGetInventoryItemModel(itemInstance.OwnerId, newOwnerId, (InventoryItem)itemInstance.InvItem, itemInstance.Amount);
                 itemInstance.UpdatetItemInstance(update);
             }
 
@@ -63,7 +63,7 @@ namespace RavenNest.Blazor.Services
 
         public void SendToStash(Guid newOwnerId, ref ItemInstance itemInstance)
         {
-            var result = playerManager.SendToStashAndGetBankItem(itemInstance.OwnerId, (InventoryItem)itemInstance.InvItem, itemInstance.Amount ?? 0);
+            var result = playerManager.SendToStashAndGetBankItem(itemInstance.OwnerId, (InventoryItem)itemInstance.InvItem, itemInstance.Amount);
             if(result != null)
                 itemInstance.UpdatetItemInstance(result);
         }

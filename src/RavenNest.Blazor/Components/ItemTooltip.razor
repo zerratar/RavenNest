@@ -1,74 +1,107 @@
-﻿@inject RavenNest.Blazor.Services.ItemService ItemService
-@if (Visible)
-{
-    <div class="item-tooltip" data-item="Item.id">
-        <div class="item-name" data-tier="@GetItemTier()">@GetItemName()</div>
-        <div class="item-type">@GetItemType()</div>
-
-        @foreach (var stat in GetItemStats())
-        {
-            <div class="item-stat">
-                <div class="item-stat-name">@stat.Name</div>
-                <div class="item-stat-value">
-                    <span>@stat.Value</span>
-                    @if (stat.Bonus > 0)
-                    {
-                        <span class="item-stat-enchantment" title="Enchantment Bonus">+ @stat.Bonus</span>
-                    }
-                </div>
+﻿<div class="item-wrapper-hover">
+    @ChildContent
+    <div class="item-details-@(DisplayDetail ? "detail" : "hover")">
+        <div class="item-details-header">
+            <div class="item-name" data-tier="@Item.GetItemTier()">@Item.ItemInfo.Name</div>
+            @if (DisplayDetail)
+            {
+                <button class="close" @onclick="CloseItemDetails">x</button>
+            }
+        </div>
+        <div class="item-details-content">
+            <div class="item-type">
+                @Item.ItemInfo?.Type.ToString()
             </div>
-        }
-        <div class="item-requirement">
-            <div>@GetItemRequirementSkill()</div>
-            <div>@GetItemRequirementLevel()</div>
+            @if (Item.Soulbound.GetValueOrDefault())
+            {
+                <div class="item-soulbound" title="Soulbound - Item can't be gifted'">
+                    <i class="fa-solid fa-user-lock"></i>
+                </div>
+            }
+            <div class="image-holder">
+                <img class="large-item-image" src="@Item.GetItemImageSrc()" />
+            </div>
+            @if (DisplayDetail)
+            {
+                <div class="item-requirement-header">Item Stats</div>
+                <div class="item-requirement">
+                    <div class="item-stat-name">@Item.GetItemRequirementSkill()</div>
+                    <div class="item-stat-value">@Item.GetItemRequirementLevel()</div>
+                </div>
+                <div class="item-stats-header">Item Stats</div>
+                @foreach (var stat in Item.GetItemStats())
+                {
+                    <div class="item-stat">
+                        <div class="item-stat-name">@stat.Name</div>
+                        <div class="item-stat-value">
+                            <span>@stat.Value</span>
+                            @if (stat.Bonus > 0)
+                            {
+                                <span class="item-stat-enchantment" title="Enchantment Bonus">(+@stat.Bonus)</span>
+                            }
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Item.Enchantment))
+                {
+                    <div class="item-enchantment-header">Enchantments</div>
+                    @foreach (var stat in Item.GetItemEnchantments())
+                    {
+                        <div class="item-enchantment">
+                            <div class="item-stat-name">@Item.GetEnchantmentName(stat)</div>
+                            <div class="item-stat-value">+@Item.GetEnchantmentValue(stat)</div>
+                        </div>
+                    }
+                }
+                @if (InventoryManagerComponent.CanManage)
+                {
+                    <div class="item-actions">
+                        @if (Item.Equipped)
+                        {
+                            <button @onclick="() => DoItemAction(BusinessLogic.Extended.Location.CharactersBag, Item.OwnerId)" class="btn btn-action">Unequip</button>
+
+                            <br />
+                        }
+                        @if (InventoryManagerComponent.User.Characters != null)
+                        {
+                            @foreach (var plr in InventoryManagerComponent.User.Characters)
+                            {
+                                if (plr.Id == Item.OwnerId)
+                                {
+                                    continue;
+                                }
+                                <button @onclick="()=>DoItemAction(BusinessLogic.Extended.Location.CharactersBag, plr.Id)" class="btn btn-action">
+                                    @(
+                                        "Send " + (Item.Amount > 1 ? Item.Amount + " " : "") + "to " + plr.Alias
+                                        )
+                                </button>
+                            }
+                            <br />
+                            @foreach (var plr in InventoryManagerComponent.User.Characters)
+                            {
+                                if (plr.Id == Item.OwnerId || InventoryManagerComponent.CanEquipItem(Item.ItemInfo, plr))
+                                {
+                                    continue;
+                                }
+                                <button @onclick="()=>DoItemAction(BusinessLogic.Extended.Location.Equipment, plr.Id)" class="btn btn-action">
+                                    @(
+                                        "Equip on " + plr.Alias
+                                        )
+                                </button>
+                            }
+                        }
+                        <button @onclick="() => DoItemAction(BusinessLogic.Extended.Location.Bank, InventoryManagerComponent.User.Id)" class="btn btn-action">@("Send " + (Item.Amount > 1 ? Item.Amount + " " : "") + "to stash")</button>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="item-requirement">
+                    <div class="item-stat-name">@Item.GetItemRequirementSkill()</div>
+                    <div class="item-stat-value">@Item.GetItemRequirementLevel()</div>
+                </div>
+
+            }
         </div>
     </div>
-}
-
-@code {
-    [Parameter]
-    public RavenNest.Models.InventoryItem Item { get; set; }
-
-    [Parameter]
-    public bool Visible { get; set; }
-
-    protected override Task OnParametersSetAsync()
-    {
-        return base.OnParametersSetAsync();
-    }
-
-    protected override Task OnAfterRenderAsync(bool firstRender)
-    {
-        return base.OnAfterRenderAsync(firstRender);
-    }
-
-    public IReadOnlyList<RavenNest.BusinessLogic.Extended.ItemStat> GetItemStats()
-    {
-        return ItemService.GetItemStats(Item);
-    }
-
-    public string GetItemRequirementLevel()
-    {
-        return ItemService.GetItemRequirementLevel(Item);
-    }
-
-    public string GetItemRequirementSkill()
-    {
-        return ItemService.GetItemRequirementSkill(Item);
-    }
-
-    public string GetItemName()
-    {
-        return Item.Name ?? ItemService.GetItem(Item.ItemId)?.Name;
-    }
-
-    public string GetItemType()
-    {
-        return ItemService.GetItem(Item.ItemId)?.Type.ToString();
-    }
-
-    public string GetItemTier()
-    {
-        return ItemService.GetItemTier(Item);
-    }
-}
+</div>

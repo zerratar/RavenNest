@@ -19,6 +19,7 @@ a.nav-link.login {
 .main {
     flex: 1;
     background-color: white;
+    overflow: hidden;
 }
 
 .sidebar {

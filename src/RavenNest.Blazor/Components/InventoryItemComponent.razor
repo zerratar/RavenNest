@@ -1,135 +1,20 @@
-﻿<div class="item draggable"
-     data-item="@Item.Id"
-     draggable="true"
-     title="@Item.ItemInfo.Name"
-     @ondragstart=@(() => HandleDragStart(Item))
-     @onclick=HandleClickEvent
-     @onmouseover=HandleMouseOver
-     @onmouseout=HandleMouseOut>
-    <div class="image-holder">
-        <img class="item-image" src="@ItemImageSrc" />
-    </div>
+﻿
+    <div class="item draggable"
+         data-item="@Item.Id"
+         draggable="true"
+         title="@Item.ItemInfo.Name"
+         @ondragstart=@(() => HandleDragStart(Item))
+         @onclick=HandleClickEvent>
+<ItemTooltip Item="Item">
+        <div class="image-holder">
+        <img class="item-image" src="@Item.GetItemImageSrc()" />
+        </div>
     @if (!Item.Equipped)
     {
-        <div class="item-amount@(Item.Amount < 2 ? " invisible" : "")">
-            @ItemAmountFormatted
+        <div class="item-amount@(Item.Amount <= 1 ? " invisible" : "")">
+            @(Item.GetItemAmount())
         </div>
     }
-    @if (!ExtendedView.Equals(ItemView.None))
-    {
-        <div class="item-details-hover">
-            <div class="item-details-header">
-                <div class="item-name">@Item.ItemInfo.Name</div>
-                @if (!ExtendedView.Equals(ItemView.Detailed))
-                {
-                    <button class="close" @onclick="CloseItemDetails">x</button>
-                }
-            </div>
-            <div class="item-details-content">
-                <div class="item-type">
-                    @Item.ItemInfo?.Type.ToString()}
-                </div>
-                @if (Item.Soulbound.GetValueOrDefault())
-                {
-                    <div class="item-soulbound" title="Soulbound - Item can't be gifted'">
-                        <i class="fa-solid fa-user-lock"></i>
-                    </div>
-                }
-                <div class="image-holder">
-                    <img class="large-item-image" src="@ItemImageSrc" />
-                </div>
-                @switch (ExtendedView)
-                {
-                    case ItemView.Summary:
-                        <div class="item-requirement">
-                            <div class="item-stat-name">@Item.GetItemRequirementSkill()</div>
-                            <div class="item-stat-value">@Item.GetItemRequirementLevel()</div>
-                        </div>
-                        break;
-                    case ItemView.Detailed:
-                        <div class="item-requirement">
-                            <div class="item-stat-name">@Item.GetItemRequirementSkill()</div>
-                            <div class="item-stat-value">@Item.GetItemRequirementLevel()</div>
-                        </div>
-                        @foreach (var stat in Item.GetItemStats())
-                        {
-                            <div class="item-stat">
-                                <div class="item-stat-name">@stat.Name</div>
-                                <div class="item-stat-value">
-                                    <span>@stat.Value</span>
-                                    @if (stat.Bonus > 0)
-                                    {
-                                        <span class="item-stat-enchantment" title="Enchantment Bonus">(+@stat.Bonus)</span>
-                                    }
-                                </div>
-                            </div>
-                        }
-                        @if (!string.IsNullOrEmpty(Item.Enchantment))
-                        {
-                            <div class="item-enchantment-header">Enchantments</div>
-                            @foreach (var stat in Item.GetItemEnchantments())
-                            {
-                                <div class="item-stat enchantment">
-                                    <div class="item-stat-name">@Item.GetEnchantmentName(stat)</div>
-                                    <div class="item-stat-value">+@Item.GetEnchantmentValue(stat)</div>
-                                </div>
-                            }
-                        }
-                        @if (InventoryManagerComponent.CanManage)
-                        {
-                            <div class="item-actions">
-
-                                @if (Item.Equipped)
-                                {
-                                    <button @onclick="() => DoItemAction(BusinessLogic.Extended.Location.CharactersBag, Item.OwnerId)" class="btn btn-action">Unequip</button>
-                                }
-                                else
-                                {
-
-                                    @if (InventoryManagerComponent.User.Characters != null)
-                                    {
-                                        @foreach (var plr in InventoryManagerComponent.User.Characters)
-                                        {
-                                            if (plr.Id == Item.OwnerId)
-                                            {
-                                                continue;
-                                            }
-
-                                            <button @onclick="()=>DoItemAction(BusinessLogic.Extended.Location.CharactersBag, plr.Id)" class="btn btn-action">
-                                                @(
-                                                    "Send " + (Item.Amount > 1 ? Item.Amount + " " : "") + "to " + plr.Alias
-                                                    )
-                                            </button>
-                                        }
-                                        <br />
-                                        @foreach (var plr in InventoryManagerComponent.User.Characters)
-                                        {
-                                            if (plr.Id == Item.OwnerId || InventoryManagerComponent.CanEquipItem(Item.ItemInfo, plr))
-                                            {
-                                                continue;
-                                            }
-
-                                            <button @onclick="()=>DoItemAction(BusinessLogic.Extended.Location.Equipment, plr.Id)" class="btn btn-action">
-                                                @(
-                                                    "Equip on " + plr.Alias
-                                                    )
-                                            </button>
-                                        }
-                                    }
-                                }
-                                <button @onclick="() => DoItemAction(BusinessLogic.Extended.Location.Bank, InventoryManagerComponent.User.Id)" class="btn btn-action">@("Send " + (Item.Amount > 1 ? Item.Amount + " " : "") + "to stash")</button>
-
-
-                                }
-                            </div>
-                        }
-                        break;
-
-                    default:
-                        break;
-                }
-            </div>
-        </div>
-    }
-</div>
+    </ItemTooltip>
+    </div>
 

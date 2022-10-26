@@ -1,38 +1,70 @@
-﻿
-.item-tooltip {
-    position: absolute;
-    display: flex;
-    z-index: 1;
-    width: 200px;
-    background-color: #000000e6;
-    color: white;
-    padding: 20px;
-    border-radius: 8px;
-    flex-flow: column;
-    text-align: left;
-    margin-top: -25px;
-}
-
-.item-stat {
+﻿.item-stat, item-enchantment, item-requirement {
     display: flex;
     justify-content: space-between;
 }
 
+.item-requirement {
+    font-size: 10pt;
+}
+
 .item-name {
     font-size: 15pt;
-    margin-bottom: -5px;
 }
 
 .item-type {
     font-size: 10pt;
     margin-bottom: 10px;
 }
+.item-details-content {
+    padding: 25px 25px 0px 25px;
+    margin:0px;
+}
+.item-wrapper-hover {
+    position: relative;
+    display: inline-block;
+}
 
-.item-requirement {
+.item-details-hover {
+    visibility: hidden;
+    position: absolute;
+    min-width: 300px;
+    max-width: 300px;
+    bottom: 100%;
+    left: 50%;
+    margin-left: -60px;
+    background-color: honeydew;
+    box-shadow: 5px 5px 10px rgb(0 0 0 / 25%);
+    max-width: 100%;
+    border-radius: 20px;
+    z-index:4;
+}
+item-details-hover::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    padding:0px;
+}
+.item-wrapper-hover:hover .item-details-hover {
+    visibility: visible;
+}
+
+.item-details-header {
     display: flex;
     justify-content: space-between;
-    font-size: 10pt;
-    margin-top: 5px;
+    padding: 25px 25px 0px 25px;
+}
+
+.item-name {
+    font-size: 17pt;
+}
+
+.large-item-image {
+    width: 100px;
+    height: 100px;
+    padding: 0px;
+    margin: 0px;
 }
 
 /* ultima */
