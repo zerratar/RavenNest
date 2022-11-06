@@ -8,8 +8,8 @@
 @inject NavigationManager NavigationManager
 
 <div class="tab-view">
-    <button @onclick="ViewMyStream" class="tab-link @(viewState == LoyaltyViewState.MyStream ? "active":"")">My Stream (Loyalty towards me)</button>
     <button @onclick="ViewStreamers" class="tab-link @(viewState == LoyaltyViewState.OtherStream ? "active":"")">Loyalty towards other streamers</button>
+    <button @onclick="ViewMyStream" class="tab-link @(viewState == LoyaltyViewState.MyStream ? "active":"")">My Stream (Loyalty towards me)</button>
 </div>
 
 @if (session == null)
@@ -239,7 +239,7 @@ else
 
 @code {
     private RavenNest.Sessions.SessionInfo session;
-    private LoyaltyViewState viewState = LoyaltyViewState.MyStream;
+    private LoyaltyViewState viewState = LoyaltyViewState.OtherStream;
     private Services.StreamerLoyaltyData loyaltyData;
     private Services.UserLoyaltyData userLoyaltyData;
     private Services.StreamerLoyalty selectedStreamer;
@@ -264,14 +264,8 @@ else
         }
 
         isStreamer = await LoyaltyService.IsStreamerAsync();
-        if (isStreamer)
-        {
-            await ViewMyStream();
-        }
-        else
-        {
-            await ViewStreamers();
-        }
+
+        await ViewStreamers();
     }
 
     private void SelectedPlayerChanged(ChangeEventArgs e)
