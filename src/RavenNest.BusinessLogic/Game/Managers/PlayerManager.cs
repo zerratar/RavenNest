@@ -2412,7 +2412,20 @@ namespace RavenNest.BusinessLogic.Game
             var character = gameData.GetCharacter(data.CharacterId);
 
             if (character == null)
+            {
                 throw new Exception("Unable to update character with ID " + data.CharacterId + ". No such character could be found.");
+            }
+
+            if (gameSession == null)
+            {
+                throw new Exception("Unable to update character with ID " + data.CharacterId + ". Character is not part of a game session.");
+            }
+
+            if (character.UserIdLock == null || !AcquiredUserLock(token, character))
+            {
+                SendRemovePlayerFromSession(character, gameSession, "[TCP API->UpdateCharacter]");
+                return true;
+            }
 
             //var sessionState = gameData.GetSessionState(gameSession.Id);
             var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
@@ -2454,7 +2467,6 @@ namespace RavenNest.BusinessLogic.Game
                 Update Character Experience
              */
 
-            var removeFromSession = !AcquiredUserLock(token, character) && character.UserIdLock != null;
             var skills = gameData.GetCharacterSkills(character.SkillsId);
 
             if (skills == null)
@@ -2464,11 +2476,6 @@ namespace RavenNest.BusinessLogic.Game
                 gameData.Add(skills);
             }
 
-            if (removeFromSession)
-            {
-                SendRemovePlayerFromSession(character, gameSession, "[TCP API->UpdateCharacter]");
-                return true;
-            }
 
             var user = gameData.GetUser(character.UserId);
 
