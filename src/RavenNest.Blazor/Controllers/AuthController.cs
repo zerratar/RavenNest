@@ -43,7 +43,11 @@ namespace RavenNest.Controllers
 
             return Redirect(TwitchRedirectUri + "?response_type=token" +
                 $"&client_id={TwitchClientID}" +
+//#if DEBUG
+//                $"&redirect_uri=https://localhost:5001/login/twitch" +
+//#else
                 $"&redirect_uri=https://www.ravenfall.stream/login/twitch" +
+//#endif
                 $"&scope=user:read:email+bits:read+chat:read+chat:edit+channel:read:subscriptions+channel:read:redemptions+channel:read:predictions" +
                 $"&state={encodedState} " +
                 $"&force_verify=true");

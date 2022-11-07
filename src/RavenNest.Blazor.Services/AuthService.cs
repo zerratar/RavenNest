@@ -104,6 +104,9 @@ namespace RavenNest.Blazor.Services
                         sessionInfo.UserName = user.Login;
                         sessionInfo.UserNameChanged = true;
                     }
+
+                    gameData.SetUserProperty(u.Id, UserProperties.Twitch_PubSub, accessToken);
+                    await ravenbotApi.SendPubSubAccessTokenAsync(user.Id, user.Login, accessToken);
                 }
 
                 await logoService.UpdateUserLogosAsync(user);
@@ -150,13 +153,13 @@ namespace RavenNest.Blazor.Services
             {
                 return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
                     + "https://www.ravenfall.stream/login/twitch"
-                    + "&response_type=token&scope=user:read:email"
+                    + "&response_type=token&scope=user:read:email+bits:read+channel:read:subscriptions+channel:read:redemptions"
                     + "&state=" + GetRandomizedBase64EncodedStateParameters(StateParametersList);
             }
 
             return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
                     + $"https://{Context.Request.Host}/login/twitch"
-                    + "&response_type=token&scope=user:read:email"
+                    + "&response_type=token&scope=user:read:email+bits:read+channel:read:subscriptions+channel:read:redemptions"
                     + "&state=" + GetRandomizedBase64EncodedStateParameters(StateParametersList);
         }
 
@@ -166,7 +169,7 @@ namespace RavenNest.Blazor.Services
             return authManager.GetRandomizedBase64EncodedStateParameters(stateParameters);
         }
 
-        
+
         public List<RavenNest.Models.StateParameters> GetDecodedObjectFromState(string encodedState)
         {
             return authManager.GetDecodedObjectFromState(encodedState);

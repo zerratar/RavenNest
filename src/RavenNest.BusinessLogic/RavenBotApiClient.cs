@@ -7,9 +7,13 @@ namespace RavenNest.BusinessLogic
 {
     public class RavenBotApiClient : IRavenBotApiClient
     {
+//#if DEBUG
+//        private const string host = "127.0.0.1";
+//#else
         private const string host = "ravenbot.ravenfall.stream";
-        private const int port = 6767;
+//#endif
 
+        private const int port = 6767;
         private readonly ILogger<RavenBotApiClient> logger;
 
         public RavenBotApiClient(ILogger<RavenBotApiClient> logger)
