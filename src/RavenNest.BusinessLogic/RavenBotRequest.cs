@@ -69,6 +69,7 @@ namespace RavenNest.BusinessLogic
                 return false;
             }
         }
+
         public void Dispose()
         {
             try
@@ -83,6 +84,11 @@ namespace RavenNest.BusinessLogic
             catch
             {
             }
+        }
+
+        public override string ToString()
+        {
+            return "RavenBotRequest: " + requestPath.ToString();
         }
 
         private class RequestPath

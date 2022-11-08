@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RavenNest.BusinessLogic.Data;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -8,6 +9,7 @@ namespace RavenNest.BusinessLogic.Net
     {
         private readonly Dictionary<int, TcpSocketApiConnection> connections = new Dictionary<int, TcpSocketApiConnection>();
         private readonly object syncRoot = new object();
+
         public void Add(int connectionId, TcpSocketApi server)
         {
             lock (syncRoot)

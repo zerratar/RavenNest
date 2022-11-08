@@ -14,7 +14,10 @@ namespace RavenNest.BusinessLogic.Net
 {
     public class TcpSocketApi : ITcpSocketApi
     {
-        public const int MaxMessageSize = 16 * 1024;
+        public const int MaxMessageSize = 256 * 1024;
+
+        public const int MaxMessageSize_v0820 = 16 * 1024;
+
         public const int DefaultServerPort = 3920;
         public const int ServerRefreshRate = 60;
 
@@ -37,6 +40,7 @@ namespace RavenNest.BusinessLogic.Net
         static long dataReceived = 0;
 
         private readonly object clientMutex = new object();
+        public IGameData GameData => gameData;
 
         public TcpSocketApi(
             IOptions<AppSettings> settings,
@@ -173,9 +177,11 @@ namespace RavenNest.BusinessLogic.Net
                             return;
                         }
 
-                        var update = MessagePackSerializer.Deserialize<CharacterUpdate>(packetData, MessagePack.Resolvers.ContractlessStandardResolver.Options);
-
-                        playerManager.UpdateCharacter(connection.SessionToken, update);
+                        var update = DeserializePacket<CharacterUpdate>(packetData, connection);
+                        if (update != null)
+                        {
+                            playerManager.UpdateCharacter(connection.SessionToken, update);
+                        }
                     }
                     else
                     {
@@ -220,6 +226,52 @@ namespace RavenNest.BusinessLogic.Net
             }
         }
 
+        private static T DeserializePacket<T>(ReadOnlyMemory<byte> packetData, TcpSocketApiConnection connection)
+        {
+            T result = default;
+            var options = MessagePack.Resolvers.ContractlessStandardResolver.Options;
+            if (packetData.Length == MaxMessageSize)
+            {
+                // this is probably an unfinished package.
+                // but we can't say for certain yet. 
+                // try deserializing package
+                try
+                {
+                    result = MessagePackSerializer.Deserialize<T>(packetData, options);
+                }
+                catch
+                {
+                    // we are missing data.
+                    // lets add the bytes to an unfinished packet for this connection
+                    // then hold it until next data comes.
+                    if (connection.UnfinishedBuffer != null) // this may be an infinite growing horror.
+                    {
+                        connection.UnfinishedBuffer.Append(packetData);
+                    }
+                    else
+                    {
+                        connection.UnfinishedBuffer = new PartialByteBuffer(packetData);
+                    }
+                }
+            }
+            else
+            {
+                var partial = connection.UnfinishedBuffer;
+                if (partial != null)
+                {
+                    partial.Append(packetData);
+                    result = MessagePackSerializer.Deserialize<T>(partial, options);
+                    connection.UnfinishedBuffer = null;
+                }
+                else
+                {
+                    result = MessagePackSerializer.Deserialize<T>(packetData, options);
+                }
+            }
+
+            return result;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool CheckSessionTokenValidity(SessionToken sessionToken)
         {
@@ -254,6 +306,50 @@ namespace RavenNest.BusinessLogic.Net
 
             this.running = false;
             this.disposed = true;
+        }
+    }
+
+    public class PartialByteBuffer
+    {
+        private byte[] data;
+        private int count;
+
+        public PartialByteBuffer(byte[] array, int count)
+        {
+            this.data = array;
+            this.count = count;
+        }
+
+        public PartialByteBuffer(ReadOnlyMemory<byte> array)
+        {
+            this.data = array.ToArray();
+            this.count = data.Length;
+        }
+
+        public void Append(ReadOnlyMemory<byte> array)
+        {
+            var tmpArray = new byte[this.count + array.Length];
+            Array.Copy(this.data, 0, tmpArray, 0, this.count);
+            Array.Copy(array.ToArray(), 0, tmpArray, this.count - 1, array.Length);
+            this.data = tmpArray;
+        }
+
+        public void Append(ReadOnlyMemory<byte> array, int count)
+        {
+            var tmpArray = new byte[this.count + count];
+            Array.Copy(this.data, 0, tmpArray, 0, this.count);
+            Array.Copy(array.ToArray(), 0, tmpArray, this.count - 1, count);
+            this.data = tmpArray;
+        }
+
+        public T Deserialize<T>()
+        {
+            return default;
+        }
+
+        public static implicit operator ReadOnlyMemory<byte>(PartialByteBuffer input)
+        {
+            return new ReadOnlyMemory<byte>(input.data);
         }
     }
 }

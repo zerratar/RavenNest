@@ -44,15 +44,18 @@ namespace RavenNest.BusinessLogic
             {
                 using (var req = RavenBotRequest.Create(BuildRequestUri(hostIndex, method), logger))
                 {
-                    if (!await req.SendAsync(args))
+                    if (await req.SendAsync(args))
                     {
-                        // RavenBot is either down or bad hostname.
-                        // to ensure it has nothing to do with the hostname,
-                        // switch to the next available one.
-                        // we then want to re-schedule this call
-                        currentHostIndex = (currentHostIndex + 1) % hostNames.Length;
-                        RescheduleSend(currentHostIndex, method, args);
+                        logger.LogError("[Not an error] " + req.ToString() + " - sent successfully.");
+                        return;
                     }
+
+                    // RavenBot is either down or bad hostname.
+                    // to ensure it has nothing to do with the hostname,
+                    // switch to the next available one.
+                    // we then want to re-schedule this call
+                    currentHostIndex = (currentHostIndex + 1) % hostNames.Length;
+                    RescheduleSend(currentHostIndex, method, args);
                 }
             }
             catch (Exception exc)
