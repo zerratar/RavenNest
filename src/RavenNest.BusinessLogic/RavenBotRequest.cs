@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
@@ -10,17 +11,19 @@ namespace RavenNest.BusinessLogic
     public class RavenBotRequest : IDisposable
     {
         private readonly RequestPath requestPath;
+        private readonly ILogger logger;
         private readonly TcpClient socket;
 
-        private RavenBotRequest(RequestPath requestPath)
+        private RavenBotRequest(RequestPath requestPath, ILogger logger = null)
         {
             this.requestPath = requestPath;
+            this.logger = logger;
             this.socket = new TcpClient();
         }
 
-        public static RavenBotRequest Create(string requestUrl)
+        public static RavenBotRequest Create(string requestUrl, ILogger logger = null)
         {
-            return new RavenBotRequest(RequestPath.Parse(requestUrl));
+            return new RavenBotRequest(RequestPath.Parse(requestUrl), logger);
         }
 
         public async Task<bool> SendAsync(params string[] args)
@@ -57,6 +60,12 @@ namespace RavenNest.BusinessLogic
             }
             catch (Exception exc)
             {
+                if (logger != null)
+                {
+                    var a = string.Join(", ", args);
+                    logger.LogError("Error sending request to Ravenbot: '" + requestPath + "', args: " + a + ", exc: " + exc);
+                }
+
                 return false;
             }
         }
@@ -99,6 +108,11 @@ namespace RavenNest.BusinessLogic
                 {
                     return null;
                 }
+            }
+
+            public override string ToString()
+            {
+                return $"ravenbot://{Host}:{Port}/{Method}";
             }
         }
     }
