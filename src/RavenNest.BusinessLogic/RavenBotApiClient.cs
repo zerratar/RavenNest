@@ -46,7 +46,7 @@ namespace RavenNest.BusinessLogic
                 {
                     if (await req.SendAsync(args))
                     {
-                        logger.LogError("[Not an error] " + req.ToString() + " - sent successfully.");
+                        //logger.LogError("[Not an error] " + req.ToString() + " - sent successfully.");
                         return;
                     }
 
