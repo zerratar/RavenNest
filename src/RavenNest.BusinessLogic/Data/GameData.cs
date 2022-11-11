@@ -2043,7 +2043,7 @@ namespace RavenNest.BusinessLogic.Data
         public Character GetCharacterBySession(Guid sessionId, string userId, bool updateSession = true)
         {
             var session = GetSession(sessionId, updateSession);
-            var characters = GetSessionCharacters(session);
+            var characters = GetActiveSessionCharacters(session);
             return characters.FirstOrDefault(x => GetUser(x.UserId)?.UserId == userId);
         }
 
@@ -2198,18 +2198,19 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<Character> GetSessionCharacters(GameSession currentSession, bool activeSessionOnly = true)
+        public IReadOnlyList<Character> GetSessionCharacters(GameSession currentSession)
         {
             if (currentSession == null) return null;
-            if (activeSessionOnly)
-                return characters[nameof(GameSession), currentSession.UserId]
-                    .OrderByDescending(x => x.LastUsed)
-                    .AsList(x => GetUser(x.UserId) != null && x.UserIdLock == currentSession.UserId && x.LastUsed >= currentSession.Started);
-
-            // in case we need to know all characters that has been locked to this user (based on sessionId).
-            // so we can clear those users out if necessary.
-            // note(zerratar): should be a separate method. Not part of this As we want to ensure we only get the real active players.
             return characters[nameof(GameSession), currentSession.UserId].OrderByDescending(x => x.LastUsed).AsList(x => GetUser(x.UserId) != null);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<Character> GetActiveSessionCharacters(GameSession currentSession)
+        {
+            if (currentSession == null) return null;
+            return characters[nameof(GameSession), currentSession.UserId]
+                .OrderByDescending(x => x.LastUsed)
+                .AsList(x => GetUser(x.UserId) != null && x.UserIdLock == currentSession.UserId && x.LastUsed >= currentSession.Started);
         }
 
 

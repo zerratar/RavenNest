@@ -112,14 +112,7 @@ namespace RavenNest.BusinessLogic.Game
             }
             else
             {
-                var activeChars = gameData.GetSessionCharacters(newGameSession);
-                if (activeChars != null)
-                {
-                    foreach (var c in activeChars)
-                    {
-                        c.UserIdLock = null;
-                    }
-                }
+                ClearUserLocks(newGameSession);
             }
 
             newGameSession.Revision = 0;
@@ -221,14 +214,7 @@ namespace RavenNest.BusinessLogic.Game
             }
             else
             {
-                var activeChars = gameData.GetSessionCharacters(newGameSession);
-                if (activeChars != null)
-                {
-                    foreach (var c in activeChars)
-                    {
-                        c.UserIdLock = null;
-                    }
-                }
+                ClearUserLocks(newGameSession);
             }
 
             newGameSession.Revision = 0;
@@ -248,11 +234,7 @@ namespace RavenNest.BusinessLogic.Game
             var s = gameData.GetSession(session.SessionId);
             if (s != null)
             {
-                var chars = gameData.GetSessionCharacters(s);
-                foreach (var c in chars)
-                {
-                    c.UserIdLock = null;
-                }
+                ClearUserLocks(s);
             }
 
             var result = false;
@@ -265,6 +247,7 @@ namespace RavenNest.BusinessLogic.Game
             return result;
         }
 
+
         public void SendExpMultiplier(DataModels.GameSession session)
         {
             DataModels.GameEvent expEvent = CreateExpMultiplierEvent(session);
@@ -274,6 +257,14 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        private void ClearUserLocks(DataModels.GameSession s)
+        {
+            var characters = gameData.GetSessionCharacters(s);
+            foreach (var c in characters)
+            {
+                c.UserIdLock = null;
+            }
+        }
         private DataModels.GameEvent CreateExpMultiplierEvent(DataModels.GameSession session)
         {
             var activeEvent = gameData.GetActiveExpMultiplierEvent();
@@ -405,7 +396,7 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
-            var characters = gameData.GetSessionCharacters(currentSession);
+            var characters = gameData.GetActiveSessionCharacters(currentSession);
 
             //var state = gameData.GetSessionState(token.SessionId);
             var ge = gameData.CreateSessionEvent(isWarRaid ? GameEventType.WarRaid : GameEventType.Raid,

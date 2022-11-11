@@ -26,7 +26,7 @@ namespace RavenNest.Blazor.Services
                 stream.TwitchUserName = user.UserName;
                 stream.UserTitle = "";
                 stream.Uptime = DateTime.UtcNow - session.Started;
-                stream.PlayerCount = gameData.GetSessionCharacters(session).Count;
+                stream.PlayerCount = gameData.GetActiveSessionCharacters(session).Count;
                 output.Add(stream);
             }
             return output.OrderBy(x => ran.Next()).ToList();

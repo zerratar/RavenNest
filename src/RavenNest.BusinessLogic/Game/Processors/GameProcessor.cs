@@ -225,7 +225,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             if (village != null)
                 village.Process(integrityChecker, gameData, inventoryProvider, session, null, null);
 
-            var characters = gameData.GetSessionCharacters(session);
+            var characters = gameData.GetActiveSessionCharacters(session);
             if (characters.Count > 0)
             {
                 var loyalty = GetTaskProcessor(LoyaltyProcessorName);

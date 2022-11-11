@@ -91,28 +91,35 @@ namespace RavenNest.BusinessLogic.Net
 
         internal void ProcessSendQueue()
         {
-            var toSend = new List<GameEvent>();
-
-            while (toSend.Count < QueueSize && sendQueue.TryDequeue(out var @event))
+            try
             {
-                toSend.Add(@event);
-            }
+                var toSend = new List<GameEvent>();
 
-            if (toSend.Count > 0)
-            {
-                if (!Send(new EventList
+                while (toSend.Count < QueueSize && sendQueue.TryDequeue(out var @event))
                 {
-                    Events = toSend
-                }))
+                    toSend.Add(@event);
+                }
+
+                if (toSend.Count > 0)
                 {
-                    // we tried to send too much.
-                    // throttle queue. and re-enqueue items.
-                    QueueSize = MinQueueSize;
-                    foreach (var item in toSend)
+                    if (!Send(new EventList
                     {
-                        Enqueue(item);
+                        Events = toSend
+                    }))
+                    {
+                        // we tried to send too much.
+                        // throttle queue. and re-enqueue items.
+                        QueueSize = MinQueueSize;
+                        foreach (var item in toSend)
+                        {
+                            Enqueue(item);
+                        }
                     }
                 }
+            }
+            catch
+            {
+                sendQueue.Clear();
             }
         }
     }

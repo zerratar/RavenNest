@@ -70,7 +70,8 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<DataModels.User> GetUsers();
         IReadOnlyList<DataModels.Character> GetCharacters(Func<Character, bool> predicate);
         IReadOnlyList<DataModels.Character> GetCharacters();
-        IReadOnlyList<DataModels.Character> GetSessionCharacters(DataModels.GameSession currentSession, bool activeSessionOnly = true);
+        IReadOnlyList<DataModels.Character> GetSessionCharacters(DataModels.GameSession currentSession);
+        IReadOnlyList<Character> GetActiveSessionCharacters(GameSession currentSession);
         IReadOnlyList<DataModels.RedeemableItem> GetRedeemableItems();
         RedeemableItem GetRedeemableItemByItemId(Guid itemId);
         User GetUserByTwitchId(string twitchUserId);

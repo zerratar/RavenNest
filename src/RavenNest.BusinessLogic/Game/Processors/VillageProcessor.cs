@@ -25,7 +25,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 return;
 
             var village = gameData.GetOrCreateVillageBySession(session);
-            var players = gameData.GetSessionCharacters(session);
+            var players = gameData.GetActiveSessionCharacters(session);
 
             village.Experience += players.Count * 20;
 

@@ -480,7 +480,7 @@ namespace RavenNest.Controllers
                         result.ClientVersion = state.ClientVersion;
                     }
 
-                    var charactersInSession = gameData.GetSessionCharacters(gameSession);
+                    var charactersInSession = gameData.GetActiveSessionCharacters(gameSession);
                     if (charactersInSession != null)
                     {
                         var session = this.HttpContext.GetSessionId();

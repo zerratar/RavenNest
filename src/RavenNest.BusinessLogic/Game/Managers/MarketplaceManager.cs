@@ -364,7 +364,7 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
-            var chars = gameData.GetSessionCharacters(session);
+            var chars = gameData.GetActiveSessionCharacters(session);
             return chars.FirstOrDefault(x => x.UserId == user.Id);
         }
 

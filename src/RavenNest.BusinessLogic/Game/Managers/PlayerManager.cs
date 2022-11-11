@@ -378,7 +378,7 @@ namespace RavenNest.BusinessLogic.Game
                 result.Success = true;
                 var chars = players.Characters ?? new Guid[0];
                 var charactersToAdd = new HashSet<Guid>(players.Characters);
-                var currentCharacters = gameData.GetSessionCharacters(session);
+                var currentCharacters = gameData.GetActiveSessionCharacters(session);
                 foreach (var c in currentCharacters)
                 {
                     if (charactersToAdd.Contains(c.Id))
@@ -473,10 +473,12 @@ namespace RavenNest.BusinessLogic.Game
                 // check if we need to remove the player from
                 // their active session.
 
-                var sessionChars = gameData.GetSessionCharacters(session);
+                var sessionChars = gameData.GetActiveSessionCharacters(session);
                 if (sessionChars != null && sessionChars.Count > 0)
                 {
-                    var charactersInSession = sessionChars.Where(x => x.UserId == user.Id).ToList();
+                    // get the characters from the same user, in case they have another character already on this stream.
+                    // set them all to userIdLock = null. But also only if it is not the character we are joining with.
+                    var charactersInSession = sessionChars.Where(x => x.UserId == user.Id && x.Id != character.Id).ToList();
                     foreach (var cs in charactersInSession)
                     {
                         cs.UserIdLock = null;
@@ -963,7 +965,7 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
-            var sessionCharacters = gameData.GetSessionCharacters(session);
+            var sessionCharacters = gameData.GetActiveSessionCharacters(session);
             var character = sessionCharacters.FirstOrDefault(x => x.UserId == user.Id);
             if (character == null)
             {
@@ -1184,7 +1186,7 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
-            var sessionCharacters = gameData.GetSessionCharacters(session);
+            var sessionCharacters = gameData.GetActiveSessionCharacters(session);
             var character = sessionCharacters.FirstOrDefault(x => x.UserId == user.Id);
             if (character == null)
             {
@@ -3460,7 +3462,7 @@ namespace RavenNest.BusinessLogic.Game
             var user = gameData.GetUserByTwitchId(userId);
             if (user == null) return null;
 
-            var sessionCharacters = gameData.GetSessionCharacters(session);
+            var sessionCharacters = gameData.GetActiveSessionCharacters(session);
             return sessionCharacters.FirstOrDefault(x => x.UserId == user.Id);
         }
 
@@ -3468,7 +3470,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             var session = gameData.GetSession(token.SessionId);
             if (session == null) return null;
-            var sessionCharacters = gameData.GetSessionCharacters(session);
+            var sessionCharacters = gameData.GetActiveSessionCharacters(session);
             return sessionCharacters.FirstOrDefault(x => x.Id == characterId);
         }
 

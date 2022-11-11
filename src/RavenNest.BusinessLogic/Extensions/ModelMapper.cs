@@ -43,7 +43,7 @@ namespace RavenNest.BusinessLogic.Extensions
             session.UserName = user.UserName;
             session.AdminPrivileges = user.IsAdmin.GetValueOrDefault();
             session.ModPrivileges = user.IsModerator.GetValueOrDefault();
-            session.Players = gameData.GetSessionCharacters(data)
+            session.Players = gameData.GetActiveSessionCharacters(data)
                 .Select(x => Map(gameData, x))
                 .Where(x => x != null)
                 .ToList();
@@ -244,7 +244,6 @@ namespace RavenNest.BusinessLogic.Extensions
         {
             return user.MapForWebsite(gameData, character);
         }
-
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static HighscorePlayer MapForHighscore(this Character character, IGameData gameData)
