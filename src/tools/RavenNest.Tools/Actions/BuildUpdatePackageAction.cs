@@ -12,7 +12,10 @@ namespace RavenNest.Tools.Actions
     {
         private const string RavenBotFolder = @"C:\git\RavenBot";
         private const string UnityBuildFolder = @"C:\git\Ravenfall Legacy\Build";
+
         private BuildState buildState = BuildState.Full;
+        private SevenZipCompressor compressor;
+        private string targetBuildName;
 
         public BuildUpdatePackageAction(
           ProgressBar toolProgress,
@@ -27,10 +30,10 @@ namespace RavenNest.Tools.Actions
             SevenZipCompressor.SetLibraryPath(dll);
             compressor = new SevenZipCompressor
             {
-                ArchiveFormat = OutArchiveFormat.SevenZip,
                 PreserveDirectoryRoot = true,
-                CompressionLevel = CompressionLevel.Ultra,
+                ArchiveFormat = OutArchiveFormat.SevenZip,
                 CompressionMethod = CompressionMethod.Lzma2,
+                CompressionLevel = CompressionLevel.Ultra,
                 CompressionMode = CompressionMode.Create
             };
             compressor.Compressing += Compressor_Compressing;
@@ -39,10 +42,6 @@ namespace RavenNest.Tools.Actions
 
         public ProgressBar ToolProgress { get; }
         public TextBlock ToolStatus { get; }
-
-        private SevenZipCompressor compressor;
-        private string targetBuildName;
-
         public async void Apply()
         {
             if (buildState == BuildState.RavenBot)
@@ -118,16 +117,34 @@ namespace RavenNest.Tools.Actions
             if (a == null)
                 return "ravenfall.7z";
 
-            System.Version v = IncrementVersion(a.Version, 0, 0, 0, 1);
+            System.Version v = IncrementVersion(a.Version, 0, 0, 0, 1); // 0,0,1,0
             return "Ravenfall.v" + v.ToString() + "a-alpha.7z";
         }
 
         private System.Version IncrementVersion(System.Version version, int major, int minor, int build, int revision)
         {
-            major = version.Major < 0 ? major : version.Major + major;
-            minor = version.Minor < 0 ? minor : version.Minor + minor;
-            build = version.Build < 0 ? build : version.Build + build;
             revision = version.Revision < 0 ? revision : version.Revision + revision;
+            if (revision >= 10)
+            {
+                revision = 0;
+                build++;
+            }
+
+            if (build >= 10)
+            {
+                build = 0;
+                minor++;
+            }
+
+            if (minor >= 10)
+            {
+                minor = 0;
+                major++;
+            }
+
+            build = version.Build + build;
+            minor = version.Minor + minor;
+            major = version.Major + major;
             return new System.Version(major, minor, build, revision);
         }
 

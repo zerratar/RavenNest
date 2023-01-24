@@ -2834,6 +2834,8 @@ namespace RavenNest.BusinessLogic.Data
 
         public void EnqueueGameEvent(GameEvent entity)
         {
+            // is it possible that there are multiple tcp connections from the client or same streamer?
+            // are we using the wrong connection if so? or wrong session?
             if (tcpConnectionProvider.TryGet(entity.GameSessionId, out var connection) && connection.Connected)
             {
                 connection.Enqueue(entity);

@@ -4,6 +4,7 @@ using RavenNest.BusinessLogic.Extensions;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using RavenNest.BusinessLogic.Data;
+using System;
 
 namespace RavenNest.BusinessLogic.Net
 {
@@ -17,6 +18,7 @@ namespace RavenNest.BusinessLogic.Net
         private readonly int connectionId;
         private readonly ConcurrentQueue<GameEvent> sendQueue = new ConcurrentQueue<GameEvent>();
         private TcpSocketApi server;
+
         private DataModels.SessionState sessionState;
 
         public TcpSocketApiConnection(int connectionId, TcpSocketApi server)
@@ -24,8 +26,11 @@ namespace RavenNest.BusinessLogic.Net
             this.gameData = server.GameData;
             this.connectionId = connectionId;
             this.server = server;
+            this.Created = DateTime.UtcNow;
         }
 
+        public DateTime Created { get; }
+        public int ConnectionId => connectionId;
         public SessionToken SessionToken { get; set; }
         public bool Connected => server.IsConnected(this.connectionId);
         public PartialByteBuffer UnfinishedBuffer { get; set; }

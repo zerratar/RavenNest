@@ -1,5 +1,4 @@
-﻿using RavenNest.BusinessLogic.Data;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -36,11 +35,43 @@ namespace RavenNest.BusinessLogic.Net
                 return connections.TryGetValue(connectionId, out connection);
 
         }
+
         public bool TryGet(Guid sessionId, out TcpSocketApiConnection connection)
         {
             lock (syncRoot)
             {
-                connection = connections.Values.FirstOrDefault(x => x.SessionToken != null && x.SessionToken.SessionId == sessionId);
+                //connection = connections.Values.OrderByDescending(x => x.Created).FirstOrDefault(x => x.SessionToken != null && x.SessionToken.SessionId == sessionId);
+                connection = null;
+                List<int> removeConnections = null;
+                foreach (var c in connections.Values.OrderByDescending(x => x.Created).Where(x =>
+                     x.SessionToken != null &&
+                     x.SessionToken.SessionId == sessionId))
+                {
+                    if (connection == null || !connection.Connected)
+                    {
+                        connection = c;
+                    }
+
+                    if (!c.Connected)
+                    {
+                        // this is not good, we still have disconnected clients.
+                        // add for removal.
+                        if (removeConnections == null)
+                        {
+                            removeConnections = new List<int>();
+                        }
+                        removeConnections.Add(c.ConnectionId);
+                    }
+                }
+
+                if (removeConnections != null && removeConnections.Count > 0)
+                {
+                    foreach (var c in removeConnections)
+                    {
+                        Remove(c);
+                    }
+                }
+
                 return connection != null;
             }
         }
