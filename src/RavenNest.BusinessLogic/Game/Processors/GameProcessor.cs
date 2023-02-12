@@ -19,7 +19,8 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private const string ClanProcessorName = "Clan";
         private const string RestedProcessorName = "Rested";
 
-        private readonly ConcurrentDictionary<string, ITaskProcessor> taskProcessors = new ConcurrentDictionary<string, ITaskProcessor>();
+        private readonly ConcurrentDictionary<string, ITaskProcessor> taskProcessors 
+            = new ConcurrentDictionary<string, ITaskProcessor>();
 
         private readonly IGameData gameData;
         private readonly IGameManager gameManager;
@@ -32,9 +33,9 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private readonly IPlayerInventoryProvider inventoryProvider;
         private readonly SessionToken sessionToken;
 
-        private readonly TimeSpan ServerTimePushInterval = TimeSpan.FromSeconds(5);
-        private readonly TimeSpan ExpMultiplierPushInterval = TimeSpan.FromSeconds(5);
-        private readonly TimeSpan villageInfoPushInterval = TimeSpan.FromSeconds(10);
+        private readonly TimeSpan ServerTimePushInterval = TimeSpan.FromSeconds(30);
+        private readonly TimeSpan ExpMultiplierPushInterval = TimeSpan.FromSeconds(15);
+        private readonly TimeSpan villageInfoPushInterval = TimeSpan.FromSeconds(30);
         private readonly TimeSpan pubsubPushInterval = TimeSpan.FromSeconds(30);
         private readonly TimeSpan permissionInfoPushInterval = TimeSpan.FromSeconds(60);
 
@@ -193,7 +194,6 @@ namespace RavenNest.BusinessLogic.Game.Processors
             }
         }
 
-
         private void PushExpMultiplier(DateTime utcNow)
         {
             var session = gameData.GetSession(sessionToken.SessionId);
@@ -207,7 +207,6 @@ namespace RavenNest.BusinessLogic.Game.Processors
                 }
             }
         }
-
 
         private void UpdateSessionTasks(DateTime utcNow)
         {

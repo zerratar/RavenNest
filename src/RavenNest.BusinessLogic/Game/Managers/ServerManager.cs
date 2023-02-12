@@ -31,7 +31,7 @@ namespace RavenNest.BusinessLogic.Game
                     Time = time
                 });
 
-                gameData.Add(gameEvent);
+                gameData.EnqueueGameEvent(gameEvent);
             }
         }
 

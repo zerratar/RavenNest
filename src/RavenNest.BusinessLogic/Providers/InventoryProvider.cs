@@ -357,11 +357,17 @@ namespace RavenNest.BusinessLogic.Providers
                 lock (mutex)
                 {
                     // No stack exists. That means we dont own that item.
-                    var existingStacks = items.Where(x => CanBeStacked(x, item)).ToArray();
-                    if (existingStacks == null || existingStacks.Length == 0)
+
+                    if (items.All(x => x.Id != item.Id))
                     {
                         return false;
                     }
+
+                    //var existingStacks = items.Where(x => CanBeStacked(x, item)).ToArray();
+                    //if (existingStacks == null || existingStacks.Length == 0)
+                    //{
+                    //    return false;
+                    //}
 
                     if (item.Equipped)
                     {
@@ -417,11 +423,11 @@ namespace RavenNest.BusinessLogic.Providers
                 lock (mutex)
                 {
                     // No stack exists. That means we dont own that item.
-                    var existingStacks = items.AsList(x => CanBeStacked(x, item));
-                    if (existingStacks == null || existingStacks.Count == 0)
+                    if (items.All(x => x.Id != item.Id))
                     {
                         return false;
                     }
+
 
                     if (!item.Equipped)
                     {
@@ -435,11 +441,15 @@ namespace RavenNest.BusinessLogic.Providers
                         return true;
                     }
 
-                    var otherStack = existingStacks.FirstOrDefault(x => x.Id != item.Id);
-                    if (otherStack != null)
+                    var existingStacks = items.AsList(x => CanBeStacked(x, item));
+                    if (existingStacks.Count > 0)
                     {
-                        otherStack.Amount++;
-                        RemoveStack(item);
+                        var otherStack = existingStacks.FirstOrDefault(x => x.Id != item.Id);
+                        if (otherStack != null)
+                        {
+                            otherStack.Amount++;
+                            RemoveStack(item);
+                        }
                     }
 
                     return true;

@@ -9,7 +9,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     public class VillageProcessor : PlayerTaskProcessor
     {
         private TimeSpan updateInterval = TimeSpan.FromSeconds(30);
-        private TimeSpan updateExpInterval = TimeSpan.FromSeconds(10);
+        private TimeSpan updateExpInterval = TimeSpan.FromSeconds(15);
         private DateTime lastUpdate = DateTime.MinValue;
         private DateTime lastExpSend = DateTime.MinValue;
 

@@ -343,7 +343,13 @@ namespace RavenNest.BusinessLogic.Game
                 return result;
             }
 
+
+#if DEBUG
+            var sessionOwner = gameData.GetUser(session.UserId);
+            if (!sessionOwner.IsAdmin.GetValueOrDefault() && isGameRestore && (c.UserIdLock != null && c.UserIdLock != session.UserId))
+#else
             if (isGameRestore && (c.UserIdLock != null && c.UserIdLock != session.UserId))
+#endif
             {
                 var targetUser = gameData.GetUser(c.UserIdLock.GetValueOrDefault());
                 result.Success = false;
@@ -1116,8 +1122,8 @@ namespace RavenNest.BusinessLogic.Game
             try
             {
                 var player = gameData.GetCharacter(update.CharacterId);//update.CharacterId != null
-                //? gameData.GetCharacter(update.CharacterId)
-                //: GetCharacter(sessionToken, update.UserId);
+                                                                       //? gameData.GetCharacter(update.CharacterId)
+                                                                       //: GetCharacter(sessionToken, update.UserId);
 
                 var session = gameData.GetSession(sessionToken.SessionId);
                 if (player == null || session == null) return false;
@@ -2420,7 +2426,8 @@ namespace RavenNest.BusinessLogic.Game
 
             if (gameSession == null)
             {
-                throw new Exception("Unable to update character with ID " + data.CharacterId + ". Character is not part of a game session.");
+                logger.LogError("Unable to update character with ID " + data.CharacterId + " (" + character.Name + "). Character is not part of a game session.");
+                return false;
             }
 
             if (character.UserIdLock == null || !AcquiredUserLock(token, character))
