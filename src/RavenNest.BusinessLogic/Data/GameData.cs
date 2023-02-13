@@ -370,7 +370,7 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureClanLevels(clans);
                 EnsureExpMultipliersWithinBounds(expMultiplierEvents);
                 EnsureCraftingRequirements(items);
-                MergeLoyaltyData(loyalty);
+                //MergeLoyaltyData(loyalty);
                 MergeClans();
 
                 RemoveDuplicatedClanMembers();

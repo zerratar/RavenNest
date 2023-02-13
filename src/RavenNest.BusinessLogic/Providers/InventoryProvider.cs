@@ -796,10 +796,12 @@ namespace RavenNest.BusinessLogic.Providers
 
                 if (addedAttrId.Add(attr.Id))
                 {
+                    var strValue = GenerateRandomAttributeValue(attr, out var dblValue);
                     output.Add(new MagicItemAttribute
                     {
                         Attribute = attr,
-                        Value = GenerateRandomAttributeValue(attr)
+                        Value = strValue,
+                        DoubleValue = dblValue
                     });
                 }
             }
@@ -821,12 +823,12 @@ namespace RavenNest.BusinessLogic.Providers
         //    return CreateRandomAttributes(s.AsReadOnly(gameData), attrCount);
         //}
 
-        private string GenerateRandomAttributeValue(ItemAttribute attr)
+        private string GenerateRandomAttributeValue(ItemAttribute attr, out double value)
         {
             var minValue = GetValue(attr.MinValue, out var minAttrValType);
             var maxValue = GetValue(attr.MaxValue, out var maxAttrValType);
             var ran = random.NextDouble();
-            var value = Math.Max(minValue, (double)ran * maxValue);
+            value = Math.Max(minValue, (double)ran * maxValue);
             return maxAttrValType == RavenNest.Models.AttributeValueType.Percent ? $"{value}%" : value.ToString();
         }
 
@@ -1255,6 +1257,7 @@ namespace RavenNest.BusinessLogic.Providers
     {
         public DataModels.ItemAttribute Attribute { get; set; }
         public string Value { get; set; }
+        public double DoubleValue { get; set; }
     }
 
     public static class InventoryItemExtensions

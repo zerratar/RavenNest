@@ -11,6 +11,11 @@ namespace RavenNest.Models
             Result = ItemEnchantmentResultValue.Error
         };
 
+        public static ItemEnchantmentResult NotAvailable() => new ItemEnchantmentResult
+        {
+            Result = ItemEnchantmentResultValue.NotAvailable
+        };
+
         public static ItemEnchantmentResult Failed(DateTime? cooldown = null) => new ItemEnchantmentResult
         {
             Result = ItemEnchantmentResultValue.Failed,
@@ -36,9 +41,10 @@ namespace RavenNest.Models
     public enum ItemEnchantmentResultValue
     {
         Error,
+        NotAvailable,
         NotEnchantable,
         NotReady,
         Failed,
-        Success
+        Success,
     }
 }

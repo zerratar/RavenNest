@@ -15,7 +15,8 @@ namespace RavenNest.BusinessLogic.Game
         private readonly IGameData gameData;
         private readonly Random random;
         private const int MaximumEnchantmentCount = 10;
-
+        private const double MinEnchantmentInterval = 30;
+        private const double MaxEnchantmentInterval = 60;
         public EnchantmentManager(ILogger<EnchantmentManager> logger, IGameData gameData)
         {
             this.logger = logger;
@@ -109,13 +110,14 @@ namespace RavenNest.BusinessLogic.Game
                     enchantedItem = invItem;
                 }
 
+                var enchantmentAttributes = inventory.CreateRandomAttributes(enchantedItem, targetAttributeCount);
                 enchantedItem.Soulbound = true;
-                enchantedItem.Enchantment = FormatEnchantment(inventory.CreateRandomAttributes(enchantedItem, targetAttributeCount));
+                enchantedItem.Enchantment = FormatEnchantment(enchantmentAttributes);
 
                 var itemName = gameData.GetItem(item.ItemId)?.Name;
 
                 // Really stupid naming right now.
-                enchantedItem.Name = "Enchanted " + itemName;
+                enchantedItem.Name = GetEnchantedName(itemName, enchantmentAttributes);
 
                 var multiplier = gameData.GetActiveExpMultiplierEvent()?.Multiplier ?? 1d;
                 var gainedExp = GameMath.GetEnchantingExperience(clanSkill.Level, targetAttributeCount, itemLvReq) * multiplier;
@@ -158,6 +160,17 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        private string GetEnchantedName(string itemName, List<MagicItemAttribute> attributes)
+        {
+            var highestValueAttribute = attributes.OrderByDescending(x => x.DoubleValue).FirstOrDefault();
+            var attrName = highestValueAttribute.Attribute.Name.ToLower();
+
+            attrName = char.ToUpper(attrName[0]) + attrName.Substring(1);
+
+            var rank = attributes.Count > 1 ? " +" + (attributes.Count - 1) : "";
+            return "Enchanted " + itemName + " of " + attrName + rank;
+        }
+
         private static DateTime GetCooldown(DataModels.User user, float random, double scale = 1d)
         {
 #if DEBUG
@@ -165,11 +178,11 @@ namespace RavenNest.BusinessLogic.Game
             {
                 //random *= 0.f;
                 scale *= 0.5f;
-                return DateTime.UtcNow.AddSeconds(Math.Min(random * 60d, 30) * scale);
+                return DateTime.UtcNow.AddSeconds(Math.Min(random * MaxEnchantmentInterval, MinEnchantmentInterval) * scale);
             }
 #endif
 
-            return DateTime.UtcNow.AddMinutes(Math.Min(random * 60d, 30) * scale);
+            return DateTime.UtcNow.AddMinutes(Math.Min(random * MaxEnchantmentInterval, MinEnchantmentInterval) * scale);
         }
 
         private static string FormatEnchantment(List<MagicItemAttribute> magicItemAttributes)

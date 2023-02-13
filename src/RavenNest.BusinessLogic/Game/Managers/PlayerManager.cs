@@ -1303,10 +1303,9 @@ namespace RavenNest.BusinessLogic.Game
             if (character == null || enchantingSkill == null)
                 return ItemEnchantmentResult.Error();
 
-#warning only administrators can currently enchant items.
             var user = gameData.GetUser(character.UserId);
 
-            if (user == null || !user.IsAdmin.GetValueOrDefault())
+            if (user == null)
                 return ItemEnchantmentResult.Error();
 
             if (!integrityChecker.VerifyPlayer(token.SessionId, character.Id, 0))
@@ -1318,19 +1317,22 @@ namespace RavenNest.BusinessLogic.Game
 
             var clanMembership = gameData.GetClanMembership(character.Id);
             if (clanMembership == null)
-                return ItemEnchantmentResult.Error();
+                return ItemEnchantmentResult.NotAvailable();
 
             var skills = gameData.GetClanSkills(clanMembership.ClanId);
             if (skills == null || skills.Count == 0)
-                return ItemEnchantmentResult.Error();
+                return ItemEnchantmentResult.NotAvailable();
 
-            var inventory = inventoryProvider.Get(character.Id);
             var clanSkill = skills.FirstOrDefault(x => x.SkillId == enchantingSkill.Id);
-            var item = inventory.Get(inventoryItemId);
 
             if (clanSkill == null)
-                return ItemEnchantmentResult.Error();
+                return ItemEnchantmentResult.NotAvailable();
 
+            var inventory = inventoryProvider.Get(character.Id);
+            var item = inventory.Get(inventoryItemId);
+
+            if (item.IsNull())
+                return ItemEnchantmentResult.Error();
 
             return enchantmentManager.EnchantItem(token.SessionId, clanSkill, character, inventory, item, resources);
         }
