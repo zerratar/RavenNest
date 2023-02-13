@@ -188,7 +188,8 @@ namespace RavenNest.BusinessLogic.Net
 
                 this.killTask = new TaskCompletionSource<object>();
                 this.gameProcessor = new GameProcessor(
-                    ravenBotApi, integrityChecker, this, extWsProvider, tcpConnectionProvider, sessionManager, inventoryProvider, gameData, gameManager, sessionToken);
+                    ravenBotApi, integrityChecker, this, 
+                    extWsProvider, tcpConnectionProvider, sessionManager, inventoryProvider, gameData, gameManager, sessionToken);
             }
 
             internal Guid SessionId => this.sessionToken.SessionId;

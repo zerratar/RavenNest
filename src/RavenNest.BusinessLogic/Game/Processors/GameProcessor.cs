@@ -19,7 +19,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private const string ClanProcessorName = "Clan";
         private const string RestedProcessorName = "Rested";
 
-        private readonly ConcurrentDictionary<string, ITaskProcessor> taskProcessors 
+        private readonly ConcurrentDictionary<string, ITaskProcessor> taskProcessors
             = new ConcurrentDictionary<string, ITaskProcessor>();
 
         private readonly IGameData gameData;
@@ -179,13 +179,16 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
         private async Task PushGameEventsAsync(DateTime utcNow, CancellationTokenSource cts)
         {
-            var events = gameManager.GetGameEvents(sessionToken);
-            if (events.Count > 0)
+            if (gameConnection != null)
             {
-                var eventList = new EventList();
-                eventList.Revision = events.Revision;
-                eventList.Events = events.ToList();
-                await gameConnection.PushAsync("game_event", eventList, cts.Token);
+                var events = gameManager.GetGameEvents(sessionToken);
+                if (events.Count > 0)
+                {
+                    var eventList = new EventList();
+                    eventList.Revision = events.Revision;
+                    eventList.Events = events.ToList();
+                    await gameConnection.PushAsync("game_event", eventList, cts.Token);
+                }
             }
 
             if (tcpConnectionProvider.TryGet(this.sessionToken.SessionId, out var connection) && connection.Connected)
