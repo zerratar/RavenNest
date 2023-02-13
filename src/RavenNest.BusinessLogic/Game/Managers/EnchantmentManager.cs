@@ -168,7 +168,7 @@ namespace RavenNest.BusinessLogic.Game
             attrName = char.ToUpper(attrName[0]) + attrName.Substring(1);
 
             var rank = attributes.Count > 1 ? " +" + (attributes.Count - 1) : "";
-            return "Enchanted " + itemName + " of " + attrName + rank;
+            return /*"Enchanted " + */itemName + " of " + attrName + rank;
         }
 
         private static DateTime GetCooldown(DataModels.User user, float random, double scale = 1d)
