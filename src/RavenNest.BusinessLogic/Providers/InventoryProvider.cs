@@ -764,7 +764,8 @@ namespace RavenNest.BusinessLogic.Providers
 
         public List<MagicItemAttribute> CreateRandomAttributes(DataModels.InventoryItem targetItem, int attributeCount)
         {
-            var availableAttributes = gameData.GetItemAttributes();
+#warning Enchantment for Health has been disabled. FIX ME!
+            var availableAttributes = gameData.GetItemAttributes().AsList(x => x.Name.ToUpper() != "HEALTH");
             var addedAttrId = new HashSet<Guid>();
 
             if (availableAttributes.Count == 0)
