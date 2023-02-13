@@ -134,6 +134,12 @@ button.btn.btn-action:active {
     cursor: pointer;
 }
 
+.inventory-item.enchanted .item-image img {
+    border: 1px solid #90e19f;
+    background-color: #f9fff9;
+    box-shadow: 3px 3px 10px hsl(113deg 37% 50% / 38%);
+}
+
 .item-amount {
     position: relative;
     top: -28px;

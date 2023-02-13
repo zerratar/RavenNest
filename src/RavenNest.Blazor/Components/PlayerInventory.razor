@@ -12,7 +12,7 @@
         <div class="inventory-items">
             @foreach (var item in GetEquippedItems())
             {
-                <div class="inventory-item equipped" @onclick="(()=>ShowItemDetails(item))">
+                <div class="inventory-item equipped @GetEnchantedItemClass(item.Enchantment)" @onclick="(()=>ShowItemDetails(item))">
                     <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
                 </div>
             }
@@ -32,7 +32,7 @@
         <div class="inventory-items inventory">
             @foreach (var item in GetInventoryItems())
             {
-                <div class="inventory-item" @onclick="(()=>ShowItemDetails(item))">
+                <div class="inventory-item @GetEnchantedItemClass(item.Enchantment)" @onclick="(()=>ShowItemDetails(item))">
                     <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
                     @if (item.Amount > 1)
                     {
@@ -177,6 +177,12 @@
         characters = await PlayerService.GetMyPlayersAsync();
     }
 
+
+    public string GetEnchantedItemClass(string enchantment)
+    {
+        // simplify it for now
+        return enchantment != null && enchantment.Length > 0 ? "enchanted" : "";
+    }
 
     public void SendToCharacter(WebsitePlayer targetCharacter)
     {
