@@ -55,7 +55,7 @@ namespace RavenNest.BusinessLogic.Game
         void AddItem(Guid characterId, Guid itemId, int amount = 1);
         Guid AddItemInstance(SessionToken token, string userId, RavenNest.Models.InventoryItem instance);
         AddItemInstanceResult AddItemInstanceDetailed(SessionToken token, string userId, RavenNest.Models.InventoryItem instance);
-        AddItemResult AddItem(SessionToken token, string userId, Guid itemId);
+        AddItemResult AddItem(SessionToken token, string userId, Guid itemId, out DataModels.InventoryItem instance);
         Task<bool> ResetPlayerSkillsAsync(Guid characterId);
         AddItemResult CraftItem_Old(SessionToken token, string userId, Guid itemId, int amount = 1);
         ItemEnchantmentResult EnchantItem(SessionToken token, string userId, Guid inventoryItemId);

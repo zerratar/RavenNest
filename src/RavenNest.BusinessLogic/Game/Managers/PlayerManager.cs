@@ -1466,13 +1466,14 @@ namespace RavenNest.BusinessLogic.Game
 
             resources.Wood -= item.WoodCost * craftableAmount;
             resources.Ore -= item.OreCost * craftableAmount;
-
+            DataModels.InventoryItem itemStack = null;
             for (var i = 0; i < craftableAmount; ++i)
             {
-                AddItem(token, userId, itemId);
+                AddItem(token, userId, itemId, out itemStack);
             }
             result.Value = craftableAmount;
             result.Status = craftableAmount == amount ? CraftItemResultStatus.Success : CraftItemResultStatus.PartialSuccess;
+            result.InventoryItemId = itemStack.Id;
             return result;
         }
 
@@ -1524,7 +1525,7 @@ namespace RavenNest.BusinessLogic.Game
 
             for (var i = 0; i < amount; ++i)
             {
-                AddItem(token, userId, itemId);
+                AddItem(token, userId, itemId, out _);
             }
 
             return AddItemResult.Added;
@@ -1719,8 +1720,10 @@ namespace RavenNest.BusinessLogic.Game
 
             return addedItem.Id;
         }
-        public AddItemResult AddItem(SessionToken token, string userId, Guid itemId)
+        public AddItemResult AddItem(SessionToken token, string userId, Guid itemId, out DataModels.InventoryItem itemStack)
         {
+            itemStack = null;
+
             var item = gameData.GetItem(itemId);
             if (item == null)
                 return AddItemResult.Failed;
@@ -1746,7 +1749,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var inventory = inventoryProvider.Get(character.Id);
 
-            var addedItems = inventory.AddItem(itemId, tag: tag, soulbound: item.Soulbound.GetValueOrDefault());
+            itemStack = inventory.AddItem(itemId, tag: tag, soulbound: item.Soulbound.GetValueOrDefault()).FirstOrDefault();
             //inventory.EquipBestItems();
 
             return AddItemResult.Added;
