@@ -128,8 +128,10 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
-        public bool AcceptClanInvite(Guid inviteId)
+        public bool AcceptClanInvite(Guid inviteId, out DataModels.Clan clan, out DataModels.ClanRole role)
         {
+            clan = null;
+            role = null;
             // invite does not exist
             var invite = gameData.GetClanInvite(inviteId);
             if (invite == null)
@@ -150,12 +152,12 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             // clan does not exist
-            var clan = gameData.GetClan(invite.ClanId);
+            clan = gameData.GetClan(invite.ClanId);
             if (clan == null)
                 return false;
 
             var roles = gameData.GetClanRoles(clan.Id);
-            var role = roles.OrderBy(x => x.Level).FirstOrDefault(x => x.Level > 0);
+            role = roles.OrderBy(x => x.Level).FirstOrDefault(x => x.Level > 0);
             if (role == null)
                 role = roles.FirstOrDefault();
 
@@ -183,6 +185,11 @@ namespace RavenNest.BusinessLogic.Game
 
             notificationManager.ClanInviteAccepted(invite.ClanId, invite.CharacterId, DateTime.UtcNow, invite.InviterUserId);
             return true;
+        }
+
+        public bool AcceptClanInvite(Guid inviteId)
+        {
+            return AcceptClanInvite(inviteId, out _, out _);
         }
 
         public bool RemoveClanInvite(Guid inviteId)
@@ -692,14 +699,24 @@ namespace RavenNest.BusinessLogic.Game
             return SendPlayerInvite(clan.Id, characterId, senderCharacterId);
         }
 
-        public bool AcceptClanInvite(Guid characterId, string argument)
+        public JoinClanResult AcceptClanInvite(Guid characterId, string argument)
         {
             var invites = gameData.GetClanInvitesByCharacter(characterId);
             var invite = invites.OrderByDescending(x => x.Created).FirstOrDefault();
             if (invite == null)
-                return false;
+                return new JoinClanResult();
 
-            return AcceptClanInvite(invite.Id);
+            if (AcceptClanInvite(invite.Id, out var c, out var r))
+            {
+                return new JoinClanResult
+                {
+                    Success = true,
+                    Clan = ModelMapper.Map(gameData, c),
+                    Role = ModelMapper.Map(r)
+                };
+            }
+
+            return new JoinClanResult();
         }
 
         public bool DeclineClanInvite(Guid characterId, string argument)
@@ -712,10 +729,10 @@ namespace RavenNest.BusinessLogic.Game
             return RemovePlayerInvite(invite.Id);
         }
 
-        public bool PromoteClanMember(Guid senderCharacterId, Guid characterId, string argument)
+        public ChangeRoleResult PromoteClanMember(Guid senderCharacterId, Guid characterId, string argument)
         {
             var senderClan = GetClanByCharacter(senderCharacterId);
-            if (senderClan == null) return false;
+            if (senderClan == null) return new ChangeRoleResult();
 
             int currentRoleLevel = 0;
             int senderRoleLevel = 9999;
@@ -724,19 +741,19 @@ namespace RavenNest.BusinessLogic.Game
             {
                 // check if we have permission to demote the player.
                 var role = GetClanRoleByCharacterId(characterId);
-                if (role == null) return false;
+                if (role == null) return new ChangeRoleResult();
 
                 var permissions = GetClanRolePermissions(role);
                 if (!permissions.CanAssignRoles)
-                    return false;
+                    return new ChangeRoleResult();
 
                 var targetCharacterClan = GetClanByCharacter(characterId);
-                if (targetCharacterClan.Id != senderClan.Id) return false;
+                if (targetCharacterClan.Id != senderClan.Id) return new ChangeRoleResult();
 
                 var currentRole = GetClanRoleByCharacterId(characterId);
-                if (currentRole == null) return false;
+                if (currentRole == null) return new ChangeRoleResult();
 
-                if (currentRole.Level <= 1) return false; // player cannot be demoted anymore, that would make them inactive.
+                if (currentRole.Level <= 1) return new ChangeRoleResult(); // player cannot be demoted anymore, that would make them inactive.
 
                 canAssignAllRoles = permissions.CanAssignAllRoles;
                 currentRoleLevel = currentRole.Level;
@@ -746,25 +763,32 @@ namespace RavenNest.BusinessLogic.Game
             // find which role can be assigned
             var roles = GetClanRoles(senderClan.Id);
             var targetRole = roles.Where(x => x.Level > currentRoleLevel).OrderBy(x => System.Math.Abs(currentRoleLevel - x.Level)).FirstOrDefault();
-            if (targetRole == null) return false;
+            if (targetRole == null) return new ChangeRoleResult();
 
             if ((targetRole.Level >= senderRoleLevel && !canAssignAllRoles) || currentRoleLevel >= senderRoleLevel)
             {
-                return false; // user does not have enough permission to assign the player to a higher role.
+                return new ChangeRoleResult(); // user does not have enough permission to assign the player to a higher role.
             }
 
             if (GetClanRolePermissions(targetRole).CanSeeClanDetails)
             {
-                return AssignMemberClanRole(senderClan.Id, characterId, targetRole.Id);
+                if (AssignMemberClanRole(senderClan.Id, characterId, targetRole.Id))
+                {
+                    return new ChangeRoleResult
+                    {
+                        NewRole = targetRole,
+                        Success = true
+                    };
+                }
             }
 
-            return false;
+            return new ChangeRoleResult();
         }
 
-        public bool DemoteClanMember(Guid senderCharacterId, Guid characterId, string argument)
+        public ChangeRoleResult DemoteClanMember(Guid senderCharacterId, Guid characterId, string argument)
         {
             var senderClan = GetClanByCharacter(senderCharacterId);
-            if (senderClan == null) return false;
+            if (senderClan == null) return new ChangeRoleResult();
 
             int currentRoleLevel = 0;
             int senderRoleLevel = 9999;
@@ -773,18 +797,18 @@ namespace RavenNest.BusinessLogic.Game
                 // check if we have permission to demote the player.
                 // check if we have permission to demote the player.
                 var role = GetClanRoleByCharacterId(characterId);
-                if (role == null) return false;
+                if (role == null) return new ChangeRoleResult();
 
                 var permissions = GetClanRolePermissions(role);
                 if (!permissions.CanAssignRoles)
-                    return false;
+                    return new ChangeRoleResult();
 
                 var targetCharacterClan = GetClanByCharacter(characterId);
-                if (targetCharacterClan.Id != senderClan.Id) return false;
+                if (targetCharacterClan.Id != senderClan.Id) return new ChangeRoleResult();
 
                 var currentRole = GetClanRoleByCharacterId(characterId);
-                if (currentRole == null) return false;
-                if (currentRole.Level <= 1) return false; // player cannot be demoted anymore, that would make them inactive.
+                if (currentRole == null) return new ChangeRoleResult();
+                if (currentRole.Level <= 1) return new ChangeRoleResult(); // player cannot be demoted anymore, that would make them inactive.
 
                 currentRoleLevel = currentRole.Level;
                 senderRoleLevel = role.Level;
@@ -793,38 +817,55 @@ namespace RavenNest.BusinessLogic.Game
             // find which role can be assigned
             var roles = GetClanRoles(senderClan.Id);
             var targetRole = roles.Where(x => x.Level < currentRoleLevel).OrderBy(x => System.Math.Abs(currentRoleLevel - x.Level)).FirstOrDefault();
-            if (targetRole == null) return false;
+            if (targetRole == null) return new ChangeRoleResult();
 
             if (currentRoleLevel >= senderRoleLevel)
             {
-                return false;
+                return new ChangeRoleResult();
             }
 
             if (GetClanRolePermissions(targetRole).CanSeeClanDetails)
             {
-                return AssignMemberClanRole(senderClan.Id, characterId, targetRole.Id);
+                if (AssignMemberClanRole(senderClan.Id, characterId, targetRole.Id))
+                {
+                    return new ChangeRoleResult
+                    {
+                        NewRole = targetRole,
+                        Success = true,
+                    };
+                }
             }
 
-            return false;
+            return new ChangeRoleResult();
         }
 
-        public bool JoinClan(string clanOwnerId, Guid characterId)
+        public JoinClanResult JoinClan(string clanOwnerId, Guid characterId)
         {
             var clan = FindClan(clanOwnerId);
-            if (clan == null) return false;
+            if (clan == null) return new JoinClanResult();
             var charClan = GetClanByCharacter(characterId);
-            if (charClan != null) return false;
+            if (charClan != null) return new JoinClanResult();
 
             if (clan.IsPublic)
-                return false;
+                return new JoinClanResult();
 
             var roles = GetClanRoles(clan.Id);
-            if (roles == null) return false;
+            if (roles == null) return new JoinClanResult();
 
             var targetRole = roles.OrderBy(x => x.Level).FirstOrDefault(x => x.Level > 0);
-            if (targetRole == null) return false;
+            if (targetRole == null) return new JoinClanResult();
 
-            return AddClanMember(clan.Id, characterId, targetRole.Id);
+            if (AddClanMember(clan.Id, characterId, targetRole.Id))
+            {
+                return new JoinClanResult
+                {
+                    Success = true,
+                    Role = targetRole,
+                    Clan = ModelMapper.Map(gameData, clan)
+                };
+            }
+
+            return new JoinClanResult();
         }
 
         public bool LeaveClan(Guid characterId)

@@ -16,4 +16,18 @@ namespace RavenNest.Models
         public int MemberCount { get; set; }
         public int Level { get; set; }
     }
+
+    public class ChangeRoleResult
+    {
+        public bool Success { get; set; }
+        public ClanRole NewRole { get; set; }
+    }
+
+    public class JoinClanResult
+    {
+        public bool Success { get; set; }
+        public Clan Clan { get; set; }
+        public ClanRole Role { get; set; }
+        public string WelcomeMessage { get; set; }
+    }
 }

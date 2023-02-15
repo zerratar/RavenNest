@@ -75,7 +75,7 @@ namespace RavenNest.Controllers
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("accept-invite/{characterId}/{argument}")]
-        public bool ClanInvitePlayerAccept(Guid characterId, string argument)
+        public JoinClanResult ClanInvitePlayerAccept(Guid characterId, string argument)
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
@@ -83,7 +83,7 @@ namespace RavenNest.Controllers
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpGet("accept-decline/{characterId}/{argument}")]
+        [HttpGet("decline-invite/{characterId}/{argument}")]
         public bool ClanInvitePlayerDecline(Guid characterId, string argument)
         {
             var session = GetSessionToken();
@@ -93,7 +93,7 @@ namespace RavenNest.Controllers
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("promote-member/{senderCharacterId}/{characterId}/{argument}")]
-        public bool ClanPromoteMember(Guid senderCharacterId, Guid characterId, string argument)
+        public ChangeRoleResult ClanPromoteMember(Guid senderCharacterId, Guid characterId, string argument)
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
@@ -102,7 +102,7 @@ namespace RavenNest.Controllers
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("demote-member/{senderCharacterId}/{characterId}/{argument}")]
-        public bool ClanDemoteMember(Guid senderCharacterId, Guid characterId, string argument)
+        public ChangeRoleResult ClanDemoteMember(Guid senderCharacterId, Guid characterId, string argument)
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
@@ -111,7 +111,7 @@ namespace RavenNest.Controllers
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("join/{clanOwnerId}/{characterId}")]
-        public bool ClanPlayerJoin(string clanOwnerId, Guid characterId)
+        public JoinClanResult ClanPlayerJoin(string clanOwnerId, Guid characterId)
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
