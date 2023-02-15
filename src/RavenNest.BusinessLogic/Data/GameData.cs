@@ -49,6 +49,9 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<Clan> clans;
         private readonly EntitySet<ClanRole> clanRoles;
         private readonly EntitySet<ClanSkill> clanSkills;
+        private readonly EntitySet<ClanRolePermissions> clanRolePermissions;
+        private readonly EntitySet<CharacterClanSkillCooldown> characterClanSkillCooldown;
+
         private readonly EntitySet<MarketItemTransaction> marketTransactions;
         //private readonly EntitySet<VendorTransaction> vendorTransaction;
 
@@ -63,6 +66,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<GameSession> gameSessions;
         private readonly EntitySet<ExpMultiplierEvent> expMultiplierEvents;
         private readonly EntitySet<GameEvent> gameEvents;
+
 
         private readonly EntitySet<Pet> pets;
 
@@ -136,6 +140,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(UserLoyalty),
                         typeof(ClanRole),
                         typeof(Clan),
+                        typeof(ClanRolePermissions),
                         //typeof(CharacterClanInvite),
                         typeof(CharacterClanMembership),
                         typeof(CharacterSkillRecord),
@@ -281,6 +286,13 @@ namespace RavenNest.BusinessLogic.Data
                     clanRoles = new EntitySet<ClanRole>(restorePoint?.Get<ClanRole>() ?? ctx.ClanRole.ToList());
                     clanRoles.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
 
+                    clanRolePermissions = new EntitySet<ClanRolePermissions>(restorePoint?.Get<ClanRolePermissions>() ?? ctx.ClanRolePermissions.ToList());
+                    clanRolePermissions.RegisterLookupGroup(nameof(ClanRole), x => x.ClanRoleId);
+
+                    characterClanSkillCooldown = new EntitySet<CharacterClanSkillCooldown>(restorePoint?.Get<CharacterClanSkillCooldown>() ?? ctx.CharacterClanSkillCooldown.ToList());
+                    characterClanSkillCooldown.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
+                    characterClanSkillCooldown.RegisterLookupGroup(nameof(Skill), x => x.SkillId);
+
                     clanMemberships = new EntitySet<CharacterClanMembership>(
                         restorePoint?.Get<CharacterClanMembership>() ?? ctx.CharacterClanMembership.ToList());
                     clanMemberships.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
@@ -343,6 +355,8 @@ namespace RavenNest.BusinessLogic.Data
                         userProperties, /*vendorTransaction,*/
                         userBankItems,
                         characterSkillRecords,
+                        clanRolePermissions,
+                        characterClanSkillCooldown,
                         resourceItemDrops,
                         gameClients,
                         items, // so we can update items
@@ -1606,6 +1620,12 @@ namespace RavenNest.BusinessLogic.Data
         #region Add Methods
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(CharacterClanSkillCooldown item) => Update(() => characterClanSkillCooldown.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(ClanRolePermissions item) => Update(() => clanRolePermissions.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(ResourceItemDrop item) => Update(() => resourceItemDrops.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2445,6 +2465,28 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Skill GetSkill(Guid skillId) => skills[skillId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<CharacterClanSkillCooldown> GetClanSkillCooldowns(Guid characterId)
+            => characterClanSkillCooldown[nameof(Character), characterId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public CharacterClanSkillCooldown GetClanSkillCooldown(Guid characterId, Guid skillId)
+        {
+            var cd = characterClanSkillCooldown[nameof(Character), characterId].FirstOrDefault(x => x.SkillId == skillId);
+            if (cd == null)
+            {
+                cd = new CharacterClanSkillCooldown
+                {
+                    SkillId = skillId,
+                    CharacterId = characterId
+                };
+
+                Add(cd);
+            }
+            return cd;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<ClanSkill> GetClanSkills(Guid clanId) => clanSkills[nameof(Clan), clanId];
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2472,6 +2514,12 @@ namespace RavenNest.BusinessLogic.Data
         public Clan GetClanByUser(Guid userId)
         {
             return clans[nameof(User), userId].FirstOrDefault();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ClanRolePermissions GetClanRolePermissions(Guid roleId)
+        {
+            return clanRolePermissions[nameof(ClanRole), roleId].FirstOrDefault();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2524,6 +2572,11 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Remove Entities
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(CharacterClanSkillCooldown item) => characterClanSkillCooldown.Remove(item);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(ClanRolePermissions item) => clanRolePermissions.Remove(item);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(VillageHouse item) => villageHouses.Remove(item);
 

@@ -112,7 +112,7 @@ namespace RavenNest.BusinessLogic
             var rawExp = (attributeCount * (((1d + (skillLevel / 100d) + (skillLevel / 75d)) * (double)Math.Pow(2, (double)(skillLevel / 20d)) / 20d) + 1d)) + (attributeCount * 8.3d);
             var attrExp = (itemLevel * (attributeCount * ((double)itemLevel / MaxLevel))) * 10.0;
             var expMulti = Math.Pow(2.0, skillLevel * 0.05);
-            return (rawExp + attrExp) * expMulti;
+            return (rawExp + attrExp) * expMulti * 0.15;
         }
     }
 }

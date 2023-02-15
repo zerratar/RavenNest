@@ -22,6 +22,7 @@ namespace RavenNest.Controllers
         private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly ISessionManager sessionManager;
         private readonly IGameManager gameManager;
+        private readonly IClanManager clanManager;
         private readonly ISecureHasher secureHasher;
         private readonly ILogger<GameController> logger;
 
@@ -32,6 +33,7 @@ namespace RavenNest.Controllers
             ISessionInfoProvider sessionInfoProvider,
             ISessionManager sessionManager,
             IGameManager gameManager,
+            IClanManager clanManager,
             ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
@@ -41,6 +43,7 @@ namespace RavenNest.Controllers
             this.sessionInfoProvider = sessionInfoProvider;
             this.sessionManager = sessionManager;
             this.gameManager = gameManager;
+            this.clanManager = clanManager;
             this.secureHasher = secureHasher;
         }
 
@@ -274,6 +277,9 @@ namespace RavenNest.Controllers
 
             return gameManager.UseScroll(session, characterId, st);
         }
+
+
+        //public bool ClanInvitePlayer(Guid characterId)
 
         //#region Admin Player Control
         //[HttpGet("{userId}/join/{targetUserId}")]

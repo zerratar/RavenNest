@@ -199,6 +199,20 @@ namespace RavenNest.Controllers
         {
             return playerManager.EnchantItem(AssertGetSessionToken(), userId, inventoryItemId);
         }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("{userId}/enchant-instance/{inventoryItemId}")]
+        public ItemEnchantmentResult EnchantItemInstance(string userId, Guid inventoryItemId)
+        {
+            return playerManager.EnchantItemInstance(AssertGetSessionToken(), userId, inventoryItemId);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("{userId}/disenchant-instance/{inventoryItemId}")]
+        public ItemEnchantmentResult DisenchantItemInstance(string userId, Guid inventoryItemId)
+        {
+            return playerManager.DisenchantItemInstance(AssertGetSessionToken(), userId, inventoryItemId);
+        }
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/item/{item}")]
         public AddItemResult AddItem(string userId, Guid item)
@@ -269,11 +283,25 @@ namespace RavenNest.Controllers
             return playerManager.GiftItem(AssertGetSessionToken(), userId, receiverUserId, itemId, amount);
         }
         [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("{userId}/gift-instance/{receiverUserId}/{itemId}/{amount}")]
+        public long GiftItemInstance(string userId, string receiverUserId, Guid itemId, long amount)
+        {
+            return playerManager.GiftItemInstance(AssertGetSessionToken(), userId, receiverUserId, itemId, amount);
+        }
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/vendor/{item}/{amount}")]
         public long VendorItem(string userId, Guid item, long amount)
         {
             return playerManager.VendorItem(AssertGetSessionToken(), userId, item, amount);
         }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("{userId}/vendor-instance/{item}/{amount}")]
+        public long VendorItemInstance(string userId, Guid item, long amount)
+        {
+            return playerManager.VendorItemInstance(AssertGetSessionToken(), userId, item, amount);
+        }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{userId}/appearance")]
         public async Task<bool> UpdateSyntyAppearanceAsync(string userId, SyntyAppearance appearance)

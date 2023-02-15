@@ -85,7 +85,7 @@ namespace RavenNest.BusinessLogic.Data
         DataModels.GameSession GetSessionByUserId(Guid userId, bool updateSession = true);
         IReadOnlyList<DataModels.GameEvent> GetSessionEvents(DataModels.GameSession gameSession);
         IReadOnlyList<DataModels.GameEvent> GetUserEvents(Guid userId);
-        IReadOnlyList<DataModels.ClanSkill> GetClanSkills(Guid id);
+        IReadOnlyList<DataModels.ClanSkill> GetClanSkills(Guid clanId);
         IReadOnlyList<DataModels.ClanSkill> GetClanSkills();
         IReadOnlyList<DataModels.Item> GetItems();
         DataModels.Item GetItem(Guid id);
@@ -143,6 +143,8 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Add
         //void Add(VendorTransaction entity);
+        AddEntityResult Add(CharacterClanSkillCooldown item);
+        AddEntityResult Add(ClanRolePermissions item);
         AddEntityResult Add(ResourceItemDrop item);
         AddEntityResult Add(Pet pet);
         AddEntityResult Add(DataModels.UserBankItem item);
@@ -189,6 +191,8 @@ namespace RavenNest.BusinessLogic.Data
 
 
         #region Remove
+        RemoveEntityResult Remove(CharacterClanSkillCooldown item);
+        RemoveEntityResult Remove(ClanRolePermissions item);
         RemoveEntityResult Remove(ResourceItemDrop item);
         RemoveEntityResult Remove(DataModels.UserBankItem item);
         RemoveEntityResult Remove(Pet pet);
@@ -236,6 +240,9 @@ namespace RavenNest.BusinessLogic.Data
         object SyncLock { get; }
         bool InitializedSuccessful { get; }
 
+        CharacterClanSkillCooldown GetClanSkillCooldown(Guid characterId, Guid skillId);
+        IReadOnlyList<CharacterClanSkillCooldown> GetClanSkillCooldowns(Guid characterId);
+
         CharacterSessionActivity GetSessionActivity(Guid id, Guid characterId);
         IReadOnlyList<ItemAttribute> GetItemAttributes();
         IReadOnlyList<Clan> GetClans();
@@ -245,5 +252,6 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<CharacterSkillRecord> GetSkillRecords(int skillIndex);
         IReadOnlyList<CharacterSkillRecord> GetSkillRecords(int skillIndex, ICollection<Guid> characterIds);
         IReadOnlyList<CharacterSkillRecord> GetSkillRecords(int skillIndex, int level);
+        ClanRolePermissions GetClanRolePermissions(Guid id);
     }
 }

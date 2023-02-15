@@ -1296,6 +1296,11 @@ namespace RavenNest.BusinessLogic.Game
         //    return results.ToArray();
         //}
 
+        public ItemEnchantmentResult EnchantItemInstance(SessionToken sessionToken, string userId, Guid inventoryItemId)
+        {
+            return EnchantItem(sessionToken, userId, inventoryItemId);
+        }
+
         public ItemEnchantmentResult EnchantItem(SessionToken token, string userId, Guid inventoryItemId)
         {
             var character = GetCharacter(token, userId);
@@ -1335,6 +1340,30 @@ namespace RavenNest.BusinessLogic.Game
                 return ItemEnchantmentResult.Error();
 
             return enchantmentManager.EnchantItem(token.SessionId, clanSkill, character, inventory, item, resources);
+        }
+
+        public ItemEnchantmentResult DisenchantItemInstance(SessionToken sessionToken, string userId, Guid inventoryItemId)
+        {
+            var character = GetCharacter(sessionToken, userId);
+            var enchantingSkill = gameData.GetSkills().FirstOrDefault(x => x.Name == "Enchanting");
+            if (character == null || enchantingSkill == null)
+                return ItemEnchantmentResult.Error();
+
+            var user = gameData.GetUser(character.UserId);
+
+            if (user == null)
+                return ItemEnchantmentResult.Error();
+
+            if (!integrityChecker.VerifyPlayer(sessionToken.SessionId, character.Id, 0))
+                return ItemEnchantmentResult.Error();
+
+            var inventory = inventoryProvider.Get(character.Id);
+            var item = inventory.Get(inventoryItemId);
+
+            if (item.IsNull())
+                return ItemEnchantmentResult.Error();
+
+            return enchantmentManager.DisenchantItem(sessionToken.SessionId, character, inventory, item);
         }
 
         public CraftItemResult CraftItems(SessionToken token, string userId, Guid itemId, int amount)
@@ -1726,6 +1755,45 @@ namespace RavenNest.BusinessLogic.Game
             //    : AddItemResult.Added;
         }
 
+
+        public long VendorItemInstance(SessionToken sessionToken, string userId, Guid item, long amount)
+        {
+            var player = GetCharacter(sessionToken, userId);
+            if (player == null) return 0;
+
+            if (!integrityChecker.VerifyPlayer(sessionToken.SessionId, player.Id, 0))
+                return 0;
+
+            //var targetItem = gameData.GetInventoryItem(item);
+            var inventory = inventoryProvider.Get(player.Id);
+            var itemToVendor = inventory.Get(item);
+            if (itemToVendor.Item.Category == (int)DataModels.ItemCategory.StreamerToken)
+            {
+                return 0;
+            }
+
+            var resources = gameData.GetResources(player.ResourcesId);
+            if (resources == null) return 0;
+
+            var session = gameData.GetSession(sessionToken.SessionId);
+            if (amount <= itemToVendor.Amount)
+            {
+                var price = itemToVendor.Item.ShopSellPrice * amount;
+                inventory.RemoveItem(itemToVendor, amount);
+                resources.Coins += itemToVendor.Item.ShopSellPrice * amount;
+                UpdateResources(gameData, session, player, resources);
+                LogVendorTransaction(player.Id, itemToVendor.ItemId, amount, price);
+                return amount;
+            }
+
+            inventory.RemoveStack(itemToVendor);
+            var totalPrice = itemToVendor.Amount * itemToVendor.Item.ShopSellPrice;
+            resources.Coins += totalPrice;
+            UpdateResources(gameData, session, player, resources);
+            LogVendorTransaction(player.Id, itemToVendor.ItemId, itemToVendor.Amount, totalPrice);
+            return (int)itemToVendor.Amount;
+        }
+
         public long VendorItem(
             SessionToken token,
             string userId,
@@ -1894,6 +1962,33 @@ namespace RavenNest.BusinessLogic.Game
             return false;
         }
 
+        public long GiftItemInstance(SessionToken sessionToken, string gifterUserId, string receiverUserId, Guid itemId, long amount)
+        {
+            var gifter = GetCharacter(sessionToken, gifterUserId);
+            if (gifter == null) return 0;
+
+            if (!integrityChecker.VerifyPlayer(sessionToken.SessionId, gifter.Id, 0))
+                return 0;
+
+            var receiver = GetCharacter(sessionToken, receiverUserId);
+            if (receiver == null) return 0;
+
+
+            var inventory = inventoryProvider.Get(gifter.Id);
+            var item = inventory.Get(itemId);
+
+            if (item.IsNull() || item.Soulbound)
+                return 0;
+
+            var gift = item;
+            var recvInventory = inventoryProvider.Get(receiver.Id);
+            var amountToGift = gift.Amount >= amount ? amount : (int)gift.Amount;
+            if (recvInventory.AddItem(gift, amountToGift) && inventory.RemoveItem(gift, amountToGift))
+            {
+                return amountToGift;
+            }
+            return 0;
+        }
         public long GiftItem(
             SessionToken token,
             string gifterUserId,
@@ -1924,7 +2019,6 @@ namespace RavenNest.BusinessLogic.Game
                     itemTag = sessionOwner.UserId;
 
                 var inventory = inventoryProvider.Get(gifter.Id);
-
                 var gift = inventory.GetUnequippedItem(itemId, tag: itemTag);
 
                 if (gift.IsNull() || gift.Amount == 0)

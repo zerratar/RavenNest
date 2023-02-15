@@ -828,7 +828,9 @@ namespace RavenNest.BusinessLogic.Providers
             var minValue = GetValue(attr.MinValue, out var minAttrValType);
             var maxValue = GetValue(attr.MaxValue, out var maxAttrValType);
             var ran = random.NextDouble();
-            value = Math.Max(minValue, (double)ran * maxValue);
+            // give a chance for max to hit, it might not do so otherwise as we floor the value afterwards
+            if (ran > 0.985) ran = 1;
+            value = Math.Floor(Math.Max(minValue, (double)ran * maxValue));
             return maxAttrValType == RavenNest.Models.AttributeValueType.Percent ? $"{value}%" : value.ToString();
         }
 

@@ -93,5 +93,9 @@ namespace RavenNest.BusinessLogic.Game
         void SendPlayerTaskToGame(DataModels.GameSession activeSession, Character character, string task, string taskArgument);
         void RemoveUserFromSessions(User user);
         IReadOnlyList<WebsiteAdminPlayer> GetAdminWebsitePlayers(Guid userId);
+        ItemEnchantmentResult EnchantItemInstance(SessionToken sessionToken, string userId, Guid inventoryItemId);
+        ItemEnchantmentResult DisenchantItemInstance(SessionToken sessionToken, string userId, Guid inventoryItemId);
+        long GiftItemInstance(SessionToken sessionToken, string userId, string receiverUserId, Guid itemId, long amount);
+        long VendorItemInstance(SessionToken sessionToken, string userId, Guid item, long amount);
     }
 }
