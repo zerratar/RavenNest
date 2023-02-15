@@ -944,13 +944,13 @@ namespace RavenNest.BusinessLogic.Game
             // 3 rename roles
             // 4 assign roles sudo // this can change to any role
             // 5 assign roles      // this can change to only roles lower level of themselves
-            // - kick members
-            // - kick all members
-            // 6 change public join
-            // 7 create invite
-            // 8 delete invite
-            // 9 use clan skills
-            // 10 see clan details
+            // 6 kick members
+            // 7 kick all members
+            // 8 change public join
+            // 9 create invite
+            // 10 delete invite
+            // 11 use clan skills
+            // 12 see clan details
 
             var builder = new ClanRolePermissionsBuilder();
 
