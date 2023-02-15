@@ -181,9 +181,26 @@ namespace RavenNest.BusinessLogic.Game
                 GainedExperience = gainedExp,
                 GainedLevels = gainedLevels,
                 EnchantedItem = DataMapper.Map<RavenNest.Models.InventoryItem, DataModels.InventoryItem>(enchantedItem),
-                OldItemStack = DataMapper.Map<RavenNest.Models.InventoryItem, DataModels.InventoryItem>(invItem),
+                OldItemStack = Transform(item),//DataMapper.Map<RavenNest.Models.InventoryItem, DataModels.InventoryItem>(invItem),
                 Result = ItemEnchantmentResultValue.Success,
                 Cooldown = cd.CooldownEnd
+            };
+        }
+
+        private RavenNest.Models.InventoryItem Transform(ReadOnlyInventoryItem item)
+        {
+            return new RavenNest.Models.InventoryItem
+            {
+                Id = item.Id,
+                Amount = item.Amount,
+                Enchantment = item.Enchantment,
+                Equipped = item.Equipped,
+                Flags = item.Flags,
+                ItemId = item.ItemId,
+                Name = item.Name,
+                Soulbound = item.Soulbound,
+                Tag = item.Tag,
+                TransmogrificationId = item.TransmogrificationId
             };
         }
 
