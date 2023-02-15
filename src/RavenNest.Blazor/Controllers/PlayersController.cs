@@ -217,7 +217,7 @@ namespace RavenNest.Controllers
         [HttpGet("{userId}/item/{item}")]
         public AddItemResult AddItem(string userId, Guid item)
         {
-            return playerManager.AddItem(AssertGetSessionToken(), userId, item);
+            return playerManager.AddItem(AssertGetSessionToken(), userId, item, out _);
         }
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{userId}/item-instance")]

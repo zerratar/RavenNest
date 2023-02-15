@@ -117,7 +117,7 @@ namespace RavenNest.Tools.Actions
             if (a == null)
                 return "ravenfall.7z";
 
-            System.Version v = IncrementVersion(a.Version, 0, 0, 0, 1); // 0,0,1,0
+            System.Version v = IncrementVersion(a.Version, 0, 0, 1, 0); // 0,0,1,0
             return "Ravenfall.v" + v.ToString() + "a-alpha.7z";
         }
 
