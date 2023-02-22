@@ -141,6 +141,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(ClanRole),
                         typeof(Clan),
                         typeof(ClanRolePermissions),
+                        typeof(CharacterClanSkillCooldown),
                         //typeof(CharacterClanInvite),
                         typeof(CharacterClanMembership),
                         typeof(CharacterSkillRecord),
@@ -381,6 +382,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 //RemoveEmptyPlayers();
 
+                EnsureClanRolePermissions();
                 EnsureClanLevels(clans);
                 EnsureExpMultipliersWithinBounds(expMultiplierEvents);
                 EnsureCraftingRequirements(items);
@@ -1089,6 +1091,11 @@ namespace RavenNest.BusinessLogic.Data
                     }
                 }
             }
+        }
+
+        private void EnsureClanRolePermissions()
+        {
+
         }
 
         private void EnsureClanLevels(EntitySet<Clan> clans)
@@ -2478,6 +2485,7 @@ namespace RavenNest.BusinessLogic.Data
             {
                 cd = new CharacterClanSkillCooldown
                 {
+                    Id = Guid.NewGuid(),
                     SkillId = skillId,
                     CharacterId = characterId
                 };

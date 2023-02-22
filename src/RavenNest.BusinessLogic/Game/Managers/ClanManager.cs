@@ -22,7 +22,10 @@ namespace RavenNest.BusinessLogic.Game
             this.logger = logger;
             this.gameData = gameData;
             this.notificationManager = notificationManager;
+
+            EnsureClanRolePermissions();
         }
+
 
         public bool RemovePlayerInvite(Guid inviteId)
         {
@@ -933,6 +936,23 @@ namespace RavenNest.BusinessLogic.Game
         public TypedClanRolePermissions GetOwnerPermissions()
         {
             return ClanRolePermissionsBuilder.Parse("11111111111111111111111111");
+        }
+
+        private void EnsureClanRolePermissions()
+        {
+            var clans = gameData.GetClans();
+            foreach (var clan in clans)
+            {
+                var roles = gameData.GetClanRoles(clan.Id);
+                foreach (var role in roles)
+                {
+                    var permissions = gameData.GetClanRolePermissions(role.Id);
+                    if (permissions == null)
+                    {
+                        GenerateDefaultPermissions(role);
+                    }
+                }
+            }
         }
 
         public TypedClanRolePermissions GetClanRolePermissions(ClanRole role)
