@@ -705,7 +705,7 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
-            var permissions = GetClanRolePermissionsByCharacterId(characterId);
+            var permissions = GetClanRolePermissionsByCharacterId(senderCharacterId);
             if (permissions == null)
             {
                 var c = gameData.GetCharacter(senderCharacterId);
