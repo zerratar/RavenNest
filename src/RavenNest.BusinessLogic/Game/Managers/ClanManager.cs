@@ -706,7 +706,30 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var permissions = GetClanRolePermissionsByCharacterId(characterId);
-            if (permissions == null || !permissions.CanCreateInvite)
+            if (permissions == null)
+            {
+                var c = gameData.GetCharacter(senderCharacterId);
+                var t = gameData.GetCharacter(characterId);
+
+                var membership = gameData.GetClanMembership(characterId);
+                if (membership == null)
+                {
+                    logger.LogError(c?.Name + " tried to invite " + t?.Name + " but no membership for the clan " + clan.Name + " could be found.");
+                    return false;
+                }
+
+                var role = gameData.GetClanRole(membership.ClanRoleId);
+                if (role == null)
+                {
+                    logger.LogError(c?.Name + " tried to invite " + t?.Name + " but no role with ID " + membership.ClanRoleId + " could be found.");
+                    return false;
+                }
+
+                logger.LogError(c?.Name + " tried to invite " + t?.Name + " but could not find any permissions for the role " + role.Name + ". (RoleID: " + role.Id + ", ClanID: " + clan.Id + ", MembershipID: " + membership.Id + ")");
+                return false;
+            }
+
+            if (!permissions.CanCreateInvite)
             {
                 var c = gameData.GetCharacter(senderCharacterId);
                 var t = gameData.GetCharacter(characterId);
@@ -715,7 +738,8 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
-            return SendPlayerInvite(clan.Id, characterId, senderCharacterId);
+            var senderChar = gameData.GetCharacter(senderCharacterId);
+            return SendPlayerInvite(clan.Id, characterId, senderChar.UserId);
         }
 
         public JoinClanResult AcceptClanInvite(Guid characterId, string argument)

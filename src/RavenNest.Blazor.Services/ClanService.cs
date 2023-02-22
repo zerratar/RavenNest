@@ -186,7 +186,19 @@ namespace RavenNest.Blazor.Services
                     {
                         var clan = gameData.GetClan(invite.ClanId);
                         var owner = gameData.GetUser(clan.UserId);
-                        var inviter = gameData.GetUser(invite.InviterUserId.GetValueOrDefault());
+
+                        var userId = invite.InviterUserId.GetValueOrDefault();
+                        var inviter = gameData.GetUser(userId);
+                        if (inviter == null)
+                        {
+                            // could be a removed user or character id by accident.
+                            var cha = gameData.GetCharacter(userId);
+                            if (cha != null)
+                            {
+                                inviter = gameData.GetUser(cha.UserId);
+                            }
+                        }
+                        
                         allInvites.Add(new ClanInvite
                         {
                             Character = ModelMapper.MapForWebsite(c, gameData, user),
