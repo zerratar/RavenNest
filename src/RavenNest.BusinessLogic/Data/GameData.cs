@@ -2350,7 +2350,7 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public UserPatreon GetPatreonUser(Guid userId) =>
-            patreons[nameof(User), userId].FirstOrDefault();
+            patreons[nameof(User), userId].FirstOrDefault(x => x != null);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public UserPatreon GetPatreonUser(long patreonId) =>
@@ -2515,18 +2515,18 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Clan GetClanByUser(Guid userId)
         {
-            return clans[nameof(User), userId].FirstOrDefault();
+            return clans[nameof(User), userId].FirstOrDefault(x => x != null);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ClanRolePermissions GetClanRolePermissions(Guid roleId)
         {
-            return clanRolePermissions[nameof(ClanRole), roleId].FirstOrDefault();
+            return clanRolePermissions[nameof(ClanRole), roleId].FirstOrDefault(x => x != null);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public CharacterClanMembership GetClanMembership(Guid characterId) =>
-            clanMemberships[nameof(Character), characterId].FirstOrDefault();
+            clanMemberships[nameof(Character), characterId].FirstOrDefault(x => x != null);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ClanRole GetClanRole(Guid roleId) =>
@@ -2563,9 +2563,9 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Village GetVillageBySession(GameSession session) => villages[nameof(User), session.UserId].FirstOrDefault();
+        public Village GetVillageBySession(GameSession session) => villages[nameof(User), session.UserId].FirstOrDefault(x => x != null);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Village GetVillageByUserId(Guid userId) => villages[nameof(User), userId].FirstOrDefault();
+        public Village GetVillageByUserId(Guid userId) => villages[nameof(User), userId].FirstOrDefault(x => x != null);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Village GetVillage(Guid villageId) => villages[villageId];
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
