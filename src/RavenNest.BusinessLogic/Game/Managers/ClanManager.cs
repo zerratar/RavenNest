@@ -710,7 +710,8 @@ namespace RavenNest.BusinessLogic.Game
             {
                 var c = gameData.GetCharacter(senderCharacterId);
                 var t = gameData.GetCharacter(characterId);
-                logger.LogError(c?.Name + " tried to invite " + t?.Name + " but does not have permission to do so.");
+                var permissionString = permissions != null ? ClanRolePermissionsBuilder.Generate(permissions) : "NULL";
+                logger.LogError(c?.Name + " tried to invite " + t?.Name + " but does not have permission to do so. Role Permissions: " + permissionString);
                 return false;
             }
 
@@ -935,7 +936,11 @@ namespace RavenNest.BusinessLogic.Game
 
         public TypedClanRolePermissions GetOwnerPermissions()
         {
-            return ClanRolePermissionsBuilder.Parse("11111111111111111111111111");
+            return ClanRolePermissionsBuilder.Parse(
+                new String('1', typeof(TypedClanRolePermissions).GetProperties(
+                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public).Length)
+            //"11111111111111111111111111"
+            );
         }
 
         private void EnsureClanRolePermissions()
@@ -1010,7 +1015,7 @@ namespace RavenNest.BusinessLogic.Game
             return permissions;
         }
 
-        private string GenerateDefaultPermissions(int level)
+        public static string GenerateDefaultPermissions(int level)
         {
             // for this, we use a binary form but with a string representation
             // permission types: (note: owner can always do everything so no permission required.)
@@ -1056,11 +1061,6 @@ namespace RavenNest.BusinessLogic.Game
                 builder.Values.CanKickMembers = true;
             }
 
-            //if (level > 3)
-            //{
-
-            //}
-
             return builder.GenerateString();
         }
 
@@ -1094,7 +1094,6 @@ namespace RavenNest.BusinessLogic.Game
     public class ClanRolePermissionsBuilder
     {
         public readonly TypedClanRolePermissions Values = new TypedClanRolePermissions();
-
         public static TypedClanRolePermissions Parse(string permissions)
         {
             var values = new TypedClanRolePermissions();
@@ -1115,7 +1114,7 @@ namespace RavenNest.BusinessLogic.Game
             return values;
         }
 
-        internal string GenerateString()
+        public static string Generate(TypedClanRolePermissions Values)
         {
             // 0 rename clan
             // 1 add roles
@@ -1146,8 +1145,12 @@ namespace RavenNest.BusinessLogic.Game
                 Bin(Values.CanUseClanSkills) +
                 Bin(Values.CanSeeClanDetails);
         }
+        internal string GenerateString()
+        {
+            return Generate(Values);
+        }
         private static bool Bool(char b) => b == '1';
-        private string Bin(bool b)
+        private static string Bin(bool b)
         {
             return b ? "1" : "0";
         }

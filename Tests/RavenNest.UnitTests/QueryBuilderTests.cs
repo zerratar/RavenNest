@@ -6,7 +6,6 @@ using RavenNest.DataModels;
 
 namespace RavenNest.UnitTests
 {
-
     [TestClass]
     public class QueryBuilderTests
     {
