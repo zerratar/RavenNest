@@ -711,7 +711,7 @@ namespace RavenNest.BusinessLogic.Game
                 var c = gameData.GetCharacter(senderCharacterId);
                 var t = gameData.GetCharacter(characterId);
 
-                var membership = gameData.GetClanMembership(characterId);
+                var membership = gameData.GetClanMembership(senderCharacterId);
                 if (membership == null)
                 {
                     logger.LogError(c?.Name + " tried to invite " + t?.Name + " but no membership for the clan " + clan.Name + " could be found.");
