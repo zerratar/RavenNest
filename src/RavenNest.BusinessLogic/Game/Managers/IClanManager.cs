@@ -35,7 +35,7 @@ namespace RavenNest.BusinessLogic.Game
 
         ClanStats GetClanStats(Guid characterId);
         ClanInfo GetClanInfo(Guid characterId);
-        bool SendPlayerInvite(Guid characterId, Guid senderCharacterId);
+        bool SendPlayerInvite(Guid senderCharacterId, Guid characterId);
         JoinClanResult AcceptClanInvite(Guid characterId, string argument);
         bool DeclineClanInvite(Guid characterId, string argument);
         ChangeRoleResult PromoteClanMember(Guid senderCharacterId, Guid characterId, string argument);

@@ -70,7 +70,7 @@ namespace RavenNest.Controllers
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
 
-            return clanManager.SendPlayerInvite(characterId, senderCharacterId);
+            return clanManager.SendPlayerInvite(senderCharacterId, characterId);
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]

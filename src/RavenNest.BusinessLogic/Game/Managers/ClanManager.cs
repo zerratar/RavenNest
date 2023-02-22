@@ -1,4 +1,5 @@
-﻿using RavenNest.BusinessLogic.Data;
+﻿using Microsoft.Extensions.Logging;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.Models;
 using System;
@@ -9,13 +10,16 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class ClanManager : IClanManager
     {
+        private readonly ILogger<ClanManager> logger;
         private readonly IGameData gameData;
         private readonly INotificationManager notificationManager;
 
         public ClanManager(
+            ILogger<ClanManager> logger,
             IGameData gameData,
             INotificationManager notificationManager)
         {
+            this.logger = logger;
             this.gameData = gameData;
             this.notificationManager = notificationManager;
         }
@@ -84,7 +88,7 @@ namespace RavenNest.BusinessLogic.Game
             // existing invite to same clan.
             var invite = gameData.GetClanInvitesByCharacter(characterId).FirstOrDefault(x => x.ClanId == clanId);
             if (invite != null)
-                return false;
+                return true;
 
             invite = new DataModels.CharacterClanInvite
             {
@@ -687,14 +691,25 @@ namespace RavenNest.BusinessLogic.Game
             return result;
         }
 
-        public bool SendPlayerInvite(Guid characterId, Guid senderCharacterId)
+        public bool SendPlayerInvite(Guid senderCharacterId, Guid characterId)
         {
-            var clan = GetClanByCharacter(characterId);
-            if (clan == null) return false;
+            var clan = GetClanByCharacter(senderCharacterId);
+            if (clan == null)
+            {
+                var c = gameData.GetCharacter(senderCharacterId);
+                var t = gameData.GetCharacter(characterId);
+                logger.LogError(c?.Name + " tried to invite " + t?.Name + " but is not part of a clan.");
+                return false;
+            }
 
             var permissions = GetClanRolePermissionsByCharacterId(characterId);
             if (permissions == null || !permissions.CanCreateInvite)
+            {
+                var c = gameData.GetCharacter(senderCharacterId);
+                var t = gameData.GetCharacter(characterId);
+                logger.LogError(c?.Name + " tried to invite " + t?.Name + " but does not have permission to do so.");
                 return false;
+            }
 
             return SendPlayerInvite(clan.Id, characterId, senderCharacterId);
         }
