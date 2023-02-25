@@ -26,27 +26,6 @@ input#password::placeholder {
     margin-bottom: 130px;
     text-align: center;
 }
-.section {
-    padding: 30px 100px 50px 100px;
-}
-
-.top-section {
-    background-image: url('/imgs/TopImage.png');
-    width: 100vw;
-    background-position: center;
-    background-size: cover;
-    margin-top: -95px;
-    z-index: 0;
-    padding: 150px 50px;
-    display: flex;
-    flex-flow: column;
-    align-items: center;
-}
-
-.content {
-    margin-top: -95px;
-}
-
 .section:last-of-type {
     padding-bottom: 220px;
 }

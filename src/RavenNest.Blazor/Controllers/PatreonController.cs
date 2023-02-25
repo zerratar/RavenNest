@@ -1,173 +1,228 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
-using RavenNest.BusinessLogic;
+using Newtonsoft.Json.Linq;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
-using RavenNest.BusinessLogic.Patreon;
-using RavenNest.BusinessLogic.Providers;
+using RavenNest.BusinessLogic.Models.Patreon.API;
 using RavenNest.Sessions;
-using System;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace RavenNest.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [ApiExplorerSettings(IgnoreApi = true)]
-    public class PatreonController : ControllerBase
+    public class PatreonController : GameApiController
     {
-        private readonly ILogger<PatreonController> logger;
-        private readonly ISessionInfoProvider sessionInfoProvider;
-        private readonly ISessionManager sessionManager;
-        private readonly IPlayerManager playerManager;
-        private readonly IRavenfallDbContextProvider dbProvider;
-        private readonly ISecureHasher secureHasher;
+        private readonly IGameData gameData;
         private readonly IAuthManager authManager;
         private readonly IPatreonManager patreonManager;
-        private readonly AppSettings settings;
+        private readonly ISessionInfoProvider sessionInfoProvider;
+        private readonly ISessionManager sessionManager;
+        private readonly IGameManager gameManager;
+        private readonly IClanManager clanManager;
+        private readonly ISecureHasher secureHasher;
+        private readonly ILogger<GameController> logger;
 
         public PatreonController(
-            ILogger<PatreonController> logger,
-            ISessionInfoProvider sessionInfoProvider,
-            IPlayerInventoryProvider inventoryProvider,
-            ISessionManager sessionManager,
-            IPlayerManager playerManager,
-            IRavenfallDbContextProvider dbProvider,
-            ISecureHasher secureHasher,
+            ILogger<GameController> logger,
+            IGameData gameData,
             IAuthManager authManager,
             IPatreonManager patreonManager,
-            IOptions<AppSettings> settings)
+            ISessionInfoProvider sessionInfoProvider,
+            ISessionManager sessionManager,
+            IGameManager gameManager,
+            IClanManager clanManager,
+            ISecureHasher secureHasher)
+            : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
             this.logger = logger;
-            this.sessionInfoProvider = sessionInfoProvider;
-            this.sessionManager = sessionManager;
-            this.playerManager = playerManager;
-            this.dbProvider = dbProvider;
-            this.secureHasher = secureHasher;
+            this.gameData = gameData;
             this.authManager = authManager;
             this.patreonManager = patreonManager;
-            this.settings = settings.Value;
+            this.sessionInfoProvider = sessionInfoProvider;
+            this.sessionManager = sessionManager;
+            this.gameManager = gameManager;
+            this.clanManager = clanManager;
+            this.secureHasher = secureHasher;
         }
 
-        [HttpPost("create")]
-        public async Task Add()
+        [HttpGet]
+        public string Get()
         {
-            //var sign = HttpContext.Request.Headers["x-signature"];
-            //if (settings.PatreonCreatePledge != sign)
-            //    return;
-
-            var data = await GetPatreonDataAsync();
-            if (data == null)
-                return;
-
-            patreonManager.AddPledge(data);
+            return "this is api, yes.";
         }
 
-        [HttpPost("update")]
-        public async Task Update()
+        [HttpPost]
+        public async Task<string> OnWebHookReceived()
         {
-            //var sign = HttpContext.Request.Headers["x-signature"];
-            //if (settings.PatreonUpdatePledge != sign)
-            //    return;
+            using var reader = new StreamReader(Request.Body);
+            var content = await reader.ReadToEndAsync();
+            var patreonEvent = HttpContext.Request.Headers["x-patreon-event"];
+            var signature = HttpContext.Request.Headers["x-patreon-signature"];
 
-            var data = await GetPatreonDataAsync();
-            if (data == null)
-                return;
+            //AssertValidateSignature(signature);
 
-            patreonManager.UpdatePledge(data);
-        }
+            var data = ParseRequest(content);
 
-        [HttpPost("delete")]
-        public async Task Remove()
-        {
-            //var sign = HttpContext.Request.Headers["x-signature"];
-            //if (settings.PatreonDeletePledge != sign)
-            //    return;
-
-            var data = await GetPatreonDataAsync();
-            if (data == null)
-                return;
-
-            patreonManager.RemovePledge(data);
-        }
-
-
-        private async Task<IPatreonData> GetPatreonDataAsync()
-        {
-            var data = await GetRequestData<ZapierPatreonData>();
-            if (data == null)
-                return null;
-
-            string title = data.RewardTitle;
-            if (!string.IsNullOrEmpty(title) && title.Contains(','))
+            switch (patreonEvent)
             {
-                title = title.Split(',')[1];
-                data.RewardTitle = title;
+                case "members:pledge:delete":
+                case "members:delete":
+                    Delete(data);
+                    break;
+
+                case "members:pledge:update":
+                case "members:update":
+                case "members:pledge:create":
+                case "members:create":
+                    await CreateOrUpdateAsync(data);
+                    break;
             }
 
-            data.Tier = GetRewardTier(title);
-            return data;
+            return "OK";
         }
 
-        private int GetRewardTier(string rewardTitle)
+        private async Task CreateOrUpdateAsync(PatreonInfo data)
         {
-            if (string.IsNullOrEmpty(rewardTitle))
-                return 0;
-
-            var title = rewardTitle.ToLower();
-            switch (title)
+            var patreon = gameData.GetPatreonUser(data.PatreonId);
+            if (patreon == null)
             {
-                default:
-                    return 0;
-                case "mithril":
-                    return 1;
-                case "adamantite":
-                case "rune":
-                    return 2;
-                case "dragon":
-                    return 3;
-                case "abraxas":
-                    return 4;
-                case "phantom":
-                    return 5;
+                patreon = new DataModels.UserPatreon();
+                patreon.Id = System.Guid.NewGuid();
+                patreon.Created = System.DateTime.UtcNow;
+                patreon.Updated = patreon.Created;
+                gameData.Add(patreon);
             }
-        }
-
-        private async Task<T> GetRequestData<T>([CallerMemberName] string caller = null)
-        {
-            string patreonJson = "";
-            try
+            else
             {
-                using (var sr = new StreamReader(HttpContext.Request.Body))
+                patreon.Updated = System.DateTime.UtcNow;
+            }
+
+            patreon.Email = data.Email;
+            patreon.PatreonId = data.PatreonId;
+            // update and make sure tiers are all set.
+            var isActive = data.Status == "active_patron";
+            if (isActive)
+            {
+                var tier = await patreonManager.GetTierByCentsAsync(data.PledgeAmountCents);
+                if (tier != null)
                 {
-                    patreonJson = await sr.ReadToEndAsync();
-
-                    logger.LogError("[" + caller + "] Patreon Data Received: " + patreonJson);
-
-                    var folder = System.IO.Path.Combine(FolderPaths.GeneratedData, FolderPaths.PatreonRequestData);
-
-                    var patreonDataFolder = new DirectoryInfo(folder);
-                    if (!System.IO.Directory.Exists(folder))
-                    {
-                        patreonDataFolder = Directory.CreateDirectory(folder);
-                    }
-
-                    System.IO.File.WriteAllText(Path.Combine(patreonDataFolder.FullName,
-                        caller + "_" + DateTime.UtcNow.ToString("yyyy-MM-dd.hhmmss") + ".json"), patreonJson);
-
-                    return JsonConvert.DeserializeObject<T>(patreonJson);
+                    patreon.Tier = tier.Level;
+                    patreon.PledgeAmount = tier.AmountCents;
+                    patreon.PledgeTitle = tier.Title;
+                }
+                else
+                {
+                    logger.LogError("Unable to find a patreon Tier with pledge amount: " + data.PledgeAmountCents + ".");
                 }
             }
-            catch (Exception exc)
+            else
             {
-                logger.LogError(exc.ToString() + "\r\n\r\n" + patreonJson);
-                return default;
+                patreon.Tier = null;
+                patreon.PledgeTitle = null;
+                patreon.PledgeAmount = null;
             }
+
+            UpdateUser(data, patreon);
+        }
+
+        private void UpdateUser(PatreonInfo data, DataModels.UserPatreon patreon)
+        {
+            DataModels.User user = null;
+            if (patreon.UserId != null)
+            {
+                user = gameData.GetUser(patreon.UserId.Value);
+            }
+
+            if (!string.IsNullOrEmpty(data.TwitchUserId))
+            {
+                patreon.TwitchUserId = data.TwitchUserId;
+
+                if (user == null)
+                {
+                    user = gameData.GetUserByTwitchId(data.TwitchUserId);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(data.TwitchUsername))
+            {
+                if (user == null)
+                {
+                    user = gameData.GetUserByUsername(data.TwitchUsername);
+                }
+            }
+
+            if (user != null)
+            {
+                user.PatreonTier = patreon.Tier;
+            }
+        }
+
+        private void Delete(PatreonInfo data)
+        {
+            var patreon = gameData.GetPatreonUser(data.PatreonId);
+            if (patreon == null) return;
+            if (patreon.UserId != null)
+            {
+                var user = gameData.GetUser(patreon.UserId.Value);
+                if (user != null)
+                {
+                    user.PatreonTier = null;
+                }
+            }
+
+            patreon.PledgeTitle = null;
+            patreon.PledgeAmount = null;
+            patreon.Tier = null;
+        }
+
+        private static PatreonInfo ParseRequest(string content)
+        {
+            var json = JObject.Parse(content);
+            var info = new PatreonInfo();
+            var included = json["included"];
+
+            foreach (var data in included.Children())
+            {
+                if ((string)data["type"] != "user")
+                {
+                    continue;
+                }
+
+                var attributes = data["attributes"];
+                info.PatreonId = (long)data["id"];
+                info.FullName = (string)attributes["full_name"];
+                info.Email = (string)attributes["email"];
+
+                var socialConnections = attributes["social_connections"];
+                var twitch = socialConnections["twitch"];
+                if (twitch != null)
+                {
+                    info.TwitchUserId = (string)twitch["user_id"];
+                    info.TwitchUsername = ((string)twitch["url"])?.Split('/').LastOrDefault();
+                }
+
+                break;
+            }
+
+            info.Status = (string)json["data"]["attributes"]["patron_status"];
+            info.PledgeAmountCents = (decimal)json["data"]["attributes"]["pledge_amount_cents"];
+            info.PledgeAmountDollars = info.PledgeAmountCents / 100; // Convert cents to dollars
+            return info;
+        }
+
+        private class PatreonInfo
+        {
+            public long PatreonId { get; set; }
+            public string FullName { get; set; }
+            public string Email { get; set; }
+            public string Status { get; set; }
+            public string TwitchUserId { get; set; }
+            public string TwitchUsername { get; set; }
+            public decimal PledgeAmountCents { get; set; }
+            public decimal PledgeAmountDollars { get; set; }
         }
     }
 }

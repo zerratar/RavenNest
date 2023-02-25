@@ -7,6 +7,8 @@
 
 @inject NavigationManager NavigationManager
 
+<h1 class="page-title">Loyalty</h1>
+
 <div class="tab-view">
     <button @onclick="ViewStreamers" class="tab-link @(viewState == LoyaltyViewState.OtherStream ? "active":"")">Loyalty towards other streamers</button>
     <button @onclick="ViewMyStream" class="tab-link @(viewState == LoyaltyViewState.MyStream ? "active":"")">My Stream (Loyalty towards me)</button>
@@ -29,7 +31,7 @@ else
                 }
                 else
                 {
-                    <h1>Viewer Loyalty</h1>
+                    @*<h1>Viewer Loyalty</h1>*@
                     <h4>Here you can keep track on your viewers to see who has been playing on your stream and for how long.</h4>
                     if (loyaltyData == null)
                     {
@@ -117,7 +119,7 @@ else
             break;
         case LoyaltyViewState.OtherStream:
             {
-                <h1>Streamer Loyalty</h1>
+                @*<h1>Streamer Loyalty</h1>*@
                 if (userLoyaltyData == null)
                 {
                     <LoadIndicator></LoadIndicator>

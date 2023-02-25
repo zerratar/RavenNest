@@ -26,32 +26,8 @@ h1:after {
     margin-left: -5px;
 }
 
-.section {
-    padding: 30px 100px 50px 100px;
-}
-
-.top-section {
-    background-image: url('/imgs/TopImage.jpg');
-    width: 100vw;
-    height: 435px;
-    background-position: center;
-    background-size: cover;
-    margin-top: -95px;
-    z-index: 0;
-    padding: 150px 50px;
-    display: flex;
-    flex-flow: column;
-    align-items: center;
-}
-
-
 .page-content {
     margin-bottom: 140px;
-}
-
-.content {
-    margin-top: -95px;
-    min-height: 400px;
 }
 
 @media screen and (max-width: 800px) {

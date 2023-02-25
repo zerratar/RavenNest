@@ -88,10 +88,6 @@ button.tab-link.active {
     background-color: black;
 }
 
-.clan-view-tabs {
-    margin-bottom: 25px;
-}
-
 .clan-header {
     display: flex;
     padding-top: 20px;
@@ -107,14 +103,6 @@ button.tab-link.active {
     height: 64px;
 }
 
-
-
-
-table.items-list {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 160px;
-}
 
 .item-stat {
     margin-right: 5px;

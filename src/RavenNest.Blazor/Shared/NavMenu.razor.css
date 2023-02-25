@@ -2,10 +2,6 @@
     width: 100%;
 }
 
-.navbar-toggler {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
 .nav-item .fas,
 .nav-item .fa-solid,
 .nav-item .fa-brands {
@@ -26,7 +22,7 @@
 }
 
 .navbar-brand img {
-    height: 26px;
+    height: 40px;
     position: relative;
     top: 0px;
     left: 25px;
@@ -53,22 +49,23 @@
 }
 
 .nav-item ::deep a {
-    color: #d7d7d7;
-    border-radius: 4px;
     height: 3rem;
     display: flex;
     align-items: center;
     line-height: 3rem;
+    margin-left: 15px;
+    margin-top: 5px;
+    border-radius: 20px 0px 0px 20px;
 }
 
 .nav-item ::deep a.active {
-    background-color: rgba(255,255,255,0.25);
-    color: white;
+    background-color: #f3f4f8;
+    color: #0b1226;
 }
 
 .nav-item ::deep a:hover {
-    background-color: rgba(255,255,255,0.1);
-    color: white;
+    background-color: rgb(255 255 255 / 73%);
+    color: #0b1226;
 }
 
 .collapse {
@@ -87,7 +84,7 @@
     display: none;
 }
 
-@media (max-width: 640.98px) {
+@media (max-width: 641px) {
 
     .notifications,
     .login {

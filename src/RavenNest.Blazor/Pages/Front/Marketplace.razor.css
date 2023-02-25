@@ -1,39 +1,10 @@
-﻿h1 {
-    color: white;
-    text-shadow: 4px 4px 10px rgba(0,0,0,0.5);
+﻿
+.top-section{
+    height: 335px;
 }
-
-h1:after {
-    background-image: url(/imgs/LineBreakWhite.png);
-    height: 28px;
-}
-
-.section {
-    padding: 30px 100px 50px 100px;
-}
-
 .item-stat {
     margin-right: 5px;
     white-space: nowrap;
-}
-
-.top-section {
-    background-image: url('/imgs/TopImage.jpg');
-    width: 100vw;
-    height: 435px;
-    background-position: center;
-    background-size: cover;
-    margin-top: -95px;
-    z-index: 0;
-    padding: 150px 50px;
-    display: flex;
-    flex-flow: column;
-    align-items: center;
-}
-
-.content {
-    margin-top: -95px;
-    min-height: 400px;
 }
 
 table.marketplace-list {

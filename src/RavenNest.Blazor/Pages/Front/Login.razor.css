@@ -1,7 +1,9 @@
 ﻿.section, h1, h2, h3, p {
     font-family: 'Heebo', sans-serif;
 }
-
+.top-section{
+    height: 1000px;
+}
 p.invalid {
     color: red;
     /* font-weight: bold; */
@@ -10,7 +12,7 @@ p.invalid {
 
 .login-header {
     color: white;
-    margin-top: -140px;
+    margin-top: 80px;
 }
 
 .login-header:after {
@@ -24,6 +26,7 @@ p.invalid {
     font-size: 14pt;
     margin-bottom: 30px;
     text-align: center;
+    margin-top: -20px;
 }
 
 .login-separator {
@@ -31,16 +34,8 @@ p.invalid {
     width: 1095px;
     max-width: 100%;
     text-align: center;
-    background-image: url(/imgs/LoginSeparator.png);
     height: 2px;
     background-size: cover;
-}
-
-.login-separator:after {
-    content: "OR";
-    position: absolute;
-    font-size: 18pt;
-    margin-top: -15px;
 }
 
 form {
@@ -48,10 +43,6 @@ form {
     flex-flow: column;
     justify-content: center;
     align-items: center;
-}
-
-.content {
-    margin-top: -95px;
 }
 
 .section {
@@ -66,20 +57,6 @@ form {
     display: flex;
     flex-flow: column;
 }
-
-.top-section {
-    width: 100vw;
-    height: 1200px;
-    background-image: url(/imgs/LoginBackground.jpg);
-    margin-top: -95px;
-    background-size: cover;
-    background-position: center;
-    display: flex;
-    flex-flow: column;
-    justify-content: center;
-    align-items: center;
-}
-
 .input-row {
     display: -webkit-box;
     display: -ms-flexbox;
@@ -120,7 +97,6 @@ input#inputUsername {
 }
 
 .content > .login {
-    margin-top: 162px;
     flex-grow: 1;
     padding-bottom: 40px;
 }

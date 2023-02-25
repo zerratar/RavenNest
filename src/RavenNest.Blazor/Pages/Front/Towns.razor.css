@@ -8,39 +8,11 @@ th, td {
     max-width: 25%;
     width: 25%;
 }
-h1 {
-    color: white;
-    text-shadow: 4px 4px 10px rgba(0,0,0,0.5);
-}
-
-h1:after {
-    background-image: url(/imgs/LineBreakWhite.png);
-    height: 28px;
-}
-
 .section {
     padding: 30px 100px 200px 100px;
 }
 table.type-group-town-list {
     width: 100%;
-}
-.top-section {
-    background-image: url('/imgs/TopImage.jpg');
-    width: 100vw;
-    height: 435px;
-    background-position: center;
-    background-size: cover;
-    margin-top: -95px;
-    z-index: 0;
-    padding: 150px 50px;
-    display: flex;
-    flex-flow: column;
-    align-items: center;
-}
-
-.content {
-    margin-top: -95px;
-    min-height: 400px;
 }
 
 .player-character-index {

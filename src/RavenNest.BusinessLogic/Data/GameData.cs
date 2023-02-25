@@ -89,6 +89,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<CharacterSkillRecord> characterSkillRecords;
         private readonly EntitySet<Skills> characterSkills;
         private readonly EntitySet<Skill> skills;
+        private readonly EntitySet<PatreonSettings> patreonSettings;
 
         private readonly EntitySet<User> users;
         private readonly EntitySet<GameClient> gameClients;
@@ -109,6 +110,7 @@ namespace RavenNest.BusinessLogic.Data
         public bool InitializedSuccessful { get; } = false;
 
         public BotStats Bot { get; set; } = new BotStats();
+        public PatreonSettings Patreon { get; set; }
         #endregion
 
         #region Game Data Construction
@@ -168,6 +170,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(VillageHouse),
                         typeof(Resources),
                         typeof(Skills),
+                        typeof(PatreonSettings),
                         typeof(Statistics),
                         typeof(MarketItem),
                         typeof(ItemCraftingRequirement),
@@ -190,6 +193,8 @@ namespace RavenNest.BusinessLogic.Data
                     agreements = new EntitySet<Agreements>(restorePoint?.Get<Agreements>() ?? ctx.Agreements.ToList());
 
                     resourceItemDrops = new EntitySet<ResourceItemDrop>(restorePoint?.Get<ResourceItemDrop>() ?? ctx.ResourceItemDrop.ToList());
+
+                    patreonSettings = new EntitySet<PatreonSettings>(restorePoint?.Get<PatreonSettings>() ?? ctx.PatreonSettings.ToList());
 
                     loyalty = new EntitySet<UserLoyalty>(restorePoint?.Get<UserLoyalty>() ?? ctx.UserLoyalty.ToList());
                     loyalty.RegisterLookupGroup(nameof(User), x => x.UserId);
@@ -344,6 +349,7 @@ namespace RavenNest.BusinessLogic.Data
                     gameClients = new EntitySet<GameClient>(ctx.GameClient.ToList());
 
                     Client = gameClients.Entities.First();
+                    Patreon = patreonSettings.Entities.FirstOrDefault();
 
                     entitySets = new IEntitySet[]
                     {
@@ -358,6 +364,7 @@ namespace RavenNest.BusinessLogic.Data
                         characterSkillRecords,
                         clanRolePermissions,
                         characterClanSkillCooldown,
+                        patreonSettings,
                         resourceItemDrops,
                         gameClients,
                         items, // so we can update items

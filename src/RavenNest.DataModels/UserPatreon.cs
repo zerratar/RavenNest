@@ -13,6 +13,12 @@ namespace RavenNest.DataModels
         private long? pledgeAmount; public long? PledgeAmount { get => pledgeAmount; set => Set(ref pledgeAmount, value); }
         private string email; public string Email { get => email; set => Set(ref email, value); }
         private int? tier; public int? Tier { get => tier; set => Set(ref tier, value); }
+        private string accessToken; public string AccessToken { get => accessToken; set => Set(ref accessToken, value); }
+        private string refreshToken; public string RefreshToken { get => refreshToken; set => Set(ref refreshToken, value); }
+        private string profilePicture; public string ProfilePicture { get => profilePicture; set => Set(ref profilePicture, value); }
+        private string expiresIn; public string ExpiresIn { get => expiresIn; set => Set(ref expiresIn, value); }
+        private string scope; public string Scope { get => scope; set => Set(ref scope, value); }
+        private string tokenType; public string TokenType { get => tokenType; set => Set(ref tokenType, value); }
         private DateTime? updated; public DateTime? Updated { get => updated; set => Set(ref updated, value); }
         private DateTime? created; public DateTime? Created { get => created; set => Set(ref created, value); }
     }

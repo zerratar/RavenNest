@@ -65,7 +65,7 @@ namespace RavenNest.Controllers
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("invite/{senderCharacterId}/{characterId}")]
-        public bool ClanInvitePlayer(Guid senderCharacterId, Guid characterId)
+        public ClanInviteResult ClanInvitePlayer(Guid senderCharacterId, Guid characterId)
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
@@ -84,7 +84,7 @@ namespace RavenNest.Controllers
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("decline-invite/{characterId}/{argument}")]
-        public bool ClanInvitePlayerDecline(Guid characterId, string argument)
+        public ClanDeclineResult ClanInvitePlayerDecline(Guid characterId, string argument)
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
@@ -120,7 +120,7 @@ namespace RavenNest.Controllers
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("leave/{characterId}")]
-        public bool ClanPlayerLeave(Guid characterId)
+        public ClanLeaveResult ClanPlayerLeave(Guid characterId)
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);

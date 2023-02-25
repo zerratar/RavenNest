@@ -41,7 +41,7 @@ namespace RavenNest.Blazor
         public void ConfigureServices(IServiceCollection services)
         {
             var appSettingsSection = Configuration.GetSection("AppSettings");
-            var appSettings = appSettingsSection.Get<AppSettings>();
+
             services.Configure<AppSettings>(appSettingsSection);
             services.Configure<JsonOptions>(options =>
             {
@@ -51,6 +51,7 @@ namespace RavenNest.Blazor
             //services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
 
+            var appSettings = appSettingsSection.Get<AppSettings>();
             services.AddLogging(loggingBuilder =>
             {
                 var loggingDbContext = new RavenfallDbContextProvider(Options.Create(appSettings));
@@ -143,7 +144,9 @@ namespace RavenNest.Blazor
             app.UseResponseCaching();
 
             app.UseRewriter(new RewriteOptions()
+#if !DEBUG
                .AddRedirectToWww()
+#endif
                .AddRedirectToHttps()
             );
 
@@ -244,6 +247,7 @@ namespace RavenNest.Blazor
             // keep this one for now... LUL
             services.AddSingleton<WeatherForecastService>();
 
+            services.AddSingleton<PatreonService>();
             services.AddSingleton<AuthService>();
             services.AddSingleton<SessionService>();
             services.AddSingleton<PoQService>();

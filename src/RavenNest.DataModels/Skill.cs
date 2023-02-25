@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace RavenNest.DataModels
+﻿namespace RavenNest.DataModels
 {
     public partial class Skill : Entity<Skill>
     {

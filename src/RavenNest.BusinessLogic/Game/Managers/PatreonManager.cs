@@ -1,188 +1,540 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 using RavenNest.BusinessLogic.Data;
-using RavenNest.BusinessLogic.Patreon;
+using RavenNest.BusinessLogic.Models.Patreon;
+using RavenNest.BusinessLogic.Models.Patreon.API;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
+using RavenNest.Sessions;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace RavenNest.BusinessLogic.Game
 {
     public class PatreonManager : IPatreonManager
     {
         private readonly IGameData gameData;
+        private readonly IHttpContextAccessor accessor;
+        private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly IPlayerInventoryProvider playerInventory;
+        private readonly PatreonSettings patreon;
+        private readonly HttpClient httpClient;
+
+        //private Task campaignDetailsTask;
+        private PatreonCampaign activeCampaign;
 
         public PatreonManager(
             IGameData gameData,
+            IHttpContextAccessor accessor,
+            ISessionInfoProvider sessionInfoProvider,
             IPlayerInventoryProvider playerInventory)
         {
             this.gameData = gameData;
+            this.accessor = accessor;
+            this.sessionInfoProvider = sessionInfoProvider;
             this.playerInventory = playerInventory;
+
+            var data = (this.gameData as GameData);
+            this.patreon = data.Patreon;
+            this.httpClient = new HttpClient();
+
+            //this.campaignDetailsTask = EnsureCampaignDetailsAsync();
         }
 
-        public void AddPledge(IPatreonData data)
+        public void Unlink(SessionInfo session)
         {
-            UpdatePledge(data);
+            var user = gameData.GetUser(session.AccountId);
+            if (user == null) return;
+            var patreonUser = gameData.GetPatreonUser(user.Id);
+            if (patreonUser == null) return;
+            patreonUser.AccessToken = null;
+            patreonUser.RefreshToken = null;
+            patreonUser.ProfilePicture = null;
+            patreonUser.Scope = null;
+            patreonUser.TokenType = null;
         }
-
-        public void RemovePledge(IPatreonData data)
+        public async Task<UserPatreon> LinkAsync(SessionInfo session, string code)
         {
-            var user = GetUser(data, out var patreon);
-            return; // don't remove anything, but we should flag it to expire?
+            var token = await GetAccessTokenUsingCodeAsync(code);
+            if (token == null || string.IsNullOrEmpty(token.AccessToken))
+                return null;
 
-            //if (user != null &&
-            //    (data.Status == null || data.Status.IndexOf("active", StringComparison.OrdinalIgnoreCase) < 0))
-            //    user.PatreonTier = null;
-
-            //user.PatreonExpires = ...
-        }
-
-        public void UpdatePledge(IPatreonData data)
-        {
-            var user = GetUser(data, out var patreon);
-            var currentPledgeAmount = patreon.PledgeAmount.GetValueOrDefault();
-
-            var newPledgeAmount = GetPledgeAmount(data);
-            if (data.Tier >= patreon.Tier || newPledgeAmount >= currentPledgeAmount)
+            // The following is a super ugly hack, this is due to an issue in Patreon API
+            // if the creator logs in, a new access token is generated and it overwrites the creator's token.
+            // if this is using the creator account, the access token will be regenerated.
+            // assign the new one if this is Zerratar.
+            var isCreator = false;
+            if (session.UserName.Equals("zerratar", StringComparison.OrdinalIgnoreCase))
             {
-                patreon.PledgeAmount = newPledgeAmount;
-                patreon.PledgeTitle = GetTierTitle(data);
-                patreon.Tier = data.Tier;
+                isCreator = true;
+                patreon.ExpiresIn = token.ExpiresIn;
+                patreon.CreatorRefreshToken = token.RefreshToken;
+                patreon.CreatorAccessToken = token.AccessToken;
+                patreon.TokenType = token.TokenType;
+                patreon.Scope = token.Scope;
+                patreon.LastUpdate = DateTime.UtcNow;
             }
 
-            if (user != null && patreon.Tier > user.PatreonTier)
+            var isNewUserPatreon = false;
+            var user = gameData.GetUser(session.AccountId);
+            var patreonUser = gameData.GetPatreonUser(user.Id);
+            if (patreonUser == null)
             {
-                user.PatreonTier = patreon.Tier;
+                // check one more time but using patreon ID, in case we received one earlier from a webhook.
+                // This will allow us to re-use those records.
+                patreonUser = new UserPatreon();
+                patreonUser.Id = Guid.NewGuid();
+                patreonUser.TwitchUserId = user.UserId;
+                patreonUser.UserId = user.Id;
+                patreonUser.Email = user.Email;
+                patreonUser.Created = DateTime.UtcNow;
+                isNewUserPatreon = true;
             }
 
-            patreon.Updated = DateTime.UtcNow;
+            patreonUser.AccessToken = token.AccessToken;
+            patreonUser.RefreshToken = token.RefreshToken;
+            patreonUser.Scope = token.Scope;
+            patreonUser.ExpiresIn = token.ExpiresIn;
+            patreonUser.TokenType = token.TokenType;
+            patreonUser.Updated = DateTime.UtcNow;
+
+            session.Patreon = patreonUser;
+            // get patreon data
+
+            /*
+                curl --request GET \
+                  --url https://www.patreon.com/api/oauth2/api/current_user \
+                  --header 'authorization: Bearer access_token'
+             */
+
+            if (string.IsNullOrEmpty(patreonUser.AccessToken))
+            {
+                return null;
+            }
+
+            var patreonData = await GetIdentityAsync(patreonUser);
+            if (patreonData != null)
+            {
+                // make sure we have campaign loaded.
+                //if (!campaignDetailsTask.IsCompleted)
+                //    await campaignDetailsTask;
+
+                await EnsureCampaignDetailsAsync();
+
+                if (long.TryParse(patreonData.Data.Id, out var patreonId))
+                {
+                    if (isNewUserPatreon)
+                    {
+                        var existing = gameData.GetPatreonUser(patreonId);
+                        if (existing != null)
+                        {
+                            Replace(ref patreonUser, existing);
+                            isNewUserPatreon = false;
+                        }
+                    }
+                    patreonUser.PatreonId = patreonId;
+                }
+
+                var firstName = patreonData.Data?.Attributes?.FirstName;
+                var lastName = patreonData.Data?.Attributes?.LastName;
+                var email = patreonData.Data?.Attributes?.Email;
+                var image = patreonData.Data?.Attributes?.ImageUrl?.ToString();
+
+                if (!string.IsNullOrEmpty(firstName))
+                {
+                    patreonUser.FirstName = firstName;
+                    patreonUser.FullName = firstName;
+                }
+
+                if (!string.IsNullOrEmpty(lastName))
+                    patreonUser.FullName = firstName + " " + lastName;
+
+                if (!string.IsNullOrEmpty(email))
+                    patreonUser.Email = email;
+
+                if (!string.IsNullOrEmpty(image))
+                    patreonUser.ProfilePicture = image;
+
+                if (patreonData.Included != null)
+                {
+                    var highestEntitledTier = GetHighestEntitledTier(patreonData);
+                    if (highestEntitledTier != null)
+                    {
+                        var t = highestEntitledTier.Tier;
+                        patreonUser.PledgeAmount = t.AmountCents;
+                        patreonUser.PledgeTitle = t.Title;
+                        patreonUser.Tier = t.Level;
+                        user.PatreonTier = t.Level;
+                    }
+                    else if (!isCreator)
+                    {
+                        patreonUser.PledgeAmount = null;
+                        patreonUser.PledgeTitle = null;
+                        patreonUser.Tier = null;
+                        user.PatreonTier = null;
+                    }
+                }
+            }
+
+            // add this last, in case we found the user using patreon id
+            // after we first created it. If so, then we don't want to add another one.
+            if (isNewUserPatreon)
+            {
+                gameData.Add(patreonUser);
+            }
+
+            await this.sessionInfoProvider.StoreAsync(session.SessionId);
+            return patreonUser;
         }
 
-        private UserPatreon GetOrCreateUserPatreon(IPatreonData data)
+        private void Replace(ref UserPatreon patreonUser, UserPatreon existing)
         {
-            var patreon = gameData.GetPatreonUser(data.PatreonId);
-            if (patreon != null)
+            existing.TwitchUserId = patreonUser.TwitchUserId;
+            existing.UserId = patreonUser.UserId;
+            existing.Email = patreonUser.Email;
+            existing.AccessToken = patreonUser.AccessToken;
+            existing.RefreshToken = patreonUser.RefreshToken;
+            existing.Scope = patreonUser.Scope;
+            existing.ExpiresIn = patreonUser.ExpiresIn;
+            existing.TokenType = patreonUser.TokenType;
+            existing.Updated = patreonUser.Updated;
+            patreonUser = existing;
+        }
+
+        private PatreonMembership GetHighestEntitledTier(PatreonIdentity.Root patreonData)
+        {
+            var highestEntitledTier = patreonData.Included
+                // sort by highest tier first
+                .OrderByDescending(x => x.Attributes?.CurrentlyEntitledAmountCents ?? 0)
+                .Select(x =>
+                {
+                    var tier = activeCampaign.Tiers.FirstOrDefault(y => y.Id == x.Id);
+                    if (tier == null) return null;
+                    return new PatreonMembership(tier, x.Attributes?.PatronStatus);
+                })
+                // take the first one that is active_patron and is one of our tiers.
+                .FirstOrDefault(x => x != null && x.PatronStatus == "active_patron");
+            return highestEntitledTier;
+        }
+
+        public async Task EnsureCampaignDetailsAsync()
+        {
+            // check if we need to update our access token.
+            if (activeCampaign != null ||
+                string.IsNullOrEmpty(patreon.CreatorAccessToken))
             {
-                return patreon;
+                return;
             }
 
-            var now = DateTime.UtcNow;
-            var firstName = data.FullName?.Split(' ')?.FirstOrDefault();
+            await EnsureAccessTokenAsync();
 
-            var pledgeAmount = GetPledgeAmount(data);
-            var title = GetTierTitle(data);
-
-            patreon = new UserPatreon()
+            var result = await GetCampaignAsync();
+            if (result == null)
             {
-                Id = Guid.NewGuid(),
-                Email = data.Email,
-                FullName = data.FullName,
-                PatreonId = data.PatreonId,
-                PledgeAmount = pledgeAmount,
-                PledgeTitle = title,
-                Tier = data.Tier,
-                TwitchUserId = data.TwitchUserId,
-                FirstName = firstName,
-                //TwitchUserId = data.TwitchUserId ?? user?.UserId,                
-                //UserId = user?.Id,
-                Updated = now,
-                Created = now,
+                // try again later
+                return;
+            }
+            var campaign = result.Data[0];
+            var tiers = new List<PatreonTier>();
+            var sorted = result.Included.OrderBy(x => x.Attributes.AmountCents).ToArray();
+            for (var i = 0; i < sorted.Length; ++i)
+            {
+                var tierData = result.Included[i];
+                var name = tierData.Attributes.Title;
+                var cents = tierData.Attributes.AmountCents;
+                var id = tierData.Id;
+                tiers.Add(new PatreonTier
+                {
+                    Id = id,
+                    Title = name,
+                    AmountCents = cents,
+                    Level = i, // since we have steel, which does not include an actual boost in game // i + 1,
+                });
+            }
+
+            this.activeCampaign = new PatreonCampaign
+            {
+                Id = campaign.Id,
+                PatreonCount = campaign.Attributes.PatronCount,
+                Tiers = tiers
             };
-            gameData.Add(patreon);
-            return patreon;
         }
 
-        private static string GetTierTitle(IPatreonData data)
+        private async Task EnsureAccessTokenAsync()
         {
-            var title = data.RewardTitle;
-            if (!string.IsNullOrEmpty(title) && title.Contains(','))
+            var expires = patreon.LastUpdate;
+            if (!string.IsNullOrEmpty(patreon.ExpiresIn))
             {
-                title = title.Split(',')[0];
+                expires = expires.AddSeconds(int.Parse(patreon.ExpiresIn));
+            }
+            //else
+            //{
+            //    expires = expires.AddDays(30);
+            //    patreon.ExpiresIn = ((int)((expires - patreon.LastUpdate).TotalSeconds)).ToString();
+            //}
+
+            if (string.IsNullOrEmpty(patreon.TokenType))
+            {
+                patreon.TokenType = "Bearer";
             }
 
-            return title;
+            if (DateTime.UtcNow >= expires)
+            {
+                await RefreshCreatorAccessTokenAsync();
+            }
         }
 
-        private static long GetPledgeAmount(IPatreonData data)
+        // needs to be requested every time, since memberships may have changed.
+        // we do need to keep track on the campaign id though so we don't need to fetch which campaigns available every time.
+        public async Task<PatreonMemberCollection.Root> GetCampaignMembersAsync()
         {
-            long pledgeAmount = 0;
-            if (!string.IsNullOrEmpty(data.PledgeAmountCents))
+            var url = "https://www.patreon.com/api/oauth2/v2/campaigns/" + activeCampaign.Id + "/members" +
+                "?fields" + WebUtility.UrlEncode("[member]") + "=currently_entitled_amount_cents,patron_status";
+            var membersResponse = await GetCampaignMembersAsync(url);
+            var meta = membersResponse.Meta;
+
+            var nextPageUrl = membersResponse?.Links?.Next;//meta?.Pagination?.Cursors?.Next;
+            while (!string.IsNullOrEmpty(nextPageUrl))
             {
-                var value = data.PledgeAmountCents;
-                if (data.PledgeAmountCents.Contains(','))
+                var nextResponse = await GetCampaignMembersAsync(nextPageUrl);
+                membersResponse.Data.AddRange(nextResponse.Data);
+                nextPageUrl = nextResponse?.Links?.Next;
+            }
+
+            return membersResponse;
+        }
+
+        //public async Task<PatreonMember.Root> GetCampaignMemberAsync(Guid id)
+        //{
+        //    try
+        //    {
+        //        var url = "https://www.patreon.com/api/oauth2/v2/members/" + id
+        //            + "?fields" + WebUtility.UrlEncode("[member]") + "=currently_entitled_amount_cents,patron_status"
+        //            + "&include=currently_entitled_tiers,user";
+        //        var httpRequest = (HttpWebRequest)WebRequest.Create(url);
+        //        httpRequest.Headers["authorization"] = patreon.TokenType + " " + patreon.CreatorAccessToken;
+        //        using var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+        //        using var streamReader = new StreamReader(httpResponse.GetResponseStream());
+        //        var json = await streamReader.ReadToEndAsync();
+        //        return JsonConvert.DeserializeObject<PatreonMember.Root>(json);
+        //    }
+        //    catch (WebException webExc)
+        //    {
+        //        if (webExc.Response is HttpWebResponse r)
+        //        {
+        //            using var streamReader = new StreamReader(r.GetResponseStream());
+        //            var responseString = await streamReader.ReadToEndAsync();
+        //        }
+        //        return null;
+        //    }
+        //}
+
+        private async Task<PatreonMemberCollection.Root> GetCampaignMembersAsync(string url)
+        {
+            try
+            {
+                var httpRequest = (HttpWebRequest)WebRequest.Create(url);
+                httpRequest.Headers["authorization"] = patreon.TokenType + " " + patreon.CreatorAccessToken;
+                using var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                using var streamReader = new StreamReader(httpResponse.GetResponseStream());
+                var json = await streamReader.ReadToEndAsync();
+                return JsonConvert.DeserializeObject<PatreonMemberCollection.Root>(json);
+            }
+            catch (WebException webExc)
+            {
+                if (webExc.Response is HttpWebResponse r)
                 {
-                    value = data.PledgeAmountCents.Split(',')[0];
+                    using var streamReader = new StreamReader(r.GetResponseStream());
+                    var responseString = await streamReader.ReadToEndAsync();
                 }
-
-                long.TryParse(value, out pledgeAmount);
+                return null;
             }
-
-            return pledgeAmount;
         }
 
-        private User GetUser(IPatreonData data, out UserPatreon patreon)
+        public async Task<PatreonCampaigns.Root> GetCampaignAsync()
         {
-            patreon = GetOrCreateUserPatreon(data);
-            var user = patreon.UserId == null ? TryGetUser(data) : gameData.GetUser(patreon.UserId.GetValueOrDefault());
-            var now = DateTime.UtcNow;
+            var url = "https://www.patreon.com/api/oauth2/v2/campaigns" +
+                "?include=tiers" +
+                "&fields" + WebUtility.UrlEncode("[tier]") + "=title,amount_cents" +
+                "&fields" + WebUtility.UrlEncode("[campaign]") + "=created_at,creation_name,discord_server_id,image_small_url,image_url,is_charged_immediately,is_monthly,is_nsfw,main_video_embed,main_video_url,one_liner,one_liner,patron_count,pay_per_name,pledge_url,published_at,summary,thanks_embed,thanks_msg,thanks_video_url,has_rss,has_sent_rss_notify,rss_feed_title,rss_artwork_url,patron_count,discord_server_id,google_analytics_id";
 
-            if (patreon.UserId == null)
+            try
             {
-                if (!string.IsNullOrEmpty(data.TwitchUserId))
-                {
-                    patreon.TwitchUserId = data.TwitchUserId;
-                    patreon.Updated = now;
-                }
-
-                if (user != null)
-                {
-                    patreon.TwitchUserId = user.UserId;
-                    patreon.UserId = user.Id;
-                    patreon.Updated = now;
-                }
+                var httpRequest = (HttpWebRequest)WebRequest.Create(url);
+                httpRequest.Headers["authorization"] = patreon.TokenType + " " + patreon.CreatorAccessToken;
+                using var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                using var streamReader = new StreamReader(httpResponse.GetResponseStream());
+                var json = await streamReader.ReadToEndAsync();
+                return JsonConvert.DeserializeObject<PatreonCampaigns.Root>(json);
             }
-
-            if (string.IsNullOrEmpty(patreon.FirstName))
+            catch (WebException webExc)
             {
-                patreon.FirstName = data.FullName?.Split(' ')?.FirstOrDefault();
-                patreon.Updated = now;
+                if (webExc.Response is HttpWebResponse r)
+                {
+                    using var streamReader = new StreamReader(r.GetResponseStream());
+                    var responseString = await streamReader.ReadToEndAsync();
+                }
+                return null;
             }
-
-            return user;
         }
 
-        private User TryGetUser(IPatreonData data)
+        public async Task<PatreonIdentity.Root> GetIdentityAsync(UserPatreon patreon)
         {
-            var firstName = data.FullName?.Split(' ')?.FirstOrDefault();
-            var twitchUserName = "";
-            if (!string.IsNullOrEmpty(data.TwitchUrl))
+            var url = "https://www.patreon.com/api/oauth2/v2/identity" +
+                "?include=memberships,memberships.currently_entitled_tiers" +
+                //"&fields" + WebUtility.UrlEncode("[tier]") + "=currently_entitled_tiers" +
+                "&fields" + WebUtility.UrlEncode("[member]") + "=currently_entitled_amount_cents,patron_status" +
+                "&fields" + WebUtility.UrlEncode("[user]") + "=created,email,first_name,full_name,image_url,last_name,social_connections,thumb_url,url,vanity";
+
+            try
             {
-                twitchUserName = data.TwitchUrl.Split('/').LastOrDefault()?.ToLower();
+                var httpRequest = (HttpWebRequest)WebRequest.Create(url);
+                httpRequest.Headers["authorization"] = patreon.TokenType + " " + patreon.AccessToken;
+                using var httpResponse = (HttpWebResponse)httpRequest.GetResponse();
+                using var streamReader = new StreamReader(httpResponse.GetResponseStream());
+                var json = await streamReader.ReadToEndAsync();
+
+                return Newtonsoft.Json.JsonConvert.DeserializeObject<PatreonIdentity.Root>(json);
             }
-            var emailLower = data.Email.ToLower();
-            var emailuser = emailLower.Split('@').FirstOrDefault();
-            return gameData.FindUser(u =>
+            catch (WebException exc)
             {
-                if (u == null)
-                    return false;
+                if (exc.Response is HttpWebResponse r)
+                {
+                    using var streamReader = new StreamReader(r.GetResponseStream());
+                    var responseString = await streamReader.ReadToEndAsync();
+                }
+                return null;
+            }
+        }
 
-                var email = u.Email?.ToLower() ?? string.Empty;
+        public async Task<AccessTokenRefresh> GetAccessTokenUsingCodeAsync(string code)
+        {
+            try
+            {
+                var url = $"https://www.patreon.com/api/oauth2/token";
 
-                if (!string.IsNullOrEmpty(twitchUserName) && u.UserName.ToLower() == twitchUserName)
-                    return true;
+                //?grant_type=refresh_token&refresh_token={patreon.CreatorRefreshToken}&client_id={patreon.ClientId}&client_secret={patreon.ClientSecret}
+                var dict = new Dictionary<string, string>();
+                dict.Add("code", code);
+                dict.Add("grant_type", "authorization_code");
+                dict.Add("client_id", patreon.ClientId);
+                dict.Add("client_secret", patreon.ClientSecret);
+                dict.Add("redirect_uri", GetRedirectUrl());
+                using var response = await httpClient.PostAsync(url, new FormUrlEncodedContent(dict));
 
-                if (!string.IsNullOrEmpty(data.TwitchUserId) && u.UserId == data.TwitchUserId)
-                    return true;
+                var contentResponse = await response.Content.ReadAsStringAsync();
+                //response.EnsureSuccessStatusCode();
 
-                if (!string.IsNullOrEmpty(u.UserName) && (u.UserName.ToLower() == firstName?.ToLower() || u.UserName.ToLower() == emailuser))
-                    return true;
+                return JsonConvert.DeserializeObject<AccessTokenRefresh>(contentResponse);
+            }
+            catch (WebException exc)
+            {
+                if (exc.Response is HttpWebResponse r)
+                {
+                    using var streamReader = new StreamReader(r.GetResponseStream());
+                    var responseString = await streamReader.ReadToEndAsync();
+                }
+                return null;
+            }
+        }
 
-                if (email == emailLower || email.StartsWith(emailuser + "@"))
-                    return true;
-
+        public async Task<bool> RefreshCreatorAccessTokenAsync()
+        {
+            try
+            {
+                var url = $"https://www.patreon.com/api/oauth2/token?grant_type=refresh_token&refresh_token={patreon.CreatorRefreshToken}&client_id={patreon.ClientId}&client_secret={patreon.ClientSecret}";
+                using var response = await httpClient.PostAsync(url, null);
+                response.EnsureSuccessStatusCode();
+                var data = JsonConvert.DeserializeObject<AccessTokenRefresh>(await response.Content.ReadAsStringAsync());
+                if (data == null) return false;
+                if (!string.IsNullOrEmpty(data.AccessToken)) patreon.CreatorAccessToken = data.AccessToken;
+                if (!string.IsNullOrEmpty(data.RefreshToken)) patreon.CreatorRefreshToken = data.RefreshToken;
+                if (!string.IsNullOrEmpty(data.Scope)) patreon.Scope = data.Scope;
+                if (!string.IsNullOrEmpty(data.ExpiresIn)) patreon.ExpiresIn = data.ExpiresIn;
+                if (!string.IsNullOrEmpty(data.TokenType)) patreon.TokenType = data.TokenType;
+                patreon.LastUpdate = DateTime.UtcNow;
+                return true;
+            }
+            catch
+            {
                 return false;
-            });
+            }
+        }
+        public async Task<bool> RefreshUserAccessTokenAsync(UserPatreon user)
+        {
+            try
+            {
+                var url = $"https://www.patreon.com/api/oauth2/token?grant_type=refresh_token&refresh_token={user.RefreshToken}&client_id={patreon.ClientId}&client_secret={patreon.ClientSecret}";
+                using var response = await httpClient.PostAsync(url, null);
+                response.EnsureSuccessStatusCode();
+                var data = JsonConvert.DeserializeObject<AccessTokenRefresh>(await response.Content.ReadAsStringAsync());
+                if (data == null) return false;
+                if (!string.IsNullOrEmpty(data.AccessToken)) user.AccessToken = data.AccessToken;
+                if (!string.IsNullOrEmpty(data.RefreshToken)) user.RefreshToken = data.RefreshToken;
+                if (!string.IsNullOrEmpty(data.Scope)) user.Scope = data.Scope;
+                if (!string.IsNullOrEmpty(data.ExpiresIn)) user.ExpiresIn = data.ExpiresIn;
+                if (!string.IsNullOrEmpty(data.TokenType)) user.TokenType = data.TokenType;
+                user.Updated = DateTime.UtcNow;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public string GetRedirectUrl()
+        {
+            var context = accessor.HttpContext;
+            if (context == null || context.Request == null || !context.Request.Host.HasValue)
+            {
+                return "https://www.ravenfall.stream/patreon/link";
+            }
+
+            return $"https://{context.Request.Host}/patreon/link";
+        }
+
+        public async Task<PatreonTier> GetTierByLevelAsync(int level)
+        {
+            await EnsureCampaignDetailsAsync();
+
+            foreach (var tier in activeCampaign.Tiers.OrderByDescending(x => x.Level))
+            {
+                if (level >= tier.Level)
+                    return tier;
+            }
+
+            return null;
+        }
+
+        public async Task<PatreonTier> GetTierByCentsAsync(decimal pledgeAmountCents)
+        {
+            await EnsureCampaignDetailsAsync();
+
+            foreach (var tier in activeCampaign.Tiers.OrderByDescending(x => x.AmountCents))
+            {
+                if (pledgeAmountCents >= tier.AmountCents)
+                    return tier;
+            }
+
+            return null;
+        }
+    }
+
+    public class PatreonMembership
+    {
+        public PatreonTier Tier;
+        public string PatronStatus;
+
+        public PatreonMembership(PatreonTier tier, string patronStatus)
+        {
+            this.Tier = tier;
+            this.PatronStatus = patronStatus;
         }
     }
 }

@@ -32,15 +32,14 @@ namespace RavenNest.BusinessLogic.Game
         int GetNameChangeCount(Guid clanId);
         bool ResetNameChangeCounter(Guid clanId);
 
-
         ClanStats GetClanStats(Guid characterId);
         ClanInfo GetClanInfo(Guid characterId);
-        bool SendPlayerInvite(Guid senderCharacterId, Guid characterId);
+        ClanInviteResult SendPlayerInvite(Guid senderCharacterId, Guid characterId);
         JoinClanResult AcceptClanInvite(Guid characterId, string argument);
-        bool DeclineClanInvite(Guid characterId, string argument);
+        ClanDeclineResult DeclineClanInvite(Guid characterId, string argument);
         ChangeRoleResult PromoteClanMember(Guid senderCharacterId, Guid characterId, string argument);
         ChangeRoleResult DemoteClanMember(Guid senderCharacterId, Guid characterId, string argument);
         JoinClanResult JoinClan(string clanOwnerId, Guid characterId);
-        bool LeaveClan(Guid characterId);
+        ClanLeaveResult LeaveClan(Guid characterId);
     }
 }

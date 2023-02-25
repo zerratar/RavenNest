@@ -1,8 +1,7 @@
 ﻿
-.section {
-    padding: 30px 100px 50px 100px;
+.top-section {
+    height: 335px;
 }
-
 .stream-view {
     height: 180px;
     width: 320px;
@@ -27,27 +26,9 @@ i.fas.fa-play {
     text-shadow: 3px 4px 6px rgb(0 0 0 / 20%);
 }
 
-.top-section {
-    background-image: url('/imgs/TopImage.jpg');
-    width: 100vw;
-    background-position: center;
-    background-size: cover;
-    margin-top: -95px;
-    z-index: 0;
-    padding: 150px 50px;
-    display: flex;
-    flex-flow: column;
-    align-items: center;
-}
-
-.content {
-    margin-top: -95px;
-}
-
 .section:last-of-type {
     padding-bottom: 220px;
 }
-
 
 .twitch-stream-item {
     width: 320px;

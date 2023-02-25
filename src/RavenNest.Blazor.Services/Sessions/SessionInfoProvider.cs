@@ -240,6 +240,7 @@ namespace RavenNest.Sessions
                     }
                 }
                 si.PlaySessions = playSessions;
+                si.Patreon = gameData.GetPatreonUser(user.Id);
             }
         }
         public int GetCombatLevel(DataModels.Skills skills)

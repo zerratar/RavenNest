@@ -28,6 +28,7 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<UserLoyaltyReward> UserLoyaltyReward { get; set; }
         public virtual DbSet<UserClaimedLoyaltyReward> UserClaimedLoyaltyReward { get; set; }
         public virtual DbSet<ResourceItemDrop> ResourceItemDrop { get; set; }
+        public virtual DbSet<PatreonSettings> PatreonSettings { get; set; }
         public virtual DbSet<Appearance> Appearance { get; set; }
         public virtual DbSet<SyntyAppearance> SyntyAppearance { get; set; }
         public virtual DbSet<Character> Character { get; set; }
@@ -93,6 +94,7 @@ namespace RavenNest.BusinessLogic.Data
                 entity.Property(e => e.PlayTime).HasConversion<long>();
             });
 
+            modelBuilder.Entity<PatreonSettings>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<ResourceItemDrop>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<Agreements>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserProperty>(entity => entity.Property(e => e.Id).ValueGeneratedNever());

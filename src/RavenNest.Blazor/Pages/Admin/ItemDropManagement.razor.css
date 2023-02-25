@@ -142,12 +142,6 @@ button.btn.cancel:hover, button.btn.cancel:active {
     margin-left: 15px;
 }
 
-table.items-list {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 160px;
-}
-
 .item-stat {
     margin-right: 5px;
     white-space: nowrap;

@@ -135,7 +135,7 @@ li.notification-item:hover {
 }
 
 
-@media screen and (max-width: 640.98px) {
+@media screen and (max-width: 641px) {
     .notification-list {
         position: fixed;
         top: 55px;

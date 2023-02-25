@@ -6,6 +6,19 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 
 <div class="player-skills">
+  
+
+    @if (CanModify)
+    {
+        <div class="admin-controls">
+            <button @onclick="()=> Unstuck()" class="btn-icon">Unstucks the player&nbsp;<i class="fa-solid fa-person-falling-burst"></i></button>
+            @if (Player.UserId != session.UserId)
+            {
+                <button @onclick="()=> CloneSkillsAndStateToMain()" class="btn-icon">Clone stats to Main&nbsp;<i class="fa fa-arrow-to-bottom"></i></button>
+            }
+            <button @onclick="()=> ResetSkills()" class="btn-icon">Reset skills&nbsp;<i class="fa-regular fa-repeat"></i></button>
+        </div>
+    }
 
     @if (Player != null && Player.Skills != null && Player.SessionInfo != null)
     {
@@ -77,18 +90,6 @@
         <div class="last-updated">@GetLastUpdateString(Player.SessionInfo.SkillsUpdated)</div>
     }
 
-
-    @if (CanModify)
-    {
-        <div class="admin-controls">
-            <button @onclick="()=> Unstuck()" class="btn-icon">Unstucks the player&nbsp;<i class="fa-solid fa-person-falling-burst"></i></button>
-            @if (Player.UserId != session.UserId)
-            {
-                <button @onclick="()=> CloneSkillsAndStateToMain()" class="btn-icon">Clone stats to Main&nbsp;<i class="fa fa-arrow-to-bottom"></i></button>
-            }
-            <button @onclick="()=> ResetSkills()" class="btn-icon">Reset skills&nbsp;<i class="fa-regular fa-repeat"></i></button>
-        </div>
-    }
 
     @foreach (var skill in Player.Skills.AsList())
     {

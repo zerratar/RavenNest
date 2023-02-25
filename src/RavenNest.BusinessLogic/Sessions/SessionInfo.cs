@@ -1,4 +1,5 @@
-﻿using RavenNest.Models;
+﻿using RavenNest.DataModels;
+using RavenNest.Models;
 using RavenNest.Twitch;
 using System;
 using System.Collections.Generic;
@@ -31,7 +32,10 @@ namespace RavenNest.Sessions
         public bool UserNameChanged { get; set; }
         public AuthToken AuthToken { get; set; }
         public bool Extension { get; set; }
+
+        public UserPatreon Patreon { get; set; }
     }
+
 
     public class CharacterGameSession
     {

@@ -8,7 +8,6 @@
 .loyalty-stats-rows {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-evenly;
 }
 
 .loyalty-streamer-details .loyalty-stats-rows {
@@ -29,14 +28,17 @@
     flex-flow: column;
     margin: 3px;
     padding: 15px;
-    background-color: #f6f6f6;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 1px 1px 4px 0px rgb(0 0 0 / 10%);
 }
+
+
 
 .tab-view {
     margin-bottom: 25px;
     display: flex;
     align-items: center;
-    justify-content: center;
     margin-top: 10px;
 }
 
@@ -87,10 +89,6 @@ input.blazored-typeahead__input {
     margin-top: 15px;
 }
 
-table.items-list {
-    width: 100%;
-    border-collapse: collapse;
-}
 
 .item-stat {
     margin-right: 5px;

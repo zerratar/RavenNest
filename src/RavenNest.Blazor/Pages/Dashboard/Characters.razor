@@ -8,8 +8,9 @@
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject NavigationManager NavigationManager
 
+<h1 class="page-title">My Characters</h1>
 
-@if (players == null && selectedPlayer == null)
+@if (players == null || selectedPlayer == null)
 {
     <LoadIndicator></LoadIndicator>
 }

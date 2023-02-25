@@ -1,6 +1,6 @@
 ﻿
 <div class="character-details">
-	<h1>
+@*	<h1>
 		<span>@SelectedPlayer.Name
           <span class="character-index">
 			@SelectedPlayer.CharacterIndex @(SelectedPlayer.Identifier != null ? $"({SelectedPlayer.Identifier})" : "")
@@ -9,7 +9,7 @@
 		<span class="character-level">
 			@PlayerService.GetCombatLevel(SelectedPlayer)
 		</span>
-	</h1>
+	</h1>*@
 	@if (CanManage)
 	{
 	 <p>

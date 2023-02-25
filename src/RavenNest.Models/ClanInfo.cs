@@ -17,6 +17,38 @@ namespace RavenNest.Models
         public int Level { get; set; }
     }
 
+    public class ClanDeclineResult
+    {
+        public bool Success { get; set; }
+        public string ErrorMessage { get; set; }
+    }
+
+    public class ClanLeaveResult
+    {
+        public bool Success { get; set; }
+        public string ErrorMessage { get; set; }
+    }
+
+    public class ClanInviteResult
+    {
+        public bool Success { get; set; }
+        public string ErrorMessage { get; set; }
+
+        public static implicit operator ClanInviteResult(bool value)
+        {
+            return new ClanInviteResult
+            {
+                Success = value,
+                ErrorMessage = value ? "Unknown error. Please try again later" : null
+            };
+        }
+
+        public static implicit operator bool(ClanInviteResult value)
+        {
+            return value.Success;
+        }
+    }
+
     public class ChangeRoleResult
     {
         public bool Success { get; set; }

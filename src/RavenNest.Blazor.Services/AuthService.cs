@@ -8,7 +8,6 @@ using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Sessions;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -105,6 +104,8 @@ namespace RavenNest.Blazor.Services
                         sessionInfo.UserNameChanged = true;
                     }
 
+                    sessionInfo.Patreon = gameData.GetPatreonUser(u.Id);
+
                     gameData.SetUserProperty(u.Id, UserProperties.Twitch_PubSub, accessToken);
                     await ravenbotApi.SendPubSubAccessTokenAsync(user.Id, user.Login, accessToken);
                 }
@@ -137,6 +138,8 @@ namespace RavenNest.Blazor.Services
                 logger.LogError("Login for " + model.Username + " failed. " + nameof(ISessionInfoProvider.SetAuthTokenAsync) + " returned null.");
                 return new SessionInfo { };
             }
+
+            result.SessionInfo.Patreon = gameData.GetPatreonUser(user.Id);
 
             return result.SessionInfo;
         }

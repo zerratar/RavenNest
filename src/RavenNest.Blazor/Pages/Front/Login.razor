@@ -7,7 +7,7 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject IJSRuntime JS
 
-<div class="top-section">
+<div class="top-section login">
 
     @if (IsTwitchLogin)
     {
@@ -50,7 +50,6 @@
                 <RavenButton CssClass="blue login-btn" Type="submit"><i class="fas fa-key"></i> Login</RavenButton>
             </EditForm>
 
-            <div class="login-separator"></div>
             <RavenButton CssClass="twitch twitch-login-btn" OnClick="LoginWithTwitch"><i class="fab fa-twitch"></i>&nbsp;Signup/signin with Twitch</RavenButton>
         }
         else

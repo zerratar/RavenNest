@@ -694,7 +694,7 @@ namespace RavenNest.BusinessLogic.Game
             return result;
         }
 
-        public bool SendPlayerInvite(Guid senderCharacterId, Guid characterId)
+        public ClanInviteResult SendPlayerInvite(Guid senderCharacterId, Guid characterId)
         {
             var clan = GetClanByCharacter(senderCharacterId);
             if (clan == null)
@@ -726,7 +726,6 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 logger.LogError(c?.Name + " tried to invite " + t?.Name + " but could not find any permissions for the role " + role.Name + ". (RoleID: " + role.Id + ", ClanID: " + clan.Id + ", MembershipID: " + membership.Id + ")");
-                return false;
             }
 
             if (!permissions.CanCreateInvite)
@@ -735,7 +734,7 @@ namespace RavenNest.BusinessLogic.Game
                 var t = gameData.GetCharacter(characterId);
                 var permissionString = permissions != null ? ClanRolePermissionsBuilder.Generate(permissions) : "NULL";
                 logger.LogError(c?.Name + " tried to invite " + t?.Name + " but does not have permission to do so. Role Permissions: " + permissionString);
-                return false;
+                return new ClanInviteResult { Success = false, ErrorMessage = "You do not have permission to invite players." };
             }
 
             var senderChar = gameData.GetCharacter(senderCharacterId);
@@ -762,14 +761,15 @@ namespace RavenNest.BusinessLogic.Game
             return new JoinClanResult();
         }
 
-        public bool DeclineClanInvite(Guid characterId, string argument)
+        public ClanDeclineResult DeclineClanInvite(Guid characterId, string argument)
         {
             var invites = gameData.GetClanInvitesByCharacter(characterId);
             var invite = invites.OrderByDescending(x => x.Created).FirstOrDefault();
             if (invite == null)
-                return false;
+                return new ClanDeclineResult { Success = false, ErrorMessage = "You don't have any pending clan invites." };
 
-            return RemovePlayerInvite(invite.Id);
+            RemovePlayerInvite(invite.Id);
+            return new ClanDeclineResult { Success = true };
         }
 
         public ChangeRoleResult PromoteClanMember(Guid senderCharacterId, Guid characterId, string argument)
@@ -911,11 +911,16 @@ namespace RavenNest.BusinessLogic.Game
             return new JoinClanResult();
         }
 
-        public bool LeaveClan(Guid characterId)
+        public ClanLeaveResult LeaveClan(Guid characterId)
         {
             var clan = GetClanByCharacter(characterId);
-            if (clan == null) return false;
-            return RemoveClanMember(clan.Id, characterId);
+            if (clan == null) return new ClanLeaveResult
+            {
+                Success = false,
+                ErrorMessage = "You're not part of a clan."
+            };
+            RemoveClanMember(clan.Id, characterId);
+            return new ClanLeaveResult { Success = true };
         }
 
         public DataModels.ClanRole GetClanRoleByCharacterId(Guid characterId)

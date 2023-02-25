@@ -60,10 +60,6 @@ input.blazored-typeahead__input {
     margin-top: 15px;
 }
 
-table.items-list {
-    width: 100%;
-    border-collapse: collapse;
-}
 
 .item-stat {
     margin-right: 5px;

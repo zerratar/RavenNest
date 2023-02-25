@@ -31,14 +31,6 @@
         public string PoQ_Prod_Url { get; set; }
         #endregion
 
-        #region Patreon
-        public string PatreonDeleteMember { get; set; }
-        public string PatreonUpdateMember { get; set; }
-        public string PatreonCreateMember { get; set; }
-        public string PatreonDeletePledge { get; set; }
-        public string PatreonUpdatePledge { get; set; }
-        public string PatreonCreatePledge { get; set; }
-        #endregion
         public int TcpApiPort { get; set; }
     }
 }

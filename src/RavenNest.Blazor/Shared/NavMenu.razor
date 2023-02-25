@@ -1,8 +1,8 @@
 ﻿@inject RavenNest.Blazor.Services.AuthService AuthService
 @using RavenNest.Blazor.Components
 
-<div class="top-row pl-4 navbar navbar-dark">
-    <a class="navbar-brand" href=""><img src="/imgs/RavenfallGray.png" /></a>
+<div class="pl-4 navbar navbar-dark">
+    <a class="navbar-brand" href=""><img src="/imgs/logo.png" /></a>
     <button class="navbar-toggler" @onclick="ToggleNavMenu">
         <span class="navbar-toggler-icon"></span>
     </button>
@@ -14,62 +14,62 @@
         {
             @if (Admin)
             {
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/characters" Match="NavLinkMatch.All">
                         <span class="oi oi-arrow-left" aria-hidden="true"></span> Dashboard
                     </NavLink>
                 </li>
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/admin" Match="NavLinkMatch.All">
                         <span class="oi oi-dashboard" aria-hidden="true"></span>&nbsp;Overview
                     </NavLink>
                 </li>
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/admin/others" Match="NavLinkMatch.All">
                         <span class="fa-solid fa-gear" aria-hidden="true"></span>&nbsp;Other Admin Tools
                     </NavLink>
                 </li>
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/admin/coc" Match="NavLinkMatch.All">
                         <i class="fa-solid fa-file-signature" aria-hidden="true"></i>&nbsp;Code of Conduct
                     </NavLink>
                 </li>
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/admin/server" Match="NavLinkMatch.All">
                         <i class="fa-solid fa-server"></i>&nbsp;Server
                     </NavLink>
                 </li>
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/admin/ravenbot-logs" Match="NavLinkMatch.All">
                         <i class="fa-solid fa-memo-circle-info"></i>&nbsp;Ravenbot Logs
                     </NavLink>
                 </li>
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/admin/users" Match="NavLinkMatch.All">
                         <i class="fa-solid fa-users"></i>&nbsp;Users
                     </NavLink>
                 </li>
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/admin/search" Match="NavLinkMatch.All">
                         <i class="fa-solid fa-users"></i>&nbsp;Search for User
                     </NavLink>
                 </li>
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/admin/players" Match="NavLinkMatch.All">
                         <i class="fa-solid fa-users-rays"></i>&nbsp;Players
                     </NavLink>
                 </li>
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/admin/items" Match="NavLinkMatch.All">
                         <i class="fa-solid fa-sword"></i>&nbsp;Items
                     </NavLink>
                 </li>
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/admin/drops" Match="NavLinkMatch.All">
                         <i class="fa-solid fa-fishing-rod"></i>&nbsp;Resources
                     </NavLink>
                 </li>
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/admin/sessions" Match="NavLinkMatch.All">
                         <i class="fa-brands fa-twitch"></i>&nbsp;Game Sessions
                     </NavLink>
@@ -77,44 +77,44 @@
             }
             else
             {
-                @*<li class="nav-item px-3">
+                @*<li class="nav-item">
         <NavLink class="nav-link" href="/dashboard" Match="NavLinkMatch.All">
         <span class="oi oi-dashboard" aria-hidden="true"></span> Overview
         </NavLink>
         </li>
-        <li class="nav-item px-3">
+        <li class="nav-item">
         <NavLink class="nav-link" href="/quests" Match="NavLinkMatch.All">
         <span class="oi oi-badge" aria-hidden="true"></span> Quests
         </NavLink>
         </li>
-        <li class="nav-item px-3">
+        <li class="nav-item">
         <NavLink class="nav-link" href="/achievements" Match="NavLinkMatch.All">
         <span class="oi oi-star" aria-hidden="true"></span> Achievements
         </NavLink>
         </li>*@
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                         <span class="oi oi-arrow-left" aria-hidden="true"></span> Frontpage
                     </NavLink>
                 </li>
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/characters" Match="NavLinkMatch.All">
                         <span class="fas fa-users" aria-hidden="true"></span>&nbsp;Characters
                     </NavLink>
                 </li>
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/stash" Match="NavLinkMatch.All">
                         <span class="fas fa-treasure-chest" aria-hidden="true"></span>&nbsp;Item Stash
                     </NavLink>
                 </li>
 
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/clan" Match="NavLinkMatch.All">
                         <span class="fas fa-shield-alt" aria-hidden="true"></span>&nbsp;Clan
                     </NavLink>
                 </li>
 
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/loyalty" Match="NavLinkMatch.All">
                         <span class="fas fa-users" aria-hidden="true"></span>&nbsp;Loyalty
                     </NavLink>
@@ -122,7 +122,7 @@
 
                 @if (IsAdministrator)
                 {
-                    <li class="nav-item px-3">
+                    <li class="nav-item">
                         <NavLink class="nav-link" href="/admin" Match="NavLinkMatch.All">
                             <span class="fas fa-key" aria-hidden="true"></span>&nbsp;Admin
                         </NavLink>
@@ -132,12 +132,17 @@
 
             @if (session?.UserId != null)
             {
-                <li class="nav-item px-3">
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/patreon" Match="NavLinkMatch.All">
+                      <span class="fa-brands fa-patreon" aria-hidden="true"></span>&nbsp;Patreon
+                    </NavLink>
+                </li>
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/password" Match="NavLinkMatch.All">
                         <span class="fas fa-key" aria-hidden="true"></span>&nbsp;Password
                     </NavLink>
                 </li>
-                <li class="nav-item px-3 login">
+                <li class="nav-item login">
                     <NavLink class="nav-link" href="/logout">
                         <span class="oi oi-account-logout" aria-hidden="true"></span> logout
                     </NavLink>
@@ -146,63 +151,63 @@
         }
         else
         {
-            <li class="nav-item px-3">
+            <li class="nav-item">
                 <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                     <span class="oi oi-home" aria-hidden="true"></span> Home
                 </NavLink>
             </li>
             @if (IsAuthenticated)
             {
-                <li class="nav-item px-3">
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/dashboard" Match="NavLinkMatch.All">
                         <span class="oi oi-dashboard" aria-hidden="true"></span> Dashboard
                     </NavLink>
                 </li>
                 @if (IsAdministrator)
                 {
-                    <li class="nav-item px-3">
+                    <li class="nav-item">
                         <NavLink class="nav-link" href="/admin" Match="NavLinkMatch.All">
                             <span class="oi oi-key" aria-hidden="true"></span> Admin
                         </NavLink>
                     </li>
                 }
             }
-            <li class="nav-item px-3">
+            <li class="nav-item">
                 <NavLink class="nav-link" href="/how-to-play" Match="NavLinkMatch.All">
                     <span class="oi oi-info" aria-hidden="true"></span> How to play
                 </NavLink>
             </li>
-            <li class="nav-item px-3">
+            <li class="nav-item">
                 <NavLink class="nav-link" href="/download" Match="NavLinkMatch.All">
                     <span class="oi oi-cloud-download" aria-hidden="true"></span> Download
                 </NavLink>
             </li>
-            <li class="nav-item px-3">
+            <li class="nav-item">
                 <NavLink class="nav-link" href="/highscore" Match="NavLinkMatch.All">
                     <span class="oi oi-bar-chart" aria-hidden="true"></span> Highscore
                 </NavLink>
             </li>
-            <li class="nav-item px-3">
+            <li class="nav-item">
                 <NavLink class="nav-link" href="/marketplace" Match="NavLinkMatch.All">
                     <span class="oi oi-basket" aria-hidden="true"></span> Marketplace
                 </NavLink>
             </li>
-            <li class="nav-item px-3">
+            <li class="nav-item">
                 <NavLink class="nav-link" href="/items" Match="NavLinkMatch.All">
                     <span class="oi oi-magnifying-glass" aria-hidden="true"></span> Items
                 </NavLink>
             </li>
-            <li class="nav-item px-3">
+            <li class="nav-item">
                 <NavLink class="nav-link" href="/about" Match="NavLinkMatch.All">
                     <span class="oi oi-info" aria-hidden="true"></span> About
                 </NavLink>
             </li>
-            <li class="nav-item px-3">
+            <li class="nav-item">
                 <NavLink class="nav-link" href="/team" Match="NavLinkMatch.All">
                     <span class="oi oi-people" aria-hidden="true"></span> The Team
                 </NavLink>
             </li>
-            <li class="nav-item px-3">
+            <li class="nav-item">
                 <NavLink class="nav-link" href="/credits" Match="NavLinkMatch.All">
                     <span class="oi oi-people" aria-hidden="true"></span> Credits
                 </NavLink>

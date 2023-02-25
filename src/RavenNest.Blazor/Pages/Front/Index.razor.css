@@ -77,28 +77,6 @@
     font-family: 'Heebo', sans-serif;
 }
 
-.section {
-    padding: 30px 100px 50px 100px;
-}
-
-.top-section {
-    background-image: url('/imgs/TopImage.jpg');
-    width: 100vw;
-    height: 720px;
-    background-position: center;
-    background-size: cover;
-    margin-top: -95px;
-    z-index: 0;
-    padding: 150px 50px;
-    display: flex;
-    flex-flow: column;
-    align-items: center;
-}
-
-.content {
-    margin-top: -95px;
-}
-
 .section:last-of-type {
     padding-bottom: 220px;
 }
