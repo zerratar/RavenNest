@@ -171,6 +171,11 @@
                                     <button @onclick="()=>SendToCharacter(plr)" class="btn btn-action">@("Send " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : "") + "to " + plr.Alias)</button>
                                 }
                             }
+
+                            @if (CanBeEquipped())
+                            {
+                                <button @onclick="Vendor" class="btn btn-action vendor">@("Vendor " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : ""))</button>
+                            }
                         </div>
                     }
                 </div>
@@ -259,6 +264,13 @@
         //    // Show Send Item Amount Dialog
         //}
 
+        CloseItemDetails();
+    }
+
+    public void Vendor()
+    {
+        Player = PlayerService.Vendor(Player.Id, itemDetailsDialogItem, itemDetailsDialogItem.Amount);
+        
         CloseItemDetails();
     }
 

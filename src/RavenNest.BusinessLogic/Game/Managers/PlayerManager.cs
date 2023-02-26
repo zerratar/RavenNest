@@ -1632,6 +1632,20 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        private async void SendItemRemoveEvent(DataModels.GameSession session, DataModels.InventoryItem item, long amount, Character character)
+        {
+            var data = new ItemRemove
+            {
+                UserId = gameData.GetUser(character.UserId).UserId,
+                Amount = amount,
+                ItemId = item.ItemId,
+                InventoryItemId = item.Id
+            };
+
+            gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.ItemRemove, session, data));
+            await TrySendToExtensionAsync(character, data);
+        }
+
         private async void SendItemRemoveEvent(DataModels.InventoryItem item, long amount, Character character, bool sendToGame = false)
         {
             var data = new ItemRemove
@@ -1784,7 +1798,7 @@ namespace RavenNest.BusinessLogic.Game
                 var price = itemToVendor.Item.ShopSellPrice * amount;
                 inventory.RemoveItem(itemToVendor, amount);
                 resources.Coins += itemToVendor.Item.ShopSellPrice * amount;
-                UpdateResources(gameData, session, player, resources);
+                UpdateResources(session, player, resources);
                 LogVendorTransaction(player.Id, itemToVendor.ItemId, amount, price);
                 return amount;
             }
@@ -1792,7 +1806,7 @@ namespace RavenNest.BusinessLogic.Game
             inventory.RemoveStack(itemToVendor);
             var totalPrice = itemToVendor.Amount * itemToVendor.Item.ShopSellPrice;
             resources.Coins += totalPrice;
-            UpdateResources(gameData, session, player, resources);
+            UpdateResources(session, player, resources);
             LogVendorTransaction(player.Id, itemToVendor.ItemId, itemToVendor.Amount, totalPrice);
             return (int)itemToVendor.Amount;
         }
@@ -1830,7 +1844,7 @@ namespace RavenNest.BusinessLogic.Game
                     var price = item.ShopSellPrice * amount;
                     inventory.RemoveItem(itemToVendor, amount);
                     resources.Coins += item.ShopSellPrice * amount;
-                    UpdateResources(gameData, session, player, resources);
+                    UpdateResources(session, player, resources);
                     LogVendorTransaction(player.Id, itemToVendor.ItemId, amount, price);
                     return amount;
                 }
@@ -1838,7 +1852,7 @@ namespace RavenNest.BusinessLogic.Game
                 inventory.RemoveStack(itemToVendor);
                 var totalPrice = itemToVendor.Amount * item.ShopSellPrice;
                 resources.Coins += totalPrice;
-                UpdateResources(gameData, session, player, resources);
+                UpdateResources(session, player, resources);
                 LogVendorTransaction(player.Id, itemToVendor.ItemId, itemToVendor.Amount, totalPrice);
                 return (int)itemToVendor.Amount;
             }
@@ -2046,6 +2060,44 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        public bool VendorItem(Guid characterId, RavenNest.Models.InventoryItem item, long amount)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return false;
+            var inventory = inventoryProvider.Get(character.Id);
+
+            var stack = gameData.GetInventoryItem(item.Id);
+            if (stack == null) return false;
+
+
+            var amountToVendor = Math.Min(amount, stack.Amount.GetValueOrDefault());
+            if (amountToVendor <= 0) return false;
+
+            var i = gameData.GetItem(item.ItemId);
+            if (i == null || i.Category == (int)DataModels.ItemCategory.StreamerToken)
+                return false;
+
+            if (inventory.RemoveItem(stack, amountToVendor))
+            {
+                var resources = gameData.GetResources(character.ResourcesId);
+                if (resources == null) return false;
+                var price = i.ShopSellPrice * amountToVendor;
+                resources.Coins += price;
+
+                var sessionUserId = character.UserIdLock;
+                if (sessionUserId != null)
+                {
+                    var session = gameData.GetSessionByUserId(sessionUserId.Value);
+                    if (session != null)
+                    {
+                        UpdateResources(session, character, resources);
+                        SendItemRemoveEvent(session, stack, amountToVendor, character);
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
         public bool SendToStash(Guid characterId, RavenNest.Models.InventoryItem item, long amount)
         {
             var character = gameData.GetCharacter(characterId);
@@ -3639,7 +3691,7 @@ namespace RavenNest.BusinessLogic.Game
             return state;
         }
 
-        private void UpdateResources(IGameData gameData, DataModels.GameSession session, Character character, DataModels.Resources resources)
+        private void UpdateResources(DataModels.GameSession session, Character character, DataModels.Resources resources)
         {
             var user = gameData.GetUser(character.UserId);
             var gameEvent = gameData.CreateSessionEvent(GameEventType.ResourceUpdate, session,

@@ -805,6 +805,26 @@ button.item-filter:focus {
     padding: 25px 25px 0px 25px;
 }
 
+
+.item-actions button.btn {
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+.item-actions button.btn:first-of-type {
+    margin: 0;
+}
+
+.item-actions button.btn.btn-action.vendor {
+    margin-left: 15px;
+    background: linear-gradient(45deg, #650808, #8e3d3d);
+    color: white;
+}
+
+.item-actions button.btn.btn-action.vendor:hover {
+    background: linear-gradient(45deg, #650808, #751313);
+}
+
 .item-details-dialog {
     position: fixed;
     top: 50%;
@@ -813,8 +833,9 @@ button.item-filter:focus {
     /*padding: 25px;*/
     transform: translate(-50%, -50%);
     box-shadow: 5px 5px 10px rgb(0 0 0 / 25%);
+    min-width: 520px;
     max-width: 100%;
-    width: 520px;
+    width: fit-content;
     z-index: 10;
 }
 

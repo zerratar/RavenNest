@@ -46,6 +46,7 @@ namespace RavenNest.BusinessLogic.Game
         bool ReturnMarketplaceItem(DataModels.MarketItem item);
         bool UpdateAppearance(AuthToken token, string userId, string identifier, RavenNest.Models.SyntyAppearance appearance);
         Task<bool> UpdatePlayerSkillAsync(Guid characterId, string skillName, int level, float levelProgress);
+        bool VendorItem(Guid characterId, RavenNest.Models.InventoryItem item, long amount);
         bool UpdateExperience(SessionToken token, string userId, int[] level, double[] experience, Guid? characterId = null);
         bool UpdateExperience(SessionToken token, int skillIndex, int level, double experience, Guid characterId);
         bool UpdateResources(SessionToken token, string userId, double[] resources);
