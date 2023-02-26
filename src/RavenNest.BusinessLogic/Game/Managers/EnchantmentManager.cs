@@ -15,8 +15,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly IGameData gameData;
         private readonly Random random;
         private const int MaximumEnchantmentCount = 10;
-        private const double MinEnchantmentInterval = 30;
-        private const double MaxEnchantmentInterval = 60;
+        private const double EnchantmentInterval = 30;
         public EnchantmentManager(ILogger<EnchantmentManager> logger, IGameData gameData)
         {
             this.logger = logger;
@@ -103,6 +102,8 @@ namespace RavenNest.BusinessLogic.Game
             var success = clanSkill.Level / (float)itemLvReq;
             var targetAttributeCount = 0;
             var rng = random.NextDouble();
+            var cooldownFactor = Math.Min(1d, 1d / success);
+
             if (rng <= success)
             {
                 targetAttributeCount = Math.Max(1, itemMaxAttrCount);
@@ -127,7 +128,7 @@ namespace RavenNest.BusinessLogic.Game
             if (targetAttributeCount == 0)
             {
                 cd.CooldownStart = DateTime.UtcNow;
-                cd.CooldownEnd = GetCooldown(user, success, 0.1d);
+                cd.CooldownEnd = GetCooldown(clanSkill.Level, user, cooldownFactor * 0.1d);
                 return ItemEnchantmentResult.Failed(cd.CooldownEnd);
             }
 
@@ -174,7 +175,7 @@ namespace RavenNest.BusinessLogic.Game
             // Fail: Add 10% of n Hours based on what type of item
 
             cd.CooldownStart = DateTime.UtcNow;
-            cd.CooldownEnd = GetCooldown(clanSkill.Level, user, success);
+            cd.CooldownEnd = GetCooldown(clanSkill.Level, user, cooldownFactor);
 
             return new ItemEnchantmentResult()
             {
@@ -220,18 +221,19 @@ namespace RavenNest.BusinessLogic.Game
             return outputName;
         }
 
-        private static DateTime GetCooldown(int clanSkillLevel, DataModels.User user, float random, double scale = 1d)
+        private static DateTime GetCooldown(int clanSkillLevel, DataModels.User user, double scale = 1d)
         {
 #if DEBUG
             if (user != null && (user.IsAdmin.GetValueOrDefault() || user.IsModerator.GetValueOrDefault()))
             {
                 //random *= 0.f;
                 scale *= 0.5f;
-                return DateTime.UtcNow.AddSeconds(Math.Min(random * MaxEnchantmentInterval, MinEnchantmentInterval) * scale);
+                return DateTime.UtcNow.AddSeconds(EnchantmentInterval * scale);
             }
 #endif
-
-            return DateTime.UtcNow.AddMinutes(Math.Min(random * MaxEnchantmentInterval, MinEnchantmentInterval) * scale).Subtract(TimeSpan.FromSeconds(clanSkillLevel));
+            var time = DateTime.UtcNow.AddMinutes(EnchantmentInterval * scale).AddSeconds(-clanSkillLevel);
+            if (time < DateTime.UtcNow.AddSeconds(10)) return DateTime.UtcNow.AddSeconds(10);
+            return time;
         }
 
         private static string FormatEnchantment(List<MagicItemAttribute> magicItemAttributes)
