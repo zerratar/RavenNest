@@ -172,7 +172,7 @@
                                 }
                             }
 
-                            @if (CanBeEquipped())
+                            @if (!itemDetailsDialogItem.Equipped)
                             {
                                 <button @onclick="Vendor" class="btn btn-action vendor">@("Vendor " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : ""))</button>
                             }
