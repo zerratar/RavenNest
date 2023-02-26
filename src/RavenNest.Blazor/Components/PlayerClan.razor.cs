@@ -31,11 +31,12 @@ namespace RavenNest.Blazor.Components
         {
             base.OnAfterRender(firstRender);
 
-            if (session.UserId == null)
-            {
-                NavigationManager.NavigateTo("/login");
-                return;
-            }
+            // don't force navigate here as a user could be logged out inspecting a player
+            //if (session.UserId == null)
+            //{
+            //    NavigationManager.NavigateTo("/login");
+            //    return;
+            //}
         }
 
         protected override void OnParametersSet()
