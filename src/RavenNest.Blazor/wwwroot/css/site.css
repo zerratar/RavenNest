@@ -283,6 +283,64 @@ td.item.item-actions {
     white-space: nowrap;
 }
 
+.item-soulbound {
+    color: rgba(0,0,0,0.5);
+    font-style: italic;
+    font-size: 10pt;
+}
+
+.enchantment .item-stat-name, .enchantment .item-stat-value {
+    color: #27ae60;
+}
+
+span.item-stat-enchantment {
+    margin-left: 5px;
+    color: #27ae60;
+}
+
+.item-enchantment-header {
+    font-weight: bold;
+    margin-top: 10px;
+    font-size: 10pt;
+    color: #27ae60;
+}
+
+.item-stat, .item-requirement {
+    display: flex;
+    justify-content: space-between;
+}
+
+.item-stat-value {
+    font-weight: bold;
+}
+
+
+div.item-actions {
+    display: flex;
+    justify-content: space-evenly;
+    margin-top: 5px;
+    background-color: #f4f4f4;
+    padding: 10px 15px 15px 15px;
+    flex-wrap: wrap;
+}
+
+.item-actions button.btn {
+    font-weight: 300;
+    font-size: 10pt;
+    box-shadow: 0px 2px 4px rgb(0 0 0 / 25%);
+    .item-actions button.btn
+}
+
+button.btn.btn-action {
+    background-color: white;
+    cursor: pointer;
+}
+
+button.btn.btn-action:hover,
+button.btn.btn-action:active {
+    background-color: #e0f1ff;
+}
+
 .white-section-break {
     background-image: url('/imgs/SectionSplitGray.png');
     position: relative;
@@ -842,12 +900,12 @@ span.vendor-amount {
 
 
 .item-actions button.btn {
-    margin-left: 5px;
-    margin-right: 5px;
+    margin: 5px;
+    height: 35px;
 }
 
 .item-actions button.btn:first-of-type {
-    margin: 0;
+    margin-right: 0;
 }
 
 .item-actions button.btn.btn-action.vendor {
