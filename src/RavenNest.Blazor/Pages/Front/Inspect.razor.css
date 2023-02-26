@@ -1,4 +1,17 @@
-﻿@media screen and (max-width: 800px) {
+﻿.top-section {
+    height: 335px;
+}
+
+.content {
+    margin-bottom: 151px;
+}
+
+.page-content {
+    background-color: #f3f4f8;
+    padding-bottom: 150px;
+}
+
+@media screen and (max-width: 800px) {
     .section {
         padding: 20px 30px 50px 20px;
     }
