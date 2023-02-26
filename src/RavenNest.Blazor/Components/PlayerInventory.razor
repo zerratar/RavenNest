@@ -1,5 +1,6 @@
 ﻿@using RavenNest.BusinessLogic.Extended
 @using RavenNest.Models
+@using RavenNest.Blazor.Services
 @using Blazored.Typeahead
 
 @inject RavenNest.Blazor.Services.AuthService AuthService
@@ -457,19 +458,5 @@
     private async Task<IEnumerable<Item>> SearchItem(string searchText)
     {
         return await ItemService.SearchAsync(searchText);
-    }
-
-    public enum ItemFilter
-    {
-        All,
-        Swords,
-        Bows,
-        Staves,
-        Shields,
-        Armors,
-        Accessories,
-        Pets,
-        Resources,
-        Scrolls
     }
 }

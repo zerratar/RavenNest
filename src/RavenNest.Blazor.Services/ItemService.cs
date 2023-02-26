@@ -239,4 +239,18 @@ namespace RavenNest.Blazor.Services
         public int Value { get; set; }
         public int Bonus { get; set; }
     }
+
+    public enum ItemFilter
+    {
+        All,
+        Swords,
+        Bows,
+        Staves,
+        Shields,
+        Armors,
+        Accessories,
+        Pets,
+        Resources,
+        Scrolls
+    }
 }

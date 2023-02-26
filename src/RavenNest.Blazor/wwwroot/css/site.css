@@ -772,6 +772,9 @@ button.btn.btn-primary.reload {
     justify-items: center;
     flex-wrap: wrap;
 }
+.stash.item-filters{
+    margin-bottom:20px;
+}
 
 button.item-filter {
     display: flex;
