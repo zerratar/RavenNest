@@ -222,6 +222,7 @@ button.tab-link {
     margin: 5px;
     box-shadow: 0px 2px 5px 1px rgb(0 0 0 / 10%);
     border-radius: 7px;
+    flex-wrap: wrap;
 }
 
 button.tab-link.active, .tab-link.active {
@@ -549,6 +550,12 @@ h3 {
     color: #303030;
 }
 
+.player-inventory h2 {
+    color: #082465;
+    font-size: 18pt;
+    text-align: center;
+}
+
 h1:after {
     content: "";
     display: block;
@@ -751,6 +758,131 @@ button.btn.btn-primary.reload {
     font-size: 9pt;
     margin-left: 15px;
 }
+
+
+.player-inventory {
+    padding-top: 25px;
+    margin-top: 25px;
+    padding-bottom: 25px;
+}
+
+.item-filters {
+    display: flex;
+    justify-content: center;
+    justify-items: center;
+    flex-wrap: wrap;
+}
+
+button.item-filter {
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    border: 0;
+    background-color: transparent;
+    outline:0;
+}
+
+button.item-filter:active,
+button.item-filter:focus {
+    outline: 0;
+}
+
+
+button.item-filter {
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    border: 0;
+    background-color: transparent;
+    opacity: 0.5;
+}
+
+button.item-filter.active-filter {
+    opacity: 1;
+}
+
+.inventory-items {
+    display: flex;
+    flex-flow: row;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.inventory .inventory-item {
+    margin: 10px;
+    margin-bottom: -15px;
+    cursor: pointer;
+}
+
+.inventory-item.equipped {
+    margin: 10px;
+    cursor: pointer;
+}
+
+.inventory-item.enchanted .item-image img {
+    border: 1px solid #90e19f;
+    background-color: #f9fff9;
+    box-shadow: 1px 1px 4px hsl(113deg 37% 50% / 38%);
+}
+.stash .item.name {
+    flex-grow: 1;
+}
+.stash td.item.image {
+    width: 75px;
+    height: 55px;
+}
+.stash-item-amount {
+    position: relative;
+    top: -19px;
+    right: 12px;
+    background-color: rgba(255,255,255,0.7);
+    width: 23px;
+    height: 20px;
+    color: #353535;
+    border: 1px solid #ffffff;
+    padding: 0;
+    line-height: 2;
+    text-align: center;
+    font-weight: 500;
+    font-size: 8pt;
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+    margin-right: -25px;
+}
+
+.item-amount {
+    position: relative;
+    top: -15px;
+    right: -42px;
+    background-color: rgba(255,255,255,0.7);
+    width: 23px;
+    height: 20px;
+    color: #353535;
+    border: 1px solid #ffffff;
+    padding: 0;
+    line-height: 2;
+    text-align: center;
+    font-weight: 500;
+    font-size: 8pt;
+}
+.inventory-item .item-image img {
+    width: 60px;
+    height: 60px;
+    max-width: 100%;
+    padding: 5px;
+    border-radius: 3px;
+    background-color: white;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+}
+
+.inventory-item.equipped .item-image img {
+}
+
 
 @media (max-width: 641px) {
     h1.page-title {

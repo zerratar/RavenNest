@@ -444,7 +444,7 @@ namespace RavenNest.BusinessLogic.Providers
                     var existingStacks = items.AsList(x => CanBeStacked(x, item));
                     if (existingStacks.Count > 0)
                     {
-                        var otherStack = existingStacks.FirstOrDefault(x => x.Id != item.Id);
+                        var otherStack = existingStacks.FirstOrDefault(x => x.Id != item.Id && !x.Equipped);
                         if (otherStack != null)
                         {
                             otherStack.Amount++;

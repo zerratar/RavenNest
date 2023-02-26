@@ -404,7 +404,9 @@ namespace RavenNest.BusinessLogic.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static WebsitePlayer MapForWebsite(this User user, IGameData gameData, Character character)
         {
-            var items = gameData.GetAllPlayerItems(character.Id).OrderBy(x => gameData.GetItem(x.ItemId)?.Name).ToList();
+            var items = gameData.GetAllPlayerItems(character.Id)
+                //.OrderByDescending(x => gameData.GetItem(x.ItemId)?.ShopSellPrice)
+                .OrderBy(x => gameData.GetItem(x.ItemId)?.Name).ToList();
 
             var clanMembership = gameData.GetClanMembership(character.Id);
             var clan = clanMembership != null ? Map(gameData, gameData.GetClan(clanMembership.ClanId)) : null;

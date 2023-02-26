@@ -7,7 +7,7 @@
 @inject RavenNest.Blazor.Services.ItemService ItemService
 
 <div class="player-inventory">
-    <div>
+    <div class="equipped-items">
         <h2>Equipped</h2>
         <div class="inventory-items">
             @foreach (var item in GetEquippedItems())
@@ -19,8 +19,7 @@
         </div>
     </div>
 
-    <div>
-        <h2>Inventory</h2>
+    <div class="unequipped-items">
 
         @if (CanModify)
         {
@@ -28,6 +27,60 @@
                 <button @onclick="ShowAddItem" class="btn btn-primary">Add item</button>
             </div>
         }
+
+        <h2>Inventory</h2>
+
+        <div class="item-filters">
+            <button class="item-filter @(itemFilter == ItemFilter.All ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.All)">
+                <span class="item-filter-text">All</span>
+                <i class="fa-sharp fa-solid fa-rectangles-mixed"></i>
+            </button>
+            <button class="item-filter @(itemFilter == ItemFilter.Swords ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Swords)">
+                <span class="item-filter-text">Swords</span>
+                <i class="fa-sharp fa-solid fa-sword"></i>
+            </button>
+            
+            <button class="item-filter @(itemFilter == ItemFilter.Bows ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Bows)">
+                <span class="item-filter-text">Bows</span>
+                <i class="fa-sharp fa-solid fa-bow-arrow"></i>
+            </button>
+            
+            <button class="item-filter @(itemFilter == ItemFilter.Staves ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Staves)">
+                <span class="item-filter-text">Staves</span>
+                <i class="fa-sharp fa-solid fa-staff"></i>
+            </button>
+
+              <button class="item-filter @(itemFilter == ItemFilter.Shields ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Shields)">
+                <span class="item-filter-text">Shields</span>
+                <i class="fa-sharp fa-solid fa-shield"></i>
+            </button>
+
+              <button class="item-filter @(itemFilter == ItemFilter.Armors ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Armors)">
+                <span class="item-filter-text">Armors</span>
+                <i class="fa-sharp fa-solid fa-helmet-battle"></i>
+            </button>
+
+              <button class="item-filter @(itemFilter == ItemFilter.Accessories ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Accessories)">
+                <span class="item-filter-text">Accessories</span>
+                <i class="fa-sharp fa-solid fa-gem"></i>
+            </button>
+
+              <button class="item-filter @(itemFilter == ItemFilter.Pets ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Pets)">
+                <span class="item-filter-text">Pets</span>
+                <i class="fa-sharp fa-solid fa-dog"></i>
+            </button>
+
+              <button class="item-filter @(itemFilter == ItemFilter.Resources ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Resources)">
+                <span class="item-filter-text">Resources</span>
+                <i class="fa-sharp fa-solid fa-hammer"></i>
+            </button>
+
+
+              <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
+                <span class="item-filter-text">Scrolls</span>
+                <i class="fa-sharp fa-solid fa-scroll"></i>
+            </button>
+        </div>
 
         <div class="inventory-items inventory">
             @foreach (var item in GetInventoryItems())
@@ -170,11 +223,18 @@
     private Item selectedItem;
     private bool addItemDialogVisible;
     private bool CanModify => session != null && session.Administrator;
+    private ItemFilter itemFilter = ItemFilter.All;
 
     protected override async Task OnInitializedAsync()
     {
         session = AuthService.GetSession();
         characters = await PlayerService.GetMyPlayersAsync();
+    }
+
+    private void SelectItemFilter(ItemFilter newItemFilter)
+    {
+        itemFilter = newItemFilter;
+        InvokeAsync(StateHasChanged);
     }
 
 
@@ -330,12 +390,41 @@
 
     public IReadOnlyList<Models.InventoryItem> GetInventoryItems()
     {
-        return Player.InventoryItems.Where(x => !x.Equipped).ToList();
+        return Player.InventoryItems.Where(x => !x.Equipped && Filter(x)).ToList();
     }
 
     public IReadOnlyList<Models.InventoryItem> GetEquippedItems()
     {
         return Player.InventoryItems.Where(x => x.Equipped).ToList();
+    }
+
+    private bool Filter(Models.InventoryItem item)
+    {
+        if (itemFilter == ItemFilter.All)
+            return true;
+
+        return GetItemFilter(item) == itemFilter;
+    }
+
+    private ItemFilter GetItemFilter(Models.InventoryItem invItem)
+    {
+        var item = ItemService.GetItem(invItem.ItemId);
+        if (item.Type == ItemType.Coins || item.Type == ItemType.Ore || item.Type == ItemType.Wood || item.Type == ItemType.Fish)
+            return ItemFilter.Resources;
+
+        if (item.Type == ItemType.OneHandedSword || item.Type == ItemType.TwoHandedSword)
+            return ItemFilter.Swords;
+        if (item.Type == ItemType.TwoHandedBow) return ItemFilter.Bows;
+        if (item.Type == ItemType.TwoHandedStaff) return ItemFilter.Staves;
+        if (item.Type == ItemType.Ring || item.Type == ItemType.Amulet) return ItemFilter.Accessories;
+        if (item.Type == ItemType.Shield) return ItemFilter.Shields;
+        if (item.Type == ItemType.Pet) return ItemFilter.Pets;
+        if (item.Type == ItemType.Scroll) return ItemFilter.Scrolls;
+
+        if (item.Category == ItemCategory.Armor)
+            return ItemFilter.Armors;
+
+        return ItemFilter.All;
     }
 
     public string GetItemImage(Guid itemId, string tag)
@@ -368,5 +457,19 @@
     private async Task<IEnumerable<Item>> SearchItem(string searchText)
     {
         return await ItemService.SearchAsync(searchText);
+    }
+
+    public enum ItemFilter
+    {
+        All,
+        Swords,
+        Bows,
+        Staves,
+        Shields,
+        Armors,
+        Accessories,
+        Pets,
+        Resources,
+        Scrolls
     }
 }
