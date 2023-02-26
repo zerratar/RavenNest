@@ -44,7 +44,8 @@
 
         @if (itemDetailDialogVisible)
         {
-            <div class="item-details-dialog-back">
+            <div class="item-details-dialog-container">
+                <div class="item-details-dialog-background" @onclick="CloseItemDetails"></div>
                 <div class="item-details-dialog">
                     <div class="dialog-header">
                         <div class="item-name" data-tier="@GetItemTier()">@GetItemName()</div>

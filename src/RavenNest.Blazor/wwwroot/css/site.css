@@ -792,6 +792,69 @@ button.item-filter:focus {
     outline: 0;
 }
 
+.item-details-content {
+    padding: 25px;
+    padding-top: 0;
+}
+
+.item-details-dialog .item-name {
+    font-size: 17pt;
+}
+
+.item-details-dialog .dialog-header {
+    padding: 25px 25px 0px 25px;
+}
+
+.item-details-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    background-color: white;
+    /*padding: 25px;*/
+    transform: translate(-50%, -50%);
+    box-shadow: 5px 5px 10px rgb(0 0 0 / 25%);
+    max-width: 100%;
+    width: 520px;
+    z-index: 10;
+}
+
+.item-details-dialog .item-image {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    justify-items: center;
+    width: 100%;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.item-details-dialog .item-image img {
+    width: 100px;
+    /* height: 100px; */
+    margin-left: auto;
+    margin-right: auto;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+}
+
+
+.item-details-dialog-container {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+}
+
+.item-details-dialog-background  {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.7);
+}
 
 button.item-filter {
     display: flex;
