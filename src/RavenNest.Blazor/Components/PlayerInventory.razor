@@ -40,44 +40,44 @@
                 <span class="item-filter-text">Swords</span>
                 <i class="fa-sharp fa-solid fa-sword"></i>
             </button>
-            
+
             <button class="item-filter @(itemFilter == ItemFilter.Bows ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Bows)">
                 <span class="item-filter-text">Bows</span>
                 <i class="fa-sharp fa-solid fa-bow-arrow"></i>
             </button>
-            
+
             <button class="item-filter @(itemFilter == ItemFilter.Staves ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Staves)">
                 <span class="item-filter-text">Staves</span>
                 <i class="fa-sharp fa-solid fa-staff"></i>
             </button>
 
-              <button class="item-filter @(itemFilter == ItemFilter.Shields ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Shields)">
+            <button class="item-filter @(itemFilter == ItemFilter.Shields ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Shields)">
                 <span class="item-filter-text">Shields</span>
                 <i class="fa-sharp fa-solid fa-shield"></i>
             </button>
 
-              <button class="item-filter @(itemFilter == ItemFilter.Armors ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Armors)">
+            <button class="item-filter @(itemFilter == ItemFilter.Armors ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Armors)">
                 <span class="item-filter-text">Armors</span>
                 <i class="fa-sharp fa-solid fa-helmet-battle"></i>
             </button>
 
-              <button class="item-filter @(itemFilter == ItemFilter.Accessories ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Accessories)">
+            <button class="item-filter @(itemFilter == ItemFilter.Accessories ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Accessories)">
                 <span class="item-filter-text">Accessories</span>
                 <i class="fa-sharp fa-solid fa-gem"></i>
             </button>
 
-              <button class="item-filter @(itemFilter == ItemFilter.Pets ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Pets)">
+            <button class="item-filter @(itemFilter == ItemFilter.Pets ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Pets)">
                 <span class="item-filter-text">Pets</span>
                 <i class="fa-sharp fa-solid fa-dog"></i>
             </button>
 
-              <button class="item-filter @(itemFilter == ItemFilter.Resources ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Resources)">
+            <button class="item-filter @(itemFilter == ItemFilter.Resources ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Resources)">
                 <span class="item-filter-text">Resources</span>
                 <i class="fa-sharp fa-solid fa-hammer"></i>
             </button>
 
 
-              <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
+            <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
                 <span class="item-filter-text">Scrolls</span>
                 <i class="fa-sharp fa-solid fa-scroll"></i>
             </button>
@@ -96,9 +96,36 @@
             }
         </div>
 
+        @if (vendorConfirmationDialogVisible)
+        {
+            <div class="item-details-dialog-container vendor">
+                <div class="item-details-dialog-background" @onclick="CloseVendorDialog"></div>
+                <div class="item-details-dialog vendor">
+                    <div class="dialog-header">
+                        <button class="close" @onclick="CloseVendorDialog">x</button>
+                    </div>
+
+                    <div class="item-details-content vendor">
+                        <div class="warning-row">
+                            <span>You are about to vendor</span>
+                            <span class="vendor-amount">@(vendorItem.Amount + "x ")</span>
+                            <span class="vendor-name">@(GetItemName(vendorItem))</span>
+                            <span>for</span>
+                            <span class="vendor-price">@((ItemService.GetItem(vendorItem.ItemId).ShopSellPrice * vendorItem.Amount) + " coins.")</span>
+                        </div>
+                        <div class="warning-row">Are you sure you want to continue?</div>
+                    </div>
+                    <div class="item-actions">
+                        <button @onclick="Vendor" class="btn btn-action vendor">Confirm</button>
+                        <button @onclick="CloseVendorDialog" class="btn btn-action">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        }
+
         @if (itemDetailDialogVisible)
         {
-            <div class="item-details-dialog-container">
+            <div class="item-details-dialog-container item-view">
                 <div class="item-details-dialog-background" @onclick="CloseItemDetails"></div>
                 <div class="item-details-dialog">
                     <div class="dialog-header">
@@ -174,7 +201,7 @@
 
                             @if (!itemDetailsDialogItem.Equipped)
                             {
-                                <button @onclick="Vendor" class="btn btn-action vendor">@("Vendor " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : ""))</button>
+                                <button @onclick="() => ShowVendorDialog(itemDetailsDialogItem)" class="btn btn-action vendor">@("Vendor " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : ""))</button>
                             }
                         </div>
                     }
@@ -224,7 +251,11 @@
     private Sessions.SessionInfo session;
 
     private bool itemDetailDialogVisible;
+    private bool vendorConfirmationDialogVisible;
+
     private Models.InventoryItem itemDetailsDialogItem;
+    private Models.InventoryItem vendorItem;
+
     private long giftOrSendAmount;
 
     private Item selectedItem;
@@ -270,7 +301,7 @@
     public void Vendor()
     {
         Player = PlayerService.Vendor(Player.Id, itemDetailsDialogItem, itemDetailsDialogItem.Amount);
-        
+
         CloseItemDetails();
     }
 
@@ -353,8 +384,13 @@
 
     public string GetItemName()
     {
-        if (itemDetailsDialogItem == null) return null;
-        return itemDetailsDialogItem.Name ?? ItemService.GetItem(itemDetailsDialogItem.ItemId)?.Name;
+        return GetItemName(itemDetailsDialogItem);
+    }
+
+    public string GetItemName(Models.InventoryItem i)
+    {
+        if (i == null) return null;
+        return i.Name ?? ItemService.GetItem(itemDetailsDialogItem.ItemId)?.Name;
     }
 
     public string GetItemType()
@@ -372,6 +408,20 @@
     {
         itemDetailDialogVisible = true;
         itemDetailsDialogItem = item;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void ShowVendorDialog(Models.InventoryItem item)
+    {
+        vendorConfirmationDialogVisible = true;
+        itemDetailDialogVisible = false;
+        vendorItem = item;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void CloseVendorDialog()
+    {
+        vendorConfirmationDialogVisible = false;
         InvokeAsync(StateHasChanged);
     }
 

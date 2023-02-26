@@ -57,7 +57,7 @@ a.navbar-brand {
 
 .clan-view-tabs {
     margin-bottom: 25px;
-    display:flex;
+    display: flex;
 }
 
 /*h1 {
@@ -772,8 +772,9 @@ button.btn.btn-primary.reload {
     justify-items: center;
     flex-wrap: wrap;
 }
-.stash.item-filters{
-    margin-bottom:20px;
+
+.stash.item-filters {
+    margin-bottom: 20px;
 }
 
 button.item-filter {
@@ -784,7 +785,7 @@ button.item-filter {
     padding: 10px 20px;
     border: 0;
     background-color: transparent;
-    outline:0;
+    outline: 0;
 }
 
 button.item-filter:active,
@@ -797,6 +798,32 @@ button.item-filter:focus {
     padding-top: 0;
 }
 
+.vendor .dialog-header {
+    align-items: flex-end;
+    justify-content: flex-end;
+    margin-bottom: 15px;
+}
+
+.item-details-content.vendor {
+    display: flex;
+    flex-flow: column;
+    align-items: center;
+}
+
+.item-details-content.vendor .warning-row {
+}
+
+span.vendor-name {
+    font-weight: 600;
+    color: #0c0083;
+    white-space: nowrap;
+}
+span.vendor-price {
+    font-weight: 600;
+}
+span.vendor-amount {
+    font-weight: 600;
+}
 .item-details-dialog .item-name {
     font-size: 17pt;
 }
@@ -839,6 +866,11 @@ button.item-filter:focus {
     z-index: 10;
 }
 
+.vendor .item-details-dialog {
+    min-width: 140px;
+    text-align: center;
+}
+
 .item-details-dialog .item-image {
     display: flex;
     justify-content: center;
@@ -868,7 +900,7 @@ button.item-filter:focus {
     bottom: 0;
 }
 
-.item-details-dialog-background  {
+.item-details-dialog-background {
     position: fixed;
     left: 0;
     right: 0;
@@ -915,13 +947,16 @@ button.item-filter.active-filter {
     background-color: #f9fff9;
     box-shadow: 1px 1px 4px hsl(113deg 37% 50% / 38%);
 }
+
 .stash .item.name {
     flex-grow: 1;
 }
+
 .stash td.item.image {
     width: 75px;
     height: 55px;
 }
+
 .stash-item-amount {
     position: relative;
     top: -19px;
@@ -957,6 +992,7 @@ button.item-filter.active-filter {
     font-weight: 500;
     font-size: 8pt;
 }
+
 .inventory-item .item-image img {
     width: 60px;
     height: 60px;
@@ -1035,10 +1071,10 @@ button.item-filter.active-filter {
 @media (max-width: 985px) {
 
     .admin-controls {
-        position:initial;
-        left:initial;
-        right:initial;
-        top:initial;
+        position: initial;
+        left: initial;
+        right: initial;
+        top: initial;
     }
 
     .patreon-details {
