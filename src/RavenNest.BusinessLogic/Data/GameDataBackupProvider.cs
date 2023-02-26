@@ -173,7 +173,14 @@ namespace RavenNest.BusinessLogic.Data
         {
             lock (ioMutex)
             {
-                var restorePointFiles = System.IO.Directory.GetFiles(FullRestorePointPath, "*" + FileTypeExt);
+                // check if restore point is provided using zip file, if so, we want to unpack it. delete the zip file and then start the restore.
+                //var zipFile = Directory.GetFiles(FullRestorePointPath, "*.zip").FirstOrDefault();
+                //if (zipFile != null)
+                //{
+                //    SharpCompress
+                //}
+
+                var restorePointFiles = Directory.GetFiles(FullRestorePointPath, "*" + FileTypeExt);
                 if (restorePointFiles.Length == 0)
                 {
                     logger?.LogInformation("No restore point available. Skipping");

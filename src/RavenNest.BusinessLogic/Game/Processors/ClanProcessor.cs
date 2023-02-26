@@ -12,15 +12,24 @@ using RavenNest.BusinessLogic.Providers;
 
 namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
+    public class ClanSkillUpdate
+    {
+        public DateTime LastUpdate { get; set; }
+        public int Level { get; set; }
+        public long Experience { get; set; }
+    }
+
     public class ClanProcessor : PlayerTaskProcessor
     {
         private static readonly GuidTimeDictionary clanExpUpdate = new GuidTimeDictionary();
         private static readonly StringTimeDictionary clanExpAnnouncement = new StringTimeDictionary();
-        private static readonly StringTimeDictionary clanSkillAnnouncement = new StringTimeDictionary();
-        private static readonly StateDictionary trainingState = new StateDictionary();
+
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, ClanSkillUpdate> skillUpdate
+            = new System.Collections.Concurrent.ConcurrentDictionary<string, ClanSkillUpdate>();
 
         private readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(20);
 
+        private readonly TimeSpan SkillExpUpdateInterval = TimeSpan.FromSeconds(10);
         //private static readonly Version ClientVersion_ClanLevel = new Version(0, 7, 1);
         public override void Process(
              IIntegrityChecker integrityChecker,
@@ -55,6 +64,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             {
                 // check which skills the clan is eligble for and add those in.
                 EnsureClanSkills(gameData, clan, clanSkills);
+                clanSkills = gameData.GetClanSkills(clan.Id);
             }
 
             // if character is training a clan skill
@@ -62,68 +72,34 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             // we then push info to the clients every N'th second regarding the exp update.
             // but only if the exp has actually changed.
 
-            return; // We don't have any skills that can be trained over time. Only skills that is leveled when used.
+            // if level up, send announcement. Otherwise send it every other second for the game session if exp is being updated
+            // incase someone training the clan skill on a different stream.
 
-            //if (!trainingState.TryGetValue(character.Id, out var ts))
-            //    trainingState[character.Id] = (ts = new ClanSkillState());
+            var enchanting = clanSkills.FirstOrDefault();
+            var key = enchanting.ToString();
+            var now = DateTime.UtcNow;
 
-            //var trainingSkill = GetTrainingSkill(gameData, state, clanSkills);
-            //if (trainingSkill == null)
-            //{
-            //    ts.Skill = null;
-            //    ts.Duration = TimeSpan.Zero;
-            //    ts.StartTime = DateTime.MaxValue;
-            //    return;
-            //}
-            //else if (ts.Skill != trainingSkill)
-            //{
-            //    ts.Skill = trainingSkill;
-            //    ts.Duration = TimeSpan.Zero;
-            //    ts.StartTime = DateTime.UtcNow;
-            //}
+            var currentLevel = enchanting.Level;
+            var currentExp = (long)enchanting.Experience;
+            if (!skillUpdate.TryGetValue(key, out var lastAnnouncement))
+                skillUpdate[key] = lastAnnouncement = new ClanSkillUpdate();
 
-            //var dictKey = session.Id + "_" + trainingSkill.Id;
-            //var now = DateTime.UtcNow;
-            //var elapsed = now - ts.StartTime;
-            //ts.Duration = ts.Duration.Add(elapsed);
+            if ((now - lastAnnouncement.LastUpdate > SkillExpUpdateInterval && lastAnnouncement.Experience != currentExp)
+                || enchanting.Level != currentLevel)
+            {
+                gameData.EnqueueGameEvent(gameData.CreateSessionEvent(RavenNest.Models.GameEventType.ClanSkillLevelChanged,
+                    session,
+                    new ClanSkillLevelChanged
+                    {
+                        ClanId = clan.Id,
+                        SkillId = enchanting.Id,
+                        Experience = currentExp,
+                        Level = currentLevel,
+                    }));
 
-            //var exp = GetExperience(trainingSkill.Level, elapsed.TotalSeconds);
-
-            //var multi = gameData.GetActiveExpMultiplierEvent();
-            //if (multi != null)
-            //{
-            //    exp *= multi.Multiplier;
-            //}
-
-            //ts.Skill.Experience += exp;
-            //var gainedLevels = 0;
-            //var nextLevel = GameMath.ExperienceForLevel(trainingSkill.Level + 1);
-            //while (exp >= nextLevel)
-            //{
-            //    exp -= nextLevel;
-            //    nextLevel = GameMath.ExperienceForLevel(trainingSkill.Level + 1);
-            //    ts.Skill.Level = ts.Skill.Level + 1;
-            //    ++gainedLevels;
-            //}
-
-            //// if level up, send announcement. Otherwise send it every other second for the game session if exp is being updated
-            //// incase someone training the clan skill on a different stream.
-
-            //if (!clanSkillAnnouncement.TryGetValue(dictKey, out var lastAnnouncement))
-            //    clanSkillAnnouncement[dictKey] = now;
-
-            //if (now - lastAnnouncement > UpdateInterval)
-            //{
-            //    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.ClanLevelChanged, session, new ClanSkillLevelChanged
-            //    {
-            //        ClanId = clan.Id,
-            //        SkillId = trainingSkill.Id,
-            //        Experience = (long)ts.Skill.Experience,
-            //        Level = ts.Skill.Level,
-            //        LevelDelta = gainedLevels,
-            //    }));
-            //    clanSkillAnnouncement[dictKey] = now;
-            //}
+                lastAnnouncement.Experience = currentExp;
+                lastAnnouncement.Level = currentLevel;
+            }
         }
         private void UpdateClanExperience(IGameData gameData, GameSession session, Clan clan)
         {
@@ -170,6 +146,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     Experience = (long)clan.Experience,
                     Level = clan.Level,
                     LevelDelta = clan.Level - oldLevel,
+
                 }));
                 clanExpAnnouncement[announcementKey] = now;
             }

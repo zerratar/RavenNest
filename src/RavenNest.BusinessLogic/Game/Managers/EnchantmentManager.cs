@@ -174,7 +174,7 @@ namespace RavenNest.BusinessLogic.Game
             // Fail: Add 10% of n Hours based on what type of item
 
             cd.CooldownStart = DateTime.UtcNow;
-            cd.CooldownEnd = GetCooldown(user, success);
+            cd.CooldownEnd = GetCooldown(clanSkill.Level, user, success);
 
             return new ItemEnchantmentResult()
             {
@@ -220,7 +220,7 @@ namespace RavenNest.BusinessLogic.Game
             return outputName;
         }
 
-        private static DateTime GetCooldown(DataModels.User user, float random, double scale = 1d)
+        private static DateTime GetCooldown(int clanSkillLevel, DataModels.User user, float random, double scale = 1d)
         {
 #if DEBUG
             if (user != null && (user.IsAdmin.GetValueOrDefault() || user.IsModerator.GetValueOrDefault()))
@@ -231,7 +231,7 @@ namespace RavenNest.BusinessLogic.Game
             }
 #endif
 
-            return DateTime.UtcNow.AddMinutes(Math.Min(random * MaxEnchantmentInterval, MinEnchantmentInterval) * scale);
+            return DateTime.UtcNow.AddMinutes(Math.Min(random * MaxEnchantmentInterval, MinEnchantmentInterval) * scale).Subtract(TimeSpan.FromSeconds(clanSkillLevel));
         }
 
         private static string FormatEnchantment(List<MagicItemAttribute> magicItemAttributes)

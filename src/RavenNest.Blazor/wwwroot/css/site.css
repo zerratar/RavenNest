@@ -793,6 +793,14 @@ button.item-filter:focus {
     outline: 0;
 }
 
+.item-filter i {
+    font-size: 21pt;
+    margin-top: 3px;
+    margin-bottom: 5px;
+}
+span.item-filter-text {
+    font-size: 9pt;
+}
 .item-details-content {
     padding: 25px;
     padding-top: 0;
