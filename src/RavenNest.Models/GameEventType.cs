@@ -1,4 +1,4 @@
-﻿namespace RavenNest.BusinessLogic.Game
+﻿namespace RavenNest.Models
 {
     public enum GameEventType
     {
@@ -26,6 +26,7 @@
         ItemUnEquip = 9,
         ItemAdd = 10,
         ItemRemove = 34,
+
         ResourceUpdate = 11,
         ServerMessage = 12,
         PermissionChange = 13,
@@ -38,5 +39,7 @@
         PlayerRestedUpdate = 32,
         PubSubToken = 33,
         // Next = 35, since ItemRemove = 34
+
+        StreamerPvP = 35
     }
 }

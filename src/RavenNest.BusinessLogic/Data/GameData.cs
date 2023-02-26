@@ -1751,7 +1751,7 @@ namespace RavenNest.BusinessLogic.Data
             };
         }
 
-        public GameEvent CreateSessionEvent<T>(GameEventType type, GameSession session, T data)
+        public GameEvent CreateSessionEvent<T>(RavenNest.Models.GameEventType type, GameSession session, T data)
         {
             session.Updated = DateTime.UtcNow;
             var ev = new GameEvent

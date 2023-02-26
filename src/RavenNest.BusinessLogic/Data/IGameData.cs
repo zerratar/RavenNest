@@ -137,7 +137,7 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Create
         DataModels.GameSession CreateSession(Guid userId);
-        DataModels.GameEvent CreateSessionEvent<T>(GameEventType type, DataModels.GameSession session, T data);
+        DataModels.GameEvent CreateSessionEvent<T>(RavenNest.Models.GameEventType type, DataModels.GameSession session, T data);
         #endregion
         IReadOnlyList<CharacterClanMembership> GetClanMemberships(Guid clanId);
 

@@ -84,7 +84,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
                     //var sessionState = gameData.GetSessionState(session.Id);
 
-                    var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRestedUpdate, session, data);
+                    var gameEvent = gameData.CreateSessionEvent(RavenNest.Models.GameEventType.PlayerRestedUpdate, session, data);
 
                     gameData.EnqueueGameEvent(gameEvent);
 

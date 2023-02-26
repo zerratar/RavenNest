@@ -51,7 +51,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     HouseSlots = villageHouses.Count
                 };
 
-                gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.VillageLevelUp, session, data));
+                gameData.EnqueueGameEvent(gameData.CreateSessionEvent(RavenNest.Models.GameEventType.VillageLevelUp, session, data));
                 lastExpSend = DateTime.UtcNow;
             }
 

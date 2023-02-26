@@ -164,7 +164,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             if (now - lastAnnouncement > UpdateInterval)
             {
-                gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.ClanLevelChanged, session, new ClanLevelChanged
+                gameData.EnqueueGameEvent(gameData.CreateSessionEvent(RavenNest.Models.GameEventType.ClanLevelChanged, session, new ClanLevelChanged
                 {
                     ClanId = clan.Id,
                     Experience = (long)clan.Experience,

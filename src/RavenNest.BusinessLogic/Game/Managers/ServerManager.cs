@@ -25,7 +25,7 @@ namespace RavenNest.BusinessLogic.Game
 
             foreach (var session in sessions)
             {
-                var gameEvent = gameData.CreateSessionEvent(GameEventType.ServerMessage, session, new ServerMessage()
+                var gameEvent = gameData.CreateSessionEvent(RavenNest.Models.GameEventType.ServerMessage, session, new ServerMessage()
                 {
                     Message = message,
                     Time = time
