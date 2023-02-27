@@ -406,7 +406,8 @@ namespace RavenNest.BusinessLogic.Extensions
         {
             var items = gameData.GetAllPlayerItems(character.Id)
                 //.OrderByDescending(x => gameData.GetItem(x.ItemId)?.ShopSellPrice)
-                .OrderBy(x => gameData.GetItem(x.ItemId)?.Name).ToList();
+                .OrderBy(x => x.Name ?? gameData.GetItem(x.ItemId)?.Name)
+                .ToList();
 
             var clanMembership = gameData.GetClanMembership(character.Id);
             var clan = clanMembership != null ? Map(gameData, gameData.GetClan(clanMembership.ClanId)) : null;
