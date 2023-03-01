@@ -17,6 +17,17 @@ namespace RavenNest.Blazor.Services
             this.gameData = gameData;
             this.marketplaceManager = marketplaceManager;
         }
+
+
+
+        public async Task<MarketItemCollection> GetMarketItemsAsync(ItemFilter filter)
+        {
+            return await Task.Run(() =>
+            {
+                return marketplaceManager.GetItems(filter, 0, int.MaxValue);
+            });
+        }
+
         public async Task<MarketItemCollection> GetMarketItemsAsync()
         {
             return await Task.Run(() =>

@@ -98,6 +98,143 @@ namespace RavenNest.Blazor.Services
             }).ConfigureAwait(false);
         }
 
+        public bool Filter(ItemFilter itemFilter, RavenNest.Models.Item item)
+        {
+            if (itemFilter == ItemFilter.All)
+                return true;
+
+            return GetItemFilter(item) == itemFilter;
+        }
+
+        public ItemFilter GetItemFilter(Guid itemId)
+        {
+            var item = GetItem(itemId);
+            return GetItemFilter(item);
+        }
+
+        public ItemFilter GetItemFilter(RavenNest.Models.Item item)
+        {
+            //var item = ItemService.GetItem(itemId);
+            var itemType = (ItemType)item.Type;
+            if (itemType == ItemType.Coins || itemType == ItemType.Ore || itemType == ItemType.Wood || itemType == ItemType.Fish)
+                return ItemFilter.Resources;
+
+            if (itemType == ItemType.OneHandedSword || itemType == ItemType.TwoHandedSword)
+                return ItemFilter.Swords;
+            if (itemType == ItemType.TwoHandedBow) return ItemFilter.Bows;
+            if (itemType == ItemType.TwoHandedStaff) return ItemFilter.Staves;
+            if (itemType == ItemType.Ring || itemType == ItemType.Amulet) return ItemFilter.Accessories;
+            if (itemType == ItemType.Shield) return ItemFilter.Shields;
+            if (itemType == ItemType.Pet) return ItemFilter.Pets;
+            if (itemType == ItemType.Scroll) return ItemFilter.Scrolls;
+
+            if ((ItemCategory)item.Category == ItemCategory.Armor)
+                return ItemFilter.Armors;
+
+            return ItemFilter.All;
+        }
+
+        public string GetTypeName(RavenNest.Models.Item item)
+        {
+            var str = item.Type.ToString();
+            var start = Char.ToUpper(str[0]);
+            var process = str.Substring(1);
+
+            foreach (var x in process.Select((x, i) =>
+            {
+                if (Char.IsUpper(x)) return i;
+                return -1;
+            })
+            .Reverse())
+            {
+                if (x != -1)
+                    process = process.Insert(x, " ");
+            }
+
+            return start + process;
+        }
+
+        public string GetMaterialName(RavenNest.Models.Item item)
+        {
+            if (item.Material == RavenNest.Models.ItemMaterial.Ultima)
+            {
+                return "Abraxas";
+            }
+
+            if (item.Type == RavenNest.Models.ItemType.None || item.Material == RavenNest.Models.ItemMaterial.None)
+            {
+                var itemNameMaterial = "";
+                if (item.Name.Contains(" "))
+                {
+                    itemNameMaterial = item.Name.Split(' ')[0];
+                }
+                if (itemNameMaterial == "Ethereum")
+                {
+                    return "Ether";
+                }
+                if (itemNameMaterial.ToLower() == "lionite")
+                {
+                    return "Lionsbane";
+                }
+                if (itemNameMaterial.ToLower() == "gold")
+                {
+                    return "Gold";
+                }
+                if (itemNameMaterial.ToLower() == "abraxas")
+                {
+                    return "Abraxas";
+                }
+
+                if (!string.IsNullOrEmpty(itemNameMaterial) && item.Material == RavenNest.Models.ItemMaterial.None)
+                {
+                    if (Enum.TryParse<RavenNest.Models.ItemMaterial>(itemNameMaterial, true, out var res))
+                    {
+                        return res.ToString();
+                    }
+                }
+
+                return "-";
+            }
+
+            return item.Material.ToString();
+        }
+
+        public int GetMaterialIndex(RavenNest.Models.Item item)
+        {
+            if (item.Type == RavenNest.Models.ItemType.None || item.Material == RavenNest.Models.ItemMaterial.None)
+            {
+                var itemNameMaterial = "";
+                if (item.Name.Contains(" "))
+                {
+                    itemNameMaterial = item.Name.Split(' ')[0];
+                }
+
+                if (itemNameMaterial == "Ethereum")
+                    return (int)RavenNest.Models.ItemMaterial.Ether;
+
+                if (itemNameMaterial.ToLower() == "lionite")
+                    return (int)RavenNest.Models.ItemMaterial.Lionsbane;
+
+                if (itemNameMaterial.ToLower() == "gold") // gold share adamantite spot
+                    return (int)RavenNest.Models.ItemMaterial.Adamantite;
+
+                if (itemNameMaterial.ToLower() == "abraxas")
+                    return (int)RavenNest.Models.ItemMaterial.Ultima;
+
+                if (!string.IsNullOrEmpty(itemNameMaterial) && item.Material == RavenNest.Models.ItemMaterial.None)
+                {
+                    if (Enum.TryParse<RavenNest.Models.ItemMaterial>(itemNameMaterial, true, out var res))
+                    {
+                        return (int)res;
+                    }
+                }
+
+                return 0;
+            }
+
+            return (int)item.Material;
+        }
+
         public string GetItemTier(InventoryItem item)
         {
             var i = GetItem(item.ItemId);
@@ -238,19 +375,5 @@ namespace RavenNest.Blazor.Services
         public string Name { get; set; }
         public int Value { get; set; }
         public int Bonus { get; set; }
-    }
-
-    public enum ItemFilter
-    {
-        All,
-        Swords,
-        Bows,
-        Staves,
-        Shields,
-        Armors,
-        Accessories,
-        Pets,
-        Resources,
-        Scrolls
     }
 }

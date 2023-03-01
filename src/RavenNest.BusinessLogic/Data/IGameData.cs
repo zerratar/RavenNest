@@ -80,6 +80,7 @@ namespace RavenNest.BusinessLogic.Data
         IReadOnlyList<UserLoyalty> GetUserLoyalties(Guid userId);
         IReadOnlyList<UserLoyalty> GetStreamerLoyalties(Guid streamerUserId);
         int GetMarketItemCount();
+        int GetMarketItemCount(ItemFilter filter);
         int GetNextGameEventRevision(Guid sessionId);
         DataModels.GameSession GetSession(Guid sessionId, bool updateSession = true);
         DataModels.GameSession GetSessionByUserId(Guid userId, bool updateSession = true);
@@ -114,6 +115,7 @@ namespace RavenNest.BusinessLogic.Data
         UserBankItem GetStashItem(Guid userId, Guid itemId);
         IReadOnlyList<UserBankItem> GetUserBankItems(Guid id);
         IReadOnlyList<DataModels.MarketItem> GetMarketItems(int skip, int take);
+        IReadOnlyList<DataModels.MarketItem> GetMarketItems(ItemFilter filter, int skip, int take);
         IReadOnlyList<DataModels.GameEvent> GetSessionEvents(Guid sessionId);
         IReadOnlyList<DataModels.UserNotification> GetNotifications(Guid userId);
 

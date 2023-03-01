@@ -28,6 +28,37 @@ namespace RavenNest.BusinessLogic.Game
             this.gameData = gameData;
         }
 
+        public MarketItemCollection GetItems(ItemFilter filter, int offset, int size)
+        {
+            try
+            {
+                var collection = new MarketItemCollection();
+                var marketItemCount = gameData.GetMarketItemCount(filter);
+                var items = gameData.GetMarketItems(filter, offset, size);
+
+                collection.Offset = offset;
+                collection.Total = marketItemCount;
+                collection.AddRange(
+                    items.Select(x =>
+                    {
+                        var character = gameData.GetCharacter(x.SellerCharacterId);
+                        if (character == null) return null;
+                        var user = gameData.GetUser(character.UserId);
+                        if (user == null) return null;
+                        var item = DataMapper.Map<RavenNest.Models.MarketItem, DataModels.MarketItem>(x);
+                        item.SellerUserId = user.UserId;
+                        return item;
+                    })
+                    .Where(x => x != null));
+
+                return collection;
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                return null;
+            }
+        }
         public MarketItemCollection GetItems(int offset, int size)
         {
             try

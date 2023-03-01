@@ -279,6 +279,7 @@ td.item.link {
 }
 
 td.item.item-actions {
+    width: 1px; /* since we have no-wrap this will ensure smallest size */
     flex-wrap: nowrap;
     white-space: nowrap;
 }
@@ -1072,9 +1073,23 @@ button.item-filter.active-filter {
 .inventory-item.equipped .item-image img {
 }
 
+.marketplace-list th {
+    cursor: pointer;
+    user-select: none;
+}
+
+td span.item-stat {
+    justify-content: flex-end;
+}
+
+td span.item-stat i {
+    margin-right: 5px;
+    position: relative;
+    top: 4px;
+}
 
 @media (max-width: 641px) {
-    h1.page-title {
+    h1 .page-title {
         margin-top: 10px;
     }
 
@@ -1141,6 +1156,10 @@ button.item-filter.active-filter {
         left: initial;
         right: initial;
         top: initial;
+    }
+
+    .stash-item-category, .stash-item-type, .stash-item-material{
+        display:none;
     }
 
     .patreon-details {

@@ -2181,6 +2181,10 @@ namespace RavenNest.BusinessLogic.Data
         public int GetMarketItemCount() => marketItems.Entities.Count;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int GetMarketItemCount(ItemFilter filter) => 
+            marketItems.Entities.Where(x => Filter(filter, x)).Count();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<MarketItem> GetMarketItems(Guid itemId, string tag = null)
         {
             if (string.IsNullOrEmpty(tag))
@@ -2196,7 +2200,12 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<MarketItem> GetMarketItems(int skip, int take) => marketItems.Entities.Slice(skip, take);
+        public IReadOnlyList<MarketItem> GetMarketItems(int skip, int take)
+            => marketItems.Entities.Slice(skip, take);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<MarketItem> GetMarketItems(ItemFilter filter, int skip, int take)
+            => marketItems.Entities.Where(x => Filter(filter, x)).Slice(skip, take);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public int GetNextGameEventRevision(Guid sessionId)
@@ -2906,6 +2915,40 @@ namespace RavenNest.BusinessLogic.Data
 
             Add(entity);
         }
+
+
+        private bool Filter(ItemFilter itemFilter, MarketItem item)
+        {
+            if (itemFilter == ItemFilter.All)
+                return true;
+
+            return GetItemFilter(item.ItemId) == itemFilter;
+        }
+
+        private ItemFilter GetItemFilter(Guid itemId)
+        {
+            var item = GetItem(itemId);
+            var itemType = (ItemType)item.Type;
+            var itemCategory = (ItemCategory)item.Category;
+
+            if (itemType == ItemType.Coins || itemType == ItemType.Ore || itemType == ItemType.Wood || itemType == ItemType.Fish)
+                return ItemFilter.Resources;
+
+            if (itemType == ItemType.OneHandedSword || itemType == ItemType.TwoHandedSword)
+                return ItemFilter.Swords;
+            if (itemType == ItemType.TwoHandedBow) return ItemFilter.Bows;
+            if (itemType == ItemType.TwoHandedStaff) return ItemFilter.Staves;
+            if (itemType == ItemType.Ring || itemType == ItemType.Amulet) return ItemFilter.Accessories;
+            if (itemType == ItemType.Shield) return ItemFilter.Shields;
+            if (itemType == ItemType.Pet) return ItemFilter.Pets;
+            if (itemType == ItemType.Scroll) return ItemFilter.Scrolls;
+
+            if (itemCategory == ItemCategory.Armor)
+                return ItemFilter.Armors;
+
+            return ItemFilter.All;
+        }
+
     }
 
     public class DataSaveError

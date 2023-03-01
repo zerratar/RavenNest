@@ -1,5 +1,7 @@
 ﻿@page "/items"
 @page "/items/{Id}"
+
+@using RavenNest.BusinessLogic.Game
 @using RavenNest.Blazor.Services
 @using RavenNest.DataModels
 @inject NavigationManager NavigationManager
@@ -17,12 +19,64 @@
 <div class="page-content">
     <div class="section">
 
+
         @if (items == null)
         {
             <LoadIndicator></LoadIndicator>
         }
         else
         {
+            <div class="stash item-filters">
+                <button class="item-filter @(itemFilter == ItemFilter.All ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.All)">
+                    <span class="item-filter-text">All</span>
+                    <i class="fa-sharp fa-solid fa-rectangles-mixed"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Swords ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Swords)">
+                    <span class="item-filter-text">Swords</span>
+                    <i class="fa-sharp fa-solid fa-sword"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Bows ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Bows)">
+                    <span class="item-filter-text">Bows</span>
+                    <i class="fa-sharp fa-solid fa-bow-arrow"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Staves ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Staves)">
+                    <span class="item-filter-text">Staves</span>
+                    <i class="fa-sharp fa-solid fa-staff"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Shields ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Shields)">
+                    <span class="item-filter-text">Shields</span>
+                    <i class="fa-sharp fa-solid fa-shield"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Armors ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Armors)">
+                    <span class="item-filter-text">Armors</span>
+                    <i class="fa-sharp fa-solid fa-helmet-battle"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Accessories ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Accessories)">
+                    <span class="item-filter-text">Accessories</span>
+                    <i class="fa-sharp fa-solid fa-gem"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Pets ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Pets)">
+                    <span class="item-filter-text">Pets</span>
+                    <i class="fa-sharp fa-solid fa-dog"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Resources ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Resources)">
+                    <span class="item-filter-text">Resources</span>
+                    <i class="fa-sharp fa-solid fa-hammer"></i>
+                </button>
+
+
+                <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
+                    <span class="item-filter-text">Scrolls</span>
+                    <i class="fa-sharp fa-solid fa-scroll"></i>
+                </button>
+            </div>
 
             @if (sorting)
             {
@@ -124,8 +178,8 @@
                                 }
                             </td>
                             <td class='item'>@item.Category</td>
-                            <td class='item'>@GetTypeName(item)</td>
-                            <td class='item'>@GetMaterialName(item)</td>
+                            <td class='item'>@ItemService.GetTypeName(item)</td>
+                            <td class='item'>@ItemService.GetMaterialName(item)</td>
                             <td class='item'>
                                 @if (item.Craftable.GetValueOrDefault())
                                 {
@@ -140,7 +194,7 @@
                             <td class='item'>
                                 @foreach (var req in item.CraftingRequirements)
                                 {
-                                    var reqItem = items.First(x => x.Id == req.ResourceItemId);
+                                    var reqItem = availableItems.First(x => x.Id == req.ResourceItemId);
                                     <span><a href="/items/@reqItem.Id">@(reqItem.Name)</a> x@(req.Amount)&nbsp;</span>
                                 }
                                 @if (item.OreCost > 0)
@@ -169,10 +223,13 @@
     public string Id { get; set; }
 
     private bool sorting;
+
+    private RavenNest.Models.ItemCollection availableItems;
     private RavenNest.Models.ItemCollection items;
 
     private string sort = "name";
     private SortDirection sortDirection;
+    private ItemFilter itemFilter = ItemFilter.All;
 
     protected override void OnInitialized()
     {
@@ -181,73 +238,21 @@
 
     private async void LoadItems()
     {
-        items = new Models.ItemCollection((await ItemService.GetItemsAsync()).OrderBy(x => x.Name));
+        availableItems = await ItemService.GetItemsAsync();
+        items = new Models.ItemCollection(availableItems.OrderBy(x => x.Name));
         StateHasChanged();
     }
 
-    private string GetTypeName(RavenNest.Models.Item item)
+    private void SelectItemFilter(ItemFilter newItemFilter)
     {
-        var str = item.Type.ToString();
-        var start = Char.ToUpper(str[0]);
-        var process = str.Substring(1);
-        process.Select((x, i) =>
-        {
-            if (Char.IsUpper(x)) return i;
-            return -1;
-        })
-        .Reverse()
-        .ForEach(x =>
-        {
-            if (x != -1)
-                process = process.Insert(x, " ");
-        });
-
-        return start + process;
+        itemFilter = newItemFilter;
+        items = new Models.ItemCollection(availableItems.Where(x => Filter(x)).OrderBy(x => x.Name));
+        InvokeAsync(StateHasChanged);
     }
 
-    private string GetMaterialName(RavenNest.Models.Item item)
+    private bool Filter(Models.Item item)
     {
-        if (item.Material == Models.ItemMaterial.Ultima)
-        {
-            return "Abraxas";
-        }
-
-        if (item.Type == Models.ItemType.None || item.Material == Models.ItemMaterial.None)
-        {
-            var itemNameMaterial = "";
-            if (item.Name.Contains(" "))
-            {
-                itemNameMaterial = item.Name.Split(' ')[0];
-            }
-            if (itemNameMaterial == "Ethereum")
-            {
-                return "Ether";
-            }
-            if (itemNameMaterial.ToLower() == "lionite")
-            {
-                return "Lionsbane";
-            }
-            if (itemNameMaterial.ToLower() == "gold")
-            {
-                return "Gold";
-            }
-            if (itemNameMaterial.ToLower() == "abraxas")
-            {
-                return "Abraxas";
-            }
-
-            if (!string.IsNullOrEmpty(itemNameMaterial) && item.Material == Models.ItemMaterial.None)
-            {
-                if (Enum.TryParse<Models.ItemMaterial>(itemNameMaterial, true, out var res))
-                {
-                    return res.ToString();
-                }
-            }
-
-            return "-";
-        }
-
-        return item.Material.ToString();
+      return ItemService.Filter(itemFilter, item);
     }
 
     protected override void OnAfterRender(bool firstRender)
@@ -290,7 +295,7 @@
     private async void SortByMaterial()
     {
         SetSorting("material");
-        await SortBy(x => (int)x.Material);
+        await SortBy(x => ItemService.GetMaterialIndex(x));
     }
     private async void SortByCraftingLevel()
     {
@@ -349,14 +354,9 @@
         }
         sort = value;
     }
+
     private async void ScrollToElementId(string elementId)
     {
         await JS.InvokeAsync<bool>("scrollToElementId", new object[] { elementId, 5 });
-    }
-
-    private enum SortDirection
-    {
-        Ascending,
-        Descending
     }
 }

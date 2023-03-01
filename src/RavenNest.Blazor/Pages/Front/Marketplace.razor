@@ -1,4 +1,6 @@
 ﻿@page "/marketplace"
+
+@using RavenNest.BusinessLogic.Game
 @using RavenNest.Blazor.Services.Models
 @using Microsoft.AspNetCore.WebUtilities
 @using RavenNest.Blazor.Services
@@ -23,22 +25,77 @@
         }
         else
         {
+            <div class="stash item-filters">
+                <button class="item-filter @(itemFilter == ItemFilter.All ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.All)">
+                    <span class="item-filter-text">All</span>
+                    <i class="fa-sharp fa-solid fa-rectangles-mixed"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Swords ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Swords)">
+                    <span class="item-filter-text">Swords</span>
+                    <i class="fa-sharp fa-solid fa-sword"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Bows ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Bows)">
+                    <span class="item-filter-text">Bows</span>
+                    <i class="fa-sharp fa-solid fa-bow-arrow"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Staves ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Staves)">
+                    <span class="item-filter-text">Staves</span>
+                    <i class="fa-sharp fa-solid fa-staff"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Shields ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Shields)">
+                    <span class="item-filter-text">Shields</span>
+                    <i class="fa-sharp fa-solid fa-shield"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Armors ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Armors)">
+                    <span class="item-filter-text">Armors</span>
+                    <i class="fa-sharp fa-solid fa-helmet-battle"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Accessories ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Accessories)">
+                    <span class="item-filter-text">Accessories</span>
+                    <i class="fa-sharp fa-solid fa-gem"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Pets ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Pets)">
+                    <span class="item-filter-text">Pets</span>
+                    <i class="fa-sharp fa-solid fa-dog"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Resources ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Resources)">
+                    <span class="item-filter-text">Resources</span>
+                    <i class="fa-sharp fa-solid fa-hammer"></i>
+                </button>
+
+
+                <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
+                    <span class="item-filter-text">Scrolls</span>
+                    <i class="fa-sharp fa-solid fa-scroll"></i>
+                </button>
+            </div>
+
             <table class="marketplace-list">
                 <thead>
                     <tr>
                         <th></th>
-                        <th>Name</th>
+
+@*                        <th @onclick="SortByCraftingLevel">Crafting Level <span>@GetIndicator("crafting")</span></th>
+                        <th @onclick="SortByVendorPrice">Vendor Price <span>@GetIndicator("vendor")</span></th>*@
+                        <th @onclick="SortByName">Name <span>@GetIndicator("name")</span></th>
                         @if (isAdmin)
                         {
-                          <th>Seller</th>
+                          <th @onclick="SortBySeller">Seller <span>@GetIndicator("seller")</span></th>
                         }
-                        <th>Stats</th>
-                        <th>Requirements</th>
-                        <th>Category</th>
-                        <th>Item Type</th>
-                        <th>Material Type</th>
-                        <th>Available Amount</th>
-                        <th>Asking Price</th>
+                        <th @onclick="SortByStats">Stats <span>@GetIndicator("stats")</span></th>
+                        <th @onclick="SortByLevelReq">Level Req <span>@GetIndicator("lev-req")</span></th>
+                        <th @onclick="SortByCategory">Category <span>@GetIndicator("category")</span></th>
+                        <th @onclick="SortByType">Item Type <span>@GetIndicator("type")</span></th>
+                        <th @onclick="SortByMaterial">Material Type <span>@GetIndicator("material")</span></th>
+                        <th @onclick="SortByAvailableAmount">Available Amount <span>@GetIndicator("amount")</span></th>
+                        <th @onclick="SortByAskingPrice">Asking Price <span>@GetIndicator("ask-price")</span></th>
                         @if (canCancelItems)
                         {
                             <th>Actions</th>
@@ -59,10 +116,10 @@
                             <td class='marketplace'>@item.Name</td>
                             @if (isAdmin)
                             {
-                              <td>@GetUserName(entry.SellerUserId)</td>
+                                <td>@GetUserName(entry.SellerUserId)</td>
                             }
                             <!-- <td class='marketplace'></td> -->
-                    <td class='item'>
+                          <td class='item'>
                                 @if (item.WeaponAim > 0)
                                 {
                                     <span class="item-stat" title="Weapon Aim - Increases your hit rate in melee"><i class="fas fa-crosshairs"></i>@item.WeaponAim</span>
@@ -128,18 +185,18 @@
                                 }
                             </td>
                             <td class='marketplace'>@item.Category</td>
-                            <td class='marketplace'>@item.Type</td>
-                            <td class='marketplace'>@item.Material</td>
+                            <td class='marketplace'>@ItemService.GetTypeName(item)</td>
+                            <td class='marketplace'>@ItemService.GetMaterialName(item)</td>
                             <td class='marketplace'>@entry.Amount</td>
                             <td class='marketplace'><img class="ravenCoins" src="/favicon.ico" />@entry.PricePerItem</td>
 
                             @if (canCancelItems)
                             {
                                 <td class='marketplace'>
-                                  @if(isAdmin || CanCancelItem(entry))
-                                  {
-                                      <button class="link-button" @onclick="(()=> CancelListing(entry.Id))">Cancel</button>
-                                  }
+                                    @if (isAdmin || CanCancelItem(entry))
+                                    {
+                                        <button class="link-button" @onclick="(()=> CancelListing(entry.Id))">Cancel</button>
+                                    }
                                 </td>
                             }
                         </tr>
