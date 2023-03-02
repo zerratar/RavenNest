@@ -148,9 +148,10 @@ namespace RavenNest.Blazor.Components
 
             return false;
         }
+
         private string ExpDisplay(double value)
         {
-            return value + " exp";
+            return Math.Floor(value) + " exp";
         }
         private string StyleWidth(int value)
         {

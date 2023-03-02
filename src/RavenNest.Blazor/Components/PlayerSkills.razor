@@ -6,7 +6,7 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 
 <div class="player-skills">
-  
+
 
     @if (CanModify)
     {
@@ -340,7 +340,7 @@
 
     private string ExpDisplay(double value)
     {
-        return value + " exp";
+        return Math.Floor(value) + " exp";
     }
 
     private string StyleWidth(int value)
