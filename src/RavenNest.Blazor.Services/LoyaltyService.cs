@@ -71,7 +71,7 @@ namespace RavenNest.Blazor.Services
                 long leftToReduct = cost;
                 foreach (var l in loyalties)
                 {
-                    var a = Math.Min(l.Points, cost);
+                    var a = Math.Min(l.Points, leftToReduct);
                     l.Points -= a;
                     leftToReduct -= a;
                     if (leftToReduct <= 0) break;
