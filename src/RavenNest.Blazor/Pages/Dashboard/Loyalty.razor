@@ -10,8 +10,8 @@
 <h1 class="page-title">Loyalty</h1>
 
 <div class="tab-view">
-    <button @onclick="ViewStreamers" class="tab-link @(viewState == LoyaltyViewState.OtherStream ? "active":"")">Loyalty towards other streamers</button>
-    <button @onclick="ViewMyStream" class="tab-link @(viewState == LoyaltyViewState.MyStream ? "active":"")">My Stream (Loyalty towards me)</button>
+    <button @onclick="ViewStreamers" class="tab-link @(viewState == LoyaltyViewState.LoyaltyRewards ? "active":"")">Loyalty Rewards</button>
+    <button @onclick="ViewMyStream" class="tab-link @(viewState == LoyaltyViewState.Streaming ? "active":"")">Streaming</button>
 </div>
 
 @if (session == null)
@@ -22,7 +22,7 @@ else
 {
     @switch (viewState)
     {
-        case LoyaltyViewState.MyStream:
+        case LoyaltyViewState.Streaming:
             {
                 if (!isStreamer)
                 {
@@ -117,7 +117,7 @@ else
                 }
             }
             break;
-        case LoyaltyViewState.OtherStream:
+        case LoyaltyViewState.LoyaltyRewards:
             {
                 @*<h1>Streamer Loyalty</h1>*@
                 if (userLoyaltyData == null)
@@ -174,38 +174,49 @@ else
                             </div>
                         }
                     </div>
-                    <div class="loyalty-users">
-                        <h3>Streamers</h3>
-                        <table class="items-list">
-                            <thead>
-                                <tr>
-                                    <th></th>
-                                    <th>Name</th>
-                                    <th>Level</th>
-                                    <th>Gifted subs</th>
-                                    <th>Cheered bits</th>
-                                    <th>Play time</th>
-                                    <th>Points</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var item in userLoyaltyData.Loyalties)
-                                {
-                                    <tr id="@item.StreamerTwitchUserId" class="item-row streamer">
-                                        <td><img src="/api/twitch/logo/@(item.StreamerTwitchUserId)" style="width: 40px" /></td>
-                                        <td class='item'>
-                                            @item.Name
-                                        </td>
-                                        <td class='item'>@item.Level</td>
-                                        <td class='item'>@item.GiftedSubs</td>
-                                        <td class='item'>@item.CheeredBits</td>
-                                        <td class='item'>@FormatTime(item.TotalPlayTime)</td>
-                                        <td class='item'>@item.Points</td>
+
+
+                    @if (!loyaltyListVisible)
+                    {
+                        <div class="btn-toggle-loyalty-list" @onclick="()=>ToggleLoyaltyList()">Click here to show streams I've played in</div>
+                    }
+                    else
+                    {
+                        <div class="btn-toggle-loyalty-list" @onclick="()=>ToggleLoyaltyList()">Click here to hide list</div>
+
+                        <div class="loyalty-users">
+                            <h3>Streamers</h3>
+                            <table class="items-list">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Name</th>
+                                        <th>Level</th>
+                                        <th>Gifted subs</th>
+                                        <th>Cheered bits</th>
+                                        <th>Play time</th>
+                                        <th>Points</th>
                                     </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in userLoyaltyData.Loyalties)
+                                    {
+                                        <tr id="@item.StreamerTwitchUserId" class="item-row streamer">
+                                            <td><img src="/api/twitch/logo/@(item.StreamerTwitchUserId)" style="width: 40px" /></td>
+                                            <td class='item'>
+                                                @item.Name
+                                            </td>
+                                            <td class='item'>@item.Level</td>
+                                            <td class='item'>@item.GiftedSubs</td>
+                                            <td class='item'>@item.CheeredBits</td>
+                                            <td class='item'>@FormatTime(item.TotalPlayTime)</td>
+                                            <td class='item'>@item.Points</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
                 }
 
                 @if (rewardConfirmationDialogVisible)
@@ -251,7 +262,7 @@ else
 
 @code {
     private RavenNest.Sessions.SessionInfo session;
-    private LoyaltyViewState viewState = LoyaltyViewState.OtherStream;
+    private LoyaltyViewState viewState = LoyaltyViewState.LoyaltyRewards;
     private Services.StreamerLoyaltyData loyaltyData;
     private Services.UserLoyaltyData userLoyaltyData;
     @*private Services.StreamerLoyalty selectedStreamer;*@
@@ -265,6 +276,8 @@ else
     private Guid? selectedPlayerId;
     private bool rewardConfirmationDialogVisible;
     private bool isStreamer;
+
+    private bool loyaltyListVisible;
 
     private long totalAvailablePoints;
     private long totalGiftedSubs;
@@ -283,6 +296,14 @@ else
         isStreamer = await LoyaltyService.IsStreamerAsync();
 
         await ViewStreamers();
+    }
+
+
+    private void ToggleLoyaltyList()
+    {
+        loyaltyListVisible = !loyaltyListVisible;
+        InvokeAsync(StateHasChanged);
+
     }
 
     private void SelectedPlayerChanged(ChangeEventArgs e)
@@ -351,7 +372,7 @@ else
 
     private async Task ViewMyStream()
     {
-        viewState = LoyaltyViewState.MyStream;
+        viewState = LoyaltyViewState.Streaming;
         loyaltyData = await LoyaltyService.GetStreamerLoyaltyDataAsync(session.UserId);
         pointRewards = await LoyaltyService.GetLoyaltyRewardsAsync();
         await InvokeAsync(StateHasChanged);
@@ -359,7 +380,7 @@ else
 
     private async Task ViewStreamers()
     {
-        viewState = LoyaltyViewState.OtherStream;
+        viewState = LoyaltyViewState.LoyaltyRewards;
         userLoyaltyData = await LoyaltyService.GetUserLoyaltyDataAsync(session.UserId);
         if (userLoyaltyData.Loyalties != null)
         {
@@ -394,7 +415,7 @@ else
 
     public enum LoyaltyViewState
     {
-        MyStream,
-        OtherStream
+        Streaming,
+        LoyaltyRewards
     }
 }

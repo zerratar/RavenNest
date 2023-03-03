@@ -447,7 +447,17 @@ button.btn.btn-action:active {
     margin-top: 10px;
     margin-right: 10px;
 }
-
+.btn-toggle-loyalty-list {
+    width: 100%;
+    padding: 20px;
+    border-top: 2px solid #ebebeb;
+    margin-top: 30px;
+    cursor: pointer;
+    /* text-transform: uppercase; */
+    font-weight: 300;
+    font-size: 13pt;
+    background-color: white;
+}
 .confirm-body select {
     width: 100%;
     margin-bottom: 10px;
