@@ -355,7 +355,7 @@ button.btn.btn-action:active {
 .loyalty-reward-list {
     display: flex;
     flex-flow: wrap;
-    justify-content: space-between;
+    /*justify-content: space-between;*/
 }
 
 .loyalty-users {
@@ -368,27 +368,43 @@ button.btn.btn-action:active {
 
 .reward-item {
     display: flex;
+    flex-flow: column;
     border-radius: 6px;
-    padding: 5px;
-    background-color: #feca57;
-    cursor: pointer;
+    /*padding: 5px;*/
+    background-color: white;
     min-width: 225px;
     margin-top: 5px;
     align-items: center;
     justify-content: center;
     box-shadow: 2px 2px 5px rgb(0 0 0 / 20%);
     transition: all ease 0.2s;
+    margin-left: 5px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+    padding-top: 45px;
 }
 
-.reward-item:hover {
+.btn-reward-redeem {
+    color: white;
+    border: 0;
+    border-radius: 6px;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    padding: 15px;
+    background: linear-gradient(45deg, #082465, #3a0647);
+    flex-grow: 1;
+    width: 100%;
+    margin: 0;
+}
+.reward-item .btn-reward-redeem:hover {
     background-color: #f3a800;
 }
 
-.reward-item.locked:hover {
+.reward-item.locked .btn-reward-redeem:hover {
     background-color: #f6f6f6;
 }
 
-.reward-item.locked {
+.locked .btn-reward-redeem {
     opacity: 0.5;
     cursor: default;
     background-color: #f6f6f6;
@@ -398,9 +414,22 @@ button.btn.btn-action:active {
     display: flex;
     flex-flow: column;
     justify-content: center;
-    margin-right: 10px;
+    /*margin-right: 10px;*/
+    margin-bottom: 25px;
+    margin-top: 15px;
 }
-
+.reward-item-name {
+    font-weight: bold;
+    font-size: 16pt;
+    text-align: center;
+}
+.reward-item-type {
+    text-transform: uppercase;
+    font-weight: 300;
+    text-align: center;
+    margin-top: 5px;
+    font-size: 9pt;
+}
 .reward-redeem-confirmation {
     position: fixed;
     top: 50%;

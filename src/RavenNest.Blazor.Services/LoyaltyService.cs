@@ -35,6 +35,53 @@ namespace RavenNest.Blazor.Services
         }
 
         public Task<bool> RedeemRewardAsync(
+            Guid characterId,
+            DataModels.UserLoyaltyReward reward,
+            int amount)
+        {
+            return Task.Run(() =>
+            {
+                if (string.IsNullOrEmpty(reward.RewardData) ||
+                    !Guid.TryParse(reward.RewardData, out var itemId))
+                    return false;
+
+                var character = gameData.GetCharacter(characterId);
+                if (character == null) return false;
+
+                var user = gameData.GetUser(character.UserId);
+                if (user == null) return false;
+
+                if (amount < 1)
+                    return false;
+
+                var totalPoints = 0l;
+                var loyalties = gameData.GetUserLoyalties(user.Id);
+                foreach (var l in loyalties)
+                {
+                    if (user.Id == l.StreamerUserId)
+                        continue;
+
+                    totalPoints += l.Points;
+                }
+
+                var cost = (reward.Points ?? 0) * amount;
+                if (totalPoints < cost)
+                    return false;
+
+                long leftToReduct = cost;
+                foreach (var l in loyalties)
+                {
+                    var a = Math.Min(l.Points, cost);
+                    l.Points -= a;
+                    leftToReduct -= a;
+                    if (leftToReduct <= 0) break;
+                }
+
+                playerManager.AddItem(characterId, itemId, amount);
+                return true;
+            });
+        }
+        public Task<bool> RedeemRewardAsync(
             Guid streamerUserId,
             Guid characterId,
             DataModels.UserLoyaltyReward reward,
