@@ -9,6 +9,10 @@ namespace RavenNest.BusinessLogic
 {
     public class RavenBotApiClient : IRavenBotApiClient
     {
+
+        const string SettingsDirectory = "../user-settings/";
+
+
         //#if DEBUG
         //        private const string host = "127.0.0.1";
         //#else
@@ -41,20 +45,34 @@ namespace RavenNest.BusinessLogic
 
         public async Task SendUserSettingsAsync(string userId, Dictionary<string, string> settings)
         {
+            // lets just overwrite the actual json file.
+            // the bot will realize it has changed and will reload the file.
             try
             {
-                using (var req = RavenBotRequest.Create(BuildRequestUri(currentHostIndex, "usersettings"), logger))
+                var targetFile = System.IO.Path.Combine(SettingsDirectory, userId + ".json");
+                var dir = System.IO.Path.GetDirectoryName(targetFile);
+                if (System.IO.Directory.Exists(dir))
+                    System.IO.Directory.CreateDirectory(dir);
+
+                System.IO.File.WriteAllText(targetFile, Newtonsoft.Json.JsonConvert.SerializeObject(settings));
+            }
+            catch
+            {
+                try
                 {
-                    foreach (var v in settings)
+                    using (var req = RavenBotRequest.Create(BuildRequestUri(currentHostIndex, "usersettings"), logger))
                     {
-                        await req.SendAsync(userId, v.Key, v.Value);
-                        await Task.Delay(100);
+                        foreach (var v in settings)
+                        {
+                            await req.SendAsync(userId, v.Key, v.Value);
+                            await Task.Delay(100);
+                        }
                     }
                 }
-            }
-            catch (Exception exc)
-            {
-                logger.LogError(exc.ToString());
+                catch (Exception exc)
+                {
+                    logger.LogError(exc.ToString());
+                }
             }
         }
 
