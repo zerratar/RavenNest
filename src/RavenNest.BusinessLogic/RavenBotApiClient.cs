@@ -28,6 +28,11 @@ namespace RavenNest.BusinessLogic
             this.kernel = kernel;
         }
 
+        public async Task SendUserSettingAsync(string userId, string key, string value)
+        {
+            await SendAsync(currentHostIndex, "usersettings", userId, key, value);
+        }
+
         public async Task SendPubSubAccessTokenAsync(string id, string login, string accessToken)
         {
             await SendAsync(currentHostIndex, "pubsub", id, login, accessToken);

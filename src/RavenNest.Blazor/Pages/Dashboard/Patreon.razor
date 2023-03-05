@@ -17,29 +17,28 @@
 }
 else
 {
-    if (session.Patreon != null && !string.IsNullOrEmpty(session.Patreon.AccessToken))
+    if (!linkedToPatreon)
+    {
+        <p>You don't seem to have linked your Patreon account to your Ravenfall account yet.</p>
+        <button class="btn-new link-patreon" @onclick="LoginToPatreon"><i class="fab fa-patreon"></i>&nbsp;Link Patreon</button>
+    }
+
+    if (patreonTierIndex > 0 || linkedToPatreon)
     {
         <div class="content-box">
             <div class="patreon-details">
                 <div class="patreon-profile">
-                    @if (!string.IsNullOrEmpty(session.Patreon.ProfilePicture))
-                    {
-                        <img class="profile-image" src="@session.Patreon.ProfilePicture" />
-                    }
-                    else
-                    {
-                        <img class="profile-image" src="/api/twitch/logo/@session.UserId" />
-                    }
-
+                    <img class="profile-image" src="@patreonProfilePicture" />
                     <div class="patreon-profile-details">
-                        <h2 class="patreon-name">@session.Patreon.FullName</h2>
+                        <h2 class="patreon-name">@patreonFullName</h2>
                         <h3 class="patreon-tier">@patreonTitle</h3>
                     </div>
                 </div>
                 <div class="patreon-rewards">
                     @if (patreonTierIndex == 0)
                     {
-                        <p>We can see that you're not a Patron yet, become one now to unlock additional rewards in Ravenfall! If you're already a patron but not showing up here, try 'Unlink' and connect with Patreon again.</p>
+                        <p>We can see that you're not a Patron yet, become one now to unlock additional rewards in Ravenfall!</p>
+                        <p>If you're already a patron but not showing up here, try 'Unlink' and connect with Patreon again.</p>
                         <a href="https://www.patreon.com/ravenfall" target="_blank">Visit our Patreon page!</a>
                     }
                     else
@@ -60,22 +59,61 @@ else
                             {
                                 <li class="patreon-reward xp-x5">5x Exp Multiplier</li>
                             }
+                            @if (patreonTierIndex >= 3)
+                            {
+                                <li class="patreon-reward bot">AI Powered Chatbot</li>
+                            }
                         </ul>
                     }
                 </div>
             </div>
 
-            <div class="patreon-actions">
-                <p>Want to remove your Patreon Link? (This won't remove your rewards, only stored tokens)</p>
-                <button class="btn-new error" @onclick="RemovePatreonLink"><i class="fab fa-patreon"></i>&nbsp;&nbsp;Unlink</button>
-            </div>
+            @if (linkedToPatreon)
+            {
+                <div class="patreon-actions">
+                    <p>Want to remove your Patreon Link? (This won't remove your rewards, only stored tokens)</p>
+                    <button class="btn-new error" @onclick="RemovePatreonLink"><i class="fab fa-patreon"></i>&nbsp;&nbsp;Unlink</button>
+                </div>
+            }
         </div>
 
     }
-    else
+
+    @if (patreonTierIndex >= 3)
     {
-        <p>You don't seem to have linked your Patreon account to your Ravenfall account yet.</p>
-        <button class="btn-new" @onclick="LoginToPatreon"><i class="fab fa-patreon"></i>&nbsp;Link Patreon</button>
+
+        <div class="content-box">
+            <div class="chat-bot-settings">
+                <h4>Chatbot Settings/Features</h4>
+                <p>You have unlocked the following beta features with RavenfallOfficial chat bot. These are all very Experimental, if you experience any issues please let us know on discord. These settings are powered by ChatGPT3.5 and will NOT work with the local bot.</p>
+                <ul class="chat-bot-settings-list">
+
+                    <li class="chat-bot-setting-item" title="Translates the message sent from the game into the selected language">
+                        <label for="translation">Translate all messages into</label>
+                        <select name="translation" class="chat-bot-language-select" value="@targetLanguage" @oninput="evt => OnLanguageSelectionChanged(evt)">
+                            <option itemid="-1" value="None">Do Not Translate</option>
+                            @for (var i = 0; i < PatreonService.AvailableLanguages.Length; ++i)
+                            {
+                                var language = PatreonService.AvailableLanguages[i];
+                                <option itemid="@i" value="@language">@language</option>
+                            }
+                        </select>
+                    </li>
+
+                    <li class="chat-bot-setting-item" title="Allow the messages to be more personalized and feel more real">
+                        <label for="personlize">Personalize messages</label>
+                        <input type="checkbox" name="personlize" checked="@personalizeMessage" @onchange="OnPersonalizeMessageChanged" />
+                    </li>
+                </ul>
+
+                <button class="btn-new save-settings" @onclick="SaveUserSettingsAsync">Save</button>
+
+                @if (changesSaved)
+                {
+                    <span class="settings-saved">Settings have been saved.</span>
+                }
+            </div>
+        </div>
     }
 }
 
@@ -85,25 +123,64 @@ else
 
     private bool IsLinkingPatreon => NavigationManager.Uri.Contains("patreon/link", StringComparison.OrdinalIgnoreCase);
 
+    private bool linkedToPatreon;
+    private string patreonFullName;
     private string patreonTitle;
+    private string patreonProfilePicture;
     private int patreonTierIndex;
     private bool reloadAfterRender;
+    private bool changesSaved;
+
+    private bool personalizeMessage;
+    private string targetLanguage = "None";
 
     protected override async Task OnInitializedAsync()
     {
         session = AuthService.GetSession();
 
+        (targetLanguage, personalizeMessage) = PatreonService.GetChatbotSettings();
+
+        patreonTierIndex = session.Tier;
+        patreonFullName = session.UserName;
+        patreonProfilePicture = "/api/twitch/logo/" + session.UserId;
         if (session.Patreon != null)
         {
             patreonTierIndex = System.Math.Max(session.Tier, session.Patreon.Tier.GetValueOrDefault());
             patreonTitle = session.Patreon.PledgeTitle;
-            if (string.IsNullOrEmpty(patreonTitle) && patreonTierIndex > 0)
-            {
-                patreonTitle = await GetPatreonTitleByTierAsync(patreonTierIndex);
-            }
+            patreonProfilePicture = session.Patreon.ProfilePicture;
+            patreonFullName = session.Patreon.FullName;
+            linkedToPatreon = true;
+        }
+
+        if (string.IsNullOrEmpty(patreonTitle) && patreonTierIndex > 0)
+        {
+            patreonTitle = await GetPatreonTitleByTierAsync(patreonTierIndex);
         }
 
         await HandlePatreonToken();
+    }
+
+    private Task OnPersonalizeMessageChanged(ChangeEventArgs e)
+    {
+        var value = e.Value;
+        personalizeMessage = (bool)value;
+        changesSaved = false;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private Task OnLanguageSelectionChanged(ChangeEventArgs evt)
+    {
+        targetLanguage = (string)evt.Value;
+        changesSaved = false;
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SaveUserSettingsAsync()
+    {
+        //AuthService.SetUserSettings(SendUserSettingAsync);
+        await PatreonService.SaveChatbotSettingsAsync(targetLanguage, personalizeMessage);
+        changesSaved = true;
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task HandlePatreonToken()

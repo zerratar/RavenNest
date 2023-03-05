@@ -4,5 +4,16 @@
     {
         public const string Twitch_PubSub = "twitch_pubsub";
         public const string Comment = "comment";
+
+        public const string ChatMessageTransformation = "ChatMessageTransformation";
+        public const string ChatBotLanguage = "ChatBotLanguage";
+    }
+
+    public enum ChatMessageTransformation : uint
+    {
+        Standard = 0,
+        Personalize = 1,
+        Translate = 2,
+        TranslateAndPersonalize = 3
     }
 }

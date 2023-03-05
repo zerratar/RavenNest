@@ -27,6 +27,7 @@ namespace RavenNest.BusinessLogic.Game
 
         //private Task campaignDetailsTask;
         private PatreonCampaign activeCampaign;
+        private List<PatreonTier> fallbackTiers;
 
         public PatreonManager(
             IGameData gameData,
@@ -503,7 +504,9 @@ namespace RavenNest.BusinessLogic.Game
         {
             await EnsureCampaignDetailsAsync();
 
-            foreach (var tier in activeCampaign.Tiers.OrderByDescending(x => x.Level))
+            var tiers = GetAllTiers();
+
+            foreach (var tier in tiers.OrderByDescending(x => x.Level))
             {
                 if (level >= tier.Level)
                     return tier;
@@ -512,17 +515,42 @@ namespace RavenNest.BusinessLogic.Game
             return null;
         }
 
+
         public async Task<PatreonTier> GetTierByCentsAsync(decimal pledgeAmountCents)
         {
             await EnsureCampaignDetailsAsync();
-
-            foreach (var tier in activeCampaign.Tiers.OrderByDescending(x => x.AmountCents))
+            var tiers = GetAllTiers();
+            foreach (var tier in tiers.OrderByDescending(x => x.AmountCents))
             {
                 if (pledgeAmountCents >= tier.AmountCents)
                     return tier;
             }
 
             return null;
+        }
+
+
+        private List<PatreonTier> GetAllTiers()
+        {
+            List<PatreonTier> tiers = activeCampaign?.Tiers;
+            if (tiers == null)
+            {
+                if (fallbackTiers == null)
+                    fallbackTiers = new List<PatreonTier>
+                    {
+                        new PatreonTier { AmountCents = 20, Level = 0, Title = "Steel" },
+                        new PatreonTier { AmountCents = 50, Level = 1, Title = "Mithril" },
+                        new PatreonTier { AmountCents = 100, Level = 2, Title = "Adamantite" },
+                        new PatreonTier { AmountCents = 150, Level = 3, Title = "Rune" },
+                        new PatreonTier { AmountCents = 300, Level = 4, Title = "Dragon" },
+                        new PatreonTier { AmountCents = 500, Level = 5, Title = "Abraxas" },
+                        new PatreonTier { AmountCents = 1000, Level = 6, Title = "Phantom" }
+                    };
+
+                tiers = fallbackTiers;
+            }
+
+            return tiers;
         }
     }
 

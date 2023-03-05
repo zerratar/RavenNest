@@ -11,6 +11,7 @@
         Pet,
         Resource,
         StreamerToken,
-        Scroll
+        Scroll,
+        Skin
     }
 }

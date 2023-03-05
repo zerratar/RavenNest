@@ -24,8 +24,9 @@ table.items-list, table.marketplace-list {
     padding: 20px;
     border-radius: 15px;
     background-color: white;
+    /*
     margin-left: auto;
-    margin-right: auto;
+    margin-right: auto;*/
 }
 
 .navbar-toggler {
@@ -110,11 +111,13 @@ li.patreon-reward.xp-x2 {
 li.patreon-reward.xp-x3 {
     background: linear-gradient(45deg, #ff742a, #0b00ff);
     color: white;
+    margin-right: 10px;
 }
 
 li.patreon-reward.xp-x5 {
     background: linear-gradient(45deg, #0b00ff, #a200d2);
     color: white;
+    margin-right: 10px;
 }
 
 .patreon-actions p {
@@ -132,6 +135,7 @@ li.patreon-reward.xp-x5 {
     flex-direction: column;
     width: fit-content;
     max-width: 100%;
+    margin-bottom: 25px;
 }
 
 
@@ -160,6 +164,10 @@ img.profile-image {
     display: flex;
     flex-flow: column;
     align-items: center;
+}
+
+.settings-saved {
+    color: #2d892d;
 }
 
 .page {
@@ -208,6 +216,10 @@ button.btn-new {
     color: white;
     border-radius: 7px;
     box-shadow: 0px 2px 5px 1px rgb(0 0 0 / 10%);
+}
+
+button.btn-new.link-patreon{
+    margin-bottom: 25px;
 }
 
 button.btn-new.error {
