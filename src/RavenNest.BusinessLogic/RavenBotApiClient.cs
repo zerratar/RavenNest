@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -12,7 +13,12 @@ namespace RavenNest.BusinessLogic
         //        private const string host = "127.0.0.1";
         //#else
         private string[] hostNames = { "ravenbot.ravenfall.stream", "127.0.0.1" };
+#if DEBUG
+        private int currentHostIndex = 1;
+#else
         private int currentHostIndex = 0;
+#endif
+
         //#endif
 
         private const int RETRY_INTERVAL = 3000;
@@ -31,6 +37,25 @@ namespace RavenNest.BusinessLogic
         public async Task SendUserSettingAsync(string userId, string key, string value)
         {
             await SendAsync(currentHostIndex, "usersettings", userId, key, value);
+        }
+
+        public async Task SendUserSettingsAsync(string userId, Dictionary<string, string> settings)
+        {
+            try
+            {
+                using (var req = RavenBotRequest.Create(BuildRequestUri(currentHostIndex, "usersettings"), logger))
+                {
+                    foreach (var v in settings)
+                    {
+                        await req.SendAsync(userId, v.Key, v.Value);
+                        await Task.Delay(100);
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+            }
         }
 
         public async Task SendPubSubAccessTokenAsync(string id, string login, string accessToken)

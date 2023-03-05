@@ -6,6 +6,7 @@ using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.Models;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -96,8 +97,12 @@ namespace RavenNest.BusinessLogic.Game.Processors
                 var uid = session.UserId;
                 var language = gameData.GetUserProperty(uid, UserProperties.ChatBotLanguage, "None");
                 var transformationStr = gameData.GetUserProperty(uid, UserProperties.ChatMessageTransformation, "0");
-                ravenbotApi.SendUserSettingAsync(sessionToken.TwitchUserId, UserProperties.ChatBotLanguage, language);
-                ravenbotApi.SendUserSettingAsync(sessionToken.TwitchUserId, UserProperties.ChatMessageTransformation, transformationStr);
+
+                ravenbotApi.SendUserSettingsAsync(sessionToken.TwitchUserId, new Dictionary<string, string>
+                {
+                    { UserProperties.ChatBotLanguage, language },
+                    { UserProperties.ChatMessageTransformation, transformationStr }
+                });
             }
         }
 

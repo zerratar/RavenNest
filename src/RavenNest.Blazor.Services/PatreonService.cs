@@ -125,8 +125,14 @@ namespace RavenNest.Blazor.Services
             gameData.SetUserProperty(uid, UserProperties.ChatBotLanguage, language);
             gameData.SetUserProperty(uid, UserProperties.ChatMessageTransformation, transformationString);
 
-            await ravenbotApi.SendUserSettingAsync(session.UserId, UserProperties.ChatBotLanguage, language);
-            await ravenbotApi.SendUserSettingAsync(session.UserId, UserProperties.ChatMessageTransformation, transformationString);
+            await ravenbotApi.SendUserSettingsAsync(session.UserId, new Dictionary<string, string>
+            {
+                { UserProperties.ChatBotLanguage, language },
+                { UserProperties.ChatMessageTransformation, transformationString }
+            });
+
+            //await ravenbotApi.SendUserSettingAsync(session.UserId, UserProperties.ChatBotLanguage, language);
+            //await ravenbotApi.SendUserSettingAsync(session.UserId, UserProperties.ChatMessageTransformation, transformationString);
         }
 
         public string GetPatreonLoginUrl()

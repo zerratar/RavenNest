@@ -30,7 +30,10 @@ namespace RavenNest.BusinessLogic
         {
             try
             {
-                await socket.ConnectAsync(this.requestPath.Host, this.requestPath.Port);
+                if (!this.socket.Connected)
+                {
+                    await socket.ConnectAsync(this.requestPath.Host, this.requestPath.Port);
+                }
 
                 using (var mem = new MemoryStream())
                 using (var writer = new BinaryWriter(mem))
@@ -53,7 +56,11 @@ namespace RavenNest.BusinessLogic
                         writer.Write(data);
                     }
 
-                    await socket.GetStream().WriteAsync(mem.ToArray());
+                    var stream = socket.GetStream();
+                    
+
+                    await stream.WriteAsync(mem.ToArray());
+                    await stream.FlushAsync();
                 }
 
                 return true;
