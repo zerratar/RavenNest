@@ -15,13 +15,13 @@ namespace RavenNest.Blazor.Services
     public class SessionService : RavenNestService
     {
         private readonly IAuthManager authManager;
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly AppSettings settings;
 
         public SessionService(
             IOptions<AppSettings> settings,
             IAuthManager authManager,
-            IGameData gameData,
+            GameData gameData,
             IHttpContextAccessor accessor,
             ISessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)

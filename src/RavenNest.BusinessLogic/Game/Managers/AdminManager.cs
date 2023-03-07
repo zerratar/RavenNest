@@ -17,24 +17,24 @@ using InventoryItem = RavenNest.DataModels.InventoryItem;
 namespace RavenNest.BusinessLogic.Game
 {
 
-    public class AdminManager : IAdminManager
+    public class AdminManager
     {
         private readonly ILogger<AdminManager> logger;
         private readonly Random random;
-        private readonly IPlayerInventoryProvider inventoryProvider;
+        private readonly PlayerInventoryProvider inventoryProvider;
         private readonly IEntityResolver itemResolver;
-        private readonly IPlayerManager playerManager;
-        private readonly IGameData gameData;
-        private readonly ISessionManager sessionManager;
+        private readonly PlayerManager playerManager;
+        private readonly GameData gameData;
+        private readonly SessionManager sessionManager;
         private readonly ISecureHasher secureHasher;
 
         public AdminManager(
             ILogger<AdminManager> logger,
-            IPlayerInventoryProvider inventoryProvider,
+            PlayerInventoryProvider inventoryProvider,
             IEntityResolver itemResolver,
-            IPlayerManager playerManager,
-            IGameData gameData,
-            ISessionManager sessionManager,
+            PlayerManager playerManager,
+            GameData gameData,
+            SessionManager sessionManager,
             ISecureHasher secureHasher)
         {
             this.logger = logger;

@@ -9,10 +9,10 @@ namespace RavenNest.Blazor.Services
 {
     public class AccountService : RavenNestService
     {
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly ISecureHasher hasher;
         public AccountService(
-            IGameData gameData,
+            GameData gameData,
             ISecureHasher hasher,
             IHttpContextAccessor accessor,
             ISessionInfoProvider sessionInfoProvider)

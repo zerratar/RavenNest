@@ -157,7 +157,7 @@ namespace RavenNest.Blazor
             {
                 builder.Run(async context =>
                 {
-                    var gameData = app.ApplicationServices.GetService<IGameData>();
+                    var gameData = app.ApplicationServices.GetService<GameData>();
                     var release = await Github.GetGithubReleaseAsync();
                     var clientVersion = gameData.GetClientVersion();
                     var client = gameData.Client;
@@ -229,7 +229,7 @@ namespace RavenNest.Blazor
         {
             try
             {
-                app.ApplicationServices.GetService<IGameData>().Flush();
+                app.ApplicationServices.GetService<GameData>().Flush();
             }
             catch { }
 
@@ -278,19 +278,20 @@ namespace RavenNest.Blazor
             services.AddSingleton<IBinarySerializer, CompressedJsonSerializer>();
             services.AddSingleton<IGamePacketSerializer, GamePacketSerializer>();
 
-            services.AddSingleton<IPlayerManager, PlayerManager>();
-            services.AddSingleton<IGameManager, GameManager>();
-            services.AddSingleton<IMarketplaceManager, MarketplaceManager>();
-            services.AddSingleton<ISessionManager, SessionManager>();
+            services.AddSingleton<PlayerManager>();
+            services.AddSingleton<GameManager>();
+            services.AddSingleton<MarketplaceManager>();
+            services.AddSingleton<SessionManager>();
+            services.AddSingleton<HighScoreManager>();
+
             services.AddSingleton<IAuthManager, AuthManager>();
             services.AddSingleton<IItemManager, ItemManager>();
-            services.AddSingleton<IAdminManager, AdminManager>();
-            services.AddSingleton<IHighScoreManager, HighScoreManager>();
+            services.AddSingleton<AdminManager>();
             services.AddSingleton<IServerManager, ServerManager>();
             services.AddSingleton<IGamePacketManager, GamePacketManager>();
             services.AddSingleton<IVillageManager, VillageManager>();
             services.AddSingleton<IPatreonManager, PatreonManager>();
-            services.AddSingleton<IClanManager, ClanManager>();
+            services.AddSingleton<ClanManager>();
             services.AddSingleton<INotificationManager, NotificationManager>();
             services.AddSingleton<ILoyaltyManager, LoyaltyManager>();
 
@@ -299,12 +300,12 @@ namespace RavenNest.Blazor
             services.AddSingleton<IIntegrityChecker, PlayerIntegrityChecker>();
             services.AddSingleton<ITwitchClient, TwitchClient>();
 
-            services.AddSingleton<IGameData, GameData>();
-            services.AddSingleton<IGameDataMigration, GameDataMigration>();
-            services.AddSingleton<IGameDataBackupProvider, GameDataBackupProvider>();
+            services.AddSingleton<GameData>();
+            services.AddSingleton<GameDataMigration>();
+            services.AddSingleton<GameDataBackupProvider>();
 
-            services.AddSingleton<IEnchantmentManager, EnchantmentManager>();
-            services.AddSingleton<IPlayerInventoryProvider, PlayerInventoryProvider>();
+            services.AddSingleton<EnchantmentManager>();
+            services.AddSingleton<PlayerInventoryProvider>();
             services.AddSingleton<IPlayerHighscoreProvider, PlayerHighscoreProvider>();
             services.AddSingleton<IRavenfallDbContextProvider, RavenfallDbContextProvider>();
             services.AddSingleton<ISessionInfoProvider, SessionInfoProvider>();

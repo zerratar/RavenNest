@@ -18,10 +18,10 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class PatreonManager : IPatreonManager
     {
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly IHttpContextAccessor accessor;
         private readonly ISessionInfoProvider sessionInfoProvider;
-        private readonly IPlayerInventoryProvider playerInventory;
+        private readonly PlayerInventoryProvider playerInventory;
         private readonly PatreonSettings patreon;
         private readonly HttpClient httpClient;
 
@@ -30,10 +30,10 @@ namespace RavenNest.BusinessLogic.Game
         private List<PatreonTier> fallbackTiers;
 
         public PatreonManager(
-            IGameData gameData,
+            GameData gameData,
             IHttpContextAccessor accessor,
             ISessionInfoProvider sessionInfoProvider,
-            IPlayerInventoryProvider playerInventory)
+            PlayerInventoryProvider playerInventory)
         {
             this.gameData = gameData;
             this.accessor = accessor;

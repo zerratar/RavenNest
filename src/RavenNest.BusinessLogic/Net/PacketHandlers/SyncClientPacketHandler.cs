@@ -5,8 +5,8 @@ namespace RavenNest.BusinessLogic.Net
 {
     internal class SyncClientPacketHandler : IGamePacketHandler
     {
-        private readonly ISessionManager sessionManager;
-        public SyncClientPacketHandler(ISessionManager sessionManager)
+        private readonly SessionManager sessionManager;
+        public SyncClientPacketHandler(SessionManager sessionManager)
         {
             this.sessionManager = sessionManager;
         }

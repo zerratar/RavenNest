@@ -17,10 +17,10 @@ namespace RavenNest.Controllers
 
         public VillageController(
             ILogger<VillageController> logger,
-            IGameData gameData,
+            GameData gameData,
             IAuthManager authManager,
             ISessionInfoProvider sessionInfoProvider,
-            ISessionManager sessionManager,
+            SessionManager sessionManager,
             IVillageManager villageManager,
             ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)

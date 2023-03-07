@@ -19,7 +19,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Version GetClientVersion(this IGameData gameData)
+        public static Version GetClientVersion(this GameData gameData)
         {
             if (gameData.Client == null || !TryParse(gameData.Client.ClientVersion, out var version))
                 return new Version();
@@ -27,27 +27,27 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsExpectedVersion(this DataModels.GameSession session, IGameData gameData)
+        public static bool IsExpectedVersion(this DataModels.GameSession session, GameData gameData)
         {
             return IsExpectedVersion(gameData, session);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsExpectedVersion(this IGameData gameData, DataModels.GameSession session)
+        public static bool IsExpectedVersion(this GameData gameData, DataModels.GameSession session)
         {
             var sessionState = gameData.GetSessionState(session.Id);
             return IsExpectedVersion(gameData, sessionState);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsExpectedVersion(this IGameData gameData, DataModels.SessionState sessionState)
+        public static bool IsExpectedVersion(this GameData gameData, DataModels.SessionState sessionState)
         {
             if (sessionState == null) return false;
             return IsExpectedVersion(gameData, sessionState.ClientVersion);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsExpectedVersion(this IGameData gameData, string versionString)
+        public static bool IsExpectedVersion(this GameData gameData, string versionString)
         {
             if (string.IsNullOrEmpty(versionString))
                 return false;
@@ -59,7 +59,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsExpectedVersion(this IGameData gameData, Version version)
+        public static bool IsExpectedVersion(this GameData gameData, Version version)
         {
             return version >= gameData.GetClientVersion();
         }

@@ -8,11 +8,10 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
-using TwitchLib.Api.Helix.Models.Users.Internal;
 
 namespace RavenNest.BusinessLogic.Data
 {
-    public class GameDataMigration : IGameDataMigration
+    public class GameDataMigration
     {
         private readonly ILogger<GameDataMigration> logger;
         private readonly HashSet<Guid> importedUsers = new HashSet<Guid>();

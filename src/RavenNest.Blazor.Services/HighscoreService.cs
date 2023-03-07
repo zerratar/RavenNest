@@ -10,10 +10,10 @@ namespace RavenNest.Blazor.Services
     public class HighscoreService
     {
         private readonly TimeSpan cacheLifeTime = TimeSpan.FromSeconds(10);
-        private readonly IHighScoreManager highScoreManager;
+        private readonly HighScoreManager highScoreManager;
         private readonly ConcurrentDictionary<CacheKey, CacheItem<HighScoreCollection>> cache
             = new ConcurrentDictionary<CacheKey, CacheItem<HighScoreCollection>>();
-        public HighscoreService(IHighScoreManager highScoreManager)
+        public HighscoreService(HighScoreManager highScoreManager)
         {
             this.highScoreManager = highScoreManager;
         }

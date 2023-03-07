@@ -24,15 +24,15 @@ using Statistics = RavenNest.DataModels.Statistics;
 
 namespace RavenNest.BusinessLogic.Game
 {
-    public class PlayerManager : IPlayerManager
+    public class PlayerManager
     {
         private const int MaxCharacterCount = 3;
         private readonly ILogger logger;
         private readonly IRavenBotApiClient ravenbotApi;
         private readonly IPlayerHighscoreProvider highscoreProvider;
-        private readonly IPlayerInventoryProvider inventoryProvider;
-        private readonly IEnchantmentManager enchantmentManager;
-        private readonly IGameData gameData;
+        private readonly PlayerInventoryProvider inventoryProvider;
+        private readonly EnchantmentManager enchantmentManager;
+        private readonly GameData gameData;
         private readonly IIntegrityChecker integrityChecker;
         private readonly IExtensionWebSocketConnectionProvider extensionWsConnectionProvider;
 
@@ -40,9 +40,9 @@ namespace RavenNest.BusinessLogic.Game
             ILogger<PlayerManager> logger,
             IRavenBotApiClient ravenbotApi,
             IPlayerHighscoreProvider highscoreProvider,
-            IPlayerInventoryProvider inventoryProvider,
-            IEnchantmentManager enchantmentManager,
-            IGameData gameData,
+            PlayerInventoryProvider inventoryProvider,
+            EnchantmentManager enchantmentManager,
+            GameData gameData,
             IIntegrityChecker integrityChecker,
             IExtensionWebSocketConnectionProvider extensionWsConnectionProvider)
         {
@@ -189,6 +189,7 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     result.Player = await CreateUserAndPlayer(session, playerData);
                     result.Success = result.Player != null;
+                    result.IsNewUser = true;
                     if (!result.Success)
                     {
                         internalErrorMessage = "Unable to create a user. " + JSON.Stringify(playerData);
@@ -932,7 +933,6 @@ namespace RavenNest.BusinessLogic.Game
             return chara.Map(gameData, user);
         }
 
-
         public Player GetPlayer(string userId, string identifier)
         {
             if (Guid.TryParse(userId, out var characterId))
@@ -1232,70 +1232,6 @@ namespace RavenNest.BusinessLogic.Game
             return UpdateAppearance(userId, identifier, appearance);
         }
 
-        //public bool[] UpdateMany(SessionToken token, PlayerState[] states)
-        //{
-        //    var results = new List<bool>();
-        //    var gameSession = gameData.GetSession(token.SessionId);
-        //    if (gameSession == null)
-        //    {
-        //        return Enumerable.Range(0, states.Length).Select(x => false).ToArray();
-        //    }
-
-        //    //var sessionPlayers = gameData.GetSessionCharacters(gameSession);
-        //    foreach (var state in states)
-        //    {
-        //        var user = gameData.GetUser(state.UserId);
-        //        if (user == null)
-        //        {
-        //            logger.LogError($"Saving failed for player with userId {state.UserId}, no user was found matching the id.");
-        //            results.Add(false);
-        //            continue;
-        //        }
-
-        //        var character = gameData.GetCharacter(state.CharacterId);//sessionPlayers.FirstOrDefault(x => x.UserId == user.Id);
-        //                                                                 //var character = gameData.GetCharacterByUserId(user.Id);
-        //        if (character == null)
-        //        {
-        //            logger.LogError($"Saving failed for player with userId {state.UserId}, no character was found matching the id in the session.");
-        //            results.Add(false);
-        //            continue;
-        //        }
-
-        //        if (!integrityChecker.VerifyPlayer(gameSession.Id, character.Id, state.SyncTime))
-        //        {
-        //            logger.LogError($"Saving failed for player with userId {state.UserId}, INTEGRITY CHECK!!.");
-        //            results.Add(false);
-        //            continue;
-        //        }
-
-        //        try
-        //        {
-        //            if (state.Experience != null && state.Experience.Length > 0)
-        //            {
-        //                UpdateExperience(token, state.UserId, state.Level, state.Experience, state.CharacterId);
-        //            }
-
-        //            if (state.Statistics != null && state.Statistics.Length > 0)
-        //            {
-        //                UpdateStatistics(token, state.UserId, state.Statistics, state.CharacterId);
-        //            }
-
-        //            EquipBestItems(character);
-
-        //            character.Revision = character.Revision.GetValueOrDefault() + 1;
-
-        //            results.Add(true);
-        //        }
-        //        catch (Exception exc)
-        //        {
-        //            logger.LogError("Failed updating many: " + exc);
-        //            results.Add(false);
-        //        }
-        //    }
-
-        //    return results.ToArray();
-        //}
-
         public ItemEnchantmentResult EnchantItemInstance(SessionToken sessionToken, string userId, Guid inventoryItemId)
         {
             return EnchantItem(sessionToken, userId, inventoryItemId);
@@ -1475,60 +1411,6 @@ namespace RavenNest.BusinessLogic.Game
             result.Status = craftableAmount == amount ? CraftItemResultStatus.Success : CraftItemResultStatus.PartialSuccess;
             result.InventoryItemId = itemStack.Id;
             return result;
-        }
-
-        public AddItemResult CraftItem_Old(SessionToken token, string userId, Guid itemId, int amount = 1)
-        {
-            amount = Math.Min(50_000_000, amount);
-
-            var item = gameData.GetItem(itemId);
-            if (item == null) return AddItemResult.Failed;
-
-            var character = GetCharacter(token, userId);
-            if (character == null) return AddItemResult.Failed;
-
-            if (!integrityChecker.VerifyPlayer(token.SessionId, character.Id, 0))
-                return AddItemResult.Failed;
-
-            var resources = gameData.GetResources(character.ResourcesId);
-            if (resources == null) return AddItemResult.Failed;
-
-            var skills = gameData.GetCharacterSkills(character.SkillsId);
-            if (skills == null) return AddItemResult.Failed;
-
-            var craftingLevel = skills.CraftingLevel;
-            if (!CanCraftItems(item, resources, craftingLevel, amount, out var craftableAmount))
-                return AddItemResult.Failed;
-
-            amount = craftableAmount;
-            if (amount <= 0) return AddItemResult.Failed;
-
-            var craftingRequirements = gameData.GetCraftingRequirements(itemId);
-            var inventory = inventoryProvider.Get(character.Id);
-            foreach (var req in craftingRequirements)
-            {
-                var invItem = inventory.GetUnequippedItem(req.ResourceItemId);
-                if (invItem.IsNull() || invItem.Amount < req.Amount * amount)
-                {
-                    return AddItemResult.Failed;
-                }
-            }
-
-            foreach (var req in craftingRequirements)
-            {
-                var resx = inventory.GetUnequippedItem(req.ResourceItemId);
-                inventory.RemoveItem(resx, req.Amount * amount);
-            }
-
-            resources.Wood -= item.WoodCost * amount;
-            resources.Ore -= item.OreCost * amount;
-
-            for (var i = 0; i < amount; ++i)
-            {
-                AddItem(token, userId, itemId, out _);
-            }
-
-            return AddItemResult.Added;
         }
 
         private static bool CanCraftItems(Item item, Resources resources, int craftingLevel, int amount, out int maxAmount)

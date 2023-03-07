@@ -16,11 +16,11 @@ namespace RavenNest.Blazor.Services
     public class LogoService : RavenNestService
     {
         private readonly IMemoryFileCache fileCache;
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly AppSettings settings;
         public LogoService(
             IOptions<AppSettings> settings,
-            IGameData gameData,
+            GameData gameData,
             IMemoryFileCacheProvider fileCacheProvider,
             IHttpContextAccessor accessor,
             ISessionInfoProvider sessionInfoProvider)

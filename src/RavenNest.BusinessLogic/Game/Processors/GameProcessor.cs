@@ -23,15 +23,15 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private readonly ConcurrentDictionary<string, ITaskProcessor> taskProcessors
             = new ConcurrentDictionary<string, ITaskProcessor>();
 
-        private readonly IGameData gameData;
-        private readonly IGameManager gameManager;
+        private readonly GameData gameData;
+        private readonly GameManager gameManager;
         private readonly IRavenBotApiClient ravenbotApi;
         private readonly IIntegrityChecker integrityChecker;
         private readonly IGameWebSocketConnection gameConnection;
         private readonly IExtensionWebSocketConnectionProvider extensionConnectionProvider;
         private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
-        private readonly ISessionManager sessionManager;
-        private readonly IPlayerInventoryProvider inventoryProvider;
+        private readonly SessionManager sessionManager;
+        private readonly PlayerInventoryProvider inventoryProvider;
         private readonly SessionToken sessionToken;
 
         private readonly TimeSpan ServerTimePushInterval = TimeSpan.FromSeconds(30);
@@ -52,10 +52,10 @@ namespace RavenNest.BusinessLogic.Game.Processors
             IGameWebSocketConnection websocket,
             IExtensionWebSocketConnectionProvider extWsProvider,
             ITcpSocketApiConnectionProvider tcpConnectionProvider,
-            ISessionManager sessionManager,
-            IPlayerInventoryProvider inventoryProvider,
-            IGameData gameData,
-            IGameManager gameManager,
+            SessionManager sessionManager,
+            PlayerInventoryProvider inventoryProvider,
+            GameData gameData,
+            GameManager gameManager,
             SessionToken sessionToken)
         {
             this.gameData = gameData;

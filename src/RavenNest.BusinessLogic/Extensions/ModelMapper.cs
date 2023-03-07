@@ -24,7 +24,7 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RavenNest.Models.GameSession Map(IGameData gameData, DataModels.GameSession data)
+        public static RavenNest.Models.GameSession Map(GameData gameData, DataModels.GameSession data)
         {
             var session = DataMapper.Map<RavenNest.Models.GameSession>(data);
             var user = gameData.GetUser(session.UserId);
@@ -52,7 +52,7 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RavenNest.Models.GameSessionPlayer Map(IGameData gameData, DataModels.Character character)
+        public static RavenNest.Models.GameSessionPlayer Map(GameData gameData, DataModels.Character character)
         {
             var user = gameData.GetUser(character.UserId);
             if (user == null) return null;
@@ -104,7 +104,7 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RavenNest.Models.Clan Map(IGameData gameData, DataModels.Clan data)
+        public static RavenNest.Models.Clan Map(GameData gameData, DataModels.Clan data)
         {
             if (data == null) return null;
             var user = gameData.GetUser(data.UserId);
@@ -185,7 +185,7 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RavenNest.Models.Item Map(IGameData gameData, Item item)
+        public static RavenNest.Models.Item Map(GameData gameData, Item item)
         {
             if (item == null) return null;
             var mapped = DataMapper.Map<RavenNest.Models.Item>(item);
@@ -234,19 +234,19 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Player Map(this Character character, IGameData gameData, User user, bool rejoin = false, bool isSessionPlayer = false)
+        public static Player Map(this Character character, GameData gameData, User user, bool rejoin = false, bool isSessionPlayer = false)
         {
             return user.Map(gameData, character, rejoin, isSessionPlayer);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static WebsitePlayer MapForWebsite(this Character character, IGameData gameData, User user)
+        public static WebsitePlayer MapForWebsite(this Character character, GameData gameData, User user)
         {
             return user.MapForWebsite(gameData, character);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static HighscorePlayer MapForHighscore(this Character character, IGameData gameData)
+        public static HighscorePlayer MapForHighscore(this Character character, GameData gameData)
         {
             var user = gameData.GetUser(character.UserId);
             if (user == null
@@ -275,7 +275,7 @@ namespace RavenNest.BusinessLogic.Extensions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Player Map(
             this User user,
-            IGameData gameData,
+            GameData gameData,
             Character character,
             bool rejoin = false,
             bool inGame = false)
@@ -338,7 +338,7 @@ namespace RavenNest.BusinessLogic.Extensions
             };
         }
 
-        private static (IReadOnlyList<BattlePet>, Guid?) MapBattlePets(this Character character, IGameData gameData)
+        private static (IReadOnlyList<BattlePet>, Guid?) MapBattlePets(this Character character, GameData gameData)
         {
             Guid? activeBattlePet = null;
             var pets = gameData.GetPets(character.Id);
@@ -355,7 +355,7 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static WebsiteAdminPlayer MapForAdmin(this User user, IGameData gameData, Character character)
+        public static WebsiteAdminPlayer MapForAdmin(this User user, GameData gameData, Character character)
         {
             var sessionName = "";
             if (character.UserIdLock != null)
@@ -402,7 +402,7 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static WebsitePlayer MapForWebsite(this User user, IGameData gameData, Character character)
+        public static WebsitePlayer MapForWebsite(this User user, GameData gameData, Character character)
         {
             var items = gameData.GetAllPlayerItems(character.Id)
                 //.OrderByDescending(x => gameData.GetItem(x.ItemId)?.ShopSellPrice)
@@ -443,7 +443,7 @@ namespace RavenNest.BusinessLogic.Extensions
             };
         }
 
-        private static CharacterSessionInfo GetCharacterSessionInfo(IGameData gameData, Character character)
+        private static CharacterSessionInfo GetCharacterSessionInfo(GameData gameData, Character character)
         {
             var sessionInfo = new CharacterSessionInfo();
             var session = gameData.GetSessionByCharacterId(character.Id);

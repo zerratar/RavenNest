@@ -3,13 +3,13 @@ using RavenNest.Models;
 
 namespace RavenNest.BusinessLogic.Game
 {
-    public class HighScoreManager : IHighScoreManager
+    public class HighScoreManager
     {
         private readonly IPlayerHighscoreProvider highscoreProvider;
-        private readonly IPlayerManager playerManager;
+        private readonly PlayerManager playerManager;
 
         public HighScoreManager(
-            IPlayerHighscoreProvider highscoreProvider, IPlayerManager playerManager)
+            IPlayerHighscoreProvider highscoreProvider, PlayerManager playerManager)
         {
             this.highscoreProvider = highscoreProvider;
             this.playerManager = playerManager;

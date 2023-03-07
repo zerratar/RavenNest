@@ -7,11 +7,11 @@ namespace RavenNest.BusinessLogic.Net
     internal class UpdateCharacterExperiencePacketHandler : IGamePacketHandler
     {
         private readonly ILogger logger;
-        private readonly IPlayerManager playerManager;
+        private readonly PlayerManager playerManager;
 
         //private ConcurrentDictionary<>
 
-        public UpdateCharacterExperiencePacketHandler(ILogger logger, IPlayerManager playerManager)
+        public UpdateCharacterExperiencePacketHandler(ILogger logger, PlayerManager playerManager)
         {
             this.logger = logger;
             this.playerManager = playerManager;

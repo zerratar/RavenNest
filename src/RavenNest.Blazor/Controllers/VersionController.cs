@@ -15,11 +15,11 @@ namespace RavenNest.Controllers
     public class VersionController : ControllerBase
     {
         private readonly IWebHostEnvironment env;
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
 
         public VersionController(
             IWebHostEnvironment env,
-            IGameData gameData)
+            GameData gameData)
         {
             this.env = env;
             this.gameData = gameData;

@@ -20,14 +20,14 @@ namespace RavenNest.BusinessLogic.Net
         private readonly ILogger logger;
         private readonly IRavenBotApiClient ravenBotApi;
         private readonly IIntegrityChecker integrityChecker;
-        private readonly IPlayerInventoryProvider inventoryProvider;
+        private readonly PlayerInventoryProvider inventoryProvider;
         private readonly IExtensionWebSocketConnectionProvider extWsProvider;
         private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
-        private readonly IGameData gameData;
-        private readonly IGameManager gameManager;
+        private readonly GameData gameData;
+        private readonly GameManager gameManager;
         private readonly IGamePacketManager packetManager;
         private readonly IGamePacketSerializer packetSerializer;
-        private readonly ISessionManager sessionManager;
+        private readonly SessionManager sessionManager;
 
         private readonly ConcurrentDictionary<Guid, IGameWebSocketConnection> socketSessions
             = new ConcurrentDictionary<Guid, IGameWebSocketConnection>();
@@ -36,14 +36,14 @@ namespace RavenNest.BusinessLogic.Net
             ILogger<GameWebSocketConnectionProvider> logger,
             IRavenBotApiClient ravenBotApi,
             IIntegrityChecker integrityChecker,
-            IPlayerInventoryProvider inventoryProvider,
+            PlayerInventoryProvider inventoryProvider,
             IExtensionWebSocketConnectionProvider extWsProvider,
             ITcpSocketApiConnectionProvider tcpConnectionProvider,
-            IGameData gameData,
-            IGameManager gameManager,
+            GameData gameData,
+            GameManager gameManager,
             IGamePacketManager packetManager,
             IGamePacketSerializer packetSerializer,
-            ISessionManager sessionManager)
+            SessionManager sessionManager)
         {
             this.logger = logger;
             this.ravenBotApi = ravenBotApi;
@@ -140,7 +140,7 @@ namespace RavenNest.BusinessLogic.Net
             private readonly IGameProcessor gameProcessor;
             private readonly IGamePacketManager packetManager;
             private readonly IGamePacketSerializer packetSerializer;
-            private readonly ISessionManager sessionManager;
+            private readonly SessionManager sessionManager;
             private readonly GameWebSocketConnectionProvider sessionProvider;
 
             private readonly WebSocket ws;
@@ -163,12 +163,12 @@ namespace RavenNest.BusinessLogic.Net
                 ILogger logger,
                 IRavenBotApiClient ravenBotApi,
                 IIntegrityChecker integrityChecker,
-                IPlayerInventoryProvider inventoryProvider,
-                IGameData gameData,
-                IGameManager gameManager,
+                PlayerInventoryProvider inventoryProvider,
+                GameData gameData,
+                GameManager gameManager,
                 IGamePacketManager packetManager,
                 IGamePacketSerializer packetSerializer,
-                ISessionManager sessionManager,
+                SessionManager sessionManager,
                 IExtensionWebSocketConnectionProvider extWsProvider,
                 ITcpSocketApiConnectionProvider tcpConnectionProvider,
                 GameWebSocketConnectionProvider sessionProvider,

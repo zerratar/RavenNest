@@ -12,12 +12,12 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class AuthManager : IAuthManager
     {
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly ILogger logger;
         private readonly ISecureHasher secureHash;
 
         public AuthManager(
-            IGameData gameData,
+            GameData gameData,
             ILogger<AuthManager> logger,
             ISecureHasher secureHash)
         {

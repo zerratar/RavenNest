@@ -8,9 +8,9 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class NotificationManager : INotificationManager
     {
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
 
-        public NotificationManager(IGameData gameData)
+        public NotificationManager(GameData gameData)
         {
             this.gameData = gameData;
         }

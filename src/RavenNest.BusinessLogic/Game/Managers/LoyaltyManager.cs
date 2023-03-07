@@ -7,13 +7,13 @@ namespace RavenNest.BusinessLogic.Game
     public class LoyaltyManager : ILoyaltyManager
     {
         private readonly ILogger logger;
-        private readonly IPlayerInventoryProvider inventoryProvider;
-        private readonly IGameData gameData;
+        private readonly PlayerInventoryProvider inventoryProvider;
+        private readonly GameData gameData;
 
         public LoyaltyManager(
             ILogger<LoyaltyManager> logger,
-            IPlayerInventoryProvider inventoryProvider,
-            IGameData gameData)
+            PlayerInventoryProvider inventoryProvider,
+            GameData gameData)
         {
             this.logger = logger;
             this.inventoryProvider = inventoryProvider;

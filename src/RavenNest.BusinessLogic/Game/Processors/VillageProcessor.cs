@@ -15,8 +15,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
         public override void Process(
             IIntegrityChecker integrityChecker,
-            IGameData gameData,
-            IPlayerInventoryProvider inventoryProvider,
+            GameData gameData,
+            PlayerInventoryProvider inventoryProvider,
             DataModels.GameSession session,
             Character character,
             CharacterState state)

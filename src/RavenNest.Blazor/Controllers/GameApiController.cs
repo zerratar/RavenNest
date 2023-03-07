@@ -13,19 +13,19 @@ namespace RavenNest.Controllers
     public class GameApiController : ControllerBase
     {
         protected string SessionId => HttpContext.GetSessionId();
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly IAuthManager authManager;
         private readonly ISessionInfoProvider sessionInfoProvider;
-        private readonly ISessionManager sessionManager;
+        private readonly SessionManager sessionManager;
         private readonly ISecureHasher secureHasher;
         private readonly ILogger logger;
 
         public GameApiController(
             ILogger logger,
-            IGameData gameData,
+            GameData gameData,
             IAuthManager authManager,
             ISessionInfoProvider sessionInfoProvider,
-            ISessionManager sessionManager,
+            SessionManager sessionManager,
             ISecureHasher secureHasher)
         {
             this.logger = logger;

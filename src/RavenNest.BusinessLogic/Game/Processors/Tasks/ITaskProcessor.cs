@@ -10,8 +10,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     {
         void Process(
             IIntegrityChecker integrityChecker,
-            IGameData gameData,
-            IPlayerInventoryProvider inventoryProvider,
+            GameData gameData,
+            PlayerInventoryProvider inventoryProvider,
             GameSession session,
             Character character,
             CharacterState state);

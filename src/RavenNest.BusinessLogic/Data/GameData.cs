@@ -15,7 +15,7 @@ using RavenNest.DataModels;
 
 namespace RavenNest.BusinessLogic.Data
 {
-    public class GameData : IGameData
+    public class GameData
     {
         #region Settings
         private const int BackupInterval = 60 * 60 * 1000; // once per hour
@@ -58,6 +58,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<CharacterClanMembership> clanMemberships;
 
         private readonly EntitySet<UserPatreon> patreons;
+        private readonly EntitySet<UserAccess> userAccess;
         private readonly EntitySet<CharacterSessionActivity> characterSessionActivities;
         private readonly EntitySet<Appearance> appearances;
         private readonly EntitySet<SyntyAppearance> syntyAppearances;
@@ -98,7 +99,7 @@ namespace RavenNest.BusinessLogic.Data
 
 
         private readonly IEntitySet[] entitySets;
-        private readonly IGameDataBackupProvider backupProvider;
+        private readonly GameDataBackupProvider backupProvider;
         private ITimeoutHandle scheduleHandler;
         private ITimeoutHandle backupHandler;
 
@@ -117,8 +118,8 @@ namespace RavenNest.BusinessLogic.Data
 
 
         public GameData(
-            IGameDataBackupProvider backupProvider,
-            IGameDataMigration dataMigration,
+            GameDataBackupProvider backupProvider,
+            GameDataMigration dataMigration,
             IRavenfallDbContextProvider db,
             ILogger<GameData> logger,
             IKernel kernel,
@@ -165,6 +166,7 @@ namespace RavenNest.BusinessLogic.Data
                         //typeof(UserNotification),
                         typeof(MarketItemTransaction),
                         //typeof(VendorTransaction),
+                        typeof(UserAccess),
                         typeof(GameSession),
                         typeof(Village),
                         typeof(VillageHouse),
@@ -213,6 +215,9 @@ namespace RavenNest.BusinessLogic.Data
 
                     loyaltyRewards = new EntitySet<UserLoyaltyReward>(ctx.UserLoyaltyReward.ToList());
                     //loyaltyRewards.RegisterLookupGroup(nameof(UserLoyaltyRank), x => x.RankId);
+
+                    userAccess = new EntitySet<UserAccess>(restorePoint?.Get<UserAccess>() ?? ctx.UserAccess.ToList());
+                    userAccess.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     claimedLoyaltyRewards = new EntitySet<UserClaimedLoyaltyReward>(restorePoint?.Get<UserClaimedLoyaltyReward>() ?? ctx.UserClaimedLoyaltyReward.ToList());
                     claimedLoyaltyRewards.RegisterLookupGroup(nameof(User), x => x.UserId);
@@ -367,6 +372,7 @@ namespace RavenNest.BusinessLogic.Data
                         patreonSettings,
                         resourceItemDrops,
                         gameClients,
+                        userAccess,
                         items, // so we can update items
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems, marketTransactions,
                         resources, statistics, characterSkills, clanSkills, users, villages, villageHouses,
@@ -377,6 +383,8 @@ namespace RavenNest.BusinessLogic.Data
                 #endregion
 
                 #region Post Data Load - Transformations
+
+                MigrateTwitchUserAccess();
 
                 EnsureCharacterSkillRecords();
                 EnsureMagicAttributes();
@@ -417,6 +425,27 @@ namespace RavenNest.BusinessLogic.Data
                 System.IO.File.WriteAllText("ravenfall-error.log", "[" + DateTime.UtcNow + "] " + exc.ToString());
             }
 
+        }
+
+        private void MigrateTwitchUserAccess()
+        {
+            foreach (var user in users.Entities)
+            {
+                UserAccess tua = GetUserAccess(user.Id, "twitch");
+                if (tua == null && !string.IsNullOrEmpty(user.UserId))
+                {
+                    var now = DateTime.UtcNow;
+                    tua = new UserAccess();
+                    tua.Id = Guid.NewGuid();
+                    tua.UserId = user.Id;
+                    tua.Platform = "Twitch";
+                    tua.PlatformId = user.UserId;
+                    tua.PlatformUsername = user.UserName;
+                    tua.Updated = now;
+                    tua.Created = now;
+                    Add(tua);
+                }
+            }
         }
 
         private void RewardRollbackPlayers()
@@ -1626,6 +1655,8 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Add Methods
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(UserAccess item) => Update(() => userAccess.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(CharacterClanSkillCooldown item) => Update(() => characterClanSkillCooldown.Add(item));
@@ -2181,7 +2212,7 @@ namespace RavenNest.BusinessLogic.Data
         public int GetMarketItemCount() => marketItems.Entities.Count;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int GetMarketItemCount(ItemFilter filter) => 
+        public int GetMarketItemCount(ItemFilter filter) =>
             marketItems.Entities.Where(x => Filter(filter, x)).Count();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2324,6 +2355,10 @@ namespace RavenNest.BusinessLogic.Data
         public IReadOnlyList<GameEvent> GetUserEvents(Guid userId) => gameEvents[nameof(User), userId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public UserAccess GetUserAccess(Guid userId, string platform) =>
+            userAccess[nameof(User), userId].FirstOrDefault(x => x.Platform.Equals(platform, StringComparison.OrdinalIgnoreCase));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public User GetUser(Guid userId) => users[userId];
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Pet GetActivePet(Guid characterId) => pets[nameof(Character), characterId].FirstOrDefault(x => x.Active);
@@ -2335,14 +2370,28 @@ namespace RavenNest.BusinessLogic.Data
         public Pet GetPet(Guid id) => pets[id];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public User GetUserByTwitchId(string twitchUserId)
+        public User GetUserByTwitchId(string userId)
         {
-            twitchUserId = twitchUserId?.ToLower()?.Trim();
-            if (string.IsNullOrEmpty(twitchUserId)) return null;
-            return users.Entities.FirstOrDefault(x => x != null && x.UserId != null
-                && x.UserId.Equals(twitchUserId, StringComparison.OrdinalIgnoreCase));
+            return GetUser(userId, "twitch");
         }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public User GetUser(string platformId, string platform)
+        {
+            platformId = platformId?.ToLower()?.Trim();
+            if (string.IsNullOrEmpty(platformId)) return null;
 
+            var access = userAccess.Entities.FirstOrDefault(x =>
+                x.Platform.Equals(platform, StringComparison.OrdinalIgnoreCase) &&
+                x.PlatformId.Equals(platformId, StringComparison.OrdinalIgnoreCase));
+
+
+            if (access != null)
+            {
+                return GetUser(access.UserId);
+            }
+
+            return null;
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public User GetUserByUsername(string username)
         {
@@ -2642,6 +2691,8 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(ItemCraftingRequirement entity) => itemCraftingRequirements.Remove(entity);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(UserAccess item) => userAccess.Remove(item);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(User user) => users.Remove(user);
 

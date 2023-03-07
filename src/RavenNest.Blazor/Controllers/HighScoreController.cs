@@ -12,11 +12,11 @@ namespace RavenNest.Controllers
     public class HighScoreController : ControllerBase
     {
         //private readonly TelemetryClient telemetryClient;
-        private readonly IHighScoreManager highScoreManager;
+        private readonly HighScoreManager highScoreManager;
 
         public HighScoreController(
             //TelemetryClient telemetryClient,
-            IHighScoreManager highScoreManager)
+            HighScoreManager highScoreManager)
         {
             //this.telemetryClient = telemetryClient;
             this.highScoreManager = highScoreManager;

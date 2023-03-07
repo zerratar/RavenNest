@@ -9,8 +9,8 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class VillageManager : IVillageManager
     {
-        private readonly IGameData gameData;
-        public VillageManager(IGameData gameData)
+        private readonly GameData gameData;
+        public VillageManager(GameData gameData)
         {
             this.gameData = gameData;
         }

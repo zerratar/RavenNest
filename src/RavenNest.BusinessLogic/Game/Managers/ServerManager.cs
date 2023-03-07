@@ -13,8 +13,8 @@ namespace RavenNest.BusinessLogic.Game
         public const int ExpMultiplierLastTimeMinutes = 50;
         public const int ExpMultiplierMinutesPerScroll = 5;
 
-        private readonly IGameData gameData;
-        public ServerManager(IGameData gameData)
+        private readonly GameData gameData;
+        public ServerManager(GameData gameData)
         {
             this.gameData = gameData;
         }

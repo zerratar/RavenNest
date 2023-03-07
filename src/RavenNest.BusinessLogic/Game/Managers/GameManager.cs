@@ -8,12 +8,12 @@ using System.Linq;
 
 namespace RavenNest.BusinessLogic.Game
 {
-    public class GameManager : IGameManager
+    public class GameManager
     {
         private readonly IServerManager serverManager;
-        private readonly ISessionManager sessionManager;
-        private readonly IPlayerInventoryProvider inventoryProvider;
-        private readonly IGameData gameData;
+        private readonly SessionManager sessionManager;
+        private readonly PlayerInventoryProvider inventoryProvider;
+        private readonly GameData gameData;
 
         private Guid expScrollId;
         private Guid dungeonScrollId;
@@ -21,9 +21,9 @@ namespace RavenNest.BusinessLogic.Game
 
         public GameManager(
             IServerManager serverManager,
-            ISessionManager sessionManager,
-            IPlayerInventoryProvider inventoryProvider,
-            IGameData gameData)
+            SessionManager sessionManager,
+            PlayerInventoryProvider inventoryProvider,
+            GameData gameData)
         {
             this.serverManager = serverManager;
             this.sessionManager = sessionManager;

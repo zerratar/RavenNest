@@ -15,18 +15,18 @@ namespace RavenNest.Controllers
     public class MarketplaceController : GameApiController
     {
         private readonly IAuthManager authManager;
-        private readonly ISessionManager sessionManager;
+        private readonly SessionManager sessionManager;
         private readonly ISessionInfoProvider sessionInfoProvider;
-        private readonly IMarketplaceManager marketplace;
+        private readonly MarketplaceManager marketplace;
 
         public MarketplaceController(
             ILogger<MarketplaceController> logger,
-            IGameData gameData,
+            GameData gameData,
             IAuthManager authManager,
-            ISessionManager sessionManager,
+            SessionManager sessionManager,
             ISessionInfoProvider sessionInfoProvider,
-            IMarketplaceManager marketplace,
-            ISecureHasher secureHasher) 
+            MarketplaceManager marketplace,
+            ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
             this.authManager = authManager;
@@ -46,6 +46,7 @@ namespace RavenNest.Controllers
         {
             return this.marketplace.GetItems(offset, size);
         }
+
         [ApiExplorerSettings(IgnoreApi = true)]
 
         [HttpGet("{userId}/sell/{itemId}/{amount}/{pricePerItem}")]
@@ -55,15 +56,27 @@ namespace RavenNest.Controllers
             RequiresSession = true,
             RequiresAuth = false)
         ]
-        public ItemSellResult SellItem(
-            string userId,
-            Guid itemId,
-            long amount,
-            double pricePerItem)
+        public ItemSellResult SellItem(string userId, Guid itemId, long amount, double pricePerItem)
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
-            return this.marketplace.SellItem(session, userId, itemId, amount, pricePerItem);
+            return this.marketplace.SellItem(session, userId, "twitch", itemId, amount, pricePerItem);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+
+        [HttpGet("{platform}/{userId}/sell/{itemId}/{amount}/{pricePerItem}")]
+        [MethodDescriptor(
+            Name = "Sell items on the marketplace",
+            Description = "Adds one or more item(s) on the marketplace listing for sale. This will remove the item(s) from the players inventory.",
+            RequiresSession = true,
+            RequiresAuth = false)
+        ]
+        public ItemSellResult SellItem(string userId, string platform, Guid itemId, long amount, double pricePerItem)
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            return this.marketplace.SellItem(session, userId, platform, itemId, amount, pricePerItem);
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -74,15 +87,25 @@ namespace RavenNest.Controllers
             RequiresSession = true,
             RequiresAuth = false)
         ]
-        public ItemBuyResult BuyItem(
-            string userId,
-            Guid itemId,
-            long amount,
-            double maxPricePerItem)
+        public ItemBuyResult BuyItem(string userId, Guid itemId, long amount, double maxPricePerItem)
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
-            return this.marketplace.BuyItem(session, userId, itemId, amount, maxPricePerItem);
+            return this.marketplace.BuyItem(session, userId, "twitch", itemId, amount, maxPricePerItem);
+        }
+
+        [HttpGet("{platform}/{userId}/buy/{itemId}/{amount}/{maxPricePerItem}")]
+        [MethodDescriptor(
+          Name = "Buy items on the marketplace",
+          Description = "Buy the target item(s) with the cheapest price per item, this price cannot exceed the requested max price per item. The bought item(s) will be equipped automatically if they are better than the currently equipped item of same type.",
+          RequiresSession = true,
+          RequiresAuth = false)
+      ]
+        public ItemBuyResult BuyItem(string userId, string platform, Guid itemId, long amount, double maxPricePerItem)
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            return this.marketplace.BuyItem(session, userId, platform, itemId, amount, maxPricePerItem);
         }
     }
 }

@@ -5,7 +5,7 @@ namespace RavenNest.BusinessLogic.Net
 {
     public interface ITcpSocketApi : IDisposable
     {
-        IGameData GameData { get; }
+        GameData GameData { get; }
         void Start();
     }
 }

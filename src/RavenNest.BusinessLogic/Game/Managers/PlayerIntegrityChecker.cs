@@ -7,12 +7,12 @@ namespace RavenNest.BusinessLogic.Game
     public class PlayerIntegrityChecker : IIntegrityChecker
     {
         private readonly ILogger logger;
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private const float MaxSyncTimeDeltaSeconds = 15f;
 
         public PlayerIntegrityChecker(
             ILogger<PlayerIntegrityChecker> logger,
-            IGameData gameData)
+            GameData gameData)
         {
             this.logger = logger;
             this.gameData = gameData;

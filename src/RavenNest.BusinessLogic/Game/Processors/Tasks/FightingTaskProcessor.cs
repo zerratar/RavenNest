@@ -14,8 +14,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public ITcpSocketApiConnectionProvider TcpConnectionProvider { get; private set; }
         public void Process(
             IIntegrityChecker integrityChecker,
-            IGameData gameData,
-            IPlayerInventoryProvider inventoryProvider,
+            GameData gameData,
+            PlayerInventoryProvider inventoryProvider,
             GameSession session,
             Character character,
             CharacterState state)

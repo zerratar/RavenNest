@@ -24,11 +24,11 @@ namespace RavenNest.BusinessLogic.Net
         private readonly IOptions<AppSettings> settings;
         private readonly ILogger<TcpSocketApi> logger;
         private readonly ITcpSocketApiConnectionProvider connectionProvider;
-        private readonly IPlayerManager playerManager;
-        private readonly IGameData gameData;
+        private readonly PlayerManager playerManager;
+        private readonly GameData gameData;
         private readonly IGamePacketManager packetManager;
         private readonly IGamePacketSerializer packetSerializer;
-        private readonly ISessionManager sessionManager;
+        private readonly SessionManager sessionManager;
         private Thread serverThread;
 
         private int serverPort = DefaultServerPort;
@@ -40,17 +40,17 @@ namespace RavenNest.BusinessLogic.Net
         static long dataReceived = 0;
 
         private readonly object clientMutex = new object();
-        public IGameData GameData => gameData;
+        public GameData GameData => gameData;
 
         public TcpSocketApi(
             IOptions<AppSettings> settings,
             ILogger<TcpSocketApi> logger,
             ITcpSocketApiConnectionProvider connectionProvider,
-            IPlayerManager playerManager,
-            IGameData gameData,
+            PlayerManager playerManager,
+            GameData gameData,
             IGamePacketManager packetManager,
             IGamePacketSerializer packetSerializer,
-            ISessionManager sessionManager)
+            SessionManager sessionManager)
         {
             this.settings = settings;
             this.logger = logger;

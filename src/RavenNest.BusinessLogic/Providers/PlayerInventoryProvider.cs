@@ -4,16 +4,16 @@ using RavenNest.BusinessLogic.Providers;
 using System;
 using System.Collections.Concurrent;
 
-public class PlayerInventoryProvider : IPlayerInventoryProvider
+public class PlayerInventoryProvider
 {
     private readonly ILogger<PlayerInventoryProvider> logger;
-    private readonly IGameData gameData;
+    private readonly GameData gameData;
     private readonly ConcurrentDictionary<Guid, PlayerInventory> inventories
         = new ConcurrentDictionary<Guid, PlayerInventory>();
 
     public PlayerInventoryProvider(
         ILogger<PlayerInventoryProvider> logger,
-        IGameData gameData)
+        GameData gameData)
     {
         this.logger = logger;
         this.gameData = gameData;

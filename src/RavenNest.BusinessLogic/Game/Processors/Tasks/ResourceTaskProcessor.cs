@@ -46,8 +46,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
         protected void UpdateResourceGain(
             IIntegrityChecker integrityChecker,
-            IGameData gameData,
-            IPlayerInventoryProvider inventoryProvider,
+            GameData gameData,
+            PlayerInventoryProvider inventoryProvider,
             DataModels.GameSession session,
             Character character,
             Action<DataModels.Resources> onUpdate)
@@ -84,7 +84,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             }
         }
 
-        protected DataModels.Resources GetVillageResources(IGameData gameData, DataModels.GameSession session)
+        protected DataModels.Resources GetVillageResources(GameData gameData, DataModels.GameSession session)
         {
             DataModels.Resources resx = null;
             var village = gameData.GetVillageBySession(session);
@@ -96,7 +96,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         }
 
         protected void UpdateResources(
-            IGameData gameData,
+            GameData gameData,
             DataModels.GameSession session,
             Character character,
             DataModels.Resources resources)

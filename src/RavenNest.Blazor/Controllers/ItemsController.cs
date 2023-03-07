@@ -15,13 +15,13 @@ namespace RavenNest.Controllers
     [ApiDescriptor(Name = "Items API", Description = "Used for managing the items database.")]
     public class ItemsController : ControllerBase
     {
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly IItemManager itemManager;
         private readonly IAuthManager authManager;
 
         public ItemsController(
-            IGameData gameData,
+            GameData gameData,
             ISessionInfoProvider sessionInfoProvider,
             IItemManager itemManager,
             IAuthManager authManager)

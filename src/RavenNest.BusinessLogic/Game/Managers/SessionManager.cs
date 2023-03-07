@@ -12,12 +12,12 @@ using RavenNest.Sessions;
 
 namespace RavenNest.BusinessLogic.Game
 {
-    public class SessionManager : ISessionManager
+    public class SessionManager
     {
         private readonly ILogger<SessionManager> logger;
         private readonly ITwitchClient twitchClient;
-        private readonly IGameData gameData;
-        private readonly IPlayerManager playerManager;
+        private readonly GameData gameData;
+        private readonly PlayerManager playerManager;
         private readonly IVillageManager villageManager;
         private readonly IExtensionWebSocketConnectionProvider extWsConnectionProvider;
         private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
@@ -31,8 +31,8 @@ namespace RavenNest.BusinessLogic.Game
         public SessionManager(
             ILogger<SessionManager> logger,
             ITwitchClient twitchClient,
-            IGameData gameData,
-            IPlayerManager playerManager,
+            GameData gameData,
+            PlayerManager playerManager,
             IVillageManager villageManager,
             IExtensionWebSocketConnectionProvider extWsConnectionProvider,
             ITcpSocketApiConnectionProvider tcpConnectionProvider)

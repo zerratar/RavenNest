@@ -11,23 +11,23 @@ namespace RavenNest.Controllers
     [ApiController]
     public class OpenAIController : GameApiController
     {
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly IAuthManager authManager;
         private readonly ISessionInfoProvider sessionInfoProvider;
-        private readonly ISessionManager sessionManager;
-        private readonly IGameManager gameManager;
-        private readonly IClanManager clanManager;
+        private readonly SessionManager sessionManager;
+        private readonly GameManager gameManager;
+        private readonly ClanManager clanManager;
         private readonly ISecureHasher secureHasher;
         private readonly ILogger<OpenAIController> logger;
 
         public OpenAIController(
             ILogger<OpenAIController> logger,
-            IGameData gameData,
+            GameData gameData,
             IAuthManager authManager,
             ISessionInfoProvider sessionInfoProvider,
-            ISessionManager sessionManager,
-            IGameManager gameManager,
-            IClanManager clanManager,
+            SessionManager sessionManager,
+            GameManager gameManager,
+            ClanManager clanManager,
             ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {

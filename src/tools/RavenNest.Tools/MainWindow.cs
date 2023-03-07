@@ -9,7 +9,6 @@ namespace RavenNest.Tools
     {
         private readonly AdjustPlayerExperienceAction expAdjuster;
         private readonly BuildUpdatePackageAction buildUpdatePackage;
-        private readonly PatreonSynchronizationAction patreonSync;
         private readonly PlayerSkillRollback skillRollbackv0788;
 
         public MainWindow()
@@ -17,7 +16,6 @@ namespace RavenNest.Tools
             InitializeComponents();
             expAdjuster = new AdjustPlayerExperienceAction(ToolProgress, ToolStatus);
             buildUpdatePackage = new BuildUpdatePackageAction(ToolProgress, ToolStatus);
-            patreonSync = new PatreonSynchronizationAction(ToolProgress, ToolStatus);
             skillRollbackv0788 = new PlayerSkillRollback(ToolProgress, ToolStatus, @"C:\Ravenfall\pre0.7.8.9-restorepoint\", @"C:\Ravenfall\pre0.7.8.9\");
         }
 
@@ -29,11 +27,6 @@ namespace RavenNest.Tools
         private void ExpBump_Invoke(object sender, EventArgs e)
         {
             expAdjuster.Apply();
-        }
-
-        private void PatreonSync_Invoke(object sender, EventArgs e)
-        {
-            patreonSync.Apply();
         }
 
         private void SkillRollbackv0788_Invoke(object sender, EventArgs e)
@@ -66,10 +59,6 @@ namespace RavenNest.Tools
             if (key.Key == ConsoleKey.F2)
             {
                 buildUpdatePackage.Apply();
-            }
-            if (key.Key == ConsoleKey.F3)
-            {
-                patreonSync.Apply();
             }
             if (key.Key == ConsoleKey.F4)
             {

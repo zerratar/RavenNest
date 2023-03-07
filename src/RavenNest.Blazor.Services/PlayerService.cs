@@ -14,12 +14,12 @@ namespace RavenNest.Blazor.Services
 {
     public class PlayerService : RavenNestService
     {
-        private readonly IGameData gameData;
-        private readonly IPlayerManager playerManager;
+        private readonly GameData gameData;
+        private readonly PlayerManager playerManager;
 
         public PlayerService(
-            IGameData gameData,
-            IPlayerManager playerManager,
+            GameData gameData,
+            PlayerManager playerManager,
             IHttpContextAccessor accessor,
             ISessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)

@@ -14,13 +14,13 @@ namespace RavenNest.BusinessLogic.Providers
     {
         private readonly Guid characterId;
         private readonly ILogger logger;
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly object mutex = new object();
         private InventoryItemCollection items;
 
         private static readonly TimeSpan PatreonRewardFrequency = TimeSpan.FromDays(1);
         private static readonly Random random = new Random();
-        public PlayerInventory(ILogger logger, IGameData gameData, Guid characterId)
+        public PlayerInventory(ILogger logger, GameData gameData, Guid characterId)
         {
             this.logger = logger;
             this.gameData = gameData;
@@ -1264,7 +1264,7 @@ namespace RavenNest.BusinessLogic.Providers
 
     public static class InventoryItemExtensions
     {
-        public static ReadOnlyInventoryItem AsReadOnly(this InventoryItem item, IGameData gameData)
+        public static ReadOnlyInventoryItem AsReadOnly(this InventoryItem item, GameData gameData)
         {
             if (item == null) return default;
             return ReadOnlyInventoryItem.Create(gameData, item);
@@ -1323,7 +1323,7 @@ namespace RavenNest.BusinessLogic.Providers
             Soulbound = soulbound;
         }
 
-        public static ReadOnlyInventoryItem Create(IGameData gameData, InventoryItem item)
+        public static ReadOnlyInventoryItem Create(GameData gameData, InventoryItem item)
         {
             var i = gameData.GetItem(item.ItemId);
             if (i == null)

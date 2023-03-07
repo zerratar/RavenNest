@@ -18,7 +18,6 @@
     <ProjectReference Include="..\..\..\GameDataSimulation\GameDataSimulation.csproj" />
     <ProjectReference Include="..\..\RavenNest.BusinessLogic\RavenNest.BusinessLogic.csproj" />
     <ProjectReference Include="..\..\RavenNest.DataModels\RavenNest.DataModels.csproj" />
-    <ProjectReference Include="..\..\RavenNest.PatreonAPI\RavenNest.PatreonAPI.csproj" />
   </ItemGroup>
 
   <ItemGroup>

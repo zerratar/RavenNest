@@ -34,9 +34,9 @@ namespace RavenNest.Blazor.Services
         private readonly ILogger<AuthService> logger;
         private readonly IRavenBotApiClient ravenbotApi;
         private readonly IPatreonManager patreonManager;
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly IAuthManager authManager;
-        private readonly IPlayerManager playerManager;
+        private readonly PlayerManager playerManager;
         private readonly LogoService logoService;
         private PatreonSettings patreon;
 
@@ -45,9 +45,9 @@ namespace RavenNest.Blazor.Services
             ILogger<AuthService> logger,
             IRavenBotApiClient ravenbotApi,
             IPatreonManager patreonManager,
-            IGameData gameData,
+            GameData gameData,
             IAuthManager authManager,
-            IPlayerManager playerManager,
+            PlayerManager playerManager,
             IHttpContextAccessor accessor,
             ISessionInfoProvider sessionInfoProvider,
             LogoService logoService)

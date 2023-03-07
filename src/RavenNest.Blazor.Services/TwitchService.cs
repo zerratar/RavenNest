@@ -7,9 +7,9 @@ namespace RavenNest.Blazor.Services
 {
     public class TwitchService
     {
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
 
-        public TwitchService(IGameData gameData)
+        public TwitchService(GameData gameData)
         {
             this.gameData = gameData;
         }

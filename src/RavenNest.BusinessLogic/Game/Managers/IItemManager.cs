@@ -23,11 +23,11 @@ namespace RavenNest.BusinessLogic.Game
         private const double ItemCacheDurationSeconds = 10 * 60;
         private readonly IMemoryCache memoryCache;
 
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
 
         public ItemManager(
             IMemoryCache memoryCache,
-            IGameData gameData)
+            GameData gameData)
         {
             this.memoryCache = memoryCache;
             this.gameData = gameData;

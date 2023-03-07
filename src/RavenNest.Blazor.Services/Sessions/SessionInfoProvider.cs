@@ -25,7 +25,7 @@ namespace RavenNest.Sessions
         private const string AuthToken = "auth_token";
 
         private readonly ILogger logger;
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly IAuthManager authManager;
         private readonly AppSettings settings;
 
@@ -37,7 +37,7 @@ namespace RavenNest.Sessions
         public SessionInfoProvider(
             ILogger<SessionInfoProvider> logger,
             IOptions<AppSettings> settings,
-            IGameData gameData,
+            GameData gameData,
             IAuthManager authManager)
         {
             this.logger = logger;

@@ -6,9 +6,9 @@ namespace RavenNest.BusinessLogic.Net
 {
     internal class UpdateGameStatsPacketHandler : IGamePacketHandler
     {
-        private readonly IPlayerManager playerManager;
+        private readonly PlayerManager playerManager;
 
-        public UpdateGameStatsPacketHandler(IPlayerManager playerManager)
+        public UpdateGameStatsPacketHandler(PlayerManager playerManager)
         {
             this.playerManager = playerManager;
         }

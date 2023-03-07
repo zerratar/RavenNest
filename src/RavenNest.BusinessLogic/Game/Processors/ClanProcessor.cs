@@ -33,8 +33,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         //private static readonly Version ClientVersion_ClanLevel = new Version(0, 7, 1);
         public override void Process(
              IIntegrityChecker integrityChecker,
-             IGameData gameData,
-             IPlayerInventoryProvider inventoryProvider,
+             GameData gameData,
+             PlayerInventoryProvider inventoryProvider,
              GameSession session,
              Character character,
              CharacterState state)
@@ -53,7 +53,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         }
 
         private void UpdateClanSkillsExperience(
-            IGameData gameData,
+            GameData gameData,
             GameSession session,
             Character character,
             CharacterState state,
@@ -101,7 +101,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 lastAnnouncement.Level = currentLevel;
             }
         }
-        private void UpdateClanExperience(IGameData gameData, GameSession session, Clan clan)
+        private void UpdateClanExperience(GameData gameData, GameSession session, Clan clan)
         {
             var now = DateTime.UtcNow;
             var elapsed = TimeSpan.Zero;
@@ -151,7 +151,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 clanExpAnnouncement[announcementKey] = now;
             }
         }
-        private static void EnsureClanSkills(IGameData gameData, Clan clan, IReadOnlyList<ClanSkill> clanSkills)
+        private static void EnsureClanSkills(GameData gameData, Clan clan, IReadOnlyList<ClanSkill> clanSkills)
         {
             foreach (var s in gameData
                 .GetSkills()
@@ -169,7 +169,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 gameData.Add(newSkill);
             }
         }
-        private static ClanSkill GetTrainingSkill(IGameData gameData, CharacterState state, List<ClanSkill> clanSkills)
+        private static ClanSkill GetTrainingSkill(GameData gameData, CharacterState state, List<ClanSkill> clanSkills)
         {
             ClanSkill trainingSkill = null;
             foreach (var cs in clanSkills)

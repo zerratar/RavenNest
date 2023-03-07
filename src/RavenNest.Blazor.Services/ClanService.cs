@@ -14,12 +14,12 @@ namespace RavenNest.Blazor.Services
 {
     public class ClanService : RavenNestService
     {
-        private readonly IGameData gameData;
-        private readonly IClanManager clanManager;
+        private readonly GameData gameData;
+        private readonly ClanManager clanManager;
 
         public ClanService(
-            IGameData gameData,
-            IClanManager clanManager,
+            GameData gameData,
+            ClanManager clanManager,
             IHttpContextAccessor accessor,
             ISessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)

@@ -18,9 +18,9 @@ namespace RavenNest.Blazor.Services
     {
         private readonly ILogger<AuthService> logger;
         private readonly IRavenBotApiClient ravenbotApi;
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly IAuthManager authManager;
-        private readonly IPlayerManager playerManager;
+        private readonly PlayerManager playerManager;
         private readonly LogoService logoService;
         private readonly AppSettings settings;
 
@@ -28,9 +28,9 @@ namespace RavenNest.Blazor.Services
             IOptions<AppSettings> settings,
             ILogger<AuthService> logger,
             IRavenBotApiClient ravenbotApi,
-            IGameData gameData,
+            GameData gameData,
             IAuthManager authManager,
-            IPlayerManager playerManager,
+            PlayerManager playerManager,
             IHttpContextAccessor accessor,
             ISessionInfoProvider sessionInfoProvider,
             LogoService logoService)

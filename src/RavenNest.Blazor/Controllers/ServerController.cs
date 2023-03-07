@@ -18,14 +18,14 @@ namespace RavenNest.Controllers
         private const string InsufficientPermissions = "You do not have permissions to call this API";
         private readonly ILogger<ServerController> logger;
         private readonly IAuthManager authManager;
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly IServerManager serverManager;
 
         public ServerController(
             ILogger<ServerController> logger,
             IAuthManager authManager,
-            IGameData gameData,
+            GameData gameData,
             ISessionInfoProvider sessionInfoProvider,
             IServerManager serverManager)
         {

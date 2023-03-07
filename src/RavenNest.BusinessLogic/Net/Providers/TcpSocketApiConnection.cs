@@ -14,7 +14,7 @@ namespace RavenNest.BusinessLogic.Net
         private const int MinQueueSize = 32;
         private int QueueSize = MaxQueueSize;
 
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly int connectionId;
         private readonly ConcurrentQueue<GameEvent> sendQueue = new ConcurrentQueue<GameEvent>();
         private TcpSocketApi server;

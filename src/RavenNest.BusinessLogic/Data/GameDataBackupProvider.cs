@@ -12,7 +12,7 @@ using System.Runtime.CompilerServices;
 
 namespace RavenNest.BusinessLogic.Data
 {
-    public class GameDataBackupProvider : IGameDataBackupProvider
+    public class GameDataBackupProvider
     {
         //#if RELEASE || Linux
         private const string FileTypeExt = ".json";

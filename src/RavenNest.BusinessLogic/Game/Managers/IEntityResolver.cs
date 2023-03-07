@@ -17,9 +17,9 @@ namespace RavenNest.BusinessLogic.Game
 
     public class EntityResolver : IEntityResolver
     {
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
 
-        public EntityResolver(IGameData gameData)
+        public EntityResolver(GameData gameData)
         {
             this.gameData = gameData;
         }

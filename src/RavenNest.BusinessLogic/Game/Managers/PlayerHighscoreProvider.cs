@@ -15,12 +15,12 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class PlayerHighscoreProvider : IPlayerHighscoreProvider
     {
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly ILogger<PlayerHighscoreProvider> logger;
         private readonly IPropertyProvider propertyProvider;
 
         public PlayerHighscoreProvider(
-            IGameData gameData,
+            GameData gameData,
             ILogger<PlayerHighscoreProvider> logger,
             IPropertyProvider propertyProvider)
         {

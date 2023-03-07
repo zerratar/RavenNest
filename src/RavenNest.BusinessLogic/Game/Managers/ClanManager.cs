@@ -8,15 +8,15 @@ using System.Linq;
 
 namespace RavenNest.BusinessLogic.Game
 {
-    public class ClanManager : IClanManager
+    public class ClanManager
     {
         private readonly ILogger<ClanManager> logger;
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly INotificationManager notificationManager;
 
         public ClanManager(
             ILogger<ClanManager> logger,
-            IGameData gameData,
+            GameData gameData,
             INotificationManager notificationManager)
         {
             this.logger = logger;

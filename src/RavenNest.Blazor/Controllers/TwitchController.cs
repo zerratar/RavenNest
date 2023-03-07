@@ -27,8 +27,8 @@ namespace RavenNest.Controllers
     [ApiDescriptor(Name = "Twitch API", Description = "Used by the website to allow authentication with Twitch. This is not meant to be used elsewhere.")]
     public class TwitchController : ControllerBase
     {
-        private readonly IPlayerManager playerManager;
-        private readonly IGameData gameData;
+        private readonly PlayerManager playerManager;
+        private readonly GameData gameData;
         private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly IAuthManager authManager;
         private readonly LogoService logoService;
@@ -41,8 +41,8 @@ namespace RavenNest.Controllers
 
         public TwitchController(
             IOptions<AppSettings> settings,
-            IPlayerManager playerManager,
-            IGameData gameData,
+            PlayerManager playerManager,
+            GameData gameData,
             ISessionInfoProvider sessionInfoProvider,
             IAuthManager authManager,
             LogoService logoService)

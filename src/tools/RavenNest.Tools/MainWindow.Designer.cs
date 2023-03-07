@@ -13,7 +13,7 @@ namespace RavenNest.Tools
         private int LogoLabelWidth = 54;
 
         private TextBlock ToolStatus;
-        private MenuItem ExpBump, BuildUpdatePackage, PatreonSync, SkillRollbackv0788;
+        private MenuItem ExpBump, BuildUpdatePackage, SkillRollbackv0788;
         //private Shinobytes.Console.Forms.Image Logo;
 
         public void InitializeComponents()
@@ -87,10 +87,6 @@ namespace RavenNest.Tools
                 ExpBump.Invoke += ExpBump_Invoke;
                 ExpBump.IsEnabled = false;
                 editMenu.SubItems.Add(ExpBump);
-
-                PatreonSync = new MenuItem("Patreon Sync");
-                PatreonSync.Invoke += PatreonSync_Invoke;
-                editMenu.SubItems.Add(PatreonSync);
 
                 SkillRollbackv0788 = new MenuItem("Skill Rollback (v0.7.8.8)");
                 SkillRollbackv0788.Invoke += SkillRollbackv0788_Invoke;

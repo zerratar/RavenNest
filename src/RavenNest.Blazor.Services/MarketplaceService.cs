@@ -7,12 +7,12 @@ namespace RavenNest.Blazor.Services
 {
     public class MarketplaceService
     {
-        private readonly IGameData gameData;
-        private readonly IMarketplaceManager marketplaceManager;
+        private readonly GameData gameData;
+        private readonly MarketplaceManager marketplaceManager;
 
         public MarketplaceService(
-            IGameData gameData,
-            IMarketplaceManager marketplaceManager)
+            GameData gameData,
+            MarketplaceManager marketplaceManager)
         {
             this.gameData = gameData;
             this.marketplaceManager = marketplaceManager;

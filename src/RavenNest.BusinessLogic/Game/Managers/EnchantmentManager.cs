@@ -9,14 +9,14 @@ using System.Linq;
 
 namespace RavenNest.BusinessLogic.Game
 {
-    public class EnchantmentManager : IEnchantmentManager
+    public class EnchantmentManager
     {
         private readonly ILogger<EnchantmentManager> logger;
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly Random random;
         private const int MaximumEnchantmentCount = 10;
         private const double EnchantmentInterval = 30;
-        public EnchantmentManager(ILogger<EnchantmentManager> logger, IGameData gameData)
+        public EnchantmentManager(ILogger<EnchantmentManager> logger, GameData gameData)
         {
             this.logger = logger;
             this.gameData = gameData;

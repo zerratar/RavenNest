@@ -8,9 +8,9 @@ namespace RavenNest.BusinessLogic.Net
     internal class UpdateCharacterSkillPacketHandler : IGamePacketHandler
     {
         private readonly ILogger logger;
-        private readonly IPlayerManager playerManager;
+        private readonly PlayerManager playerManager;
 
-        public UpdateCharacterSkillPacketHandler(ILogger logger, IPlayerManager playerManager)
+        public UpdateCharacterSkillPacketHandler(ILogger logger, PlayerManager playerManager)
         {
             this.logger = logger;
             this.playerManager = playerManager;

@@ -10,9 +10,9 @@ namespace RavenNest.Health
     public class GameServerHealthCheck : IHealthCheck
     {
         private readonly IKernel kernel;
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
 
-        public GameServerHealthCheck(IKernel kernel, IGameData gameData /* GameData will start the Kernel if everything went ok*/)
+        public GameServerHealthCheck(IKernel kernel, GameData gameData /* GameData will start the Kernel if everything went ok*/)
         {
             this.kernel = kernel;
             this.gameData = gameData;
@@ -23,7 +23,7 @@ namespace RavenNest.Health
             var errorData = new Dictionary<string, object>();
 
             if (!gameData.InitializedSuccessful)
-                errorData.Add(nameof(IGameData), "GameData was not initialized successful");
+                errorData.Add(nameof(GameData), "GameData was not initialized successful");
 
             if (!kernel.Started)
                 errorData.Add(nameof(IKernel), "Kernel not started");

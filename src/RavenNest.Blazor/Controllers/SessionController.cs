@@ -15,19 +15,19 @@ namespace RavenNest.Controllers
     //[ApiDescriptor(Name = "Game API", Description = "Used for handling game sessions and polling game events.")]
     public class SessionController : GameApiController
     {
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly IAuthManager authManager;
-        private readonly ISessionManager sessionManager;
-        private readonly IGameManager gameManager;
+        private readonly SessionManager sessionManager;
+        private readonly GameManager gameManager;
         private readonly ISecureHasher secureHasher;
 
         public SessionController(
             ILogger<SessionController> logger,
-            IGameData gameData,
+            GameData gameData,
             ISessionInfoProvider sessionInfoProvider,
             IAuthManager authManager,
-            ISessionManager sessionManager,
-            IGameManager gameManager,
+            SessionManager sessionManager,
+            GameManager gameManager,
             ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {

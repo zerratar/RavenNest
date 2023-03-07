@@ -18,8 +18,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public ITcpSocketApiConnectionProvider TcpConnectionProvider { get; private set; }
 
         public void IncrementItemStack(
-            IGameData gameData,
-            IPlayerInventoryProvider inventoryProvider,
+            GameData gameData,
+            PlayerInventoryProvider inventoryProvider,
             DataModels.GameSession session,
             Character character, Guid itemId)
         {
@@ -37,8 +37,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
         public abstract void Process(
             IIntegrityChecker integrityChecker,
-            IGameData gameData,
-            IPlayerInventoryProvider inventoryProvider,
+            GameData gameData,
+            PlayerInventoryProvider inventoryProvider,
             DataModels.GameSession session,
             Character character,
             DataModels.CharacterState state);

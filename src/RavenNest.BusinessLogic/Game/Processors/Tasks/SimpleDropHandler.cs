@@ -18,7 +18,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             this.skill = skill;
         }
 
-        public void LoadDrops(IGameData gameData)
+        public void LoadDrops(GameData gameData)
         {
             var skillIndex = Skills.SkillNames.IndexOf(skill);
             foreach (var drop in gameData.GetResourceItemDrops().Where(x => x.Skill == null || x.Skill == skillIndex))
@@ -27,7 +27,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             }
         }
 
-        public bool TryDropItem(ResourceTaskProcessor resProcessor, IGameData gameData, IPlayerInventoryProvider inventoryProvider, GameSession session, Character character, int skillLevel, Func<ResourceDrop, bool> canDrop = null)
+        public bool TryDropItem(ResourceTaskProcessor resProcessor, GameData gameData, PlayerInventoryProvider inventoryProvider, GameSession session, Character character, int skillLevel, Func<ResourceDrop, bool> canDrop = null)
         {
             var chance = resProcessor.Random.NextDouble();
             if (chance > ItemDropRateSettings.InitDropChance)
@@ -53,7 +53,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             return false;
         }
 
-        private void LoadDropsIfRequired(IGameData gameData)
+        private void LoadDropsIfRequired(GameData gameData)
         {
             if (initialized || drops.Count > 0) return;
             LoadDrops(gameData);

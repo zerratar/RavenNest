@@ -10,10 +10,10 @@ namespace RavenNest.Blazor.Services
 {
     public class TownService
     {
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private const float MaxExpBonusPerSlot = 200f;
 
-        public TownService(IGameData gameData)
+        public TownService(GameData gameData)
         {
             this.gameData = gameData;
         }

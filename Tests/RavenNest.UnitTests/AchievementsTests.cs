@@ -63,9 +63,9 @@ namespace RavenNest.UnitTests
     {
         public Player Player { get; set; }
         public GameSession Session { get; set; }
-        public IPlayerManager PlayerManager { get; set; }
+        public PlayerManager PlayerManager { get; set; }
         public IGambitRule<PlayerAchievementFact> Rule { get; set; }
-        public IGameData GameData { get; set; }
+        public GameData GameData { get; set; }
     }
 
     public enum GameTrigger

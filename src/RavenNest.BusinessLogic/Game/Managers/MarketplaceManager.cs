@@ -9,18 +9,18 @@ using RavenNest.Models;
 
 namespace RavenNest.BusinessLogic.Game
 {
-    public class MarketplaceManager : IMarketplaceManager
+    public class MarketplaceManager
     {
         private readonly ILogger<MarketplaceManager> logger;
-        private readonly IPlayerManager playerManager;
-        private readonly IPlayerInventoryProvider inventoryProvider;
-        private readonly IGameData gameData;
+        private readonly PlayerManager playerManager;
+        private readonly PlayerInventoryProvider inventoryProvider;
+        private readonly GameData gameData;
 
         public MarketplaceManager(
             ILogger<MarketplaceManager> logger,
-            IPlayerManager playerManager,
-            IPlayerInventoryProvider inventoryProvider,
-            IGameData gameData)
+            PlayerManager playerManager,
+            PlayerInventoryProvider inventoryProvider,
+            GameData gameData)
         {
             this.logger = logger;
             this.playerManager = playerManager;
@@ -102,7 +102,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         public ItemSellResult SellItem(
-            SessionToken token, string userId, Guid itemId, long amount, double pricePerItem)
+            SessionToken token, string userId, string platform, Guid itemId, long amount, double pricePerItem)
         {
             //if (i != null && i.Category == (int)DataModels.ItemCategory.StreamerToken)
             //{
@@ -119,7 +119,7 @@ namespace RavenNest.BusinessLogic.Game
                 return new ItemSellResult(ItemTradeState.Failed);
             }
 
-            var character = GetCharacterAsync(token, userId);
+            var character = GetCharacterAsync(token, userId, platform);
             if (character == null) return new ItemSellResult(ItemTradeState.Failed);
 
             if (!playerManager.AcquiredUserLock(token, character))
@@ -178,7 +178,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         public ItemBuyResult BuyItem(
-            SessionToken token, string userId, Guid itemId, long amount, double maxPricePerItem)
+            SessionToken token, string userId, string platform, Guid itemId, long amount, double maxPricePerItem)
         {
             // todo(zerratar): Rewrite this!! This is horrible
             // The idea behind the following logic:
@@ -203,7 +203,7 @@ namespace RavenNest.BusinessLogic.Game
                 return new ItemBuyResult(ItemTradeState.RequestToLow, new long[0], new double[0], 0, 0);
             }
 
-            var character = GetCharacterAsync(token, userId);
+            var character = GetCharacterAsync(token, userId, platform);
             if (character == null) return new ItemBuyResult(ItemTradeState.Failed, new long[0], new double[0], 0, 0);
 
             if (!playerManager.AcquiredUserLock(token, character))
@@ -384,9 +384,9 @@ namespace RavenNest.BusinessLogic.Game
             return (int)buyAmount;
         }
 
-        private Character GetCharacterAsync(SessionToken token, string userId)
+        private Character GetCharacterAsync(SessionToken token, string userId, string platform)
         {
-            var user = gameData.GetUserByTwitchId(userId);
+            var user = gameData.GetUser(userId, platform);
             if (user == null) return null;
 
             var session = gameData.GetSession(token.SessionId);

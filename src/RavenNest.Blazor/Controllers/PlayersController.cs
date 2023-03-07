@@ -24,8 +24,8 @@ namespace RavenNest.Controllers
     public class PlayersController : GameApiController
     {
         private readonly ISessionInfoProvider sessionInfoProvider;
-        private readonly ISessionManager sessionManager;
-        private readonly IPlayerManager playerManager;
+        private readonly SessionManager sessionManager;
+        private readonly PlayerManager playerManager;
         private readonly IRavenfallDbContextProvider dbProvider;
         private readonly IOptions<AppSettings> settings;
         private readonly ISecureHasher secureHasher;
@@ -33,11 +33,11 @@ namespace RavenNest.Controllers
 
         public PlayersController(
             ILogger<PlayersController> logger,
-            IGameData gameData,
+            GameData gameData,
             ISessionInfoProvider sessionInfoProvider,
-            IPlayerInventoryProvider inventoryProvider,
-            ISessionManager sessionManager,
-            IPlayerManager playerManager,
+            PlayerInventoryProvider inventoryProvider,
+            SessionManager sessionManager,
+            PlayerManager playerManager,
             IRavenfallDbContextProvider dbProvider,
             ISecureHasher secureHasher,
             IAuthManager authManager,
@@ -174,18 +174,6 @@ namespace RavenNest.Controllers
         public bool AddTokens(string userId, int amount)
         {
             return playerManager.AddTokens(AssertGetSessionToken(), userId, amount);
-        }
-        [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpGet("{userId}/craft/{item}")]
-        public AddItemResult CraftItem(string userId, Guid item)
-        {
-            return playerManager.CraftItem_Old(AssertGetSessionToken(), userId, item);
-        }
-        [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpGet("{userId}/craft/{item}/{amount}")]
-        public AddItemResult CraftItem(string userId, Guid item, int amount)
-        {
-            return playerManager.CraftItem_Old(AssertGetSessionToken(), userId, item, amount);
         }
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/craft-many/{item}/{amount}")]

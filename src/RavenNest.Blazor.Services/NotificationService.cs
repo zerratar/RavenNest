@@ -11,10 +11,10 @@ namespace RavenNest.Blazor.Services
 {
     public class NotificationService : RavenNestService
     {
-        private readonly IGameData gameData;
+        private readonly GameData gameData;
         private readonly INotificationManager notificationManager;
         public NotificationService(
-            IGameData gameData,
+            GameData gameData,
             INotificationManager notificationManager,
             IHttpContextAccessor accessor,
             ISessionInfoProvider sessionInfoProvider)
