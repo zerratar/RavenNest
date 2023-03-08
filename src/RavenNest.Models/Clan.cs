@@ -6,6 +6,7 @@ namespace RavenNest.Models
     {
         public Guid Id { get; set; }
         public string Owner { get; set; }
+        public Guid OwnerUserId { get; set; }
         public int Level { get; set; }
         public double Experience { get; set; }
         public string Name { get; set; }

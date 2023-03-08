@@ -1,8 +1,10 @@
-﻿namespace RavenNest.Models
+﻿using System;
+
+namespace RavenNest.Models
 {
     public class SyntyAppearanceUpdate
     {
-        public string UserId { get; set; }
+        public Guid PlayerId { get; set; }
         public SyntyAppearance Value { get; set; }
     }
 }

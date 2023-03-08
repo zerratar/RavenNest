@@ -378,8 +378,8 @@ namespace RavenNest.BusinessLogic.Game
 
             var model = new ItemTradeUpdate
             {
-                SellerId = seller?.UserId,
-                BuyerId = buyer?.UserId,
+                SellerPlayerId = sellerCharacter.Id,
+                BuyerPlayerId = character.Id,
                 ItemId = itemId,
                 Amount = buyAmount,//amount,
                 Cost = totalCost

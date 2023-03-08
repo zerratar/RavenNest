@@ -532,7 +532,7 @@ namespace RavenNest.BusinessLogic.Game
                 playerSession,
                 new PlayerExpUpdate
                 {
-                    UserId = user.UserId,
+                    PlayerId = characterId,
                     Skill = skill,
                     Experience = experience
                 });
@@ -558,7 +558,7 @@ namespace RavenNest.BusinessLogic.Game
                 playerSession,
                 new PlayerNameUpdate
                 {
-                    UserId = user.UserId,
+                    PlayerId = characterId,
                     Name = name
                 });
 

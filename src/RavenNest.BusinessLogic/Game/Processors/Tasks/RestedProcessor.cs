@@ -75,7 +75,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
                     var data = new RavenNest.Models.PlayerRestedUpdate
                     {
-                        CharacterId = character.Id,
+                        PlayerId = character.Id,
                         ExpBoost = isRested ? ExpBoost : 0,
                         StatsBoost = isRested ? CombatStatsBoost : 0,
                         RestedTime = restedTime,

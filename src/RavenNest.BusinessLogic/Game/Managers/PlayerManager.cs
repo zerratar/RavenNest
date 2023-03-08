@@ -131,8 +131,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 Task = task,
                 TaskArgument = taskArgument,
-                UserId = user.UserId,
-                CharacterId = character.Id
+                PlayerId = character.Id
             }));
         }
 
@@ -1449,7 +1448,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var data = new ItemEquip
             {
-                UserId = gameData.GetUser(character.UserId).UserId,
+                PlayerId = character.Id,
                 InventoryItemId = inventoryItemId,
                 IsEquipped = equipped
             };
@@ -1470,7 +1469,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var data = new ItemAdd
             {
-                UserId = gameData.GetUser(character.UserId).UserId,
+                PlayerId = character.Id,
                 Amount = amount,
                 ItemId = item.ItemId,
                 InventoryItemId = item.Id,
@@ -1494,7 +1493,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             var data = new ItemRemove
             {
-                UserId = gameData.GetUser(character.UserId).UserId,
+                PlayerId = character.Id,
                 Amount = amount,
                 ItemId = item.ItemId,
                 InventoryItemId = item.Id
@@ -1508,7 +1507,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             var data = new ItemRemove
             {
-                UserId = gameData.GetUser(character.UserId).UserId,
+                PlayerId = character.Id,
                 Amount = amount,
                 ItemId = item.ItemId,
                 InventoryItemId = item.Id
@@ -2420,7 +2419,7 @@ namespace RavenNest.BusinessLogic.Game
                     gameSession,
                     new SyntyAppearanceUpdate
                     {
-                        UserId = user.UserId,
+                        PlayerId = character.Id,
                         Value = appearance
                     });
 
@@ -2449,7 +2448,7 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerAppearance, gameSession, new SyntyAppearanceUpdate
                     {
-                        UserId = userId,
+                        PlayerId = character.Id,
                         Value = appearance
                     });
 
