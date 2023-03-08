@@ -91,7 +91,7 @@ namespace RavenNest.Blazor.Services.RSS
                                 .Replace("<li>", "");
                         }
 
-                        currentItem.ImageSource = content.Substring(content.IndexOf("https://cdn-images-")).Split('"')[0];
+                        currentItem.ImageSource = content[content.IndexOf("https://cdn-images-")..].Split('"')[0];
 
                         continue;
                     }

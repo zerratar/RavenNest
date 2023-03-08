@@ -24,7 +24,7 @@ namespace RavenNest.Controllers
         public SessionController(
             ILogger<SessionController> logger,
             GameData gameData,
-            ISessionInfoProvider sessionInfoProvider,
+            SessionInfoProvider sessionInfoProvider,
             IAuthManager authManager,
             SessionManager sessionManager,
             GameManager gameManager,

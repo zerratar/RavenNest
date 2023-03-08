@@ -17,7 +17,7 @@ namespace RavenNest.Blazor.Services
             GameData gameData,
             INotificationManager notificationManager,
             IHttpContextAccessor accessor,
-            ISessionInfoProvider sessionInfoProvider)
+            SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
             this.gameData = gameData;

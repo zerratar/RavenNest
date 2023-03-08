@@ -91,7 +91,6 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-
         public bool Cancel(Guid id)
         {
             var i = gameData.GetMarketItem(id);
@@ -101,14 +100,22 @@ namespace RavenNest.BusinessLogic.Game
             return playerManager.ReturnMarketplaceItem(i);
         }
 
-        public ItemSellResult SellItem(
-            SessionToken token, string userId, string platform, Guid itemId, long amount, double pricePerItem)
+        public ItemSellResult SellItem(SessionToken token, string userId, string platform, Guid itemId, long amount, double pricePerItem)
         {
-            //if (i != null && i.Category == (int)DataModels.ItemCategory.StreamerToken)
-            //{
-            //    return new ItemSellResult(ItemTradeState.Failed);
-            //}
+            var character = GetCharacter(token, userId, platform);
+            if (character == null) return new ItemSellResult(ItemTradeState.Failed);
+            return SellItem(token, itemId, amount, pricePerItem, character);
+        }
 
+        public ItemSellResult SellItem(SessionToken token, Guid characterId, Guid itemId, long amount, double pricePerItem)
+        {
+            var character = GetCharacter(token, characterId);
+            if (character == null) return new ItemSellResult(ItemTradeState.Failed);
+            return SellItem(token, itemId, amount, pricePerItem, character);
+        }
+
+        private ItemSellResult SellItem(SessionToken token, Guid itemId, long amount, double pricePerItem, Character character)
+        {
             if (amount <= 0 || pricePerItem <= 0)
             {
                 return new ItemSellResult(ItemTradeState.RequestToLow);
@@ -118,9 +125,6 @@ namespace RavenNest.BusinessLogic.Game
             {
                 return new ItemSellResult(ItemTradeState.Failed);
             }
-
-            var character = GetCharacterAsync(token, userId, platform);
-            if (character == null) return new ItemSellResult(ItemTradeState.Failed);
 
             if (!playerManager.AcquiredUserLock(token, character))
             {
@@ -177,8 +181,21 @@ namespace RavenNest.BusinessLogic.Game
             return new ItemSellResult(ItemTradeState.Success);
         }
 
-        public ItemBuyResult BuyItem(
-            SessionToken token, string userId, string platform, Guid itemId, long amount, double maxPricePerItem)
+        public ItemBuyResult BuyItem(SessionToken token, string userId, string platform, Guid itemId, long amount, double maxPricePerItem)
+        {
+            var character = GetCharacter(token, userId, platform);
+            if (character == null) return new ItemBuyResult(ItemTradeState.Failed, Array.Empty<long>(), Array.Empty<double>(), 0, 0);
+            return BuyItem(token, itemId, amount, maxPricePerItem, character);
+        }
+
+        public ItemBuyResult BuyItem(SessionToken token, Guid characterId, Guid itemId, long amount, double maxPricePerItem)
+        {
+            var character = GetCharacter(token, characterId);
+            if (character == null) return new ItemBuyResult(ItemTradeState.Failed, Array.Empty<long>(), Array.Empty<double>(), 0, 0);
+            return BuyItem(token, itemId, amount, maxPricePerItem, character);
+        }
+
+        private ItemBuyResult BuyItem(SessionToken token, Guid itemId, long amount, double maxPricePerItem, Character character)
         {
             // todo(zerratar): Rewrite this!! This is horrible
             // The idea behind the following logic:
@@ -200,15 +217,12 @@ namespace RavenNest.BusinessLogic.Game
 
             if (amount <= 0 || maxPricePerItem <= 0)
             {
-                return new ItemBuyResult(ItemTradeState.RequestToLow, new long[0], new double[0], 0, 0);
+                return new ItemBuyResult(ItemTradeState.RequestToLow, Array.Empty<long>(), Array.Empty<double>(), 0, 0);
             }
-
-            var character = GetCharacterAsync(token, userId, platform);
-            if (character == null) return new ItemBuyResult(ItemTradeState.Failed, new long[0], new double[0], 0, 0);
 
             if (!playerManager.AcquiredUserLock(token, character))
             {
-                return new ItemBuyResult(ItemTradeState.Failed, new long[0], new double[0], 0, 0);
+                return new ItemBuyResult(ItemTradeState.Failed, Array.Empty<long>(), Array.Empty<double>(), 0, 0);
             }
 
             var session = gameData.GetSession(token.SessionId);
@@ -384,19 +398,22 @@ namespace RavenNest.BusinessLogic.Game
             return (int)buyAmount;
         }
 
-        private Character GetCharacterAsync(SessionToken token, string userId, string platform)
+        private Character GetCharacter(SessionToken token, string userId, string platform)
         {
             var user = gameData.GetUser(userId, platform);
             if (user == null) return null;
-
             var session = gameData.GetSession(token.SessionId);
-            if (session == null)
-            {
-                return null;
-            }
-
+            if (session == null) return null;
             var chars = gameData.GetActiveSessionCharacters(session);
             return chars.FirstOrDefault(x => x.UserId == user.Id);
+        }
+
+        private Character GetCharacter(SessionToken token, Guid characterId)
+        {
+            var session = gameData.GetSession(token.SessionId);
+            if (session == null) return null;
+            var chars = gameData.GetActiveSessionCharacters(session);
+            return chars.FirstOrDefault(x => x.Id == characterId);
         }
 
         private void AddGameEvent(Guid sessionId, GameEventType type, object model)
@@ -405,6 +422,5 @@ namespace RavenNest.BusinessLogic.Game
             var gameEvent = gameData.CreateSessionEvent(type, session, model);
             gameData.EnqueueGameEvent(gameEvent);
         }
-
     }
 }

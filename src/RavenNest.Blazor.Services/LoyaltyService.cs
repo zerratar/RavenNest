@@ -2,7 +2,6 @@
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.DataModels;
-using RavenNest.Sessions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,7 +20,7 @@ namespace RavenNest.Blazor.Services
             IAuthManager authManager,
             PlayerManager playerManager,
             IHttpContextAccessor accessor,
-            ISessionInfoProvider sessionInfoProvider)
+            SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
             this.gameData = gameData;
@@ -131,7 +130,7 @@ namespace RavenNest.Blazor.Services
                 var session = GetSession();
                 if (session == null) return new StreamerLoyaltyData();
 
-                var user = gameData.GetUser(session.AccountId);
+                var user = gameData.GetUser(session.UserId);
                 if (user == null) return new StreamerLoyaltyData();
 
                 var data = gameData.GetStreamerLoyalties(user.Id);
@@ -218,7 +217,7 @@ namespace RavenNest.Blazor.Services
                 var session = GetSession();
                 if (session == null) return new UserLoyaltyData();
 
-                var user = gameData.GetUser(session.AccountId);
+                var user = gameData.GetUser(session.UserId);
                 if (user == null) return new UserLoyaltyData();
 
                 var loyalties = gameData.GetUserLoyalties(user.Id);
@@ -271,7 +270,7 @@ namespace RavenNest.Blazor.Services
                 var session = GetSession();
                 if (session == null) return false;
 
-                var user = gameData.GetUser(session.AccountId);
+                var user = gameData.GetUser(session.UserId);
                 if (user == null) return false;
 
                 return gameData.FindSession(x => x.UserId == user.Id) != null;

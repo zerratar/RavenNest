@@ -1,9 +1,10 @@
 ﻿@layout DashboardLayout
 @page "/dashboard"
+@using RavenNest
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject NavigationManager NavigationManager
 
-@if (session.UserId == null)
+@if (session.TwitchUserId == null)
 {
   <p>You don't seem to be logged in.</p>
 }
@@ -13,7 +14,7 @@ else
 }
 
 @code {
-  private RavenNest.Sessions.SessionInfo session;
+  private SessionInfo session;
 
   protected override void OnInitialized()
   {
@@ -22,7 +23,7 @@ else
 
   protected override void OnAfterRender(bool firstRender)
   {
-    if (session == null || session.UserId == null)
+    if (session == null || session.TwitchUserId == null)
     {
             NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
     }

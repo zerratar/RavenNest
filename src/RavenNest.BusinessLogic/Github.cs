@@ -21,7 +21,7 @@ namespace RavenNest.BusinessLogic.Github
 
     public class GitHubReleaseProvider
     {
-        private static MemoryCache<GameRelease> cachedVersion = new MemoryCache<GameRelease>();
+        private static readonly MemoryCache<GameRelease> cachedVersion = new MemoryCache<GameRelease>();
         private readonly static TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
         public async Task<GameRelease> GetGithubReleaseAsync(string owner, string repo)

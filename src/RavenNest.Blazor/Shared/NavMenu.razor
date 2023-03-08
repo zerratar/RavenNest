@@ -130,7 +130,7 @@
                 }
             }
 
-            @if (session?.UserId != null)
+            @if (session?.TwitchUserId != null)
             {
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/patreon" Match="NavLinkMatch.All">
@@ -217,10 +217,10 @@
 </div>
 
 
-@if (session?.UserId != null)
+@if (session?.TwitchUserId != null)
 {
     <div class="notifications">
-        <NotificationIcon UserId="@session.UserId"></NotificationIcon>
+        <NotificationIcon UserId="@session.TwitchUserId"></NotificationIcon>
     </div>
 }
 

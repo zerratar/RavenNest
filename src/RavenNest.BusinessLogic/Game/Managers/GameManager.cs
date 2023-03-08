@@ -15,9 +15,9 @@ namespace RavenNest.BusinessLogic.Game
         private readonly PlayerInventoryProvider inventoryProvider;
         private readonly GameData gameData;
 
-        private Guid expScrollId;
-        private Guid dungeonScrollId;
-        private Guid raidScrollId;
+        private readonly Guid expScrollId;
+        private readonly Guid dungeonScrollId;
+        private readonly Guid raidScrollId;
 
         public GameManager(
             IServerManager serverManager,
@@ -189,7 +189,7 @@ namespace RavenNest.BusinessLogic.Game
             return item.ItemId == dungeonScrollId;
         }
 
-        private bool IsScrollOfType(ReadOnlyInventoryItem item, ScrollType scrollType)
+        private static bool IsScrollOfType(ReadOnlyInventoryItem item, ScrollType scrollType)
         {
             return item.Item.Name.Contains(scrollType == ScrollType.Experience ? "exp" : scrollType.ToString(), StringComparison.OrdinalIgnoreCase);
         }

@@ -105,7 +105,7 @@ namespace RavenNest.Tools.Actions
                 this.ToolProgress.Value = IncrementProgress();
                 this.ToolStatus.Text = "Saving Empty Character Skill Records";
                 // 1. we know we will have to truncate the character skill record. so lets save an empty one right away.
-                Write(new DataModels.CharacterSkillRecord[0]);
+                Write(Array.Empty<CharacterSkillRecord>());
 
 
                 var earliestFirst = backups.OrderBy(x => x.Created).ToList();
@@ -930,7 +930,7 @@ namespace RavenNest.Tools.Actions
 
             if (!string.IsNullOrEmpty(Name))
             {
-                if (Name.Contains("#") && Index == null)
+                if (Name.Contains('#') && Index == null)
                 {
                     var d = Name.Split('#');
                     Index = int.Parse(d[1]);

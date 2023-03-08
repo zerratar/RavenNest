@@ -11,7 +11,7 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
     public class JsonPacketDataSerializer : IExtensionPacketDataSerializer
     {
         private readonly ILogger<JsonPacketDataSerializer> logger;
-        private JsonSerializerSettings serializerSettings;
+        private readonly JsonSerializerSettings serializerSettings;
 
         public JsonPacketDataSerializer(ILogger<JsonPacketDataSerializer> logger)
         {

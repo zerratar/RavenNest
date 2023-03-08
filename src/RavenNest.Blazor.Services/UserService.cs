@@ -23,7 +23,7 @@ namespace RavenNest.Blazor.Services
             GameData gameData,
             PlayerManager playerManager,
             IHttpContextAccessor accessor,
-            ISessionInfoProvider sessionInfoProvider)
+            SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
             this.gameData = gameData;
@@ -81,7 +81,7 @@ namespace RavenNest.Blazor.Services
         {
             var session = GetSession();
             if (session == null) return null;
-            return GetUser(session.AccountId);
+            return GetUser(session.UserId);
         }
 
         public WebsiteAdminUser GetUser(Guid accountId)
@@ -149,7 +149,7 @@ namespace RavenNest.Blazor.Services
                         result.Add(x);
                         count++;
                     }
-                    if(count >= pageSize)
+                    if (count >= pageSize)
                     {
                         break;
                     }
@@ -188,7 +188,7 @@ namespace RavenNest.Blazor.Services
                 {
                     playerManager.RemoveUserFromSessions(user);
 
-                    var ownedSession = gameData.GetOwnedSessionByUserId(user.UserId);
+                    var ownedSession = gameData.GetOwnedSessionByUserId(user.Id);
                     if (ownedSession != null)
                     {
                         ownedSession.Status = (int)SessionStatus.Inactive;
@@ -204,12 +204,13 @@ namespace RavenNest.Blazor.Services
 
         private List<WebsiteAdminUser> GetUsers(IEnumerable<WebsiteAdminPlayer> players)
         {
-            var output = new Dictionary<string, WebsiteAdminUser>();
-            var users = new Dictionary<string, DataModels.User>();
+            var output = new Dictionary<Guid, WebsiteAdminUser>();
+            var users = new Dictionary<Guid, DataModels.User>();
+
             foreach (var user in gameData.GetUsers())
             {
                 // to ignore any potential collisions with ToDictionary with duplicated userId's
-                users[user.UserId] = user;
+                users[user.Id] = user;
             }
 
             foreach (var p in players)

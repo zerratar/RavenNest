@@ -23,7 +23,7 @@ namespace RavenNest.Blazor.Services
             GameData gameData,
             IServerManager serverManager,
             IHttpContextAccessor accessor,
-            ISessionInfoProvider sessionInfoProvider)
+            SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
             this.gameData = gameData;
@@ -145,7 +145,7 @@ namespace RavenNest.Blazor.Services
         {
             // anything that happens in this function, let it throw an exception. It will be caught by GetRavenbotLogEntriesAsync
             var msg = line;
-            var dateTime = DateTime.Parse(line.Substring(1, line.IndexOf(']') - 1));
+            var dateTime = DateTime.Parse(line[1..line.IndexOf(']')]);
             var logLevel = LogLevel.Information;
 
             var logLevelStart = line.IndexOf('{');
@@ -168,7 +168,7 @@ namespace RavenNest.Blazor.Services
                 if (logLevelValue.StartsWith("w", StringComparison.OrdinalIgnoreCase))
                     logLevel = LogLevel.Warning;
 
-                msg = msg.Substring(logLevelEnd + 1);
+                msg = msg[(logLevelEnd + 1)..];
                 if (msg.StartsWith(": "))
                 {
                     msg = msg.Replace(": ", "");

@@ -1,32 +1,21 @@
-﻿using Microsoft.Extensions.Logging;
-using RavenNest.BusinessLogic.Data;
+﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Models;
-using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using Skills = RavenNest.Models.Skills;
 
 namespace RavenNest.BusinessLogic.Game
 {
     public class PlayerHighscoreProvider : IPlayerHighscoreProvider
     {
         private readonly GameData gameData;
-        private readonly ILogger<PlayerHighscoreProvider> logger;
-        private readonly IPropertyProvider propertyProvider;
 
-        public PlayerHighscoreProvider(
-            GameData gameData,
-            ILogger<PlayerHighscoreProvider> logger,
-            IPropertyProvider propertyProvider)
+        public PlayerHighscoreProvider(GameData gameData)
         {
             this.gameData = gameData;
-            this.logger = logger;
-            this.propertyProvider = propertyProvider;
         }
 
         public HighScoreItem GetSkillHighScore(Player player, IReadOnlyDictionary<Guid, HighscorePlayer> players, string skill)
@@ -103,7 +92,7 @@ namespace RavenNest.BusinessLogic.Game
 
         private Span<CharacterSkillRecord> SortRecords(Span<CharacterSkillRecord> input, int skip, int take)
         {
-            int Sort(CharacterSkillRecord a, CharacterSkillRecord b)
+            static int Sort(CharacterSkillRecord a, CharacterSkillRecord b)
             {
                 if (a.SkillLevel < b.SkillLevel)
                 {
@@ -171,7 +160,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private double OrderByExp(int skillIndex, HighscorePlayer x)
+        private static double OrderByExp(int skillIndex, HighscorePlayer x)
         {
             return TryGetExperience(skillIndex, x.Skills, out var exp) ? exp : 0;
         }
@@ -223,7 +212,7 @@ namespace RavenNest.BusinessLogic.Game
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private bool TryGetExperience(int skillIndex, DataModels.Skills skills, out double exp)
+        private static bool TryGetExperience(int skillIndex, DataModels.Skills skills, out double exp)
         {
             exp = 0;
 

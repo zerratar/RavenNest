@@ -94,8 +94,8 @@ namespace RavenNest.UnitTests
 
     public class AchievementManager
     {
-        private Achievement achievement;
-        private UserAchievement userAchievement;
+        private readonly Achievement achievement;
+        private readonly UserAchievement userAchievement;
         public AchievementManager()
         {
             userAchievement = new UserAchievement();

@@ -19,14 +19,14 @@ namespace RavenNest.Controllers
         private readonly ILogger<ServerController> logger;
         private readonly IAuthManager authManager;
         private readonly GameData gameData;
-        private readonly ISessionInfoProvider sessionInfoProvider;
+        private readonly SessionInfoProvider sessionInfoProvider;
         private readonly IServerManager serverManager;
 
         public ServerController(
             ILogger<ServerController> logger,
             IAuthManager authManager,
             GameData gameData,
-            ISessionInfoProvider sessionInfoProvider,
+            SessionInfoProvider sessionInfoProvider,
             IServerManager serverManager)
         {
             this.logger = logger;

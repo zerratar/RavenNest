@@ -27,7 +27,7 @@ namespace Shinobytes.Ravenfall.Core.RuleEngine
 
         private class GambitRuleCondition<TKnowledgeBase> : IGambitRuleCondition<TKnowledgeBase>
         {
-            private Func<TKnowledgeBase, bool> condition;
+            private readonly Func<TKnowledgeBase, bool> condition;
 
             public GambitRuleCondition(Func<TKnowledgeBase, bool> condition)
             {
@@ -42,7 +42,7 @@ namespace Shinobytes.Ravenfall.Core.RuleEngine
 
         private class GambitRuleAction<TKnowledgeBase> : IGambitRuleAction<TKnowledgeBase>
         {
-            private Action<TKnowledgeBase> onConditionMet;
+            private readonly Action<TKnowledgeBase> onConditionMet;
 
             public GambitRuleAction(Action<TKnowledgeBase> onConditionMet)
             {
@@ -57,8 +57,8 @@ namespace Shinobytes.Ravenfall.Core.RuleEngine
 
         private class GambitRule<TKnowledgeBase> : IGambitRule<TKnowledgeBase>
         {
-            private IGambitRuleCondition<TKnowledgeBase> condition;
-            private IGambitRuleAction<TKnowledgeBase> action;
+            private readonly IGambitRuleCondition<TKnowledgeBase> condition;
+            private readonly IGambitRuleAction<TKnowledgeBase> action;
 
             public string Name { get; }
 

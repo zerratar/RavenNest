@@ -21,7 +21,7 @@ namespace RavenNest.Blazor.Services
             GameData gameData,
             ClanManager clanManager,
             IHttpContextAccessor accessor,
-            ISessionInfoProvider sessionInfoProvider)
+            SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
             this.gameData = gameData;
@@ -34,21 +34,7 @@ namespace RavenNest.Blazor.Services
             if (!session.Authenticated)
                 return null;
 
-            return this.clanManager.GetClanByUserId(session.AccountId);
-        }
-
-        public Clan GetClanByUserId(string userId)
-        {
-            var session = GetSession();
-            if (!session.Authenticated)
-                return null;
-
-            if (session.UserId == userId || session.Administrator || session.Moderator)
-            {
-                return this.clanManager.GetClanByUserId(session.AccountId);
-            }
-
-            return null;
+            return this.clanManager.GetClanByUserId(session.UserId);
         }
 
         public IReadOnlyList<ClanMember> RemoveMember(Guid clanId, Guid characterId)
@@ -57,7 +43,7 @@ namespace RavenNest.Blazor.Services
             if (!session.Authenticated)
                 return null;
 
-            var user = gameData.GetUser(session.AccountId);
+            var user = gameData.GetUser(session.UserId);
             if (user == null) return null;
 
             var character = gameData.GetCharacter(characterId);
@@ -96,7 +82,7 @@ namespace RavenNest.Blazor.Services
             var session = GetSession();
             if (!session.Authenticated)
                 return null;
-            var user = gameData.GetUser(session.AccountId);
+            var user = gameData.GetUser(session.UserId);
             this.clanManager.SendPlayerInvite(clanId, characterId, user.Id);
             return GetMembers(clanId);
         }
@@ -141,7 +127,7 @@ namespace RavenNest.Blazor.Services
                 if (!session.Authenticated)
                     return null;
 
-                var user = gameData.GetUser(session.AccountId);
+                var user = gameData.GetUser(session.UserId);
                 if (user == null)
                     return null;
 
@@ -157,7 +143,7 @@ namespace RavenNest.Blazor.Services
                 if (!session.Authenticated)
                     return null;
 
-                var user = gameData.GetUser(session.AccountId);
+                var user = gameData.GetUser(session.UserId);
                 if (user == null)
                     return null;
 
@@ -173,7 +159,7 @@ namespace RavenNest.Blazor.Services
                 var session = GetSession();
                 if (!session.Authenticated)
                     return null;
-                var user = gameData.GetUser(session.AccountId);
+                var user = gameData.GetUser(session.UserId);
                 if (user == null)
                     return null;
 
@@ -240,7 +226,7 @@ namespace RavenNest.Blazor.Services
             if (clan == null)
                 return false;
 
-            if (clan.Owner != session.UserId)
+            if (clan.Owner != session.TwitchUserId)
                 return false;
 
             return this.clanManager.UpdateClanName(clanId, newName);
@@ -251,7 +237,7 @@ namespace RavenNest.Blazor.Services
             if (!session.Authenticated)
                 return null;
 
-            return this.clanManager.CreateClan(session.UserId, model.Name, model.Logo);
+            return this.clanManager.CreateClan(session.TwitchUserId, model.Name, model.Logo);
         }
     }
 

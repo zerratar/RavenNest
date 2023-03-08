@@ -31,7 +31,7 @@ namespace RavenNest.BusinessLogic.Net
         private readonly SessionManager sessionManager;
         private Thread serverThread;
 
-        private int serverPort = DefaultServerPort;
+        private readonly int serverPort = DefaultServerPort;
         private Telepathy.Server server;
         private bool running;
         private bool disposed;
@@ -312,7 +312,7 @@ namespace RavenNest.BusinessLogic.Net
     public class PartialByteBuffer
     {
         private byte[] data;
-        private int count;
+        private readonly int count;
 
         public PartialByteBuffer(byte[] array, int count)
         {

@@ -162,11 +162,10 @@
     public bool CanManage { get; set; }
 
     private IReadOnlyList<WebsitePlayer> characters { get; set; }
-    private Sessions.SessionInfo session;
+    private SessionInfo session;
 
     private bool itemDetailDialogVisible;
     private Models.InventoryItem itemDetailsDialogItem;
-    private long giftOrSendAmount;
 
     private Item selectedItem;
     private bool addItemDialogVisible;

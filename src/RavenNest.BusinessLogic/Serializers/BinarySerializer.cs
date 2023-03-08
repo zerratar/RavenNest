@@ -33,7 +33,7 @@ namespace RavenNest.BusinessLogic.Serializers
 
         public byte[] Serialize(object data)
         {
-            if (data == null) return new byte[0];
+            if (data == null) return Array.Empty<byte>();
             using (var ms = new MemoryStream())
             using (var bw = new BinaryWriter(ms))
             {

@@ -90,7 +90,7 @@ namespace RavenNest.BusinessLogic.Data
                     }
                 }
             }
-            catch (Exception exc)
+            catch
             {
                 // ignored for now
             }
@@ -257,7 +257,7 @@ namespace RavenNest.BusinessLogic.Data
 
         private class EntityRestorePoint : IEntityRestorePoint
         {
-            private ConcurrentDictionary<Type, IReadOnlyList<IEntity>> entityData =
+            private readonly ConcurrentDictionary<Type, IReadOnlyList<IEntity>> entityData =
                 new ConcurrentDictionary<Type, IReadOnlyList<IEntity>>();
 
             public IReadOnlyList<T> Get<T>() where T : IEntity

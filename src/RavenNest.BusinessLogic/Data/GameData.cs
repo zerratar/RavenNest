@@ -32,9 +32,9 @@ namespace RavenNest.BusinessLogic.Data
         private readonly IKernel kernel;
         private readonly IQueryBuilder queryBuilder;
 
-        private readonly ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, CharacterSessionState>> characterSessionStates = new ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, CharacterSessionState>>();
+        private readonly ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, CharacterSessionState>> characterSessionStates = new();
 
-        private readonly ConcurrentDictionary<Guid, SessionState> sessionStates = new ConcurrentDictionary<Guid, SessionState>();
+        private readonly ConcurrentDictionary<Guid, SessionState> sessionStates = new();
 
         private readonly EntitySet<Agreements> agreements;
 
@@ -710,7 +710,7 @@ namespace RavenNest.BusinessLogic.Data
                 {
                     return ItemMaterial.None;
                 }
-                if (item.Name.Contains(" "))
+                if (item.Name.Contains(' '))
                 {
                     itemNameMaterial = item.Name.Split(' ')[0];
                 }
@@ -1353,9 +1353,8 @@ namespace RavenNest.BusinessLogic.Data
         private void RemoveEmptyPlayers()
         {
             var now = DateTime.UtcNow;
-            List<Character> characterToRemove = new List<Character>();
-
-            List<CharacterSkillRecord> recordsToRemove = new List<CharacterSkillRecord>();
+            List<Character> characterToRemove = new();
+            List<CharacterSkillRecord> recordsToRemove = new();
             // check if we have character skill records that no longer has a character :o
 
             foreach (var s in this.characterSkillRecords.Entities)
@@ -1481,7 +1480,7 @@ namespace RavenNest.BusinessLogic.Data
             var toRemove = new List<User>();
             foreach (var user in users.Entities)
             {
-                if (string.IsNullOrEmpty(user.UserName) || Guid.TryParse(user.UserId, out var guid))
+                if (string.IsNullOrEmpty(user.UserName) || (!string.IsNullOrEmpty(user.UserId) && Guid.TryParse(user.UserId, out _)))
                 {
                     toRemove.Add(user);
                 }
@@ -1770,7 +1769,7 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(GameEvent entity) => gameEvents.Add(entity);//Update(() => gameEvents.Add(entity));
 
-        public GameSession CreateSession(Guid userId)
+        public static GameSession CreateSession(Guid userId)
         {
             return new GameSession
             {
@@ -1854,7 +1853,7 @@ namespace RavenNest.BusinessLogic.Data
 
             if (village.Level <= 1)
             {
-                return new VillageHouse[0];
+                return Array.Empty<VillageHouse>();
             }
 
             var houseCount = System.Math.Min(village.Level / 10, GameMath.MaxVillageLevel / 10);
@@ -1926,15 +1925,12 @@ namespace RavenNest.BusinessLogic.Data
 
         public CharacterSessionState GetCharacterSessionState(Guid sessionId, Guid characterId)
         {
-            ConcurrentDictionary<Guid, CharacterSessionState> states;
-
-            if (!characterSessionStates.TryGetValue(sessionId, out states))
+            if (!characterSessionStates.TryGetValue(sessionId, out var states))
             {
                 states = new ConcurrentDictionary<Guid, CharacterSessionState>();
             }
 
-            CharacterSessionState state;
-            if (!states.TryGetValue(characterId, out state))
+            if (!states.TryGetValue(characterId, out var state))
             {
                 state = new CharacterSessionState();
                 state.LastTaskUpdate = DateTime.UtcNow;
@@ -1996,22 +1992,34 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GameSession GetOwnedSessionByUserId(string userId)
+        public GameSession GetOwnedSessionByUserId(string userId, string platform)
         {
-            var user = users.Entities.FirstOrDefault(x => x.UserId == userId);
-            if (user == null) return null;
+            var access = userAccess.Entities.FirstOrDefault(x =>
+                x.PlatformId.Equals(userId, StringComparison.OrdinalIgnoreCase) &&
+                x.Platform.Equals(platform, StringComparison.OrdinalIgnoreCase));
 
-            return GetActiveSessions().FirstOrDefault(x => x.UserId == user.Id);
+            if (access == null) return null;
+
+            return GetActiveSessions().FirstOrDefault(x => x.UserId == access.UserId);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public GameSession GetOwnedSessionByUserId(Guid userId)
+        {
+            return GetActiveSessions().FirstOrDefault(x => x.UserId == userId);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GameSession GetJoinedSessionByUserId(string userId)
+        [Obsolete]
+        public GameSession GetJoinedSessionByUserId(string userId, string platform)
         {
-            var user = users.Entities.FirstOrDefault(x => x.UserId == userId);
-            if (user == null) return null;
+            var access = userAccess.Entities.FirstOrDefault(x =>
+                x.PlatformId.Equals(userId, StringComparison.OrdinalIgnoreCase) &&
+                x.Platform.Equals(platform, StringComparison.OrdinalIgnoreCase));
 
-            var character = characters.Entities.FirstOrDefault(x => x.UserId == user.Id);
+            if (access == null) return null;
+
+            var character = characters.Entities.FirstOrDefault(x => x.UserId == access.UserId);
             if (character == null) return null;
 
             return gameSessions.Entities
@@ -2031,10 +2039,24 @@ namespace RavenNest.BusinessLogic.Data
             if (string.IsNullOrWhiteSpace(userIdOrUsername))
                 return null;
 
-            return users.Entities.FirstOrDefault(x =>
-                    x != null &&
-                    (x.UserId == userIdOrUsername ||
-                    (x.UserName?.Equals(userIdOrUsername, StringComparison.OrdinalIgnoreCase) ?? false)));
+            foreach (var user in users.Entities)
+            {
+                if (user.UserName?.Equals(userIdOrUsername, StringComparison.OrdinalIgnoreCase) ?? false)
+                {
+                    return user;
+                }
+
+                foreach (var access in GetUserAccess(user.Id))
+                {
+                    if (access.PlatformId.Equals(userIdOrUsername, StringComparison.OrdinalIgnoreCase) ||
+                        access.PlatformUsername.Equals(userIdOrUsername, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return user;
+                    }
+                }
+            }
+
+            return null;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2098,14 +2120,33 @@ namespace RavenNest.BusinessLogic.Data
             return user == null ? null : characters[nameof(User), user.Id];
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Character GetCharacterBySession(Guid sessionId, string userId, bool updateSession = true)
+        [Obsolete("Use GetCharacterBySession(Guid, Guid, Bool) instead as it uses the Ravenfall UserId instead of a platform id")]
+        public Character GetCharacterBySession(Guid sessionId, string userId, string platform, bool updateSession = true)
         {
             var session = GetSession(sessionId, updateSession);
             var characters = GetActiveSessionCharacters(session);
-            return characters.FirstOrDefault(x => GetUser(x.UserId)?.UserId == userId);
+
+            foreach (var character in characters)
+            {
+                var uac = GetUserAccess(character.UserId);
+                foreach (var a in uac)
+                {
+                    if (a.Platform.Equals(platform, StringComparison.OrdinalIgnoreCase) &&
+                        a.PlatformId.Equals(userId, StringComparison.OrdinalIgnoreCase))
+                        return character;
+                }
+            }
+
+            return null;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Character GetCharacterBySession(Guid sessionId, Guid userId, bool updateSession = true)
+        {
+            var session = GetSession(sessionId, updateSession);
+            var characters = GetActiveSessionCharacters(session);
+            return characters.FirstOrDefault(x => x.UserId == userId);
+        }
 
         private Character GetCharacterByIdentifier(IReadOnlyList<Character> chars, string identifier)
         {
@@ -2335,6 +2376,12 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<UserProperty> GetUserProperties(Guid userId)
+        {
+            return this.userProperties[nameof(User), userId];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ExpMultiplierEvent GetActiveExpMultiplierEvent() =>
             this.expMultiplierEvents?.Entities?
             .Where(x => x.StartTime <= DateTime.UtcNow && x.EndTime >= DateTime.UtcNow)
@@ -2357,6 +2404,9 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public UserAccess GetUserAccess(Guid userId, string platform) =>
             userAccess[nameof(User), userId].FirstOrDefault(x => x.Platform.Equals(platform, StringComparison.OrdinalIgnoreCase));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<UserAccess> GetUserAccess(Guid userId) => userAccess[nameof(User), userId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public User GetUser(Guid userId) => users[userId];

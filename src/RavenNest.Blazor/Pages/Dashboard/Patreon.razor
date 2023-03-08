@@ -11,7 +11,7 @@
 
 <h1 class="page-title">Patreon</h1>
 
-@if (session.UserId == null)
+@if (session.TwitchUserId == null)
 {
     <p>You don't seem to be logged in.</p>
 }
@@ -142,7 +142,7 @@ else
 
         patreonTierIndex = session.Tier;
         patreonFullName = session.UserName;
-        patreonProfilePicture = "/api/twitch/logo/" + session.UserId;
+        patreonProfilePicture = "/api/twitch/logo/" + session.TwitchUserId;
         if (session.Patreon != null)
         {
             patreonTierIndex = System.Math.Max(session.Tier, session.Patreon.Tier.GetValueOrDefault());
@@ -251,7 +251,7 @@ else
             NavigationManager.NavigateTo("/patreon");
             return;
         }
-        if (session == null || session.UserId == null)
+        if (session == null || session.TwitchUserId == null)
         {
             NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
         }

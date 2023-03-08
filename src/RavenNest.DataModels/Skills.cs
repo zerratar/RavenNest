@@ -27,8 +27,8 @@ namespace RavenNest.DataModels
             nameof(Healing)
         };
 
-        private static ConcurrentDictionary<string, PropertyInfo> expProperties = new ConcurrentDictionary<string, PropertyInfo>();
-        private static ConcurrentDictionary<string, PropertyInfo> levelProperties = new ConcurrentDictionary<string, PropertyInfo>();
+        private static readonly ConcurrentDictionary<string, PropertyInfo> expProperties = new ConcurrentDictionary<string, PropertyInfo>();
+        private static readonly ConcurrentDictionary<string, PropertyInfo> levelProperties = new ConcurrentDictionary<string, PropertyInfo>();
         private List<StatsUpdater> skills;
 
         private double attack;

@@ -10,7 +10,7 @@
 
 <h1 class="page-title">Clan</h1>
 
-@if (session.UserId == null)
+@if (session.TwitchUserId == null)
 {
 	<p>You don't seem to be logged in.</p>
 }
@@ -45,7 +45,7 @@ else
 			}
 			else
 			{
-			 <img src="/api/twitch/logo/@session.UserId" class="clan-logo" />
+			 <img src="/api/twitch/logo/@session.TwitchUserId" class="clan-logo" />
 			}
 			@if (!reloadingClanLogo)
 			{
@@ -221,7 +221,7 @@ else
 	{
 		showRanks = NavigationManager.Uri.ToString().IndexOf("ranks", StringComparison.OrdinalIgnoreCase) > 0;
 		session = AuthService.GetSession();
-		if (session == null || session.UserId == null)
+		if (session == null || session.TwitchUserId == null)
 		{
 			return;
 		}
@@ -230,7 +230,7 @@ else
 		clan = ClanService.GetClan();
 		if (clan != null)
 		{
-			canManageMembers = clan.Owner == session.UserId;
+			canManageMembers = clan.Owner == session.TwitchUserId;
 			nameChangeCount = ClanService.GetNameChangeCount(clan.Id);
 			oldClanName = clan.Name;
 		}
@@ -249,7 +249,7 @@ else
 
 	protected override void OnAfterRender(bool firstRender)
 	{
-		if (session == null || session.UserId == null)
+		if (session == null || session.TwitchUserId == null)
 		{
             NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
 		}

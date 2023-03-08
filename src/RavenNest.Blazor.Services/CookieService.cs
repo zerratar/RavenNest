@@ -10,7 +10,7 @@ namespace RavenNest.Blazor.Services
     {
         public CookieService(
             IHttpContextAccessor accessor,
-            ISessionInfoProvider sessionInfoProvider)
+            SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
         }

@@ -187,7 +187,7 @@ namespace RavenNest.Blazor
                 {
                     var sessionInfo = new SessionInfo();
                     context.Response.ContentType = "text/javascript";
-                    var service = app.ApplicationServices.GetService<ISessionInfoProvider>();
+                    var service = app.ApplicationServices.GetService<SessionInfoProvider>();
 
                     service.TryGet(context.GetSessionId(), out sessionInfo);
                     context.Response.Headers.Add("Cache-Control", "no-cache, no-store");
@@ -293,7 +293,6 @@ namespace RavenNest.Blazor
             services.AddSingleton<IPatreonManager, PatreonManager>();
             services.AddSingleton<ClanManager>();
             services.AddSingleton<INotificationManager, NotificationManager>();
-            services.AddSingleton<ILoyaltyManager, LoyaltyManager>();
 
             services.AddSingleton<IQueryBuilder, QueryBuilder>();
             services.AddSingleton<IEntityResolver, EntityResolver>();
@@ -308,7 +307,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<PlayerInventoryProvider>();
             services.AddSingleton<IPlayerHighscoreProvider, PlayerHighscoreProvider>();
             services.AddSingleton<IRavenfallDbContextProvider, RavenfallDbContextProvider>();
-            services.AddSingleton<ISessionInfoProvider, SessionInfoProvider>();
+            services.AddSingleton<SessionInfoProvider>();
             services.AddSingleton<IPropertyProvider, MemoryCachedPropertyProvider>();
 
 

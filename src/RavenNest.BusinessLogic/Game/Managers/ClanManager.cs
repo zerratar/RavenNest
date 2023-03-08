@@ -882,9 +882,9 @@ namespace RavenNest.BusinessLogic.Game
             return new ChangeRoleResult();
         }
 
-        public JoinClanResult JoinClan(string clanOwnerId, Guid characterId)
+        public JoinClanResult JoinClan(string clanOwnerId, string platform, Guid characterId)
         {
-            var clan = FindClan(clanOwnerId);
+            var clan = FindClan(clanOwnerId, platform);
             if (clan == null) return new JoinClanResult();
             var charClan = GetClanByCharacter(characterId);
             if (charClan != null) return new JoinClanResult();
@@ -930,11 +930,11 @@ namespace RavenNest.BusinessLogic.Game
             return gameData.GetClanRole(membership.ClanRoleId);
         }
 
-        public DataModels.Clan FindClan(string query)
+        public DataModels.Clan FindClan(string query, string platform)
         {
             foreach (var clan in gameData.GetClans())
             {
-                if (Match(clan, query))
+                if (Match(clan, query, platform))
                 {
                     return clan;
                 }
@@ -1093,13 +1093,18 @@ namespace RavenNest.BusinessLogic.Game
             return builder.GenerateString();
         }
 
-        private bool Match(DataModels.Clan clan, string query)
+        private bool Match(DataModels.Clan clan, string query, string platform)
         {
             var owner = gameData.GetUser(clan.UserId);
             if (owner == null) return false;
-            return owner.UserId.Equals(query, StringComparison.OrdinalIgnoreCase) ||
-                owner.UserName.Equals(query, StringComparison.OrdinalIgnoreCase) ||
-                clan.Name.Equals(query, StringComparison.OrdinalIgnoreCase);
+
+            if (owner.UserName.Equals(query, StringComparison.OrdinalIgnoreCase) || clan.Name.Equals(query, StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var access = gameData.GetUserAccess(owner.Id, platform);
+            if (access == null) return false;
+
+            return access.PlatformId.Equals(query, StringComparison.OrdinalIgnoreCase);
         }
     }
 

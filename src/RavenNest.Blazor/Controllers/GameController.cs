@@ -17,33 +17,24 @@ namespace RavenNest.Controllers
     public class GameController : GameApiController
     {
         private readonly GameData gameData;
-        private readonly IAuthManager authManager;
-        private readonly ISessionInfoProvider sessionInfoProvider;
         private readonly SessionManager sessionManager;
         private readonly GameManager gameManager;
-        private readonly ClanManager clanManager;
-        private readonly ISecureHasher secureHasher;
         private readonly ILogger<GameController> logger;
 
         public GameController(
             ILogger<GameController> logger,
             GameData gameData,
             IAuthManager authManager,
-            ISessionInfoProvider sessionInfoProvider,
+            SessionInfoProvider sessionInfoProvider,
             SessionManager sessionManager,
             GameManager gameManager,
-            ClanManager clanManager,
             ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
             this.logger = logger;
             this.gameData = gameData;
-            this.authManager = authManager;
-            this.sessionInfoProvider = sessionInfoProvider;
             this.sessionManager = sessionManager;
             this.gameManager = gameManager;
-            this.clanManager = clanManager;
-            this.secureHasher = secureHasher;
         }
 
         [HttpGet]

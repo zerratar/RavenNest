@@ -23,7 +23,7 @@ namespace RavenNest.Blazor.Services
             GameData gameData,
             IMemoryFileCacheProvider fileCacheProvider,
             IHttpContextAccessor accessor,
-            ISessionInfoProvider sessionInfoProvider)
+            SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
             this.settings = settings.Value;
@@ -67,7 +67,7 @@ namespace RavenNest.Blazor.Services
         {
             try
             {
-                var forceRefreshLogo = userId.Contains("_");
+                var forceRefreshLogo = userId.Contains('_');
                 if (forceRefreshLogo)
                 {
                     userId = userId.Split('_')[1];
@@ -96,7 +96,7 @@ namespace RavenNest.Blazor.Services
             try
             {
                 string logoUrl = downloadUrl;
-                var forceRefreshLogo = userId.Contains("_");
+                var forceRefreshLogo = userId.Contains('_');
                 if (forceRefreshLogo)
                 {
                     userId = userId.Split('_')[1];

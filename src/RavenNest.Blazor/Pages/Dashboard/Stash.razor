@@ -16,7 +16,7 @@
 
 <h1 class="page-title">Item Stash</h1>
 
-@if (session.UserId == null)
+@if (session.TwitchUserId == null)
 {
     <p>You don't seem to be logged in.</p>
 }
@@ -225,7 +225,7 @@ else
         session = AuthService.GetSession();
         characters = await PlayerService.GetMyPlayersAsync();
 
-        if (session == null || session.UserId == null)
+        if (session == null || session.TwitchUserId == null)
         {
             return;
         }
@@ -265,7 +265,7 @@ else
 
     protected override void OnAfterRender(bool firstRender)
     {
-        if (session == null || session.UserId == null)
+        if (session == null || session.TwitchUserId == null)
         {
             NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
         }

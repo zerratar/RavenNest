@@ -1,7 +1,10 @@
-﻿namespace RavenNest.Models
+﻿using System;
+
+namespace RavenNest.Models
 {
     public class PlayerAdd
     {
+        [Obsolete("Use CharacterId")]
         public string UserId { get; set; }
         public string UserName { get; set; }
         public string Identifier { get; set; }

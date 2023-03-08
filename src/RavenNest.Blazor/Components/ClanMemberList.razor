@@ -7,227 +7,229 @@
 
 @if (members == null)
 {
-  <LoadIndicator></LoadIndicator>
+    <LoadIndicator></LoadIndicator>
 }
 else
 {
-  if (invitePlayerVisible)
-  {
-    <div class="clan-member-invite">
-      <div class="clan-member-invite-header">
-        <h2>Search for character to invite</h2>
-        <button class="close" @onclick="HideInvitePlayer">x</button>
-      </div>
-      <BlazoredTypeahead SearchMethod="SearchPlayer"
-                         @bind-Value="selectedPlayer"
-                         @onselectionchange="SelectedPlayerChanged">
-        <SelectedTemplate>
-          @context.UserName (Level @PlayerService.GetCombatLevel(context) #@context.CharacterIndex)
-        </SelectedTemplate>
-        <ResultTemplate>
-          @context.UserName (Level @PlayerService.GetCombatLevel(context) #@context.CharacterIndex)
-        </ResultTemplate>
-      </BlazoredTypeahead>
+    if (invitePlayerVisible)
+    {
+        <div class="clan-member-invite">
+            <div class="clan-member-invite-header">
+                <h2>Search for character to invite</h2>
+                <button class="close" @onclick="HideInvitePlayer">x</button>
+            </div>
+            <BlazoredTypeahead SearchMethod="SearchPlayer"
+                       @bind-Value="selectedPlayer"
+                       @onselectionchange="SelectedPlayerChanged">
+                <SelectedTemplate>
+                    @context.UserName (Level @PlayerService.GetCombatLevel(context) #@context.CharacterIndex)
+                </SelectedTemplate>
+                <ResultTemplate>
+                    @context.UserName (Level @PlayerService.GetCombatLevel(context) #@context.CharacterIndex)
+                </ResultTemplate>
+            </BlazoredTypeahead>
 
-      <div class="clan-member-invite-controls">
-        @if (selectedPlayer != null)
-        {
-          <button @onclick="SendInvite" class="btn btn-primary">Send Invite</button>
-        }
-        <button @onclick="HideInvitePlayer" class="btn btn-secondary">Cancel</button>
-      </div>
-    </div>
-  }
+            <div class="clan-member-invite-controls">
+                @if (selectedPlayer != null)
+                {
+                    <button @onclick="SendInvite" class="btn btn-primary">Send Invite</button>
+                }
+                <button @onclick="HideInvitePlayer" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    }
 
-  <div class="clan-member-list">
-    <div class="clan-member-list-header">
-      <h2>Clan Members</h2>
-      <button class="btn btn-success" @onclick="ShowInvitePlayer" title="Invite player to your clan"><span class="fas fa-user-plus"></span>&nbsp;Invite Player</button>
+    <div class="clan-member-list">
+        <div class="clan-member-list-header">
+            <h2>Clan Members</h2>
+            <button class="btn btn-success" @onclick="ShowInvitePlayer" title="Invite player to your clan"><span class="fas fa-user-plus"></span>&nbsp;Invite Player</button>
+        </div>
+        <table class="items-list">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Name</th>
+                    <th>Rank</th>
+                    <th>Joined</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in members)
+                {
+                    <tr id="@item.Player.Id" class="item-row">
+                        <td><img src="/api/twitch/logo/@(item.Player.Twitch?.PlatformId)" style="width: 40px" /></td>
+                        <td class='item link' @onclick="(()=>InspectPlayer(item.Player))">
+                            @GetPlayerName(item.Player)
+                        </td>
+                        <td class='item'>
+                            @if (item.InvitationPending)
+                            {
+                                <span>-</span>
+                            }
+                            else
+                            {
+                                if (savingChanges)
+                                {
+                                    <LoadIndicator></LoadIndicator>
+                                }
+                                else if (rankEditPlayerId == item.Player.Id)
+                                {
+                                    <select class="clan-role-selector" @onchange="SelectedRoleChanged">
+                                        @foreach (var role in roles)
+                                        {
+                                            if (role.Id == item.Player.ClanRole?.Id)
+                                            {
+                                                <option id="@role.Id" value="@role.Id" selected>
+                                                    @role.Name
+                                                </option>
+                                            }
+                                            else
+                                            {
+                                                <option id="@role.Id" value="@role.Id">
+                                                    @role.Name
+                                                </option>
+                                            }
+                                        }
+                                    </select>
+                                    <span class="fas fa-check" @onclick="UpdatePlayerRole"></span>
+                                    <span class="fas fa-times" @onclick="CancelEditPlayerRole"></span>
+                                }
+                                else
+                                {
+                                    <span>@(item.Player.ClanRole.Name)&nbsp;</span>
+
+                                    <span class="fas fa-pencil" @onclick="(()=>rankEditPlayerId=item.Player.Id)"></span>
+                                }
+                            }
+                        </td>
+                        <td class='item'>@(item.InvitationPending ? "Invite Pending" : item.Player.ClanRole.Joined)</td>
+                        <td>
+                            @if (item.InvitationPending)
+                            {
+                                <button class="btn btn-warning" @onclick="(()=>RemoveInvite(item.Player.Id))">Remove Invite</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-danger" @onclick="(()=>RemoveMember(item.Player.Id))">Remove Member</button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
     </div>
-    <table class="items-list">
-      <thead>
-        <tr>
-          <th></th>
-          <th>Name</th>
-          <th>Rank</th>
-          <th>Joined</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        @foreach (var item in members)
-        {
-          <tr id="@item.Player.Id" class="item-row">
-            <td><img src="/api/twitch/logo/@(item.Player.UserId)" style="width: 40px" /></td>
-            <td class='item link' @onclick="(()=>InspectPlayer(item.Player))">
-              @GetPlayerName(item.Player)
-            </td>
-            <td class='item'>
-              @if (item.InvitationPending)
-              {
-                <span>-</span>
-              }
-              else
-              {
-                if (savingChanges)
-                {
-                  <LoadIndicator></LoadIndicator>
-                }
-                else if (rankEditPlayerId == item.Player.Id)
-                {
-                  <select class="clan-role-selector" @onchange="SelectedRoleChanged">
-                    @foreach (var role in roles)
-                    {
-                      if (role.Id == item.Player.ClanRole?.Id)
-                      {
-                        <option id="@role.Id" value="@role.Id" selected>
-                          @role.Name
-                        </option>
-                      }
-                      else
-                      {
-                        <option id="@role.Id" value="@role.Id">
-                          @role.Name
-                        </option>
-                      }
-                    }
-                  </select>
-                  <span class="fas fa-check" @onclick="UpdatePlayerRole"></span>
-                  <span class="fas fa-times" @onclick="CancelEditPlayerRole"></span>
-                }
-                else
-                {
-                  <span>@(item.Player.ClanRole.Name)&nbsp;</span><span class="fas fa-pencil" @onclick="(()=>rankEditPlayerId=item.Player.Id)"></span>
-                }
-              }
-            </td>
-            <td class='item'>@(item.InvitationPending ? "Invite Pending" : item.Player.ClanRole.Joined)</td>
-            <td>
-              @if (item.InvitationPending)
-              {
-                <button class="btn btn-warning" @onclick="(()=>RemoveInvite(item.Player.Id))">Remove Invite</button>
-              }
-              else
-              {
-                <button class="btn btn-danger" @onclick="(()=>RemoveMember(item.Player.Id))">Remove Member</button>
-              }
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
 }
 
 @code {
-  [Parameter]
-  public Guid ClanId { get; set; }
+    [Parameter]
+    public Guid ClanId { get; set; }
 
-  [Parameter]
-  public bool CanManage { get; set; }
+    [Parameter]
+    public bool CanManage { get; set; }
 
-  private bool savingChanges;
-  private bool invitePlayerVisible;
-  private Guid? rankEditPlayerId;
-  private Guid? targetRoleId;
+    private bool savingChanges;
+    private bool invitePlayerVisible;
+    private Guid? rankEditPlayerId;
+    private Guid? targetRoleId;
 
-  private Player selectedPlayer;
+    private Player selectedPlayer;
 
-  IReadOnlyList<ClanMember> members = null;
+    IReadOnlyList<ClanMember> members = null;
 
-  IReadOnlyList<ClanRole> roles = null;
+    IReadOnlyList<ClanRole> roles = null;
 
-  protected override void OnInitialized()
-  {
-    members = ClanService.GetMembers(ClanId);
-    roles = ClanService.GetRoles(ClanId);
-  }
-
-  private string GetPlayerName(Player player)
-  {
-    var name = player.Name;
-    if (!string.IsNullOrEmpty(player.Identifier))
-      name += " (" + player.Identifier + ")";
-    if (player.CharacterIndex > 0)
-      name += " #" + player.CharacterIndex;
-    return name;
-  }
-
-  private void InspectPlayer(Player player)
-  {
-    NavigationManager.NavigateTo("/inspect/" + player.Id);
-  }
-
-  private void SelectedRoleChanged(ChangeEventArgs e)
-  {
-    var id = e.Value?.ToString();
-    if (Guid.TryParse(id, out var roleId))
-      targetRoleId = roleId;
-  }
-
-  private void CancelEditPlayerRole()
-  {
-    savingChanges = false;
-    rankEditPlayerId = null;
-    targetRoleId = null;
-
-    InvokeAsync(this.StateHasChanged);
-  }
-
-  private async void UpdatePlayerRole()
-  {
-    savingChanges = true;
-    try
+    protected override void OnInitialized()
     {
-      if (targetRoleId != null && rankEditPlayerId != null)
-      {
-        members = await ClanService.UpdateMemberRoleAsync(ClanId, rankEditPlayerId.Value, targetRoleId.Value);
-      }
+        members = ClanService.GetMembers(ClanId);
+        roles = ClanService.GetRoles(ClanId);
     }
-    finally
+
+    private string GetPlayerName(Player player)
     {
-      CancelEditPlayerRole();
+        var name = player.Name;
+        if (!string.IsNullOrEmpty(player.Identifier))
+            name += " (" + player.Identifier + ")";
+        if (player.CharacterIndex > 0)
+            name += " #" + player.CharacterIndex;
+        return name;
     }
-  }
 
-  private void HideInvitePlayer()
-  {
-    invitePlayerVisible = false;
-  }
+    private void InspectPlayer(Player player)
+    {
+        NavigationManager.NavigateTo("/inspect/" + player.Id);
+    }
 
-  private void ShowInvitePlayer()
-  {
-    invitePlayerVisible = true;
-  }
+    private void SelectedRoleChanged(ChangeEventArgs e)
+    {
+        var id = e.Value?.ToString();
+        if (Guid.TryParse(id, out var roleId))
+            targetRoleId = roleId;
+    }
 
-  private void SendInvite()
-  {
-    if (selectedPlayer == null)
-      return;
+    private void CancelEditPlayerRole()
+    {
+        savingChanges = false;
+        rankEditPlayerId = null;
+        targetRoleId = null;
+
+        InvokeAsync(this.StateHasChanged);
+    }
+
+    private async void UpdatePlayerRole()
+    {
+        savingChanges = true;
+        try
+        {
+            if (targetRoleId != null && rankEditPlayerId != null)
+            {
+                members = await ClanService.UpdateMemberRoleAsync(ClanId, rankEditPlayerId.Value, targetRoleId.Value);
+            }
+        }
+        finally
+        {
+            CancelEditPlayerRole();
+        }
+    }
+
+    private void HideInvitePlayer()
+    {
+        invitePlayerVisible = false;
+    }
+
+    private void ShowInvitePlayer()
+    {
+        invitePlayerVisible = true;
+    }
+
+    private void SendInvite()
+    {
+        if (selectedPlayer == null)
+            return;
 
 
-    invitePlayerVisible = false;
-    members = ClanService.InvitePlayer(ClanId, selectedPlayer.Id);
-    selectedPlayer = null;
-  }
+        invitePlayerVisible = false;
+        members = ClanService.InvitePlayer(ClanId, selectedPlayer.Id);
+        selectedPlayer = null;
+    }
 
-  private void RemoveInvite(Guid characterId)
-  {
-    members = ClanService.RemoveInvite(ClanId, characterId);
-  }
+    private void RemoveInvite(Guid characterId)
+    {
+        members = ClanService.RemoveInvite(ClanId, characterId);
+    }
 
-  private void RemoveMember(Guid characterId)
-  {
-    members = ClanService.RemoveMember(ClanId, characterId);
-  }
+    private void RemoveMember(Guid characterId)
+    {
+        members = ClanService.RemoveMember(ClanId, characterId);
+    }
 
-  private void SelectedPlayerChanged()
-  {
-  }
+    private void SelectedPlayerChanged()
+    {
+    }
 
-  private async Task<IEnumerable<Player>> SearchPlayer(string searchText)
-  {
-    var result = (await PlayerService.SearchForPlayersAsync(searchText));
-    return result.Where(x => x.Clan?.Id == null).ToList();
-  }
+    private async Task<IEnumerable<Player>> SearchPlayer(string searchText)
+    {
+        var result = (await PlayerService.SearchForPlayersAsync(searchText));
+        return result.Where(x => x.Clan?.Id == null).ToList();
+    }
 }

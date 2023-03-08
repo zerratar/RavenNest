@@ -1,24 +1,17 @@
-﻿using RavenNest.DataModels;
-using RavenNest.Models;
-using RavenNest.Twitch;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using RavenNest.DataModels;
+using RavenNest.Models;
 
-namespace RavenNest.Sessions
+namespace RavenNest
 {
-
-    public class TwitchUserSessionInfo
-    {
-        public SessionInfo SessionInfo { get; set; }
-        public TwitchRequests.TwitchUser TwitchUser { get; set; }
-    }
-
     public class SessionInfo
     {
         public Guid Id { get; set; }
         public string SessionId { get; set; }
-        public string UserId { get; set; }
-        public Guid AccountId { get; set; }
+        public string TwitchUserId { get; set; }
+        public string Platform { get; set; }
+        public Guid UserId { get; set; }
         public string UserName { get; set; }
         public bool Authenticated { get; set; }
         public bool Moderator { get; set; }
@@ -27,24 +20,12 @@ namespace RavenNest.Sessions
         public bool CanChangeClanName { get; set; }
         public int Tier { get; set; }
         public List<CharacterGameSession> PlaySessions { get; set; }
+        public List<AuthServiceConnection> Connections { get; set; }
         public Guid? ActiveCharacterId { get; set; }
         public bool AcceptedCookiesDisclaimer { get; set; }
         public bool UserNameChanged { get; set; }
         public AuthToken AuthToken { get; set; }
         public bool Extension { get; set; }
-
         public UserPatreon Patreon { get; set; }
-    }
-
-
-    public class CharacterGameSession
-    {
-        public Guid CharacterId { get; set; }
-        public string CharacterName { get; set; }
-        public int CharacterIndex { get; set; }
-        public int CharacterCombatLevel { get; set; }
-        public string SessionTwitchUserId { get; set; }
-        public string SessionTwitchUserName { get; set; }
-        public DateTime Joined { get; set; }
     }
 }

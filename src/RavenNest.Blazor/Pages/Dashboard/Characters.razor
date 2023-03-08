@@ -60,7 +60,7 @@ else
     {
         await base.OnParametersSetAsync();
 
-        if (session == null || session.UserId == null)
+        if (session == null || session.TwitchUserId == null)
             return;
 
         players = await PlayerService.GetMyPlayersAsync();
@@ -81,7 +81,7 @@ else
 
     protected override void OnAfterRender(bool firstRender)
     {
-        if (session == null || session.UserId == null && selectedPlayer == null)
+        if (session == null || session.TwitchUserId == null && selectedPlayer == null)
         {
             NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
         }

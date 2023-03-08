@@ -6,11 +6,11 @@ namespace RavenNest.Blazor.Services
     public abstract class RavenNestService
     {
         protected readonly IHttpContextAccessor accessor;
-        protected readonly ISessionInfoProvider sessionInfoProvider;
+        protected readonly SessionInfoProvider sessionInfoProvider;
 
         protected RavenNestService(
             IHttpContextAccessor accessor,
-            ISessionInfoProvider sessionInfoProvider)
+            SessionInfoProvider sessionInfoProvider)
         {
             this.accessor = accessor;
             this.sessionInfoProvider = sessionInfoProvider;

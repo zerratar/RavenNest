@@ -18,7 +18,7 @@ namespace RavenNest.Controllers
         private readonly GameData gameData;
         private readonly IAuthManager authManager;
         private readonly IPatreonManager patreonManager;
-        private readonly ISessionInfoProvider sessionInfoProvider;
+        private readonly SessionInfoProvider sessionInfoProvider;
         private readonly SessionManager sessionManager;
         private readonly GameManager gameManager;
         private readonly ClanManager clanManager;
@@ -30,7 +30,7 @@ namespace RavenNest.Controllers
             GameData gameData,
             IAuthManager authManager,
             IPatreonManager patreonManager,
-            ISessionInfoProvider sessionInfoProvider,
+            SessionInfoProvider sessionInfoProvider,
             SessionManager sessionManager,
             GameManager gameManager,
             ClanManager clanManager,
@@ -204,6 +204,20 @@ namespace RavenNest.Controllers
                     info.TwitchUsername = ((string)twitch["url"])?.Split('/').LastOrDefault();
                 }
 
+                var youtube = socialConnections["youtube"];
+                if (youtube != null)
+                {
+                    info.YouTubeUserId = (string)youtube["user_id"];
+                    //info.TwitchUsername = ((string)youtube["url"])?.Split('/').LastOrDefault();
+                }
+
+                var discord = socialConnections["discord"];
+                if (discord != null)
+                {
+                    info.DiscordUserId = (string)youtube["user_id"];
+                    //info.TwitchUsername = ((string)youtube["url"])?.Split('/').LastOrDefault();
+                }
+
                 break;
             }
 
@@ -221,6 +235,8 @@ namespace RavenNest.Controllers
             public string Status { get; set; }
             public string TwitchUserId { get; set; }
             public string TwitchUsername { get; set; }
+            public string YouTubeUserId { get; set; }
+            public string DiscordUserId { get; set; }
             public decimal PledgeAmountCents { get; set; }
             public decimal PledgeAmountDollars { get; set; }
         }

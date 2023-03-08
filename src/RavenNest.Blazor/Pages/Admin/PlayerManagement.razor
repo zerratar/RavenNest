@@ -1,136 +1,137 @@
 ﻿@layout AdminLayout
 @page "/admin/players"
+@using RavenNest
 @using RavenNest.BusinessLogic.Extended
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject NavigationManager NavigationManager
 
 <div class="pagenation">
-  <div class="page-navigation">
-    <button class="link-button" @onclick="PreviousPage"><i class="fas fa-chevron-left"></i></button>
-    <div class="pages">
-      <div class="current-page">@(pageIndex+1)</div>&nbsp;/&nbsp;
-      <div class="total-pages">@pageCount</div>
+    <div class="page-navigation">
+        <button class="link-button" @onclick="PreviousPage"><i class="fas fa-chevron-left"></i></button>
+        <div class="pages">
+            <div class="current-page">@(pageIndex+1)</div>&nbsp;/&nbsp;
+            <div class="total-pages">@pageCount</div>
+        </div>
+        <button class="link-button" @onclick="NextPage"><i class="fas fa-chevron-right"></i></button>
     </div>
-    <button class="link-button" @onclick="NextPage"><i class="fas fa-chevron-right"></i></button>
-  </div>
-  <div class="search-bar">
-    <EditForm Model="searchModel" OnSubmit="Filter">
-      <InputText class="search-input" placeholder="Search for id, username or name" @bind-Value="searchModel.Query" />
-    </EditForm>
-  </div>
-  <div class="total-players"><span>@totalCount</span> players</div>
+    <div class="search-bar">
+        <EditForm Model="searchModel" OnSubmit="Filter">
+            <InputText class="search-input" placeholder="Search for id, username or name" @bind-Value="searchModel.Query" />
+        </EditForm>
+    </div>
+    <div class="total-players"><span>@totalCount</span> players</div>
 </div>
 
 
 <table class="player-table">
-  <thead>
-    <tr>
-      <th>Id</th>
-      <th>UserName</th>
-      <th>Name</th>
-      <th>Session</th>
-      <th>Admin</th>
-      <th>Moderator</th>
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    @if (players == null || loading)
-    {
-      <LoadIndicator></LoadIndicator>
-    }
-    else
-    {
-      @foreach (var player in players)
-      {
-        <tr class="player-row">
-          <td>@player.UserId</td>
-          <td @onclick="(() => DisplayPlayer(player))">@player.UserName<span class='player-character-index' alt='Character Number'>#@player.CharacterIndex</span></td>
-          <td>
-
-            @*<span v-if="editingName(player.userId)">
-                <input class="table-edit" v-model="player.name" />
-                <button class="link-button" @click="applyEditName(player.id)"><i class="fas fa-check"></i></button>
-                <button class="link-button" @click="cancelEditName(player.id)"><i class="fas fa-times"></i></button>
-              </span>*@
-
-            <span>
-              @*v-if="!editingName(player.userId)"*@
-              @player.Name
-              @*<button class="link-button" @click="editName(player.id)"><i class="fas fa-pencil-alt"></i></button>*@
-            </span>
-
-          </td>
-          <td>@player.SessionName</td>
-          <td>@player.IsAdmin</td>
-          <td>@player.IsModerator</td>
-          <td>
-          </td>
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>UserName</th>
+            <th>Name</th>
+            <th>Session</th>
+            <th>Admin</th>
+            <th>Moderator</th>
+            <th></th>
         </tr>
-      }
-    }
-  </tbody>
+    </thead>
+    <tbody>
+        @if (players == null || loading)
+        {
+            <LoadIndicator></LoadIndicator>
+        }
+        else
+        {
+            @foreach (var player in players)
+            {
+                <tr class="player-row">
+                    <td>@player.Id</td>
+                    <td @onclick="(() => DisplayPlayer(player))">@player.UserName<span class='player-character-index' alt='Character Number'>#@player.CharacterIndex</span></td>
+                    <td>
+
+                        @*<span v-if="editingName(player.userId)">
+                            <input class="table-edit" v-model="player.name" />
+                            <button class="link-button" @click="applyEditName(player.id)"><i class="fas fa-check"></i></button>
+                            <button class="link-button" @click="cancelEditName(player.id)"><i class="fas fa-times"></i></button>
+                            </span>*@
+
+                        <span>
+                            @*v-if="!editingName(player.userId)"*@
+                            @player.Name
+                            @*<button class="link-button" @click="editName(player.id)"><i class="fas fa-pencil-alt"></i></button>*@
+                        </span>
+
+                    </td>
+                    <td>@player.SessionName</td>
+                    <td>@player.IsAdmin</td>
+                    <td>@player.IsModerator</td>
+                    <td>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
 </table>
 
 
 
 @code {
-  private bool loading = false;
-  private PlayerSearchModel searchModel = new PlayerSearchModel();
-  private RavenNest.Sessions.SessionInfo session;
-  private IReadOnlyList<WebsiteAdminPlayer> players;
-  private int pageIndex = 0;
-  private int pageSize = 50;
-  private int pageCount = 1;
-  private long totalCount = 0;
+    private bool loading = false;
+    private PlayerSearchModel searchModel = new PlayerSearchModel();
+    private SessionInfo session;
+    private IReadOnlyList<WebsiteAdminPlayer> players;
+    private int pageIndex = 0;
+    private int pageSize = 50;
+    private int pageCount = 1;
+    private long totalCount = 0;
 
-  protected override void OnInitialized()
-  {
-    session = AuthService.GetSession();
-    LoadPlayerPageAsync(pageIndex, pageSize);
-  }
+    protected override void OnInitialized()
+    {
+        session = AuthService.GetSession();
+        LoadPlayerPageAsync(pageIndex, pageSize);
+    }
 
-  private void DisplayPlayer(WebsiteAdminPlayer player)
-  {
-    NavigationManager.NavigateTo("/inspect/" + player.Id);
-  }
+    private void DisplayPlayer(WebsiteAdminPlayer player)
+    {
+        NavigationManager.NavigateTo("/inspect/" + player.Id);
+    }
 
-  private void Filter()
-  {
-    pageIndex = 0;
-    LoadPlayerPageAsync(pageIndex, pageSize);
-  }
+    private void Filter()
+    {
+        pageIndex = 0;
+        LoadPlayerPageAsync(pageIndex, pageSize);
+    }
 
-  private void NextPage()
-  {
-    ++pageIndex;
-    LoadPlayerPageAsync(pageIndex, pageSize);
-  }
+    private void NextPage()
+    {
+        ++pageIndex;
+        LoadPlayerPageAsync(pageIndex, pageSize);
+    }
 
-  private void PreviousPage()
-  {
-    var oldPage = pageIndex;
-    if (--pageIndex < 0)
-      pageIndex = 0;
-    if (oldPage != pageIndex)
-      LoadPlayerPageAsync(pageIndex, pageSize);
-  }
+    private void PreviousPage()
+    {
+        var oldPage = pageIndex;
+        if (--pageIndex < 0)
+            pageIndex = 0;
+        if (oldPage != pageIndex)
+            LoadPlayerPageAsync(pageIndex, pageSize);
+    }
 
-  private async Task LoadPlayerPageAsync(int index, int take)
-  {
-    loading = true;
-    var filter = searchModel.Query;
-    var result = await PlayerService.GetPlayerPageAsync(filter, index, take);
-    players = result.Items;
-    totalCount = result.TotalSize;
-    pageCount = (int)Math.Floor((double)this.totalCount / this.pageSize) + 1;
-    loading = false;
-    await InvokeAsync(StateHasChanged);
-  }  
+    private async Task LoadPlayerPageAsync(int index, int take)
+    {
+        loading = true;
+        var filter = searchModel.Query;
+        var result = await PlayerService.GetPlayerPageAsync(filter, index, take);
+        players = result.Items;
+        totalCount = result.TotalSize;
+        pageCount = (int)Math.Floor((double)this.totalCount / this.pageSize) + 1;
+        loading = false;
+        await InvokeAsync(StateHasChanged);
+    }
 
-  public class PlayerSearchModel
-  {
-    public string Query { get; set; }
-  }
+    public class PlayerSearchModel
+    {
+        public string Query { get; set; }
+    }
 }

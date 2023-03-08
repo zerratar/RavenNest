@@ -11,7 +11,6 @@ using Newtonsoft.Json;
 using RavenNest.Blazor.Services;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
-using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Game;
@@ -24,12 +23,11 @@ namespace RavenNest.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [ApiDescriptor(Name = "Twitch API", Description = "Used by the website to allow authentication with Twitch. This is not meant to be used elsewhere.")]
     public class TwitchController : ControllerBase
     {
         private readonly PlayerManager playerManager;
         private readonly GameData gameData;
-        private readonly ISessionInfoProvider sessionInfoProvider;
+        private readonly SessionInfoProvider sessionInfoProvider;
         private readonly IAuthManager authManager;
         private readonly LogoService logoService;
         private readonly AppSettings settings;
@@ -43,7 +41,7 @@ namespace RavenNest.Controllers
             IOptions<AppSettings> settings,
             PlayerManager playerManager,
             GameData gameData,
-            ISessionInfoProvider sessionInfoProvider,
+            SessionInfoProvider sessionInfoProvider,
             IAuthManager authManager,
             LogoService logoService)
         {
@@ -169,7 +167,7 @@ namespace RavenNest.Controllers
                     return false;
                 }
 
-                if (sessionInfo.UserId != userId)
+                if (sessionInfo.TwitchUserId != userId)
                 {
                     return false;
                 }
@@ -181,7 +179,6 @@ namespace RavenNest.Controllers
         }
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("session/{token}")]
-        [MethodDescriptor(Name = "Set Twitch Access Token", Description = "Updates current session with the set Twitch access token, used as an user identifier throughout the website.")]
         public async Task<SessionInfo> SetAccessToken(string token)
         {
             var session = this.HttpContext.GetSessionId();
@@ -189,7 +186,7 @@ namespace RavenNest.Controllers
             var user = await sessionInfoProvider.GetTwitchUserAsync(session, token);
             if (user != null)
             {
-                playerManager.CreatePlayerIfNotExists(user.Id, user.Login, "1");
+                playerManager.CreatePlayerIfNotExists(user.Id, "twitch", user.Login, "1");
             }
             return result.SessionInfo;
         }
@@ -213,13 +210,13 @@ namespace RavenNest.Controllers
                 return false;
             }
 
-            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId);
+            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId, "twitch");
             if (activeSession == null)
             {
                 return false;
             }
 
-            var user = gameData.GetUser(sessionInfo.AccountId);
+            var user = gameData.GetUser(sessionInfo.UserId);
             if (user == null)
             {
                 return false;
@@ -239,7 +236,7 @@ namespace RavenNest.Controllers
         [HttpGet("extension/player/{broadcasterId}")]
         public WebsitePlayer GetActivePlayer(string broadcasterId)
         {
-            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId);
+            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId, "twitch");
             if (activeSession == null)
             {
                 return null;
@@ -247,8 +244,8 @@ namespace RavenNest.Controllers
 
             if (TryGetSession(out var si))
             {
-                var activeCharacter = gameData.GetCharacterBySession(activeSession.Id, si.UserId);
-                var user = gameData.GetUser(si.AccountId);
+                var activeCharacter = gameData.GetCharacterBySession(activeSession.Id, si.TwitchUserId, "twitch");
+                var user = gameData.GetUser(si.UserId);
                 return activeCharacter == null || user == null
                     ? null : playerManager.GetWebsitePlayer(user, activeCharacter);
             }
@@ -269,13 +266,13 @@ namespace RavenNest.Controllers
                 return false;
             }
 
-            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId);
+            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId, "twitch");
             if (activeSession == null)
             {
                 return false;
             }
 
-            var user = gameData.GetUser(sessionInfo.AccountId);
+            var user = gameData.GetUser(sessionInfo.UserId);
             if (user == null)
             {
                 return false;
@@ -308,7 +305,7 @@ namespace RavenNest.Controllers
                 return result;
             }
 
-            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId);
+            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId, "twitch");
             if (activeSession == null)
             {
                 result.ErrorMessage = "Broadcaster does not have an active game session";
@@ -317,7 +314,7 @@ namespace RavenNest.Controllers
 
             if (TryGetSession(out var sessionInfo))
             {
-                var user = gameData.GetUser(sessionInfo.AccountId);
+                var user = gameData.GetUser(sessionInfo.UserId);
                 if (user == null)
                 {
                     result.ErrorMessage = "No such user.";
@@ -332,7 +329,7 @@ namespace RavenNest.Controllers
                 }
 
                 var index = existingCharacters.Count + 1;
-                var player = await playerManager.CreatePlayer(user.UserId, user.UserName, index.ToString());
+                var player = await playerManager.CreatePlayer(user.UserId, "twitch", user.UserName, index.ToString());
                 if (player == null)
                 {
                     result.ErrorMessage = "Failed to create a new character.";
@@ -359,7 +356,7 @@ namespace RavenNest.Controllers
                     {
                         CharacterId = c.Id,
                         Identifier = c.Identifier,
-                        UserId = sessionInfo.UserId,
+                        UserId = sessionInfo.TwitchUserId,
                         UserName = sessionInfo.UserName
                     });
 
@@ -385,7 +382,7 @@ namespace RavenNest.Controllers
                 return result;
             }
 
-            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId);
+            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId, "twitch");
             if (activeSession == null)
             {
                 result.ErrorMessage = "Broadcaster does not have an active game session";
@@ -402,7 +399,7 @@ namespace RavenNest.Controllers
                 }
 
                 var myUser = gameData.GetUser(c.UserId);
-                if (myUser == null || myUser.UserId != sessionInfo.UserId)
+                if (myUser == null || myUser.UserId != sessionInfo.TwitchUserId)
                 {
                     result.ErrorMessage = "No such user.";
                     return result;
@@ -419,7 +416,6 @@ namespace RavenNest.Controllers
                 result.Success = true;
                 result.Player = c.MapForWebsite(gameData, myUser);
 
-
                 sessionInfoProvider.SetActiveCharacter(sessionInfo, characterId);
 
                 var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerAdd,
@@ -428,8 +424,8 @@ namespace RavenNest.Controllers
                     {
                         CharacterId = characterId,
                         Identifier = c.Identifier,
-                        UserId = sessionInfo.UserId,
-                        UserName = sessionInfo.UserName
+                        UserId = sessionInfo.TwitchUserId,
+                        UserName = sessionInfo.UserName,
                     });
 
                 gameData.EnqueueGameEvent(gameEvent);
@@ -442,18 +438,19 @@ namespace RavenNest.Controllers
 
             return result;
         }
-        [ApiExplorerSettings(IgnoreApi = true)]
 
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/new/{broadcasterId}/{userId}/{username}/{displayName}")]
-        public Task<SessionInfo> CreateUserAsync(string broadcasterId, string userId, string username, string displayName)
+        public async Task<SessionInfo> CreateUserAsync(string broadcasterId, string userId, string username, string displayName)
         {
             if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(username))
             {
-                if (userId.StartsWith("u")) userId = userId.Substring(1);
-                playerManager.CreatePlayerIfNotExists(userId, username, "1");
+                if (userId.StartsWith("u")) userId = userId[1..];
+                await playerManager.CreatePlayerIfNotExists(userId, "twitch", username, "1");
             }
             return SetExtensionViewer(broadcasterId, userId);
         }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/{broadcasterId}")]
         public StreamerInfo GetStreamerInfo(string broadcasterId)
@@ -465,10 +462,9 @@ namespace RavenNest.Controllers
                 result.StreamerUserId = broadcasterId;
                 result.StreamerUserName = streamer.UserName;
 
-                var gameSession = gameData.GetOwnedSessionByUserId(streamer.UserId);
+                var gameSession = gameData.GetOwnedSessionByUserId(streamer.Id);
                 result.IsRavenfallRunning = gameSession != null;
                 result.StreamerSessionId = gameSession?.Id;
-
 
                 if (gameSession != null)
                 {
@@ -486,7 +482,7 @@ namespace RavenNest.Controllers
                         var session = this.HttpContext.GetSessionId();
                         if (sessionInfoProvider.TryGet(session, out var sessionInfo))
                         {
-                            var u = gameData.GetUser(sessionInfo.AccountId);
+                            var u = gameData.GetUser(sessionInfo.UserId);
                             if (u != null)
                             {
                                 var c = charactersInSession.FirstOrDefault(x => x.UserId == u.Id);
@@ -505,18 +501,17 @@ namespace RavenNest.Controllers
         }
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/{broadcasterId}/{viewerId}")]
-        public async Task<SessionInfo> SetExtensionViewer(string broadcasterId, string viewerId)
+        public SessionInfo SetExtensionViewer(string broadcasterId, string viewerId)
         {
             var session = this.HttpContext.GetSessionId();
 
             // We need to clear out previous sessions of the combinations of broadcasterId and viewerId.
             // we will use the pair to retake existing one
-            var result = await sessionInfoProvider.CreateTwitchUserSessionAsync(session, broadcasterId, viewerId);
-            return result;
+            return sessionInfoProvider.CreateTwitchUserSession(session, broadcasterId, viewerId);
         }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("access")]
-        [MethodDescriptor(Name = "Get Access Token Request URL", Description = "Gets a Twitch access token request url with the scope user:read:email.")]
         public string GetAccessTokenRequestUrl()
         {
             return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
@@ -540,12 +535,11 @@ namespace RavenNest.Controllers
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("user")]
-        [MethodDescriptor(Name = "Get Twitch User", Description = "After authenticating with Twitch, this can be used to get information about the logged in user.")]
         public async Task<string> GetTwitchUser()
         {
             if (sessionInfoProvider.TryGet(HttpContext.GetSessionId(), out var session))
             {
-                return $"{{ \"login\": \"{session.UserName}\", \"id\": \"{session.UserId}\"}}";
+                return $"{{ \"login\": \"{session.UserName}\", \"id\": \"{session.TwitchUserId}\"}}";
             }
 
             if (!this.sessionInfoProvider.TryGetTwitchToken(HttpContext.GetSessionId(), out var key))

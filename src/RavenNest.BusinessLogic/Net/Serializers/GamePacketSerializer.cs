@@ -39,7 +39,7 @@ namespace RavenNest.BusinessLogic.Net
                 var packetId = br.ReadString();
 
                 var dataSize = 0;
-                var payload = new byte[0];
+                var payload = Array.Empty<byte>();
                 Type targetType = null;
 
                 try

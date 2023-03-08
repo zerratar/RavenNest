@@ -11,7 +11,7 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
     public class ExtensionConnectionProvider : IExtensionWebSocketConnectionProvider
     {
         private readonly GameData gameData;
-        private readonly ISessionInfoProvider sessionInfoProvider;
+        private readonly SessionInfoProvider sessionInfoProvider;
         private readonly ILogger<ExtensionConnectionProvider> logger;
         private readonly IExtensionPacketDataSerializer packetDataSerializer;
         private readonly Dictionary<string, IExtensionConnection> connections = new Dictionary<string, IExtensionConnection>();
@@ -22,7 +22,7 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
             ILogger<ExtensionConnectionProvider> logger,
             GameData gameData,
             IExtensionPacketDataSerializer packetDataSerializer,
-            ISessionInfoProvider sessionInfoProvider
+            SessionInfoProvider sessionInfoProvider
         )
         {
             this.logger = logger;

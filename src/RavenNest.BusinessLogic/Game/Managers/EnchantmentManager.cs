@@ -165,7 +165,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 gainedExp -= nextLevel;
                 nextLevel = GameMath.ExperienceForLevel(clanSkill.Level + 1);
-                clanSkill.Level = clanSkill.Level + 1;
+                ++clanSkill.Level;
                 ++gainedLevels;
             }
 
@@ -188,7 +188,7 @@ namespace RavenNest.BusinessLogic.Game
             };
         }
 
-        private RavenNest.Models.InventoryItem Transform(ReadOnlyInventoryItem item)
+        private static RavenNest.Models.InventoryItem Transform(ReadOnlyInventoryItem item)
         {
             return new RavenNest.Models.InventoryItem
             {
@@ -210,7 +210,7 @@ namespace RavenNest.BusinessLogic.Game
             var highestValueAttribute = attributes.OrderByDescending(x => x.DoubleValue).FirstOrDefault();
             var attrName = highestValueAttribute.Attribute.Name.ToLower();
 
-            attrName = char.ToUpper(attrName[0]) + attrName.Substring(1);
+            attrName = char.ToUpper(attrName[0]) + attrName[1..];
 
             var totalPlus = attributes.Sum(x => (int)Math.Floor(x.DoubleValue));
 

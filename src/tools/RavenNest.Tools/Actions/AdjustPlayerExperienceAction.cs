@@ -17,7 +17,7 @@ namespace RavenNest.Tools.Actions
 {
     public class AdjustPlayerExperienceAction
     {
-        private SaveConfirmationWindow confirmDialog;
+        private readonly SaveConfirmationWindow confirmDialog;
 
         public AdjustPlayerExperienceAction(
             ProgressBar toolProgress,

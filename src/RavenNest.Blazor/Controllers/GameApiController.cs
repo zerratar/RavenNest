@@ -15,7 +15,7 @@ namespace RavenNest.Controllers
         protected string SessionId => HttpContext.GetSessionId();
         private readonly GameData gameData;
         private readonly IAuthManager authManager;
-        private readonly ISessionInfoProvider sessionInfoProvider;
+        private readonly SessionInfoProvider sessionInfoProvider;
         private readonly SessionManager sessionManager;
         private readonly ISecureHasher secureHasher;
         private readonly ILogger logger;
@@ -24,7 +24,7 @@ namespace RavenNest.Controllers
             ILogger logger,
             GameData gameData,
             IAuthManager authManager,
-            ISessionInfoProvider sessionInfoProvider,
+            SessionInfoProvider sessionInfoProvider,
             SessionManager sessionManager,
             ISecureHasher secureHasher)
         {

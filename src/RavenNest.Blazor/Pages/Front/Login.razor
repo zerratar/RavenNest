@@ -33,7 +33,7 @@
     }
     else
     {
-        if (session.UserId == null)
+        if (session.TwitchUserId == null)
         {
             <h1 class="login-header">LOGIN TO YOUR ACCOUNT</h1>
             <h4 class="login-slogan">Get access to all the features<br />Ravenfall has to offer.</h4>
@@ -75,7 +75,7 @@
     private string loginFailedError = "";
     private bool userInitiatedLogin = false;
     private bool twitchLoginInitiated = false;
-    private bool IsAuthenticated => session != null && session.UserId != null;
+    private bool IsAuthenticated => session != null && session.TwitchUserId != null;
     private bool IsLoggingIn => !IsAuthenticated && (userInitiatedLogin || HasQueryParams());
 
     private bool IsTwitchLogin => twitchLoginInitiated || NavigationManager.Uri.Contains("login/twitch", StringComparison.OrdinalIgnoreCase);
@@ -195,7 +195,7 @@
     {
         userInitiatedLogin = true;
         session = await AuthService.LoginAsync(loginModel);
-        if (string.IsNullOrEmpty(session.UserId))
+        if (string.IsNullOrEmpty(session.TwitchUserId))
         {
             userInitiatedLogin = false;
             loginFailed = true;

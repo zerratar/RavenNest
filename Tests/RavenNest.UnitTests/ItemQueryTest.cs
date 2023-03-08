@@ -114,7 +114,7 @@ namespace RavenNest.UnitTests
                 var lastChar = token.Value[token.Value.Length - 1];
                 if (values.TryGetValue(char.ToLower(lastChar).ToString(), out var m))
                 {
-                    if (decimal.TryParse(token.Value.Remove(token.Value.Length - 1).Substring(1),
+                    if (decimal.TryParse(token.Value.Remove(token.Value.Length - 1)[1..],
                         NumberStyles.Any, new NumberFormatInfo(), out var p))
                     {
                         amount = (long)(p * m);
@@ -122,7 +122,7 @@ namespace RavenNest.UnitTests
                     }
                 }
 
-                if (long.TryParse(token.Value.Substring(1), out amount))
+                if (long.TryParse(token.Value[1..], out amount))
                 {
                     return true;
                 }
@@ -185,7 +185,7 @@ namespace RavenNest.UnitTests
             var abbreviation = "";
             foreach (var part in nameParts)
             {
-                if (part.Contains("-"))
+                if (part.Contains('-'))
                     abbreviation += string.Join("", part.Split('-').Select(x => x[0]));
                 else
                     abbreviation += part[0];

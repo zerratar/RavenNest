@@ -14,7 +14,7 @@ namespace RavenNest.Controllers
     {
         private readonly GameData gameData;
         private readonly IAuthManager authManager;
-        private readonly ISessionInfoProvider sessionInfoProvider;
+        private readonly SessionInfoProvider sessionInfoProvider;
         private readonly SessionManager sessionManager;
         private readonly GameManager gameManager;
         private readonly ClanManager clanManager;
@@ -25,7 +25,7 @@ namespace RavenNest.Controllers
             ILogger<ClanController> logger,
             GameData gameData,
             IAuthManager authManager,
-            ISessionInfoProvider sessionInfoProvider,
+            SessionInfoProvider sessionInfoProvider,
             SessionManager sessionManager,
             GameManager gameManager,
             ClanManager clanManager,
@@ -115,7 +115,16 @@ namespace RavenNest.Controllers
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
-            return clanManager.JoinClan(clanOwnerId, characterId);
+            return clanManager.JoinClan(clanOwnerId, "twitch", characterId);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("join/{platform}/{ownerPlatformId}/{characterId}")]
+        public JoinClanResult ClanPlayerJoin(string clanOwnerId, string platform, Guid characterId)
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            return clanManager.JoinClan(clanOwnerId, platform, characterId);
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]

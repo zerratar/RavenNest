@@ -8,7 +8,6 @@ namespace RavenNest.BusinessLogic.Game
     {
         private readonly ILogger logger;
         private readonly GameData gameData;
-        private const float MaxSyncTimeDeltaSeconds = 15f;
 
         public PlayerIntegrityChecker(
             ILogger<PlayerIntegrityChecker> logger,
@@ -28,8 +27,6 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
-#warning player integrity check disabled
-
             var character = gameData.GetCharacter(characterId);
             if (gameSession.UserId != character.UserIdLock)
             {
@@ -45,20 +42,6 @@ namespace RavenNest.BusinessLogic.Game
 
             return true;
 
-            // TODO(Zerratar): enable again in the future
-
-
-            //var syncDelta = syncTime - sessionState.SyncTime;
-            //var clientTime = gameSession.Started.AddSeconds(syncDelta);
-            //if (clientTime - DateTime.UtcNow > TimeSpan.FromSeconds(MaxSyncTimeDeltaSeconds))
-            //{
-            //    logger.WriteError($"Player with ID {characterId} is compromised. CT: {clientTime}, SD: {syncDelta}");
-            //    playerSessionState.Compromised = true;
-            //    return false;
-            //}
-
-            //playerSessionState.SyncTime = syncTime;
-            //return true;
         }
     }
 }

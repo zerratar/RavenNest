@@ -4,7 +4,6 @@ namespace RavenNest.Models
 {
     public class PlayerState
     {
-        public string UserId { get; set; }
         public Guid CharacterId { get; set; }
         public string CurrentTask { get; set; }
         public int[] Level { get; set; }

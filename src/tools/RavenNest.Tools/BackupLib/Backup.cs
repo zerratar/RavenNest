@@ -57,7 +57,7 @@ namespace RavenNest.Tools.BackupLib
                 var name = new DirectoryInfo(bf).Name;
                 var data = name.Split('_');
                 var str = data[1].AsSpan();
-                var date = DateTime.Parse(data[0] + " " + string.Join(":", str.Slice(0, 2).ToString(), str.Slice(2, 2).ToString(), str.Slice(4, 2).ToString()));
+                var date = DateTime.Parse(data[0] + " " + string.Join(":", str[..2].ToString(), str.Slice(2, 2).ToString(), str.Slice(4, 2).ToString()));
                 result.Add(new BackupInfo
                 {
                     Created = date,
@@ -82,7 +82,7 @@ namespace RavenNest.Tools.BackupLib
                 var name = new DirectoryInfo(bf).Name;
                 var data = name.Split('_');
                 var str = data[1].AsSpan();
-                var date = DateTime.Parse(data[0] + " " + string.Join(":", str.Slice(0, 2).ToString(), str.Slice(2, 2).ToString(), str.Slice(4, 2).ToString()));
+                var date = DateTime.Parse(data[0] + " " + string.Join(":", str[..2].ToString(), str.Slice(2, 2).ToString(), str.Slice(4, 2).ToString()));
 
                 var backup = new Backup<T1, T2>();
                 backup.Created = date;
@@ -106,7 +106,7 @@ namespace RavenNest.Tools.BackupLib
                 var name = new DirectoryInfo(bf).Name;
                 var data = name.Split('_');
                 var str = data[1].AsSpan();
-                var date = DateTime.Parse(data[0] + " " + string.Join(":", str.Slice(0, 2).ToString(), str.Slice(2, 2).ToString(), str.Slice(4, 2).ToString()));
+                var date = DateTime.Parse(data[0] + " " + string.Join(":", str[..2].ToString(), str.Slice(2, 2).ToString(), str.Slice(4, 2).ToString()));
 
                 var backup = new Backup<T1, T2, T3>();
                 backup.Created = date;

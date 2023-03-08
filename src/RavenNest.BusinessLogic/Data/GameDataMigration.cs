@@ -249,7 +249,7 @@ namespace RavenNest.BusinessLogic.Data
             var query = new StringBuilder();
 
             User user = users.FirstOrDefault(x => x.Id == character.UserId);
-            if (user == null) return new string[0];
+            if (user == null) return Array.Empty<string>();
 
             if (importedUsers.Add(user.Id))
             {

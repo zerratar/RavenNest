@@ -49,7 +49,7 @@ namespace RavenNest.BusinessLogic.Game
 
                 var username = line.Split(' ')[0];
                 var player = gameData.GetCharacterByName(username, charIdentifier);
-                query = query.Substring(username.Length).Trim();
+                query = query[username.Length..].Trim();
 
                 if (string.IsNullOrEmpty(query))
                     return itemOutput;
@@ -146,17 +146,17 @@ namespace RavenNest.BusinessLogic.Game
 
             if (token.Value.StartsWith("x", StringComparison.OrdinalIgnoreCase))
             {
-                var lastChar = token.Value[token.Value.Length - 1];
+                var lastChar = token.Value[^1];
                 if (values.TryGetValue(char.ToLower(lastChar).ToString(), out var m))
                 {
-                    if (double.TryParse(token.Value.Remove(token.Value.Length - 1).Substring(1), NumberStyles.Any, new NumberFormatInfo(), out var p))
+                    if (double.TryParse(token.Value.Remove(token.Value.Length - 1)[1..], NumberStyles.Any, new NumberFormatInfo(), out var p))
                     {
                         amount = (long)(p * m);
                         return true;
                     }
                 }
 
-                if (long.TryParse(token.Value.Substring(1), out amount))
+                if (long.TryParse(token.Value.AsSpan(1), out amount))
                 {
                     return true;
                 }
@@ -219,7 +219,7 @@ namespace RavenNest.BusinessLogic.Game
             var abbreviation = "";
             foreach (var part in nameParts)
             {
-                if (part.Contains("-"))
+                if (part.Contains('-'))
                     abbreviation += string.Join("", part.Split('-').Select(x => x[0]));
                 else
                     abbreviation += part[0];

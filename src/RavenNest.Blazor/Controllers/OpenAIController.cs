@@ -13,7 +13,7 @@ namespace RavenNest.Controllers
     {
         private readonly GameData gameData;
         private readonly IAuthManager authManager;
-        private readonly ISessionInfoProvider sessionInfoProvider;
+        private readonly SessionInfoProvider sessionInfoProvider;
         private readonly SessionManager sessionManager;
         private readonly GameManager gameManager;
         private readonly ClanManager clanManager;
@@ -24,7 +24,7 @@ namespace RavenNest.Controllers
             ILogger<OpenAIController> logger,
             GameData gameData,
             IAuthManager authManager,
-            ISessionInfoProvider sessionInfoProvider,
+            SessionInfoProvider sessionInfoProvider,
             SessionManager sessionManager,
             GameManager gameManager,
             ClanManager clanManager,
@@ -57,14 +57,12 @@ namespace RavenNest.Controllers
             };
         }
 
-
-
         public class ChatMessage
         {
             [JsonPropertyName("role")]
-            public string? Role { get; set; }
+            public string Role { get; set; }
             [JsonPropertyName("content")]
-            public string? Content { get; set; }
+            public string Content { get; set; }
 
             internal static ChatMessage Create(string role, string prompt)
             {

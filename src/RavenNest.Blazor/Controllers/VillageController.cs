@@ -19,7 +19,7 @@ namespace RavenNest.Controllers
             ILogger<VillageController> logger,
             GameData gameData,
             IAuthManager authManager,
-            ISessionInfoProvider sessionInfoProvider,
+            SessionInfoProvider sessionInfoProvider,
             SessionManager sessionManager,
             IVillageManager villageManager,
             ISecureHasher secureHasher)

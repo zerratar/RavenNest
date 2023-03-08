@@ -7,8 +7,8 @@ namespace RavenNest.Tools.Windows
 {
     public class SaveConfirmationWindow : Window
     {
-        private Button yesBtn;
-        private Button noBtn;
+        private readonly Button yesBtn;
+        private readonly Button noBtn;
 
         public SaveConfirmationWindow()
         {

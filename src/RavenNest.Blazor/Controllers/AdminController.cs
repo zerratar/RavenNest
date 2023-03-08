@@ -22,7 +22,7 @@ namespace RavenNest.Controllers
         private readonly ILogger<AdminController> logger;
         private readonly IGameWebSocketConnectionProvider socketProvider;
         private readonly GameData gameData;
-        private readonly ISessionInfoProvider sessionInfoProvider;
+        private readonly SessionInfoProvider sessionInfoProvider;
         private readonly PlayerManager playerManager;
         private readonly AdminManager adminManager;
         private readonly IAuthManager authManager;
@@ -31,7 +31,7 @@ namespace RavenNest.Controllers
             ILogger<AdminController> logger,
             IGameWebSocketConnectionProvider socketProvider,
             GameData gameData,
-            ISessionInfoProvider sessionInfoProvider,
+            SessionInfoProvider sessionInfoProvider,
             PlayerManager playerManager,
             AdminManager adminManager,
             IAuthManager authManager)

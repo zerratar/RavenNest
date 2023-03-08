@@ -116,6 +116,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 new ResourceUpdate
                 {
                     UserId = user.UserId,
+                    CharacterId = character.Id,
                     FishAmount = resources.Fish,
                     OreAmount = resources.Ore,
                     WheatAmount = resources.Wheat,

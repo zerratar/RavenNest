@@ -20,8 +20,7 @@ namespace RavenNest.BusinessLogic.Game
     {
         private readonly GameData gameData;
         private readonly IHttpContextAccessor accessor;
-        private readonly ISessionInfoProvider sessionInfoProvider;
-        private readonly PlayerInventoryProvider playerInventory;
+        private readonly SessionInfoProvider sessionInfoProvider;
         private readonly PatreonSettings patreon;
         private readonly HttpClient httpClient;
 
@@ -32,13 +31,11 @@ namespace RavenNest.BusinessLogic.Game
         public PatreonManager(
             GameData gameData,
             IHttpContextAccessor accessor,
-            ISessionInfoProvider sessionInfoProvider,
-            PlayerInventoryProvider playerInventory)
+            SessionInfoProvider sessionInfoProvider)
         {
             this.gameData = gameData;
             this.accessor = accessor;
             this.sessionInfoProvider = sessionInfoProvider;
-            this.playerInventory = playerInventory;
 
             var data = (this.gameData as GameData);
             this.patreon = data.Patreon;
@@ -49,7 +46,7 @@ namespace RavenNest.BusinessLogic.Game
 
         public void Unlink(SessionInfo session)
         {
-            var user = gameData.GetUser(session.AccountId);
+            var user = gameData.GetUser(session.UserId);
             if (user == null) return;
             var patreonUser = gameData.GetPatreonUser(user.Id);
             if (patreonUser == null) return;
@@ -82,18 +79,21 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var isNewUserPatreon = false;
-            var user = gameData.GetUser(session.AccountId);
+            var user = gameData.GetUser(session.UserId);
             var patreonUser = gameData.GetPatreonUser(user.Id);
             if (patreonUser == null)
             {
                 // check one more time but using patreon ID, in case we received one earlier from a webhook.
                 // This will allow us to re-use those records.
-                patreonUser = new UserPatreon();
-                patreonUser.Id = Guid.NewGuid();
-                patreonUser.TwitchUserId = user.UserId;
-                patreonUser.UserId = user.Id;
-                patreonUser.Email = user.Email;
-                patreonUser.Created = DateTime.UtcNow;
+                patreonUser = new UserPatreon
+                {
+                    Id = Guid.NewGuid(),
+                    TwitchUserId = user.UserId,
+                    
+                    UserId = user.Id,
+                    Email = user.Email,
+                    Created = DateTime.UtcNow
+                };
                 isNewUserPatreon = true;
             }
 
@@ -193,7 +193,7 @@ namespace RavenNest.BusinessLogic.Game
             return patreonUser;
         }
 
-        private void Replace(ref UserPatreon patreonUser, UserPatreon existing)
+        private static void Replace(ref UserPatreon patreonUser, UserPatreon existing)
         {
             existing.TwitchUserId = patreonUser.TwitchUserId;
             existing.UserId = patreonUser.UserId;
@@ -297,7 +297,6 @@ namespace RavenNest.BusinessLogic.Game
             var url = "https://www.patreon.com/api/oauth2/v2/campaigns/" + activeCampaign.Id + "/members" +
                 "?fields" + WebUtility.UrlEncode("[member]") + "=currently_entitled_amount_cents,patron_status";
             var membersResponse = await GetCampaignMembersAsync(url);
-            var meta = membersResponse.Meta;
 
             var nextPageUrl = membersResponse?.Links?.Next;//meta?.Pagination?.Cursors?.Next;
             while (!string.IsNullOrEmpty(nextPageUrl))
@@ -384,7 +383,7 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        public async Task<PatreonIdentity.Root> GetIdentityAsync(UserPatreon patreon)
+        public static async Task<PatreonIdentity.Root> GetIdentityAsync(UserPatreon patreon)
         {
             var url = "https://www.patreon.com/api/oauth2/v2/identity" +
                 "?include=memberships,memberships.currently_entitled_tiers" +
@@ -420,12 +419,14 @@ namespace RavenNest.BusinessLogic.Game
                 var url = $"https://www.patreon.com/api/oauth2/token";
 
                 //?grant_type=refresh_token&refresh_token={patreon.CreatorRefreshToken}&client_id={patreon.ClientId}&client_secret={patreon.ClientSecret}
-                var dict = new Dictionary<string, string>();
-                dict.Add("code", code);
-                dict.Add("grant_type", "authorization_code");
-                dict.Add("client_id", patreon.ClientId);
-                dict.Add("client_secret", patreon.ClientSecret);
-                dict.Add("redirect_uri", GetRedirectUrl());
+                var dict = new Dictionary<string, string>
+                {
+                    { "code", code },
+                    { "grant_type", "authorization_code" },
+                    { "client_id", patreon.ClientId },
+                    { "client_secret", patreon.ClientSecret },
+                    { "redirect_uri", GetRedirectUrl() }
+                };
                 using var response = await httpClient.PostAsync(url, new FormUrlEncodedContent(dict));
 
                 var contentResponse = await response.Content.ReadAsStringAsync();

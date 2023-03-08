@@ -4,8 +4,11 @@ namespace RavenNest.Models
 {
     public class PlayerJoinData
     {
-        public string UserId { get; set; }
+        public Guid UserId { get; set; }
         public string UserName { get; set; }
+
+        [Obsolete("Please use UserId instead.")]
+        public string PlatformId { get; set; }
         public string Platform { get; set; }
         public string Identifier { get; set; }
         public bool Subscriber { get; set; }

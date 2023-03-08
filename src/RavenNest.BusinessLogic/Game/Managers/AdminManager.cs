@@ -580,7 +580,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 var sortProperty = typeof(T)
                     .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    .FirstOrDefault(x => x.Name == sortOrder.Substring(1));
+                    .FirstOrDefault(x => x.Name == sortOrder[1..]);
 
                 var ascending = sortOrder[0] == '+' || sortOrder[0] == '1';
                 if (sortProperty != null)

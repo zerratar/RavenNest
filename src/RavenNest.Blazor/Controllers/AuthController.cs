@@ -4,7 +4,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using RavenNest.Blazor.Services;
-using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
 using RavenNest.Sessions;
@@ -13,16 +12,15 @@ namespace RavenNest.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [ApiDescriptor(Name = "Authentication API", Description = "Used for authenticating with the RavenNest API.")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthManager authManager;
-        private readonly ISessionInfoProvider sessionInfoProvider;
+        private readonly SessionInfoProvider sessionInfoProvider;
         private readonly LogoService logoService;
 
         public AuthController(
             IAuthManager authManager,
-            ISessionInfoProvider sessionInfoProvider,
+            SessionInfoProvider sessionInfoProvider,
             LogoService logoService)
         {
             this.authManager = authManager;
@@ -55,14 +53,6 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet]
-        [MethodDescriptor(
-            Name = "Check current authentication state",
-            Description = "Doing a GET to this api will return whether or not you are logged in and can use the RavenNest API.",
-            ResponseExample = "\"You are logged in\"",
-            RequiresSession = false,
-            RequiresAuth = false,
-            RequiresAdmin = false)
-        ]
         public string Get()
         {
             var token = GetAuthToken();
@@ -75,26 +65,12 @@ namespace RavenNest.Controllers
         }
 
         [HttpPost]
-        [MethodDescriptor(
-            Name = "Authenticate",
-            Description = "Authenticate to RavenNest API and retrieve an auth token. The auth token is required for many of the available APIs. This method be called every hour or so to keep your auth token valid.",
-            RequiresSession = false,
-            RequiresAuth = false,
-            RequiresAdmin = false)
-        ]
         public AuthToken AuthenticateAsync(AuthModel model)
         {
             return this.authManager.Authenticate(model.Username, model.Password);
         }
 
         [HttpPost("login")]
-        [MethodDescriptor(
-            Name = "Login",
-            Description = "Authenticate with RavenNest Website using a username/password combination",
-            RequiresSession = false,
-            RequiresAuth = false,
-            RequiresAdmin = false)
-        ]
         public async Task<SessionInfo> LoginAsync(AuthModel model)
         {
             var authenticateAsync = this.authManager.Authenticate(model.Username, model.Password);
@@ -102,13 +78,6 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("logout")]
-        [MethodDescriptor(
-            Name = "Logout",
-            Description = "Clears the current logged in website session",
-            RequiresSession = false,
-            RequiresAuth = false,
-            RequiresAdmin = false)
-        ]
         public SessionInfo Logout()
         {
             sessionInfoProvider.Clear(SessionId);
@@ -117,14 +86,6 @@ namespace RavenNest.Controllers
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("signup")]
-        [MethodDescriptor(
-            Name = "Signup",
-            Description = "First time user setup requires to assign a password",
-            RequiresSession = false,
-            RequiresAuth = false,
-            RequiresAdmin = false,
-            RequiresTwitchAuth = true)
-        ]
         public async Task<SessionInfo> SignUpAsync(PasswordModel password)
         {
             var user = await sessionInfoProvider.GetTwitchUserAsync(SessionId);

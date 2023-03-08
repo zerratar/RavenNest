@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
+using RavenNest.BusinessLogic.Data;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -9,14 +11,16 @@ namespace RavenNest.BusinessLogic
 {
     public class RavenBotApiClient : IRavenBotApiClient
     {
-
+#if DEBUG
+        const string SettingsDirectory = @"C:\Ravenfall\user-settings";
+#else
         const string SettingsDirectory = "../user-settings/";
-
+#endif
 
         //#if DEBUG
         //        private const string host = "127.0.0.1";
         //#else
-        private string[] hostNames = { "ravenbot.ravenfall.stream", "127.0.0.1" };
+        private readonly string[] hostNames = { "ravenbot.ravenfall.stream", "127.0.0.1" };
 #if DEBUG
         private int currentHostIndex = 1;
 #else
@@ -27,23 +31,19 @@ namespace RavenNest.BusinessLogic
 
         private const int RETRY_INTERVAL = 3000;
         private const int PORT = 6767;
-
+        private readonly GameData gameData;
         private readonly ILogger<RavenBotApiClient> logger;
         private readonly IKernel kernel;
         private readonly ConcurrentDictionary<string, ITimeoutHandle> retries = new();
 
-        public RavenBotApiClient(ILogger<RavenBotApiClient> logger, IKernel kernel)
+        public RavenBotApiClient(GameData gameData, ILogger<RavenBotApiClient> logger, IKernel kernel)
         {
+            this.gameData = gameData;
             this.logger = logger;
             this.kernel = kernel;
         }
 
-        public async Task SendUserSettingAsync(string userId, string key, string value)
-        {
-            await SendAsync(currentHostIndex, "usersettings", userId, key, value);
-        }
-
-        public async Task SendUserSettingsAsync(string userId, Dictionary<string, string> settings)
+        public void UpdateUserSettings(Guid userId)
         {
             // lets just overwrite the actual json file.
             // the bot will realize it has changed and will reload the file.
@@ -51,37 +51,54 @@ namespace RavenNest.BusinessLogic
             {
                 var targetFile = System.IO.Path.Combine(SettingsDirectory, userId + ".json");
                 var dir = System.IO.Path.GetDirectoryName(targetFile);
+
+                var props = gameData.GetUserProperties(userId);
+                if (props == null)
+                {
+                    return; // we don't have anything to save.
+                }
+
+
                 if (System.IO.Directory.Exists(dir))
                     System.IO.Directory.CreateDirectory(dir);
 
+
+                // map it into dictionary and save!
+                var settings = new Dictionary<string, object>();
+                foreach (var prop in props)
+                {
+                    settings[prop.PropertyKey] = prop.Value;
+                }
+
+                // add platform identifiers
+                var access = gameData.GetUserAccess(userId);
+                foreach (var a in access)
+                {
+                    settings[a.Platform.ToLower() + "_id"] = a.PlatformId;
+                    settings[a.Platform.ToLower() + "_name"] = a.PlatformUsername;
+                }
+
+                var user = gameData.GetUser(userId);
+
+                settings["is_admin"] = user.IsAdmin.GetValueOrDefault();
+                settings["is_moderator"] = user.IsModerator.GetValueOrDefault();
+                settings["ravenfall_id"] = user.Id;
+                settings["ravenfall_name"] = user.UserName;
+
                 System.IO.File.WriteAllText(targetFile, Newtonsoft.Json.JsonConvert.SerializeObject(settings));
             }
-            catch
+            catch (Exception exc)
             {
-                try
-                {
-                    using (var req = RavenBotRequest.Create(BuildRequestUri(currentHostIndex, "usersettings"), logger))
-                    {
-                        foreach (var v in settings)
-                        {
-                            await req.SendAsync(userId, v.Key, v.Value);
-                            await Task.Delay(100);
-                        }
-                    }
-                }
-                catch (Exception exc)
-                {
-                    logger.LogError(exc.ToString());
-                }
+                logger.LogError(exc.ToString());
             }
         }
 
-        public async Task SendPubSubAccessTokenAsync(string id, string login, string accessToken)
+        public async Task SendTwitchPubSubAccessTokenAsync(string id, string login, string accessToken)
         {
             await SendAsync(currentHostIndex, "pubsub", id, login, accessToken);
         }
 
-        public async Task SendUserRoleAsync(string userId, string userName, string role)
+        public async Task SendUserRoleAsync(string userId, string platform, string userName, string role)
         {
             await SendAsync(currentHostIndex, "userrole", userId, userName, role);
         }

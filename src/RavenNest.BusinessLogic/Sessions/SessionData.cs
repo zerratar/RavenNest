@@ -42,7 +42,7 @@ namespace RavenNest.Sessions
                 if (string.IsNullOrEmpty(key))
                     return;
 
-                var bytes = new byte[0];
+                var bytes = Array.Empty<byte>();
                 if (!string.IsNullOrEmpty(value))
                     bytes = System.Text.Encoding.UTF8.GetBytes(value);
                 Data[key] = bytes;

@@ -1,22 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Game;
 using RavenNest.DataModels;
 using RavenNest.Models;
+using RavenNest.Sessions;
 using RavenNest.Twitch;
-using RavenNest.BusinessLogic.Game;
-using RavenNest.Blazor.Services;
 
-namespace RavenNest.Sessions
+namespace RavenNest
 {
-    public class SessionInfoProvider : ISessionInfoProvider
+    public class SessionInfoProvider
     {
         private const string CookieDisclaimer = "cookie_disclaimer";
         private const string TwitchAccessToken = "twitch_access_token";
@@ -89,7 +88,7 @@ namespace RavenNest.Sessions
         /// </summary>
         /// <param name="twitchUserId"></param>
         /// <returns></returns>
-        public async Task<SessionInfo> CreateTwitchUserSessionAsync(string sessionId, string broadcasterId, string twitchUserId)
+        public SessionInfo CreateTwitchUserSession(string sessionId, string broadcasterId, string twitchUserId)
         {
             var si = new SessionInfo();
 
@@ -97,7 +96,7 @@ namespace RavenNest.Sessions
                 return si;
 
             if (twitchUserId.StartsWith("u", StringComparison.OrdinalIgnoreCase))
-                twitchUserId = twitchUserId.Substring(1); // remove starting U
+                twitchUserId = twitchUserId[1..]; // remove starting U
 
             var broadcaster = gameData.GetUserByTwitchId(broadcasterId);
             if (broadcaster == null)
@@ -112,7 +111,7 @@ namespace RavenNest.Sessions
             if (activeSession == null)
                 return new SessionInfo();
 
-            var activeCharacter = gameData.GetCharacterBySession(activeSession.Id, twitchUserId, false);
+            var activeCharacter = gameData.GetCharacterBySession(activeSession.Id, twitchUserId, "twitch", false);
             if (activeCharacter != null)
             {
                 foreach (var sd in sessions.Values)
@@ -202,8 +201,9 @@ namespace RavenNest.Sessions
                 si.AuthToken = authManager.GenerateAuthToken(user);
                 si.Administrator = user.IsAdmin.GetValueOrDefault();
                 si.Moderator = user.IsModerator.GetValueOrDefault();
-                si.UserId = user.UserId;
-                si.AccountId = user.Id;
+
+                si.TwitchUserId = user.UserId;
+                si.UserId = user.Id;
                 si.UserName = user.UserName;
 
                 var clan = gameData.GetClanByUser(user.Id);
@@ -216,6 +216,18 @@ namespace RavenNest.Sessions
                 si.Tier = user.PatreonTier ?? 0;
 
                 var playSessions = new List<CharacterGameSession>();
+                var connections = new List<AuthServiceConnection>();
+
+                foreach (var c in gameData.GetUserAccess(user.Id))
+                {
+                    connections.Add(new AuthServiceConnection
+                    {
+                        Platform = c.Platform,
+                        PlatformId = c.PlatformId,
+                        PlatformUserName = c.PlatformUsername
+                    });
+                }
+
                 var myChars = gameData.GetCharacters(x => x.UserId == user.Id);
                 foreach (var myChar in myChars)
                 {
@@ -223,7 +235,7 @@ namespace RavenNest.Sessions
                     {
                         var skills = gameData.GetCharacterSkills(myChar.SkillsId);
                         var owner = gameData.GetUser(myChar.UserIdLock.Value);
-                        var session = gameData.GetJoinedSessionByUserId(owner.UserId);
+                        var session = gameData.GetOwnedSessionByUserId(owner.Id);
                         if (session != null)
                         {
                             playSessions.Add(new CharacterGameSession
@@ -232,13 +244,15 @@ namespace RavenNest.Sessions
                                 CharacterCombatLevel = GetCombatLevel(skills),
                                 CharacterIndex = myChar.CharacterIndex,
                                 CharacterName = myChar.Name,
+                                SessionOwnerUserId = owner.Id,
+                                SessionOwnerUserName = owner.UserName,
                                 SessionTwitchUserId = owner.UserId,
-                                SessionTwitchUserName = owner.UserName,
                                 Joined = myChar.LastUsed.GetValueOrDefault()
                             });
                         }
                     }
                 }
+                si.Connections = connections;
                 si.PlaySessions = playSessions;
                 si.Patreon = gameData.GetPatreonUser(user.Id);
             }
@@ -296,7 +310,7 @@ namespace RavenNest.Sessions
                 sessionInfo = JSON.Parse<SessionInfo>(json);
                 if (sessionInfo.Authenticated)
                 {
-                    var user = gameData.GetUser(sessionInfo.AccountId);
+                    var user = gameData.GetUser(sessionInfo.UserId);
                     UpdateSessionInfoData(sessionInfo, user);
                     GetSessionData(sessionId).SessionInfo = sessionInfo;
                 }

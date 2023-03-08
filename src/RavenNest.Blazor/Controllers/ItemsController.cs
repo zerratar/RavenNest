@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using RavenNest.BusinessLogic.Data;
-using RavenNest.BusinessLogic.Docs.Attributes;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
 using RavenNest.Sessions;
@@ -12,17 +11,16 @@ namespace RavenNest.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [ApiDescriptor(Name = "Items API", Description = "Used for managing the items database.")]
     public class ItemsController : ControllerBase
     {
         private readonly GameData gameData;
-        private readonly ISessionInfoProvider sessionInfoProvider;
+        private readonly SessionInfoProvider sessionInfoProvider;
         private readonly IItemManager itemManager;
         private readonly IAuthManager authManager;
 
         public ItemsController(
             GameData gameData,
-            ISessionInfoProvider sessionInfoProvider,
+            SessionInfoProvider sessionInfoProvider,
             IItemManager itemManager,
             IAuthManager authManager)
         {
@@ -37,12 +35,6 @@ namespace RavenNest.Controllers
         /// </summary>
         /// <returns>This will return the list of all available items in Ravenfall. This is required as no other endpoints will give out any item data other than item id. This list of items is then necessary to do an item lookup.</returns>
         [HttpGet]
-        [MethodDescriptor(
-            Name = "Get all available items",
-            Description = "This will return the list of all available items in Ravenfall. This is required as no other endpoints will give out any item data other than item id. This list of items is then necessary to do an item lookup.",
-            RequiresSession = false,
-            RequiresAuth = false)
-        ]
         public async Task<ActionResult<ItemCollection>> Get()
         {
             if (itemManager == null)
@@ -59,12 +51,6 @@ namespace RavenNest.Controllers
         /// </summary>
         /// <returns>This will return the list of all redeemable items in Ravenfall.</returns>
         [HttpGet("redeemable")]
-        [MethodDescriptor(
-            Name = "Get all redeemable items",
-            Description = "This will return the list of all redeemable items in Ravenfall.",
-            RequiresSession = false,
-            RequiresAuth = false)
-        ]
         public async Task<ActionResult<RedeemableItemCollection>> GetRedeemables()
         {
             if (itemManager == null)
@@ -75,45 +61,27 @@ namespace RavenNest.Controllers
             var itemCollection = itemManager.GetRedeemableItems();
             return itemCollection;
         }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
-        [MethodDescriptor(
-            Name = "Add a new item to the database",
-            Description = "This will add a new item to the game. This requires the authenticated user to be a Ravenfall administrator.",
-            RequiresSession = false,
-            RequiresAuth = true,
-            RequiresAdmin = true)
-        ]
         public bool AddItemAsync(Item item)
         {
             var authToken = GetAuthToken();
             AssertAdminAuthToken(authToken);
             return this.itemManager.TryAddItem(item);
         }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpDelete("{itemId}")]
-        [MethodDescriptor(
-            Name = "Delete an item from the database",
-            Description = "This will delete an item from the game. This requires the authenticated user to be a Ravenfall administrator.",
-            RequiresSession = false,
-            RequiresAuth = true,
-            RequiresAdmin = true)
-        ]
         public bool RemoveItem(Guid itemId)
         {
             var authToken = GetAuthToken();
             AssertAdminAuthToken(authToken);
             return this.itemManager.RemoveItem(itemId);
         }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPut]
-        [MethodDescriptor(
-            Name = "Update an item in the database",
-            Description = "This update the target item. This requires the authenticated user to be a Ravenfall administrator.",
-            RequiresSession = false,
-            RequiresAuth = true,
-            RequiresAdmin = true)
-        ]
         public bool UpdateItem(Item item)
         {
             var authToken = GetAuthToken();
@@ -128,6 +96,7 @@ namespace RavenNest.Controllers
             if (!user.IsAdmin.GetValueOrDefault())
                 throw new Exception("You do not have permissions to call this API");
         }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void AssertAuthTokenValidity(AuthToken authToken)

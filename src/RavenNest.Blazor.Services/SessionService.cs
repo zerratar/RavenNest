@@ -23,7 +23,7 @@ namespace RavenNest.Blazor.Services
             IAuthManager authManager,
             GameData gameData,
             IHttpContextAccessor accessor,
-            ISessionInfoProvider sessionInfoProvider)
+            SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
             this.authManager = authManager;

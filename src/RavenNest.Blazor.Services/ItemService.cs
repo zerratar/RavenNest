@@ -22,7 +22,7 @@ namespace RavenNest.Blazor.Services
             GameData gameData,
             IItemManager itemManager,
             IHttpContextAccessor accessor,
-            ISessionInfoProvider sessionInfoProvider)
+            SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
             this.gameData = gameData;
@@ -138,7 +138,7 @@ namespace RavenNest.Blazor.Services
         {
             var str = item.Type.ToString();
             var start = Char.ToUpper(str[0]);
-            var process = str.Substring(1);
+            var process = str[1..];
 
             foreach (var x in process.Select((x, i) =>
             {
@@ -164,7 +164,7 @@ namespace RavenNest.Blazor.Services
             if (item.Type == RavenNest.Models.ItemType.None || item.Material == RavenNest.Models.ItemMaterial.None)
             {
                 var itemNameMaterial = "";
-                if (item.Name.Contains(" "))
+                if (item.Name.Contains(' '))
                 {
                     itemNameMaterial = item.Name.Split(' ')[0];
                 }
@@ -204,7 +204,7 @@ namespace RavenNest.Blazor.Services
             if (item.Type == RavenNest.Models.ItemType.None || item.Material == RavenNest.Models.ItemMaterial.None)
             {
                 var itemNameMaterial = "";
-                if (item.Name.Contains(" "))
+                if (item.Name.Contains(' '))
                 {
                     itemNameMaterial = item.Name.Split(' ')[0];
                 }

@@ -16,7 +16,7 @@ namespace RavenNest.BusinessLogic.Providers
         private readonly ILogger logger;
         private readonly GameData gameData;
         private readonly object mutex = new object();
-        private InventoryItemCollection items;
+        private readonly InventoryItemCollection items;
 
         private static readonly TimeSpan PatreonRewardFrequency = TimeSpan.FromDays(1);
         private static readonly Random random = new Random();

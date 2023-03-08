@@ -15,7 +15,7 @@ namespace RavenNest.Blazor.Services
             GameData gameData,
             ISecureHasher hasher,
             IHttpContextAccessor accessor,
-            ISessionInfoProvider sessionInfoProvider)
+            SessionInfoProvider sessionInfoProvider)
          : base(accessor, sessionInfoProvider)
         {
             this.gameData = gameData;
@@ -31,7 +31,7 @@ namespace RavenNest.Blazor.Services
             if (!sessionInfoProvider.TryGet(sessionId, out var session))
                 return false;
 
-            var user = gameData.GetUser(session.AccountId);
+            var user = gameData.GetUser(session.UserId);
             if (user == null)
                 return false;
 

@@ -38,7 +38,7 @@ namespace RavenNest.Blazor.Services
         private readonly IAuthManager authManager;
         private readonly PlayerManager playerManager;
         private readonly LogoService logoService;
-        private PatreonSettings patreon;
+        private readonly PatreonSettings patreon;
 
 
         public PatreonService(
@@ -49,7 +49,7 @@ namespace RavenNest.Blazor.Services
             IAuthManager authManager,
             PlayerManager playerManager,
             IHttpContextAccessor accessor,
-            ISessionInfoProvider sessionInfoProvider,
+            SessionInfoProvider sessionInfoProvider,
             LogoService logoService)
             : base(accessor, sessionInfoProvider)
         {
@@ -87,7 +87,7 @@ namespace RavenNest.Blazor.Services
         public (string, bool) GetChatbotSettings()
         {
             var session = GetSession();
-            var uid = session.AccountId;
+            var uid = session.UserId;
             // IRavenBotApiClient    
 
             var language = gameData.GetUserProperty(uid, UserProperties.ChatBotLanguage, "None");
@@ -103,7 +103,7 @@ namespace RavenNest.Blazor.Services
         {
             // set the values in the user settings
             var session = GetSession();
-            var uid = session.AccountId;
+            var uid = session.UserId;
             // IRavenBotApiClient    
 
             var transformation = ChatMessageTransformation.Standard;
@@ -124,15 +124,7 @@ namespace RavenNest.Blazor.Services
             var transformationString = ((int)transformation).ToString();
             gameData.SetUserProperty(uid, UserProperties.ChatBotLanguage, language);
             gameData.SetUserProperty(uid, UserProperties.ChatMessageTransformation, transformationString);
-
-            await ravenbotApi.SendUserSettingsAsync(session.UserId, new Dictionary<string, string>
-            {
-                { UserProperties.ChatBotLanguage, language },
-                { UserProperties.ChatMessageTransformation, transformationString }
-            });
-
-            //await ravenbotApi.SendUserSettingAsync(session.UserId, UserProperties.ChatBotLanguage, language);
-            //await ravenbotApi.SendUserSettingAsync(session.UserId, UserProperties.ChatMessageTransformation, transformationString);
+            ravenbotApi.UpdateUserSettings(session.UserId);
         }
 
         public string GetPatreonLoginUrl()

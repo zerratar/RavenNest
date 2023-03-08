@@ -28,7 +28,7 @@ namespace Telepathy
         // and it can be tested easily.
         //
         // IMPORTANT: lock{} all usages!
-        Pool<byte[]> pool;
+        readonly Pool<byte[]> pool;
 
         // constructor
         public MagnificentSendPipe(int MaxMessageSize)

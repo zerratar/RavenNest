@@ -17,7 +17,7 @@ namespace RavenNest.BusinessLogic.Net
         private readonly GameData gameData;
         private readonly int connectionId;
         private readonly ConcurrentQueue<GameEvent> sendQueue = new ConcurrentQueue<GameEvent>();
-        private TcpSocketApi server;
+        private readonly TcpSocketApi server;
 
         private DataModels.SessionState sessionState;
 

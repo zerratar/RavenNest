@@ -42,7 +42,7 @@ namespace RavenNest.Blazor.Pages.Admin
 
         protected override void OnAfterRender(bool firstRender)
         {
-            if (Session == null || Session.UserId == null && SelectedUser == null)
+            if (Session == null || Session.TwitchUserId == null && SelectedUser == null)
             {
                 NavigationManager.NavigateTo("/login");
             }

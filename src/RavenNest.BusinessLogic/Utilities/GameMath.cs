@@ -6,7 +6,7 @@ namespace RavenNest.BusinessLogic
     {
         public const int MaxLevel = 999;
         public const int MaxVillageLevel = 300;
-        private static double[] ExperienceArray = new double[MaxLevel];
+        private static readonly double[] ExperienceArray = new double[MaxLevel];
 
         static GameMath()
         {

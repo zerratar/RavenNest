@@ -29,7 +29,7 @@ namespace RavenNest.BusinessLogic.Game
                     string identifier)
                 {
                     if (string.IsNullOrEmpty(username)) throw new ArgumentNullException(nameof(username));
-                    Username = username.StartsWith("@") ? username.Substring(1) : username;
+                    Username = username.StartsWith("@") ? username[1..] : username;
                     UserId = userId;
                     DisplayName = displayName;
                     Color = color;

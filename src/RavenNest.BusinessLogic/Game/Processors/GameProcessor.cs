@@ -93,16 +93,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
                 sessionManager.SendPermissionData(session);
                 sessionManager.SendVillageInfo(session);
                 sessionManager.SendExpMultiplier(session);
-
-                var uid = session.UserId;
-                var language = gameData.GetUserProperty(uid, UserProperties.ChatBotLanguage, "None");
-                var transformationStr = gameData.GetUserProperty(uid, UserProperties.ChatMessageTransformation, "0");
-
-                ravenbotApi.SendUserSettingsAsync(sessionToken.TwitchUserId, new Dictionary<string, string>
-                {
-                    { UserProperties.ChatBotLanguage, language },
-                    { UserProperties.ChatMessageTransformation, transformationStr }
-                });
+                ravenbotApi.UpdateUserSettings(session.UserId);
             }
         }
 
@@ -137,8 +128,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
                     var accessToken = gameData.GetUserProperty(session.UserId, UserProperties.Twitch_PubSub);
                     if (!string.IsNullOrEmpty(accessToken))
                     {
-                        await ravenbotApi.SendPubSubAccessTokenAsync(user.UserId, user.UserName, accessToken);
-
+                        ravenbotApi.UpdateUserSettings(user.Id);
                         sessionManager.SendPubSubToken(session, accessToken);
                     }
                     lastPubsubPush = utcNow;

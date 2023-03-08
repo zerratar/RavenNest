@@ -21,7 +21,7 @@ namespace RavenNest.Blazor.Services
             GameData gameData,
             PlayerManager playerManager,
             IHttpContextAccessor accessor,
-            ISessionInfoProvider sessionInfoProvider)
+            SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
             this.gameData = gameData;
@@ -122,7 +122,7 @@ namespace RavenNest.Blazor.Services
         {
             var session = GetSession();
             if (session == null) return false;
-            var mainCharacter = gameData.GetCharacterByUserId(session.AccountId);
+            var mainCharacter = gameData.GetCharacterByUserId(session.UserId);
             if (mainCharacter == null) return false;
             return await playerManager.CloneSkillsAndStateAsync(fromCharacterId, mainCharacter.Id);
         }
@@ -139,7 +139,7 @@ namespace RavenNest.Blazor.Services
             return await Task.Run(() =>
             {
                 var session = GetSession();
-                var userId = session.AccountId;
+                var userId = session.UserId;
                 return playerManager.GetWebsitePlayer(userId, index.ToString());
             });
         }
@@ -149,7 +149,7 @@ namespace RavenNest.Blazor.Services
             return await Task.Run(() =>
             {
                 var session = GetSession();
-                var userId = session.AccountId;
+                var userId = session.UserId;
                 return playerManager.GetWebsitePlayers(userId);
             });
         }
@@ -173,7 +173,7 @@ namespace RavenNest.Blazor.Services
                 if (ignoreClanInvitedPlayers)
                 {
                     var session = GetSession();
-                    var user = gameData.GetUser(session.AccountId);
+                    var user = gameData.GetUser(session.UserId);
                     if (user == null)
                         return new List<Player>();
 
@@ -190,11 +190,27 @@ namespace RavenNest.Blazor.Services
                     return new List<Player>();
                 }
 
-                return players.AsList(x =>
-                    x.UserId.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) ||
-                    x.UserName.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) ||
-                    x.Name.Contains(searchText, System.StringComparison.OrdinalIgnoreCase)
-                );
+                var list = new List<Player>();
+                foreach (var player in players)
+                {
+                    if (player.UserName.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) || player.Name.Contains(searchText, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        list.Add(player);
+                    }
+                    else
+                    {
+                        foreach (var access in gameData.GetUserAccess(player.UserId))
+                        {
+                            // this could lead to wrong account being mapped to a specific player if two different accounts cross platforms have the same username or id.
+                            if (access.PlatformId.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) || access.PlatformUsername.Contains(searchText, System.StringComparison.OrdinalIgnoreCase))
+                            {
+                                list.Add(player);
+                                break;
+                            }
+                        }
+                    }
+                }
+                return list;
             });
         }
 
@@ -202,13 +218,14 @@ namespace RavenNest.Blazor.Services
         {
             return await Task.Run(() =>
             {
+                var empty = (IReadOnlyList<WebsiteAdminPlayer>)Array.Empty<WebsiteAdminPlayer>();
                 IEnumerable<WebsiteAdminPlayer> players = playerManager.GetWebsiteAdminPlayers();
                 if (ignoreClanInvitedPlayers)
                 {
                     var session = GetSession();
-                    var user = gameData.GetUser(session.AccountId);
+                    var user = gameData.GetUser(session.UserId);
                     if (user == null)
-                        return new List<WebsiteAdminPlayer>();
+                        return empty;
 
                     var clan = gameData.GetClanByUser(user.Id);
                     players = players.Where(x => x.Clan == null &&
@@ -220,14 +237,30 @@ namespace RavenNest.Blazor.Services
                     if (allOnEmptySearch)
                         return players.AsList();
 
-                    return new List<WebsiteAdminPlayer>();
+                    return empty;
                 }
 
-                return players.AsList(x =>
-                    x.UserId.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) ||
-                    x.UserName.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) ||
-                    x.Name.Contains(searchText, System.StringComparison.OrdinalIgnoreCase)
-                );
+                var list = new List<WebsiteAdminPlayer>();
+                foreach (var player in players)
+                {
+                    if (player.UserName.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) || player.Name.Contains(searchText, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        list.Add(player);
+                    }
+                    else
+                    {
+                        foreach (var access in gameData.GetUserAccess(player.UserId))
+                        {
+                            // this could lead to wrong account being mapped to a specific player if two different accounts cross platforms have the same username or id.
+                            if (access.PlatformId.Contains(searchText, System.StringComparison.OrdinalIgnoreCase) || access.PlatformUsername.Contains(searchText, System.StringComparison.OrdinalIgnoreCase))
+                            {
+                                list.Add(player);
+                                break;
+                            }
+                        }
+                    }
+                }
+                return list;
             });
         }
     }

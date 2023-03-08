@@ -13,13 +13,13 @@ namespace RavenNest.Blazor.Services
 
     public class PoQService : RavenNestService
     {
-        private AppSettings appSettings;
-        private PoQSettings poqSettings;
+        private readonly AppSettings appSettings;
+        private readonly PoQSettings poqSettings;
 
         public PoQService(
             IOptions<AppSettings> settings,
             IHttpContextAccessor accessor,
-            ISessionInfoProvider sessionInfoProvider)
+            SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
             this.appSettings = settings.Value;

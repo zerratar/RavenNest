@@ -100,7 +100,7 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
 
-            var newGameSession = activeSession ?? gameData.CreateSession(userId);
+            var newGameSession = activeSession ?? GameData.CreateSession(userId);
             if (activeSession == null)
             {
                 gameData.Add(newGameSession);
@@ -202,7 +202,7 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
 
-            var newGameSession = activeSession ?? gameData.CreateSession(userId);
+            var newGameSession = activeSession ?? GameData.CreateSession(userId);
             if (activeSession == null)
             {
                 gameData.Add(newGameSession);
@@ -514,6 +514,9 @@ namespace RavenNest.BusinessLogic.Game
                 ExpiresUtc = DateTime.UtcNow + TimeSpan.FromDays(180),
                 SessionId = session.Id,
                 StartedUtc = session.Started,
+                UserId = user.Id,
+                DisplayName = user.DisplayName,
+                UserName = user.UserName,
                 TwitchDisplayName = user.DisplayName,
                 TwitchUserId = user.UserId,
                 TwitchUserName = user.UserName,

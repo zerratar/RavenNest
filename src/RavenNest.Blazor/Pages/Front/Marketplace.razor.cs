@@ -47,7 +47,7 @@ namespace RavenNest.Blazor.Pages.Front
             if (isAdmin) return true;
             if (session == null || listedItem == null)
                 return false;
-            return session.UserId == listedItem.SellerUserId;
+            return session.TwitchUserId == listedItem.SellerUserId;
         }
 
         private RavenNest.Models.Item GetItem(Guid itemId)

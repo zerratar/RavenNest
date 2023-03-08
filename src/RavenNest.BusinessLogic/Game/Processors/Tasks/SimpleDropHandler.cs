@@ -10,7 +10,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     public class SimpleDropHandler
     {
         private readonly string skill;
-        private List<ResourceDrop> drops = new List<ResourceDrop>();
+        private readonly List<ResourceDrop> drops = new List<ResourceDrop>();
 
         private bool initialized;
         public SimpleDropHandler(string skill)

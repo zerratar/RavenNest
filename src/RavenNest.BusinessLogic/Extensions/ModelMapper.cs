@@ -309,12 +309,25 @@ namespace RavenNest.BusinessLogic.Extensions
             }
 
             (var battlePets, var activeBattlePet) = character.MapBattlePets(gameData);
+            var connections = new List<AuthServiceConnection>();
+
+            var uac = gameData.GetUserAccess(user.Id);
+            foreach (var access in uac)
+            {
+                connections.Add(new AuthServiceConnection
+                {
+                    Platform = access.Platform,
+                    PlatformId = access.PlatformId,
+                    PlatformUserName = access.PlatformUsername
+                });
+            }
 
             return new Player
             {
                 Id = character.Id,
                 UserName = user.UserName,
-                UserId = user.UserId,
+                UserId = user.Id,
+                Connections = connections,
                 Name = character.Name,
                 IsRejoin = rejoin,
                 IsAdmin = user.IsAdmin.GetValueOrDefault(),
@@ -371,13 +384,27 @@ namespace RavenNest.BusinessLogic.Extensions
             var clan = clanMembership != null ? Map(gameData, gameData.GetClan(clanMembership.ClanId)) : null;
             var clanRole = clanMembership != null ? Map(gameData.GetClanRole(clanMembership.ClanRoleId), clanMembership) : null;
             (var battlePets, var activeBattlePet) = character.MapBattlePets(gameData);
+
+            var connections = new List<AuthServiceConnection>();
+            var uac = gameData.GetUserAccess(user.Id);
+            foreach (var access in uac)
+            {
+                connections.Add(new AuthServiceConnection
+                {
+                    Platform = access.Platform,
+                    PlatformId = access.PlatformId,
+                    PlatformUserName = access.PlatformUsername
+                });
+            }
+
             return new WebsiteAdminPlayer
             {
                 Created = user.Created,
                 Id = character.Id,
                 PasswordHash = user.PasswordHash,
                 UserName = user.UserName,
-                UserId = user.UserId,
+                UserId = user.Id,
+                Connections = connections,
                 Name = character.Name,
                 IsAdmin = user.IsAdmin.GetValueOrDefault(),
                 IsModerator = user.IsModerator.GetValueOrDefault(),
@@ -415,12 +442,26 @@ namespace RavenNest.BusinessLogic.Extensions
 
             var sessionInfo = GetCharacterSessionInfo(gameData, character);
             (var battlePets, var activeBattlePet) = character.MapBattlePets(gameData);
+
+            var connections = new List<AuthServiceConnection>();
+            var uac = gameData.GetUserAccess(user.Id);
+            foreach (var access in uac)
+            {
+                connections.Add(new AuthServiceConnection
+                {
+                    Platform = access.Platform,
+                    PlatformId = access.PlatformId,
+                    PlatformUserName = access.PlatformUsername
+                });
+            }
+
             return new WebsitePlayer
             {
                 Id = character.Id,
                 UserName = user.UserName,
                 CharacterIndex = character.CharacterIndex,
-                UserId = user.UserId,
+                UserId = user.Id,
+                Connections = connections,
                 Name = character.Name,
                 IsAdmin = user.IsAdmin.GetValueOrDefault(),
                 IsModerator = user.IsModerator.GetValueOrDefault(),

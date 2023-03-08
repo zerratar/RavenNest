@@ -14,7 +14,7 @@ namespace RavenNest.Tools.Actions
         private const string UnityBuildFolder = @"C:\git\Ravenfall Legacy\Build";
 
         private BuildState buildState = BuildState.Full;
-        private SevenZipCompressor compressor;
+        private readonly SevenZipCompressor compressor;
         private string targetBuildName;
 
         public BuildUpdatePackageAction(
