@@ -28,7 +28,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.ItemAdd, session, new ItemAdd
             {
-                UserId = gameData.GetUser(character.UserId).UserId,
+                PlayerId = character.Id,
                 Amount = 1,
                 ItemId = itemId,
                 InventoryItemId = items.FirstOrDefault().Id,
