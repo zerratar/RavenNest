@@ -2141,12 +2141,22 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Character GetCharacterBySession(Guid sessionId, Guid userId, bool updateSession = true)
+        public Character GetSessionCharacterByUserId(Guid sessionId, Guid userId, bool updateSession = true)
         {
             var session = GetSession(sessionId, updateSession);
             var characters = GetActiveSessionCharacters(session);
             return characters.FirstOrDefault(x => x.UserId == userId);
         }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Character GetSessionCharacter(Guid sessionId, Guid characterId, bool updateSession = true)
+        {
+            var session = GetSession(sessionId, updateSession);
+            var characters = GetActiveSessionCharacters(session);
+            return characters.FirstOrDefault(x => x.Id == characterId);
+        }
+
 
         private Character GetCharacterByIdentifier(IReadOnlyList<Character> chars, string identifier)
         {

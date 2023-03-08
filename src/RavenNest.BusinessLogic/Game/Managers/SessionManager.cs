@@ -18,7 +18,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly ITwitchClient twitchClient;
         private readonly GameData gameData;
         private readonly PlayerManager playerManager;
-        private readonly IVillageManager villageManager;
+        private readonly VillageManager villageManager;
         private readonly IExtensionWebSocketConnectionProvider extWsConnectionProvider;
         private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
         private readonly int[] MaxMultiplier = new int[]
@@ -33,7 +33,7 @@ namespace RavenNest.BusinessLogic.Game
             ITwitchClient twitchClient,
             GameData gameData,
             PlayerManager playerManager,
-            IVillageManager villageManager,
+            VillageManager villageManager,
             IExtensionWebSocketConnectionProvider extWsConnectionProvider,
             ITcpSocketApiConnectionProvider tcpConnectionProvider)
         {

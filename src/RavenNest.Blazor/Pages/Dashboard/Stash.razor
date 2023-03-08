@@ -4,7 +4,6 @@
 @using RavenNest.Blazor.Components
 @using RavenNest.Blazor.Services
 @using RavenNest.BusinessLogic.Extended
-@using RavenNest.Blazor.Services
 @using RavenNest.BusinessLogic.Game
 @using RavenNest.Models
 @using Blazored.Typeahead
@@ -207,7 +206,7 @@ else
 }
 
 @code {
-    private RavenNest.Sessions.SessionInfo session;
+    private SessionInfo session;
     private WebsiteAdminUser currentUser;
     private IReadOnlyList<RavenNest.Models.UserBankItem> stash;
     private IReadOnlyList<RavenNest.Models.UserBankItem> stashFiltered;

@@ -6,7 +6,7 @@ namespace RavenNest.Blazor.Components
 {
     public partial class PlayerMap
     {
-        private RavenNest.Sessions.SessionInfo session;
+        private SessionInfo session;
 
         [Parameter]
         public WebsitePlayer Player { get; set; }

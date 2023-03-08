@@ -13,7 +13,7 @@ namespace RavenNest.Controllers
     [ApiController]
     public class VillageController : GameApiController
     {
-        private readonly IVillageManager villageManager;
+        private readonly VillageManager villageManager;
 
         public VillageController(
             ILogger<VillageController> logger,
@@ -21,20 +21,13 @@ namespace RavenNest.Controllers
             IAuthManager authManager,
             SessionInfoProvider sessionInfoProvider,
             SessionManager sessionManager,
-            IVillageManager villageManager,
+            VillageManager villageManager,
             ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
             this.villageManager = villageManager;
         }
-        [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpGet("{slot}/assign/{userId}")]
-        public bool AssignPlayerAsync(int slot, string userId)
-        {
-            var sessionToken = GetSessionToken();
-            AssertSessionTokenValidity(sessionToken);
-            return villageManager.AssignPlayerToHouse(sessionToken.SessionId, slot, userId);
-        }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("assign-village")]
         public bool AssignVillage([FromBody] VillageAssignRequest request)
@@ -43,6 +36,7 @@ namespace RavenNest.Controllers
             AssertSessionTokenValidity(sessionToken);
             return villageManager.AssignVillage(sessionToken.SessionId, request.Type, request.CharacterIds);
         }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{slot}/assign-character/{characterId}")]
         public bool AssignPlayerByCharacterAsync(int slot, Guid characterId)
@@ -51,6 +45,7 @@ namespace RavenNest.Controllers
             AssertSessionTokenValidity(sessionToken);
             return villageManager.AssignPlayerToHouse(sessionToken.SessionId, slot, characterId);
         }
+
         [ApiExplorerSettings(IgnoreApi = true)]
 
         [HttpGet("{slot}/build/{type}")]

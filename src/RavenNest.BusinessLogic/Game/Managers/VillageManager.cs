@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace RavenNest.BusinessLogic.Game
 {
-    public class VillageManager : IVillageManager
+    public class VillageManager
     {
         private readonly GameData gameData;
         public VillageManager(GameData gameData)
@@ -26,28 +26,6 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
 
             var player = gameData.GetCharacter(characterId);
-            if (player == null)
-                return false;
-
-            var existingHouse = houses.FirstOrDefault(x => x.UserId == player.UserId);
-            if (existingHouse != null)
-                existingHouse.UserId = null;
-
-            targetHouse.UserId = player.UserId;
-            return true;
-        }
-
-        public bool AssignPlayerToHouse(Guid sessionId, int slot, string userId)
-        {
-            var session = gameData.GetSession(sessionId);
-            var village = gameData.GetOrCreateVillageBySession(session);
-            var houses = gameData.GetOrCreateVillageHouses(village);
-
-            var targetHouse = houses.FirstOrDefault(x => x.Slot == slot);
-            if (targetHouse == null)
-                return false;
-
-            var player = gameData.GetCharacterBySession(session.Id, userId);
             if (player == null)
                 return false;
 

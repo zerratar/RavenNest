@@ -7,7 +7,7 @@ namespace RavenNest.Blazor.Pages.Dashboard
 {
     public partial class PoQ
     {
-        private RavenNest.Sessions.SessionInfo session;
+        private SessionInfo session;
         private string code;
         private PoQAuthToken token;
         private string UserDetails;

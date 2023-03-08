@@ -6,7 +6,7 @@ namespace RavenNest.Blazor.Components
 {
     public partial class PlayerClan
     {
-        private RavenNest.Sessions.SessionInfo session;
+        private SessionInfo session;
         private RavenNest.Models.Clan clan;
         private RavenNest.Models.ClanRole clanRole;
 

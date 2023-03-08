@@ -18,7 +18,7 @@
                         <div class="--character-index">@play.CharacterIndex</div>
                         <div class="--character-level">@play.CharacterCombatLevel</div>
                     </div>
-                    <iframe src="https://player.twitch.tv/?channel=@(play.SessionTwitchUserName)&parent=www.ravenfall.stream&parent=ravenfall.stream&parent=www.ravenfall.gg&parent=ravenfall.gg&parent=localhost"
+                    <iframe src="@GetTwitchStreamUrl(play)"
                 height="200"
                 width="360"
                 frameborder="0"
@@ -33,7 +33,7 @@
 
 @code {
     [Parameter]
-    public RavenNest.Sessions.SessionInfo Session { get; set; }
+    public SessionInfo Session { get; set; }
 
     private bool IsPlaying => Session.TwitchUserId != null && Session?.PlaySessions?.Count > 0;
     private bool showTwitchStreams = false;
@@ -41,5 +41,10 @@
     private void ToggleTwitchStreams()
     {
         showTwitchStreams = !showTwitchStreams;
+    }
+
+    private string GetTwitchStreamUrl(CharacterGameSession play)
+    {
+        return "https://player.twitch.tv/?channel=" + play.SessionOwnerUserName + "&parent=www.ravenfall.stream&parent=ravenfall.stream&parent=www.ravenfall.gg&parent=ravenfall.gg&parent=localhost";
     }
 }

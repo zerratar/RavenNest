@@ -289,7 +289,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<AdminManager>();
             services.AddSingleton<IServerManager, ServerManager>();
             services.AddSingleton<IGamePacketManager, GamePacketManager>();
-            services.AddSingleton<IVillageManager, VillageManager>();
+            services.AddSingleton<VillageManager>();
             services.AddSingleton<IPatreonManager, PatreonManager>();
             services.AddSingleton<ClanManager>();
             services.AddSingleton<INotificationManager, NotificationManager>();

@@ -10,7 +10,7 @@ namespace RavenNest.Blazor.Pages.Front
 {
     public partial class Marketplace
     {
-        private Sessions.SessionInfo session;
+        private SessionInfo session;
         private RavenNest.Models.MarketItemCollection items;
         private bool isAdmin;
         private bool canCancelItems;

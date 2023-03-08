@@ -20,7 +20,7 @@ namespace RavenNest.Blazor.Components
         private string trainingSkill;
         private int currentHealth;
 
-        private Sessions.SessionInfo session;
+        private SessionInfo session;
 
         private bool modifySkillDialogVisible;
         private int modifyingSkillLevel = 0;

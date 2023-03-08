@@ -20,7 +20,7 @@ namespace RavenNest.Blazor.Components
 
         [Parameter]
         public CharacterViewState ViewState { get; set; }
-        private Sessions.SessionInfo session { get; set; }
+        private SessionInfo session { get; set; }
         private bool CanModify { get => session != null && session.Administrator; }
         private string TrainingSkill { get; set; }
 

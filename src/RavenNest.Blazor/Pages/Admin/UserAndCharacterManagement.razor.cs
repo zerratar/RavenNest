@@ -28,7 +28,7 @@ namespace RavenNest.Blazor.Pages.Admin
 
 
         private WebsiteAdminUser SelectedUser { get; set; }
-        private Sessions.SessionInfo Session { get; set; }
+        private SessionInfo Session { get; set; }
 
         protected override async Task OnInitializedAsync()
         {
