@@ -12,6 +12,7 @@ using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
 using RavenNest;
+using System.IO;
 
 namespace RavenNest.Controllers
 {
@@ -26,6 +27,9 @@ namespace RavenNest.Controllers
         private readonly IOptions<AppSettings> settings;
         private readonly ISecureHasher secureHasher;
         private readonly IAuthManager authManager;
+
+        private readonly byte[] unknownProfilePictureBytes;
+        private readonly string unknownProfilePictureUrl;
 
         public PlayersController(
             ILogger<PlayersController> logger,
@@ -47,7 +51,45 @@ namespace RavenNest.Controllers
             this.secureHasher = secureHasher;
             this.authManager = authManager;
             this.settings = settings;
+
+            var a = unknownProfilePictureUrl = "imgs/ravenfall_logo_tiny.png";
+            if (!System.IO.File.Exists(a))
+            {
+                a = Path.Combine("wwwroot", a);
+            }
+            if (System.IO.File.Exists(a))
+            {
+                this.unknownProfilePictureBytes = System.IO.File.ReadAllBytes(a);
+            }
         }
+
+        [HttpGet("logo/{userId}")]
+        [ResponseCache(VaryByHeader = "User-Agent", Duration = 600)]
+        public async Task<ActionResult> GetChannelPictureAsync(Guid userId)
+        {
+            try
+            {
+                //var imageData = await logoService.GetChannelPictureAsync(userId);
+                //if (imageData != null)
+                //{
+                //    return File(imageData, "image/png");
+                //}
+
+                // NOT IMPLEMENTED YET
+
+                if (unknownProfilePictureBytes == null)
+                {
+                    return NotFound();
+                }
+
+                //return Redirect(unknownProfilePictureUrl);
+                return File(unknownProfilePictureBytes, "image/png");
+            }
+            catch { }
+            return NotFound();
+        }
+
+
 
         [HttpGet]
         public Task<Player> Get()
@@ -89,12 +131,14 @@ namespace RavenNest.Controllers
         {
             return playerManager.AddLoyaltyData(AssertGetSessionToken(), data);
         }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         public Task<PlayerJoinResult> PlayerJoin([FromBody] PlayerJoinData playerData)
         {
             return playerManager.AddPlayer(AssertGetSessionToken(), playerData);
         }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("restore")]
         public Task<PlayerRestoreResult> Restore([FromBody] PlayerRestoreData players)

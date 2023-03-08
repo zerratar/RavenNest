@@ -403,11 +403,11 @@ namespace RavenNest.BusinessLogic.Game
                 targetSession, new StreamRaidInfo
                 {
                     RaiderUserName = sessionUser.UserName,
-                    RaiderUserId = sessionUser.UserId,
+                    RaiderUserId = sessionUser.Id,
                     Players = characters.Select(x =>
                     {
                         var u = gameData.GetUser(x.UserId);
-                        return new UserCharacter { CharacterId = x.Id, UserId = u?.UserId, Username = u?.UserName };
+                        return new StreamRaidPlayer { CharacterId = x.Id, UserId = u?.Id ?? Guid.Empty, Username = u?.UserName };
                     }).ToList()
                 });
 

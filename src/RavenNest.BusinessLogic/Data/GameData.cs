@@ -2638,7 +2638,7 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Clan GetClanByUser(Guid userId)
+        public Clan GetClanByOwner(Guid userId)
         {
             return clans[nameof(User), userId].FirstOrDefault(x => x != null);
         }

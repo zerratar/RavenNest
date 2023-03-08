@@ -242,7 +242,7 @@ namespace RavenNest.Blazor.Services
         private WebsiteAdminUser GetUser(DataModels.User userData)
         {
             if (userData == null) return null;
-            var clan = gameData.GetClanByUser(userData.Id);
+            var clan = gameData.GetClanByOwner(userData.Id);
 
             WebsiteClan websiteClan = null;
             if (clan != null)

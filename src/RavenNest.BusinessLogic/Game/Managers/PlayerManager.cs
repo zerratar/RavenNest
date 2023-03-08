@@ -101,9 +101,9 @@ namespace RavenNest.BusinessLogic.Game
             return CreateUserAndPlayer(null, new PlayerJoinData
             {
                 PlatformId = userId,
+                Platform = platform,
                 UserName = userName,
                 Identifier = identifier,
-                Platform = platform,
             });
         }
 
@@ -165,7 +165,7 @@ namespace RavenNest.BusinessLogic.Game
                     return result;
                 }
 
-                // in case a reload did something wonkers. ?
+                // Add by Character Id
                 var characterId = playerData.CharacterId;
                 if (characterId != Guid.Empty || Guid.TryParse(playerData.PlatformId ?? "", out characterId))
                 {
@@ -173,7 +173,6 @@ namespace RavenNest.BusinessLogic.Game
                     return result;
                 }
 
-                var userId = playerData.PlatformId;
                 var userName = playerData.UserName;
                 var identifier = playerData.Identifier;
 
@@ -182,14 +181,23 @@ namespace RavenNest.BusinessLogic.Game
                     identifier = "0";
                 }
 
-                if (string.IsNullOrEmpty(userId))
+                var platformId = playerData.PlatformId;
+                if (string.IsNullOrEmpty(platformId))
                 {
                     result.Success = false;
-                    result.ErrorMessage = "Something went wrong. Unable to verify user.";
+                    result.ErrorMessage = "Player does not contain a valid UserId.";
                     return result;
                 }
 
-                var user = gameData.GetUserByTwitchId(userId);
+                var platform = playerData.Platform;
+                if (string.IsNullOrEmpty(platform))
+                {
+                    result.Success = false;
+                    result.ErrorMessage = "Player is not from a valid Platform.";
+                    return result;
+                }
+
+                var user = gameData.GetUser(platformId, platform);
                 if (user == null)
                 {
                     result.Player = await CreateUserAndPlayer(session, playerData);
@@ -276,7 +284,7 @@ namespace RavenNest.BusinessLogic.Game
             }
             catch (Exception exc)
             {
-                logger.LogError($"Unable to add player ({playerData?.PlatformId}, {playerData?.UserName}, {playerData?.Identifier}): " + exc.ToString());
+                logger.LogError($"Unable to add player ({playerData?.PlatformId}, {playerData?.Platform}, {playerData?.UserName}, {playerData?.Identifier}): " + exc.ToString());
                 return result;
             }
             finally
@@ -562,7 +570,7 @@ namespace RavenNest.BusinessLogic.Game
                 await this.TrySendToExtensionAsync(character, new PlayerAdd
                 {
                     Identifier = character.Identifier,
-                    UserId = user.UserId,
+                    UserId = user.Id,
                     UserName = user.UserName,
                     CharacterId = character.Id
                 });
@@ -646,7 +654,7 @@ namespace RavenNest.BusinessLogic.Game
                  new PlayerRemove()
                  {
                      Reason = reason,
-                     UserId = user.UserId,
+                     UserId = user.Id,
                      CharacterId = character.Id
                  });
 
@@ -690,7 +698,7 @@ namespace RavenNest.BusinessLogic.Game
                 new PlayerRemove()
                 {
                     Reason = reason,
-                    UserId = characterUser.UserId,
+                    UserId = characterUser.Id,
                     CharacterId = character.Id
                 });
 
@@ -3295,7 +3303,7 @@ namespace RavenNest.BusinessLogic.Game
                 new PlayerRemove()
                 {
                     Reason = clientMessage,
-                    UserId = characterUser.UserId,
+                    UserId = characterUser.Id,
                     CharacterId = character.Id
                 });
 
@@ -3311,7 +3319,7 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     Identifier = character.Identifier,
                     UserName = characterUser.UserName,
-                    UserId = characterUser.UserId,
+                    UserId = characterUser.Id,
                     CharacterId = character.Id
                 });
 
@@ -3352,7 +3360,10 @@ namespace RavenNest.BusinessLogic.Game
             DataModels.GameSession session,
             PlayerJoinData playerData)
         {
-            var user = gameData.GetUserByTwitchId(playerData.PlatformId);
+            var user = playerData.UserId != Guid.Empty
+                ? gameData.GetUser(playerData.UserId)
+                : gameData.GetUser(playerData.PlatformId, playerData.Platform);
+
             if (user == null)
             {
                 if (Guid.TryParse(playerData.PlatformId, out var characterId) && gameData.GetCharacter(characterId) != null)
@@ -3379,7 +3390,18 @@ namespace RavenNest.BusinessLogic.Game
                     UserName = playerData.UserName,
                     Created = DateTime.UtcNow
                 };
+
                 gameData.Add(user);
+
+                gameData.Add(new UserAccess
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = user.Id,
+                    Platform = playerData.Platform,
+                    PlatformId = playerData.PlatformId,
+                    PlatformUsername = playerData.UserName,
+                    Created = DateTime.UtcNow
+                });
             }
 
             return CreatePlayer(session, user, playerData);

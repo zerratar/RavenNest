@@ -104,7 +104,7 @@ namespace RavenNest.Blazor.Services
                     var user = gameData.GetUserByTwitchId(userId);
                     if (user != null)
                     {
-                        var clan = gameData.GetClanByUser(user.Id);
+                        var clan = gameData.GetClanByOwner(user.Id);
                         if (clan != null && clan.Logo != null && clan.Logo.Contains("/api/twitch/logo/"))
                         {
                             clan.Logo = null;

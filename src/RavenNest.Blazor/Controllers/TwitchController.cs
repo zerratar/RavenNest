@@ -356,7 +356,7 @@ namespace RavenNest.Controllers
                     {
                         CharacterId = c.Id,
                         Identifier = c.Identifier,
-                        UserId = sessionInfo.TwitchUserId,
+                        UserId = sessionInfo.UserId,
                         UserName = sessionInfo.UserName
                     });
 
@@ -424,7 +424,7 @@ namespace RavenNest.Controllers
                     {
                         CharacterId = characterId,
                         Identifier = c.Identifier,
-                        UserId = sessionInfo.TwitchUserId,
+                        UserId = sessionInfo.UserId,
                         UserName = sessionInfo.UserName,
                     });
 

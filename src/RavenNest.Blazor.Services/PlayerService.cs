@@ -177,7 +177,7 @@ namespace RavenNest.Blazor.Services
                     if (user == null)
                         return new List<Player>();
 
-                    var clan = gameData.GetClanByUser(user.Id);
+                    var clan = gameData.GetClanByOwner(user.Id);
                     players = players.Where(x => x.Clan == null &&
                         gameData.GetClanInvitesByCharacter(x.Id).All(y => y.ClanId != clan.Id));
                 }
@@ -227,7 +227,7 @@ namespace RavenNest.Blazor.Services
                     if (user == null)
                         return empty;
 
-                    var clan = gameData.GetClanByUser(user.Id);
+                    var clan = gameData.GetClanByOwner(user.Id);
                     players = players.Where(x => x.Clan == null &&
                         gameData.GetClanInvitesByCharacter(x.Id).All(y => y.ClanId != clan.Id));
                 }

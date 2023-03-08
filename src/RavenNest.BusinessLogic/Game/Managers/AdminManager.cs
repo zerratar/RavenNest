@@ -257,7 +257,7 @@ namespace RavenNest.BusinessLogic.Game
                 new PlayerRemove()
                 {
                     Reason = $"{character.Name} was kicked remotely.",
-                    UserId = characterUser.UserId,
+                    UserId = characterUser.Id,
                     CharacterId = character.Id
                 });
 

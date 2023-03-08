@@ -210,9 +210,9 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
-        public Clan GetClanByUserId(Guid userId)
+        public Clan GetClanByOwnerUserId(Guid userId)
         {
-            var clan = gameData.GetClanByUser(userId);
+            var clan = gameData.GetClanByOwner(userId);
             if (clan == null) return null;
             return ModelMapper.Map(gameData, clan);
         }
@@ -221,7 +221,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             var user = gameData.GetUserByTwitchId(userId);
             if (user == null) return null;
-            var clan = gameData.GetClanByUser(user.Id);
+            var clan = gameData.GetClanByOwner(user.Id);
             if (clan == null) return null;
             return ModelMapper.Map(gameData, clan);
         }
@@ -322,7 +322,7 @@ namespace RavenNest.BusinessLogic.Game
             name = name.Trim();
 
             // already have a clan
-            var clan = gameData.GetClanByUser(ownerUserId);
+            var clan = gameData.GetClanByOwner(ownerUserId);
             if (clan != null)
                 return null;
 
@@ -882,10 +882,23 @@ namespace RavenNest.BusinessLogic.Game
             return new ChangeRoleResult();
         }
 
+        [Obsolete]
         public JoinClanResult JoinClan(string clanOwnerId, string platform, Guid characterId)
         {
             var clan = FindClan(clanOwnerId, platform);
             if (clan == null) return new JoinClanResult();
+            return JoinClan(characterId, clan);
+        }
+
+        public JoinClanResult JoinClan(Guid clanOwnerUserId, Guid characterId)
+        {
+            var clan = gameData.GetClanByOwner(clanOwnerUserId);
+            if (clan == null) return new JoinClanResult();
+            return JoinClan(characterId, clan);
+        }
+
+        private JoinClanResult JoinClan(Guid characterId, DataModels.Clan clan)
+        {
             var charClan = GetClanByCharacter(characterId);
             if (charClan != null) return new JoinClanResult();
 
@@ -959,7 +972,7 @@ namespace RavenNest.BusinessLogic.Game
             var role = GetClanRoleByCharacterId(characterId);
             if (role == null) return false;
             var c = gameData.GetCharacter(characterId);
-            var targetClan = gameData.GetClanByUser(c.UserId);
+            var targetClan = gameData.GetClanByOwner(c.UserId);
             return targetClan != null && targetClan.Id == role.ClanId;
         }
 

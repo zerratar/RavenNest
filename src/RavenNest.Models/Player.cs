@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json.Serialization;
 
 namespace RavenNest.Models
 {
@@ -33,10 +32,10 @@ namespace RavenNest.Models
         public int PatreonTier { get; set; }
         public bool IsHiddenInHighscore { get; set; }
         public IReadOnlyList<AuthServiceConnection> Connections { get; set; }
-        [JsonIgnore] public AuthServiceConnection Twitch => Connections.FirstOrDefault(x => x.Platform.Equals("twitch", StringComparison.OrdinalIgnoreCase));
-        [JsonIgnore] public AuthServiceConnection Discord => Connections.FirstOrDefault(x => x.Platform.Equals("discord", StringComparison.OrdinalIgnoreCase));
-        [JsonIgnore] public AuthServiceConnection YouTube => Connections.FirstOrDefault(x => x.Platform.Equals("youtube", StringComparison.OrdinalIgnoreCase));
-        [JsonIgnore] public AuthServiceConnection Kick => Connections.FirstOrDefault(x => x.Platform.Equals("kick", StringComparison.OrdinalIgnoreCase));
+        public AuthServiceConnection Twitch => Connections.FirstOrDefault(x => x.Platform.Equals("twitch", StringComparison.OrdinalIgnoreCase));
+        public AuthServiceConnection Discord => Connections.FirstOrDefault(x => x.Platform.Equals("discord", StringComparison.OrdinalIgnoreCase));
+        public AuthServiceConnection YouTube => Connections.FirstOrDefault(x => x.Platform.Equals("youtube", StringComparison.OrdinalIgnoreCase));
+        public AuthServiceConnection Kick => Connections.FirstOrDefault(x => x.Platform.Equals("kick", StringComparison.OrdinalIgnoreCase));
     }
 
     public class AuthServiceConnection

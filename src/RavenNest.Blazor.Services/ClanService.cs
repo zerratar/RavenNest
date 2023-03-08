@@ -34,7 +34,7 @@ namespace RavenNest.Blazor.Services
             if (!session.Authenticated)
                 return null;
 
-            return this.clanManager.GetClanByUserId(session.UserId);
+            return this.clanManager.GetClanByOwnerUserId(session.UserId);
         }
 
         public IReadOnlyList<ClanMember> RemoveMember(Guid clanId, Guid characterId)

@@ -1,10 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using RavenNest.Blazor.Services;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
 using RavenNest.Sessions;
 using System;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace RavenNest.Controllers
 {
@@ -18,8 +21,12 @@ namespace RavenNest.Controllers
         private readonly SessionManager sessionManager;
         private readonly GameManager gameManager;
         private readonly ClanManager clanManager;
+        private readonly LogoService logoService;
         private readonly ISecureHasher secureHasher;
         private readonly ILogger<ClanController> logger;
+
+        private readonly byte[] unknownClanLogoBytes;
+        private readonly string unknownClanLogoUrl;
 
         public ClanController(
             ILogger<ClanController> logger,
@@ -29,9 +36,11 @@ namespace RavenNest.Controllers
             SessionManager sessionManager,
             GameManager gameManager,
             ClanManager clanManager,
+            LogoService logoService,
             ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
+            this.logoService = logoService;
             this.logger = logger;
             this.gameData = gameData;
             this.authManager = authManager;
@@ -40,6 +49,45 @@ namespace RavenNest.Controllers
             this.gameManager = gameManager;
             this.clanManager = clanManager;
             this.secureHasher = secureHasher;
+
+            var b = unknownClanLogoUrl = "imgs/logo-tiny-black.png";
+
+            if (!System.IO.File.Exists(b))
+            {
+                b = Path.Combine("wwwroot", b);
+            }
+
+            if (System.IO.File.Exists(b))
+            {
+                this.unknownClanLogoBytes = System.IO.File.ReadAllBytes(b);
+            }
+        }
+
+
+        [HttpGet("logo/{userId}")]
+        [ResponseCache(VaryByHeader = "User-Agent", Duration = 600)]
+        public async Task<ActionResult> GetClanLogoAsync(Guid userId)
+        {
+            try
+            {
+                //var imageData = await logoService.GetClanLogoAsync(userId);
+                //if (imageData != null)
+                //{
+                //    return File(imageData, "image/png");
+                //}
+
+                // NOT IMPLEMENTED YET
+
+                if (unknownClanLogoBytes == null)
+                {
+                    return NotFound();
+                }
+
+                //return Redirect(unknownClanLogoUrl);
+                return File(unknownClanLogoBytes, "image/png");
+            }
+            catch { }
+            return NotFound();
         }
 
 
@@ -116,6 +164,15 @@ namespace RavenNest.Controllers
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
             return clanManager.JoinClan(clanOwnerId, "twitch", characterId);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("v2/join/{clanOwnerUserId}/{characterId}")]
+        public JoinClanResult ClanPlayerJoin(Guid clanOwnerUserId, Guid characterId)
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            return clanManager.JoinClan(clanOwnerUserId, characterId);
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]

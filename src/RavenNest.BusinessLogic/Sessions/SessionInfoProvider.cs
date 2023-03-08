@@ -206,7 +206,7 @@ namespace RavenNest
                 si.UserId = user.Id;
                 si.UserName = user.UserName;
 
-                var clan = gameData.GetClanByUser(user.Id);
+                var clan = gameData.GetClanByOwner(user.Id);
                 if (clan != null)
                 {
                     si.CanChangeClanName = clan.CanChangeName || clan.NameChangeCount < 2;
