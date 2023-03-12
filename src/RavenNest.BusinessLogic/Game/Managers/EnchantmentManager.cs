@@ -157,13 +157,14 @@ namespace RavenNest.BusinessLogic.Game
 
             // 1. Add exp whenever user successefully enchants an item
 
-            clanSkill.Experience += gainedExp;
+            clanSkill.Experience = Math.Floor(clanSkill.Experience + gainedExp);
 
             var gainedLevels = 0;
             var nextLevel = GameMath.ExperienceForLevel(clanSkill.Level + 1);
-            while (gainedExp >= nextLevel)
+
+            while (clanSkill.Experience >= nextLevel)
             {
-                gainedExp -= nextLevel;
+                clanSkill.Experience -= nextLevel;
                 nextLevel = GameMath.ExperienceForLevel(clanSkill.Level + 1);
                 ++clanSkill.Level;
                 ++gainedLevels;

@@ -179,7 +179,6 @@ namespace RavenNest.Blazor.Services
                     {
                         UserName = u.UserName,
                         DisplayName = u.DisplayName,
-                        TwitchUserId = u.UserId,
                         CheeredBits = d.CheeredBits,
                         Experience = d.Experience,
                         GiftedSubs = d.GiftedSubs,

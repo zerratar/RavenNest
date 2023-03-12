@@ -184,7 +184,7 @@ namespace RavenNest.Blazor.Services
                                 inviter = gameData.GetUser(cha.UserId);
                             }
                         }
-                        
+
                         allInvites.Add(new ClanInvite
                         {
                             Character = ModelMapper.MapForWebsite(c, gameData, user),
@@ -192,7 +192,7 @@ namespace RavenNest.Blazor.Services
                             Inviter = inviter,
                             Created = invite.Created,
                             ClanName = clan.Name,
-                            ClanLogo = clan.Logo ?? $"/api/twitch/logo/{owner.UserId}"
+                            ClanLogo = clan.Logo ?? $"/api/clan/logo/{owner.Id}"
                         });
                     }
                 }

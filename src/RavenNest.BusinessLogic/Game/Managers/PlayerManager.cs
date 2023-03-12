@@ -152,7 +152,6 @@ namespace RavenNest.BusinessLogic.Game
             });
         }
 
-
         public async Task<PlayerJoinResult> AddPlayer(DataModels.GameSession session, PlayerJoinData playerData)
         {
             var result = new PlayerJoinResult();
@@ -280,6 +279,8 @@ namespace RavenNest.BusinessLogic.Game
 
                 result.Player = await AddPlayerToSession(session, user, character);
                 result.Success = result.Player != null;
+
+
                 return result;
             }
             catch (Exception exc)
@@ -289,6 +290,10 @@ namespace RavenNest.BusinessLogic.Game
             }
             finally
             {
+                if (result.Success)
+                {
+                    ravenbotApi.UpdateUserSettings(result.Player.UserId);
+                }
 #if DEBUG
                 if (!result.Success && session != null)
                 {

@@ -438,11 +438,13 @@ namespace RavenNest.BusinessLogic.Data
                     tua = new UserAccess();
                     tua.Id = Guid.NewGuid();
                     tua.UserId = user.Id;
-                    tua.Platform = "Twitch";
+                    tua.Platform = "twitch";
                     tua.PlatformId = user.UserId;
                     tua.PlatformUsername = user.UserName;
                     tua.Updated = now;
                     tua.Created = now;
+
+                    user.UserId = null;
                     Add(tua);
                 }
             }

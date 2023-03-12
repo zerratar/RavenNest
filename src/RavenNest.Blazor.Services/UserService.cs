@@ -262,14 +262,22 @@ namespace RavenNest.Blazor.Services
 
             var bankItems = DataMapper.MapMany<RavenNest.Models.UserBankItem>(gameData.GetUserBankItems(userData.Id));
             var commentProperty = gameData.GetUserProperty(userData.Id, UserProperties.Comment);
-
+            var connections = new List<AuthServiceConnection>();
+            foreach (var a in gameData.GetUserAccess(userData.Id))
+            {
+                connections.Add(new AuthServiceConnection
+                {
+                    Platform = a.Platform,
+                    PlatformId = a.PlatformId,
+                    PlatformUserName = a.PlatformUsername
+                });
+            }
             return new WebsiteAdminUser
             {
                 Characters = new List<WebsiteAdminPlayer>(),
                 Created = userData.Created,
                 Id = userData.Id,
                 PatreonTier = userData.PatreonTier,
-                UserId = userData.UserId,
                 UserName = userData.UserName,
                 Email = userData.Email,
                 IsAdmin = userData.IsAdmin.GetValueOrDefault(),
@@ -278,6 +286,7 @@ namespace RavenNest.Blazor.Services
                 IsHiddenInHighscore = userData.IsHiddenInHighscore.GetValueOrDefault(),
                 Clan = websiteClan,
                 HasClan = websiteClan != null,
+                Connections = connections,
                 Stash = bankItems,
                 Comment = commentProperty
             };

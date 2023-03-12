@@ -45,7 +45,6 @@ namespace RavenNest.Blazor.Services
                     var owner = this.gameData.GetUser(village.UserId);
                     town.Owner = new TownOwnerData();
                     town.Owner.Id = owner?.Id ?? Guid.Empty;
-                    town.Owner.UserId = owner?.UserId;
                     town.Owner.UserName = owner?.UserName;
 
                     var tHouses = new List<TownHouseData>();
@@ -183,7 +182,6 @@ namespace RavenNest.Blazor.Services
     public class TownOwnerData
     {
         public Guid Id { get; set; }
-        public string UserId { get; set; }
         public string UserName { get; set; }
     }
 }

@@ -9,8 +9,8 @@ namespace RavenNest
     {
         public Guid Id { get; set; }
         public string SessionId { get; set; }
+        [Obsolete("Use Connections instead.")]
         public string TwitchUserId { get; set; }
-        public string Platform { get; set; }
         public Guid UserId { get; set; }
         public string UserName { get; set; }
         public bool Authenticated { get; set; }

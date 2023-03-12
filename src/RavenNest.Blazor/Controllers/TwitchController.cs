@@ -329,7 +329,9 @@ namespace RavenNest.Controllers
                 }
 
                 var index = existingCharacters.Count + 1;
-                var player = await playerManager.CreatePlayer(user.UserId, "twitch", user.UserName, index.ToString());
+                var uac = gameData.GetUserAccess(user.Id);
+                var twitch = uac.FirstOrDefault(x => x.Platform == "twitch");
+                var player = await playerManager.CreatePlayer(twitch.PlatformId, "twitch", user.UserName, index.ToString());
                 if (player == null)
                 {
                     result.ErrorMessage = "Failed to create a new character.";
@@ -399,7 +401,7 @@ namespace RavenNest.Controllers
                 }
 
                 var myUser = gameData.GetUser(c.UserId);
-                if (myUser == null || myUser.UserId != sessionInfo.TwitchUserId)
+                if (myUser == null)
                 {
                     result.ErrorMessage = "No such user.";
                     return result;

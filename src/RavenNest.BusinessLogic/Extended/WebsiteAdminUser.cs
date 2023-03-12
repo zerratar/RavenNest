@@ -7,6 +7,7 @@ namespace RavenNest.BusinessLogic.Extended
     public class WebsiteAdminUser
     {
         public Guid Id { get; set; }
+        [Obsolete("Use Connections instead")]
         public string UserId { get; set; }
         public string UserName { get; set; }
         public int? PatreonTier { get; set; }
@@ -14,6 +15,7 @@ namespace RavenNest.BusinessLogic.Extended
         public bool IsAdmin { get; set; }
         public bool IsModerator { get; set; }
         public List<WebsiteAdminPlayer> Characters { get; set; }
+        public List<AuthServiceConnection> Connections { get; set; }
         public int Status { get; set; }
         public bool IsHiddenInHighscore { get; set; }
         public DateTime Created { get; set; }
