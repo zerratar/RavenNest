@@ -157,15 +157,16 @@ namespace RavenNest.BusinessLogic.Game
 
             // 1. Add exp whenever user successefully enchants an item
 
-            clanSkill.Experience += gainedExp;
+            clanSkill.Experience = Math.Floor(clanSkill.Experience + gainedExp);
 
             var gainedLevels = 0;
             var nextLevel = GameMath.ExperienceForLevel(clanSkill.Level + 1);
-            while (gainedExp >= nextLevel)
+
+            while (clanSkill.Experience >= nextLevel)
             {
-                gainedExp -= nextLevel;
+                clanSkill.Experience -= nextLevel;
                 nextLevel = GameMath.ExperienceForLevel(clanSkill.Level + 1);
-                clanSkill.Level = clanSkill.Level + 1;
+                ++clanSkill.Level;
                 ++gainedLevels;
             }
 
@@ -188,7 +189,7 @@ namespace RavenNest.BusinessLogic.Game
             };
         }
 
-        private RavenNest.Models.InventoryItem Transform(ReadOnlyInventoryItem item)
+        private static RavenNest.Models.InventoryItem Transform(ReadOnlyInventoryItem item)
         {
             return new RavenNest.Models.InventoryItem
             {
@@ -210,7 +211,7 @@ namespace RavenNest.BusinessLogic.Game
             var highestValueAttribute = attributes.OrderByDescending(x => x.DoubleValue).FirstOrDefault();
             var attrName = highestValueAttribute.Attribute.Name.ToLower();
 
-            attrName = char.ToUpper(attrName[0]) + attrName.Substring(1);
+            attrName = char.ToUpper(attrName[0]) + attrName[1..];
 
             var totalPlus = attributes.Sum(x => (int)Math.Floor(x.DoubleValue));
 
