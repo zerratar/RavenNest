@@ -26,7 +26,7 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class PlayerManager
     {
-        private const int MaxCharacterCount = 3;
+        public const int MaxCharacterCount = 3;
         private readonly ILogger logger;
         private readonly IRavenBotApiClient ravenbotApi;
         private readonly IPlayerHighscoreProvider highscoreProvider;
@@ -3305,6 +3305,8 @@ namespace RavenNest.BusinessLogic.Game
             {
                 return null;
             }
+
+            logger.LogWarning("Creating new character for '" + user.UserName + "' Data: " + Newtonsoft.Json.JsonConvert.SerializeObject(playerData));
 
             var character = new Character
             {

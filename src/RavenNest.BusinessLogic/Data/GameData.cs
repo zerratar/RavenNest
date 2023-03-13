@@ -384,7 +384,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 #region Post Data Load - Transformations
 
-                MigrateTwitchUserAccess();
+                //MigrateTwitchUserAccess();
 
                 EnsureCharacterSkillRecords();
                 EnsureMagicAttributes();
@@ -395,7 +395,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 RemoveBadInventoryItems(inventoryItems);
 
-                //RemoveEmptyPlayers();
+                RemoveEmptyPlayers();
 
                 EnsureClanLevels(clans);
                 EnsureExpMultipliersWithinBounds(expMultiplierEvents);
@@ -1354,7 +1354,6 @@ namespace RavenNest.BusinessLogic.Data
         {
             var now = DateTime.UtcNow;
             List<Character> characterToRemove = new List<Character>();
-
             List<CharacterSkillRecord> recordsToRemove = new List<CharacterSkillRecord>();
             // check if we have character skill records that no longer has a character :o
 
@@ -1366,66 +1365,62 @@ namespace RavenNest.BusinessLogic.Data
                 }
             }
 
-            foreach (var c in this.characters.Entities)
+            var byUser = this.characters.Entities.GroupBy(x => x.UserId, x => x, (key, g) => new { UserId = key, Characters = g.ToList() });
+            foreach (var g in byUser)
             {
-                if (c.LastUsed == null || (now - c.LastUsed) >= TimeSpan.FromDays(365 / 2))
+                if (g.Characters.Count > PlayerManager.MaxCharacterCount)
                 {
-                    // check if the player has any data associated with it. Inventory Items
-                    // Skills, etc.
-
-                    var chars = GetCharactersByUserId(c.UserId);
-
-                    // if chars == null, user does not exist anymore.
-                    if (chars != null && chars.Count > 1)
+                    foreach (var c in g.Characters)
                     {
-                        continue;
-                    }
+                        // check if the player has any data associated with it. Inventory Items
+                        // Skills, etc.
 
-                    var s = GetCharacterSkills(c.SkillsId);
-                    if (s == null || s.GetSkills().All(x => x.Level == 1 || (x.Name == "Health" && x.Level == 10)))
-                    {
-                        var items = GetInventoryItems(c.Id);
-                        if (items != null && items.Count > 0)
+                        var s = GetCharacterSkills(c.SkillsId);
+                        if (s == null || s.GetSkills().All(x => x.Level == 1 || (x.Name == "Health" && x.Level == 10)))
                         {
-                            continue;
-                        }
+                            var items = GetInventoryItems(c.Id);
+                            if (items != null && items.Count > 0)
+                            {
+                                continue;
+                            }
 
-                        characterToRemove.Add(c);
+                            characterToRemove.Add(c);
 
-                        if (s != null)
-                        {
-                            Remove(s);
-                        }
+                            if (s != null)
+                            {
+                                Remove(s);
+                            }
 
-                        var records = GetCharacterSkillRecords(c.Id);
-                        foreach (var r in records)
-                        {
-                            Remove(r);
-                        }
+                            var records = GetCharacterSkillRecords(c.Id);
+                            foreach (var r in records)
+                            {
+                                Remove(r);
+                            }
 
-                        var appearance = GetAppearance(c.AppearanceId);
-                        if (appearance != null)
-                        {
-                            Remove(appearance);
-                        }
+                            var appearance = GetAppearance(c.AppearanceId);
+                            if (appearance != null)
+                            {
+                                Remove(appearance);
+                            }
 
-                        var statistics = GetStatistics(c.StatisticsId);
-                        if (statistics != null)
-                        {
-                            Remove(statistics);
-                        }
+                            var statistics = GetStatistics(c.StatisticsId);
+                            if (statistics != null)
+                            {
+                                Remove(statistics);
+                            }
 
-                        var mem = GetClanMembership(c.Id);
-                        if (mem != null)
-                        {
-                            Remove(mem);
-                        }
+                            var mem = GetClanMembership(c.Id);
+                            if (mem != null)
+                            {
+                                Remove(mem);
+                            }
 
-                        var invites = GetClanInvitesByCharacter(c.Id);
-                        if (invites != null && invites.Count > 0)
-                        {
-                            foreach (var i in invites)
-                                Remove(i);
+                            var invites = GetClanInvitesByCharacter(c.Id);
+                            if (invites != null && invites.Count > 0)
+                            {
+                                foreach (var i in invites)
+                                    Remove(i);
+                            }
                         }
                     }
                 }
