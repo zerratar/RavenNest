@@ -1471,28 +1471,6 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
-        private void RemoveBadUsers(EntitySet<User> users)
-        {
-            var toRemove = new List<User>();
-            foreach (var user in users.Entities)
-            {
-                if (string.IsNullOrEmpty(user.UserName) || Guid.TryParse(user.UserId, out var guid))
-                {
-                    toRemove.Add(user);
-                }
-            }
-
-            foreach (var badUser in toRemove)
-            {
-                Remove(badUser);
-            }
-
-            if (toRemove.Count > 0)
-            {
-                logger.LogError("Removed " + toRemove.Count + " users without username or users with twitch user id being a guid.");
-            }
-        }
-
         private void MergeVillages()
         {
             // slow process.

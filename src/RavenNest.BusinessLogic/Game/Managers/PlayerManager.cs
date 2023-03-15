@@ -3306,7 +3306,7 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
-            logger.LogWarning("Creating new character for '" + user.UserName + "' Data: " + Newtonsoft.Json.JsonConvert.SerializeObject(playerData));
+            logger.LogError("Creating new character for '" + user.UserName + "' Data: " + Newtonsoft.Json.JsonConvert.SerializeObject(playerData));
 
             var character = new Character
             {
