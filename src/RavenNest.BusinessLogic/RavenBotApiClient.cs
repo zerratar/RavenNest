@@ -52,38 +52,14 @@ namespace RavenNest.BusinessLogic
                 var targetFile = System.IO.Path.Combine(SettingsDirectory, userId + ".json");
                 var dir = System.IO.Path.GetDirectoryName(targetFile);
 
-                var props = gameData.GetUserProperties(userId);
-                if (props == null)
+                var settings = gameData.GetUserSettings(userId);
+                if (settings == null)
                 {
                     return; // we don't have anything to save.
                 }
 
-
                 if (System.IO.Directory.Exists(dir))
                     System.IO.Directory.CreateDirectory(dir);
-
-
-                // map it into dictionary and save!
-                var settings = new Dictionary<string, object>();
-                foreach (var prop in props)
-                {
-                    settings[prop.PropertyKey] = prop.Value;
-                }
-
-                // add platform identifiers
-                var access = gameData.GetUserAccess(userId);
-                foreach (var a in access)
-                {
-                    settings[a.Platform.ToLower() + "_id"] = a.PlatformId;
-                    settings[a.Platform.ToLower() + "_name"] = a.PlatformUsername;
-                }
-
-                var user = gameData.GetUser(userId);
-
-                settings["is_admin"] = user.IsAdmin.GetValueOrDefault();
-                settings["is_moderator"] = user.IsModerator.GetValueOrDefault();
-                settings["ravenfall_id"] = user.Id;
-                settings["ravenfall_name"] = user.UserName;
 
                 System.IO.File.WriteAllText(targetFile, Newtonsoft.Json.JsonConvert.SerializeObject(settings));
             }

@@ -131,6 +131,7 @@ namespace RavenNest.BusinessLogic.Game
                 ExpMultiplier = GetExpMultiplier(),
                 Permissions = GetUserPermissions(user),
                 Village = villageManager.GetVillageInfo(newGameSession),
+                UserSettings = gameData.GetUserSettings(userId),
             });
         }
 

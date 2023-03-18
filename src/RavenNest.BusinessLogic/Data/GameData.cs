@@ -46,6 +46,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<UserNotification> notifications;
 
         private readonly EntitySet<CharacterClanInvite> clanInvites;
+
         private readonly EntitySet<Clan> clans;
         private readonly EntitySet<ClanRole> clanRoles;
         private readonly EntitySet<ClanSkill> clanSkills;
@@ -426,6 +427,38 @@ namespace RavenNest.BusinessLogic.Data
             }
 
         }
+
+        public Dictionary<string, object> GetUserSettings(Guid userId)
+        {
+            var props = GetUserProperties(userId);
+            if (props == null)
+            {
+                return null;
+            }
+
+            var settings = new Dictionary<string, object>();
+            foreach (var prop in props)
+            {
+                settings[prop.PropertyKey] = prop.Value;
+            }
+
+            // add platform identifiers
+            var access = GetUserAccess(userId);
+            foreach (var a in access)
+            {
+                settings[a.Platform.ToLower() + "_id"] = a.PlatformId;
+                settings[a.Platform.ToLower() + "_name"] = a.PlatformUsername;
+            }
+
+            var user = GetUser(userId);
+
+            settings["is_admin"] = user.IsAdmin.GetValueOrDefault();
+            settings["is_moderator"] = user.IsModerator.GetValueOrDefault();
+            settings["ravenfall_id"] = user.Id;
+            settings["ravenfall_name"] = user.UserName;
+            return settings;
+        }
+
 
         private void MigrateTwitchUserAccess()
         {

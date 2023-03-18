@@ -32,6 +32,7 @@ namespace RavenNest.Models
         public Permissions Permissions { get; set; }
         public string ExpectedClientVersion { get; set; }
         public BeginSessionResultState State { get; set; }
+        public Dictionary<string, object> UserSettings { get; set; }
         public static BeginSessionResult InvalidVersion { get; set; } = new BeginSessionResult
         {
             State = BeginSessionResultState.UpdateRequired
