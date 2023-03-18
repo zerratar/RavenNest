@@ -48,8 +48,8 @@
             @foreach (var user in users)
             {
                 <tr class="player-row">
-                    <td><img src="/api/twitch/logo/@(user.UserId)" class="profile-picture" /></td>
-                    <td>@user.UserId</td>
+                    <td><img src="/api/twitch/logo/@(user.Id)" class="profile-picture" /></td>
+                    <td>@user.Id</td>
                     <td>
                         <span>@user.UserName</span>
                         @if (user.Status >= 1)

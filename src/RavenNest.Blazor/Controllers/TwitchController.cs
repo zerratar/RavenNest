@@ -114,6 +114,16 @@ namespace RavenNest.Controllers
         {
             try
             {
+                if (Guid.TryParse(userId, out var rfuid))
+                {
+                    var uac = gameData.GetUserAccess(rfuid);
+                    var twitch = uac.FirstOrDefault(x => x.Platform == "twitch");
+                    if (twitch != null)
+                    {
+                        userId = twitch.PlatformId;
+                    }
+                }
+
                 var imageData = await logoService.GetChannelPictureAsync(userId);
                 if (imageData != null)
                 {
