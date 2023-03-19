@@ -66,17 +66,15 @@ namespace RavenNest.Controllers
 
         [HttpGet("logo/{userId}")]
         [ResponseCache(VaryByHeader = "User-Agent", Duration = 600)]
-        public async Task<ActionResult> GetClanLogoAsync(Guid userId)
+        public async Task<ActionResult> GetClanLogoAsync(string userId)
         {
             try
             {
-                //var imageData = await logoService.GetClanLogoAsync(userId);
-                //if (imageData != null)
-                //{
-                //    return File(imageData, "image/png");
-                //}
-
-                // NOT IMPLEMENTED YET
+                var imageData = await logoService.GetClanLogoAsync(userId);
+                if (imageData != null)
+                {
+                    return File(imageData, "image/png");
+                }
 
                 if (unknownClanLogoBytes == null)
                 {
