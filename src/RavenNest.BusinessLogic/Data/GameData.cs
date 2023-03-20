@@ -621,13 +621,12 @@ namespace RavenNest.BusinessLogic.Data
             return settings;
         }
 
-
         private void MigrateTwitchUserAccess()
         {
             foreach (var user in users.Entities)
             {
                 UserAccess tua = GetUserAccess(user.Id, "twitch");
-                if (tua == null)
+                if (tua == null && !string.IsNullOrEmpty(user.UserId) && !user.UserName.Contains("#"))
                 {
                     var now = DateTime.UtcNow;
                     tua = new UserAccess();
