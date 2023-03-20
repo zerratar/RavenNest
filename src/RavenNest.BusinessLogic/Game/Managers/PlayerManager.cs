@@ -624,7 +624,7 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
-        public async void RemoveUserFromSessions(User user)
+        public async Task RemoveUserFromSessions(User user)
         {
             if (user == null)
             {

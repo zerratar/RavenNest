@@ -388,9 +388,27 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
-        public bool MergePlayerAccounts(string userId)
+        public async Task<bool> MergePlayerAccounts()
         {
-            var user = gameData.GetUserByTwitchId(userId);
+            foreach (var userGroup in gameData.GetDuplicateUsers())
+            {
+                foreach (var user in userGroup)
+                {
+                    await playerManager.RemoveUserFromSessions(user);
+                }
+            }
+
+            // give it 10s, hopefully the characters should be removed
+            await Task.Delay(10000);
+
+            gameData.MergeAccounts();
+
+            return true;
+        }
+
+        public bool MergePlayerAccounts(Guid userId)
+        {
+            var user = gameData.GetUser(userId);
             if (user == null)
                 return false;
 

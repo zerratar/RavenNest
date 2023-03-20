@@ -406,6 +406,8 @@ namespace RavenNest.BusinessLogic.Data
 
                 RemoveDuplicatedClanMembers();
 
+                //MergeAccounts();
+
                 //UpgradeVillageLevels();
                 //MergeVillages();
                 //ApplyVendorPrices();
@@ -426,6 +428,166 @@ namespace RavenNest.BusinessLogic.Data
                 System.IO.File.WriteAllText("ravenfall-error.log", "[" + DateTime.UtcNow + "] " + exc.ToString());
             }
 
+        }
+
+        public List<List<User>> GetDuplicateUsers()
+        {
+            return users.Entities.GroupBy(u => u.UserName)
+                .Where(group => group.Count() > 1)
+                .Select(group => group.ToList())
+                .ToList();
+        }
+
+        public void MergeAccounts()
+        {
+            var duplicates = GetDuplicateUsers();
+
+            foreach (var group in duplicates)
+            {
+                // Merge all the users in the group, this will put all characters, user bank items, etc into one user account
+                var mergedUser = MergeUser(group);
+
+                // with all merged characters, which may just as well be beyond the maximum of 3.
+                // start removing them
+                var characters = GetCharactersByUserId(mergedUser.Id);
+                foreach (var c in characters)
+                {
+                    RemoveCharacterIfEmpty(c);
+                }
+
+                // now with removed characters in first step, get the updated list of characters
+                characters = GetCharactersByUserId(mergedUser.Id);
+
+                // if we have more than 3 characters, we have to merge characters if possible.
+                if (characters.Count > 3)
+                {
+                    // do not merge right now, its going to be too risky.
+                }
+
+                // finally, with one last step, we will assign new character indices
+                characters = GetCharactersByUserId(mergedUser.Id);
+                var index = 0;
+                foreach (var c in characters.OrderBy(x => x.Created))
+                {
+                    c.CharacterIndex = index++;
+                }
+            }
+        }
+
+        private User MergeUser(List<User> group)
+        {
+            // move everything over to one and the same user. Its okay if its the latest one,
+
+            var targetUser = group.OrderByDescending(x =>
+            {
+                var chars = GetCharactersByUserId(x.Id);
+                var total = chars.Count;
+                foreach (var c in chars)
+                {
+                    total += GetInventoryItems(c.Id).Count;
+                }
+                return total;
+            }).FirstOrDefault();
+
+            var targetUserAccess = GetUserAccess(targetUser.Id);
+
+            // with a target user, one more time we will go through all characters for all users in the group
+            // we will end up with more than 3 characters, but its okay. We will remove empty ones later
+            foreach (var user in group)
+            {
+                // no need to process the target user
+                if (user.Id == targetUser.Id)
+                {
+                    continue;
+                }
+
+                if (user.PatreonTier > targetUser.PatreonTier)
+                {
+                    targetUser.PatreonTier = user.PatreonTier;
+                    MergeUserPatreonData(targetUser, user);
+                }
+
+                if (string.IsNullOrEmpty(targetUser.PasswordHash) && !string.IsNullOrEmpty(user.PasswordHash))
+                {
+                    targetUser.PasswordHash = user.PasswordHash;
+                }
+
+                // All your characters are now mine!
+                var characters = GetCharactersByUserId(user.Id);
+                foreach (var c in characters)
+                {
+                    c.UserId = targetUser.Id;
+                }
+
+                // if we have user bank items, move them over.
+                foreach (var item in GetUserBankItems(user.Id))
+                {
+                    item.UserId = targetUser.Id;
+                }
+
+                // since only twitch is currently being used AND we already generate these records. Remove them
+                foreach (var ua in GetUserAccess(user.Id))
+                {
+                    Remove(ua);
+                }
+
+                // Remove all properties, the props we have are related to access tokens like pub-sub,
+                // but that will be updated automatically as the user logs back in again using twitch
+                foreach (var prop in GetUserProperties(user.Id))
+                {
+                    Remove(prop);
+                }
+
+                Remove(user);
+            }
+
+            return targetUser;
+        }
+
+        private void MergeUserPatreonData(User targetUser, User user)
+        {
+            var sourcePatreon = GetPatreonUser(user.Id);
+            if (sourcePatreon == null)
+            {
+                return;
+            }
+
+            var targetPatreon = GetPatreonUser(targetUser.Id);
+            if (targetPatreon == null)
+            {
+                sourcePatreon.UserId = targetUser.Id;
+                return;
+            }
+
+            if (sourcePatreon.Updated > targetPatreon.Updated && sourcePatreon.Tier > targetPatreon.Tier)
+            {
+                targetPatreon.Tier = sourcePatreon.Tier;
+                targetPatreon.Scope = sourcePatreon.Scope;
+                targetPatreon.RefreshToken = sourcePatreon.RefreshToken;
+                targetPatreon.TokenType = sourcePatreon.TokenType;
+                targetPatreon.AccessToken = sourcePatreon.AccessToken;
+                targetPatreon.Email = sourcePatreon.Email;
+                targetPatreon.FullName = sourcePatreon.FullName;
+                targetPatreon.FirstName = sourcePatreon.FirstName;
+                targetPatreon.ExpiresIn = sourcePatreon.ExpiresIn;
+            }
+
+            Remove(sourcePatreon);
+        }
+
+        private void RemoveUser(User user)
+        {
+            var props = GetUserProperties(user.Id);
+            foreach (var prop in props)
+            {
+                Remove(prop);
+            }
+
+            var uac = GetUserAccess(user.Id);
+            foreach (var a in uac)
+            {
+                Remove(a);
+            }
         }
 
         public Dictionary<string, object> GetUserSettings(Guid userId)
@@ -465,7 +627,7 @@ namespace RavenNest.BusinessLogic.Data
             foreach (var user in users.Entities)
             {
                 UserAccess tua = GetUserAccess(user.Id, "twitch");
-                if (tua == null && !string.IsNullOrEmpty(user.UserId))
+                if (tua == null)
                 {
                     var now = DateTime.UtcNow;
                     tua = new UserAccess();
@@ -476,9 +638,12 @@ namespace RavenNest.BusinessLogic.Data
                     tua.PlatformUsername = user.UserName;
                     tua.Updated = now;
                     tua.Created = now;
-
-                    user.UserId = null;
                     Add(tua);
+                }
+
+                if (!string.IsNullOrEmpty(user.UserId))
+                {
+                    user.UserId = null;
                 }
             }
         }
@@ -1385,6 +1550,66 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
+        private void RemoveCharacterIfEmpty(Character c)
+        {
+            var s = GetCharacterSkills(c.SkillsId);
+            if (s == null || s.GetSkills().All(x => x.Level == 1 || (x.Name == "Health" && x.Level == 10)))
+            {
+                var items = GetInventoryItems(c.Id);
+                if (items != null && items.Count > 0)
+                {
+                    return;
+                }
+
+                var resx = GetResources(c.ResourcesId);
+                if (resx != null && (resx.Wheat != 0 || resx.Coins != 0 || resx.Fish != 0 || resx.Wood != 0 || resx.Ore != 0))
+                {
+                    return;
+                }
+
+                if (resx != null)
+                {
+                    Remove(resx);
+                }
+
+                if (s != null)
+                {
+                    Remove(s);
+                }
+
+                var records = GetCharacterSkillRecords(c.Id);
+                foreach (var r in records)
+                {
+                    Remove(r);
+                }
+
+                var appearance = GetAppearance(c.AppearanceId);
+                if (appearance != null)
+                {
+                    Remove(appearance);
+                }
+
+                var statistics = GetStatistics(c.StatisticsId);
+                if (statistics != null)
+                {
+                    Remove(statistics);
+                }
+
+                var mem = GetClanMembership(c.Id);
+                if (mem != null)
+                {
+                    Remove(mem);
+                }
+
+                var invites = GetClanInvitesByCharacter(c.Id);
+                if (invites != null && invites.Count > 0)
+                {
+                    foreach (var i in invites)
+                        Remove(i);
+                }
+            }
+        }
+
         private void RemoveEmptyPlayers()
         {
             var now = DateTime.UtcNow;
@@ -1484,6 +1709,7 @@ namespace RavenNest.BusinessLogic.Data
                     }
 
                     ++removedUserCount;
+
                     Remove(user);
                     str.AppendLine("u\t" + user.Id + "\t" + user.UserName);
                 }
@@ -2735,7 +2961,12 @@ namespace RavenNest.BusinessLogic.Data
         #region Remove Entities
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(UserPatreon item) => patreons.Remove(item);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(CharacterClanSkillCooldown item) => characterClanSkillCooldown.Remove(item);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(UserProperty item) => userProperties.Remove(item);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(ClanRolePermissions item) => clanRolePermissions.Remove(item);

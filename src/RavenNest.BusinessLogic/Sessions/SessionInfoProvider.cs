@@ -222,7 +222,7 @@ namespace RavenNest
                 {
                     connections.Add(new AuthServiceConnection
                     {
-                        Platform = c.Platform,
+                        Platform = c.Platform.ToLower(),
                         PlatformId = c.PlatformId,
                         PlatformUserName = c.PlatformUsername
                     });

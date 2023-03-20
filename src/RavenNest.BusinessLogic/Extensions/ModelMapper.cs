@@ -316,7 +316,7 @@ namespace RavenNest.BusinessLogic.Extensions
             {
                 connections.Add(new AuthServiceConnection
                 {
-                    Platform = access.Platform,
+                    Platform = access.Platform.ToLower(),
                     PlatformId = access.PlatformId,
                     PlatformUserName = access.PlatformUsername
                 });
@@ -391,7 +391,7 @@ namespace RavenNest.BusinessLogic.Extensions
             {
                 connections.Add(new AuthServiceConnection
                 {
-                    Platform = access.Platform,
+                    Platform = access.Platform.ToLower(),
                     PlatformId = access.PlatformId,
                     PlatformUserName = access.PlatformUsername
                 });
@@ -449,7 +449,7 @@ namespace RavenNest.BusinessLogic.Extensions
             {
                 connections.Add(new AuthServiceConnection
                 {
-                    Platform = access.Platform,
+                    Platform = access.Platform.ToLower(),
                     PlatformId = access.PlatformId,
                     PlatformUserName = access.PlatformUsername
                 });

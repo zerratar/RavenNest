@@ -267,7 +267,7 @@ namespace RavenNest.Blazor.Services
             {
                 connections.Add(new AuthServiceConnection
                 {
-                    Platform = a.Platform,
+                    Platform = a.Platform.ToLower(),
                     PlatformId = a.PlatformId,
                     PlatformUserName = a.PlatformUsername
                 });

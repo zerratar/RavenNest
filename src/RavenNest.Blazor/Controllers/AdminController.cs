@@ -59,6 +59,14 @@ namespace RavenNest.Controllers
             return adminManager.FixCharacterIndices(userId);
         }
 
+        [HttpGet("merge-accounts")]
+        public async Task<bool> MergePlayerAccounts()
+        {
+            await AssertAdminAccessAsync();
+            return await adminManager.MergePlayerAccounts();
+        }
+
+
         [HttpGet("fix-loyalties")]
         public async Task<bool> FixLoyaltyPoints()
         {
@@ -342,7 +350,7 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("mergeplayer/{userid}")]
-        public async Task<bool> MergePlayerAccounts(string userid)
+        public async Task<bool> MergePlayerAccounts(Guid userid)
         {
             await AssertAdminAccessAsync();
             return adminManager.MergePlayerAccounts(userid);
