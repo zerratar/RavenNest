@@ -7,6 +7,7 @@ using RavenNest.BusinessLogic.Net;
 using RavenNest.Models;
 using RavenNest.Sessions;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -60,7 +61,28 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("merge-accounts")]
-        public async Task<bool> MergePlayerAccounts()
+        public async Task<string[]> PrepareMergePlayerAccounts()
+        {
+            await AssertAdminAccessAsync();
+
+            var groups = gameData.GetDuplicateUsers();
+            var accs = new List<string>();
+            foreach (var group in groups)
+            {
+                foreach (var u in group)
+                {
+                    accs.Add(u.Id + " - " + u.UserName);
+                }
+            }
+
+            accs.Insert(0, "Use /merge-accounts/confirm to merge the following items");
+
+            return accs.ToArray();
+        }
+
+
+        [HttpGet("merge-accounts/confirm")]
+        public async Task<string[]> MergePlayerAccounts()
         {
             await AssertAdminAccessAsync();
             return await adminManager.MergePlayerAccounts();

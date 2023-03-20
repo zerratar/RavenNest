@@ -388,13 +388,15 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
-        public async Task<bool> MergePlayerAccounts()
+        public async Task<string[]> MergePlayerAccounts()
         {
+            var accounts = new List<string>();
             foreach (var userGroup in gameData.GetDuplicateUsers())
             {
                 foreach (var user in userGroup)
                 {
                     await playerManager.RemoveUserFromSessions(user);
+                    accounts.Add(user.Id + " - " + user.UserName);
                 }
             }
 
@@ -403,7 +405,7 @@ namespace RavenNest.BusinessLogic.Game
 
             gameData.MergeAccounts();
 
-            return true;
+            return accounts.ToArray();
         }
 
         public bool MergePlayerAccounts(Guid userId)
