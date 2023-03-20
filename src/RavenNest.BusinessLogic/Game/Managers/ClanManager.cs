@@ -217,15 +217,6 @@ namespace RavenNest.BusinessLogic.Game
             return ModelMapper.Map(gameData, clan);
         }
 
-        public Clan GetClanByUserId(string userId)
-        {
-            var user = gameData.GetUserByTwitchId(userId);
-            if (user == null) return null;
-            var clan = gameData.GetClanByOwner(user.Id);
-            if (clan == null) return null;
-            return ModelMapper.Map(gameData, clan);
-        }
-
         public Clan GetClanByCharacter(Guid characterId)
         {
             var clanMembership = gameData.GetClanMembership(characterId);
@@ -646,7 +637,7 @@ namespace RavenNest.BusinessLogic.Game
                 });
             }
 
-            var owner = gameData.GetUserByTwitchId(clan.Owner);
+            var owner = gameData.GetUser(clan.OwnerUserId);
             var result = new ClanStats
             {
                 ClanSkills = skillInfos,
@@ -684,7 +675,7 @@ namespace RavenNest.BusinessLogic.Game
                 roleInfos.Add(roleInfo);
             }
 
-            var owner = gameData.GetUserByTwitchId(clan.Owner);
+            var owner = gameData.GetUser(clan.OwnerUserId);
             var result = new ClanInfo
             {
                 Name = clan.Name,

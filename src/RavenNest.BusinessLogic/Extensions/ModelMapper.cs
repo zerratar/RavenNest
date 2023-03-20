@@ -136,12 +136,21 @@ namespace RavenNest.BusinessLogic.Extensions
                 };
             }
 
+            // needs to be removed in the future, but game client requires it right now.
+            var twitchUserId = user.UserId;
+            var twitch = gameData.GetUserAccess(user.Id, "twitch");
+            if (twitch != null)
+            {
+                twitchUserId = twitch.PlatformId;
+            }
+
             return new RavenNest.Models.Clan()
             {
                 Id = data.Id,
                 Logo = data.Logo,
                 Name = data.Name,
-                Owner = user.UserId,
+                Owner = twitchUserId,
+                OwnerUserId = user.Id,
                 Experience = data.Experience,
                 Level = data.Level,
                 ClanSkills = skills

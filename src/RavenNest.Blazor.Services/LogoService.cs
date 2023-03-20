@@ -31,6 +31,16 @@ namespace RavenNest.Blazor.Services
             this.gameData = gameData;
         }
 
+        public async Task UpdateClanLogoAsync(Guid userId)
+        {
+            var twitch = gameData.GetUserAccess(userId, "twitch");
+            if (twitch != null)
+            {
+                await GetClanLogoAsync("_" + twitch.PlatformId);
+                await GetChannelPictureAsync("_" + twitch.PlatformId);
+            }
+        }
+
         public async Task UpdateClanLogoAsync(string userId)
         {
             await GetClanLogoAsync("_" + userId);

@@ -226,7 +226,7 @@ namespace RavenNest.Blazor.Services
             if (clan == null)
                 return false;
 
-            if (clan.Owner != session.TwitchUserId)
+            if (clan.OwnerUserId != session.UserId)
                 return false;
 
             return this.clanManager.UpdateClanName(clanId, newName);
