@@ -21,13 +21,13 @@ namespace RavenNest.Blazor.Components
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
-            if (session == null || session.TwitchUserId == null)
+            if (session == null || session.UserName == null)
             {
                 NavigationManager.NavigateTo("/login");
                 return;
             }
 
-            if (session != null && session.TwitchUserId != null)
+            if (session != null && session.UserName != null)
             {
                 await JS.InvokeAsync<object>("showCharacterCustomization", System.Array.Empty<object>());
             }

@@ -202,7 +202,6 @@ namespace RavenNest
                 si.Administrator = user.IsAdmin.GetValueOrDefault();
                 si.Moderator = user.IsModerator.GetValueOrDefault();
 
-                si.TwitchUserId = user.UserId;
                 si.UserId = user.Id;
                 si.UserName = user.UserName;
 
@@ -226,6 +225,11 @@ namespace RavenNest
                         PlatformId = c.PlatformId,
                         PlatformUserName = c.PlatformUsername
                     });
+
+                    if (c.Platform.ToLower() == "twitch")
+                    {
+                        si.TwitchUserId = c.PlatformId;
+                    }
                 }
 
                 var myChars = gameData.GetCharacters(x => x.UserId == user.Id);

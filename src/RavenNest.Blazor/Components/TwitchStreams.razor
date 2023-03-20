@@ -35,7 +35,7 @@
     [Parameter]
     public SessionInfo Session { get; set; }
 
-    private bool IsPlaying => Session.TwitchUserId != null && Session?.PlaySessions?.Count > 0;
+    private bool IsPlaying => Session.UserName != null && Session?.PlaySessions?.Count > 0;
     private bool showTwitchStreams = false;
 
     private void ToggleTwitchStreams()

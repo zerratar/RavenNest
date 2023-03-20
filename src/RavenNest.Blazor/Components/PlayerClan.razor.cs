@@ -19,7 +19,7 @@ namespace RavenNest.Blazor.Components
         protected override async Task OnInitializedAsync()
         {
             session = AuthService.GetSession();
-            if (session.TwitchUserId != null)
+            if (session.UserName != null)
             {
                 clan = Player.Clan;
                 clanRole = Player.ClanRole;
