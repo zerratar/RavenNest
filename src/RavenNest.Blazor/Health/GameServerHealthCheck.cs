@@ -28,7 +28,7 @@ namespace RavenNest.Health
             if (!kernel.Started)
                 errorData.Add(nameof(IKernel), "Kernel not started");
 
-            return Task.FromResult(errorData.Count > 0 ? HealthCheckResult.Unhealthy("The GameServer is not running properly", data: errorData) : HealthCheckResult.Healthy());
+            return Task.FromResult(errorData.Count > 0 ? HealthCheckResult.Unhealthy("The GameServer is not running properly: " + Newtonsoft.Json.JsonConvert.SerializeObject(errorData), data: errorData) : HealthCheckResult.Healthy());
         }
     }
 }

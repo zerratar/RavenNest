@@ -183,6 +183,8 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(ExpMultiplierEvent)
                 });
 
+
+                logger.LogInformation($"Checking for restore points.");
                 if (restorePoint != null)
                 {
                     dataMigration.Migrate(this.db, restorePoint);
@@ -190,6 +192,7 @@ namespace RavenNest.BusinessLogic.Data
                 }
                 #endregion
 
+                logger.LogInformation($"Loading dataset from database.");
                 #region Data Load
                 using (var ctx = this.db.Get())
                 {
@@ -385,6 +388,8 @@ namespace RavenNest.BusinessLogic.Data
 
                 #region Post Data Load - Transformations
 
+                logger.LogInformation($"Post processing dataset.");
+
                 MigrateTwitchUserAccess();
 
                 EnsureCharacterSkillRecords();
@@ -415,8 +420,8 @@ namespace RavenNest.BusinessLogic.Data
                 #endregion
 
                 stopWatch.Stop();
-                logger.LogDebug($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
-                logger.LogDebug("GameData initialized... Starting kernel...");
+                logger.LogInformation($"All database entries loaded in {stopWatch.Elapsed.TotalSeconds} seconds.");
+                logger.LogInformation("GameData initialized... Starting kernel...");
                 kernel.Start();
                 InitializedSuccessful = true;
                 CreateBackup();
@@ -623,6 +628,7 @@ namespace RavenNest.BusinessLogic.Data
 
         private void MigrateTwitchUserAccess()
         {
+            logger.LogInformation($"Migrating old Twitch data to User Access.");
             foreach (var user in users.Entities)
             {
                 UserAccess tua = GetUserAccess(user.Id, "twitch");
@@ -724,6 +730,7 @@ namespace RavenNest.BusinessLogic.Data
 
         private void EnsureCharacterSkillRecords()
         {
+            logger.LogInformation($"Ensuring all characters have skill records.");
             var addedRecords = 0;
 
             // seem like top 1000 currently is as low as 89 (min level), keeping it at 75 here
@@ -780,6 +787,8 @@ namespace RavenNest.BusinessLogic.Data
             {
                 return;
             }
+
+            logger.LogInformation($"Restoring magic attributes.");
 
             for (var i = 0; i < DataModels.Skills.SkillNames.Length; ++i)
             {
