@@ -259,7 +259,7 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (gameData.GetCharacterSkills(character.SkillsId) == null)
                 {
-                    var skills = GenerateSkills();
+                    var skills = gameData.GenerateSkills();
                     character.SkillsId = skills.Id;
                     gameData.Add(skills);
                 }
@@ -2619,7 +2619,7 @@ namespace RavenNest.BusinessLogic.Game
 
             if (skills == null)
             {
-                skills = GenerateSkills();
+                skills = gameData.GenerateSkills();
                 character.SkillsId = skills.Id;
                 gameData.Add(skills);
             }
@@ -2717,7 +2717,7 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (skills == null)
                 {
-                    skills = GenerateSkills();
+                    skills = gameData.GenerateSkills();
                     character.SkillsId = skills.Id;
                     gameData.Add(skills);
                 }
@@ -3105,7 +3105,7 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (skills == null)
                 {
-                    skills = GenerateSkills();
+                    skills = gameData.GenerateSkills();
                     character.SkillsId = skills.Id;
                     gameData.Add(skills);
                 }
@@ -3442,7 +3442,7 @@ namespace RavenNest.BusinessLogic.Game
             var appearance = GenerateRandomAppearance();
             var syntyAppearance = GenerateRandomSyntyAppearance();
 
-            var skills = GenerateSkills();
+            var skills = gameData.GenerateSkills();
             var resources = GenerateResources();
             var statistics = GenerateStatistics();
             var state = new DataModels.CharacterState()
@@ -3534,28 +3534,6 @@ namespace RavenNest.BusinessLogic.Game
             };
         }
 
-        private Skills GenerateSkills()
-        {
-            return new Skills
-            {
-                Id = Guid.NewGuid(),
-                HealthLevel = 10,
-                AttackLevel = 1,
-                CraftingLevel = 1,
-                CookingLevel = 1,
-                DefenseLevel = 1,
-                FarmingLevel = 1,
-                FishingLevel = 1,
-                MagicLevel = 1,
-                MiningLevel = 1,
-                RangedLevel = 1,
-                SailingLevel = 1,
-                SlayerLevel = 1,
-                StrengthLevel = 1,
-                WoodcuttingLevel = 1,
-                HealingLevel = 1,
-            };
-        }
 
         private bool ValidateDateRange(DataModels.RedeemableItem redeemable)
         {

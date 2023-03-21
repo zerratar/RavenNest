@@ -740,11 +740,21 @@ namespace RavenNest.BusinessLogic.Data
 
             foreach (var c in this.characters.Entities)
             {
-                var records = GetCharacterSkillRecords(c.Id);
                 var skills = GetCharacterSkills(c.SkillsId);
+                if (skills == null)
+                {
+                    logger.LogError(c.Id + " - " + c.Name + " - " + c.Identifier + " does not have any skills! SkillsId: " + c.SkillsId);
+
+
+
+                    continue;
+                }
+
+                var records = GetCharacterSkillRecords(c.Id);
+
                 foreach (var skill in skills.GetSkills())
                 {
-                    var existingRecord = records.FirstOrDefault(x => x.SkillIndex == skill.Index);
+                    var existingRecord = records?.FirstOrDefault(x => x.SkillIndex == skill.Index);
 
                     if (skill.Level < minSkillRecordLevel)
                     {
@@ -3286,6 +3296,29 @@ namespace RavenNest.BusinessLogic.Data
             }
 
             return true;
+        }
+
+        public Skills GenerateSkills()
+        {
+            return new Skills
+            {
+                Id = Guid.NewGuid(),
+                HealthLevel = 10,
+                AttackLevel = 1,
+                CraftingLevel = 1,
+                CookingLevel = 1,
+                DefenseLevel = 1,
+                FarmingLevel = 1,
+                FishingLevel = 1,
+                MagicLevel = 1,
+                MiningLevel = 1,
+                RangedLevel = 1,
+                SailingLevel = 1,
+                SlayerLevel = 1,
+                StrengthLevel = 1,
+                WoodcuttingLevel = 1,
+                HealingLevel = 1,
+            };
         }
 
         public void EnqueueGameEvent(GameEvent entity)
