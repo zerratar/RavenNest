@@ -132,9 +132,15 @@ namespace RavenNest.BusinessLogic.Game
                         {
                             owner = gameData.GetUser(uid.Value);
                         }
+
+                        // really bad, but for now we have no choice until game client been updated.
+                        var twitchUserId = owner != null ? gameData.GetUserAccess(owner.Id, "twitch")?.PlatformId : String.Empty;
+
                         return new VillageHouseInfo
                         {
-                            Owner = owner?.UserId,
+                            Owner = twitchUserId,
+                            OwnerCharacterId = x.CharacterId,
+                            OwnerUserId = x.UserId,
                             Slot = x.Slot,
                             Type = x.Type
                         };
