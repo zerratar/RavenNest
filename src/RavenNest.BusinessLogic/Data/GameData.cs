@@ -391,7 +391,7 @@ namespace RavenNest.BusinessLogic.Data
                 logger.LogInformation($"Post processing dataset.");
 
                 MigrateTwitchUserAccess();
-
+                RemoveCharactersWithoutSkills();
                 EnsureCharacterSkillRecords();
                 EnsureMagicAttributes();
                 EnsureResources();
@@ -725,6 +725,59 @@ namespace RavenNest.BusinessLogic.Data
             if (rewardCount > 0)
             {
                 logger.LogError("(Not actual error) " + rewardCount + " items was rewarded to various players.");
+            }
+        }
+
+        private void RemoveCharactersWithoutSkills()
+        {
+            foreach (var c in this.characters.Entities)
+            {
+                var skills = GetCharacterSkills(c.SkillsId);
+                if (skills != null)
+                {
+                    continue;
+                }
+
+                // make sure inventory is empty too.
+                var items = GetInventoryItems(c.Id);
+                if (items.Count != 0)
+                {
+                    // Move all items to another character in the same account.
+                    var otherCharacters = GetCharactersByUserId(c.UserId);
+                    var targetCharacter = otherCharacters.OrderBy(x => x.CharacterIndex).FirstOrDefault(x => GetCharacterSkills(x.SkillsId) != null);
+                    if (targetCharacter != null)
+                    {
+                        foreach (var item in items)
+                        {
+                            item.CharacterId = targetCharacter.Id;
+                        }
+                    }
+                }
+
+                var appearance = GetAppearance(c.AppearanceId);
+                if (appearance != null)
+                {
+                    Remove(appearance);
+                }
+
+                var statistics = GetStatistics(c.StatisticsId);
+                if (statistics != null)
+                {
+                    Remove(statistics);
+                }
+
+                var state = GetCharacterState(c.StateId);
+                if (state != null)
+                {
+                    Remove(state);
+                }
+
+                var invites = GetClanInvitesByCharacter(c.Id);
+                foreach (var invite in invites)
+                {
+                    if (invite != null)
+                        Remove(invite);
+                }
             }
         }
 
@@ -3045,7 +3098,8 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(Skills skill) => characterSkills.Remove(skill);
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(CharacterState state) => characterStates.Remove(state);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(Statistics stat) => statistics.Remove(stat);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
