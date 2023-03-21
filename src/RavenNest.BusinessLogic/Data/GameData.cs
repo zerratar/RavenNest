@@ -392,6 +392,9 @@ namespace RavenNest.BusinessLogic.Data
 
                 MigrateTwitchUserAccess();
                 RemoveCharactersWithoutSkills();
+
+                //RemoveDanglingEntities();
+
                 EnsureCharacterSkillRecords();
                 EnsureMagicAttributes();
                 EnsureResources();
@@ -432,7 +435,82 @@ namespace RavenNest.BusinessLogic.Data
                 InitializedSuccessful = false;
                 System.IO.File.WriteAllText("ravenfall-error.log", "[" + DateTime.UtcNow + "] " + exc.ToString());
             }
+        }
 
+        public void RemoveDanglingEntities()
+        {
+            // appearances
+
+            foreach (var act in characterSessionActivities.Entities)
+            {
+                if (GetCharacter(act.CharacterId) == null)
+                {
+                    Remove(act);
+                }
+            }
+
+            foreach (var appearance in appearances.Entities)
+            {
+                var match = false;
+                foreach (var character in characters.Entities)
+                {
+                    if (character.AppearanceId == appearance.Id)
+                    {
+                        match = true;
+                        break;
+                    }
+                }
+
+                if (!match)
+                {
+                    Remove(appearance);
+                }
+            }
+
+            foreach (var appearance in syntyAppearances.Entities)
+            {
+                var match = false;
+                foreach (var character in characters.Entities)
+                {
+                    if (character.SyntyAppearanceId == appearance.Id)
+                    {
+                        match = true;
+                        break;
+                    }
+                }
+
+                if (!match)
+                {
+                    Remove(appearance);
+                }
+            }
+
+            foreach (var res in resources.Entities)
+            {
+                var match = false;
+                foreach (var character in characters.Entities)
+                {
+                    if (character.ResourcesId == res.Id)
+                    {
+                        match = true;
+                        break;
+                    }
+                }
+
+                foreach (var village in villages.Entities)
+                {
+                    if (village.ResourcesId == res.Id)
+                    {
+                        match = true;
+                        break;
+                    }
+                }
+
+                if (!match)
+                {
+                    Remove(res);
+                }
+            }
         }
 
         public List<List<User>> GetDuplicateUsers()
@@ -778,6 +856,8 @@ namespace RavenNest.BusinessLogic.Data
                     if (invite != null)
                         Remove(invite);
                 }
+
+                Remove(c);
             }
         }
 
@@ -3033,6 +3113,8 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(UserPatreon item) => patreons.Remove(item);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(Appearance item) => appearances.Remove(item);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(CharacterClanSkillCooldown item) => characterClanSkillCooldown.Remove(item);
 

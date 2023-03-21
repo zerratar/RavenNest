@@ -60,6 +60,7 @@ namespace RavenNest.BusinessLogic.Data
                             logger.LogInformation($"Migrating {table} data...");
 
                             var queries = BuildInsertQuery(queryBuilder, entities);
+                            var queryIndex = 0;
                             foreach (var q in queries)
                             {
                                 using (var cmd = con.CreateCommand())
@@ -67,6 +68,7 @@ namespace RavenNest.BusinessLogic.Data
                                     cmd.CommandText = q;
                                     cmd.ExecuteNonQuery();
                                 }
+                                queryIndex++;
                             }
                         }
                         catch (Exception exc)

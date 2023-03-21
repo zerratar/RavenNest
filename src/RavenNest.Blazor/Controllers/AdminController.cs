@@ -60,6 +60,14 @@ namespace RavenNest.Controllers
             return adminManager.FixCharacterIndices(userId);
         }
 
+        [HttpGet("remove-dangling-entities")]
+        public async Task<bool> RemoveDanglingEntities()
+        {
+            await AssertAdminAccessAsync();
+            gameData.RemoveDanglingEntities();
+            return true;
+        }
+
         [HttpGet("merge-accounts")]
         public async Task<string[]> PrepareMergePlayerAccounts()
         {

@@ -197,6 +197,12 @@ namespace RavenNest.BusinessLogic.Game
         private bool TryGetLevel(int skillIndex, DataModels.Skills skills, out int level)
         {
             level = 0;
+
+            if (skills == null)
+            {
+                return false;
+            }
+
             if (skillIndex < 0)
             {
                 foreach (var skill in skills.GetSkills())
