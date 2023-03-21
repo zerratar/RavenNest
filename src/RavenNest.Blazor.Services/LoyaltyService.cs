@@ -175,8 +175,11 @@ namespace RavenNest.Blazor.Services
                     if (d.Playtime != null)
                         TimeSpan.TryParse(d.Playtime, out totalPlayTime);
 
+                    var twitch = gameData.GetUserAccess(d.UserId, "twitch");
+
                     loyalties.Add(new PlayerLoyalty
                     {
+                        TwitchUserId = twitch?.PlatformId,
                         UserName = u.UserName,
                         DisplayName = u.DisplayName,
                         CheeredBits = d.CheeredBits,
@@ -236,6 +239,9 @@ namespace RavenNest.Blazor.Services
                         continue; // ignore ourselves. So we as the streamer can't redeem on our own stream.
 
                     TimeSpan.TryParse(l.Playtime, out var totalPlayTime);
+
+                    var twitch = gameData.GetUserAccess(l.StreamerUserId, "twitch");
+
                     result.Add(new StreamerLoyalty
                     {
                         GiftedSubs = l.GiftedSubs,
@@ -250,7 +256,7 @@ namespace RavenNest.Blazor.Services
                         StreamerUserName = streamer.UserName,
                         StreamerUserId = l.StreamerUserId,
                         StreamerDisplayName = streamer.DisplayName,
-                        StreamerTwitchUserId = streamer.UserId,
+                        StreamerTwitchUserId = twitch?.PlatformId,
                         TotalPlayTime = totalPlayTime
                     });
                 }
