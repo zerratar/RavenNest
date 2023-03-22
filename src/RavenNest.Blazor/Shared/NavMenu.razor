@@ -78,20 +78,20 @@
             else
             {
                 @*<li class="nav-item">
-        <NavLink class="nav-link" href="/dashboard" Match="NavLinkMatch.All">
-        <span class="oi oi-dashboard" aria-hidden="true"></span> Overview
-        </NavLink>
-        </li>
-        <li class="nav-item">
-        <NavLink class="nav-link" href="/quests" Match="NavLinkMatch.All">
-        <span class="oi oi-badge" aria-hidden="true"></span> Quests
-        </NavLink>
-        </li>
-        <li class="nav-item">
-        <NavLink class="nav-link" href="/achievements" Match="NavLinkMatch.All">
-        <span class="oi oi-star" aria-hidden="true"></span> Achievements
-        </NavLink>
-        </li>*@
+                    <NavLink class="nav-link" href="/dashboard" Match="NavLinkMatch.All">
+                    <span class="oi oi-dashboard" aria-hidden="true"></span> Overview
+                    </NavLink>
+                    </li>
+                    <li class="nav-item">
+                    <NavLink class="nav-link" href="/quests" Match="NavLinkMatch.All">
+                    <span class="oi oi-badge" aria-hidden="true"></span> Quests
+                    </NavLink>
+                    </li>
+                    <li class="nav-item">
+                    <NavLink class="nav-link" href="/achievements" Match="NavLinkMatch.All">
+                    <span class="oi oi-star" aria-hidden="true"></span> Achievements
+                    </NavLink>
+                    </li>*@
                 <li class="nav-item">
                     <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                         <span class="oi oi-arrow-left" aria-hidden="true"></span> Frontpage
@@ -134,7 +134,7 @@
             {
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/patreon" Match="NavLinkMatch.All">
-                      <span class="fa-brands fa-patreon" aria-hidden="true"></span>&nbsp;Patreon
+                        <span class="fa-brands fa-patreon" aria-hidden="true"></span>&nbsp;Patreon
                     </NavLink>
                 </li>
                 <li class="nav-item">
@@ -217,10 +217,10 @@
 </div>
 
 
-@if (session?.TwitchUserId != null)
+@if (session != null && session.Authenticated)
 {
     <div class="notifications">
-        <NotificationIcon UserId="@session.TwitchUserId"></NotificationIcon>
+        <NotificationIcon UserId="@session.UserId"></NotificationIcon>
     </div>
 }
 

@@ -24,28 +24,20 @@ namespace RavenNest.Blazor.Services
             this.notificationManager = notificationManager;
         }
 
-        public async Task<IReadOnlyList<UserNotification>> DeleteNotificationAsync(string twitchUserId, Guid notificationId)
+        public async Task<IReadOnlyList<UserNotification>> DeleteNotificationAsync(Guid userId, Guid notificationId)
         {
-            var userId = gameData.GetUserByTwitchId(twitchUserId)?.Id;
-            if (userId == null)
-                return new List<UserNotification>();
-
             return await Task.Run(() =>
             {
                 notificationManager.DeleteNotification(notificationId);
-                return notificationManager.GetNotifications(userId.GetValueOrDefault());
+                return notificationManager.GetNotifications(userId);
             });
         }
 
-        public async Task<IReadOnlyList<UserNotification>> GetNotificationsAsync(string twitchUserId, int take = int.MaxValue)
+        public async Task<IReadOnlyList<UserNotification>> GetNotificationsAsync(Guid userId, int take = int.MaxValue)
         {
-            var userId = gameData.GetUserByTwitchId(twitchUserId)?.Id;
-            if (userId == null)
-                return new List<UserNotification>();
-
             return await Task.Run(() =>
             {
-                return notificationManager.GetNotifications(userId.GetValueOrDefault(), take);
+                return notificationManager.GetNotifications(userId, take);
             });
         }
     }
