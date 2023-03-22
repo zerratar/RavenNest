@@ -401,13 +401,6 @@ namespace RavenNest.Controllers
             return adminManager.ResetUserPassword(userid);
         }
 
-        [HttpGet("set-password/{username}/{password}")]
-        public async Task<bool> SetPassword(string username, string password)
-        {
-            await AssertAdminAccessAsync();
-            return adminManager.SetPassword(username, password);
-        }
-
         [HttpGet("updateplayername/{characterId}/{name}")]
         public async Task<bool> UpdatePlayerName(Guid characterId, string identifier, string name)
         {
