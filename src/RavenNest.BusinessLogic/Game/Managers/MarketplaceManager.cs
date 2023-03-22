@@ -46,7 +46,7 @@ namespace RavenNest.BusinessLogic.Game
                         var user = gameData.GetUser(character.UserId);
                         if (user == null) return null;
                         var item = DataMapper.Map<RavenNest.Models.MarketItem, DataModels.MarketItem>(x);
-                        item.SellerUserId = user.UserId;
+                        item.SellerUserId = user.Id;
                         return item;
                     })
                     .Where(x => x != null));
@@ -77,7 +77,7 @@ namespace RavenNest.BusinessLogic.Game
                         var user = gameData.GetUser(character.UserId);
                         if (user == null) return null;
                         var item = DataMapper.Map<RavenNest.Models.MarketItem, DataModels.MarketItem>(x);
-                        item.SellerUserId = user.UserId;
+                        item.SellerUserId = user.Id;
                         return item;
                     })
                     .Where(x => x != null));

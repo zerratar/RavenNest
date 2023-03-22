@@ -47,7 +47,7 @@ namespace RavenNest.Blazor.Pages.Front
             if (isAdmin) return true;
             if (session == null || listedItem == null)
                 return false;
-            return session.TwitchUserId == listedItem.SellerUserId;
+            return session.UserId == listedItem.SellerUserId;
         }
 
         private RavenNest.Models.Item GetItem(Guid itemId)
@@ -55,10 +55,10 @@ namespace RavenNest.Blazor.Pages.Front
             return ItemService.GetItem(itemId);
         }
 
-        private string GetUserName(string twitchUserId)
+        private string GetUserName(Guid userId)
         {
             if (!isAdmin) return null;
-            return UserService.GetUser(twitchUserId)?.UserName;
+            return UserService.GetUser(userId)?.UserName;
         }
 
         private async void CancelListing(Guid id)
