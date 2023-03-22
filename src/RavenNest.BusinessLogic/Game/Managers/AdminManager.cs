@@ -324,6 +324,26 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
+        public bool FixCharacterIndices()
+        {
+            foreach (var user in gameData.GetUsers())
+            {
+                var characters = gameData.GetCharactersByUserId(user.Id).OrderBy(x => x.CharacterIndex).ToArray();
+                var index = 0;
+                var prevAlias = "";
+                foreach (var c in characters)
+                {
+                    c.CharacterIndex = index++;
+                    if (c.Identifier == prevAlias && !string.IsNullOrWhiteSpace(c.Identifier))
+                    {
+                        c.Identifier = c.CharacterIndex.ToString();
+                    }
+                }
+            }
+
+            return true;
+        }
+
         public bool FixCharacterIndices(string userId)
         {
             if (string.IsNullOrEmpty(userId))

@@ -60,6 +60,14 @@ namespace RavenNest.Controllers
             return adminManager.FixCharacterIndices(userId);
         }
 
+        [HttpGet("fix-all-index")]
+        public async Task<bool> FixIndicesForCharaters()
+        {
+            await AssertAdminAccessAsync();
+            return adminManager.FixCharacterIndices();
+        }
+
+
         [HttpGet("remove-dangling-entities")]
         public async Task<bool> RemoveDanglingEntities()
         {
