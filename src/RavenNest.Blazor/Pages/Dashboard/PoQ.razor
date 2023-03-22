@@ -4,7 +4,7 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject NavigationManager NavManager
 
-@if (session.TwitchUserId == null)
+@if (!session.Authenticated)
 {
     <p>You don't seem to be logged in.</p>
 }

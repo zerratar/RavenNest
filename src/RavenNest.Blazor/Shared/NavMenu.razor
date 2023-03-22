@@ -130,7 +130,7 @@
                 }
             }
 
-            @if (session?.TwitchUserId != null)
+            @if (session != null && session.Authenticated)
             {
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/patreon" Match="NavLinkMatch.All">

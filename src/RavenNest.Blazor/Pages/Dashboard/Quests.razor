@@ -3,7 +3,7 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject NavigationManager NavigationManager
 
-@if (session.TwitchUserId == null)
+@if (!session.Authenticated)
 {
   <p>You don't seem to be logged in.</p>
 }
@@ -23,7 +23,7 @@ else
 
   protected override void OnAfterRender(bool firstRender)
   {
-    if (session == null || session.TwitchUserId == null)
+    if (session == null || !session.Authenticated)
     {
             NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
     }

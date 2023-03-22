@@ -3,35 +3,35 @@
 @inject NavigationManager NavigationManager
 @inject RavenNest.Blazor.Services.AuthService AuthService
 <style>
-  a.nav-link.login {
-    color: #3ba4eb;
-}
+    a.nav-link.login {
+        color: #3ba4eb;
+    }
 
-span.notification-count {
-    /*background-color: #dc3545;*/
-    background-color: #69C33B;
-}
+    span.notification-count {
+        /*background-color: #dc3545;*/
+        background-color: #69C33B;
+    }
 </style>
 <div class="page">
-  @if (IsAdministrator)
-  {
-    <div class="sidebar">
-      <NavMenu Dashboard="true" Administrator="true" Admin="true" />
-    </div>
+    @if (IsAdministrator)
+    {
+        <div class="sidebar">
+            <NavMenu Dashboard="true" Administrator="true" Admin="true" />
+        </div>
 
-    <div class="main">
-      <div class="top-row px-4">
-        <NotificationIcon UserId="@session.TwitchUserId"></NotificationIcon>
-        <NavLink class="nav-link login" href="/logout" Match="NavLinkMatch.All">
-          <span class="oi oi-account-logout" aria-hidden="true"></span> logout
-        </NavLink>
-      </div>
+        <div class="main">
+            <div class="top-row px-4">
+                <NotificationIcon UserId="@session.UserId"></NotificationIcon>
+                <NavLink class="nav-link login" href="/logout" Match="NavLinkMatch.All">
+                    <span class="oi oi-account-logout" aria-hidden="true"></span> logout
+                </NavLink>
+            </div>
 
-      <div class="content px-4">
-        @Body
-      </div>
-    </div>
-  }
+            <div class="content px-4">
+                @Body
+            </div>
+        </div>
+    }
 </div>
 
 @code {
@@ -39,23 +39,23 @@ span.notification-count {
     private SessionInfo session;
     protected override void OnInitialized()
     {
-      Instance = this;
-      session = AuthService.GetSession();
+        Instance = this;
+        session = AuthService.GetSession();
     }
 
     protected override void OnAfterRender(bool firstRender)
     {
-      if (!IsAdministrator)
-      {
-        NavigationManager.NavigateTo("/");
-      }
+        if (!IsAdministrator)
+        {
+            NavigationManager.NavigateTo("/");
+        }
     }
 
     public void UpdateSession()
     {
-      session = AuthService.GetSession();
+        session = AuthService.GetSession();
     }
 
-    private bool IsAuthenticated => session != null && session.TwitchUserId != null;
+    private bool IsAuthenticated => session != null && session.Authenticated;
     private bool IsAdministrator => IsAuthenticated && session.Administrator;
 }

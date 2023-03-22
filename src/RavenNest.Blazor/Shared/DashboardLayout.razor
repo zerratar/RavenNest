@@ -2,52 +2,52 @@
 @using RavenNest.Blazor.Components
 @inject RavenNest.Blazor.Services.AuthService AuthService
 <div class="page">
-  <div class="sidebar">
-    <NavMenu Dashboard="true" />
-  </div>
-
-  <div class="main">
-    <div class="top-row px-4">
-      @if (IsAuthenticated)
-      {
-        <NotificationIcon UserId="@session.TwitchUserId"></NotificationIcon>
-        <NavLink class="nav-link login" href="/logout" Match="NavLinkMatch.All">
-          <span class="oi oi-account-logout" aria-hidden="true"></span> logout
-        </NavLink>
-      }
-      else
-      {
-        <NavLink class="nav-link" href="/login" Match="NavLinkMatch.All">
-          <span class="oi oi-account-login" aria-hidden="true"></span> login
-        </NavLink>
-      }
+    <div class="sidebar">
+        <NavMenu Dashboard="true" />
     </div>
 
-    <div class="content px-4">
-      @Body
+    <div class="main">
+        <div class="top-row px-4">
+            @if (IsAuthenticated)
+            {
+                <NotificationIcon UserId="@session.UserId"></NotificationIcon>
+                <NavLink class="nav-link login" href="/logout" Match="NavLinkMatch.All">
+                    <span class="oi oi-account-logout" aria-hidden="true"></span> logout
+                </NavLink>
+            }
+            else
+            {
+                <NavLink class="nav-link" href="/login" Match="NavLinkMatch.All">
+                    <span class="oi oi-account-login" aria-hidden="true"></span> login
+                </NavLink>
+            }
+        </div>
+
+        <div class="content px-4">
+            @Body
+        </div>
+
+
+        @if (IsAuthenticated)
+        {
+            <TwitchStreams Session="session"></TwitchStreams>
+        }
     </div>
-
-
-    @if (IsAuthenticated)
-    {
-      <TwitchStreams Session="session"></TwitchStreams>
-    }
-  </div>
 </div>
 
 @code {
-  public static DashboardLayout Instance { get; private set; }
-  private SessionInfo session;
-  protected override void OnInitialized()
-  {
-    Instance = this;
-    session = AuthService.GetSession();
-  }
+    public static DashboardLayout Instance { get; private set; }
+    private SessionInfo session;
+    protected override void OnInitialized()
+    {
+        Instance = this;
+        session = AuthService.GetSession();
+    }
 
-  public void UpdateSession()
-  {
-    session = AuthService.GetSession();
-  }
+    public void UpdateSession()
+    {
+        session = AuthService.GetSession();
+    }
 
-  private bool IsAuthenticated => session != null && session.TwitchUserId != null;
+    private bool IsAuthenticated => session != null && session.Authenticated;
 }

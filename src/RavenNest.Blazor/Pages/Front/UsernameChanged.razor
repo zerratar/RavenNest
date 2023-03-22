@@ -50,7 +50,7 @@
 
 	protected override void OnAfterRender(bool firstRender)
 	{
-		if (session == null || session.TwitchUserId == null)
+		if (session == null || !session.Authenticated)
 		{
 			NavigationManager.NavigateTo("/login");
 		}

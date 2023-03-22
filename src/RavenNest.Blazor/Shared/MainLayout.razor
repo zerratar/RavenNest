@@ -11,7 +11,7 @@
             <div class="top-row corner">
                 @if (IsAuthenticated)
                 {
-                    <NotificationIcon UserId="@session.TwitchUserId"></NotificationIcon>
+                    <NotificationIcon UserId="@session.UserId"></NotificationIcon>
                     <NavLink class="nav-link" href="/logout" Match="NavLinkMatch.All">
                         <span class="oi oi-account-logout" aria-hidden="true"></span> LOGOUT
                     </NavLink>
@@ -142,5 +142,5 @@
         session = AuthService.GetSession();
     }
     private bool IsAdministrator => IsAuthenticated && session.Administrator;
-    private bool IsAuthenticated => session != null && session.TwitchUserId != null;
+    private bool IsAuthenticated => session != null && session.Authenticated;
 }

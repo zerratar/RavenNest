@@ -288,7 +288,7 @@ else
     {
         session = AuthService.GetSession();
 
-        if (session == null || session.TwitchUserId == null)
+        if (session == null || !session.Authenticated)
         {
             return;
         }
@@ -373,7 +373,7 @@ else
     private async Task ViewMyStream()
     {
         viewState = LoyaltyViewState.Streaming;
-        loyaltyData = await LoyaltyService.GetStreamerLoyaltyDataAsync(session.TwitchUserId);
+        loyaltyData = await LoyaltyService.GetStreamerLoyaltyDataAsync(session.UserId);
         pointRewards = await LoyaltyService.GetLoyaltyRewardsAsync();
         await InvokeAsync(StateHasChanged);
     }
@@ -381,7 +381,7 @@ else
     private async Task ViewStreamers()
     {
         viewState = LoyaltyViewState.LoyaltyRewards;
-        userLoyaltyData = await LoyaltyService.GetUserLoyaltyDataAsync(session.TwitchUserId);
+        userLoyaltyData = await LoyaltyService.GetUserLoyaltyDataAsync(session.UserId);
         if (userLoyaltyData.Loyalties != null)
         {
             totalAvailablePoints = 0;
@@ -407,7 +407,7 @@ else
 
     protected override void OnAfterRender(bool firstRender)
     {
-        if (session == null || session.TwitchUserId == null)
+        if (session == null || !session.Authenticated)
         {
             NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
         }

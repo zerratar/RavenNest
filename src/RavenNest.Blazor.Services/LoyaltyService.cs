@@ -123,17 +123,17 @@ namespace RavenNest.Blazor.Services
             });
         }
 
-        public Task<StreamerLoyaltyData> GetStreamerLoyaltyDataAsync(string userId)
+        public Task<StreamerLoyaltyData> GetStreamerLoyaltyDataAsync(Guid userId)
         {
             return Task.Run(() =>
             {
                 var session = GetSession();
                 if (session == null) return new StreamerLoyaltyData();
 
-                var user = gameData.GetUser(session.UserId);
+                var user = gameData.GetUser(userId);
                 if (user == null) return new StreamerLoyaltyData();
 
-                var data = gameData.GetStreamerLoyalties(user.Id);
+                var data = gameData.GetStreamerLoyalties(userId);
                 var sessions = gameData.FindSessions(x => x.UserId == user.Id);
 
                 if (sessions.Count == 0) return new StreamerLoyaltyData();
@@ -212,17 +212,17 @@ namespace RavenNest.Blazor.Services
             });
         }
 
-        public Task<UserLoyaltyData> GetUserLoyaltyDataAsync(string userId)
+        public Task<UserLoyaltyData> GetUserLoyaltyDataAsync(Guid userId)
         {
             return Task.Run(() =>
             {
                 var session = GetSession();
                 if (session == null) return new UserLoyaltyData();
 
-                var user = gameData.GetUser(session.UserId);
+                var user = gameData.GetUser(userId);
                 if (user == null) return new UserLoyaltyData();
 
-                var loyalties = gameData.GetUserLoyalties(user.Id);
+                var loyalties = gameData.GetUserLoyalties(userId);
                 var result = new List<StreamerLoyalty>();
 
                 foreach (var l in loyalties)

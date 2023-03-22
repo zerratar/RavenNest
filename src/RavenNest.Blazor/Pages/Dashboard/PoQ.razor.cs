@@ -20,7 +20,7 @@ namespace RavenNest.Blazor.Pages.Dashboard
 
         protected override void OnAfterRender(bool firstRender)
         {
-            if (session == null || session.TwitchUserId == null)
+            if (session == null || !session.Authenticated)
             {
                 NavManager.NavigateTo("/login");
             }

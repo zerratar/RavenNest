@@ -11,7 +11,7 @@
 
 <h1 class="page-title">Patreon</h1>
 
-@if (session.TwitchUserId == null)
+@if (!session.Authenticated)
 {
     <p>You don't seem to be logged in.</p>
 }
@@ -251,7 +251,7 @@ else
             NavigationManager.NavigateTo("/patreon");
             return;
         }
-        if (session == null || session.TwitchUserId == null)
+        if (session == null || !session.Authenticated)
         {
             NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
         }
