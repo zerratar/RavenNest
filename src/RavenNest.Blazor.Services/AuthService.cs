@@ -105,6 +105,12 @@ namespace RavenNest.Blazor.Services
                         sessionInfo.UserNameChanged = true;
                     }
 
+                    var twitchUserAccess = gameData.GetUserAccess(u.Id, "twitch");
+                    if (twitchUserAccess != null)
+                    {
+                        twitchUserAccess.PlatformUsername = user.Login; // in case username was changed, always keep this one up to date.
+                    }
+
                     sessionInfo.Patreon = gameData.GetPatreonUser(u.Id);
 
                     gameData.SetUserProperty(u.Id, UserProperties.Twitch_PubSub, accessToken);
