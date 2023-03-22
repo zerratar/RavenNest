@@ -26,7 +26,6 @@ namespace RavenNest.Blazor.Pages.Admin
         public string Id { get; set; }
         private CharacterViewState ViewState { get; set; }
 
-
         private WebsiteAdminUser SelectedUser { get; set; }
         private SessionInfo Session { get; set; }
 
@@ -42,7 +41,7 @@ namespace RavenNest.Blazor.Pages.Admin
 
         protected override void OnAfterRender(bool firstRender)
         {
-            if (Session == null || !session.Authenticated && SelectedUser == null)
+            if (Session == null || !Session.Authenticated || SelectedUser == null)
             {
                 NavigationManager.NavigateTo("/login");
             }
