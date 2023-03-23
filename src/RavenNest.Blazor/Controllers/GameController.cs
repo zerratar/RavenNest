@@ -20,6 +20,7 @@ namespace RavenNest.Controllers
         private readonly AdminManager adminManager;
         private readonly SessionManager sessionManager;
         private readonly GameManager gameManager;
+        private readonly SessionInfoProvider siProvider;
         private readonly ILogger<GameController> logger;
 
         public GameController(
@@ -33,6 +34,7 @@ namespace RavenNest.Controllers
             ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
+            this.siProvider = sessionInfoProvider;
             this.logger = logger;
             this.gameData = gameData;
             this.adminManager = adminManager;
@@ -66,20 +68,24 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("state-data")]
-        public async Task<FileContentResult> DownloadStreamerStateCache()
+        public async Task<ActionResult> DownloadStreamerStateCache()
         {
             try
             {
-                var authToken = GetAuthToken();
-                AssertAuthTokenValidity(authToken);
-                var cache = adminManager.GetStreamerStateCache(authToken.UserId);
+                var sessionId = HttpContext.GetSessionId();
+                if (!siProvider.TryGet(sessionId, out var si))
+                {
+                    return Unauthorized();
+                }
+
+                var cache = adminManager.GetStreamerStateCache(si.UserId);
                 var json = Newtonsoft.Json.JsonConvert.SerializeObject(cache);
                 var fileContent = System.Text.UTF8Encoding.UTF8.GetBytes(json);
                 return File(fileContent, "application/json", "state-data.json", true);
             }
             catch
             {
-                return null;
+                return NotFound();
             }
         }
 

@@ -51,6 +51,9 @@ namespace RavenNest.Controllers
                 return authManager.Get(value);
             if (sessionInfoProvider.TryGetAuthToken(SessionId, out var authToken))
                 return authToken;
+            var sid = HttpContext.GetSessionId();
+            if (sessionInfoProvider.TryGet(sid, out var si))
+                return si.AuthToken;
             return null;
         }
 
