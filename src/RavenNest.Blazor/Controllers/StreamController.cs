@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Twitch.Extension;
 
@@ -52,7 +53,6 @@ namespace RavenNest.Controllers
                 HttpContext.Response.StatusCode = 400;
             }
         }
-
 
         [HttpGet("extension/{broadcasterId}/{sessionId}")]
         public async Task GetExtensionWebsocketConnection(string broadcasterId, string sessionId)

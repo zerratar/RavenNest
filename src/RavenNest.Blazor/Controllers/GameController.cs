@@ -17,6 +17,7 @@ namespace RavenNest.Controllers
     public class GameController : GameApiController
     {
         private readonly GameData gameData;
+        private readonly AdminManager adminManager;
         private readonly SessionManager sessionManager;
         private readonly GameManager gameManager;
         private readonly ILogger<GameController> logger;
@@ -24,6 +25,7 @@ namespace RavenNest.Controllers
         public GameController(
             ILogger<GameController> logger,
             GameData gameData,
+            AdminManager adminManager,
             IAuthManager authManager,
             SessionInfoProvider sessionInfoProvider,
             SessionManager sessionManager,
@@ -33,6 +35,7 @@ namespace RavenNest.Controllers
         {
             this.logger = logger;
             this.gameData = gameData;
+            this.adminManager = adminManager;
             this.sessionManager = sessionManager;
             this.gameManager = gameManager;
         }
@@ -62,6 +65,23 @@ namespace RavenNest.Controllers
             };
         }
 
+        [HttpGet("state-data")]
+        public async Task<FileContentResult> DownloadStreamerStateCache()
+        {
+            try
+            {
+                var authToken = GetAuthToken();
+                AssertAuthTokenValidity(authToken);
+                var cache = adminManager.GetStreamerStateCache(authToken.UserId);
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(cache);
+                var fileContent = System.Text.UTF8Encoding.UTF8.GetBytes(json);
+                return File(fileContent, "application/json", "state-data.json", true);
+            }
+            catch
+            {
+                return null;
+            }
+        }
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{clientVersion}/{accessKey}")]

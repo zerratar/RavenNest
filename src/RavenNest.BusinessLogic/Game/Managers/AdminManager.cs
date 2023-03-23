@@ -92,12 +92,14 @@ namespace RavenNest.BusinessLogic.Game
                         continue;
                     }
 
+                    var userAccess = gameData.GetUserAccess(character.UserId).FirstOrDefault();
                     players.Add(new GameSessionPlayerCache.GameCachePlayerItem
                     {
                         CharacterId = character.Id,
                         CharacterIndex = character.CharacterIndex,
-                        TwitchUser = new GameSessionPlayerCache.GameCachePlayerItem.TwitchPlayerInfo(
-                                user.UserId, user.UserName, user.DisplayName, "", false, false, false, false, character.Identifier)
+                        User = new GameSessionPlayerCache.GameCachePlayerItem.SocialMediaUser(
+                                user.Id, character.Id, user.UserName, user.DisplayName, "",
+                                userAccess.Platform, userAccess.PlatformId, false, false, false, false, character.Identifier)
                     });
                 }
 
@@ -120,18 +122,36 @@ namespace RavenNest.BusinessLogic.Game
             {
                 return new GameSessionPlayerCache();
             }
+            return GetStreamerStateCache(streamerUser);
+        }
 
+        public GameSessionPlayerCache GetStreamerStateCache(Guid userId)
+        {
+            // 1., resolve the streamer, is it username, twitch user id or user id guid
+            var streamerUser = gameData.GetUser(userId);
+            if (streamerUser == null)
+            {
+                return new GameSessionPlayerCache();
+            }
+
+            return GetStreamerStateCache(streamerUser);
+        }
+
+        public GameSessionPlayerCache GetStreamerStateCache(User streamerUser)
+        {
             var players = new List<GameSessionPlayerCache.GameCachePlayerItem>();
             var characters = gameData.GetCharactersByUserLock(streamerUser.Id);
             foreach (var character in characters)
             {
                 var user = gameData.GetUser(character.UserId);
+                var userAccess = gameData.GetUserAccess(character.UserId).FirstOrDefault();
                 players.Add(new GameSessionPlayerCache.GameCachePlayerItem
                 {
                     CharacterId = character.Id,
                     CharacterIndex = character.CharacterIndex,
-                    TwitchUser = new GameSessionPlayerCache.GameCachePlayerItem.TwitchPlayerInfo(
-                            user.UserId, user.UserName, user.DisplayName, "", false, false, false, false, character.Identifier)
+                    User = new GameSessionPlayerCache.GameCachePlayerItem.SocialMediaUser(
+                            user.Id, character.Id, user.UserName, user.DisplayName, "",
+                            userAccess.Platform, userAccess.PlatformId, false, false, false, false, character.Identifier)
                 });
             }
 
