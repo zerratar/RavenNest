@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.DataModels;
 using RavenNest.Models;
@@ -258,7 +259,7 @@ namespace RavenNest
                 }
                 si.Connections = connections;
                 si.PlaySessions = playSessions;
-                si.Patreon = gameData.GetPatreonUser(user.Id);
+                si.Patreon = ModelMapper.Map(gameData.GetPatreonUser(user.Id));
             }
         }
         public int GetCombatLevel(DataModels.Skills skills)

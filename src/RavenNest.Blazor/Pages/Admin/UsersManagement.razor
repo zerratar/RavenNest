@@ -153,7 +153,7 @@
 @code {
     private bool loading = false;
     private PlayerSearchModel searchModel = new PlayerSearchModel();
-    private SessionInfo session;
+    private RavenNest.Models.SessionInfo session;
     private IReadOnlyList<WebsiteAdminUser> users;
     private int pageIndex = 0;
     private int pageSize = 50;
@@ -175,7 +175,7 @@
         LoadUserPageAsync(pageIndex, pageSize);
     }
 
-    private void IsHiddenInHighscoreChanged(WebsiteAdminUser user, object? newValue)
+    private void IsHiddenInHighscoreChanged(WebsiteAdminUser user, object newValue)
     {
         var boolValue = newValue != null && newValue is bool b ? b : false;
         UserService.SetUserHiddenInHighscore(user.Id, boolValue);

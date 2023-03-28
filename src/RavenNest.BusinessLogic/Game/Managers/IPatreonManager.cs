@@ -1,5 +1,6 @@
 ﻿using RavenNest.BusinessLogic.Models.Patreon.API;
 using RavenNest.DataModels;
+using RavenNest.Models;
 using RavenNest.Sessions;
 using System.Threading.Tasks;
 

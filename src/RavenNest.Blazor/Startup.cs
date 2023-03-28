@@ -185,7 +185,7 @@ namespace RavenNest.Blazor
             {
                 builder.Run(async context =>
                 {
-                    var sessionInfo = new SessionInfo();
+                    var sessionInfo = new RavenNest.Models.SessionInfo();
                     context.Response.ContentType = "text/javascript";
                     var service = app.ApplicationServices.GetService<SessionInfoProvider>();
 

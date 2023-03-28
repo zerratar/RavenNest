@@ -17,7 +17,7 @@ namespace RavenNest.Blazor.Pages.Admin
         Services.ClanService ClanService { get; set; }
         public bool loading { get; set; } = false;
         private PlayerSearchModel searchModel { get; set; } = new PlayerSearchModel();
-        private SessionInfo session { get; set; }
+        private Models.SessionInfo session { get; set; }
         private IReadOnlyList<WebsiteAdminUser> users { get; set; }
         private int pageSize { get; set; } = 25;
         private long totalCount { get; set; } = 0;

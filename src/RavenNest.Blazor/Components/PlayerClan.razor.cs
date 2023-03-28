@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using RavenNest.BusinessLogic.Extended;
+using RavenNest.Models;
 using System.Threading.Tasks;
 
 namespace RavenNest.Blazor.Components
@@ -7,8 +8,8 @@ namespace RavenNest.Blazor.Components
     public partial class PlayerClan
     {
         private SessionInfo session;
-        private RavenNest.Models.Clan clan;
-        private RavenNest.Models.ClanRole clanRole;
+        private Clan clan;
+        private ClanRole clanRole;
 
         [Parameter]
         public WebsitePlayer Player { get; set; }

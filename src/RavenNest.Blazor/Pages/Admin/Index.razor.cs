@@ -10,7 +10,7 @@ namespace RavenNest.Blazor.Pages.Admin
 {
     public partial class Index
     {
-        private SessionInfo session;
+        private Models.SessionInfo session;
         private bool isAdmin;
 
         private ChartTimeFrame newUserTimeframe = ChartTimeFrame.ThisMonth;

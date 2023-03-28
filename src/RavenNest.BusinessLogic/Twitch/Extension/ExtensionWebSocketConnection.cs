@@ -12,7 +12,7 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
     {
         private readonly ILogger logger;
         private readonly System.Net.WebSockets.WebSocket socket;
-        private readonly SessionInfo session;
+        private readonly RavenNest.Models.SessionInfo session;
         private readonly IExtensionPacketDataSerializer packetDataSerializer;
         private readonly byte[] buffer;
         private bool closed;
@@ -21,7 +21,7 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
             ILogger logger,
             WebSocket socket,
             IExtensionPacketDataSerializer serializer,
-            SessionInfo session,
+            RavenNest.Models.SessionInfo session,
             string twitchBroadcasterId)
         {
             this.SendQueue = new ConcurrentQueue<Packet>();
@@ -45,7 +45,7 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
 
         public TaskCompletionSource<object> KillTask { get; set; }
 
-        public SessionInfo Session => session;
+        public RavenNest.Models.SessionInfo Session => session;
         public string SessionId => session.SessionId;
 
         public string BroadcasterTwitchUserId { get; }

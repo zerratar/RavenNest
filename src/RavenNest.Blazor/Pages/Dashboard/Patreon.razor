@@ -3,6 +3,7 @@
 @page "/patreon/link"
 @using RavenNest.Blazor.Services.Models
 @using Microsoft.AspNetCore.WebUtilities
+@using RavenNest.BusinessLogic.Extensions
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JS
 
@@ -118,7 +119,7 @@ else
 }
 
 @code {
-    private SessionInfo session;
+    private RavenNest.Models.SessionInfo session;
     private bool patreonLinkInitiated;
 
     private bool IsLinkingPatreon => NavigationManager.Uri.Contains("patreon/link", StringComparison.OrdinalIgnoreCase);
@@ -208,7 +209,7 @@ else
             var result = await PatreonService.LinkAsync(code);
             if (result != null)
             {
-                session.Patreon = result;
+                session.Patreon = ModelMapper.Map(result);
             }
         }
 

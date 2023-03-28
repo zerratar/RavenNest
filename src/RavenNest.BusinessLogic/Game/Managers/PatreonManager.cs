@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Models.Patreon;
 using RavenNest.BusinessLogic.Models.Patreon.API;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
+using RavenNest.Models;
 using RavenNest.Sessions;
 using System;
 using System.Collections.Generic;
@@ -89,7 +91,7 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     Id = Guid.NewGuid(),
                     TwitchUserId = user.UserId,
-                    
+
                     UserId = user.Id,
                     Email = user.Email,
                     Created = DateTime.UtcNow
@@ -104,7 +106,8 @@ namespace RavenNest.BusinessLogic.Game
             patreonUser.TokenType = token.TokenType;
             patreonUser.Updated = DateTime.UtcNow;
 
-            session.Patreon = patreonUser;
+            session.Patreon = ModelMapper.Map(patreonUser);
+
             // get patreon data
 
             /*

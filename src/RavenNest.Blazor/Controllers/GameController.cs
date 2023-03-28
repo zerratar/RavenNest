@@ -88,6 +88,27 @@ namespace RavenNest.Controllers
                 return NotFound();
             }
         }
+        [HttpPost("report-exception")]
+        public async Task<bool> ReportExceptionAsync([FromBody] string error)
+        {
+            try
+            {
+                var sessionUserName = "client";
+                var authToken = GetAuthToken();
+                if (authToken != null)
+                {
+                    var user = gameData.GetUser(authToken.UserId);
+                    sessionUserName = user.UserName;
+                }
+
+                logger.LogError("Exception Reported by " + sessionUserName + ": " + error);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{clientVersion}/{accessKey}")]

@@ -175,6 +175,11 @@ namespace RavenNest.BusinessLogic.Extensions
             return DataMapper.Map<RavenNest.Models.Skills>(data);
         }
 
+        public static PatreonInfo Map(UserPatreon data)
+        {
+            return DataMapper.Map<PatreonInfo>(data);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static SkillsExtended MapForWebsite(Skills data)
         {

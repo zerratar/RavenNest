@@ -33,7 +33,7 @@
 
 @code {
     [Parameter]
-    public SessionInfo Session { get; set; }
+    public RavenNest.Models.SessionInfo Session { get; set; }
 
     private bool IsPlaying => Session.UserName != null && Session?.PlaySessions?.Count > 0;
     private bool showTwitchStreams = false;

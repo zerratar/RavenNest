@@ -152,16 +152,27 @@ namespace RavenNest.Controllers
             return playerManager.RemovePlayerFromActiveSession(AssertGetSessionToken(), characterId);
         }
 
-        [HttpGet("{userId}")]
+        [HttpGet("{characterId}")]
         public Player GetPlayer(Guid characterId)
         {
             AssertAuthTokenValidity(GetAuthToken());
             return playerManager.GetPlayer(characterId);
         }
 
-        [HttpGet("{userId}/{identifier}")]
-        [Obsolete]
-        public Player GetPlayer(string userId, string identifier)
+        [HttpGet("twitch/{userId}")]
+        public Player GetPlayerByTwitchUser(string userId)
+        {
+            if (GetSessionToken() == null)
+            {
+                AssertAuthTokenValidity(GetAuthToken());
+                return playerManager.GetPlayer(userId, "twitch", "1");
+            }
+
+            return playerManager.GetPlayer(AssertGetSessionToken(), userId);
+        }
+
+        [HttpGet("twitch/{userId}/{identifier}")]
+        public Player GetPlayerByTwitchUser(string userId, string identifier)
         {
             if (GetSessionToken() == null)
             {
@@ -173,8 +184,7 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("v2/{userId}/{identifier}")]
-        [Obsolete]
-        public Player GetPlayer(Guid userId, string identifier)
+        public Player GetPlayerByUserId(Guid userId, string identifier)
         {
             AssertAuthTokenValidity(GetAuthToken());
             return playerManager.GetPlayer(userId, identifier);
@@ -257,6 +267,7 @@ namespace RavenNest.Controllers
         {
             return playerManager.DisenchantItemInstance(AssertGetSessionToken(), userId, inventoryItemId);
         }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/item/{item}")]
         [Obsolete]

@@ -6,7 +6,9 @@ using Newtonsoft.Json;
 using RavenNest.Blazor.Services.Models;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.Models;
 using RavenNest.Sessions;
 using System.Collections.Generic;
 using System.IO;
@@ -113,7 +115,7 @@ namespace RavenNest.Blazor.Services
                         twitchUserAccess.Updated = System.DateTime.UtcNow;
                     }
 
-                    sessionInfo.Patreon = gameData.GetPatreonUser(u.Id);
+                    sessionInfo.Patreon = ModelMapper.Map(gameData.GetPatreonUser(u.Id));
 
                     gameData.SetUserProperty(u.Id, UserProperties.Twitch_PubSub, accessToken);
 
@@ -151,8 +153,7 @@ namespace RavenNest.Blazor.Services
                 return new SessionInfo { };
             }
 
-            result.SessionInfo.Patreon = gameData.GetPatreonUser(user.Id);
-
+            result.SessionInfo.Patreon = ModelMapper.Map(gameData.GetPatreonUser(user.Id));
             return result.SessionInfo;
         }
 

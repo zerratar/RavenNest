@@ -1,4 +1,5 @@
-﻿using RavenNest.Sessions;
+﻿using RavenNest.Models;
+using RavenNest.Sessions;
 using System.Threading.Tasks;
 
 namespace RavenNest.BusinessLogic.Twitch.Extension

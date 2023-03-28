@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RavenNest.Models;
+using System;
 
 namespace RavenNest.Sessions
 {

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using RavenNest.Models;
 using RavenNest.Sessions;
 
 namespace RavenNest.Blazor.Services
@@ -19,7 +20,7 @@ namespace RavenNest.Blazor.Services
         public HttpContext Context => accessor.HttpContext;
         public ISession Session => accessor.HttpContext.Session;
 
-        public SessionInfo GetSession()
+        public RavenNest.Models.SessionInfo GetSession()
         {
             var id = SessionCookie.GetSessionId(Context);
             if (!this.sessionInfoProvider.TryGet(id, out var sessionInfo))

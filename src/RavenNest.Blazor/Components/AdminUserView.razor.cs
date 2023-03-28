@@ -28,7 +28,7 @@ namespace RavenNest.Blazor.Components
             "None", "Mithril", "Rune", "Dragon", "Abraxas", "Phantom", "Above Phantom"
         };
 
-        private void IsHiddenInHighscoreChanged(object? newValue)
+        private void IsHiddenInHighscoreChanged(object newValue)
         {
             var boolValue = newValue != null && newValue is bool b ? b : false;
             UserService.SetUserHiddenInHighscore(SelectedUser.Id, boolValue);

@@ -15,7 +15,7 @@ namespace RavenNest.Blazor.Components
         [Parameter]
         public bool CanManage { get; set; }
 
-        private SessionInfo session;
+        private Models.SessionInfo session;
         private bool editingAlias;
         private string oldIdentifier;
         private CharacterViewState viewState;

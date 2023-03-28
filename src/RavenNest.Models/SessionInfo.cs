@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using RavenNest.DataModels;
-using RavenNest.Models;
 
-namespace RavenNest
+namespace RavenNest.Models
 {
     public class SessionInfo
     {
@@ -26,6 +24,22 @@ namespace RavenNest
         public bool UserNameChanged { get; set; }
         public AuthToken AuthToken { get; set; }
         public bool Extension { get; set; }
-        public UserPatreon Patreon { get; set; }
+        public PatreonInfo Patreon { get; set; }
+    }
+
+    public class PatreonInfo
+    {
+        public Guid? UserId { get; set; }
+        public string TwitchUserId { get; set; }
+        public string PledgeTitle { get; set; }
+        public string FirstName { get; set; }
+        public string FullName { get; set; }
+        public long? PatreonId { get; set; }
+        public long? PledgeAmount { get; set; }
+        public string Email { get; set; }
+        public int? Tier { get; set; }
+        public string ProfilePicture { get; set; }
+        public DateTime? Updated { get; set; }
+        public DateTime? Created { get; set; }
     }
 }

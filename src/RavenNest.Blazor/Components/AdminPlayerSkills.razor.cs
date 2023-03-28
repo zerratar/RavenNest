@@ -3,6 +3,7 @@ using System;
 using System.Linq;
 using RavenNest.Blazor.Services;
 using RavenNest.BusinessLogic.Extended;
+using RavenNest.Models;
 
 namespace RavenNest.Blazor.Components
 {
@@ -29,7 +30,6 @@ namespace RavenNest.Blazor.Components
         private PlayerSkill modifyingSkill;
 
         private bool CanModify => session != null && session.Administrator;
-
 
         public string GetLastUpdateString(DateTime update)
         {
