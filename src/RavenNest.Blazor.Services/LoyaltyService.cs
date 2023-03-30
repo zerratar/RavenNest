@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TwitchLib.Api.Helix.Models.Users.GetUsers;
 
 namespace RavenNest.Blazor.Services
 {
@@ -53,20 +54,12 @@ namespace RavenNest.Blazor.Services
                 if (amount < 1)
                     return false;
 
-                var totalPoints = 0l;
-                var loyalties = gameData.GetUserLoyalties(user.Id);
-                foreach (var l in loyalties)
-                {
-                    if (user.Id == l.StreamerUserId)
-                        continue;
-
-                    totalPoints += l.Points;
-                }
-
                 var cost = (reward.Points ?? 0) * amount;
+                var totalPoints = GetTotalLoyaltyPoints(user.Id);
                 if (totalPoints < cost)
                     return false;
 
+                var loyalties = gameData.GetUserLoyalties(user.Id);
                 long leftToReduct = cost;
                 foreach (var l in loyalties)
                 {
@@ -75,11 +68,23 @@ namespace RavenNest.Blazor.Services
                     leftToReduct -= a;
                     if (leftToReduct <= 0) break;
                 }
+                
+                // this is still risky, as the value may change from a different thread
+                // accessing this value is not thread-safe. therefor this check may fail if
+                // the user gets the same amount of loyalty points added as the cost of the reward
+                // from a different thread.
+                var totalPointsAfter = GetTotalLoyaltyPoints(user.Id);
+                if (totalPointsAfter != totalPoints)
+                {
+                    playerManager.AddItem(characterId, itemId, amount);
+                    return true;
+                }
 
-                playerManager.AddItem(characterId, itemId, amount);
-                return true;
+                return false;
             });
         }
+
+
         public Task<bool> RedeemRewardAsync(
             Guid streamerUserId,
             Guid characterId,
@@ -281,6 +286,21 @@ namespace RavenNest.Blazor.Services
                 return gameData.FindSession(x => x.UserId == user.Id) != null;
             });
         }
+
+        public long GetTotalLoyaltyPoints(Guid userId)
+        {
+            var totalPoints = 0l;
+            var loyalties = gameData.GetUserLoyalties(userId);
+            foreach (var l in loyalties)
+            {
+                if (userId == l.StreamerUserId)
+                    continue;
+
+                totalPoints += l.Points;
+            }
+            return totalPoints;
+        }
+
     }
 
     public class PlayerLoyalty
