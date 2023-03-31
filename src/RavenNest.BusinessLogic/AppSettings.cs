@@ -7,6 +7,11 @@
         public string KeyIdentifier { get; set; }
     }
 
+    public class OpenAISettings
+    {
+        public string AccessToken { get; set; }
+    }
+
     public class AppSettings
     {
         public string DbConnectionString { get; set; }

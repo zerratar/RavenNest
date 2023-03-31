@@ -42,6 +42,7 @@ namespace RavenNest.Blazor
         {
             var appSettingsSection = Configuration.GetSection("AppSettings");
 
+            services.Configure<OpenAISettings>(Configuration.GetSection("OpenAI"));
             services.Configure<AppSettings>(appSettingsSection);
             services.Configure<JsonOptions>(options =>
             {
@@ -266,6 +267,8 @@ namespace RavenNest.Blazor
             services.AddSingleton<LoyaltyService>();
             services.AddSingleton<CookieService>();
             services.AddSingleton<TownService>();
+
+            services.AddSingleton<RavenfallTvManager>();
 
             services.AddSingleton<IRavenBotApiClient, RavenBotApiClient>();
 

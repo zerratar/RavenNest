@@ -12,6 +12,7 @@ using RavenNest.Sessions;
 
 namespace RavenNest.BusinessLogic.Game
 {
+
     public class SessionManager
     {
         private readonly ILogger<SessionManager> logger;

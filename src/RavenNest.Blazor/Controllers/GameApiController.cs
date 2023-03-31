@@ -6,14 +6,14 @@ using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
-using RavenNest.Sessions;
 
 namespace RavenNest.Controllers
 {
     public class GameApiController : ControllerBase
     {
         protected string SessionId => HttpContext.GetSessionId();
-        private readonly GameData gameData;
+        protected readonly GameData GameData;
+
         private readonly IAuthManager authManager;
         private readonly SessionInfoProvider sessionInfoProvider;
         private readonly SessionManager sessionManager;
@@ -29,7 +29,7 @@ namespace RavenNest.Controllers
             ISecureHasher secureHasher)
         {
             this.logger = logger;
-            this.gameData = gameData;
+            this.GameData = gameData;
             this.authManager = authManager;
             this.sessionInfoProvider = sessionInfoProvider;
             this.sessionManager = sessionManager;
@@ -62,13 +62,13 @@ namespace RavenNest.Controllers
         {
             var authToken = GetAuthToken();
             AssertAuthTokenValidity(authToken);
-            return gameData.GetUser(authToken.UserId);
+            return GameData.GetUser(authToken.UserId);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected void AssertAdminAuthToken(AuthToken authToken)
         {
-            var user = gameData.GetUser(authToken.UserId);
+            var user = GameData.GetUser(authToken.UserId);
             if (!user.IsAdmin.GetValueOrDefault())
                 throw new Exception("You do not have permissions to call this API");
         }
@@ -101,7 +101,28 @@ namespace RavenNest.Controllers
                 throw new Exception(errorMessage);
             }
         }
+        protected bool IsAuthTokenValid(AuthToken authToken, out string validationError)
+        {
+            validationError = null;
+            if (authToken == null || string.IsNullOrEmpty(authToken.Token))
+            {
+                validationError = "Auth token cannot be null.";
+            }
+            else if (authToken.UserId == Guid.Empty)
+            {
+                validationError = "UserId cannot be null.";
+            }
+            else if (authToken.Expired)
+            {
+                validationError = "Auth token has expired.";
+            }
+            else if (authToken.Token != secureHasher.Get(authToken))
+            {
+                validationError = "Auth token did not match expected value.";
+            }
 
+            return string.IsNullOrEmpty(validationError);
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected string GetHeaderValues()
         {

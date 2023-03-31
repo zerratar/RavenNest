@@ -4,6 +4,13 @@ using System.Text.Json.Serialization;
 
 namespace RavenNest.Models.Tv
 {
+
+    /* 
+        make a separate object that can be stored on disk that includes the prompt generated 
+        so in case server is being restarted when episode is being generated it can retry.
+     */
+
+
     public class GenerateEpisodeRequest
     {
         /// <summary>
