@@ -86,11 +86,14 @@
         HandleTwitchTokens();
     }
 
-    protected override Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        NavigateToLastPageOrHomeIfAuthenticated();
-        UpdateGameClientLoginStateAsync();
-        return base.OnAfterRenderAsync(firstRender);
+        if (!await UpdateGameClientLoginStateAsync())
+        {
+            NavigateToLastPageOrHomeIfAuthenticated();
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
     }
 
     private bool HasQueryParams()
@@ -102,12 +105,15 @@
         return false;
     }
 
-    private async void UpdateGameClientLoginStateAsync()
+    private async Task<bool> UpdateGameClientLoginStateAsync()
     {
         if (await JS.InvokeAsync<bool>("updateGameClientLoginStateAsync", new object[] { }))
         {
             await CloseWindow();
+            return true;
         }
+
+        return false;
     }
 
     private async Task CloseWindow()
@@ -128,7 +134,6 @@
     private async void HandleTwitchTokens()
     {
         var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
-        var atn = "access_token";
         var queryString = uri.Fragment;
 
         if (string.IsNullOrEmpty(queryString))
@@ -141,7 +146,7 @@
         var parsedQuery = System.Web.HttpUtility.ParseQueryString(queryString);
 
         userInitiatedLogin = true;
-        var token = parsedQuery.Get(atn);
+        var token = parsedQuery.Get("access_token");
         var state = parsedQuery.Get("state");
         var error = parsedQuery.Get("error");
         var error_description = parsedQuery.Get("error_description");

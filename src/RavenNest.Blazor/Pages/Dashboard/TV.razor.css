@@ -1,0 +1,192 @@
+﻿
+button {
+    border: 0;
+    padding: 10px;
+    outline: 0;
+    background: linear-gradient(45deg, #082465, #3a0647);
+    color: white;
+    border-radius: 7px;
+    box-shadow: 0px 2px 5px 1px rgb(0 0 0 / 10%);
+    cursor: pointer;
+    text-align: center;
+}
+
+button:hover {
+    background: linear-gradient(45deg, #051c53, #290432);
+    color:white;
+}
+
+button:active {
+    background: linear-gradient(45deg, #03153f, #1e0325);
+    box-shadow: 0;
+}
+
+button.error {
+    background: linear-gradient(45deg, #650808, #8e3d3d);
+}
+
+
+.-page-container {
+    max-width: 100%;
+    width: 700px;
+    display: flex;
+    flex-flow: column;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.btn.download {
+    font-size: 11pt;
+    font-weight: 300;
+    padding: 12px;
+    margin-bottom: 25px;
+}
+
+
+.btn-list {
+    display: flex;
+}
+
+.logo-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.details {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-flow: column;
+}
+
+.details-section {
+    margin-bottom: 25px;
+    text-align: center;
+    line-height: 23pt;
+}
+
+.details-section.notice {
+    text-align: center;
+    font-size: 9pt;
+    font-style: italic;
+    line-height: 17pt;
+}
+
+.ravenfall-tv-logo {
+    max-width: 100%;
+    width: 450px;
+}
+
+.settings form,.-form,
+.content form.-form,
+form.-form, form {
+    justify-content: initial;
+    -webkit-align-items: initial;
+    align-items: initial;
+}
+
+.-input-row {
+    display: flex;
+    flex-flow: column;
+}
+
+.settings {
+    display: flex;
+    flex-flow: column;
+}
+
+.locked,
+.unavailable {
+    user-select: none;
+    pointer-events: none;
+    position: relative;
+}
+
+.locked::before,
+.unavailable::before {
+    font-family: "Font Awesome 6 Sharp";
+    content: "\f30d";
+    font-weight: bold;
+    z-index: 11;
+    position: absolute;
+    font-size: 24pt;
+    top: calc(50% - 42px);
+    width: 100%;
+    text-align: center;
+}
+
+.locked::after,
+.unavailable::after {
+    content: "Unlock by becoming a patron";
+    font-size: 10pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    padding-top: 25px;
+    background-color: #f3f4f8c6;
+    z-index: 10;
+    opacity: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.unavailable::after {
+    content: "coming soon";
+}
+
+.settings label {
+    margin-bottom: 3px;
+    font-size: 8pt;
+    font-weight: bold;
+    margin-left: 3px;
+}
+
+.settings input,
+.settings select,
+.settings textarea {
+    padding: 5px 10px;
+    margin-bottom: 10px;
+    /* use transparent could be better for user accessibility, but it does not go well with borders.*/
+    outline: none;
+    border: 1px solid rgb(218 218 218);
+    border-radius: 5px;
+}
+
+.settings textarea {
+    padding: 10px;
+}
+
+.-badge-list {
+    display: flex;
+    margin-bottom: 15px;
+}
+
+.-badge {
+    padding: 3px 9px;
+    border-radius: 2px;
+    font-size: 8pt;
+    color: white;
+    text-transform: uppercase;
+    justify-content: space-evenly;
+    align-content: space-evenly;
+    margin: 3px;
+}
+
+.-badge.twitch {
+    background-color: rgb(118, 38, 174);
+}
+
+.-badge.patreon {
+    background-color: rgb(218, 79, 69);
+}
+
+.-badge.experimental {
+    background-color: rgb(181, 45, 45);
+}

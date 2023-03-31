@@ -77,21 +77,6 @@
             }
             else
             {
-                @*<li class="nav-item">
-                    <NavLink class="nav-link" href="/dashboard" Match="NavLinkMatch.All">
-                    <span class="oi oi-dashboard" aria-hidden="true"></span> Overview
-                    </NavLink>
-                    </li>
-                    <li class="nav-item">
-                    <NavLink class="nav-link" href="/quests" Match="NavLinkMatch.All">
-                    <span class="oi oi-badge" aria-hidden="true"></span> Quests
-                    </NavLink>
-                    </li>
-                    <li class="nav-item">
-                    <NavLink class="nav-link" href="/achievements" Match="NavLinkMatch.All">
-                    <span class="oi oi-star" aria-hidden="true"></span> Achievements
-                    </NavLink>
-                    </li>*@
                 <li class="nav-item">
                     <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                         <span class="oi oi-arrow-left" aria-hidden="true"></span> Frontpage
@@ -122,6 +107,12 @@
 
                 @if (IsAdministrator)
                 {
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/tv" Match="NavLinkMatch.All">
+                            <span class="fa-sharp fa-solid fa-tv-retro" aria-hidden="true"></span>&nbsp;TV
+                        </NavLink>
+                    </li>
+
                     <li class="nav-item">
                         <NavLink class="nav-link" href="/admin" Match="NavLinkMatch.All">
                             <span class="fas fa-key" aria-hidden="true"></span>&nbsp;Admin
