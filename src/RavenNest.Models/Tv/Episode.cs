@@ -4,13 +4,6 @@ using System.Text.Json.Serialization;
 
 namespace RavenNest.Models.Tv
 {
-
-    /* 
-        make a separate object that can be stored on disk that includes the prompt generated 
-        so in case server is being restarted when episode is being generated it can retry.
-     */
-
-
     public class GenerateEpisodeRequest
     {
         /// <summary>
@@ -59,7 +52,7 @@ namespace RavenNest.Models.Tv
     public class Episode
     {
         [JsonPropertyName("id")]
-        public Guid Id { get; set; }
+        public Guid? Id { get; set; }
         [JsonPropertyName("user_id")]
         public Guid? UserId { get; set; }
         [JsonPropertyName("language")]
@@ -77,6 +70,10 @@ namespace RavenNest.Models.Tv
 
         [JsonPropertyName("dialogues")]
         public Dialogue[] Dialogues { get; set; }
+        [JsonPropertyName("created")]
+        public DateTime? Created { get; set; }
+        [JsonPropertyName("requested")]
+        public DateTime? Requested { get; set; }
 
         public class Character
         {
@@ -116,7 +113,6 @@ namespace RavenNest.Models.Tv
             public string CharacterName { get; set; }
             [JsonPropertyName("location")]
             public string Location { get; set; }
-
             [JsonPropertyName("text")]
             public string Text { get; set; }
 

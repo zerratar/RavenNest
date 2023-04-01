@@ -1,8 +1,13 @@
 ﻿using Newtonsoft.Json;
+using RavenNest.BusinessLogic.Tv;
+using RavenNest.DataModels;
+using RavenNest.Models.Tv;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 
 namespace RavenNest.BusinessLogic
@@ -93,6 +98,11 @@ namespace RavenNest.BusinessLogic
             return _cache.FirstOrDefault().Value;
         }
 
+        public List<T> TakeWhereOrdered<T2>(Func<T, bool> wherePredicate, Func<T, T2> orderBy, int take)
+        {
+            return _cache.Values.Where(wherePredicate).OrderBy(orderBy).Take(take).ToList();
+        }
+
         private string GetFilePath(Guid id)
         {
             return Path.Combine(_folderPath, $"{id}.json");
@@ -103,5 +113,14 @@ namespace RavenNest.BusinessLogic
             return Guid.Parse(Path.GetFileNameWithoutExtension(fileName));
         }
 
+        internal IEnumerable<T> OrderedBy<T2>(Func<T, T2> value)
+        {
+            return _cache.Values.OrderBy(value);
+        }
+
+        internal List<T> TakeRandomWhere(Func<T, bool> value, int take)
+        {
+            return _cache.Values.Where(value).OrderBy(x => System.Random.Shared.Next()).Take(take).ToList();
+        }
     }
 }

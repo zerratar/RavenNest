@@ -23,6 +23,7 @@
   <ItemGroup>
     <Folder Include="Game\Achievements\" />
     <Folder Include="Game\Quests\" />
+    <Folder Include="OpenAI\" />
     <Folder Include="Telepathy\" />
   </ItemGroup>
 </Project>

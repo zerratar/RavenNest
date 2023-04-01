@@ -19,6 +19,7 @@ using RavenNest.BusinessLogic.Github;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Serializers;
+using RavenNest.BusinessLogic.Tv;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.Health;
 using RavenNest.Sessions;

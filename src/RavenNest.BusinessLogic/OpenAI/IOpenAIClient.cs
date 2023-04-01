@@ -22,14 +22,14 @@
  **/
 
 using Shinobytes.OpenAI.Models;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Shinobytes.OpenAI
 {
     public interface IOpenAIClient
     {
-        Task<ChatCompletionResponse> GetCompletionAsync(string prompt, params ChatMessage[] previousMessages);
-
-        Task<ImageResponse> GenerateImageAsync(string prompt, string size = "512x512", int count = 1);
+        Task<ChatCompletionResponse> GetCompletionAsync(string prompt, CancellationToken cancellationToken, params ChatMessage[] previousMessages);
+        Task<ImageResponse> GenerateImageAsync(string prompt, CancellationToken cancellationToken, string size = "512x512", int count = 1);
     }
 }

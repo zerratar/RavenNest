@@ -14,6 +14,7 @@ namespace RavenNest.DataModels
         private Guid originUserId; public Guid OriginUserId { get => originUserId; set => Set(ref originUserId, value); }
         private DateTime created; public DateTime Created { get => created; set => Set(ref created, value); }
         private string name; public string Name { get => name; set => Set(ref name, value); }
+        private string description; public string Description { get => description; set => Set(ref description, value); }
         private int? revision; public int? Revision { get => revision; set => Set(ref revision, value); }
         private Guid? userIdLock; public Guid? UserIdLock { get => userIdLock; set => Set(ref userIdLock, value); }
         private DateTime? lastUsed; public DateTime? LastUsed { get => lastUsed; set => Set(ref lastUsed, value); }

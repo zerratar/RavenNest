@@ -7,6 +7,10 @@
 
         public const string ChatMessageTransformation = "ChatMessageTransformation";
         public const string ChatBotLanguage = "ChatBotLanguage";
+
+        public const string RavenfallTvShowName = "RavenfallTv_ShowName";
+        public const string RavenfallTvShowDescription = "RavenfallTv_ShowDescription";
+
     }
 
     public enum ChatMessageTransformation : uint

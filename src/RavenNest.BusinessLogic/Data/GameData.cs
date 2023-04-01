@@ -2503,7 +2503,7 @@ namespace RavenNest.BusinessLogic.Data
             characters[characterId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Character GetCharacterByName(string name, string identifier)
+        public Character GetCharacterByName(string name, string identifier = "0")
         {
             var c = characters.Entities.FirstOrDefault(x => x.Name.ToLower() == name.ToLower());
             if (c == null) return null;

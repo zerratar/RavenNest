@@ -29,6 +29,7 @@ using System;
 using Newtonsoft.Json;
 
 using Shinobytes.OpenAI.Models;
+using System.Threading;
 
 namespace Shinobytes.OpenAI
 {
@@ -51,12 +52,12 @@ namespace Shinobytes.OpenAI
             client = new HttpClient();
         }
 
-        public async Task<ImageResponse> GenerateImageAsync(string prompt, string size = "512x512", int count = 1)
+        public async Task<ImageResponse> GenerateImageAsync(string prompt, CancellationToken cancellationToken, string size = "512x512", int count = 1)
         {
-            return await RequestAsync<ImageRequest, ImageResponse>("https://api.openai.com/v1/images/generations", ImageRequest.Create(prompt, size, count));
+            return await RequestAsync<ImageRequest, ImageResponse>("https://api.openai.com/v1/images/generations", ImageRequest.Create(prompt, size, count), cancellationToken);
         }
 
-        public async Task<ChatCompletionResponse> GetCompletionAsync(string prompt, params ChatMessage[] previousMessages)
+        public async Task<ChatCompletionResponse> GetCompletionAsync(string prompt, CancellationToken cancellationToken, params ChatMessage[] previousMessages)
         {
             var msgs = new List<ChatMessage>();
             msgs.AddRange(previousMessages);
@@ -69,10 +70,10 @@ namespace Shinobytes.OpenAI
                 //Model = "davinci:ft-shinobytes-2023-02-20-14-02-16",
                 // Prompt = "What if Nicholas Cage played the lead role in Superman?",
                 Messages = msgs.ToArray()
-            });
+            }, cancellationToken);
         }
 
-        private async Task<TResult> RequestAsync<TRequest, TResult>(string url, TRequest model)
+        private async Task<TResult> RequestAsync<TRequest, TResult>(string url, TRequest model, CancellationToken cancellationToken)
         {
             var s = settings;
             if (s == null)
@@ -88,7 +89,7 @@ namespace Shinobytes.OpenAI
                 httpReq.Content = new StringContent(requestString, Encoding.UTF8, "application/json");
                 using (var httpResponse = await client.SendAsync(httpReq))
                 {
-                    var responseString = await httpResponse.Content.ReadAsStringAsync();
+                    var responseString = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
                     if (!string.IsNullOrWhiteSpace(responseString))
                     {
                         return JsonConvert.DeserializeObject<TResult>(responseString);
