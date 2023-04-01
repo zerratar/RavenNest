@@ -18,9 +18,17 @@ namespace RavenNest.BusinessLogic.Tv
 
         public string Generate(GenerateUserEpisodeRequest req)
         {
-            var showName = gameData.GetUserProperty(req.UserId, UserProperties.RavenfallTvShowName);
-            var showDescription = gameData.GetUserProperty(req.UserId, UserProperties.RavenfallTvShowDescription);
-            var showLanguage = gameData.GetUserProperty(req.UserId, UserProperties.RavenfallTvShowLanguage);
+            string showName = null;
+            string showDescription = null;
+            string showLanguage = null;
+
+            if (req.UserId != Guid.Empty)
+            {
+                showName = gameData.GetUserProperty(req.UserId, UserProperties.RavenfallTvShowName);
+                showDescription = gameData.GetUserProperty(req.UserId, UserProperties.RavenfallTvShowDescription);
+                showLanguage = gameData.GetUserProperty(req.UserId, UserProperties.RavenfallTvShowLanguage);
+            }
+
             var ep = req.Request;
             return
                 new RavenfallTvEpisodePromptBuilder()

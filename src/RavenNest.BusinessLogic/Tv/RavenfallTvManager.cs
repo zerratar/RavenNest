@@ -34,6 +34,13 @@ namespace RavenNest.BusinessLogic.Tv
         private readonly ConcurrentQueue<GenerateUserEpisodeRequest> requestQueue;
 
         private bool disposed;
+
+        // for generating new episodes if we don't have any
+        private DateTime lastGenerateRequestTime;
+        private GenerateEpisodeRequest lastGenerateRequest;
+        private readonly int episodeLimit = 20;
+        private readonly TimeSpan generateInterval = TimeSpan.FromMinutes(1);
+
         private readonly OpenAIClient openAI;
         private readonly TimeSpan throttlePeriod;
         private readonly TransformBlock<GenerateUserEpisodeRequest, Episode> throttler;
@@ -81,6 +88,24 @@ namespace RavenNest.BusinessLogic.Tv
                 }
                 else
                 {
+                    // every minute we should generate a new episode that has no real players in it, to ensure we have episodes at all.
+                    // but only if we have less than 20 episodes.
+                    var now = DateTime.UtcNow;
+                    if (episodes.Count() < episodeLimit && requestQueue.Count == 0 && (now - lastGenerateRequestTime) >= generateInterval)
+                    {
+                        lastGenerateRequestTime = now;
+
+                        // make sure this has been generated before we request to generate more.
+                        if (lastGenerateRequest != null && !episodes.Contains(lastGenerateRequest.Id))
+                        {
+                            await Task.Delay(throttlePeriod, cancellationToken);
+                            continue;
+                        }
+
+                        lastGenerateRequest = new GenerateEpisodeRequest { Id = Guid.NewGuid() };
+                        await GenerateEpisodeAsync(lastGenerateRequest);
+                    }
+
                     await Task.Delay(throttlePeriod, cancellationToken);
                 }
             }
@@ -153,6 +178,19 @@ namespace RavenNest.BusinessLogic.Tv
         {
             disposed = true;
             cancellationTokenSource.Cancel();
+        }
+
+        public async Task<EpisodeResult> GenerateEpisodeAsync(GenerateEpisodeRequest request)
+        {
+            var req = new GenerateUserEpisodeRequest { Request = request, UserId = Guid.Empty, Created = DateTime.UtcNow };
+            requestQueue.Enqueue(req);
+            await episodeRequests.SaveAsync(request.Id, req);
+
+            return new EpisodeResult()
+            {
+                Id = request.Id,
+                Status = EpisodeGenerationStatus.Generating,
+            };
         }
 
         public async Task<EpisodeResult> GenerateEpisodeAsync(User user, GenerateEpisodeRequest request)

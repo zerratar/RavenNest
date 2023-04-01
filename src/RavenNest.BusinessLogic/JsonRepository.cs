@@ -122,5 +122,10 @@ namespace RavenNest.BusinessLogic
         {
             return _cache.Values.Where(value).OrderBy(x => System.Random.Shared.Next()).Take(take).ToList();
         }
+
+        internal int Count()
+        {
+            return _cache.Count;
+        }
     }
 }
