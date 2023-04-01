@@ -10,6 +10,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -39,7 +40,7 @@ namespace RavenNest.BusinessLogic.Tv
         private DateTime lastGenerateRequestTime;
         private GenerateEpisodeRequest lastGenerateRequest;
         private readonly int episodeLimit = 50;
-        private readonly TimeSpan generateInterval = TimeSpan.FromMinutes(1);
+        private readonly TimeSpan generateInterval = TimeSpan.FromMinutes(0.1);
 
         private readonly OpenAIClient openAI;
         private readonly TimeSpan throttlePeriod;
@@ -91,7 +92,9 @@ namespace RavenNest.BusinessLogic.Tv
                     // every minute we should generate a new episode that has no real players in it, to ensure we have episodes at all.
                     // but only if we have less than 20 episodes.
                     var now = DateTime.UtcNow;
-                    if (episodes.Count() < episodeLimit && requestQueue.Count == 0 && (now - lastGenerateRequestTime) >= generateInterval)
+                    if (episodes.Count() < episodeLimit
+                        && requestQueue.Count == 0
+                        && (now - lastGenerateRequestTime) >= generateInterval)
                     {
                         lastGenerateRequestTime = now;
 
@@ -162,11 +165,20 @@ namespace RavenNest.BusinessLogic.Tv
         private string EnsureValidJson(string content)
         {
             while (content[0] == '\n') content = content.Substring(1);
-            return content
+
+            content = content
                 .Replace("’", "'")
                 .Replace("”", "\"")
                 .Replace(" ( ", " ) ")
                 .Trim();
+
+            // Remove semicolons at the end of lines
+            content = Regex.Replace(content, @";\s*\n", "\n");
+
+            // Remove trailing commas after the last element in an object or array
+            content = Regex.Replace(content, @",\s*([}\]])", "$1");
+
+            return content;
         }
 
         private string GetPrompt(GenerateUserEpisodeRequest request)
