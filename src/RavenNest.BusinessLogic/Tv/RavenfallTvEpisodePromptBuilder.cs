@@ -106,7 +106,7 @@ The episode has to have at least 15 dialogues but please make more if suitable. 
 
 Your response should only include the JSON.
 
-Use the following predefined animations when creating dialogues: ""idle"", ""sit"", ""drink"", ""shoot_arrow"", ""walk"", ""run"", ""jump"", ""attack"", ""defend"", ""cast_spell"", ""heal"", ""talk"", ""emote_positive"", ""emote_negative"", ""celebrate"", ""react_surprise"", and ""react_pain"". Add more animations if necessary, but try to keep the list limited for easier implementation in Unity.
+Use the following predefined animations when creating dialogues: ""idle"", ""sit"", ""drink"", ""shoot_arrow"", ""walk"", ""run"", ""jump"", ""attack"", ""defend"", ""cast_spell"", ""heal"", ""talk"", ""point"", ""agree"", ""disagree"", ""wave"", ""celebrate"", ""suprised"", and ""hurt"". Add more animations if necessary, but try to keep the list limited for easier implementation in Unity.
 
 In the dialogue structure:
 
@@ -115,7 +115,8 @@ In the dialogue structure:
 * Use the ""Animation"" and ""Description"" fields inside the ""Action"" object to describe what the character is doing.
 * Use the ""Target"" field inside the ""Action"" object to specify the target character, group, object, or none involved in the action (if applicable). The target can be identified by their name.
 
-When a character asks a question to another character, the question must be answered. It is important that all characters are in the same area, so if one character is in the Tavern, all characters must be in the Tavern because it would be impossible for the characters to talk to each other otherwise. If they are in different areas, they can still talk to each other, but it has to be done in a way that makes sense, for example, if one character is in the Tavern and the other is in the Dungeon, the Tavern character can ask the Dungeon character to come to the Tavern. You can be creative with characters picking up things; they can do random funny stuff.
+When a character asks a question to another character, the question must be answered. It is important that all characters are in the same area, so if one character is in the Tavern, all characters must be in the Tavern because it would be impossible for the characters to talk to each other otherwise. If they are in different areas, they can still talk to each other, but it has to be done in a way that makes sense, 
+for example, if one character is in the Tavern and the other is in the Dungeon, the Tavern character can ask the Dungeon character to come to the Tavern. You can be creative with characters picking up things; they can do random funny stuff.
 Be sure to maintain consistency in locations, animations, and actions throughout the generated episode.
 
 Keep in mind that the setting for the show is a fantasy, medieval world with magic and monsters, and the characters' interactions and dialogues should be based on this theme. Feel free to include humor, plot twists, and exciting events to keep the audience engaged.

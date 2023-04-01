@@ -107,11 +107,16 @@
 
     private async Task<bool> UpdateGameClientLoginStateAsync()
     {
-        if (await JS.InvokeAsync<bool>("updateGameClientLoginStateAsync", new object[] { }))
+        try
         {
-            await CloseWindow();
-            return true;
+            if (await JS.InvokeAsync<bool>("updateGameClientLoginStateAsync", new object[] { }))
+            {
+                await CloseWindow();
+                return true;
+            }
+
         }
+        catch { }
 
         return false;
     }

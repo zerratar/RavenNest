@@ -38,7 +38,7 @@ namespace RavenNest.BusinessLogic.Tv
         // for generating new episodes if we don't have any
         private DateTime lastGenerateRequestTime;
         private GenerateEpisodeRequest lastGenerateRequest;
-        private readonly int episodeLimit = 20;
+        private readonly int episodeLimit = 50;
         private readonly TimeSpan generateInterval = TimeSpan.FromMinutes(1);
 
         private readonly OpenAIClient openAI;
