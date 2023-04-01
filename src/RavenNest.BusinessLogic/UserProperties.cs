@@ -10,7 +10,7 @@
 
         public const string RavenfallTvShowName = "RavenfallTv_ShowName";
         public const string RavenfallTvShowDescription = "RavenfallTv_ShowDescription";
-
+        public const string RavenfallTvShowLanguage = "RavenfallTv_ShowLanguage";
     }
 
     public enum ChatMessageTransformation : uint

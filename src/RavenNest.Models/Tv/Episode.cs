@@ -89,10 +89,15 @@ namespace RavenNest.Models.Tv
             public string Job { get; set; }
             [JsonPropertyName("description")]
             public string Description { get; set; }
-
             [JsonPropertyName("strength")]
             public int Strength { get; set; }
 
+            /// <summary>
+            ///     Whether or not this character is a real Ravenfall character or not. If false, 
+            ///     this is an AI generated character. It will be required to load the character data from the server.
+            /// </summary>
+            [JsonPropertyName("is_real")]
+            public bool IsReal { get; set; }
             public override string ToString()
             {
                 return "id: " + Id +
@@ -109,6 +114,8 @@ namespace RavenNest.Models.Tv
         {
             [JsonPropertyName("animation")]
             public string Animation { get; set; }
+            [JsonPropertyName("action_description")]
+            public string ActionDescription { get; set; }
             [JsonPropertyName("character_name")]
             public string CharacterName { get; set; }
             [JsonPropertyName("location")]
@@ -118,7 +125,7 @@ namespace RavenNest.Models.Tv
 
             public override string ToString()
             {
-                return Animation + ", " + CharacterName + ": \"" + Text + "\"";
+                return Animation + " *" + ActionDescription + "* [" + CharacterName + "] \"" + Text + "\"";
             }
         }
     }

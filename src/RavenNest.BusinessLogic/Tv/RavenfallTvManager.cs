@@ -107,6 +107,14 @@ namespace RavenNest.BusinessLogic.Tv
                             episode.Created = DateTime.UtcNow;
                             episode.Requested = request.Created;
 
+                            foreach (var c in episode.Characters)
+                            {
+                                if (Guid.TryParse(c.Id, out var characterId) && gameData.GetCharacter(characterId) != null)
+                                {
+                                    c.IsReal = true;
+                                }
+                            }
+
                             await episodes.SaveAsync(episode.Id.Value, episode);
                             await episodeRequests.DeleteAsync(request.Request.Id);
                         }

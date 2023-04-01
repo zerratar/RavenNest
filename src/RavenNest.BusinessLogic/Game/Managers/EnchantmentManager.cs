@@ -15,7 +15,9 @@ namespace RavenNest.BusinessLogic.Game
         private readonly GameData gameData;
         private readonly Random random;
         private const int MaximumEnchantmentCount = 10;
-        private const double EnchantmentInterval = 30;
+        private const double EnchantmentInterval = 60;
+        private const double MinEnchantmentTime = 30;
+
         public EnchantmentManager(ILogger<EnchantmentManager> logger, GameData gameData)
         {
             this.logger = logger;
@@ -233,7 +235,7 @@ namespace RavenNest.BusinessLogic.Game
             }
 #endif
             var time = DateTime.UtcNow.AddMinutes(EnchantmentInterval * scale).AddSeconds(-clanSkillLevel);
-            if (time < DateTime.UtcNow.AddSeconds(10)) return DateTime.UtcNow.AddSeconds(10);
+            if (time < DateTime.UtcNow.AddSeconds(MinEnchantmentTime)) return DateTime.UtcNow.AddSeconds(MinEnchantmentTime);
             return time;
         }
 

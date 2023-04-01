@@ -11,6 +11,7 @@ namespace RavenNest.BusinessLogic.Tv
         private string episodeDescription;
         private string title;
         private string description;
+        private string language;
         private List<Episode.Character> characters;
 
         public RavenfallTvEpisodePromptBuilder SetEpisodeTitle(string title)
@@ -23,6 +24,12 @@ namespace RavenNest.BusinessLogic.Tv
         public RavenfallTvEpisodePromptBuilder SetEpisodeDescription(string description)
         {
             episodeDescription = description;
+            return this;
+        }
+
+        public RavenfallTvEpisodePromptBuilder SetLanguage(string language)
+        {
+            this.language = language;
             return this;
         }
 
@@ -52,6 +59,7 @@ namespace RavenNest.BusinessLogic.Tv
    ""title"": ""name of the episode"",
    ""description"": ""A short description of the episode and what its about"",
    ""outro"": ""A short outro, finalizing and wrapping up the result of the episode and if the episode did not have an outcome, what event happened afterwards."",
+   ""language"": ""The language of the episode, english, german, french, etc. This must be english unless said differently"",
    ""characters"": [
      ""id"": ""Character id"",
      ""name"": ""Name of the character"",
@@ -63,9 +71,10 @@ namespace RavenNest.BusinessLogic.Tv
    ],
    ""dialogues"": [ {
      ""animation"": ""Animation_to_play"",
+     ""action_description"": ""Describe what the character is doing"",
      ""location"": ""Current location of the character"",
      ""character_name"": ""The name of the character this dialogue belongs to"",
-     ""text"": ""A text that will be spoken""
+     ""text"": ""A text that will be spoken"",
    } ] 
 }
 
@@ -99,7 +108,7 @@ If they are in different areas, they can still talk to eachother, but it has to 
                 prompt += "The different characters that can be used are:\n";
                 prompt += string.Join("\n", characters.Select(x => "- " + x.ToString()).OrderBy(x => Random.Shared.NextDouble()));
                 prompt += "\n\n";
-                prompt += "Not all characters need to be used, but when using a character it has to be one of them unless there are not enough characters then you are free to come up with your own.\n\n\n";
+                prompt += "Not all characters need to be used, but when using a character it has to be one of them unless there are not enough characters then you are free to come up with your own.\nGenerated characters and not used from the list should use index and not Guid as Id.\n\n\n";
             }
 
             prompt += @"You can be creative with characters picking up things, they can do random funny stuff.
@@ -130,8 +139,15 @@ If they are in different areas, they can still talk to eachother, but it has to 
 
 The episode has to have at least 15 dialogues but please make more if suitable.
 The episode cannot end with a cliffhanger, it must have a conclusion!
-Your response should only include the json.
+
 ";
+            if (!string.IsNullOrEmpty(language))
+            {
+                prompt += "The dialogue text and action description must be translated into " + language + " and the language field in the json should be set to this language as well.\nAnimation must always be in english!\n";
+            }
+
+            prompt += "Your response should only include the json.";
+
             return prompt;
         }
 

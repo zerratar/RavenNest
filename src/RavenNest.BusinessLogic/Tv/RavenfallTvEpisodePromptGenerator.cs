@@ -20,11 +20,13 @@ namespace RavenNest.BusinessLogic.Tv
         {
             var showName = gameData.GetUserProperty(req.UserId, UserProperties.RavenfallTvShowName);
             var showDescription = gameData.GetUserProperty(req.UserId, UserProperties.RavenfallTvShowDescription);
+            var showLanguage = gameData.GetUserProperty(req.UserId, UserProperties.RavenfallTvShowLanguage);
             var ep = req.Request;
             return
                 new RavenfallTvEpisodePromptBuilder()
                 .SetShowTitle(showName)
                 .SetShowDescription(showDescription)
+                .SetLanguage(showLanguage)
                 .SetEpisodeTitle(ep.Title)
                 .SetEpisodeDescription(ep.Description)
                 .SetCharacters(GetCharacters(req.Request.Characters))
@@ -55,6 +57,7 @@ namespace RavenNest.BusinessLogic.Tv
                     if (string.IsNullOrEmpty(c.Name))
                         c.Name = c.Name;
 
+                    c.IsReal = true;
                     c.Gender = appearance.Gender == Gender.Male ? "male" : "female";
                     c.Strength = DetermineSkillStrength(gameData.GetCharacterSkills(target.SkillsId));
                     if (string.IsNullOrEmpty(c.Description) && !string.IsNullOrEmpty(target.Description))
