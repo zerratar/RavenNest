@@ -225,6 +225,9 @@ namespace RavenNest.Blazor
 
             // Start the TCP Api
             app.ApplicationServices.GetService<ITcpSocketApi>();
+
+            // Start Generating Ravenfall Tv Episodes
+            app.ApplicationServices.GetService<RavenfallTvManager>();
         }
 
         private void OnApplicaftionStopping(IApplicationBuilder app)

@@ -51,83 +51,63 @@ namespace RavenNest.Models.Tv
 
     public class Episode
     {
-        [JsonPropertyName("id")]
         public Guid? Id { get; set; }
-        [JsonPropertyName("user_id")]
         public Guid? UserId { get; set; }
-        [JsonPropertyName("language")]
         public string Language { get; set; }
-        [JsonPropertyName("title")]
         public string Title { get; set; }
-        [JsonPropertyName("description")]
         public string Description { get; set; }
-
-        [JsonPropertyName("outro")]
         public string Outro { get; set; }
-
-        [JsonPropertyName("characters")]
         public Character[] Characters { get; set; }
-
-        [JsonPropertyName("dialogues")]
         public Dialogue[] Dialogues { get; set; }
-        [JsonPropertyName("created")]
         public DateTime? Created { get; set; }
-        [JsonPropertyName("requested")]
         public DateTime? Requested { get; set; }
 
         public class Character
         {
-            [JsonPropertyName("id")]
             public string Id { get; set; }
-            [JsonPropertyName("name")]
             public string Name { get; set; }
-            [JsonPropertyName("gender")]
             public string Gender { get; set; }
-            [JsonPropertyName("race")]
             public string Race { get; set; }
-            [JsonPropertyName("job")]
             public string Job { get; set; }
-            [JsonPropertyName("description")]
             public string Description { get; set; }
-            [JsonPropertyName("strength")]
             public int Strength { get; set; }
 
             /// <summary>
             ///     Whether or not this character is a real Ravenfall character or not. If false, 
             ///     this is an AI generated character. It will be required to load the character data from the server.
             /// </summary>
-            [JsonPropertyName("is_real")]
             public bool IsReal { get; set; }
             public override string ToString()
             {
-                return "id: " + Id +
-                    ", name: \"" + Name + "\"" +
-                    ", gender: " + Gender +
-                    ", race: " + Race +
-                    ", job: " + Job +
-                    ", strength: " + Strength +
-                    ", description: \"" + Description + "\"";
+                return "Id: " + Id +
+                    ", Name: \"" + Name + "\"" +
+                    ", Gender: " + Gender +
+                    ", Race: " + Race +
+                    ", Job: " + Job +
+                    ", Strength: " + Strength +
+                    ", Description: \"" + Description + "\"";
             }
         }
 
         public class Dialogue
         {
-            [JsonPropertyName("animation")]
-            public string Animation { get; set; }
-            [JsonPropertyName("action_description")]
-            public string ActionDescription { get; set; }
-            [JsonPropertyName("character_name")]
-            public string CharacterName { get; set; }
-            [JsonPropertyName("location")]
+            public string Character { get; set; }
             public string Location { get; set; }
-            [JsonPropertyName("text")]
             public string Text { get; set; }
+            public Action Action { get; set; }
+        }
 
-            public override string ToString()
-            {
-                return Animation + " *" + ActionDescription + "* [" + CharacterName + "] \"" + Text + "\"";
-            }
+        public class Action
+        {
+            public string Animation { get; set; }
+            public string Description { get; set; }
+            public ActionTarget Target { get; set; }
+        }
+
+        public class ActionTarget
+        {
+            public string Type { get; set; }
+            public string Identifier { get; set; }
         }
     }
-
 }

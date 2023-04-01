@@ -43,6 +43,7 @@ namespace RavenNest.BusinessLogic.Tv
 
         private List<Episode.Character> GetCharacters(List<Episode.Character> characters)
         {
+            if (characters == null) return null;
             foreach (var c in characters)
             {
                 Character target = null;

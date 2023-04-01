@@ -43,6 +43,7 @@ namespace Shinobytes.OpenAI
         public OpenAIClient(Func<IOpenAIClientSettings> getSettings)
         {
             client = new HttpClient();
+            client.Timeout = TimeSpan.FromMinutes(3);
             this.getSettings = getSettings;
         }
 
@@ -50,6 +51,7 @@ namespace Shinobytes.OpenAI
         {
             this.settings = settings;
             client = new HttpClient();
+            client.Timeout = TimeSpan.FromMinutes(3);
         }
 
         public async Task<ImageResponse> GenerateImageAsync(string prompt, CancellationToken cancellationToken, string size = "512x512", int count = 1)
@@ -84,7 +86,6 @@ namespace Shinobytes.OpenAI
             using (var httpReq = new HttpRequestMessage(HttpMethod.Post, url))
             {
                 httpReq.Headers.Add("Authorization", $"Bearer {s.AccessToken}");
-
                 var requestString = JsonConvert.SerializeObject(model);
                 httpReq.Content = new StringContent(requestString, Encoding.UTF8, "application/json");
                 using (var httpResponse = await client.SendAsync(httpReq))

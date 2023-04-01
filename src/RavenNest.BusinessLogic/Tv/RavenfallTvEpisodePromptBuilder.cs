@@ -53,29 +53,34 @@ namespace RavenNest.BusinessLogic.Tv
 
         public override string ToString()
         {
-            var prompt = @"Generate the script for a short sitcom/tv show, it needs to be funny, exciting and innovative, the result should be in the following json format:
-
+            var prompt = @"Generate the script for a short sitcom/tv show, it needs to be funny, exciting, and innovative. The result should be in the following JSON format:
 {
-   ""title"": ""name of the episode"",
-   ""description"": ""A short description of the episode and what its about"",
-   ""outro"": ""A short outro, finalizing and wrapping up the result of the episode and if the episode did not have an outcome, what event happened afterwards."",
-   ""language"": ""The language of the episode, english, german, french, etc. This must be english unless said differently"",
-   ""characters"": [
-     ""id"": ""Character id"",
-     ""name"": ""Name of the character"",
-     ""gender"": ""male or female"",
-     ""race"": ""human, dragon, skeleton, etc"",
-     ""job"": ""tank, warrior, ranger, mage, healer, pirate, bartender, etc"",
-     ""description"": ""A description of the character, describing its personality and more"",
-     ""strength"": ""A value between 1 and 999 representing how strong or proficient the character is in their job"",
-   ],
-   ""dialogues"": [ {
-     ""animation"": ""Animation_to_play"",
-     ""action_description"": ""Describe what the character is doing"",
-     ""location"": ""Current location of the character"",
-     ""character_name"": ""The name of the character this dialogue belongs to"",
-     ""text"": ""A text that will be spoken"",
-   } ] 
+""Title"": ""name of the episode"",
+""Description"": ""A short description of the episode and what it's about"",
+""Outro"": ""A short outro, finalizing and wrapping up the result of the episode and if the episode did not have an outcome, what event happened afterward."",
+""Language"": ""The language of the episode, English, German, French, etc. This must be English unless said differently"",
+""Characters"": [
+""Id"": ""Character id"",
+""Name"": ""Name of the character"",
+""Gender"": ""male or female"",
+""Race"": ""human, dragon, skeleton, etc"",
+""Job"": ""tank, warrior, ranger, mage, healer, pirate, bartender, etc"",
+""Description"": ""A description of the character, describing its personality and more"",
+""Strength"": ""A value between 1 and 999 representing how strong or proficient the character is in their job"",
+],
+""Dialogues"": [ {
+""Action"": {
+""Animation"": ""animation_name"",
+""Description"": ""Describe what the character is doing, but express it in a simple, understandable format"",
+""Target"": {
+""Type"": ""Character, Group, Object, or None"",
+""Identifier"": ""Identifier of the target (if applicable)""
+}
+},
+""Location"": ""Current location of the character"",
+""Character"": ""The name of the character this dialogue belongs to"",
+""Text"": ""A text that will be spoken"",
+} ]
 }
 
 Characters are the available characters in the show and can be used multiple times, they are referenced in the dialogues by their name
@@ -87,20 +92,38 @@ Location is one of the islands Dawnhaven, Dreadmaw, Ironhill, Kyo, Heim, it can 
 Text is the dialogue of the character spoken, be creative.
 Animation is a name of a potential 3d animation that can be used to visualize what the character is doing.
 
-The setting for the show is that it is a fantasy, medieval world with magic and monsters, based on a game called Ravenfall, 
-there are 5 islands that can be explored: 
-* Dawnhaven aka Home, it is the starting island where all players start.
-* Dreadmaw, aka Away, it is the second island players visits and is filled with pirates.
-* Ironhill, the third island and consists of old ruins and Dragons that lives there.
+The setting for the show is a fantasy, medieval world with magic and monsters, based on a game called Ravenfall. There are 5 islands that can be explored:
+
+* Dawnhaven aka Home, the starting island where all players start.
+* Dreadmaw, aka Away, the second island players visit and is filled with pirates.
+* Ironhill, the third island and consists of old ruins and dragons that live there.
 * Kyo, an island inspired by Japan, filled with aggressive and dangerous samurais to fight, but with also an onsen resting area.
-* Heim, the last island available only for the strongest people, filled with ferocious vikings.
+* Heim, the last island available only for the strongest people, filled with ferocious Vikings.
 
-There is also a Tavern for the players to relax, play tic tac toe and drink in.
-There are also random events of huge raid bosses appearing on the different islands as well as dungeons appearing containing big bosses to slay.
+There is also a Tavern for the players to relax, play tic-tac-toe, and drink in. There are also random events of huge raid bosses appearing on the different islands and dungeons containing big bosses to slay.
 
-The only area used for the show is this world, the different islands, Dungeons, and the Tavern.
-It is also very important that all characters are in the same area, so if one character is in the Tavern, all characters must be in the Tavern, because it would be impossible for the characters to talk to eachother otherwise.
-If they are in different areas, they can still talk to eachother, but it has to be done in a way that makes sense, for example if one character is in the Tavern and the other is in the Dungeon, the Tavern character can ask the Dungeon character to come to the Tavern.
+The episode has to have at least 15 dialogues but please make more if suitable. The episode cannot end with a cliffhanger; it must have a conclusion!
+
+Your response should only include the JSON.
+
+Use the following predefined animations when creating dialogues: ""idle"", ""sit"", ""drink"", ""shoot_arrow"", ""walk"", ""run"", ""jump"", ""attack"", ""defend"", ""cast_spell"", ""heal"", ""talk"", ""emote_positive"", ""emote_negative"", ""celebrate"", ""react_surprise"", and ""react_pain"". Add more animations if necessary, but try to keep the list limited for easier implementation in Unity.
+
+In the dialogue structure:
+
+* Location is one of the islands Dawnhaven, Dreadmaw, Ironhill, Kyo, Heim, it can also be Tavern or Dungeon.
+* Text is the dialogue of the character spoken, be creative.
+* Use the ""Animation"" and ""Description"" fields inside the ""Action"" object to describe what the character is doing.
+* Use the ""Target"" field inside the ""Action"" object to specify the target character, group, object, or none involved in the action (if applicable). The target can be identified by their name.
+
+When a character asks a question to another character, the question must be answered. It is important that all characters are in the same area, so if one character is in the Tavern, all characters must be in the Tavern because it would be impossible for the characters to talk to each other otherwise. If they are in different areas, they can still talk to each other, but it has to be done in a way that makes sense, for example, if one character is in the Tavern and the other is in the Dungeon, the Tavern character can ask the Dungeon character to come to the Tavern. You can be creative with characters picking up things; they can do random funny stuff.
+Be sure to maintain consistency in locations, animations, and actions throughout the generated episode.
+
+Keep in mind that the setting for the show is a fantasy, medieval world with magic and monsters, and the characters' interactions and dialogues should be based on this theme. Feel free to include humor, plot twists, and exciting events to keep the audience engaged.
+
+To ensure a smooth transition between different scenes and character interactions, make sure that the dialogues flow naturally and that the characters' actions are consistent with their personality and role. Additionally, remember to use the predefined animations and action structure as mentioned in the prompt to facilitate easier implementation in Unity.
+
+When creating new episodes, ensure that each episode has a self-contained plot that concludes by the end of the episode, avoiding cliffhangers. However, you may add overarching themes or character arcs that span multiple episodes, adding depth to the story and characters.
+
 ";
 
             if (characters != null && characters.Count > 0)
@@ -135,18 +158,10 @@ If they are in different areas, they can still talk to eachother, but it has to 
                 prompt += "\"" + episodeDescription + "\"\n";
             }
 
-            prompt += @"It is important that when a character asks a question to another character, the question must be answered.
-
-The episode has to have at least 15 dialogues but please make more if suitable.
-The episode cannot end with a cliffhanger, it must have a conclusion!
-
-";
             if (!string.IsNullOrEmpty(language))
             {
                 prompt += "The dialogue text and action description must be translated into " + language + " and the language field in the json should be set to this language as well.\nAnimation must always be in english!\n";
             }
-
-            prompt += "Your response should only include the json.";
 
             return prompt;
         }
