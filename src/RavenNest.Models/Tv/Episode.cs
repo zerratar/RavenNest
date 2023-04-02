@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Xml.Linq;
@@ -117,6 +118,19 @@ namespace RavenNest.Models.Tv
         {
             public string Type { get; set; }
             public string Identifier { get; set; }
+
+            public static implicit operator ActionTarget(string value)
+            {
+                return new ActionTarget
+                {
+                    Identifier = value
+                };
+            }
+
+            public static implicit operator string(ActionTarget target)
+            {
+                return target.Type;
+            }
         }
     }
 }

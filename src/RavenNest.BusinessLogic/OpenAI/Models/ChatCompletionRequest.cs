@@ -33,6 +33,7 @@ namespace Shinobytes.OpenAI.Models
             get;
             set;
         }
+
         [JsonProperty("messages")]
         public ChatMessage[] Messages
         {

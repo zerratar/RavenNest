@@ -880,6 +880,7 @@ namespace RavenNest.BusinessLogic.Game
         public Player GetPlayer(Guid characterId)
         {
             var chara = gameData.GetCharacter(characterId);
+            if (chara == null) return null;
             var user = gameData.GetUser(chara.UserId);
             return chara.Map(gameData, user);
         }

@@ -37,10 +37,16 @@ namespace RavenNest.BusinessLogic
             foreach (var filePath in Directory.GetFiles(_folderPath, "*.json"))
             {
                 var jsonString = File.ReadAllText(filePath);
-                var id = GetIdFromFileName(Path.GetFileName(filePath));
-                var obj = JsonConvert.DeserializeObject<T>(jsonString);
-
-                _cache.TryAdd(id, obj);
+                try
+                {
+                    var id = GetIdFromFileName(Path.GetFileName(filePath));
+                    var obj = JsonConvert.DeserializeObject<T>(jsonString);
+                    _cache.TryAdd(id, obj);
+                }
+                catch
+                {
+                    System.IO.File.Move(filePath, filePath + ".invalid");
+                }
             }
         }
 
