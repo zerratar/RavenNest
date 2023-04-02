@@ -179,6 +179,15 @@ namespace RavenNest.BusinessLogic.Tv
                     // this one exists, skip it.
                     continue;
                 }
+                if (string.IsNullOrEmpty(d.Character)
+                    || d.Character.Equals("narrator", StringComparison.OrdinalIgnoreCase)
+                    || d.Character.Equals("all", StringComparison.OrdinalIgnoreCase)
+                    || d.Character.Equals("group", StringComparison.OrdinalIgnoreCase)
+                    || d.Character.Equals("party", StringComparison.OrdinalIgnoreCase))
+                {
+                    // this is a narrator, all, etc. Ignore this one.
+                    continue;
+                }
 
                 // this is a generated character for sure.
                 // we can't really determine gender, so pick a random one.
