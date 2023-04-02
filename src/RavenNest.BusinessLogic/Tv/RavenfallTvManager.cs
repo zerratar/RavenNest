@@ -125,27 +125,27 @@ namespace RavenNest.BusinessLogic.Tv
                 try
                 {
                     var result = await openAI.GetCompletionAsync(GetPrompt(request), cancellationToken).ConfigureAwait(false);
-                    foreach (var choice in result.Choices)
+                    var choice = result.Choices.FirstOrDefault();
+                    var content = EnsureValidJson(choice.Message.Content);
+                    episode = Newtonsoft.Json.JsonConvert.DeserializeObject<Episode>(content);
+                    if (episode != null)
                     {
-                        var content = EnsureValidJson(choice.Message.Content);
-                        episode = Newtonsoft.Json.JsonConvert.DeserializeObject<Episode>(content);
-                        if (episode != null)
+                        episode.Id = request.Request.Id != Guid.Empty ? request.Request.Id : Guid.NewGuid();
+                        episode.UserId = request.UserId != Guid.Empty ? request.UserId : null;
+                        episode.Created = DateTime.UtcNow;
+                        episode.Requested = request.Created;
+
+                        foreach (var c in episode.Characters)
                         {
-                            episode.Id = request.Request.Id != Guid.Empty ? request.Request.Id : Guid.NewGuid();
-                            episode.Created = DateTime.UtcNow;
-                            episode.Requested = request.Created;
-
-                            foreach (var c in episode.Characters)
+                            if (Guid.TryParse(c.Id, out var characterId) && gameData.GetCharacter(characterId) != null)
                             {
-                                if (Guid.TryParse(c.Id, out var characterId) && gameData.GetCharacter(characterId) != null)
-                                {
-                                    c.IsReal = true;
-                                }
+                                c.IsReal = true;
                             }
-
-                            await episodes.SaveAsync(episode.Id.Value, episode);
-                            await episodeRequests.DeleteAsync(request.Request.Id);
                         }
+
+                        await episodes.SaveAsync(episode.Id.Value, episode);
+                        await episodeRequests.DeleteAsync(request.Request.Id);
+                        return episode;
                     }
                 }
                 catch
@@ -159,7 +159,9 @@ namespace RavenNest.BusinessLogic.Tv
                     }
                 }
             }
-            return episode;
+
+            requestQueue.Enqueue(request);
+            return null;
         }
 
         private string EnsureValidJson(string content)
@@ -249,12 +251,13 @@ namespace RavenNest.BusinessLogic.Tv
         public async Task<List<Episode>> GetEpisodesAsync(Guid userId, DateTime date, int take)
         {
             // Not very graceful, but still. Better than nothing
-            var e = episodes.TakeWhereOrdered(x => x.Created >= date && x.UserId == userId, x => x.Created, take);
+            var e = episodes.TakeWhereOrdered(x => x.Created.GetValueOrDefault().Truncate(TimeSpan.TicksPerSecond) > date && x.UserId == userId, x => x.Created.GetValueOrDefault(), take);
             if (e.Count < take)
             {
-                var random = episodes.TakeRandomWhere(x => x.Created >= date && e.All(y => y.Id != x.Id), take - e.Count);
-                if (random.Count > 0)
-                    e.AddRange(random);
+                //var items = episodes.OrderedBy(x => x.Created).ToList();
+                var potentialEpisodes = episodes.TakeWhereOrdered(x => x.Created.GetValueOrDefault().Truncate(TimeSpan.TicksPerSecond) > date && e.All(y => y.Id != x.Id), x => x.Created.GetValueOrDefault(), take - e.Count);
+                if (potentialEpisodes.Count > 0)
+                    e.AddRange(potentialEpisodes);
             }
             return e;
         }
@@ -262,6 +265,22 @@ namespace RavenNest.BusinessLogic.Tv
         public async Task<List<Episode>> GetEpisodesAsync(DateTime date, int take)
         {
             return episodes.TakeWhereOrdered(x => x.Created >= date, x => x.Created, take);
+        }
+
+    }
+
+    public static class DateTimeUtils
+    {
+        /// <summary>
+        /// <para>Truncates a DateTime to a specified resolution.</para>
+        /// <para>A convenient source for resolution is TimeSpan.TicksPerXXXX constants.</para>
+        /// </summary>
+        /// <param name="date">The DateTime object to truncate</param>
+        /// <param name="resolution">e.g. to round to nearest second, TimeSpan.TicksPerSecond</param>
+        /// <returns>Truncated DateTime</returns>
+        public static DateTime Truncate(this DateTime date, long resolution)
+        {
+            return new DateTime(date.Ticks - (date.Ticks % resolution), date.Kind);
         }
     }
 }

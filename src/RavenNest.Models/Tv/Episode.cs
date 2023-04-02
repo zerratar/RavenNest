@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text.Json.Serialization;
+using System.Xml.Linq;
 
 namespace RavenNest.Models.Tv
 {
@@ -61,7 +63,14 @@ namespace RavenNest.Models.Tv
         public Dialogue[] Dialogues { get; set; }
         public DateTime? Created { get; set; }
         public DateTime? Requested { get; set; }
-
+        public override string ToString()
+        {
+            return "Created: " + Created +
+                ", Title: \"" + Title + "\"" +
+                ", UserId: \"" + UserId + "\"" +
+                ", Chars: \"" + Characters.Length + "\"" +
+                ", Dialogues: \"" + Dialogues.Length + "\"";
+        }
         public class Character
         {
             public string Id { get; set; }

@@ -118,6 +118,11 @@ namespace RavenNest.BusinessLogic
             return _cache.Values.OrderBy(value);
         }
 
+        internal IReadOnlyList<T> All()
+        {
+            return _cache.Values.ToList();
+        }
+
         internal List<T> TakeRandomWhere(Func<T, bool> value, int take)
         {
             return _cache.Values.Where(value).OrderBy(x => System.Random.Shared.Next()).Take(take).ToList();
