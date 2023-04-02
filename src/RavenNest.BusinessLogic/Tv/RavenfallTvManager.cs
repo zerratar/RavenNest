@@ -135,6 +135,8 @@ namespace RavenNest.BusinessLogic.Tv
                         episode.Created = DateTime.UtcNow;
                         episode.Requested = request.Created;
 
+                        AddMissingCharacters(episode);
+
                         foreach (var c in episode.Characters)
                         {
                             if (Guid.TryParse(c.Id, out var characterId) && gameData.GetCharacter(characterId) != null)
@@ -163,6 +165,57 @@ namespace RavenNest.BusinessLogic.Tv
             requestQueue.Enqueue(request);
             return null;
         }
+
+        private static void AddMissingCharacters(Episode episode)
+        {
+            // sometimes, the characters list is not filled up with the characters in the dialogue.
+            // needs to be fixed on server side. but for now, populate missing character list.
+            var characterList = episode.Characters.ToList();
+            foreach (var d in episode.Dialogues)
+            {
+                var existing = characterList.FirstOrDefault(x => x.Name.Equals(d.Character, StringComparison.OrdinalIgnoreCase));
+                if (existing != null)
+                {
+                    // this one exists, skip it.
+                    continue;
+                }
+
+                // this is a generated character for sure.
+                // we can't really determine gender, so pick a random one.
+                var newCharacter = new Episode.Character
+                {
+                    Id = GenerateCharacterId(characterList),
+                    Name = d.Character,
+                    Gender = Random.Shared.NextDouble() >= 0.5 ? "male" : "female",
+                    Job = "Other",
+                    Race = "Human",
+                    Strength = Random.Shared.Next(1, 400),
+                    IsReal = false,
+                };
+
+                characterList.Add(newCharacter);
+            }
+            episode.Characters = characterList.ToArray();
+        }
+
+        private static string GenerateCharacterId(List<Episode.Character> characterList)
+        {
+            var index = 1;
+            string id = index.ToString();
+            while (true)
+            {
+                if (characterList.Any(x => x.Id == id))
+                {
+                    id = (++index).ToString();
+                    continue;
+                }
+
+                break;
+            }
+
+            return id;
+        }
+
 
         private string EnsureValidJson(string content)
         {

@@ -84,6 +84,7 @@ namespace RavenNest.BusinessLogic.Tv
 }
 
 Characters are the available characters in the show and can be used multiple times, they are referenced in the dialogues by their name
+If a character is used in a dialogue either by target or text, it must also be included in the list of characters.
 
 The strength of a character represent how strong they are in combat or how proficient they are in their job, it is a value between 1 and 999 where 999 is the strongest.
 
