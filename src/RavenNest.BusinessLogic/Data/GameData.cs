@@ -37,7 +37,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly ConcurrentDictionary<Guid, SessionState> sessionStates = new();
 
         private readonly EntitySet<Agreements> agreements;
-
+        private readonly EntitySet<DailyAggregatedMarketplaceData> dailyAggregatedMarketplaceData;
         private readonly EntitySet<UserLoyalty> loyalty;
         private readonly EntitySet<UserProperty> userProperties;
         private readonly EntitySet<UserLoyaltyRank> loyaltyRanks;
@@ -202,6 +202,8 @@ namespace RavenNest.BusinessLogic.Data
 
                     patreonSettings = new EntitySet<PatreonSettings>(restorePoint?.Get<PatreonSettings>() ?? ctx.PatreonSettings.ToList());
 
+                    dailyAggregatedMarketplaceData = new EntitySet<DailyAggregatedMarketplaceData>(ctx.DailyAggregatedMarketplaceData.ToList());
+
                     loyalty = new EntitySet<UserLoyalty>(restorePoint?.Get<UserLoyalty>() ?? ctx.UserLoyalty.ToList());
                     loyalty.RegisterLookupGroup(nameof(User), x => x.UserId);
                     loyalty.RegisterLookupGroup("Streamer", x => x.StreamerUserId);
@@ -340,7 +342,6 @@ namespace RavenNest.BusinessLogic.Data
                     clanSkills = new EntitySet<ClanSkill>(restorePoint?.Get<ClanSkill>() ?? ctx.ClanSkill.ToList());
                     clanSkills.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
 
-
                     //vendorTransaction = new EntitySet<VendorTransaction>(
                     //    restorePoint?.Get<VendorTransaction>() ??
                     //    ctx.VendorTransaction.ToList());
@@ -364,6 +365,7 @@ namespace RavenNest.BusinessLogic.Data
                     {
                         redeemableItems,
                         itemAttributes,
+                        dailyAggregatedMarketplaceData,
                         pets,
                         patreons, loyalty, loyaltyRewards, loyaltyRanks, claimedLoyaltyRewards,
                         expMultiplierEvents, notifications,
@@ -2067,6 +2069,9 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Add Methods
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(DailyAggregatedMarketplaceData item) => Update(() => dailyAggregatedMarketplaceData.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(UserAccess item) => Update(() => userAccess.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2697,6 +2702,16 @@ namespace RavenNest.BusinessLogic.Data
         public IReadOnlyList<MarketItem> GetMarketItems(int skip, int take)
             => marketItems.Entities.Slice(skip, take);
 
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<DailyAggregatedMarketplaceData> GetMarketplaceReports(DateTime startDateInclusive, DateTime endDateInclusive)
+        {
+            return dailyAggregatedMarketplaceData.Entities.AsList(x => x.Date >= startDateInclusive && x.Date <= endDateInclusive);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<MarketItem> GetMarketItems() => marketItems.Entities;
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<MarketItem> GetMarketItems(ItemFilter filter, int skip, int take)
             => marketItems.Entities.Where(x => Filter(filter, x)).Slice(skip, take);
@@ -3110,7 +3125,8 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Remove Entities
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(DailyAggregatedMarketplaceData item) => dailyAggregatedMarketplaceData.Remove(item);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(UserPatreon item) => patreons.Remove(item);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3502,7 +3518,6 @@ namespace RavenNest.BusinessLogic.Data
 
             return ItemFilter.All;
         }
-
     }
 
     public class DataSaveError

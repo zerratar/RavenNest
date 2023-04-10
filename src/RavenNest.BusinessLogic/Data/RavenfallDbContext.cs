@@ -17,6 +17,9 @@ namespace RavenNest.BusinessLogic.Data
             : base(options)
         {
         }
+
+        public virtual DbSet<DailyAggregatedMarketplaceData> DailyAggregatedMarketplaceData { get; set; }
+
         public virtual DbSet<ExpMultiplierEvent> ExpMultiplierEvent { get; set; }
         public virtual DbSet<UserPatreon> UserPatreon { get; set; }
         public virtual DbSet<UserNotification> UserNotification { get; set; }
@@ -93,6 +96,11 @@ namespace RavenNest.BusinessLogic.Data
                 entity.Property(e => e.Tier).HasConversion(v => (int)v, v => (PetTier)v);
                 entity.Property(e => e.DateOfBirth).HasColumnType("datetime");
                 entity.Property(e => e.PlayTime).HasConversion<long>();
+            });
+
+            modelBuilder.Entity<DailyAggregatedMarketplaceData>(entity =>
+            {
+                entity.Property(e => e.Id).ValueGeneratedNever();
             });
 
             modelBuilder.Entity<PatreonSettings>(entity => entity.Property(e => e.Id).ValueGeneratedNever());

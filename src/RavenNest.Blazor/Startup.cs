@@ -228,6 +228,7 @@ namespace RavenNest.Blazor
 
             // Start Generating Ravenfall Tv Episodes
             app.ApplicationServices.GetService<RavenfallTvManager>();
+            app.ApplicationServices.GetService<MarketplaceReportAggregator>();
         }
 
         private void OnApplicaftionStopping(IApplicationBuilder app)

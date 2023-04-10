@@ -21,6 +21,15 @@ namespace RavenNest.DataModels
 
         public DateTime LastModified { get; private set; }
 
+        public EntitySet(bool trackChanges = true)
+        {
+            this.trackChanges = trackChanges;
+            this.entities = new ConcurrentDictionary<Guid, TModel>();
+            this.addedEntities = new ConcurrentDictionary<Guid, EntityChangeSet>();
+            this.updatedEntities = new ConcurrentDictionary<Guid, EntityChangeSet>();
+            this.removedEntities = new ConcurrentDictionary<Guid, EntityChangeSet>();
+        }
+
         public EntitySet(IEnumerable<TModel> collection, bool trackChanges = true)
         {
             this.trackChanges = trackChanges;
