@@ -1,0 +1,110 @@
+﻿@layout AdminLayout
+@page "/admin/economy/marketplace"
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.Blazor.Services.EconomyService EconomyService
+@inject RavenNest.BusinessLogic.Data.GameData GameData;
+
+@if (isAdmin)
+{
+    <ul>
+        <li><a href="/admin/economy">Overview</a></li>
+        <li><a href="/admin/economy/marketplace/avg-price">Average Item Price</a></li>
+        @*<li><a href="/admin/economy/marketplace/item-amounts-sellers">Item Amounts and Number of Sellers</a></li>*@
+    </ul>
+
+    <h3>Marketplace Economy Detail</h3>
+
+    @if (marketplaceReports == null || marketItemTransactions == null)
+    {
+        <p>Loading data...</p>
+    }
+    else
+    {
+        <h4>Marketplace Reports</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Item</th>
+                    <th>Avg Price</th>
+                    <th>Amount</th>
+                    <th>Sellers</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var report in marketplaceReports)
+                {
+                    <tr>
+                        <td>@report.Date.ToShortDateString()</td>
+                        <td title="@report.ItemId">@GameData.GetItem(report.ItemId).Name</td>
+                        <td>@report.AvgPrice</td>
+                        <td>@report.Amount</td>
+                        <td>@report.Sellers</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <h4>Market Item Transactions</h4>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Amount</th>
+                    <th>Price Per Item</th>
+                    <th>Total Price</th>
+                    <th>Buyer Character</th>
+                    <th>Seller Character</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var transaction in marketItemTransactions)
+                {
+                    <tr>
+                        <td title="@transaction.ItemId">@GameData.GetItem(transaction.ItemId).Name</td>
+                        <td>@transaction.Amount</td>
+                        <td>@transaction.PricePerItem</td>
+                        <td>@transaction.TotalPrice</td>
+                        <td title="@transaction.BuyerCharacterId">@GameData.GetCharacter(transaction.BuyerCharacterId).Name</td>
+                        <td title="@transaction.SellerCharacterId">@GameData.GetCharacter(transaction.SellerCharacterId).Name</td>
+                        <td>@transaction.Created</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+
+    private IReadOnlyList<RavenNest.DataModels.DailyAggregatedMarketplaceData> marketplaceReports;
+    private IReadOnlyList<RavenNest.DataModels.MarketItemTransaction> marketItemTransactions;
+
+    private bool isAdmin;
+    private string updateError = "";
+
+    private RavenNest.Models.SessionInfo session;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            session = AuthService.GetSession();
+            isAdmin = session != null && session.Administrator;
+
+            // Adjust the date range according to your needs
+            var startDate = DateTime.UtcNow.Date.AddDays(-30);
+            var endDate = DateTime.UtcNow.Date;
+
+            marketplaceReports = await Task.Run(() => EconomyService.GetMarketplaceReports(startDate, endDate));
+            marketItemTransactions = await Task.Run(() => EconomyService.GetMarketItemTransactions(startDate, endDate));
+        }
+        catch (System.Exception exc)
+        {
+
+        }
+    }
+
+}

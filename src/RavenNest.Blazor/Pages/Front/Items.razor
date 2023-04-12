@@ -228,7 +228,7 @@
     private RavenNest.Models.ItemCollection items;
 
     private string sort = "name";
-    private SortDirection sortDirection;
+    private BusinessLogic.Game.SortDirection sortDirection;
     private ItemFilter itemFilter = ItemFilter.All;
 
     protected override void OnInitialized()
@@ -269,7 +269,7 @@
             return (MarkupString)"";
         }
 
-        return (MarkupString)(sortDirection == SortDirection.Ascending ? "&uarr;" : "&darr;");
+        return (MarkupString)(sortDirection == BusinessLogic.Game.SortDirection.Ascending ? "&uarr;" : "&darr;");
     }
 
     private async void SortByName()
@@ -327,7 +327,7 @@
             sorting = true;
             await Task.Run(() =>
             {
-                if (sortDirection == SortDirection.Descending)
+                if (sortDirection == BusinessLogic.Game.SortDirection.Descending)
                 {
                     items = new Models.ItemCollection(items.OrderByDescending(sort));
                     return;
@@ -346,11 +346,11 @@
     {
         if (sort != value)
         {
-            sortDirection = SortDirection.Ascending;
+            sortDirection = BusinessLogic.Game.SortDirection.Ascending;
         }
         else
         {
-            sortDirection = (SortDirection)(((int)sortDirection + 1) % Enum.GetValues(typeof(SortDirection)).Length);
+            sortDirection = (BusinessLogic.Game.SortDirection)(((int)sortDirection + 1) % Enum.GetValues(typeof(BusinessLogic.Game.SortDirection)).Length);
         }
         sort = value;
     }

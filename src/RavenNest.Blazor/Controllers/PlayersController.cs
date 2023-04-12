@@ -431,35 +431,11 @@ namespace RavenNest.Controllers
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpGet("{userId}/vendor/{item}/{amount}")]
-        [Obsolete]
-        public long VendorItem(string userId, Guid item, long amount)
-        {
-            return playerManager.VendorByItemId(AssertGetSessionToken(), userId, item, amount);
-        }
-
-        [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpGet("v2/{characterId}/vendor/{item}/{amount}")]
-        public long VendorItem(Guid characterId, Guid item, long amount)
-        {
-            return playerManager.VendorItemInstance(AssertGetSessionToken(), characterId, item, amount);
-        }
-
-        [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpGet("{userId}/vendor-instance/{item}/{amount}")]
-        [Obsolete]
-        public long VendorItemInstance(string userId, Guid item, long amount)
-        {
-            return playerManager.VendorItemInstance(AssertGetSessionToken(), userId, item, amount);
-        }
-
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("v2/{characterId}/vendor-instance/{item}/{amount}")]
         public long VendorItemInstance(Guid characterId, Guid item, long amount)
         {
-            return playerManager.VendorItemInstance(AssertGetSessionToken(), characterId, item, amount);
+            return playerManager.SellItemInstanceToVendor(AssertGetSessionToken(), characterId, item, amount);
         }
-
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{userId}/appearance")]

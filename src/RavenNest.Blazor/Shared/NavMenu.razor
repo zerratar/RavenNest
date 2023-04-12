@@ -60,6 +60,11 @@
                     </NavLink>
                 </li>
                 <li class="nav-item">
+                    <NavLink class="nav-link" href="/admin/economy" Match="NavLinkMatch.All">
+                        <i class="fa-solid fa-money-bill-trend-up"></i>&nbsp;Game Economy
+                    </NavLink>
+                </li>
+                <li class="nav-item">
                     <NavLink class="nav-link" href="/admin/items" Match="NavLinkMatch.All">
                         <i class="fa-solid fa-sword"></i>&nbsp;Items
                     </NavLink>
@@ -246,7 +251,7 @@
 
     private string MenuTitle => Dashboard ? "Dashboard" : "Ravenfall";
 
-    private bool collapseNavMenu = true;
+    private bool collapseNavMenu = false;
     private string NavMenuCssClass => collapseNavMenu ? "nav-list collapse" : "nav-list";
 
     protected override void OnInitialized()
@@ -259,6 +264,7 @@
     {
         collapseNavMenu = !collapseNavMenu;
     }
+
     private bool IsAdministrator => Administrator || session.Administrator;
     private bool IsAuthenticated => Authenticated;
 }

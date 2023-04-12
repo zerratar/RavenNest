@@ -4,28 +4,26 @@
 @inject RavenNest.Blazor.Services.UserService UserService
 
 @using System.Linq;
-@using ChartJs.Blazor.LineChart;
-@using ChartJs.Blazor.Common.Axes;
-@using ChartJs.Blazor;
+@using Blazorise.Charts
 
 @if (isAdmin)
 {
-  <h1>Overview</h1>
-  <div class="skill-selector">
-    @for (var i = 0; i < TimeFrames.Length; ++i)
+    <h1>Overview</h1>
+    <div class="skill-selector">
+        @for (var i = 0; i < TimeFrames.Length; ++i)
+        {
+            var tf = TimeFrames[i];
+            var name = GetName(tf);
+            <button @onclick="(() => SelectTimeFrameAsync(tf))" class="btn @(newUserTimeframe == tf ? "active" : "")">@name</button>
+        }
+    </div>
+    if (newUserChartData != null && newUserChartOptions != null)
     {
-      var tf = TimeFrames[i];
-      var name = GetName(tf);
-      <button @onclick="(() => SelectTimeFrameAsync(tf))" class="btn @(newUserTimeframe == tf ? "active" : "")">@name</button>
+        <LineChart TItem="double" Data="@newUserChartData" Options="@newUserChartOptions"></LineChart>
     }
-  </div>
-  if (newUserConfig != null)
-  {
-    <Chart Config="newUserConfig"></Chart>
-  }
 
-  if (commonHoursNewUsers != null)
-  {
-    <Chart Config="commonHoursNewUsers"></Chart>
-  }
+    if (commonHoursNewUsersChartData != null && commonHoursNewUsersChartOptions != null)
+    {
+        <LineChart TItem="double" Data="@commonHoursNewUsersChartData" Options="@commonHoursNewUsersChartOptions"></LineChart>
+    }
 }

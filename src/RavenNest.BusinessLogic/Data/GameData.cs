@@ -15,7 +15,7 @@ using RavenNest.DataModels;
 
 namespace RavenNest.BusinessLogic.Data
 {
-    public class GameData
+    public class GameData : IDisposable
     {
         #region Settings
         private const int BackupInterval = 60 * 60 * 1000; // once per hour
@@ -38,6 +38,8 @@ namespace RavenNest.BusinessLogic.Data
 
         private readonly EntitySet<Agreements> agreements;
         private readonly EntitySet<DailyAggregatedMarketplaceData> dailyAggregatedMarketplaceData;
+        private readonly EntitySet<DailyAggregatedEconomyReport> dailyAggregatedEconomyReport;
+
         private readonly EntitySet<UserLoyalty> loyalty;
         private readonly EntitySet<UserProperty> userProperties;
         private readonly EntitySet<UserLoyaltyRank> loyaltyRanks;
@@ -45,8 +47,9 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<UserClaimedLoyaltyReward> claimedLoyaltyRewards;
         private readonly EntitySet<UserNotification> notifications;
 
-        private readonly EntitySet<CharacterClanInvite> clanInvites;
+        private readonly EntitySet<VendorItem> vendorItems;
 
+        private readonly EntitySet<CharacterClanInvite> clanInvites;
         private readonly EntitySet<Clan> clans;
         private readonly EntitySet<ClanRole> clanRoles;
         private readonly EntitySet<ClanSkill> clanSkills;
@@ -54,7 +57,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<CharacterClanSkillCooldown> characterClanSkillCooldown;
 
         private readonly EntitySet<MarketItemTransaction> marketTransactions;
-        //private readonly EntitySet<VendorTransaction> vendorTransaction;
+        private readonly EntitySet<VendorTransaction> vendorTransaction;
 
         private readonly EntitySet<CharacterClanMembership> clanMemberships;
 
@@ -69,15 +72,12 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<ExpMultiplierEvent> expMultiplierEvents;
         private readonly EntitySet<GameEvent> gameEvents;
 
-
         private readonly EntitySet<Pet> pets;
 
         private readonly EntitySet<UserBankItem> userBankItems;
         private readonly EntitySet<InventoryItem> inventoryItems;
         private readonly EntitySet<ResourceItemDrop> resourceItemDrops;
-
         private readonly EntitySet<ItemAttribute> itemAttributes;
-
         private readonly EntitySet<RedeemableItem> redeemableItems;
 
         private readonly EntitySet<MarketItem> marketItems;
@@ -97,7 +97,6 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<GameClient> gameClients;
         private readonly EntitySet<Village> villages;
         private readonly EntitySet<VillageHouse> villageHouses;
-
 
         private readonly IEntitySet[] entitySets;
         private readonly GameDataBackupProvider backupProvider;
@@ -164,9 +163,10 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(RedeemableItem),
                         typeof(Pet),
                         typeof(ResourceItemDrop),
+                        typeof(VendorItem),
                         //typeof(UserNotification),
                         typeof(MarketItemTransaction),
-                        //typeof(VendorTransaction),
+                        typeof(VendorTransaction),
                         typeof(UserAccess),
                         typeof(GameSession),
                         typeof(Village),
@@ -203,6 +203,7 @@ namespace RavenNest.BusinessLogic.Data
                     patreonSettings = new EntitySet<PatreonSettings>(restorePoint?.Get<PatreonSettings>() ?? ctx.PatreonSettings.ToList());
 
                     dailyAggregatedMarketplaceData = new EntitySet<DailyAggregatedMarketplaceData>(ctx.DailyAggregatedMarketplaceData.ToList());
+                    dailyAggregatedEconomyReport = new EntitySet<DailyAggregatedEconomyReport>(ctx.DailyAggregatedEconomyReport.ToList());
 
                     loyalty = new EntitySet<UserLoyalty>(restorePoint?.Get<UserLoyalty>() ?? ctx.UserLoyalty.ToList());
                     loyalty.RegisterLookupGroup(nameof(User), x => x.UserId);
@@ -275,6 +276,9 @@ namespace RavenNest.BusinessLogic.Data
                     userBankItems = new EntitySet<UserBankItem>(restorePoint?.Get<UserBankItem>() ?? ctx.UserBankItem.ToList());
                     userBankItems.RegisterLookupGroup(nameof(User), x => x.UserId);
 
+                    vendorItems = new EntitySet<VendorItem>(restorePoint?.Get<VendorItem>() ?? ctx.VendorItem.ToList());
+                    vendorItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
+
                     inventoryItems = new EntitySet<InventoryItem>(restorePoint?.Get<InventoryItem>() ?? ctx.InventoryItem.ToList());
                     inventoryItems.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
@@ -342,11 +346,11 @@ namespace RavenNest.BusinessLogic.Data
                     clanSkills = new EntitySet<ClanSkill>(restorePoint?.Get<ClanSkill>() ?? ctx.ClanSkill.ToList());
                     clanSkills.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
 
-                    //vendorTransaction = new EntitySet<VendorTransaction>(
-                    //    restorePoint?.Get<VendorTransaction>() ??
-                    //    ctx.VendorTransaction.ToList());
-                    //vendorTransaction.RegisterLookupGroup(nameof(Item), x => x.ItemId);
-                    //vendorTransaction.RegisterLookupGroup(nameof(Character) + "Seller", x => x.SellerCharacterId);
+                    vendorTransaction = new EntitySet<VendorTransaction>(
+                        restorePoint?.Get<VendorTransaction>() ??
+                        ctx.VendorTransaction.ToList());
+                    vendorTransaction.RegisterLookupGroup(nameof(Item), x => x.ItemId);
+                    vendorTransaction.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
                     marketTransactions = new EntitySet<MarketItemTransaction>(restorePoint?.Get<MarketItemTransaction>() ?? ctx.MarketItemTransaction.ToList());
                     marketTransactions.RegisterLookupGroup(nameof(Item), x => x.ItemId);
@@ -366,11 +370,12 @@ namespace RavenNest.BusinessLogic.Data
                         redeemableItems,
                         itemAttributes,
                         dailyAggregatedMarketplaceData,
+                        dailyAggregatedEconomyReport,
                         pets,
                         patreons, loyalty, loyaltyRewards, loyaltyRanks, claimedLoyaltyRewards,
                         expMultiplierEvents, notifications,
                         appearances, syntyAppearances, characters, characterStates,
-                        userProperties, /*vendorTransaction,*/
+                        userProperties, vendorTransaction,
                         userBankItems,
                         characterSkillRecords,
                         clanRolePermissions,
@@ -379,6 +384,7 @@ namespace RavenNest.BusinessLogic.Data
                         resourceItemDrops,
                         gameClients,
                         userAccess,
+                        vendorItems,
                         items, // so we can update items
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems, marketTransactions,
                         resources, statistics, characterSkills, clanSkills, users, villages, villageHouses,
@@ -2069,8 +2075,14 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Add Methods
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(VendorItem item) => Update(() => vendorItems.Add(item));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(DailyAggregatedMarketplaceData item) => Update(() => dailyAggregatedMarketplaceData.Add(item));
-
+        
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(DailyAggregatedEconomyReport item) => Update(() => dailyAggregatedEconomyReport.Add(item));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(VendorTransaction item) => Update(() => vendorTransaction.Add(item));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(UserAccess item) => Update(() => userAccess.Add(item));
 
@@ -2110,8 +2122,6 @@ namespace RavenNest.BusinessLogic.Data
         public AddEntityResult Add(MarketItemTransaction entity) => Update(() => marketTransactions.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        //public AddEntityResult Add(VendorTransaction entity) => Update(() => vendorTransaction.Add(entity));
-        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(CharacterClanInvite entity) => Update(() => this.clanInvites.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2662,10 +2672,20 @@ namespace RavenNest.BusinessLogic.Data
         public IReadOnlyList<ItemAttribute> GetItemAttributes() => itemAttributes.Entities;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public VendorItem GetVendorItemByItemId(Guid itemId)
+            => vendorItems[nameof(Item), itemId].FirstOrDefault();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<VendorItem> GetVendorItems() => vendorItems.Entities;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<VendorTransaction> GetVendorTransactions(DateTime start, DateTime end) => vendorTransaction.Entities.AsList(x => x.Created >= start && x.Created <= end);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactions() => marketTransactions.Entities;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactions(DateTime start, DateTime end) => marketTransactions.Entities.AsList(x => x.Created >= start && x.Created <= end);
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactions(Guid itemId, DateTime start, DateTime end) => marketTransactions[nameof(Item), itemId].AsList(x => x.Created >= start && x.Created <= end);
@@ -2707,6 +2727,12 @@ namespace RavenNest.BusinessLogic.Data
         public IReadOnlyList<DailyAggregatedMarketplaceData> GetMarketplaceReports(DateTime startDateInclusive, DateTime endDateInclusive)
         {
             return dailyAggregatedMarketplaceData.Entities.AsList(x => x.Date >= startDateInclusive && x.Date <= endDateInclusive);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<DailyAggregatedEconomyReport> GetEconomyReports(DateTime startDateInclusive, DateTime endDateInclusive)
+        {
+            return dailyAggregatedEconomyReport.Entities.AsList(x => x.Date >= startDateInclusive && x.Date <= endDateInclusive);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3126,7 +3152,18 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Remove Entities
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(VendorItem item) => vendorItems.Remove(item);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(DailyAggregatedMarketplaceData item) => dailyAggregatedMarketplaceData.Remove(item);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(DailyAggregatedEconomyReport item) => dailyAggregatedEconomyReport.Remove(item);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(VendorTransaction item) => vendorTransaction.Remove(item);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(MarketItemTransaction item) => marketTransactions.Remove(item);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(UserPatreon item) => patreons.Remove(item);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3517,6 +3554,11 @@ namespace RavenNest.BusinessLogic.Data
                 return ItemFilter.Armors;
 
             return ItemFilter.All;
+        }
+
+        public void Dispose()
+        {
+            this.Flush();
         }
     }
 

@@ -19,6 +19,7 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         public virtual DbSet<DailyAggregatedMarketplaceData> DailyAggregatedMarketplaceData { get; set; }
+        public virtual DbSet<DailyAggregatedEconomyReport> DailyAggregatedEconomyReport { get; set; }
 
         public virtual DbSet<ExpMultiplierEvent> ExpMultiplierEvent { get; set; }
         public virtual DbSet<UserPatreon> UserPatreon { get; set; }
@@ -57,6 +58,7 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<GameEvent> GameEvent { get; set; }
         public virtual DbSet<InventoryItem> InventoryItem { get; set; }
 
+        public virtual DbSet<VendorItem> VendorItem { get; set; }
         public virtual DbSet<UserBankItem> UserBankItem { get; set; }
         public virtual DbSet<ItemAttribute> ItemAttribute { get; set; }
         //public virtual DbSet<MagicItemAttribute> InventoryItemAttribute { get; set; }
@@ -102,6 +104,9 @@ namespace RavenNest.BusinessLogic.Data
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();
             });
+
+
+            modelBuilder.Entity<DailyAggregatedEconomyReport>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
             modelBuilder.Entity<PatreonSettings>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<ResourceItemDrop>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
@@ -163,7 +168,7 @@ namespace RavenNest.BusinessLogic.Data
 
             modelBuilder.Entity<MarketItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<InventoryItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
-
+            modelBuilder.Entity<VendorItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserBankItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
             //modelBuilder.Entity<MagicItemAttribute>(entity => entity.Property(e => e.Id).ValueGeneratedNever());

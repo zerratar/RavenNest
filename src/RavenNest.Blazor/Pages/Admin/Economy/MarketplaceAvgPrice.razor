@@ -1,0 +1,154 @@
+﻿@layout AdminLayout
+@page "/admin/economy/marketplace/avg-price"
+
+@inject RavenNest.BusinessLogic.Data.GameData GameData;
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.Blazor.Services.EconomyService EconomyService
+
+@if (isAdmin)
+{
+    <ul>
+        <li><a href="/admin/economy">Overview</a></li>
+        <li><a href="/admin/economy/marketplace">Marketplace</a></li>
+    </ul>
+
+    <h3>Average Item Price Over Time</h3>
+
+    if (chartData == null || chartData.Count == 0)
+    {
+
+        <LoadIndicator></LoadIndicator>
+    }
+    else
+    {
+
+        <h4>Average sale price per item past 30 days</h4>
+        foreach (var lcd in chartData)
+        {
+            <div class="item-sales-row">
+                <div class="details-wrapper">
+                    <img class="item-image" src="/imgs/items/@(lcd.ItemId).png" />
+                    <div class="details">
+                        <h4>@lcd.ItemName</h4>
+                        <p>Sold a total of <b>@lcd.TotalSoldCount</b></p>
+                    </div>
+                </div>
+
+                <LineChart TItem="double" Data="@lcd.ChartData" Options="@lineChartOptions"></LineChart>
+            </div>
+        }
+    }
+}
+
+@code {
+    private bool isAdmin;
+    private RavenNest.Models.SessionInfo session;
+
+    private List<ChartData<double>> lineChartData = new();
+    private List<ChartDataContainer> chartData = new();
+
+    private LineChartOptions lineChartOptions = new LineChartOptions
+        {
+            Scales = new ChartScales
+            {
+                X = new ChartAxis
+                {
+                    Title = new ChartScaleTitle
+                    {
+                        Text = new IndexableOption<string>("Date")
+                    }
+                },
+                Y = new ChartAxis
+                {
+                    Title = new ChartScaleTitle
+                    {
+                        Text = new IndexableOption<string>("Average Price")
+                    }
+                }
+            }
+        };
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        session = AuthService.GetSession();
+        isAdmin = session != null && session.Administrator;
+        try
+        {
+            var startDate = DateTime.UtcNow.Date.AddDays(-30);
+            var endDate = DateTime.UtcNow.Date;
+
+            // .GetMarketplaceReports
+            var transactions = await Task.Run(() => EconomyService.GetMarketItemTransactions(startDate, endDate));
+
+            foreach (var itemGroup in transactions.GroupBy(x => x.ItemId))
+            {
+
+                var lcd = new ChartData<double>
+                    {
+                        Datasets = new List<ChartDataset<double>>(),
+                        Labels = new List<object>()
+                    };
+
+                var item = GameData.GetItem(itemGroup.First().ItemId);
+                var itemName = item.Name;
+
+                var lineDataSet = new LineChartDataset<double>
+                    {
+                        Label = "Average Price for " + itemName,
+                        BackgroundColor = "rgba(75, 192, 192, 0.2)",
+                        BorderColor = "rgba(75, 192, 192, 1)",
+                        Fill = false,
+                        Data = new List<double>()
+                    };
+
+                foreach (var day in itemGroup.GroupBy(x => x.Created.Date))
+                {
+                    var date = day.Key;
+                    var soldCount = day.Sum(x => x.Amount);
+                    var totalPrice = day.Sum(x => x.TotalPrice);
+                    var avgPrice = totalPrice / soldCount;
+
+                    lineDataSet.Data.Add(avgPrice);
+                    lcd.Labels.Add(date.ToShortDateString());
+                }
+
+                lcd.Datasets.Add(lineDataSet);
+                this.chartData.Add(new ChartDataContainer
+                    {
+                        ChartData = lcd,
+                        ItemId = item.Id,
+                        ItemName = itemName,
+                        TotalSoldCount = itemGroup.Sum(x => x.Amount)
+                    });
+
+
+                //lineChartData.Add(lcd);
+            }
+        }
+        catch (System.Exception exc)
+        {
+        }
+    }
+
+    private string FormatCoins(double coins)
+    {
+        if (coins >= 1_000_000_000_000)
+            return $"{coins / 1_000_000_000_000:0.##}T";
+        if (coins >= 1_000_000_000)
+            return $"{coins / 1_000_000_000:0.##}B";
+        if (coins >= 1_000_000)
+            return $"{coins / 1_000_000:0.##}M";
+        if (coins >= 1_000)
+            return $"{coins / 1_000:0.##}K";
+
+        return coins.ToString("0.##");
+    }
+    private class ChartDataContainer
+    {
+        public Guid ItemId { get; set; }
+        public string ItemName { get; set; }
+        public long TotalSoldCount { get; set; }
+        public ChartData<double> ChartData { get; set; }
+    }
+}

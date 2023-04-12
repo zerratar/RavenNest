@@ -2,7 +2,6 @@
 
 namespace RavenNest.DataModels
 {
-
     // Want to rename this to ItemInstance
     public partial class InventoryItem : Entity<InventoryItem>
     {

@@ -1,10 +1,10 @@
-﻿using ChartJs.Blazor.Common.Axes;
-using ChartJs.Blazor.LineChart;
+﻿using Blazorise.Charts;
 using RavenNest.BusinessLogic.Extended;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+
 
 namespace RavenNest.Blazor.Pages.Admin
 {
@@ -14,8 +14,12 @@ namespace RavenNest.Blazor.Pages.Admin
         private bool isAdmin;
 
         private ChartTimeFrame newUserTimeframe = ChartTimeFrame.ThisMonth;
-        private LineConfig newUserConfig;
-        private LineConfig commonHoursNewUsers;
+
+        private ChartData<double> newUserChartData;
+        private LineChartOptions newUserChartOptions;
+
+        private ChartData<double> commonHoursNewUsersChartData;
+        private LineChartOptions commonHoursNewUsersChartOptions;
 
         public ChartTimeFrame[] TimeFrames => Enum.GetValues<ChartTimeFrame>();
 
@@ -35,50 +39,110 @@ namespace RavenNest.Blazor.Pages.Admin
             await InvokeAsync(StateHasChanged);
         }
 
-        private async Task<LineConfig> CreateNewUserConfig(
-          ChartTimeFrame tf,
-          bool avgUserPerHour = false)
+        private async Task CreateNewUserConfig(
+           ChartTimeFrame tf,
+           bool avgUserPerHour = false)
         {
-            LineConfig config = null;
+            ChartData<double> chartData;
+            LineChartOptions chartOptions;
+
             if (!avgUserPerHour)
             {
-                if (newUserConfig == null)
-                    newUserConfig = new LineConfig();
-                config = newUserConfig;
+                if (newUserChartData == null)
+                    newUserChartData = new ChartData<double>();
+
+                chartData = newUserChartData;
             }
             else
             {
-                if (commonHoursNewUsers == null)
-                    commonHoursNewUsers = new LineConfig();
-                config = commonHoursNewUsers;
+                if (commonHoursNewUsersChartData == null)
+                    commonHoursNewUsersChartData = new ChartData<double>();
+
+                chartData = commonHoursNewUsersChartData;
             }
 
-            config.Options = new LineOptions()
+            chartOptions = new LineChartOptions()
             {
                 Responsive = true,
-                Title = new ChartJs.Blazor.Common.OptionsTitle()
+                Scales = new ChartScales
                 {
-                    Display = true,
-                    Text = avgUserPerHour ? "Users per hour" : "New users of " + GetName(tf)
-                },
-                Scales = new Scales
-                {
-                    XAxes = new List<CartesianAxis> {
-                      new CategoryAxis
-                      {
-                        ScaleLabel = new ScaleLabel { LabelString = GetLabel(tf) }
-                      }
-                },
-                    YAxes = new List<CartesianAxis> {
-                      new LinearCartesianAxis
-                      {
-                        ScaleLabel = new ScaleLabel { LabelString = "Value" }
-                      }
+                    X = new ChartAxis
+                    {
+                        Title = new ChartScaleTitle { Text = new IndexableOption<string>(GetLabel(tf)) }
+                    },
+                    Y = new ChartAxis
+                    {
+                        Title = new ChartScaleTitle { Text = new IndexableOption<string>("Value") }
                     }
                 }
             };
 
-            return await UpdateDatasetAsync(config, tf, avgUserPerHour);
+            if (avgUserPerHour)
+                commonHoursNewUsersChartOptions = chartOptions;
+            else
+                newUserChartOptions = chartOptions;
+
+            await UpdateDatasetAsync(chartData, chartOptions, tf, avgUserPerHour);
+        }
+
+
+        private async Task UpdateDatasetAsync(
+         ChartData<double> chartData,
+         LineChartOptions chartOptions,
+         ChartTimeFrame tf,
+         bool avgUserPerHour)
+        {
+            var now = DateTime.UtcNow;
+            var start = GetStartTime(tf, avgUserPerHour);
+            var labels = GetChartLabels(tf, avgUserPerHour);
+            if (chartData.Labels == null)
+                chartData.Labels = new List<object>();
+
+            chartData.Labels.Clear();
+            foreach (var lb in labels)
+            {
+                chartData.Labels.Add(lb);
+            }
+
+            var userData = await UserService.GetUsersByCreatedAsync(start, now);
+            var outputData = GetChartData(userData, start, labels.Count, tf, avgUserPerHour);
+            var total = outputData.Length > 0 ? outputData.Sum() : 0;
+
+            var lineDataSet = new LineChartDataset<double>
+            {
+                Label = "New users (" + total + ")",
+                Data = new List<double>(),
+                Fill = false,
+                BorderColor = "rgba(75, 192, 192, 1)",
+                PointBorderColor = "rgba(75, 192, 192, 1)",
+                PointBackgroundColor = "#fff",
+                PointBorderWidth = 1,
+                PointHoverRadius = 5,
+                PointHoverBackgroundColor = "rgba(75, 192, 192, 1)",
+                PointHoverBorderColor = "rgba(220, 220, 220, 1)",
+                PointHoverBorderWidth = 2,
+                PointRadius = 1,
+                PointHitRadius = 10
+            };
+
+            foreach (var value in outputData)
+            {
+                lineDataSet.Data.Add(value);
+            }
+
+            if (chartData.Datasets == null)
+                chartData.Datasets = new();
+            chartData.Datasets.Clear();
+            chartData.Datasets.Add(lineDataSet);
+            chartOptions.Plugins = new()
+            {
+                Title = new() { Display = true, Text = avgUserPerHour ? "Users per hour" : "New users of " + GetName(tf) }
+            };
+
+            if (outputData != null && outputData.Length > 0)
+            {
+                chartOptions.Plugins.Title.Text += " - Total " + total;
+            }
         }
 
         private List<string> GetChartLabels(ChartTimeFrame tf, bool avgUserPerHour)
@@ -93,49 +157,6 @@ namespace RavenNest.Blazor.Pages.Admin
                 output.Add(GetChartLabel(i, steps, start, tf, avgUserPerHour));
             }
             return output;
-        }
-
-        private async Task<LineConfig> UpdateDatasetAsync(
-          LineConfig config,
-          ChartTimeFrame tf,
-          bool avgUserPerHour)
-        {
-            var now = DateTime.UtcNow;
-            var start = GetStartTime(tf, avgUserPerHour);
-            var labels = GetChartLabels(tf, avgUserPerHour);
-
-            config.Data.Labels.Clear();
-            foreach (var lb in labels)
-            {
-                config.Data.Labels.Add(lb);
-            }
-
-            var userData = await UserService.GetUsersByCreatedAsync(start, now);
-            var outputData = GetChartData(userData, start, labels.Count, tf, avgUserPerHour);
-            var total = outputData.Length > 0 ? outputData.Sum() : 0;
-
-            LineDataset<int> dataset = new ChartJs.Blazor.LineChart.LineDataset<int>(outputData)
-            {
-                Label = "New users (" + total + ")",
-            };
-            config.Data.Datasets.Clear();
-            config.Data.Datasets.Add(dataset);
-
-            try
-            {
-                if (string.IsNullOrEmpty(config?.Options?.Title?.Text?.SingleValue))
-                {
-                    return config;
-                }
-
-                var title = config?.Options?.Title?.Text?.SingleValue;
-                if (outputData != null && outputData.Length > 0 && title != null)
-                {
-                    config.Options.Title.Text = title + " - Total " + total;
-                }
-            }
-            catch { }
-            return config;
         }
 
         public int[] GetChartData(
@@ -167,19 +188,6 @@ namespace RavenNest.Blazor.Pages.Admin
             switch (tf)
             {
 
-                //case ChartTimeFrame.AllTime:
-                //  {
-                //      var d = data
-                //        .GroupBy(x => new DateTime(x.Created.Date.Year, x.Created.Date.Month, 1))
-                //        .OrderBy(x => x.Key)
-                //        .ToArray();
-                //    for (var i = 0; i < outputData.Length; ++i)
-                //    {
-                //        outputData[i] = d.
-                //    }
-                //  }
-                //  break;
-
                 case ChartTimeFrame.LastSixMonths:
                 case ChartTimeFrame.LastThreeMonths:
                 {
@@ -204,12 +212,6 @@ namespace RavenNest.Blazor.Pages.Admin
                     }
                 }
                 break;
-                //case ChartTimeFrame.ThisWeek:
-                //  var di = 0;
-                //  foreach (var g in data.GroupBy(x => x.Created.Date).OrderBy(x => x.Key))
-                //    outputData[++di] = g.Count();
-                //  break;
-
                 case ChartTimeFrame.Today:
                 {
                     var records = source.GroupBy(x =>

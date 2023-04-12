@@ -98,6 +98,6 @@
     }
 
     .collapse {
-        display: flex;
+        display: flex !important;
     }
 }

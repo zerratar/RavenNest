@@ -1671,21 +1671,21 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [Obsolete]
-        public long VendorItemInstance(SessionToken sessionToken, string userId, Guid inventoryItemId, long amount)
+        public long SellItemInstanceToVendor(SessionToken sessionToken, string userId, Guid inventoryItemId, long amount)
         {
             var player = GetCharacter(sessionToken, userId);
             if (player == null) return 0;
-            return Vendor(sessionToken, inventoryItemId, amount, player);
+            return SellItemToVendor(sessionToken, inventoryItemId, amount, player);
         }
 
-        public long VendorItemInstance(SessionToken sessionToken, Guid characterId, Guid inventoryItemId, long amount)
+        public long SellItemInstanceToVendor(SessionToken sessionToken, Guid characterId, Guid inventoryItemId, long amount)
         {
             var player = GetCharacter(sessionToken, characterId);
             if (player == null) return 0;
-            return Vendor(sessionToken, inventoryItemId, amount, player);
+            return SellItemToVendor(sessionToken, inventoryItemId, amount, player);
         }
 
-        private long Vendor(SessionToken sessionToken, Guid inventoryItemId, long amount, Character player)
+        private long SellItemToVendor(SessionToken sessionToken, Guid inventoryItemId, long amount, Character player)
         {
             if (!integrityChecker.VerifyPlayer(sessionToken.SessionId, player.Id, 0))
                 return 0;
@@ -1708,7 +1708,7 @@ namespace RavenNest.BusinessLogic.Game
                 inventory.RemoveItem(itemToVendor, amount);
                 resources.Coins += itemToVendor.Item.ShopSellPrice * amount;
                 UpdateResources(session, player, resources);
-                LogVendorTransaction(player.Id, itemToVendor.ItemId, amount, price);
+                UpdateStockAndLogTransaction(player.Id, itemToVendor.ItemId, amount, price, false);
                 return amount;
             }
 
@@ -1716,11 +1716,11 @@ namespace RavenNest.BusinessLogic.Game
             var totalPrice = itemToVendor.Amount * itemToVendor.Item.ShopSellPrice;
             resources.Coins += totalPrice;
             UpdateResources(session, player, resources);
-            LogVendorTransaction(player.Id, itemToVendor.ItemId, itemToVendor.Amount, totalPrice);
+            UpdateStockAndLogTransaction(player.Id, itemToVendor.ItemId, itemToVendor.Amount, totalPrice, false);
             return (int)itemToVendor.Amount;
         }
 
-        public long VendorByItemId(
+        public long SellItemToVendorByItemId(
             SessionToken token,
             string userId,
             Guid itemId,
@@ -1754,7 +1754,7 @@ namespace RavenNest.BusinessLogic.Game
                     inventory.RemoveItem(itemToVendor, amount);
                     resources.Coins += item.ShopSellPrice * amount;
                     UpdateResources(session, player, resources);
-                    LogVendorTransaction(player.Id, itemToVendor.ItemId, amount, price);
+                    UpdateStockAndLogTransaction(player.Id, itemToVendor.ItemId, amount, price, false);
                     return amount;
                 }
 
@@ -1762,7 +1762,7 @@ namespace RavenNest.BusinessLogic.Game
                 var totalPrice = itemToVendor.Amount * item.ShopSellPrice;
                 resources.Coins += totalPrice;
                 UpdateResources(session, player, resources);
-                LogVendorTransaction(player.Id, itemToVendor.ItemId, itemToVendor.Amount, totalPrice);
+                UpdateStockAndLogTransaction(player.Id, itemToVendor.ItemId, itemToVendor.Amount, totalPrice, false);
                 return (int)itemToVendor.Amount;
             }
             catch (Exception exc)
@@ -1781,25 +1781,65 @@ namespace RavenNest.BusinessLogic.Game
         //            Amount = amount,
         //            FromCharacterId = characterId,
         //            ToCharacterId = receiverCharacterId,
-
         //            ItemId = itemId,
         //            Created = DateTime.UtcNow
         //        });
         //}
 
-        private void LogVendorTransaction(Guid characterId, Guid itemId, long amount, double totalPrice)
+        /// <summary>
+        /// Logs a vendor transaction to the database. This is used for reporting.
+        /// wasItemBought is either false (sold) or true (bought).
+        /// </summary>
+        /// <param name="characterId"></param>
+        /// <param name="itemId"></param>
+        /// <param name="amount"></param>
+        /// <param name="totalPrice"></param>
+        /// <param name="wasItemBought"></param>
+        private void UpdateStockAndLogTransaction(Guid characterId, Guid itemId, long amount, double totalPrice, bool wasItemBought)
         {
-            //gameData.Add(
-            //    new VendorTransaction
-            //    {
-            //        Id = Guid.NewGuid(),
-            //        Amount = amount,
-            //        SellerCharacterId = characterId,
-            //        ItemId = itemId,
-            //        PricePerItem = totalPrice / amount,
-            //        TotalPrice = totalPrice,
-            //        Created = DateTime.UtcNow
-            //    });
+            // Update Vendor Stock, we will not persist enchantment data for now, only itemId is relevant
+            UpdateVendorItemStock(itemId, amount, wasItemBought);
+
+            gameData.Add(
+                new VendorTransaction
+                {
+                    Id = Guid.NewGuid(),
+                    Amount = amount,
+                    CharacterId = characterId,
+                    ItemId = itemId,
+                    PricePerItem = (long)(totalPrice / amount),
+                    TotalPrice = (long)totalPrice,
+                    TransactionType = wasItemBought,
+                    Created = DateTime.UtcNow
+                });
+        }
+
+        private void UpdateVendorItemStock(Guid itemId, long amount, bool wasItemBought)
+        {
+            var existingItem = gameData.GetVendorItemByItemId(itemId);
+            if (existingItem == null)
+            {
+                existingItem = new VendorItem
+                {
+                    Id = Guid.NewGuid(),
+                    ItemId = itemId,
+                };
+
+                gameData.Add(existingItem);
+            }
+
+            if (wasItemBought)
+            {
+                existingItem.Stock -= amount;
+                if (existingItem.Stock <= 0)
+                {
+                    gameData.Remove(existingItem);
+                }
+            }
+            else
+            {
+                existingItem.Stock += amount;
+            }
         }
 
         public bool EquipItem(Guid characterId, RavenNest.Models.InventoryItem item)

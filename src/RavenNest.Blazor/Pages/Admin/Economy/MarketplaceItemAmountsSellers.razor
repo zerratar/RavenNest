@@ -1,0 +1,108 @@
+﻿@*@layout AdminLayout
+@page "/admin/economy/marketplace/item-amounts-sellers"
+@using ChartJs.Blazor.BarChart
+@using ChartJs.Blazor.Common.Axes;
+@using ChartJs.Blazor;
+@using ChartJs.Blazor.Common;
+@using ChartJs.Blazor.Util;
+
+@inject RavenNest.BusinessLogic.Data.GameData GameData;
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.Blazor.Services.EconomyService EconomyService
+
+@if (isAdmin)
+{
+    <h3>Item Amounts and Number of Sellers</h3>
+
+    <Chart Config="@barConfig" Width="600" Height="300"></Chart>
+    <h4>Navigation</h4>
+    <ul>
+        <li><a href="/admin/economy">Overview</a></li>
+        <li><a href="/admin/economy/marketplace">Marketplace</a></li>
+        <li><a href="/admin/economy/marketplace/avg-price">Average Item Price</a></li>
+    </ul>
+}
+
+@code {
+    private bool isAdmin;
+    private string updateError = "";
+    private Chart barChart;
+    private RavenNest.Models.SessionInfo session;
+
+    private BarConfig barConfig = new BarConfig
+        {
+            Options = new BarOptions
+            {
+                Title = new OptionsTitle
+                {
+                    Display = true,
+                    Text = "Item Amounts and Number of Sellers"
+                },
+                Scales = new BarScales
+                {
+                    XAxes = new List<CartesianAxis>
+                {
+                    new CategoryAxis
+                    {
+                        ScaleLabel = new ScaleLabel
+                        {
+                            LabelString = "Item Name"
+                        }
+                    }
+                },
+                    YAxes = new List<CartesianAxis>
+                {
+                    new LinearCartesianAxis
+                    {
+                        ScaleLabel = new ScaleLabel
+                        {
+                            LabelString = "Amount"
+                        }
+                    }
+                }
+                }
+            }
+        };
+    protected override async Task OnInitializedAsync()
+    {
+        session = AuthService.GetSession();
+        isAdmin = session != null && session.Administrator;
+
+        try
+        {
+            var marketplaceReports = EconomyService.GetMarketplaceReports();
+
+            var amountDataSet = new BarDataset<float>
+                {
+                    Label = "Amount",
+                    BackgroundColor = ColorUtil.ColorHexString(255, 99, 132),
+                    BorderColor = ColorUtil.ColorHexString(255, 99, 132)
+                };
+
+            var sellersDataSet = new BarDataset<float>
+                {
+                    Label = "Sellers",
+                    BackgroundColor = ColorUtil.ColorHexString(54, 162, 235),
+                    BorderColor = ColorUtil.ColorHexString(54, 162, 235)
+                };
+
+            foreach (var report in marketplaceReports)
+            {
+                var item = GameData.GetItem(report.ItemId);
+                barConfig.Data.Labels.Add(item.Name);
+                amountDataSet.Add(report.Amount);
+                sellersDataSet.Add(report.Sellers);
+            }
+
+            barConfig.Data.Datasets.Add(amountDataSet);
+            barConfig.Data.Datasets.Add(sellersDataSet);
+            //await barChart.Update();
+        }
+        catch (System.Exception exc)
+        {
+
+        }
+    }
+
+
+}*@

@@ -1,0 +1,165 @@
+﻿@layout AdminLayout
+@page "/admin/economy"
+@using Blazorise
+@using Blazorise.Charts
+
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.Blazor.Services.EconomyService EconomyService
+@inject RavenNest.BusinessLogic.Data.GameData GameData;
+
+@if (isAdmin)
+{
+    <ul>
+        <li><a href="/admin/economy/marketplace">Marketplace</a></li>
+        <li><a href="/admin/economy/marketplace/avg-price">Average Item Price</a></li>
+        @*<li><a href="/admin/economy/marketplace/item-amounts-sellers">Item Amounts and Number of Sellers</a></li>*@
+    </ul>
+
+    <h3>Economy Overview</h3>
+    <p>
+        Total amount of coins in the game: @totalCoins<br />
+        Average amount of coins per player: @averageCoins
+    </p>
+
+    <h4>Average coins based on character age</h4>
+    <LineChart TItem="double" Data="@lineChartData" Options="@lineChartOptions"></LineChart>
+
+    <h4>Top 10 Richest Players</h4>
+    if (topRichestPlayers == null)
+    {
+        <LoadIndicator></LoadIndicator>
+    }
+    else
+    {
+        <table class="table table-striped table-bordered">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Coins</th>
+                    <th>Time Since Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var player in topRichestPlayers)
+                {
+                    var coins = GameData.GetResources(player.ResourcesId)?.Coins ?? 0;
+                    <tr>
+                        <td>@player.Name</td>
+                        <td title="@coins">@FormatCoins(coins)</td>
+                        <td>@(DateTime.UtcNow - player.Created)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+
+    private IReadOnlyList<RavenNest.DataModels.Character> topRichestPlayers;
+
+    private bool isAdmin;
+
+    private double totalCoins;
+    private double averageCoins;
+    private ChartData<double> lineChartData = new()
+        {
+            Labels = new(),
+            Datasets = new()
+        };
+
+    private LineChartOptions lineChartOptions = new LineChartOptions
+        {
+            Scales = new ChartScales
+            {
+                X = new ChartAxis
+                {
+                    Title = new ChartScaleTitle
+                    {
+                        Text = new IndexableOption<string>("Days")
+                    }
+                },
+                Y = new ChartAxis
+                {
+                    Title = new ChartScaleTitle
+                    {
+                        Text = new IndexableOption<string>("Average Coins")
+                    }
+                }
+            }
+        };
+
+    private RavenNest.Models.SessionInfo session;
+
+    protected override async Task OnInitializedAsync()
+    {
+        session = AuthService.GetSession();
+        isAdmin = session != null && session.Administrator;
+        topRichestPlayers = await EconomyService.GetTopRichestPlayers(10);
+
+        try
+        {
+            var characters = GameData.GetCharacters();
+            var totalCharacters = characters.Count;
+            var coinsByCharacterAge = new Dictionary<int, (double coins, int count)>();
+
+            foreach (var character in characters)
+            {
+                var resources = GameData.GetResources(character.ResourcesId);
+                totalCoins += resources.Coins;
+
+                var daysSinceCreation = (DateTime.UtcNow.Date - character.Created.Date).Days;
+                if (coinsByCharacterAge.TryGetValue(daysSinceCreation, out var coinData))
+                {
+                    coinsByCharacterAge[daysSinceCreation] = (coinData.coins + resources.Coins, coinData.count + 1);
+                }
+                else
+                {
+                    coinsByCharacterAge[daysSinceCreation] = (resources.Coins, 1);
+                }
+            }
+
+            averageCoins = totalCoins / totalCharacters;
+
+            var lineDataSet = new LineChartDataset<double>
+                {
+                    Label = "Average Coins",
+                    BackgroundColor = "rgba(75, 192, 192, 0.2)",
+                    BorderColor = "rgba(75, 192, 192, 1)",
+                    Fill = false,
+                    Data = new List<double>()
+                };
+
+            lineChartData.Labels = new List<object>();
+
+            foreach (var kvp in coinsByCharacterAge.OrderBy(kvp => kvp.Key))
+            {
+                var days = kvp.Key;
+                var (coins, count) = kvp.Value;
+                var avgCoins = coins / count;
+
+                lineDataSet.Data.Add(avgCoins);
+                lineChartData.Labels.Add(days.ToString());
+            }
+
+            lineChartData.Datasets.Add(lineDataSet);
+        }
+        catch (System.Exception exc)
+        {
+        }
+    }
+
+    private string FormatCoins(double coins)
+    {
+        if (coins >= 1_000_000_000_000)
+            return $"{coins / 1_000_000_000_000:0.##}T";
+        if (coins >= 1_000_000_000)
+            return $"{coins / 1_000_000_000:0.##}B";
+        if (coins >= 1_000_000)
+            return $"{coins / 1_000_000:0.##}M";
+        if (coins >= 1_000)
+            return $"{coins / 1_000:0.##}K";
+
+        return coins.ToString("0.##");
+    }
+}

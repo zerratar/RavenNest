@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Blazorise;
+using Blazorise.Bootstrap;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Json;
@@ -25,6 +27,8 @@ using RavenNest.Health;
 using RavenNest.Sessions;
 using System;
 using System.Text.Json.Serialization;
+using Blazorise.Icons.FontAwesome;
+using RavenNest.BusinessLogic.Data.Aggregators;
 
 namespace RavenNest.Blazor
 {
@@ -86,6 +90,15 @@ namespace RavenNest.Blazor
             services.AddServerSideBlazor();
             services.AddHttpContextAccessor();
             services.AddResponseCaching();
+
+
+            services
+                .AddBlazorise(options =>
+                        {
+                            options.Immediate = true;
+                        })
+            .AddBootstrapProviders()
+            .AddFontAwesomeIcons();
 
             RegisterServices(services);
 
@@ -155,6 +168,9 @@ namespace RavenNest.Blazor
             app.UseSwagger();
             app.UseSwaggerUI();
             app.UseStaticFiles();
+
+            //app.UseUseBlazorise(options => { options.DelayTextOnKeyPress = true; });
+
             app.Map("/download/latest", builder =>
             {
                 builder.Run(async context =>
@@ -228,31 +244,36 @@ namespace RavenNest.Blazor
 
             // Start Generating Ravenfall Tv Episodes
             app.ApplicationServices.GetService<RavenfallTvManager>();
+
+            // Start the report aggregators
             app.ApplicationServices.GetService<MarketplaceReportAggregator>();
+            app.ApplicationServices.GetService<EconomyReportAggregator>();
         }
 
         private void OnApplicaftionStopping(IApplicationBuilder app)
         {
+            Dispose<GameData>(app);
+            Dispose<ITcpSocketApi>(app);
+            Dispose<MarketplaceReportAggregator>(app);
+            Dispose<EconomyReportAggregator>(app);
+            Dispose<RavenfallTvManager>(app);
+        }
+
+        private void Dispose<T>(IApplicationBuilder app) where T : IDisposable
+        {
             try
             {
-                app.ApplicationServices.GetService<GameData>().Flush();
+                app.ApplicationServices.GetService<T>().Dispose();
             }
             catch { }
-
-            try
-            {
-                app.ApplicationServices.GetService<ITcpSocketApi>().Dispose();
-            }
-            catch { }
-
-
         }
 
         private static void RegisterServices(IServiceCollection services)
         {
-            // keep this one for now... LUL
-            services.AddSingleton<WeatherForecastService>();
+            services.AddSingleton<MarketplaceReportAggregator>();
+            services.AddSingleton<EconomyReportAggregator>();
 
+            services.AddSingleton<EconomyService>();
             services.AddSingleton<PatreonService>();
             services.AddSingleton<AuthService>();
             services.AddSingleton<SessionService>();
