@@ -17,6 +17,10 @@ namespace RavenNest.Tools
             expAdjuster = new AdjustPlayerExperienceAction(ToolProgress, ToolStatus);
             buildUpdatePackage = new BuildUpdatePackageAction(ToolProgress, ToolStatus);
             skillRollbackv0788 = new PlayerSkillRollback(ToolProgress, ToolStatus, @"C:\Ravenfall\pre0.7.8.9-restorepoint\", @"C:\Ravenfall\pre0.7.8.9\");
+
+            var nextVersion = buildUpdatePackage.GetNextVersion();
+            if (!string.IsNullOrEmpty(nextVersion))
+                BuildUpdatePackage.Text = "Build Update Package (" + nextVersion + ")";
         }
 
         private void BuildUpdatePackage_Invoke(object sender, EventArgs e)

@@ -1399,6 +1399,7 @@ namespace RavenNest.BusinessLogic.Game
             result.Value = craftableAmount;
             result.Status = craftableAmount == amount ? CraftItemResultStatus.Success : CraftItemResultStatus.PartialSuccess;
             result.InventoryItemId = itemStack.Id;
+            result.ItemId = itemId;
             return result;
         }
 
