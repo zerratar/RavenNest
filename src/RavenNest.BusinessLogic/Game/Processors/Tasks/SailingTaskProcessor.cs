@@ -10,7 +10,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public static readonly SimpleDropHandler Drops = new SimpleDropHandler(nameof(Skills.Sailing));
 
         public override void Process(
-            IIntegrityChecker integrityChecker,
             GameData gameData,
             PlayerInventoryProvider inventoryProvider,
             GameSession session,
@@ -20,11 +19,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             // if player has been sailing for certain amount of time
             // and if player does not already own one of the hats (Sailor hat, pirate hat)
             // then reward the player one of those.
-
-            if (!integrityChecker.VerifyPlayer(session.Id, character.Id, 0))
-            {
-                return;
-            }
 
             var now = DateTime.UtcNow;
             var s = gameData.GetCharacterSessionState(session.Id, character.Id);

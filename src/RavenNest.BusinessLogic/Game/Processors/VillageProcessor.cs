@@ -14,10 +14,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         private DateTime lastExpSend = DateTime.MinValue;
 
         public override void Process(
-            IIntegrityChecker integrityChecker,
             GameData gameData,
             PlayerInventoryProvider inventoryProvider,
-            DataModels.GameSession session,
+            GameSession session,
             Character character,
             CharacterState state)
         {

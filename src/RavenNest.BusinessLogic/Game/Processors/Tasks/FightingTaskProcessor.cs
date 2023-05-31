@@ -1,6 +1,5 @@
 ﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Net;
-using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using System.Threading.Tasks;
@@ -9,11 +8,10 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
     public class FightingTaskProcessor : ITaskProcessor
     {
-        public IExtensionWebSocketConnectionProvider ExtensionConnectionProvider { get; private set; }
+        public ITwitchExtensionConnectionProvider ExtensionConnectionProvider { get; private set; }
 
         public ITcpSocketApiConnectionProvider TcpConnectionProvider { get; private set; }
         public void Process(
-            IIntegrityChecker integrityChecker,
             GameData gameData,
             PlayerInventoryProvider inventoryProvider,
             GameSession session,
@@ -22,7 +20,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         {
         }
 
-        public void SetExtensionConnectionProvider(IExtensionWebSocketConnectionProvider provider)
+        public void SetExtensionConnectionProvider(ITwitchExtensionConnectionProvider provider)
         {
             this.ExtensionConnectionProvider = provider;
         }

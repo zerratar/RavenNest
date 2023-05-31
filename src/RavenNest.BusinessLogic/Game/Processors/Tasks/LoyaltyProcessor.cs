@@ -21,7 +21,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             = new ConcurrentDictionary<Guid, CharacterState>();
 
         public override void Process(
-            IIntegrityChecker integrityChecker,
             GameData gameData,
             PlayerInventoryProvider inventoryProvider,
             GameSession session,

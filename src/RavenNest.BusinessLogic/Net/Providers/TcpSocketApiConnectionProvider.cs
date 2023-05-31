@@ -9,11 +9,13 @@ namespace RavenNest.BusinessLogic.Net
         private readonly Dictionary<int, TcpSocketApiConnection> connections = new Dictionary<int, TcpSocketApiConnection>();
         private readonly object syncRoot = new object();
 
-        public void Add(int connectionId, TcpSocketApi server)
+        public TcpSocketApiConnection Add(int connectionId, TcpSocketApi server)
         {
             lock (syncRoot)
             {
-                connections[connectionId] = new TcpSocketApiConnection(connectionId, server);
+                var connection = new TcpSocketApiConnection(connectionId, server);
+                connections[connectionId] = connection;
+                return connection;
             }
         }
 
@@ -23,10 +25,13 @@ namespace RavenNest.BusinessLogic.Net
                 return connections.ContainsKey(connectionId);
         }
 
-        public bool Remove(int connectionId)
+        public bool Remove(int connectionId, out TcpSocketApiConnection connection)
         {
             lock (syncRoot)
+            {
+                connections.TryGetValue(connectionId, out connection);
                 return connections.Remove(connectionId);
+            }
         }
 
         public bool TryGet(int connectionId, out TcpSocketApiConnection connection)
@@ -68,7 +73,7 @@ namespace RavenNest.BusinessLogic.Net
                 {
                     foreach (var c in removeConnections)
                     {
-                        Remove(c);
+                        Remove(c, out _);
                     }
                 }
 

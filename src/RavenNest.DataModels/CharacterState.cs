@@ -7,7 +7,6 @@ namespace RavenNest.DataModels
     {
 
         private int health; public int Health { get => health; set => Set(ref health, value); }
-        private string duelOpponent; public string DuelOpponent { get => duelOpponent; set => Set(ref duelOpponent, value); }
         private bool inRaid; public bool InRaid { get => inRaid; set => Set(ref inRaid, value); }
         private bool inArena; public bool InArena { get => inArena; set => Set(ref inArena, value); }
         private bool? inDungeon; public bool? InDungeon { get => inDungeon; set => Set(ref inDungeon, value); }

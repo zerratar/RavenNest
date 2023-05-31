@@ -32,7 +32,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         private readonly TimeSpan SkillExpUpdateInterval = TimeSpan.FromSeconds(10);
         //private static readonly Version ClientVersion_ClanLevel = new Version(0, 7, 1);
         public override void Process(
-             IIntegrityChecker integrityChecker,
              GameData gameData,
              PlayerInventoryProvider inventoryProvider,
              GameSession session,

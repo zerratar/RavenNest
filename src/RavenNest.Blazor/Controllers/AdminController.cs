@@ -21,7 +21,6 @@ namespace RavenNest.Controllers
     {
         private const string InsufficientPermissions = "You do not have permissions to call this API";
         private readonly ILogger<AdminController> logger;
-        private readonly IGameWebSocketConnectionProvider socketProvider;
         private readonly GameData gameData;
         private readonly SessionInfoProvider sessionInfoProvider;
         private readonly PlayerManager playerManager;
@@ -30,7 +29,6 @@ namespace RavenNest.Controllers
 
         public AdminController(
             ILogger<AdminController> logger,
-            IGameWebSocketConnectionProvider socketProvider,
             GameData gameData,
             SessionInfoProvider sessionInfoProvider,
             PlayerManager playerManager,
@@ -38,7 +36,6 @@ namespace RavenNest.Controllers
             IAuthManager authManager)
         {
             this.logger = logger;
-            this.socketProvider = socketProvider;
             this.gameData = gameData;
             this.sessionInfoProvider = sessionInfoProvider;
             this.playerManager = playerManager;
@@ -355,14 +352,6 @@ namespace RavenNest.Controllers
                 logger.LogError(exc.ToString());
                 throw;
             }
-        }
-
-
-        [HttpGet("kill-sockets")]
-        public async Task KillConnections()
-        {
-            await AssertAdminAccessAsync();
-            socketProvider.KillAllConnections();
         }
 
         [HttpGet("nerf-items")]

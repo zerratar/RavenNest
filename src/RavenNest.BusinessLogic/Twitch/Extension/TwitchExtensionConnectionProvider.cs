@@ -1,25 +1,24 @@
 ﻿using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
-using RavenNest.Sessions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace RavenNest.BusinessLogic.Twitch.Extension
 {
-    public class ExtensionConnectionProvider : IExtensionWebSocketConnectionProvider
+    public class TwitchExtensionConnectionProvider : ITwitchExtensionConnectionProvider
     {
         private readonly GameData gameData;
         private readonly SessionInfoProvider sessionInfoProvider;
-        private readonly ILogger<ExtensionConnectionProvider> logger;
+        private readonly ILogger<TwitchExtensionConnectionProvider> logger;
         private readonly IExtensionPacketDataSerializer packetDataSerializer;
         private readonly Dictionary<string, IExtensionConnection> connections = new Dictionary<string, IExtensionConnection>();
 
         private readonly object mutex = new object();
 
-        public ExtensionConnectionProvider(
-            ILogger<ExtensionConnectionProvider> logger,
+        public TwitchExtensionConnectionProvider(
+            ILogger<TwitchExtensionConnectionProvider> logger,
             GameData gameData,
             IExtensionPacketDataSerializer packetDataSerializer,
             SessionInfoProvider sessionInfoProvider

@@ -12,25 +12,24 @@ namespace RavenNest.Models.TcpApi
     {
         // Starting with Guid seem to kill things?
         public Guid CharacterId { get; set; }
-        public int Health { get; set; }
+        public short Health { get; set; }
         public Island Island { get; set; }
         public CharacterState State { get; set; }
-        /// <summary>
-        /// If State is Duel or StreamRaidWar then this will be the target Twitch User ID, otherwise null.
-        /// </summary>
-        public string StateData { get; set; }
         public string Task { get; set; }
         public string TaskArgument { get; set; }
         public float X { get; set; }
         public float Y { get; set; }
         public float Z { get; set; }
-        public Dictionary<string, SkillUpdate> Skills { get; set; }
-        public string SessionToken { get; set; }
+        public SkillUpdate[] Skills
+        {
+            get; set;
+        }
     }
 
     public class SkillUpdate
     {
-        public int Level { get; set; }
+        public byte Index { get; set; }
+        public short Level { get; set; }
         public double Experience { get; set; }
     }
 

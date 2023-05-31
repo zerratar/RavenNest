@@ -1,5 +1,6 @@
 ﻿using SevenZip;
 using Shinobytes.Console.Forms;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -16,6 +17,12 @@ namespace RavenNest.Tools.Actions
         private BuildState buildState = BuildState.Full;
         private readonly SevenZipCompressor compressor;
         private string targetBuildName;
+
+
+        public int MajorIncrement = 0;
+        public int MinorIncrement = 0;
+        public int BuildIncrement = 0;
+        public int RevisionIncrement = 1;
 
         public BuildUpdatePackageAction(
           ProgressBar toolProgress,
@@ -117,8 +124,21 @@ namespace RavenNest.Tools.Actions
             if (a == null)
                 return "ravenfall.7z";
 
-            System.Version v = IncrementVersion(a.Version, 0, 0, 1, 0); // 0,0,1,0
+            System.Version v = IncrementVersion(a.Version, MajorIncrement, MinorIncrement, BuildIncrement, RevisionIncrement);
             return "Ravenfall.v" + v.ToString() + "a-alpha.7z";
+        }
+
+
+        internal string GetNextVersion()
+        {
+            var existingArchives = System.IO.Directory.GetFiles(UnityBuildFolder, "Ravenfall.v*a-alpha.7z");
+            if (existingArchives.Length == 0) return null;
+            var archives = existingArchives.Select(x => new { File = x, Version = GetVersion(x) }).OrderByDescending(x => x.Version).ToList();
+            var a = archives.FirstOrDefault();
+            if (a == null)
+                return null;
+
+            return IncrementVersion(a.Version, MajorIncrement, MinorIncrement, BuildIncrement, RevisionIncrement).ToString();
         }
 
         private System.Version IncrementVersion(System.Version version, int major, int minor, int build, int revision)
@@ -219,10 +239,10 @@ namespace RavenNest.Tools.Actions
         private bool FilterFiles(string x)
         {
             var lower = x.ToLower();
-            var test = NotContains(lower, ".7z", "settings.json", "autologin.conf", "tmpautologin.conf", "pubsub-tokens.json", "game-settings.json", "state-data.json", "__DEBUG__", "_DoNotShip", "_ButDontShipItWithYourGame");
+            var test = NotContains(lower, ".7z", "settings.json", "pub-sub.json", "autologin.conf", "tmpautologin.conf", "pubsub-tokens.json", "game-settings.json", "state-data.json", "__DEBUG__", "_DoNotShip", "_ButDontShipItWithYourGame");
             if (buildState == BuildState.Update)
             {
-                test &= NotContains(lower, "\\data\\", "/data/", "fonts\\", "fonts/", "RavenWeave");
+                test &= NotContains(lower, "/update/","\\update\\", "\\data\\", "/data/", "fonts\\", "fonts/", "RavenWeave");
             }
 
             return test;
@@ -238,6 +258,7 @@ namespace RavenNest.Tools.Actions
 
             return true;
         }
+
     }
 
     public enum BuildState

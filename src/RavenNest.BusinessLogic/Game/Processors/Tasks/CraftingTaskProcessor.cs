@@ -8,10 +8,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     public class CraftingTaskProcessor : ResourceTaskProcessor
     {
         public override void Process(
-            IIntegrityChecker integrityChecker,
             GameData gameData,
             PlayerInventoryProvider inventoryProvider,
-            DataModels.GameSession session,
+            GameSession session,
             Character character,
             CharacterState characterState)
         {

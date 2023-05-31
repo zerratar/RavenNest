@@ -9,14 +9,13 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public static readonly SimpleDropHandler Drops = new SimpleDropHandler(nameof(Skills.Woodcutting));
 
         public override void Process(
-            IIntegrityChecker integrityChecker,
             GameData gameData,
             PlayerInventoryProvider inventoryProvider,
             GameSession session,
             Character character,
             CharacterState state)
         {
-            UpdateResourceGain(integrityChecker, gameData, inventoryProvider, session, character, resources =>
+            UpdateResourceGain(gameData, session, character, resources =>
             {
                 ++resources.Wood;
                 var villageResources = GetVillageResources(gameData, session);

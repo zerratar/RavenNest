@@ -34,7 +34,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly EnchantmentManager enchantmentManager;
         private readonly GameData gameData;
         private readonly IIntegrityChecker integrityChecker;
-        private readonly IExtensionWebSocketConnectionProvider extensionWsConnectionProvider;
+        private readonly ITwitchExtensionConnectionProvider extensionWsConnectionProvider;
 
         public PlayerManager(
             ILogger<PlayerManager> logger,
@@ -44,7 +44,7 @@ namespace RavenNest.BusinessLogic.Game
             EnchantmentManager enchantmentManager,
             GameData gameData,
             IIntegrityChecker integrityChecker,
-            IExtensionWebSocketConnectionProvider extensionWsConnectionProvider)
+            ITwitchExtensionConnectionProvider extensionWsConnectionProvider)
         {
             this.logger = logger;
             this.ravenbotApi = ravenbotApi;
@@ -1108,7 +1108,6 @@ namespace RavenNest.BusinessLogic.Game
                 {
 
                     var state = gameData.GetCharacterState(player.StateId);
-                    state.DuelOpponent = update.DuelOpponent;
                     state.Health = update.Health;
                     state.InArena = update.InArena;
                     state.InDungeon = update.InDungeon;
@@ -2671,20 +2670,17 @@ namespace RavenNest.BusinessLogic.Game
 
             foreach (var update in data.Skills)
             {
-                var skillUpdate = update.Value;
-                var skillName = update.Key;
-                var level = skillUpdate.Level;
-                var experience = skillUpdate.Experience;
-                if (skillUpdate.Level > GameMath.MaxLevel)
+                if (update.Level > GameMath.MaxLevel)
                 {
                     continue;
                 }
 
+                var skill = skills.GetSkill(update.Index);
+                if (skill == null) continue;
+
+                var level = update.Level;
+                var experience = update.Experience;
                 var timeSinceLastSkillUpdate = DateTime.UtcNow - characterSessionState.LastSkillUpdate;
-
-                var skill = skills.GetSkill(skillName);
-                if (skill == null || skill.Name.ToLower() != skillName.ToLower()) continue;
-
                 var existingLevel = skill.Level;
 
                 if (!user.IsAdmin.GetValueOrDefault() && user.IsModerator.GetValueOrDefault())
@@ -3080,155 +3076,6 @@ namespace RavenNest.BusinessLogic.Game
                     await Task.Delay(100);
                     SendPlayerAddToSession(character, gameSession);
                 }
-            }
-        }
-
-        public bool UpdateExperience(
-            SessionToken token,
-            string userId,
-            int[] level,
-            double[] experience,
-            Guid? characterId = null)
-        {
-            try
-            {
-                if (token == null)
-                {
-                    logger.LogError("UpdateExperience: Unable to save experience for " + userId + ", SessionToken is null!");
-                    return false;
-                }
-
-                var gameSession = gameData.GetSession(token.SessionId);
-
-                if (gameSession == null)
-                {
-                    logger.LogError("UpdateExperience: Unable to save experience for " + userId + ", gameSession is null!");
-                    return false;
-                }
-
-
-                var character = (characterId != null ? gameData.GetCharacter(characterId.Value) : GetCharacter(token, userId)) ?? GetCharacter(token, userId);
-                if (character == null)
-                    throw new Exception("UpdateExperience: Unable to save exp. Character for user ID " + userId + " could not be found.");
-
-
-                /*
-                    Temporary Debugging
-                 */
-                if (character.Name.ToLower() == "zerratar")
-                {
-
-                }
-
-
-                var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
-                if (characterSessionState.Compromised)
-                {
-                    logger.LogError("UpdateExperience: Trying to update an out of sync player: " + character.Name + " (" + character.Id + ")");
-                    return true;
-                }
-
-                var sessionOwner = gameData.GetUser(gameSession.UserId);
-                if (sessionOwner.Status >= 1)
-                {
-                    logger.LogError("UpdateExperience: The user session from " + sessionOwner.UserName + " trying to save players, but the owner has been banned.");
-                    return true;
-                }
-
-                // Temporary solution to skill rollback, block saving skills from clients other than the one definied.
-                if (!sessionOwner.IsAdmin.GetValueOrDefault() && !gameData.IsExpectedVersion(gameSession))
-                {
-                    return true;
-                }
-
-                var expLimit = sessionOwner.IsAdmin.GetValueOrDefault() ? 5000 : 50;
-                var removeFromSession = !AcquiredUserLock(token, character) && character.UserIdLock != null;
-                var skills = gameData.GetCharacterSkills(character.SkillsId);
-
-                if (skills == null)
-                {
-                    skills = gameData.GenerateSkills();
-                    character.SkillsId = skills.Id;
-                    gameData.Add(skills);
-                }
-
-                if (removeFromSession)
-                {
-                    SendRemovePlayerFromSession(character, gameSession, "[Update All Skills]");
-                    //if (character.UserIdLock != null)
-                    //{
-                    //    var activeSessionOwner = gameData.GetUser(character.UserIdLock.GetValueOrDefault());
-                    //    if (activeSessionOwner != null)
-                    //    {
-                    //        logger.LogError($"{character.Name} was trying to save from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is part of {activeSessionOwner.UserName}.");
-                    //    }
-                    //}
-                    //else
-                    //{
-                    //    logger.LogError($"{character.Name} was trying to save from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is not part of any session.");
-                    //}
-                    return false;
-                }
-
-                if (experience == null)
-                    return true; // no skills was updated. Ignore
-                                 // throw new Exception($"Unable to save exp. Client didnt supply experience, or experience was null. Character with name {character.Name} game session: " + gameSession.Id + ".");
-
-                var gains = characterSessionState.ExpGain;
-
-                var updated = false;
-                var timeSinceLastSkillUpdate = DateTime.UtcNow - characterSessionState.LastSkillUpdate;
-                var user = gameData.GetUser(character.UserId);
-
-                //var savedSkillsCount = 0;
-                for (var skillIndex = 0; skillIndex < experience.Length; ++skillIndex)
-                {
-                    var skillLevel = level != null ? level[skillIndex] : 0;
-                    var xp = experience[skillIndex];
-
-                    var existingLevel = skills.GetLevel(skillIndex);
-
-                    if (!user.IsAdmin.GetValueOrDefault() && user.IsModerator.GetValueOrDefault())
-                    {
-                        if (skillLevel > 100 && existingLevel < skillLevel * 0.5)
-                        {
-                            if (timeSinceLastSkillUpdate <= TimeSpan.FromSeconds(10))
-                            {
-                                logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Level changed from " + existingLevel + " to " + skillLevel);
-                                BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
-                                return true;
-                            }
-                        }
-                    }
-
-                    if (skillLevel <= GameMath.MaxLevel)
-                    {
-                        if (existingLevel != skillLevel)
-                        {
-                            UpdateCharacterSkillRecord(character.Id, skillIndex, skillLevel, xp);
-                        }
-
-                        skills.Set(skillIndex, skillLevel, experience[skillIndex]);
-                        updated = true;
-                    }
-                }
-
-                if (updated)
-                {
-                    characterSessionState.LastSkillUpdate = DateTime.UtcNow;
-                }
-
-                //if (savedSkillsCount != experience.Length)
-                //{
-                //    logger.LogError(character.Name + " could only save " + savedSkillsCount + " out of " + experience.Length + " skills. Client did not provide level data. Saving using old way of saving. Session: " + sessionOwner?.UserName + " (" + gameSession.Id + "), Client Version: " + sessionState.ClientVersion);
-                //}
-
-                return true;
-            }
-            catch (Exception exc)
-            {
-                logger.LogError(exc.ToString());
-                return false;
             }
         }
 
@@ -3659,7 +3506,6 @@ namespace RavenNest.BusinessLogic.Game
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void SetCharacterState(DataModels.CharacterState state, CharacterUpdate update)
         {
-            state.DuelOpponent = update.StateData;
             state.Health = update.Health;
             state.InArena = update.State == RavenNest.Models.TcpApi.CharacterState.Arena;
             state.InRaid = update.State == RavenNest.Models.TcpApi.CharacterState.Raid;
@@ -3678,7 +3524,6 @@ namespace RavenNest.BusinessLogic.Game
             var state = new DataModels.CharacterState
             {
                 Id = Guid.NewGuid(),
-                DuelOpponent = update.StateData,
                 Health = update.Health,
                 InArena = update.State == RavenNest.Models.TcpApi.CharacterState.Arena,
                 InRaid = update.State == RavenNest.Models.TcpApi.CharacterState.Raid,
@@ -3699,7 +3544,6 @@ namespace RavenNest.BusinessLogic.Game
             var state = new DataModels.CharacterState
             {
                 Id = Guid.NewGuid(),
-                DuelOpponent = update.DuelOpponent,
                 Health = update.Health,
                 InArena = update.InArena,
                 InRaid = update.InRaid,

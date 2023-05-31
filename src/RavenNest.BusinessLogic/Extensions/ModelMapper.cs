@@ -79,7 +79,6 @@ namespace RavenNest.BusinessLogic.Extensions
                     state.TaskArgument = data.TaskArgument;
                     state.InRaid = data.InRaid;
                     state.Island = data.Island;
-                    state.DuelOpponent = data.DuelOpponent;
                     state.RestedTime = data.RestedTime ?? 0d;
                     state.X = data.X;
                     state.Y = data.Y;

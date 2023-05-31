@@ -26,8 +26,7 @@ namespace RavenNest.BusinessLogic.Net
         private readonly ITcpSocketApiConnectionProvider connectionProvider;
         private readonly PlayerManager playerManager;
         private readonly GameData gameData;
-        private readonly IGamePacketManager packetManager;
-        private readonly IGamePacketSerializer packetSerializer;
+        private readonly IGameProcessorManager gameProcessorManager;
         private readonly SessionManager sessionManager;
         private Thread serverThread;
 
@@ -48,8 +47,7 @@ namespace RavenNest.BusinessLogic.Net
             ITcpSocketApiConnectionProvider connectionProvider,
             PlayerManager playerManager,
             GameData gameData,
-            IGamePacketManager packetManager,
-            IGamePacketSerializer packetSerializer,
+            IGameProcessorManager gameProcessorManager,
             SessionManager sessionManager)
         {
             this.settings = settings;
@@ -57,8 +55,7 @@ namespace RavenNest.BusinessLogic.Net
             this.connectionProvider = connectionProvider;
             this.playerManager = playerManager;
             this.gameData = gameData;
-            this.packetManager = packetManager;
-            this.packetSerializer = packetSerializer;
+            this.gameProcessorManager = gameProcessorManager;
             this.sessionManager = sessionManager;
 
             if (settings.Value.TcpApiPort > 0)
@@ -141,7 +138,11 @@ namespace RavenNest.BusinessLogic.Net
 
         private void OnClientDisconnected(int connectionId)
         {
-            connectionProvider.Remove(connectionId);
+            if (connectionProvider.Remove(connectionId, out var connection))
+            {
+                gameProcessorManager.Stop(connection.SessionToken);
+            }
+
             logger.LogDebug(connectionId + " Disconnected");
         }
 
@@ -207,6 +208,10 @@ namespace RavenNest.BusinessLogic.Net
                         }
 
                         connection.SessionToken = sessionToken;
+
+                        // Now that we have a token
+                        // start the game Game Processor
+                        gameProcessorManager.Start(sessionToken);
                     }
                 }
 
@@ -303,6 +308,15 @@ namespace RavenNest.BusinessLogic.Net
                 catch { }
                 server = null;
             }
+
+            try
+            {
+                if (gameProcessorManager != null)
+                {
+                    gameProcessorManager.Dispose();
+                }
+            }
+            catch { }
 
             this.running = false;
             this.disposed = true;

@@ -1,5 +1,4 @@
 ﻿using RavenNest.BusinessLogic.Data;
-using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using System;
@@ -45,19 +44,11 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         }
 
         protected void UpdateResourceGain(
-            IIntegrityChecker integrityChecker,
             GameData gameData,
-            PlayerInventoryProvider inventoryProvider,
             DataModels.GameSession session,
             Character character,
             Action<DataModels.Resources> onUpdate)
         {
-
-            if (!integrityChecker.VerifyPlayer(session.Id, character.Id, 0))
-            {
-                return;
-            }
-
             var now = DateTime.UtcNow;
             var state = gameData.GetCharacterSessionState(session.Id, character.Id);
             if (now - state.LastTaskUpdate >= TimeSpan.FromSeconds(ItemDropRateSettings.ResourceGatherInterval))

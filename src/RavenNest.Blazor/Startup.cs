@@ -254,6 +254,7 @@ namespace RavenNest.Blazor
         {
             Dispose<GameData>(app);
             Dispose<ITcpSocketApi>(app);
+            Dispose<IGameProcessorManager>(app);
             Dispose<MarketplaceReportAggregator>(app);
             Dispose<EconomyReportAggregator>(app);
             Dispose<RavenfallTvManager>(app);
@@ -305,7 +306,6 @@ namespace RavenNest.Blazor
 
             services.AddSingleton<ISecureHasher, SecureHasher>();
             services.AddSingleton<IBinarySerializer, CompressedJsonSerializer>();
-            services.AddSingleton<IGamePacketSerializer, GamePacketSerializer>();
 
             services.AddSingleton<PlayerManager>();
             services.AddSingleton<GameManager>();
@@ -317,7 +317,6 @@ namespace RavenNest.Blazor
             services.AddSingleton<IItemManager, ItemManager>();
             services.AddSingleton<AdminManager>();
             services.AddSingleton<IServerManager, ServerManager>();
-            services.AddSingleton<IGamePacketManager, GamePacketManager>();
             services.AddSingleton<VillageManager>();
             services.AddSingleton<IPatreonManager, PatreonManager>();
             services.AddSingleton<ClanManager>();
@@ -340,10 +339,11 @@ namespace RavenNest.Blazor
             services.AddSingleton<IPropertyProvider, MemoryCachedPropertyProvider>();
 
 
+            services.AddSingleton<IGameProcessorManager, GameProcessorManager>();
+
             services.AddSingleton<ITcpSocketApiConnectionProvider, TcpSocketApiConnectionProvider>();
             services.AddSingleton<ITcpSocketApi, TcpSocketApi>();
-            services.AddSingleton<IGameWebSocketConnectionProvider, GameWebSocketConnectionProvider>();
-            services.AddSingleton<IExtensionWebSocketConnectionProvider, ExtensionConnectionProvider>();
+            services.AddSingleton<ITwitchExtensionConnectionProvider, TwitchExtensionConnectionProvider>();
             services.AddSingleton<IExtensionPacketDataSerializer, JsonPacketDataSerializer>();
         }
     }

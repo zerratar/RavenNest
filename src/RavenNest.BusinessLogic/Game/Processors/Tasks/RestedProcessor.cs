@@ -1,5 +1,4 @@
 ﻿using RavenNest.BusinessLogic.Data;
-using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
 using System;
 using System.Collections.Concurrent;
@@ -30,7 +29,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         private const double CombatStatsBoost = 0.15;
 
         public override void Process(
-            IIntegrityChecker integrityChecker,
             GameData gameData,
             PlayerInventoryProvider inventoryProvider,
             GameSession session,
@@ -44,8 +42,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 && !state.InDungeon.GetValueOrDefault()
                 && !state.InArena
                 && !state.InRaid
-                && !string.IsNullOrEmpty(state.Island)
-                && string.IsNullOrEmpty(state.DuelOpponent);
+                && !string.IsNullOrEmpty(state.Island);
 
             var now = DateTime.UtcNow;
             if (!lastUpdate.TryGetValue(character.Id, out var lastUpdateTime))

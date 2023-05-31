@@ -24,17 +24,13 @@ namespace RavenNest.BusinessLogic.Game.Processors
             = new ConcurrentDictionary<string, ITaskProcessor>();
 
         private readonly GameData gameData;
-        private readonly GameManager gameManager;
         private readonly IRavenBotApiClient ravenbotApi;
-        private readonly IIntegrityChecker integrityChecker;
-        private readonly IGameWebSocketConnection gameConnection;
-        private readonly IExtensionWebSocketConnectionProvider extensionConnectionProvider;
+        private readonly ITwitchExtensionConnectionProvider extensionConnectionProvider;
         private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
         private readonly SessionManager sessionManager;
         private readonly PlayerInventoryProvider inventoryProvider;
         private readonly SessionToken sessionToken;
 
-        private readonly TimeSpan ServerTimePushInterval = TimeSpan.FromSeconds(30);
         private readonly TimeSpan ExpMultiplierPushInterval = TimeSpan.FromSeconds(15);
         private readonly TimeSpan villageInfoPushInterval = TimeSpan.FromSeconds(30);
         private readonly TimeSpan pubsubPushInterval = TimeSpan.FromSeconds(30);
@@ -43,26 +39,19 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private DateTime lastVillageInfoPush;
         private DateTime lastPermissionInfoPush;
         private DateTime lastExpMultiPush;
-        private DateTime lastServerTimePush;
         private DateTime lastPubsubPush;
 
         public GameProcessor(
             IRavenBotApiClient ravenbotApi,
-            IIntegrityChecker integrityChecker,
-            IGameWebSocketConnection websocket,
-            IExtensionWebSocketConnectionProvider extWsProvider,
+            ITwitchExtensionConnectionProvider extWsProvider,
             ITcpSocketApiConnectionProvider tcpConnectionProvider,
             SessionManager sessionManager,
             PlayerInventoryProvider inventoryProvider,
             GameData gameData,
-            GameManager gameManager,
             SessionToken sessionToken)
         {
             this.gameData = gameData;
-            this.gameManager = gameManager;
             this.ravenbotApi = ravenbotApi;
-            this.integrityChecker = integrityChecker;
-            this.gameConnection = websocket;
             this.extensionConnectionProvider = extWsProvider;
             this.tcpConnectionProvider = tcpConnectionProvider;
             this.sessionManager = sessionManager;
@@ -109,7 +98,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
             //PushServerTime();
 
-            await PushGameEventsAsync(now, cts);
+            PushGameEvents();
 
             PushPermissionDataInfo(now);
 
@@ -150,20 +139,6 @@ namespace RavenNest.BusinessLogic.Game.Processors
             }
         }
 
-        private void PushServerTime()
-        {
-            var session = gameData.GetSession(sessionToken.SessionId);
-            if (session != null)
-            {
-                var elapsed = DateTime.UtcNow - lastServerTimePush;
-                if (elapsed >= ServerTimePushInterval)
-                {
-                    lastServerTimePush = DateTime.UtcNow;
-                    sessionManager.SendServerTime(session);
-                }
-            }
-        }
-
         private void PushPermissionDataInfo(DateTime utcNow)
         {
             var session = gameData.GetSession(sessionToken.SessionId);
@@ -178,20 +153,8 @@ namespace RavenNest.BusinessLogic.Game.Processors
             }
         }
 
-        private async Task PushGameEventsAsync(DateTime utcNow, CancellationTokenSource cts)
+        private void PushGameEvents()
         {
-            if (gameConnection != null)
-            {
-                var events = gameManager.GetGameEvents(sessionToken);
-                if (events.Count > 0)
-                {
-                    var eventList = new EventList();
-                    eventList.Revision = events.Revision;
-                    eventList.Events = events.ToList();
-                    await gameConnection.PushAsync("game_event", eventList, cts.Token);
-                }
-            }
-
             if (tcpConnectionProvider.TryGet(this.sessionToken.SessionId, out var connection) && connection.Connected)
             {
                 connection.ProcessSendQueue();
@@ -226,7 +189,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
             var village = GetTaskProcessor(VillageProcessorName);
             if (village != null)
-                village.Process(integrityChecker, gameData, inventoryProvider, session, null, null);
+                village.Process(gameData, inventoryProvider, session, null, null);
 
             var characters = gameData.GetActiveSessionCharacters(session);
             if (characters.Count > 0)
@@ -254,17 +217,16 @@ namespace RavenNest.BusinessLogic.Game.Processors
                         character.StateId = state.Id;
                     }
 
-                    rested.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
-                    clan.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
-                    loyalty.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
+                    rested.Process(gameData, inventoryProvider, session, character, state);
+                    clan.Process(gameData, inventoryProvider, session, character, state);
+                    loyalty.Process(gameData, inventoryProvider, session, character, state);
 
                     if (string.IsNullOrEmpty(state.Task)
                         || (state.InOnsen ?? false)
                         || (state.InDungeon ?? false)
                         || state.InArena
                         || state.InRaid
-                        || state.Island == "War"
-                        || !string.IsNullOrEmpty(state.DuelOpponent))
+                        || state.Island == "War")
                     {
                         continue;
                     }
@@ -277,7 +239,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
                     var task = GetTaskProcessor(taskName);
                     if (task != null)
-                        task.Process(integrityChecker, gameData, inventoryProvider, session, character, state);
+                        task.Process(gameData, inventoryProvider, session, character, state);
                 }
             }
         }

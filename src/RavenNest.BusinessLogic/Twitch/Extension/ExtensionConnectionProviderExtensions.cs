@@ -7,13 +7,13 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
 {
     public static class ExtensionConnectionProviderExtensions
     {
-        public static Task<bool> BroadcastAsync<T>(this IExtensionWebSocketConnectionProvider connectionProvider, T update)
+        public static Task<bool> BroadcastAsync<T>(this ITwitchExtensionConnectionProvider connectionProvider, T update)
         {
             return connectionProvider.ForAllConnectionsAsync(x => x.SendAsync(update));
         }
 
         private static async Task<bool> ForAllConnectionsAsync(
-            this IExtensionWebSocketConnectionProvider connectionProvider,
+            this ITwitchExtensionConnectionProvider connectionProvider,
             Func<IExtensionConnection, Task> action)
         {
             var connection = connectionProvider.GetAll();
