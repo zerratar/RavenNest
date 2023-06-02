@@ -77,8 +77,8 @@ ul.download-list li {
 .notice {
     display: block;
     margin-top: 10px;
-    color: #ff437f;
-    font-size: 14px;
+    color: #646464;
+    font-size: 12px;
 }
 
 @media screen and (max-width: 800px) {

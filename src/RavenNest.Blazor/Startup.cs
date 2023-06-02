@@ -171,7 +171,6 @@ namespace RavenNest.Blazor
 
             //app.UseUseBlazorise(options => { options.DelayTextOnKeyPress = true; });
 
-
             /*
                 Linux
              */
