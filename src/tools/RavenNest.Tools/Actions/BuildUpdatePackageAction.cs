@@ -12,9 +12,16 @@ namespace RavenNest.Tools.Actions
     public class BuildUpdatePackageAction
     {
         private const string RavenBotFolder = @"C:\git\RavenBot";
-        private const string UnityBuildFolder = @"C:\git\Ravenfall Legacy\Build";
+        private const string UnityBuildFolderWin = @"C:\git\Ravenfall Legacy\Build";
+        private const string UnityBuildFolderLinux = @"C:\git\Ravenfall Legacy\Build Linux";
 
-        private BuildState buildState = BuildState.Full;
+        /// <summary>
+        /// Until we have an updated, the files are the same therefor we don't need to compress it twice.
+        /// </summary>
+        private const bool LinuxUpdateIsCopyOfReleaseBuild = true;
+
+
+        private BuildState buildState = BuildState.Full_Windows;
         private readonly SevenZipCompressor compressor;
         private string targetBuildName;
 
@@ -23,6 +30,7 @@ namespace RavenNest.Tools.Actions
         public int MinorIncrement = 0;
         public int BuildIncrement = 0;
         public int RevisionIncrement = 1;
+        private Version BuildVersion;
 
         public BuildUpdatePackageAction(
           ProgressBar toolProgress,
@@ -61,9 +69,11 @@ namespace RavenNest.Tools.Actions
                 await Task.Delay(1000);
             }
 
+            BuildVersion = GetNextVersion();
+
             ToolStatus.Text = "Building Release Package...";
             ToolProgress.Indeterminate = false;
-            buildState = BuildState.Full;
+            buildState = BuildState.Full_Windows;
             await BuildPackageAsync();
         }
 
@@ -76,7 +86,7 @@ namespace RavenNest.Tools.Actions
                 {
                     FileName = "dotnet.exe",
                     WorkingDirectory = RavenBotFolder,
-                    Arguments = $"publish -r win10-x64 -c release -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true -o \"{UnityBuildFolder}\"",
+                    Arguments = $"publish -r win10-x64 -c release -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true -o \"{UnityBuildFolderWin}\"",
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                 };
@@ -89,7 +99,7 @@ namespace RavenNest.Tools.Actions
                         process.WaitForExit();
                     }
                 }
-                buildState = BuildState.Full;
+                buildState = BuildState.Full_Windows;
             });
         }
 
@@ -98,47 +108,70 @@ namespace RavenNest.Tools.Actions
             await Task.Run(() =>
             {
                 var allFiles = GetFiles();
+                var buildFolder = GetTargetBuildFolder();
                 targetBuildName = GetTargetName();
                 ToolStatus.Text = "Building " + targetBuildName + "..";
-                var targetFile = System.IO.Path.Combine(UnityBuildFolder, targetBuildName);
+                var targetFile = System.IO.Path.Combine(buildFolder, targetBuildName);
                 if (System.IO.File.Exists(targetFile))
                     System.IO.File.Delete(targetFile);
 
-                compressor.CompressFiles(targetFile, allFiles);
+                if (LinuxUpdateIsCopyOfReleaseBuild && buildState == BuildState.Update_Linux)
+                {
+                    System.IO.File.Copy(
+                        System.IO.Path.Combine(buildFolder, GetReleaseFileName(false))
+                        , targetFile, true);
+                    Compressor_CompressionFinished(this, EventArgs.Empty);
+                }
+                else
+                {
+                    compressor.CompressFiles(targetFile, allFiles);
+                }
+
             });
         }
 
         private string GetTargetName()
         {
-            if (buildState == BuildState.Update)
+            if (buildState == BuildState.Update_Windows)
             {
                 return "update.7z";
             }
 
-            var existingArchives = System.IO.Directory.GetFiles(UnityBuildFolder, "Ravenfall.v*a-alpha.7z");
+            if (buildState == BuildState.Update_Linux)
+            {
+                return "update-linux.7z";
+            }
+
+            var isWindowsBuild = IsWindowsBuild();
+            var platformExtension = isWindowsBuild ? "" : "-linux";
+
+            // var buildFolder = GetTargetBuildFolder();
+            // while we could check both folders, its better to make sure both are up to date to the same version number. Therefor always use windows folder for this
+            var existingArchives = System.IO.Directory.GetFiles(UnityBuildFolderWin, "Ravenfall.v*a-alpha.7z");
             if (existingArchives.Length == 0)
-                return "ravenfall.7z";
+                return "ravenfall" + platformExtension + ".7z";
 
-            var archives = existingArchives.Select(x => new { File = x, Version = GetVersion(x) }).OrderByDescending(x => x.Version).ToList();
-            var a = archives.FirstOrDefault();
-            if (a == null)
-                return "ravenfall.7z";
+            //System.Version v = IncrementVersion(a.Version, MajorIncrement, MinorIncrement, BuildIncrement, RevisionIncrement);
+            return GetReleaseFileName(isWindowsBuild);
+        }
 
-            System.Version v = IncrementVersion(a.Version, MajorIncrement, MinorIncrement, BuildIncrement, RevisionIncrement);
-            return "Ravenfall.v" + v.ToString() + "a-alpha.7z";
+        private string GetReleaseFileName(bool windowsBuild)
+        {
+            var platformExtension = windowsBuild ? "" : "-linux";
+            return "Ravenfall.v" + BuildVersion.ToString() + "a-alpha" + platformExtension + ".7z";
         }
 
 
-        internal string GetNextVersion()
+        internal Version GetNextVersion()
         {
-            var existingArchives = System.IO.Directory.GetFiles(UnityBuildFolder, "Ravenfall.v*a-alpha.7z");
+            var existingArchives = System.IO.Directory.GetFiles(UnityBuildFolderWin, "Ravenfall.v*a-alpha.7z");
             if (existingArchives.Length == 0) return null;
             var archives = existingArchives.Select(x => new { File = x, Version = GetVersion(x) }).OrderByDescending(x => x.Version).ToList();
             var a = archives.FirstOrDefault();
             if (a == null)
                 return null;
 
-            return IncrementVersion(a.Version, MajorIncrement, MinorIncrement, BuildIncrement, RevisionIncrement).ToString();
+            return IncrementVersion(a.Version, MajorIncrement, MinorIncrement, BuildIncrement, RevisionIncrement);
         }
 
         private System.Version IncrementVersion(System.Version version, int major, int minor, int build, int revision)
@@ -184,13 +217,24 @@ namespace RavenNest.Tools.Actions
         {
             switch (buildState)
             {
-                case BuildState.Full:
+                case BuildState.Full_Windows:
                     ToolStatus.Text = "Building Update Package..";
-                    buildState = BuildState.Update;
+                    buildState = BuildState.Update_Windows;
                     BuildPackageAsync();
                     break;
-                case BuildState.Update:
-                    ToolStatus.Text = "Building Update All Done.";
+                case BuildState.Update_Windows:
+                    ToolStatus.Text = "Building Linux Release Package..";
+                    buildState = BuildState.Full_Linux;
+                    BuildPackageAsync();
+                    break;
+                case BuildState.Full_Linux:
+                    ToolStatus.Text = "Building Linux Update Package..";
+                    buildState = BuildState.Update_Linux;
+                    BuildPackageAsync();
+                    break;
+                case BuildState.Update_Linux:
+                    ToolStatus.Text = "All packages built!";
+                    buildState = BuildState.Completed;
                     break;
             }
         }
@@ -202,12 +246,24 @@ namespace RavenNest.Tools.Actions
             ToolProgress.Value = e.PercentDone;
         }
 
+        private string GetTargetBuildFolder()
+        {
+            var winBuild = IsWindowsBuild();
+            var buildFolder = winBuild ? UnityBuildFolderWin : UnityBuildFolderLinux;
+            return buildFolder;
+        }
+
+        private bool IsWindowsBuild()
+        {
+            return buildState == BuildState.Full_Windows || buildState == BuildState.Update_Windows;
+        }
+
         private string[] GetFiles()
         {
-            var legacyDataDir = System.IO.Path.Combine(UnityBuildFolder, "Ravenfall Legacy_Data");
-            var targetDataDir = System.IO.Path.Combine(UnityBuildFolder, "Ravenfall_Data");
-            var legacyExe = System.IO.Path.Combine(UnityBuildFolder, "Ravenfall Legacy.exe");
-            var targetExe = System.IO.Path.Combine(UnityBuildFolder, "Ravenfall.exe");
+            var winBuild = IsWindowsBuild();
+            var buildFolder = GetTargetBuildFolder();
+            var legacyDataDir = System.IO.Path.Combine(buildFolder, "Ravenfall Legacy_Data");
+            var targetDataDir = System.IO.Path.Combine(buildFolder, "Ravenfall_Data");
 
             if (System.IO.Directory.Exists(legacyDataDir))
             {
@@ -219,18 +275,23 @@ namespace RavenNest.Tools.Actions
                 System.IO.Directory.Move(legacyDataDir, targetDataDir);
             }
 
-            if (System.IO.File.Exists(legacyExe))
+            if (winBuild)
             {
-                if (System.IO.File.Exists(targetExe))
-                {
-                    System.IO.File.Delete(targetExe);
-                }
+                var legacyExe = System.IO.Path.Combine(buildFolder, "Ravenfall Legacy.exe");
+                var targetExe = System.IO.Path.Combine(buildFolder, "Ravenfall.exe");
 
-                System.IO.File.Move(legacyExe, targetExe, true);
+                if (System.IO.File.Exists(legacyExe))
+                {
+                    if (System.IO.File.Exists(targetExe))
+                    {
+                        System.IO.File.Delete(targetExe);
+                    }
+
+                    System.IO.File.Move(legacyExe, targetExe, true);
+                }
             }
 
-
-            var files = System.IO.Directory.GetFiles(UnityBuildFolder, "*", System.IO.SearchOption.AllDirectories);
+            var files = System.IO.Directory.GetFiles(buildFolder, "*", System.IO.SearchOption.AllDirectories);
 
             //var filesToRename = files.Where(x => x.Contains("Ravenfall Legacy")).ToList();
             return files.Where(FilterFiles).ToArray();
@@ -239,10 +300,16 @@ namespace RavenNest.Tools.Actions
         private bool FilterFiles(string x)
         {
             var lower = x.ToLower();
-            var test = NotContains(lower, ".7z", "settings.json", "pub-sub.json", "autologin.conf", "tmpautologin.conf", "pubsub-tokens.json", "game-settings.json", "state-data.json", "__DEBUG__", "_DoNotShip", "_ButDontShipItWithYourGame");
-            if (buildState == BuildState.Update)
+            var test = NotContains(lower, ".7z", "settings.json",
+                "pub-sub.json", "autologin.conf", "tmpautologin.conf", "pubsub-tokens.json",
+                "camera-positions.json", "game-settings.json", "state-data.json", "__DEBUG__",
+                "\\update\\", "\\update\\",
+                "\\data\\", "data\\stats", "data\\sounds",
+                "_DoNotShip", "_ButDontShipItWithYourGame");
+            if (buildState == BuildState.Update_Windows)
             {
-                test &= NotContains(lower, "/update/","\\update\\", "\\data\\", "/data/", "fonts\\", "fonts/", "RavenWeave");
+                test &= NotContains(lower,
+                    "fonts\\", "RavenWeave");
             }
 
             return test;
@@ -250,9 +317,11 @@ namespace RavenNest.Tools.Actions
 
         private static bool NotContains(string input, params string[] cases)
         {
+            input = input.Replace("/", "\\");
             foreach (var c in cases)
             {
-                if (input.IndexOf(c, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                var test = c.Replace("/", "\\");
+                if (input.IndexOf(test, StringComparison.OrdinalIgnoreCase) >= 0)
                     return false;
             }
 
@@ -264,7 +333,10 @@ namespace RavenNest.Tools.Actions
     public enum BuildState
     {
         RavenBot,
-        Full,
-        Update
+        Full_Windows,
+        Full_Linux,
+        Update_Windows,
+        Update_Linux,
+        Completed
     }
 }

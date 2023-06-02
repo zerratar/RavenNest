@@ -18,7 +18,7 @@ namespace RavenNest.Tools
             buildUpdatePackage = new BuildUpdatePackageAction(ToolProgress, ToolStatus);
             skillRollbackv0788 = new PlayerSkillRollback(ToolProgress, ToolStatus, @"C:\Ravenfall\pre0.7.8.9-restorepoint\", @"C:\Ravenfall\pre0.7.8.9\");
 
-            var nextVersion = buildUpdatePackage.GetNextVersion();
+            var nextVersion = buildUpdatePackage.GetNextVersion().ToString();
             if (!string.IsNullOrEmpty(nextVersion))
                 BuildUpdatePackage.Text = "Build Update Package (" + nextVersion + ")";
         }
