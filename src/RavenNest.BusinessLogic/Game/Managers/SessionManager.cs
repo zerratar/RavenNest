@@ -500,6 +500,25 @@ namespace RavenNest.BusinessLogic.Game
             return Encoding.UTF8.GetString(data);
         }
 
+        internal SessionToken GetSessionTokenByCharacterId(Guid characterId)
+        {
+            var session = gameData.GetSessionByCharacterId(characterId);
+            if (session == null) return null;
+            var user = gameData.GetUser(session.UserId);
+            return new SessionToken
+            {
+                SessionId = session.Id,
+                ExpiresUtc = DateTime.UtcNow + TimeSpan.FromDays(180),
+                StartedUtc = session.Started,
+                UserId = user.Id,
+                DisplayName = user.DisplayName,
+                UserName = user.UserName,
+                TwitchDisplayName = user.DisplayName,
+                TwitchUserId = user.UserId,
+                TwitchUserName = user.UserName,
+            };
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static SessionToken GenerateSessionToken(
             AuthToken token,
@@ -575,9 +594,5 @@ namespace RavenNest.BusinessLogic.Game
             //}
         }
 
-        internal SessionToken GetSessionTokenByCharacterId(Guid characterId)
-        {
-            throw new NotImplementedException();
-        }
     }
 }
