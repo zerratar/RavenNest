@@ -103,6 +103,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             PushPermissionDataInfo(now);
 
             await PushPubSubDetailsAsync(now);
+
         }
 
         private async Task PushPubSubDetailsAsync(DateTime utcNow)

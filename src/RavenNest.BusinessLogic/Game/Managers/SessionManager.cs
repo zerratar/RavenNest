@@ -253,10 +253,7 @@ namespace RavenNest.BusinessLogic.Game
         public void SendExpMultiplier(DataModels.GameSession session)
         {
             DataModels.GameEvent expEvent = CreateExpMultiplierEvent(session);
-            if (expEvent != null)
-            {
-                gameData.EnqueueGameEvent(expEvent);
-            }
+            gameData.EnqueueGameEvent(expEvent);
         }
 
         private void ClearUserLocks(DataModels.GameSession s)
@@ -294,7 +291,7 @@ namespace RavenNest.BusinessLogic.Game
         public void SendVillageInfo(DataModels.GameSession newGameSession)
         {
             DataModels.GameEvent villageInfoEvent = CreateVillageInfoEvent(newGameSession);
-            gameData.Add(villageInfoEvent);
+            gameData.EnqueueGameEvent(villageInfoEvent);
         }
 
         public void SendPermissionData(DataModels.GameSession gameSession, DataModels.User user = null)
@@ -315,7 +312,7 @@ namespace RavenNest.BusinessLogic.Game
 
             DataModels.GameEvent permissionEvent = CreatePermissionChangeEvent(gameSession, user);
 
-            gameData.Add(permissionEvent);
+            gameData.EnqueueGameEvent(permissionEvent);
         }
 
         private DataModels.GameEvent CreateVillageInfoEvent(DataModels.GameSession newGameSession)
