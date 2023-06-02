@@ -188,17 +188,17 @@ namespace RavenNest.Blazor
                         if (client.ClientVersion != release.VersionString)
                         {
                             client.ClientVersion = release.VersionString;
-                            client.DownloadLink = release.UpdateDownloadUrl;
+                            client.DownloadLink = release.UpdateDownloadUrl_Linux;
                         }
 
-                        var url = release.FullDownloadUrl.Replace(".7z", "-linux.7z");
+                        var url = release.UpdateDownloadUrl_Linux;
                         context.Response.Redirect(url);
                         return;
                     }
 
                     // fall back to saved settings in db.
                     var redirectUrl = gameData.Client.DownloadLink;
-                    redirectUrl = redirectUrl.Replace("update.7z", $"Ravenfall.v{client.ClientVersion}-alpha-linux.7z");
+                    redirectUrl = redirectUrl.Replace("update-linux.7z", $"Ravenfall.v{client.ClientVersion}-alpha-linux.7z");
                     context.Response.Redirect(redirectUrl);
                 });
             });
@@ -221,10 +221,10 @@ namespace RavenNest.Blazor
                         if (client.ClientVersion != release.VersionString)
                         {
                             client.ClientVersion = release.VersionString;
-                            client.DownloadLink = release.UpdateDownloadUrl;
+                            client.DownloadLink = release.UpdateDownloadUrl_Win;
                         }
 
-                        context.Response.Redirect(release.FullDownloadUrl);
+                        context.Response.Redirect(release.FullDownloadUrl_Win);
                         return;
                     }
 

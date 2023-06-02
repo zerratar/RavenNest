@@ -49,13 +49,13 @@ namespace RavenNest.Controllers
                 if (client.ClientVersion != release.VersionString)
                 {
                     client.ClientVersion = release.VersionString;
-                    client.DownloadLink = release.UpdateDownloadUrl;
+                    client.DownloadLink = release.UpdateDownloadUrl_Win;
                 }
 
                 return new UpdateData
                 {
                     Version = release.VersionString,
-                    DownloadUrl = release.UpdateDownloadUrl,
+                    DownloadUrl = release.UpdateDownloadUrl_Win,
                     Released = DateTime.UtcNow,
                     CodeOfConduct = codeOfConduct,
                     Description = release.Description

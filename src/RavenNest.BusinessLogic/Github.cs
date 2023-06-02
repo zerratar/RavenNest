@@ -137,8 +137,11 @@ namespace RavenNest.BusinessLogic.Github
                 Version = gameVersion;
             }
             this.Description = ParseDescription(root.Body);
-            this.UpdateDownloadUrl = root.Assets.FirstOrDefault(x => x.Name.StartsWith("update"))?.BrowserDownloadUrl;
-            this.FullDownloadUrl = root.Assets.FirstOrDefault(x => x.Name.StartsWith("Ravenfall.v"))?.BrowserDownloadUrl;
+                        
+            this.UpdateDownloadUrl_Win = root.Assets.FirstOrDefault(x => x.Name.StartsWith("update."))?.BrowserDownloadUrl;
+            this.UpdateDownloadUrl_Linux = root.Assets.FirstOrDefault(x => x.Name.StartsWith("update-linux"))?.BrowserDownloadUrl;
+            this.FullDownloadUrl_Win = root.Assets.FirstOrDefault(x => x.Name.StartsWith("Ravenfall.v") && !x.Name.Contains("linux"))?.BrowserDownloadUrl; 
+            this.FullDownloadUrl_Linux = root.Assets.FirstOrDefault(x => x.Name.StartsWith("Ravenfall.v") && x.Name.Contains("linux"))?.BrowserDownloadUrl;
             this.Published = root.PublishedAt;
         }
 
@@ -152,8 +155,12 @@ namespace RavenNest.BusinessLogic.Github
         public Version Version { get; }
         public string VersionString { get; }
         public string Description { get; }
-        public string UpdateDownloadUrl { get; }
-        public string FullDownloadUrl { get; }
+
+        public string UpdateDownloadUrl_Win { get; }
+        public string FullDownloadUrl_Win { get; }
+
+        public string UpdateDownloadUrl_Linux { get; }
+        public string FullDownloadUrl_Linux { get; }
         public DateTime Published { get; }
     }
 
