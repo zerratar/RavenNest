@@ -171,6 +171,43 @@ namespace RavenNest.Blazor
 
             //app.UseUseBlazorise(options => { options.DelayTextOnKeyPress = true; });
 
+
+            /*
+                Linux
+             */
+            app.Map("/download/linux", builder =>
+            {
+                builder.Run(async context =>
+                {
+                    var gameData = app.ApplicationServices.GetService<GameData>();
+                    var release = await Github.GetGithubReleaseAsync();
+                    var clientVersion = gameData.GetClientVersion();
+                    var client = gameData.Client;
+
+                    if (release != null && release.Version >= clientVersion)
+                    {
+                        if (client.ClientVersion != release.VersionString)
+                        {
+                            client.ClientVersion = release.VersionString;
+                            client.DownloadLink = release.UpdateDownloadUrl;
+                        }
+
+                        var url = release.FullDownloadUrl.Replace(".7z", "-linux.7z");
+                        context.Response.Redirect(url);
+                        return;
+                    }
+
+                    // fall back to saved settings in db.
+                    var redirectUrl = gameData.Client.DownloadLink;
+                    redirectUrl = redirectUrl.Replace("update.7z", $"Ravenfall.v{client.ClientVersion}-alpha-linux.7z");
+                    context.Response.Redirect(redirectUrl);
+                });
+            });
+
+
+            /*
+                Windows
+             */
             app.Map("/download/latest", builder =>
             {
                 builder.Run(async context =>

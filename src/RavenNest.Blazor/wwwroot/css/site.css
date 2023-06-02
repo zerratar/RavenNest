@@ -49,7 +49,7 @@ a.navbar-brand {
 }
 
 .h1, h1 {
-    font-size: 2rem;
+    font-size: 1.75rem;
 }
 
 .h3, h3 {
@@ -60,11 +60,6 @@ a.navbar-brand {
     margin-bottom: 25px;
     display: flex;
 }
-
-/*h1 {
-    color: white;
-    text-shadow: 4px 4px 10px rgba(0,0,0,0.5);
-}*/
 
 h1:after {
     background-image: url(/imgs/LineBreakWhite.png);
@@ -362,6 +357,7 @@ button.btn.btn-action:active {
     height: 166px;
     display: inline-block;
     z-index: 0;
+    pointer-events: none;
 }
 
 .loyalty-reward-list {
@@ -644,7 +640,6 @@ button.raven-btn.twitch.twitch-login-btn {
 }
 
 h1 {
-    text-transform: uppercase;
     font-weight: 700;
     color: #303030;
 }
@@ -730,12 +725,9 @@ footer:before {
     width: 100%;
     height: 200px;
     position: absolute;
-    /* top: -200px; */
     z-index: 1;
     left: 0;
-    margin-top: -200px;
-    /*    margin-top: 10px;
-    margin-bottom: 30px;*/
+    margin-top: -400px;
 }
 
 .footer-row {
@@ -1138,6 +1130,79 @@ td span.item-stat i {
     position: relative;
     top: 4px;
 }
+
+/* Raven Buttons */
+.raven-btn {
+    font-family: 'Heebo', sans-serif;
+    text-decoration: none;
+    padding: 11px 25px;
+    border: 0;
+
+    background: rgb(255,88,131);
+    background: linear-gradient(90deg, rgba(255,88,131,1) 0%, rgba(139,24,255,1) 100%);
+    
+    box-shadow: 1px 1px 7px 3px rgba(0,0,0,0.1), inset 1px 1px 7px 3px rgba(0,0,0,0.1);
+    border-radius: 7px;
+    margin: 5px;
+    color: white;
+    transition: all 0.25s ease;
+}
+
+
+.raven-btn:focus,
+.raven-btn:active {
+    outline: none;
+}
+
+/* default colors */
+.raven-btn:hover, .raven-btn:hover {
+    background: rgb(145,29,59);
+    background: linear-gradient(90deg, rgba(145,29,59,1) 0%, rgba(139,24,255,1) 100%);
+
+    text-decoration: none;
+    color: white;
+}
+
+
+.raven-btn:active {
+    background: rgb(145,29,59);
+    background: linear-gradient(90deg, rgba(145,29,59,1) 0%, rgba(72,0,145,1) 100%);
+}
+
+.raven-btn i {
+    margin-right: 10px;
+}
+
+/* orange */
+.raven-btn.orange:active {
+    background: #e55844;
+}
+
+.raven-btn.orange:hover, .raven-btn.orange:hover {
+    background: #ed5e4a;
+}
+
+.raven-btn.orange {
+    background: #f96854;
+}
+
+/* blue */
+.raven-btn.blue {
+    background: rgb(0,117,255);
+    background: linear-gradient(90deg, rgba(0,117,255,1) 0%, rgba(0,88,205,1) 100%);
+}
+
+.raven-btn.blue:hover, .raven-btn.blue:hover {
+    background: rgb(0,60,130);
+    background: linear-gradient(90deg, rgba(0,60,130,1) 0%, rgba(0,88,205,1) 100%);
+}
+
+.raven-btn.blue:active {
+    background: rgb(0,60,130);
+    background: linear-gradient(90deg, rgba(0,60,130,1) 0%, rgba(0,41,94,1) 100%);
+}
+
+
 
 @media (max-width: 641px) {
     h1 .page-title {

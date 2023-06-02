@@ -13,5 +13,8 @@ namespace RavenNest.Blazor.Components
 
         [Parameter]
         public string CssClass { get; set; }
+
+        [Parameter]
+        public string Target { get; set; } = "_blank";
     }
 }

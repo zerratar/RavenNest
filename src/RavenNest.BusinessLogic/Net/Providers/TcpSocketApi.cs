@@ -14,7 +14,7 @@ namespace RavenNest.BusinessLogic.Net
 {
     public class TcpSocketApi : ITcpSocketApi
     {
-        public const int MaxMessageSize = 256 * 1024;
+        public const int MaxMessageSize = 2 * 256 * 1024;
 
         public const int MaxMessageSize_v0820 = 16 * 1024;
 

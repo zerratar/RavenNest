@@ -148,6 +148,10 @@
     width: 840px;
 }
 
+a.raven-btn {
+    margin: 5px;
+}
+
 .hero-text b {
     font-weight: 600;
 }
@@ -159,12 +163,20 @@ p.invalid {
 }
 
 .hero-buttons {
-    margin-top: 50px;
+    margin-top: 25px;
     max-width: 100%;
-    width: 470px;
     display: flex;
-    /*justify-content: space-between;*/
     justify-content: center;
+}
+
+.raven-btn {
+    margin: 5px;
+}
+.raven-link {
+    margin: 5px;
+}
+.hero-buttons a {
+    margin: 5px;
 }
 
 .twitch-stream-item {

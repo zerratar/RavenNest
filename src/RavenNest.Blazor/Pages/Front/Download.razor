@@ -5,12 +5,83 @@
 @inject NavigationManager NavigationManager
 @inject AuthService AuthService
 
-<h1>Downloading and installing Ravenfall</h1>
+<div class="top-section">
+    <div class="hero-text">
+        <h1>Get started with Ravenfall</h1>
+    </div>
+</div>
 
-@code {
+<div class="white-section-break"></div>
+<div class="page-content">
+    
+    <div class="section">
+        <h2>Get started with Ravenfall</h2>
+        <p>Experience the magic of Ravenfall on your favorite device. Select your platform and get your copy now.</p>
+        <div class="download-options">
+            <div class="option">
+                <h3><i class="fa-brands fa-windows"></i>&nbsp;Windows x86</h3>
+                <p>Download the latest version for Windows.</p>
+                <a href="https://www.ravenfall.stream/download/latest" class="raven-btn">Download Ravenfall.7z</a>
+            </div>
+            <div class="option">
+                <h3><i class="fa-brands fa-linux"></i>&nbsp;Linux x86 (Experimental)</h3>
+                <p>Experimental build for Linux users.</p>
+                <a href="https://www.ravenfall.stream/download/linux" class="raven-btn blue">Download Ravenfall.7z</a>
+                <small class="notice">Note: Linux is not officially supported yet and does not have a working auto-update. The link may not work if no successful build was made for the current version of the game.</small>
+            </div>
+        </div>
+    </div>
 
-    protected override void OnInitialized()
-    {
-    }
+    <div class="section">
+        <div class="system-requirements">
+            <h2>System Requirements</h2>
+            <p>Ravenfall is designed to perform well across a wide range of systems. To ensure an optimal gaming experience, please review our basic system requirements below.</p>
+            <ul>
+                <li><strong>OS</strong>: Windows 10 or later (linux is untested)</li>
+                <li><strong>CPU</strong>: i5-6700 or equivalent (at least 4 cores)</li>
+                <li><strong>GPU</strong>: GTX 970 or equivalent (Dedicated)</li>
+            </ul>
+            <p>Note: These requirements are estimates for a game with about 25 players. For more players, hardware requirements may be higher. Please share your experiences on our <a href="https://discord.gg/gtfDts7" target="_blank">Discord</a> to help us refine these specifications.</p>
+        </div>
+    </div>
 
-}
+    <div class="section">
+        <div class="installation-guide">
+            <h2>Installation Guide</h2>
+            <p>Follow these steps to install and start playing Ravenfall:</p>
+            <ol>
+                <li><strong>Download the client:</strong> Unzip the downloaded file using <a href="https://www.7-zip.org/" target="_blank">7-zip</a> or similar software, and extract it into a new directory called “Ravenfall”.</li>
+                <li><strong>Set up 2FA (Optional):</strong> If you want to use your own account or a custom bot, set up Two-Factor Authentication for your Twitch account. Learn how to do it <a href="https://help.twitch.tv/s/article/two-factor-authentication?language=en_US">here</a>.</li>
+                <li><strong>Set a password:</strong> Head to <a href="https://www.ravenfall.stream/password">this link</a> and set a password for your Ravenfall account if you haven’t done so. This password is used only for the Ravenfall client, as it doesn't support Twitch login.</li>
+                <li><strong>Log in:</strong> Open the Ravenfall client, log in with your Twitch username and the password you just set, and explore the village on Home Island.</li>
+                <li><strong>Join the Twitch Chat:</strong> Type !join in your Twitch channel chat. You should see a response from RavenfallOfficial, and your character should be visible in the client.</li>
+                <li><strong>Adjust Screen Mode:</strong> To exit fullscreen mode, simply press Alt + Enter.</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="game-tips">
+            <h2>Additional Tips & Tricks</h2>
+            <p>To enhance your Ravenfall experience, here are some tips and notes:</p>
+            <ul>
+                <li><strong>Ravenfall Music:</strong> Feel free to use Ravenfall's public domain music on your stream.</li>
+                <li><strong>Client Running:</strong> Ensure the client is running for characters to gain experience, even when your stream is offline.</li>
+                <li><strong>Offline Input:</strong> Players can input commands at twitch.tv/popout/[username]/chat even when you're offline.</li>
+                <li><strong>Offscreen Play:</strong> Ravenfall doesn't have to be visible on the stream. Some streamers run the client offscreen, and viewers can still input commands, especially for events like raids or dungeons.</li>
+                <li><strong>Free Camera Mode:</strong> Press Ctrl + Tab to activate free camera mode, necessary for setting village bonuses. Check out the Streamers Control for comprehensive camera controls.</li>
+                <li><strong>Skill Mentoring Buildings:</strong> In free camera mode, you can fly to the Home village and set the skill mentoring buildings. Assign a mentor to each building to give characters leveling that skill an experience boost.</li>
+                <li><strong>Village Bonuses:</strong> Try not to overextend when choosing your village bonuses. For new servers, focusing exclusively on Barracks is advisable.</li>
+                <li><strong>Player List Size:</strong> If you change the player list size, it may seem to revert to the default size when you restart the client. Simply open the UI settings to restore your chosen size.</li>
+                <li><strong>Nightbot Commands:</strong> Consider using Nightbot commands to provide game information to players.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="community-guidelines">
+            <p>For more detailed guidelines, please visit our <a href="https://wiki.ravenfall.stream/index.php/Streamer_Setup_Guide">community wiki setup guide</a>. It is kept up to date by our dedicated community and may have more details than this page.</p>
+        </div>
+    </div>
+
+</div>
