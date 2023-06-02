@@ -9,6 +9,8 @@ using Microsoft.Extensions.Options;
 using System.Diagnostics;
 using RavenNest.Models.TcpApi;
 using MessagePack;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using TwitchLib.Api.Auth;
 
 namespace RavenNest.BusinessLogic.Net
 {
@@ -164,42 +166,18 @@ namespace RavenNest.BusinessLogic.Net
                         return;
                     }
 
-                    if (connection.SessionToken != null)
+                    if (TryDeserializePacket<CharacterUpdate>(packetData, connection, out var updatePacket) && updatePacket.CharacterId != Guid.Empty)
                     {
-                        // connection is authenticated. 
-                        // we will expect state skill update
-
-                        // check if token is still valid.
-                        // Most likely wont be an issue as expiry time is 6 months. LUL.
-                        if (!CheckSessionTokenValidity(connection.SessionToken))
+                        if (connection.SessionToken == null)
                         {
-                            logger.LogWarning("Session token expired for tcp api connection (" + (connection?.SessionToken?.SessionId.ToString() ?? "Token Unavailble") + ")");
-                            server.Disconnect(connectionId);
-                            return;
+                            connection.SessionToken = sessionManager.GetSessionTokenByCharacterId(updatePacket.CharacterId);
                         }
 
-                        var update = DeserializePacket<CharacterUpdate>(packetData, connection);
-                        if (update != null)
-                        {
-                            playerManager.UpdateCharacter(connection.SessionToken, update);
-                        }
+                        playerManager.UpdateCharacter(connection.SessionToken, updatePacket);
                     }
-                    else
+                    else if (TryDeserializePacket<AuthenticationRequest>(packetData, connection, out var authPacket))
                     {
-                        // we will expect authentication
-                        // if it isnt, we will disconnect the client.
-                        // var auth = BinaryPack.BinaryConverter.Deserialize<AuthenticationRequest>(packetData);
-
-                        var auth = MessagePackSerializer.Deserialize<AuthenticationRequest>(packetData, MessagePack.Resolvers.ContractlessStandardResolver.Options);
-
-                        if (string.IsNullOrEmpty(auth.SessionToken))
-                        {
-                            logger.LogDebug("Connection trying to authenticate with empty session token. Most likely reconnection without sending session token.");
-                            server.Disconnect(connectionId);
-                            return;
-                        }
-
-                        var sessionToken = sessionManager.Get(auth.SessionToken);
+                        var sessionToken = sessionManager.Get(authPacket.SessionToken);
                         if (!CheckSessionTokenValidity(sessionToken))
                         {
                             logger.LogWarning("Invalid session token for tcp api connection (" + (sessionToken?.SessionId.ToString() ?? "Token Unavailble") + ")");
@@ -207,7 +185,10 @@ namespace RavenNest.BusinessLogic.Net
                             return;
                         }
 
-                        connection.SessionToken = sessionToken;
+                        if (connection.SessionToken == null || connection.SessionToken.SessionId != sessionToken.SessionId)
+                        {
+                            connection.SessionToken = sessionToken;
+                        }
 
                         // Now that we have a token
                         // start the game Game Processor
@@ -231,50 +212,33 @@ namespace RavenNest.BusinessLogic.Net
             }
         }
 
+        private static bool TryDeserializePacket<T>(ReadOnlyMemory<byte> packetData, TcpSocketApiConnection connection, out T value)
+        {
+            var options = MessagePack.Resolvers.ContractlessStandardResolver.Options;
+            try
+            {
+                value = MessagePackSerializer.Deserialize<T>(packetData, options);
+
+                return true;
+            }
+            catch
+            {
+                value = default;
+                return false;
+            }
+        }
+
         private static T DeserializePacket<T>(ReadOnlyMemory<byte> packetData, TcpSocketApiConnection connection)
         {
-            T result = default;
             var options = MessagePack.Resolvers.ContractlessStandardResolver.Options;
-            if (packetData.Length == MaxMessageSize)
+            try
             {
-                // this is probably an unfinished package.
-                // but we can't say for certain yet. 
-                // try deserializing package
-                try
-                {
-                    result = MessagePackSerializer.Deserialize<T>(packetData, options);
-                }
-                catch
-                {
-                    // we are missing data.
-                    // lets add the bytes to an unfinished packet for this connection
-                    // then hold it until next data comes.
-                    if (connection.UnfinishedBuffer != null) // this may be an infinite growing horror.
-                    {
-                        connection.UnfinishedBuffer.Append(packetData);
-                    }
-                    else
-                    {
-                        connection.UnfinishedBuffer = new PartialByteBuffer(packetData);
-                    }
-                }
+                return MessagePackSerializer.Deserialize<T>(packetData, options);
             }
-            else
+            catch
             {
-                var partial = connection.UnfinishedBuffer;
-                if (partial != null)
-                {
-                    partial.Append(packetData);
-                    result = MessagePackSerializer.Deserialize<T>(partial, options);
-                    connection.UnfinishedBuffer = null;
-                }
-                else
-                {
-                    result = MessagePackSerializer.Deserialize<T>(packetData, options);
-                }
+                return default;
             }
-
-            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

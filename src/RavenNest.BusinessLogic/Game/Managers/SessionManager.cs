@@ -575,5 +575,9 @@ namespace RavenNest.BusinessLogic.Game
             //}
         }
 
+        internal SessionToken GetSessionTokenByCharacterId(Guid characterId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }
