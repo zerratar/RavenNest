@@ -86,7 +86,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             }
         }
 
-        public async Task ProcessAsync(CancellationTokenSource cts)
+        public void Process(CancellationTokenSource cts)
         {
             var now = DateTime.UtcNow;
 
@@ -102,7 +102,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
             PushPermissionDataInfo(now);
 
-            await PushPubSubDetailsAsync(now);
+            PushPubSubDetailsAsync(now);
 
         }
 
@@ -181,7 +181,6 @@ namespace RavenNest.BusinessLogic.Game.Processors
             var session = gameData.GetSession(sessionToken.SessionId);
             if (session == null)
                 return;
-
 
             // force keep a session alive if we are connected here
             session.Stopped = null;

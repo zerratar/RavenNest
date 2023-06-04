@@ -5,6 +5,6 @@ namespace RavenNest.BusinessLogic.Game.Processors
 {
     public interface IGameProcessor
     {
-        Task ProcessAsync(CancellationTokenSource cts);
+        void Process(CancellationTokenSource cts);
     }
 }

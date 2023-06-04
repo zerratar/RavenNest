@@ -5,6 +5,8 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
 {
     public interface ITwitchExtensionConnectionProvider
     {
+        bool Enabled { get; set; }
+
         IEnumerable<IExtensionConnection> GetAll();
         IExtensionConnection Get(System.Net.WebSockets.WebSocket socket, IReadOnlyDictionary<string, string> requestHeaders);
         bool TryGet(string sessionId, out IExtensionConnection connection);

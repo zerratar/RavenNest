@@ -62,7 +62,7 @@ namespace RavenNest.BusinessLogic.Net
             var uid = sessionToken.UserId;
             if (gameInstances.TryGetValue(uid, out var existing) && existing != null && existing.IsActive)
             {
-                logger.LogWarning("An existing Game Instance for user with ID " + uid + " exists, we may have two connections now. But we can't have multiple processors.");
+                //logger.LogWarning("An existing Game Instance for user with ID " + uid + " exists, we may have two connections now. But we can't have multiple processors.");
                 return;
             }
 
@@ -129,11 +129,16 @@ namespace RavenNest.BusinessLogic.Net
 
         public void Start()
         {
+            if (started)
+            {
+                return;
+            }
+
             started = true;
             updateThread.Start();
         }
 
-        private async void UpdateProcess()
+        private void UpdateProcess()
         {
             using (var cts = new CancellationTokenSource())
             {
@@ -154,15 +159,15 @@ namespace RavenNest.BusinessLogic.Net
 
                     try
                     {
-                        await gameProcessor.ProcessAsync(cts).ConfigureAwait(false);
+                        gameProcessor.Process(cts);
                     }
 
                     catch (Exception exc)
                     {
                         logger.LogError("[" + SessionToken.UserName + "] Error processing game update: " + exc.ToString());
-                        await Task.Delay(500);
+                        System.Threading.Thread.Sleep(500);
                     }
-                    await Task.Delay(16);
+                    System.Threading.Thread.Sleep(16);
                 }
 
                 logger.LogWarning("[" + SessionToken.UserName + "] Session terminated game loop (" + SessionToken.SessionId + ")");
@@ -177,6 +182,7 @@ namespace RavenNest.BusinessLogic.Net
             }
 
             this.disposed = true;
+            this.started = false;
             this.updateThread.Join();
 
             logger.LogWarning("[" + SessionToken.TwitchUserName + "] Session disposed (" + SessionToken.SessionId + ")");

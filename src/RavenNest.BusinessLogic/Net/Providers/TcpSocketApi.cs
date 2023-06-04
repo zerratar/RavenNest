@@ -12,6 +12,8 @@ using MessagePack;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using TwitchLib.Api.Auth;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using RavenNest.BusinessLogic.ScriptParser;
+using Newtonsoft.Json.Linq;
 
 namespace RavenNest.BusinessLogic.Net
 {
@@ -192,7 +194,16 @@ namespace RavenNest.BusinessLogic.Net
                         {
                             connection.SessionToken = sessionManager.GetSessionTokenByCharacterId(updatePacket.CharacterId, true);
                         }
-                        
+
+                        if (!CheckSessionTokenValidity(connection.SessionToken))
+                        {
+                            logger.LogWarning("Invalid session token for tcp api connection (" + (connection.SessionToken?.SessionId.ToString() ?? "Token Unavailble") + ")");
+                            server.Disconnect(connection.ConnectionId);
+                            return;
+                        }
+
+                        gameProcessorManager.Start(connection.SessionToken);
+
                         playerManager.UpdateCharacter(connection.SessionToken, updatePacket);
                     }
                     else if (TryDeserializePacket<AuthenticationRequest>(packetData, out var authPacket))
@@ -236,12 +247,12 @@ namespace RavenNest.BusinessLogic.Net
             if (connection.SessionToken == null)
             {
                 connection.SessionToken = token;
+            }
 
-                // start the game session if its not already started.
-                if (token != null)
-                {
-                    gameProcessorManager.Start(token);
-                }
+            // start the game session if its not already started.
+            if (token != null)
+            {
+                gameProcessorManager.Start(token);
             }
 
             return true;

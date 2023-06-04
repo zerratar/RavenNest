@@ -4,6 +4,7 @@ using RavenNest.DataModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace RavenNest.BusinessLogic.Twitch.Extension
 {
@@ -16,6 +17,8 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
         private readonly Dictionary<string, IExtensionConnection> connections = new Dictionary<string, IExtensionConnection>();
 
         private readonly object mutex = new object();
+
+        public bool Enabled { get; set; }
 
         public TwitchExtensionConnectionProvider(
             ILogger<TwitchExtensionConnectionProvider> logger,
@@ -32,6 +35,7 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
 
         public IEnumerable<IExtensionConnection> GetAll()
         {
+            if (!Enabled) return null;
             lock (mutex)
             {
                 return connections.Values;
@@ -42,6 +46,7 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
             System.Net.WebSockets.WebSocket socket,
             IReadOnlyDictionary<string, string> requestHeaders)
         {
+            if (!Enabled) return null;
             var sessionId = requestHeaders.GetSessionId();
             if (!sessionInfoProvider.TryGet(sessionId, out var session))
             {
@@ -63,6 +68,11 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
 
         public bool TryGet(string sessionId, out IExtensionConnection connection)
         {
+            if (!Enabled)
+            {
+                connection = null;
+                return false;
+            }
             lock (mutex)
             {
                 return connections.TryGetValue(sessionId, out connection);
@@ -71,6 +81,11 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
 
         public bool TryGetAllByStreamer(Guid streamerUserId, out IReadOnlyList<IExtensionConnection> connections)
         {
+            if (!Enabled)
+            {
+                connections = null;
+                return false;
+            }
             lock (mutex)
             {
                 var streamer = gameData.GetUser(streamerUserId);
@@ -80,6 +95,12 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
 
         public bool TryGetAllByUser(Guid userId, out IReadOnlyList<IExtensionConnection> connections)
         {
+            if (!Enabled)
+            {
+                connections = null;
+                return false;
+            }
+
             lock (mutex)
             {
                 return (connections = this.connections.SelectWhere(x => x.Value.Session.Id == userId, x => x.Value)).Count > 0;
@@ -88,16 +109,19 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
 
         public bool TryGet(Guid characterId, out IExtensionConnection connection)
         {
-            lock (mutex)
+            if (!Enabled)
             {
-                if (sessionInfoProvider.TryGet(characterId, out var session))
-                {
-                    return TryGet(session.SessionId, out connection);
-                }
-
                 connection = null;
                 return false;
             }
+
+            if (sessionInfoProvider.TryGet(characterId, out var session))
+            {
+                return TryGet(session.SessionId, out connection);
+            }
+
+            connection = null;
+            return false;
         }
     }
 }

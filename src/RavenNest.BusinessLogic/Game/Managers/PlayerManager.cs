@@ -55,6 +55,9 @@ namespace RavenNest.BusinessLogic.Game
             this.gameData = gameData;
             this.integrityChecker = integrityChecker;
             this.extensionWsConnectionProvider = extensionWsConnectionProvider;
+
+            // extension is not enabled yet
+            extensionWsConnectionProvider.Enabled = false;
         }
 
         public int GetHighscore(SessionToken sessionToken, Guid characterId, string skillName)
