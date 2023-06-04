@@ -190,6 +190,7 @@ namespace RavenNest.Controllers
 
 
         [HttpGet("backup/download")]
+        [HttpGet("download/backup")]
         public async Task<ActionResult> DownloadGameState()
         {
             try

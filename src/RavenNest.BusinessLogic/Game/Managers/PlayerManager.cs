@@ -10,10 +10,12 @@ using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Models;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
+using RavenNest.BusinessLogic.ScriptParser;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Models.TcpApi;
+using static RavenNest.BusinessLogic.Models.Patreon.API.PatreonIdentity;
 using Appearance = RavenNest.DataModels.Appearance;
 using Gender = RavenNest.DataModels.Gender;
 using Item = RavenNest.DataModels.Item;
@@ -2525,6 +2527,11 @@ namespace RavenNest.BusinessLogic.Game
 
         internal void SaveExperience(SessionToken sessionToken, SaveExperienceRequest saveExp)
         {
+            if (sessionToken == null || saveExp == null)
+            {
+                return;
+            }
+
             var gameSession = gameData.GetSession(sessionToken.SessionId);
             if (gameSession == null)
             {
@@ -2610,12 +2617,16 @@ namespace RavenNest.BusinessLogic.Game
                     });
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 }
-
             }
         }
 
         internal void SaveState(SessionToken sessionToken, SaveStateRequest stateUpdate)
         {
+            if (sessionToken == null || stateUpdate == null)
+            {
+                return;
+            }
+
             var gameSession = gameData.GetSession(sessionToken.SessionId);
             if (gameSession == null)
             {
@@ -2667,8 +2678,10 @@ namespace RavenNest.BusinessLogic.Game
         public bool UpdateCharacter(SessionToken token, CharacterUpdate data)
         {
             // seem to happen on server restarts.
-            if (data == null || data.CharacterId == Guid.Empty)
+            if (token == null || data == null || data.CharacterId == Guid.Empty)
+            {
                 return false;
+            }
 
             var gameSession = gameData.GetSession(token.SessionId);
             var character = gameData.GetCharacter(data.CharacterId);

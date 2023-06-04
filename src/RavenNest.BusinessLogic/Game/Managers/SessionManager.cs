@@ -500,9 +500,9 @@ namespace RavenNest.BusinessLogic.Game
             return Encoding.UTF8.GetString(data);
         }
 
-        internal SessionToken GetSessionTokenByCharacterId(Guid characterId)
+        internal SessionToken GetSessionTokenByCharacterId(Guid characterId, bool allowInactiveSessions = false)
         {
-            var session = gameData.GetSessionByCharacterId(characterId);
+            var session = gameData.GetSessionByCharacterId(characterId, allowInactiveSessions);
             if (session == null) return null;
             var user = gameData.GetUser(session.UserId);
             return new SessionToken

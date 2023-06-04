@@ -56,9 +56,19 @@ namespace RavenNest.BusinessLogic.Extensions
         {
             var user = gameData.GetUser(character.UserId);
             if (user == null) return null;
+
+            var lastSkillUpdate = DateTime.MinValue;
+            var sessionInfo = GetCharacterSessionInfo(gameData, character);
+            if (sessionInfo != null)
+            {
+                lastSkillUpdate = sessionInfo.SkillsUpdated;
+            }
+
             return new GameSessionPlayer
             {
+                CharacterId = character.Id,
                 TwitchUserId = user.UserId,
+                LastExpUpdate = lastSkillUpdate,
                 UserName = user.UserName,
                 IsAdmin = user.IsAdmin.GetValueOrDefault(),
                 IsModerator = user.IsModerator.GetValueOrDefault(),
@@ -496,11 +506,10 @@ namespace RavenNest.BusinessLogic.Extensions
                 IsHiddenInHighscore = user.IsHiddenInHighscore.GetValueOrDefault()
             };
         }
-
-        private static CharacterSessionInfo GetCharacterSessionInfo(GameData gameData, Character character)
+        public static CharacterSessionInfo GetCharacterSessionInfo(GameData gameData, Guid characterId)
         {
             var sessionInfo = new CharacterSessionInfo();
-            var session = gameData.GetSessionByCharacterId(character.Id);
+            var session = gameData.GetSessionByCharacterId(characterId);
             if (session != null)
             {
                 sessionInfo.Started = session.Started;
@@ -510,7 +519,7 @@ namespace RavenNest.BusinessLogic.Extensions
                     sessionInfo.OwnerDisplayName = sessionOwner.DisplayName;
                     sessionInfo.OwnerUserName = sessionOwner.UserName;
                 }
-                var css = gameData.GetCharacterSessionState(session.Id, character.Id);
+                var css = gameData.GetCharacterSessionState(session.Id, characterId);
                 if (css != null)
                 {
                     sessionInfo.SkillsUpdated = css.LastSkillUpdate;
@@ -518,6 +527,11 @@ namespace RavenNest.BusinessLogic.Extensions
             }
 
             return sessionInfo;
+        }
+
+        public static CharacterSessionInfo GetCharacterSessionInfo(GameData gameData, Character character)
+        {
+            return GetCharacterSessionInfo(gameData, character.Id);
         }
     }
 }

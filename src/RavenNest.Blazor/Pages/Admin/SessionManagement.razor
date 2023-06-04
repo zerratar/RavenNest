@@ -1,155 +1,189 @@
 ﻿@layout AdminLayout
 @page "/admin/sessions"
+@using RavenNest.BusinessLogic.Extensions
 @inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.BusinessLogic.Data.GameData GameData
+@inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject RavenNest.Blazor.Services.SessionService SessionService
 
 @if (isAdmin)
 {
 
-  @if (gameSessions == null || loading)
-  {
-    <h1>Game Sessions</h1>
-    <LoadIndicator></LoadIndicator>
-  }
-  else
-  {
-    <h1>Game Sessions (@gameSessions.Count)</h1>
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Id</th>
-          <th>Owner</th>
-          <th>Status</th>
-          <th>Started</th>
-          <th>Last Update</th>
-          <th>Uptime</th>
-          <th>Admin</th>
-          <th>Mod</th>
-          <th>Client Version</th>
-          <th>Players (@gameSessions.Sum(x => x.Players.Count))</th>
-        </tr>
-      </thead>
-      <tbody>
-        @foreach (var session in gameSessions)
-        {
-          <tr class="table-row">
-            <td>@session.Id</td>
-            <td><span>Twitch: @session.TwitchUserId</span> <span>@session.UserName</span></td>
-            <td>@GetSessionStatus(session.Status)</td>
-            <td>@session.Started</td>
-            <td>@session.Updated</td>
-            <td>@GetUptime(session)</td>
-            <td>@session.AdminPrivileges</td>
-            <td>@session.ModPrivileges</td>
-            <td>@session.ClientVersion</td>
-            <td @onclick="()=>ShowPlayerList(session)">@session.Players.Count</td>
-          </tr>
-        }
-
-      </tbody>
-    </table>
-  }
-  @if (playerListVisible)
-  {
-    <div class="player-list-modal">
-      <div class="player-list-modal-header">
-        @if (inspectingSession != null)
-        {
-          <h3>@(inspectingSession.UserName + " - " + inspectingSession.Players.Count + " players")</h3>
-        }
-        <div @onclick="HidePlayerList" class="btn-close">&times;</div>
-      </div>
-      <div class="player-list">
-        @if (inspectingSession != null)
-        {
-          <table class="table">
+    @if (gameSessions == null || loading)
+    {
+        <h1>Game Sessions</h1>
+        <LoadIndicator></LoadIndicator>
+    }
+    else
+    {
+        <h1>Game Sessions (@gameSessions.Count)</h1>
+        <table class="table">
             <thead>
-              <tr>
-                <th>Twitch User Id</th>
-                <th>Twitch User Name</th>
-                <th>Administrator</th>
-                <th>Moderator</th>
-              </tr>
+                <tr>
+                    <th>Id</th>
+                    <th>Owner</th>
+                    <th>Status</th>
+                    <th>Started</th>
+                    <th>Last Update</th>
+                    <th>Uptime</th>
+                    <th>Admin</th>
+                    <th>Mod</th>
+                    <th>Client Version</th>
+                    <th>Players (@gameSessions.Sum(x => x.Players.Count))</th>
+                </tr>
             </thead>
             <tbody>
-              @foreach (var player in inspectingSession.Players)
-              {
-                <tr class="table-row">
-                  <td>@player.TwitchUserId</td>
-                  <td>@player.UserName</td>
-                  <td>@player.IsAdmin</td>
-                  <td>@player.IsModerator</td>
-                </tr>
-              }
+                @foreach (var session in gameSessions)
+                {
+                    <tr class="table-row">
+                        <td>@session.Id</td>
+                        <td><span>Twitch: @session.TwitchUserId</span> <span>@session.UserName</span></td>
+                        <td>@GetSessionStatus(session.Status)</td>
+                        <td>@session.Started</td>
+                        <td>@session.Updated</td>
+                        <td>@GetUptime(session)</td>
+                        <td>@session.AdminPrivileges</td>
+                        <td>@session.ModPrivileges</td>
+                        <td>@session.ClientVersion</td>
+                        <td @onclick="()=>ShowPlayerList(session)">@session.Players.Count</td>
+                    </tr>
+                }
+
             </tbody>
-          </table>
-        }
-      </div>
-    </div>
-  }
+        </table>
+    }
+    @if (playerListVisible)
+    {
+        <div class="player-list-modal">
+            <div class="player-list-modal-header">
+                @if (inspectingSession != null)
+                {
+                    <h3>@(inspectingSession.UserName + " - " + inspectingSession.Players.Count + " players")</h3>
+                }
+                <div @onclick="HidePlayerList" class="btn-close">&times;</div>
+            </div>
+            <div class="player-list">
+                @if (inspectingSession != null)
+                {
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>User Name</th>
+                                <th>Administrator</th>
+                                <th>Moderator</th>
+                                <th>Last Saved (Avg @((inspectingSession.AvgSaveTime.HasValue ? System.Math.Round(inspectingSession.AvgSaveTime.Value.TotalSeconds) : 0))s)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var player in inspectingSession.Players)
+                            {
+                                <tr class="table-row">
+                                    <td>@player.UserName</td>
+                                    <td>@player.IsAdmin</td>
+                                    <td>@player.IsModerator</td>
+                                    <td>
+                                        <div class="last-updated">@GetLastUpdateString(player.LastExpUpdate)</div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    }
 }
 
 @code {
-  private RavenNest.Models.SessionInfo session;
-  private RavenNest.Models.GameSession inspectingSession;
-  private bool isAdmin;
-  private bool playerListVisible;
-  private bool loading = false;
-  private IReadOnlyList<RavenNest.Models.GameSession> gameSessions;
+    private RavenNest.Models.SessionInfo session;
+    private RavenNest.Models.GameSession inspectingSession;
+    private bool isAdmin;
+    private bool playerListVisible;
+    private bool loading = false;
+    private IReadOnlyList<RavenNest.Models.GameSession> gameSessions;
+    private DateTime UtcNow = DateTime.UtcNow;
 
-  protected override void OnInitialized()
-  {
-    session = AuthService.GetSession();
-    isAdmin = session != null && session.Administrator;
-    if (isAdmin)
+    protected override void OnInitialized()
     {
-      LoadGameSessionsAsync();
-    }
-  }
-
-  private void HidePlayerList()
-  {
-    playerListVisible = false;
-    InvokeAsync(StateHasChanged);
-  }
-
-  private void ShowPlayerList(RavenNest.Models.GameSession data)
-  {
-    inspectingSession = data;
-    playerListVisible = true;
-    InvokeAsync(StateHasChanged);
-  }
-
-  private string GetUptime(RavenNest.Models.GameSession session)
-  {
-    return FormatTime(DateTime.UtcNow - session.Started);
-  }
-
-  private string FormatTime(TimeSpan time)
-  {
-    if (time.TotalSeconds < 60) return "<1 minute";
-    if (time.TotalMinutes < 60)
-      return (int)Math.Floor(time.TotalMinutes) + " minutes";
-    if (time.TotalHours < 24)
-      return Math.Round(time.TotalHours, 2) + " hours";
-    return $"{time.Days} days, {time.Hours} hours, {time.Minutes} minutes";
-  }
-
-  private string GetSessionStatus(int status)
-  {
-    if (status == 0)
-    {
-      return "Active";
+        session = AuthService.GetSession();
+        isAdmin = session != null && session.Administrator;
+        if (isAdmin)
+        {
+            LoadGameSessionsAsync();
+        }
     }
 
-    return "Ended";
-  }
+    public string GetLastUpdateString(DateTime update)
+    {
+        var elapsed = UtcNow - update;
+        if (update == DateTime.MinValue)
+        {
+            return "";
+        }
+        var prefix = "Exp Last updated: ";
+        if (elapsed.TotalHours >= 24)
+        {
+            return prefix + (int)elapsed.TotalDays + " days ago";
+        }
 
-  private async Task LoadGameSessionsAsync()
-  {
-    loading = true;
-    gameSessions = await SessionService.GetGameSessionsAsync();
-    loading = false;
-    await InvokeAsync(StateHasChanged);
-  }
+        if (elapsed.TotalHours >= 1)
+        {
+            return prefix + (int)elapsed.TotalHours + " hours ago";
+        }
+
+        if (elapsed.TotalMinutes >= 1)
+        {
+            return prefix + (int)elapsed.TotalMinutes + " minutes ago";
+        }
+
+        return prefix + (int)elapsed.TotalSeconds + " seconds ago";
+    }
+
+    private void HidePlayerList()
+    {
+        playerListVisible = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ShowPlayerList(RavenNest.Models.GameSession data)
+    {
+        inspectingSession = data;
+        inspectingSession.AvgSaveTime = TimeSpan.FromSeconds(data.Players.Average(x => (UtcNow - x.LastExpUpdate).TotalSeconds));
+        playerListVisible = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private string GetUptime(RavenNest.Models.GameSession session)
+    {
+        return FormatTime(DateTime.UtcNow - session.Started);
+    }
+
+    private string FormatTime(TimeSpan time)
+    {
+        if (time.TotalSeconds < 60) return "<1 minute";
+        if (time.TotalMinutes < 60)
+            return (int)Math.Floor(time.TotalMinutes) + " minutes";
+        if (time.TotalHours < 24)
+            return Math.Round(time.TotalHours, 2) + " hours";
+        return $"{time.Days} days, {time.Hours} hours, {time.Minutes} minutes";
+    }
+
+    private string GetSessionStatus(int status)
+    {
+        if (status == 0)
+        {
+            return "Active";
+        }
+
+        return "Ended";
+    }
+
+    private async Task LoadGameSessionsAsync()
+    {
+        loading = true;
+        gameSessions = await SessionService.GetGameSessionsAsync();
+        loading = false;
+        UtcNow = DateTime.UtcNow;
+        await InvokeAsync(StateHasChanged);
+    }
 }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RavenNest.Models;
+using System;
 
 namespace RavenNest.BusinessLogic.Extended
 {
@@ -9,4 +10,5 @@ namespace RavenNest.BusinessLogic.Extended
         public string OwnerDisplayName { get; set; }
         public string OwnerUserName { get; set; }
     }
+
 }

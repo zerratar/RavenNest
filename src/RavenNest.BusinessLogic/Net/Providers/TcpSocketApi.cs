@@ -190,9 +190,9 @@ namespace RavenNest.BusinessLogic.Net
                         // we don't provide a session token in this request. This should be obsolete as its insecure.
                         if (connection.SessionToken == null)
                         {
-                            connection.SessionToken = sessionManager.GetSessionTokenByCharacterId(updatePacket.CharacterId);
+                            connection.SessionToken = sessionManager.GetSessionTokenByCharacterId(updatePacket.CharacterId, true);
                         }
-
+                        
                         playerManager.UpdateCharacter(connection.SessionToken, updatePacket);
                     }
                     else if (TryDeserializePacket<AuthenticationRequest>(packetData, out var authPacket))

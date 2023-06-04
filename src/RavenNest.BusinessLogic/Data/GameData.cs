@@ -2078,7 +2078,7 @@ namespace RavenNest.BusinessLogic.Data
         public AddEntityResult Add(VendorItem item) => Update(() => vendorItems.Add(item));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(DailyAggregatedMarketplaceData item) => Update(() => dailyAggregatedMarketplaceData.Add(item));
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(DailyAggregatedEconomyReport item) => Update(() => dailyAggregatedEconomyReport.Add(item));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2361,6 +2361,7 @@ namespace RavenNest.BusinessLogic.Data
             {
                 state = new CharacterSessionState();
                 state.LastTaskUpdate = DateTime.UtcNow;
+                state.LastSkillUpdate = DateTime.UtcNow;
                 state.SailingRewardAttempted = DateTime.MinValue;
                 states[characterId] = state;
                 characterSessionStates[sessionId] = states;
@@ -2409,12 +2410,18 @@ namespace RavenNest.BusinessLogic.Data
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GameSession GetSessionByCharacterId(Guid characterId)
+        public GameSession GetSessionByCharacterId(Guid characterId, bool allowInactiveSessions = false)
         {
             var character = characters.Entities.FirstOrDefault(x => x.Id == characterId);
             if (character == null || character.UserIdLock == null) return null;
             var sessionOwner = GetUser(character.UserIdLock.Value);
             if (sessionOwner == null) return null;
+
+            if (allowInactiveSessions)
+            {
+                return gameSessions[nameof(User), sessionOwner.Id].FirstOrDefault();
+            }
+
             return GetActiveSessions().FirstOrDefault(x => x.UserId == sessionOwner.Id);
         }
 

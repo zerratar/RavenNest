@@ -14,6 +14,7 @@ namespace RavenNest.Models
         public List<GameSessionPlayer> Players { get; set; }
         public DateTime Started { get; set; }
         public DateTime? Updated { get; set; }
+        public TimeSpan? AvgSaveTime { get; set; }
         public string ClientVersion { get; set; }
         public float SyncTime { get; set; }
         public int Status { get; set; }
