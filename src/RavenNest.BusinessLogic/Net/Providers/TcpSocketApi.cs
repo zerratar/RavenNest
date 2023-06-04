@@ -11,6 +11,7 @@ using RavenNest.Models.TcpApi;
 using MessagePack;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using TwitchLib.Api.Auth;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace RavenNest.BusinessLogic.Net
 {
@@ -166,8 +167,27 @@ namespace RavenNest.BusinessLogic.Net
                         return;
                     }
 
-                    if (TryDeserializePacket<CharacterUpdate>(packetData, connection, out var updatePacket) && updatePacket.CharacterId != Guid.Empty)
+                    if (TryDeserializePacket<SaveExperienceRequest>(packetData, out var saveExp))
                     {
+                        if (!HandleSessionToken(saveExp.SessionToken, connection))
+                        {
+                            return;
+                        }
+
+                        playerManager.SaveExperience(connection.SessionToken, saveExp);
+                    }
+                    else if (TryDeserializePacket<SaveStateRequest>(packetData, out var stateUpdate))
+                    {
+                        if (!HandleSessionToken(stateUpdate.SessionToken, connection))
+                        {
+                            return;
+                        }
+
+                        playerManager.SaveState(connection.SessionToken, stateUpdate);
+                    }
+                    else if (TryDeserializePacket<CharacterUpdate>(packetData, out var updatePacket))
+                    {
+                        // we don't provide a session token in this request. This should be obsolete as its insecure.
                         if (connection.SessionToken == null)
                         {
                             connection.SessionToken = sessionManager.GetSessionTokenByCharacterId(updatePacket.CharacterId);
@@ -175,24 +195,16 @@ namespace RavenNest.BusinessLogic.Net
 
                         playerManager.UpdateCharacter(connection.SessionToken, updatePacket);
                     }
-                    else if (TryDeserializePacket<AuthenticationRequest>(packetData, connection, out var authPacket))
+                    else if (TryDeserializePacket<AuthenticationRequest>(packetData, out var authPacket))
                     {
-                        var sessionToken = sessionManager.Get(authPacket.SessionToken);
-                        if (!CheckSessionTokenValidity(sessionToken))
+                        if (!HandleSessionToken(stateUpdate.SessionToken, connection))
                         {
-                            logger.LogWarning("Invalid session token for tcp api connection (" + (sessionToken?.SessionId.ToString() ?? "Token Unavailble") + ")");
-                            server.Disconnect(connectionId);
                             return;
                         }
 
-                        if (connection.SessionToken == null || connection.SessionToken.SessionId != sessionToken.SessionId)
-                        {
-                            connection.SessionToken = sessionToken;
-                        }
-
                         // Now that we have a token
-                        // start the game Game Processor
-                        gameProcessorManager.Start(sessionToken);
+                        //// start the game Game Processor
+                        //gameProcessorManager.Start(connection.SessionToken);
                     }
                 }
 
@@ -212,14 +224,36 @@ namespace RavenNest.BusinessLogic.Net
             }
         }
 
-        private static bool TryDeserializePacket<T>(ReadOnlyMemory<byte> packetData, TcpSocketApiConnection connection, out T value)
+        private bool HandleSessionToken(string sessionToken, TcpSocketApiConnection connection)
+        {
+            var token = sessionManager.Get(sessionToken);
+            if (!CheckSessionTokenValidity(token))
+            {
+                logger.LogWarning("Invalid session token for tcp api connection (" + (token?.SessionId.ToString() ?? "Token Unavailble") + ")");
+                server.Disconnect(connection.ConnectionId);
+                return false;
+            }
+            if (connection.SessionToken == null)
+            {
+                connection.SessionToken = token;
+
+                // start the game session if its not already started.
+                if (token != null)
+                {
+                    gameProcessorManager.Start(token);
+                }
+            }
+
+            return true;
+        }
+
+        private static bool TryDeserializePacket<T>(ReadOnlyMemory<byte> packetData, out T value) where T : class
         {
             var options = MessagePack.Resolvers.ContractlessStandardResolver.Options;
             try
             {
                 value = MessagePackSerializer.Deserialize<T>(packetData, options);
-
-                return true;
+                return value != null && Validate<T>(value);
             }
             catch
             {
@@ -228,7 +262,8 @@ namespace RavenNest.BusinessLogic.Net
             }
         }
 
-        private static T DeserializePacket<T>(ReadOnlyMemory<byte> packetData, TcpSocketApiConnection connection)
+
+        private static T DeserializePacket<T>(ReadOnlyMemory<byte> packetData)
         {
             var options = MessagePack.Resolvers.ContractlessStandardResolver.Options;
             try
@@ -239,6 +274,33 @@ namespace RavenNest.BusinessLogic.Net
             {
                 return default;
             }
+        }
+
+        private static bool Validate<T>(T value) where T : class
+        {
+            // ugly hax to validate if our packets are correct.
+
+            if (value is SaveExperienceRequest saveRequest)
+            {
+                return !string.IsNullOrEmpty(saveRequest.SessionToken) && saveRequest.ExpUpdates != null && saveRequest.ExpUpdates.Length > 0;
+            }
+
+            if (value is CharacterUpdate characterUpdate)
+            {
+                return characterUpdate.CharacterId != Guid.Empty && ((characterUpdate.X != 0 || characterUpdate.Y != 0 || characterUpdate.Z != 0) || (characterUpdate.Skills != null && characterUpdate.Skills.Length > 0));
+            }
+
+            if (value is AuthenticationRequest tokenRequest)
+            {
+                return !string.IsNullOrEmpty(tokenRequest.SessionToken);
+            }
+
+            if (value is SaveStateRequest stateUpdate)
+            {
+                return !string.IsNullOrEmpty(stateUpdate.SessionToken) && stateUpdate.StateUpdates != null && stateUpdate.StateUpdates.Length > 0;
+            }
+
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

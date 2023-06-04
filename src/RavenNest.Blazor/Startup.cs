@@ -188,7 +188,7 @@ namespace RavenNest.Blazor
                         if (client.ClientVersion != release.VersionString)
                         {
                             client.ClientVersion = release.VersionString;
-                            client.DownloadLink = release.UpdateDownloadUrl_Linux;
+                            client.DownloadLink = release.UpdateDownloadUrl_Win;
                         }
 
                         var url = release.UpdateDownloadUrl_Linux;

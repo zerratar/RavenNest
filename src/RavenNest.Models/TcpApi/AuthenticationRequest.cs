@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace RavenNest.Models.TcpApi
 {
@@ -7,6 +6,39 @@ namespace RavenNest.Models.TcpApi
     {
         public string SessionToken { get; set; }
     }
+
+
+    public class SaveExperienceRequest
+    {
+        public string SessionToken { get; set; }
+        public ExperienceUpdate[] ExpUpdates { get; set; }
+    }
+
+    public class ExperienceUpdate
+    {
+        public Guid CharacterId { get; set; }
+        public SkillUpdate[] Skills { get; set; }
+    }
+
+
+    public class SaveStateRequest
+    {
+        public string SessionToken { get; set; }
+        public CharacterStateUpdate[] StateUpdates { get; set; }
+    }
+
+    public class CharacterStateUpdate
+    {
+        public Guid CharacterId { get; set; }
+        public short Health { get; set; }
+        public Island Island { get; set; }
+        public CharacterState State { get; set; }
+        public int TrainingSkillIndex { get; set; }
+        public short X { get; set; }
+        public short Y { get; set; }
+        public short Z { get; set; }
+    }
+
 
     public class CharacterUpdate
     {
@@ -20,10 +52,7 @@ namespace RavenNest.Models.TcpApi
         public float X { get; set; }
         public float Y { get; set; }
         public float Z { get; set; }
-        public SkillUpdate[] Skills
-        {
-            get; set;
-        }
+        public SkillUpdate[] Skills { get; set; }
     }
 
     public class SkillUpdate
