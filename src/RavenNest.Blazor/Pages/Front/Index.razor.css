@@ -275,3 +275,16 @@ i.fas.fa-play {
         width: 100%;
     }
 }
+@media (max-width: 575px){
+    .hero-text {
+        font-size: 11pt;
+        margin-bottom: 10px;
+    }
+
+    .raven-btn {
+        font-size: 10pt;
+        padding: 5px 10px;
+        text-align: center;
+        padding-top: 7px;
+    }
+}

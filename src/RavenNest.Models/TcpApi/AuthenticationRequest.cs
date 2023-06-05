@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace RavenNest.Models.TcpApi
 {
@@ -17,7 +18,7 @@ namespace RavenNest.Models.TcpApi
     public class ExperienceUpdate
     {
         public Guid CharacterId { get; set; }
-        public SkillUpdate[] Skills { get; set; }
+        public IReadOnlyList<SkillUpdate> Skills { get; set; }
     }
 
 

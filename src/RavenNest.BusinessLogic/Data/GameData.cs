@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
+using MessagePack;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Game.Processors.Tasks;
@@ -2218,7 +2219,7 @@ namespace RavenNest.BusinessLogic.Data
                 UserId = session.UserId,
                 Type = (int)type,
                 Revision = GetNextGameEventRevision(session.Id),
-                Data = JSON.Stringify(data)
+                Data = MessagePackSerializer.Serialize(data, MessagePack.Resolvers.ContractlessStandardResolver.Options)//JSON.Stringify(data)
             };
             return ev;
         }
