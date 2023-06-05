@@ -23,6 +23,7 @@ namespace RavenNest.Blazor.Components
 
         private SessionInfo session;
 
+        private bool isSailing;
         private bool modifySkillDialogVisible;
         private int modifyingSkillLevel = 0;
         private int modifyingSkillExperiencePercent = 0;
@@ -65,6 +66,7 @@ namespace RavenNest.Blazor.Components
             if (Player.State != null)
             {
                 trainingSkill = Player.State.InDungeon || !string.IsNullOrEmpty(Player.State.Island) ? (Player.State.TaskArgument ?? Player.State.Task) : null;
+                isSailing = string.IsNullOrEmpty(trainingSkill) && string.IsNullOrEmpty(Player.State.Island);
                 currentHealth = Player.State.Health;
             }
             else
@@ -184,6 +186,9 @@ namespace RavenNest.Blazor.Components
 
         protected bool IsTrainingSkill(PlayerSkill skill)
         {
+            if (isSailing && skill.Name.Equals("Sailing"))
+                return true;
+
             if (string.IsNullOrEmpty(trainingSkill))
                 return false;
 

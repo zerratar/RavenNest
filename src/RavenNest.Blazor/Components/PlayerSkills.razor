@@ -147,10 +147,10 @@
 
     private RavenNest.Models.SessionInfo session;
 
+    private bool isSailing;
     private bool modifySkillDialogVisible;
     private int modifyingSkillLevel = 0;
     private int modifyingSkillExperiencePercent = 0;
-
     private PlayerSkill modifyingSkill;
 
     private bool CanModify => session != null && session.Administrator;
@@ -190,6 +190,7 @@
         if (Player.State != null)
         {
             trainingSkill = Player.State.InDungeon || !string.IsNullOrEmpty(Player.State.Island) ? (Player.State.TaskArgument ?? Player.State.Task) : null;
+            isSailing = string.IsNullOrEmpty(trainingSkill) && string.IsNullOrEmpty(Player.State.Island);
             currentHealth = Player.State.Health;
         }
         else
@@ -309,6 +310,9 @@
 
     private bool IsTrainingSkill(PlayerSkill skill)
     {
+        if (isSailing && skill.Name.Equals("Sailing"))
+            return true;
+
         if (string.IsNullOrEmpty(trainingSkill))
             return false;
 
