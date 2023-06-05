@@ -24,8 +24,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         private static readonly GuidTimeDictionary clanExpUpdate = new GuidTimeDictionary();
         private static readonly StringTimeDictionary clanExpAnnouncement = new StringTimeDictionary();
 
-        private static readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, ClanSkillUpdate> skillUpdate
-            = new System.Collections.Concurrent.ConcurrentDictionary<Guid, ClanSkillUpdate>();
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, ClanSkillUpdate> skillUpdate
+            = new System.Collections.Concurrent.ConcurrentDictionary<string, ClanSkillUpdate>();
 
         private readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(20);
 
@@ -75,7 +75,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             // incase someone training the clan skill on a different stream.
 
             var enchanting = clanSkills.FirstOrDefault();
-            var key = enchanting.Id;
+            var key = session.Id + "_" + enchanting.Id;
             var now = DateTime.UtcNow;
 
             var currentLevel = enchanting.Level;
@@ -168,6 +168,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 gameData.Add(newSkill);
             }
         }
+
         private static ClanSkill GetTrainingSkill(GameData gameData, CharacterState state, List<ClanSkill> clanSkills)
         {
             ClanSkill trainingSkill = null;

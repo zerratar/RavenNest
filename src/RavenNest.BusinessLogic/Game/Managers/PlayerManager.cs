@@ -3629,7 +3629,26 @@ namespace RavenNest.BusinessLogic.Game
         {
             var task = GetTaskBySkillIndex(update.TrainingSkillIndex);
             var taskArgument = GetTaskArgumentBySkillIndex(update.TrainingSkillIndex);
+            if (string.IsNullOrEmpty(taskArgument)) taskArgument = task;
+            state.Health = update.Health;
+            state.InArena = update.State == RavenNest.Models.TcpApi.CharacterState.Arena;
+            state.InRaid = update.State == RavenNest.Models.TcpApi.CharacterState.Raid;
+            state.InDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.Dungeon;
+            state.InOnsen = update.State == RavenNest.Models.TcpApi.CharacterState.Onsen;
+            state.Island = update.Island != Island.Ferry ? update.Island.ToString() : null;
+            state.Task = task;
+            state.TaskArgument = taskArgument ?? task;
+            state.X = update.X;
+            state.Y = update.Y;
+            state.Z = update.Z;
+        }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void SetCharacterState(DataModels.CharacterState state, CharacterUpdate update)
+        {
+            var task = update.Task;
+            var taskArgument = update.TaskArgument;
+            if (string.IsNullOrEmpty(taskArgument)) taskArgument = task;
             state.Health = update.Health;
             state.InArena = update.State == RavenNest.Models.TcpApi.CharacterState.Arena;
             state.InRaid = update.State == RavenNest.Models.TcpApi.CharacterState.Raid;
@@ -3642,27 +3661,36 @@ namespace RavenNest.BusinessLogic.Game
             state.Y = update.Y;
             state.Z = update.Z;
         }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void SetCharacterState(DataModels.CharacterState state, CharacterUpdate update)
-        {
-            state.Health = update.Health;
-            state.InArena = update.State == RavenNest.Models.TcpApi.CharacterState.Arena;
-            state.InRaid = update.State == RavenNest.Models.TcpApi.CharacterState.Raid;
-            state.InDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.Dungeon;
-            state.InOnsen = update.State == RavenNest.Models.TcpApi.CharacterState.Onsen;
-            state.Island = update.Island != Island.Ferry ? update.Island.ToString() : null;
-            state.Task = update.Task;
-            state.TaskArgument = update.TaskArgument;
-            state.X = update.X;
-            state.Y = update.Y;
-            state.Z = update.Z;
-        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static DataModels.CharacterState CreateCharacterState(CharacterStateUpdate update)
         {
             var task = GetTaskBySkillIndex(update.TrainingSkillIndex);
             var taskArgument = GetTaskArgumentBySkillIndex(update.TrainingSkillIndex);
+            if (string.IsNullOrEmpty(taskArgument)) taskArgument = task;
+            var state = new DataModels.CharacterState
+            {
+                Id = Guid.NewGuid(),
+                Health = update.Health,
+                InArena = update.State == RavenNest.Models.TcpApi.CharacterState.Arena,
+                InRaid = update.State == RavenNest.Models.TcpApi.CharacterState.Raid,
+                InDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.Dungeon,
+                InOnsen = update.State == RavenNest.Models.TcpApi.CharacterState.Onsen,
+                Island = update.Island != Island.Ferry ? update.Island.ToString() : null,
+                Task = task,
+                TaskArgument = taskArgument ?? task,
+                X = update.X,
+                Y = update.Y,
+                Z = update.Z,
+            };
+            return state;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static DataModels.CharacterState CreateCharacterState(CharacterUpdate update)
+        {
+            var task = update.Task;
+            var taskArgument = update.TaskArgument;
+            if (string.IsNullOrEmpty(taskArgument)) taskArgument = task;
             var state = new DataModels.CharacterState
             {
                 Id = Guid.NewGuid(),
@@ -3674,27 +3702,6 @@ namespace RavenNest.BusinessLogic.Game
                 Island = update.Island != Island.Ferry ? update.Island.ToString() : null,
                 Task = task,
                 TaskArgument = taskArgument,
-                X = update.X,
-                Y = update.Y,
-                Z = update.Z,
-            };
-            return state;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static DataModels.CharacterState CreateCharacterState(CharacterUpdate update)
-        {
-            var state = new DataModels.CharacterState
-            {
-                Id = Guid.NewGuid(),
-                Health = update.Health,
-                InArena = update.State == RavenNest.Models.TcpApi.CharacterState.Arena,
-                InRaid = update.State == RavenNest.Models.TcpApi.CharacterState.Raid,
-                InDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.Dungeon,
-                InOnsen = update.State == RavenNest.Models.TcpApi.CharacterState.Onsen,
-                Island = update.Island != Island.Ferry ? update.Island.ToString() : null,
-                Task = update.Task,
-                TaskArgument = update.TaskArgument,
                 X = update.X,
                 Y = update.Y,
                 Z = update.Z,
