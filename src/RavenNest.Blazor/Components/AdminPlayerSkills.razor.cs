@@ -64,7 +64,7 @@ namespace RavenNest.Blazor.Components
 
             if (Player.State != null)
             {
-                trainingSkill = Player.State.TaskArgument ?? Player.State.Task;
+                trainingSkill = Player.State.InDungeon || !string.IsNullOrEmpty(Player.State.Island) ? (Player.State.TaskArgument ?? Player.State.Task) : null;
                 currentHealth = Player.State.Health;
             }
             else
