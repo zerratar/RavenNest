@@ -106,7 +106,14 @@ namespace RavenNest.BusinessLogic.Net
                     // report every 10 seconds
                     if (stopwatch.ElapsedMilliseconds > 10000 && (messagesReceived > 0))
                     {
-                        logger.LogDebug(string.Format("Thread[" + Thread.CurrentThread.ManagedThreadId + "]: Server in={0} ({1} KB/s)  out={0} ({1} KB/s) ReceiveQueue={2}", messagesReceived, (dataReceived * 1000 / (stopwatch.ElapsedMilliseconds * 1024)), server.ReceivePipeTotalCount.ToString()));
+
+                        var threadId = Thread.CurrentThread.ManagedThreadId;
+                        var messageCount = messagesReceived;
+                        var serverTransferRateKBps = (dataReceived * 1000 / (stopwatch.ElapsedMilliseconds * 1024));
+                        var activePipes = server.ReceivePipeTotalCount.ToString();
+                        gameData.SetNetworkStats(threadId, messageCount, serverTransferRateKBps, activePipes);
+                        logger.LogDebug(string.Format("Thread[" + threadId + "]: Server in={0} ({1} KB/s)  out={0} ({1} KB/s) ReceiveQueue={2}", messageCount, serverTransferRateKBps, activePipes));
+
                         stopwatch.Stop();
                         stopwatch = Stopwatch.StartNew();
                         messagesReceived = 0;

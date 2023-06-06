@@ -3573,6 +3573,26 @@ namespace RavenNest.BusinessLogic.Data
         {
             this.Flush();
         }
+
+        internal void SetNetworkStats(int threadId, long messageCount, long serverTransferRateKBps, string activePipes)
+        {
+            NetworkStats.ThreadId = threadId;
+            NetworkStats.MessageCount = messageCount;
+            NetworkStats.ServerTransferRateKBps = serverTransferRateKBps;
+            NetworkStats.ReceivePipeCount = activePipes;
+            NetworkStats.SampleDateTime = DateTime.UtcNow;
+        }
+
+        public readonly NetworkStats NetworkStats = new NetworkStats();
+    }
+
+    public class NetworkStats
+    {
+        public int ThreadId { get; internal set; }
+        public long MessageCount { get; internal set; }
+        public long ServerTransferRateKBps { get; internal set; }
+        public string ReceivePipeCount { get; internal set; }
+        public DateTime SampleDateTime { get; internal set; }
     }
 
     public class DataSaveError

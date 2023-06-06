@@ -3,6 +3,7 @@
 @using System.ComponentModel.DataAnnotations
 @using RavenNest.BusinessLogic.Data
 @using RavenNest.DataModels
+@inject RavenNest.BusinessLogic.Data.GameData GameData
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.ServerService ServerService
 
@@ -38,6 +39,16 @@
             <ValidationSummary />
             <button class="btn btn-primary" Type="submit"> Send</button>
         </EditForm>
+    </div>
+
+    <div class="server-details">
+        <h2>TCP Api Network Details (last 10s)</h2>
+        <ul class="details">
+            <li><strong>Message Count:</strong>&nbsp;@GameData.NetworkStats.MessageCount</li>
+            <li><strong>Traffic in/out (KB/s):</strong>&nbsp;@GameData.NetworkStats.ServerTransferRateKBps</li>
+            <li><strong>Receive Pipes:</strong>&nbsp;@GameData.NetworkStats.ReceivePipeCount</li>
+            <li><strong>Date Sampled:</strong>&nbsp;@GameData.NetworkStats.SampleDateTime</li>
+        </ul>
     </div>
 
     <div class="bot-details">
