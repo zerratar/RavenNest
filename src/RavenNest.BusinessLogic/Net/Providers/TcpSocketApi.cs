@@ -111,7 +111,12 @@ namespace RavenNest.BusinessLogic.Net
                         var messageCount = messagesReceived;
                         var serverTransferRateKBps = (dataReceived * 1000 / (stopwatch.ElapsedMilliseconds * 1024));
                         var activePipes = server.ReceivePipeTotalCount.ToString();
-                        gameData.SetNetworkStats(threadId, messageCount, serverTransferRateKBps, activePipes);
+                        
+                        if (gameData != null)
+                        {
+                            gameData.SetNetworkStats(threadId, messageCount, serverTransferRateKBps, activePipes);
+                        }
+
                         logger.LogDebug(string.Format("Thread[" + threadId + "]: Server in={0} ({1} KB/s)  out={0} ({1} KB/s) ReceiveQueue={2}", messageCount, serverTransferRateKBps, activePipes));
 
                         stopwatch.Stop();

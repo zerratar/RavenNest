@@ -30,6 +30,8 @@ namespace RavenNest.Blazor.Services
             this.serverManager = serverManager;
         }
 
+        public GameData GameData => gameData;
+
         public async Task<IReadOnlyList<RavenbotLogFile>> GetLogFilesAsync()
         {
             return await Task.Run(() =>

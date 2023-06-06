@@ -23,7 +23,10 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             var skillIndex = Skills.SkillNames.IndexOf(skill);
             foreach (var drop in gameData.GetResourceItemDrops().Where(x => x.Skill == null || x.Skill == skillIndex))
             {
-                drops.Add(drop);
+                if (drop != null)
+                {
+                    drops.Add(drop);
+                }
             }
         }
 
