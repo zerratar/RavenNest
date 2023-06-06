@@ -19,7 +19,7 @@ namespace RavenNest.BusinessLogic.Net
         public const int MaxMessageSize_v0820 = 16 * 1024;
 
         public const int DefaultServerPort = 3920;
-        public const int ServerRefreshRate = 60;
+        public const int ServerRefreshRate = 120;
 
         private readonly IOptions<AppSettings> settings;
         private readonly ILogger<TcpSocketApi> logger;
