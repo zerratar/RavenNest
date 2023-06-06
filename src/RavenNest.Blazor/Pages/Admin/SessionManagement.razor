@@ -20,11 +20,12 @@
         <table class="table">
             <thead>
                 <tr>
-                    <th>Id</th>
+                    @*<th>Id</th>*@
                     <th>Owner</th>
                     <th>Status</th>
                     <th>Started</th>
-                    <th>Last Update</th>
+                    <th>Exp Req</th>
+                    <th>State Req</th>
                     <th>Uptime</th>
                     <th>Admin</th>
                     <th>Mod</th>
@@ -36,11 +37,12 @@
                 @foreach (var session in gameSessions)
                 {
                     <tr class="table-row">
-                        <td>@session.Id</td>
+                        @*<td>@session.Id</td>*@
                         <td><span>Twitch: @session.TwitchUserId</span> <span>@session.UserName</span></td>
                         <td>@GetSessionStatus(session.Status)</td>
                         <td>@session.Started</td>
-                        <td>@session.Updated</td>
+                        <td>@GetLastUpdateStringShort(session.LastExpRequest)</td>
+                        <td>@GetLastUpdateStringShort(session.LastStateRequest)</td>
                         <td>@GetUptime(session)</td>
                         <td>@session.AdminPrivileges</td>
                         <td>@session.ModPrivileges</td>

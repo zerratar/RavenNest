@@ -18,5 +18,7 @@ namespace RavenNest.Models
         public string ClientVersion { get; set; }
         public float SyncTime { get; set; }
         public int Status { get; set; }
+        public DateTime LastExpRequest { get; set; }
+        public DateTime LastStateRequest { get; set; }
     }
 }

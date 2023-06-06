@@ -2542,6 +2542,12 @@ namespace RavenNest.BusinessLogic.Game
                 return;
             }
 
+            var sessionState = gameData.GetSessionState(gameSession.Id);
+            if (sessionState != null)
+            {
+                sessionState.LastExpRequest = DateTime.UtcNow;
+            }
+
             var sessionOwner = gameData.GetUser(gameSession.UserId);
             if (sessionOwner.Status >= 1)
             {
@@ -2637,6 +2643,12 @@ namespace RavenNest.BusinessLogic.Game
             {
                 logger.LogError("Save State Request received from an invalid game session. " + sessionToken.UserName);
                 return;
+            }
+
+            var sessionState = gameData.GetSessionState(gameSession.Id);
+            if (sessionState != null)
+            {
+                sessionState.LastStateRequest = DateTime.UtcNow;
             }
 
             var sessionOwner = gameData.GetUser(gameSession.UserId);

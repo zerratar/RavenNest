@@ -37,6 +37,8 @@ namespace RavenNest.BusinessLogic.Extensions
             {
                 session.ClientVersion = state.ClientVersion;
                 session.SyncTime = state.SyncTime;
+                session.LastExpRequest = state.LastExpRequest;
+                session.LastStateRequest = state.LastStateRequest;
             }
 
             session.TwitchUserId = user.UserId;
