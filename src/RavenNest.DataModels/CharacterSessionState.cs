@@ -17,7 +17,11 @@ namespace RavenNest.DataModels
         public bool Compromised { get; set; }
 
         //Default to now, as it will be used as "first grab" 10s "ago"
-        public DateTime LastSkillUpdate { get; set; } = DateTime.UtcNow.AddSeconds(-10);
+        public DateTime LastExpUpdate { get; set; } = DateTime.UtcNow.AddSeconds(-10);
+        public DateTime LastExpSaveRequest { get; set; } = DateTime.UtcNow.AddSeconds(-10);
+        public DateTime LastStateUpdate { get; set; } = DateTime.UtcNow.AddSeconds(-10);
+        public DateTime LastStateSaveRequest { get; set; } = DateTime.UtcNow.AddSeconds(-10);
+
         public DateTime LastEnchantmentTryAt { get; set; }
         //public DateTime EnchantmentCooldown { get; set; }
         public DateTime SailingRewardAttempted { get; set; }

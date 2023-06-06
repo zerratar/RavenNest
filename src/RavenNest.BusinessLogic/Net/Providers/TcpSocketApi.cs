@@ -111,13 +111,13 @@ namespace RavenNest.BusinessLogic.Net
                         var messageCount = messagesReceived;
                         var serverTransferRateKBps = (dataReceived * 1000 / (stopwatch.ElapsedMilliseconds * 1024));
                         var activePipes = server.ReceivePipeTotalCount.ToString();
-                        
+
                         if (gameData != null)
                         {
                             gameData.SetNetworkStats(threadId, messageCount, serverTransferRateKBps, activePipes);
                         }
 
-                        logger.LogDebug(string.Format("Thread[" + threadId + "]: Server in={0} ({1} KB/s)  out={0} ({1} KB/s) ReceiveQueue={2}", messageCount, serverTransferRateKBps, activePipes));
+                        //logger.LogDebug(string.Format("Thread[" + threadId + "]: Server in={0} ({1} KB/s)  out={0} ({1} KB/s) ReceiveQueue={2}", messageCount, serverTransferRateKBps, activePipes));
 
                         stopwatch.Stop();
                         stopwatch = Stopwatch.StartNew();
@@ -165,6 +165,8 @@ namespace RavenNest.BusinessLogic.Net
 
         private void OnData(int connectionId, ReadOnlyMemory<byte> packetData)
         {
+            messagesReceived++;
+            dataReceived += packetData.Length;
             TcpSocketApiConnection connection = null;
             try
             {

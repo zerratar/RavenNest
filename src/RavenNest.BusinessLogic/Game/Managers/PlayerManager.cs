@@ -2559,6 +2559,8 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 var characterSessionState = gameData.GetCharacterSessionState(sessionToken.SessionId, character.Id);
+                characterSessionState.LastExpSaveRequest = DateTime.UtcNow;
+
                 if (characterSessionState.Compromised)
                 {
                     continue;
@@ -2585,7 +2587,7 @@ namespace RavenNest.BusinessLogic.Game
 
                     var level = update.Level;
                     var experience = update.Experience;
-                    var timeSinceLastSkillUpdate = DateTime.UtcNow - characterSessionState.LastSkillUpdate;
+                    var timeSinceLastSkillUpdate = DateTime.UtcNow - characterSessionState.LastExpUpdate;
                     var existingLevel = skill.Level;
 
                     if (!user.IsAdmin.GetValueOrDefault() && user.IsModerator.GetValueOrDefault())
@@ -2608,7 +2610,7 @@ namespace RavenNest.BusinessLogic.Game
                         UpdateCharacterSkillRecord(character.Id, skill.Index, level, experience);
                     }
 
-                    characterSessionState.LastSkillUpdate = DateTime.UtcNow;
+                    characterSessionState.LastExpUpdate = DateTime.UtcNow;
 
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                     TrySendToExtensionAsync(character, new CharacterExpUpdate
@@ -2653,6 +2655,11 @@ namespace RavenNest.BusinessLogic.Game
                     logger.LogError("Trying to update a character that does not exist. ID: " + data.CharacterId);
                     continue;
                 }
+
+                var characterSessionState = gameData.GetCharacterSessionState(sessionToken.SessionId, character.Id);
+                characterSessionState.LastStateSaveRequest = DateTime.UtcNow;
+                characterSessionState.LastStateUpdate = DateTime.UtcNow;
+
 
                 if (character.StateId != null)
                 {
@@ -2758,6 +2765,12 @@ namespace RavenNest.BusinessLogic.Game
 
             var user = gameData.GetUser(character.UserId);
 
+
+            if (data.Skills != null && data.Skills.Length > 0)
+            {
+                characterSessionState.LastExpSaveRequest = DateTime.UtcNow;
+            }
+
             foreach (var update in data.Skills)
             {
                 if (update.Level > GameMath.MaxLevel)
@@ -2770,8 +2783,9 @@ namespace RavenNest.BusinessLogic.Game
 
                 var level = update.Level;
                 var experience = update.Experience;
-                var timeSinceLastSkillUpdate = DateTime.UtcNow - characterSessionState.LastSkillUpdate;
+                var timeSinceLastSkillUpdate = DateTime.UtcNow - characterSessionState.LastExpUpdate;
                 var existingLevel = skill.Level;
+
 
                 if (!user.IsAdmin.GetValueOrDefault() && user.IsModerator.GetValueOrDefault())
                 {
@@ -2793,7 +2807,7 @@ namespace RavenNest.BusinessLogic.Game
                     UpdateCharacterSkillRecord(character.Id, skill.Index, level, experience);
                 }
 
-                characterSessionState.LastSkillUpdate = DateTime.UtcNow;
+                characterSessionState.LastExpUpdate = DateTime.UtcNow;
 
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 TrySendToExtensionAsync(character, new CharacterExpUpdate
@@ -2872,9 +2886,10 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 var gains = characterSessionState.ExpGain;
+                characterSessionState.LastExpSaveRequest = DateTime.UtcNow;
                 var user = gameData.GetUser(character.UserId);
                 var updated = false;
-                var timeSinceLastSkillUpdate = DateTime.UtcNow - characterSessionState.LastSkillUpdate;
+                var timeSinceLastSkillUpdate = DateTime.UtcNow - characterSessionState.LastExpUpdate;
                 var existingLevel = skills.GetLevel(skillIndex);
 
                 if (level > GameMath.MaxLevel)
@@ -2905,7 +2920,7 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (updated)
                 {
-                    characterSessionState.LastSkillUpdate = DateTime.UtcNow;
+                    characterSessionState.LastExpUpdate = DateTime.UtcNow;
                     TrySendToExtensionAsync(character, new CharacterExpUpdate
                     {
                         CharacterId = character.Id,
@@ -3148,7 +3163,8 @@ namespace RavenNest.BusinessLogic.Game
                 if (characterSessionState != null)
                 {
                     characterSessionState.Compromised = true;
-                    characterSessionState.LastSkillUpdate = DateTime.UtcNow;
+                    characterSessionState.LastExpUpdate = DateTime.UtcNow;
+                    characterSessionState.LastExpSaveRequest = DateTime.UtcNow;
                 }
             }
 

@@ -2362,7 +2362,8 @@ namespace RavenNest.BusinessLogic.Data
             {
                 state = new CharacterSessionState();
                 state.LastTaskUpdate = DateTime.UtcNow;
-                state.LastSkillUpdate = DateTime.UtcNow;
+                state.LastExpUpdate = DateTime.UtcNow;
+                state.LastStateUpdate = DateTime.UtcNow;
                 state.SailingRewardAttempted = DateTime.MinValue;
                 states[characterId] = state;
                 characterSessionStates[sessionId] = states;

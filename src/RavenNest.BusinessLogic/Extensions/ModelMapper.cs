@@ -44,7 +44,7 @@ namespace RavenNest.BusinessLogic.Extensions
             session.AdminPrivileges = user.IsAdmin.GetValueOrDefault();
             session.ModPrivileges = user.IsModerator.GetValueOrDefault();
             session.Players = gameData.GetActiveSessionCharacters(data)
-                .Select(x => Map(gameData, x))
+                .Select(x => Map(gameData, x, data))
                 .Where(x => x != null)
                 .ToList();
 
@@ -52,16 +52,22 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RavenNest.Models.GameSessionPlayer Map(GameData gameData, DataModels.Character character)
+        public static RavenNest.Models.GameSessionPlayer Map(GameData gameData, DataModels.Character character, DataModels.GameSession session)
         {
             var user = gameData.GetUser(character.UserId);
             if (user == null) return null;
 
             var lastSkillUpdate = DateTime.MinValue;
-            var sessionInfo = GetCharacterSessionInfo(gameData, character);
-            if (sessionInfo != null)
+            var lastExpUpdateRequest = DateTime.MinValue;
+            var lastStateUpdate = DateTime.MinValue;
+            var lastStateSaveRequest = DateTime.MinValue;
+            var css = gameData.GetCharacterSessionState(session.Id, character.Id);
+            if (css != null)
             {
-                lastSkillUpdate = sessionInfo.SkillsUpdated;
+                lastExpUpdateRequest = css.LastExpSaveRequest;
+                lastSkillUpdate = css.LastExpUpdate;
+                lastStateUpdate = css.LastStateUpdate;
+                lastStateSaveRequest = css.LastStateSaveRequest;
             }
 
             return new GameSessionPlayer
@@ -69,6 +75,10 @@ namespace RavenNest.BusinessLogic.Extensions
                 CharacterId = character.Id,
                 TwitchUserId = user.UserId,
                 LastExpUpdate = lastSkillUpdate,
+                LastExpSaveRequest = lastExpUpdateRequest,
+                LastStateUpdate = lastStateUpdate,
+                LastStateSaveRequest = lastStateSaveRequest,
+
                 UserName = user.UserName,
                 IsAdmin = user.IsAdmin.GetValueOrDefault(),
                 IsModerator = user.IsModerator.GetValueOrDefault(),
@@ -522,7 +532,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 var css = gameData.GetCharacterSessionState(session.Id, characterId);
                 if (css != null)
                 {
-                    sessionInfo.SkillsUpdated = css.LastSkillUpdate;
+                    sessionInfo.SkillsUpdated = css.LastExpUpdate;
                 }
             }
 
