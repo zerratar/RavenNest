@@ -8,7 +8,10 @@
 
 @if (isAdmin)
 {
-
+    <div>
+        <label>Hide Inactive Sessions</label>
+        <input type="checkbox" value="@activeSessionsOnly" @onchange="ev => ActiveSessionsOnlyChanged(ev.Value)">
+    </div>
     @if (gameSessions == null || loading)
     {
         <h1>Game Sessions</h1>
@@ -30,12 +33,17 @@
                     <th>Admin</th>
                     <th>Mod</th>
                     <th>Client Version</th>
-                    <th>Players (@gameSessions.Sum(x => x.Players.Count))</th>
+                    <th>Players (@gameSessions.Sum(x => x != null && x.Players != null ? x.Players.Count : 0))</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var session in gameSessions)
                 {
+                    @if (session == null)
+                    {
+                        continue;
+                    }
                     <tr class="table-row">
                         @*<td>@session.Id</td>*@
                         <td><span>Twitch: @session.TwitchUserId</span> <span>@session.UserName</span></td>
@@ -48,6 +56,14 @@
                         <td>@session.ModPrivileges</td>
                         <td>@session.ClientVersion</td>
                         <td @onclick="()=>ShowPlayerList(session)">@session.Players.Count</td>
+                        <td>
+                          @{
+                            #if DEBUG
+                            <button title="(TEST) Make this user initiate a Raid against our game session" class="inline-button raid" @onclick="(()=> RaidOurSession(session))"><i class="fa-solid fa-people-group"></i> Raid</button>
+                            <button title="(TEST) Make this user initiate a Raid War against our game session" class="inline-button raidwar" @onclick="(()=> RaidWarOurSession(session))"><i class="fa-solid fa-swords"></i> War</button>
+                            #endif
+                          }
+                        </td>
                     </tr>
                 }
 
@@ -60,7 +76,7 @@
             <div class="player-list-modal-header">
                 @if (inspectingSession != null)
                 {
-                    <h3>@(inspectingSession.UserName + " - " + inspectingSession.Players.Count + " players")</h3>
+                    <h3>@(inspectingSession.UserName + " - " + (inspectingSession.Players?.Count ?? 0) + " players")</h3>
                 }
                 <div @onclick="HidePlayerList" class="btn-close">&times;</div>
             </div>
@@ -79,19 +95,24 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach (var player in inspectingSession.Players)
-                            {
-                                <tr class="table-row">
-                                    <td>@player.UserName</td>
-                                    <td>@player.IsAdmin</td>
-                                    <td>@player.IsModerator</td>
-                                    <td>
-                                        <div class="last-updated">@GetLastUpdateStringShort(player.LastExpSaveRequest)</div>
-                                    </td>
-                                    <td>
-                                        <div class="last-updated">@GetLastUpdateStringShort(player.LastExpUpdate)</div>
-                                    </td>
-                                </tr>
+                            @{
+                                if (inspectingSession.Players != null)
+                                {
+                                    foreach (var player in inspectingSession.Players)
+                                    {
+                                        <tr class="table-row">
+                                            <td>@player.UserName</td>
+                                            <td>@player.IsAdmin</td>
+                                            <td>@player.IsModerator</td>
+                                            <td>
+                                                <div class="last-updated">@GetLastUpdateStringShort(player.LastExpSaveRequest)</div>
+                                            </td>
+                                            <td>
+                                                <div class="last-updated">@GetLastUpdateStringShort(player.LastExpUpdate)</div>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
                             }
                         </tbody>
                     </table>
@@ -110,14 +131,34 @@
     private IReadOnlyList<RavenNest.Models.GameSession> gameSessions;
     private DateTime UtcNow = DateTime.UtcNow;
 
+    private bool activeSessionsOnly = true;
+
     protected override void OnInitialized()
     {
         session = AuthService.GetSession();
         isAdmin = session != null && session.Administrator;
         if (isAdmin)
         {
+            activeSessionsOnly = true;
             LoadGameSessionsAsync();
         }
+    }
+
+    private async void ActiveSessionsOnlyChanged(object value)
+    {
+        activeSessionsOnly = (bool)value;
+        await LoadGameSessionsAsync();
+    }
+
+
+    private void RaidOurSession(RavenNest.Models.GameSession session)
+    {
+        SessionService.InitiateRaid(session);
+    }
+
+    private void RaidWarOurSession(RavenNest.Models.GameSession session)
+    {
+        SessionService.InitiateRaidWar(session);
     }
 
 
@@ -201,7 +242,7 @@
     private async Task LoadGameSessionsAsync()
     {
         loading = true;
-        gameSessions = await SessionService.GetGameSessionsAsync();
+        gameSessions = await SessionService.GetGameSessionsAsync(activeSessionsOnly);
         loading = false;
         UtcNow = DateTime.UtcNow;
         await InvokeAsync(StateHasChanged);

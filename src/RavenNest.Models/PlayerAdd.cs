@@ -9,6 +9,8 @@ namespace RavenNest.Models
         public string Identifier { get; set; }
         public Guid UserId { get; set; }
         public Guid CharacterId { get; set; }
+        public string PlatformId { get; set; }
+        public string Platform { get; set; }
     }
 
     public class StreamRaidInfo

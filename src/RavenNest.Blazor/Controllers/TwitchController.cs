@@ -117,7 +117,7 @@ namespace RavenNest.Controllers
                 if (Guid.TryParse(userId, out var rfuid))
                 {
                     var uac = gameData.GetUserAccess(rfuid);
-                    var twitch = uac.FirstOrDefault(x => x.Platform == "twitch");
+                    var twitch = gameData.GetUserAccess(rfuid, "twitch");
                     if (twitch != null)
                     {
                         userId = twitch.PlatformId;
@@ -339,8 +339,8 @@ namespace RavenNest.Controllers
                 }
 
                 var index = existingCharacters.Count + 1;
-                var uac = gameData.GetUserAccess(user.Id);
-                var twitch = uac.FirstOrDefault(x => x.Platform == "twitch");
+
+                var twitch = gameData.GetUserAccess(user.Id, "twitch");
                 var player = await playerManager.CreatePlayer(twitch.PlatformId, "twitch", user.UserName, index.ToString());
                 if (player == null)
                 {
@@ -362,6 +362,7 @@ namespace RavenNest.Controllers
 
                 sessionInfoProvider.SetActiveCharacter(sessionInfo, c.Id);
 
+
                 var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerAdd,
                     activeSession,
                     new PlayerAdd()
@@ -369,7 +370,9 @@ namespace RavenNest.Controllers
                         CharacterId = c.Id,
                         Identifier = c.Identifier,
                         UserId = sessionInfo.UserId,
-                        UserName = sessionInfo.UserName
+                        UserName = sessionInfo.UserName,
+                        Platform = "twitch",
+                        PlatformId = twitch.PlatformId
                     });
 
                 gameData.EnqueueGameEvent(gameEvent);
@@ -430,6 +433,8 @@ namespace RavenNest.Controllers
 
                 sessionInfoProvider.SetActiveCharacter(sessionInfo, characterId);
 
+                var twitch = gameData.GetUserAccess(c.UserId, "twitch");
+
                 var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerAdd,
                     activeSession,
                     new PlayerAdd()
@@ -438,6 +443,8 @@ namespace RavenNest.Controllers
                         Identifier = c.Identifier,
                         UserId = sessionInfo.UserId,
                         UserName = sessionInfo.UserName,
+                        Platform = "twitch",
+                        PlatformId = twitch.PlatformId
                     });
 
                 gameData.EnqueueGameEvent(gameEvent);

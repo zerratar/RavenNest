@@ -272,6 +272,9 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
 
             var characterUser = gameData.GetUser(character.UserId);
+            
+            character.UserIdLock = null;
+
             var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRemove,
                 currentSession,
                 new PlayerRemove()
@@ -282,6 +285,7 @@ namespace RavenNest.BusinessLogic.Game
                 });
 
             gameData.EnqueueGameEvent(gameEvent);
+            
             return true;
         }
 

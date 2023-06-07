@@ -18,7 +18,7 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
 
         private readonly object mutex = new object();
 
-        public bool Enabled { get; set; }
+        public bool Enabled { get; set; } = true;
 
         public TwitchExtensionConnectionProvider(
             ILogger<TwitchExtensionConnectionProvider> logger,

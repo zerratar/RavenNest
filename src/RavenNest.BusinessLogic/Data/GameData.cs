@@ -2353,6 +2353,7 @@ namespace RavenNest.BusinessLogic.Data
 
         public CharacterSessionState GetCharacterSessionState(Guid sessionId, Guid characterId)
         {
+            // We might need to know which platform the character is being used from so we know where to reply.
             if (!characterSessionStates.TryGetValue(sessionId, out var states))
             {
                 states = new ConcurrentDictionary<Guid, CharacterSessionState>();
@@ -2955,11 +2956,11 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public GameSession GetSessionByUserId(Guid userId, bool updateSession = true)
+        public GameSession GetSessionByUserId(Guid userId, bool updateSession = true, bool mustBeActive = true)
         {
             var session = gameSessions[nameof(User), userId]
                     .OrderByDescending(x => x.Started)
-                    .FirstOrDefault(x => x.Stopped == null);
+                    .FirstOrDefault(x => !mustBeActive || (mustBeActive && x.Stopped == null));
             if (updateSession && session != null) session.Updated = DateTime.UtcNow;
             return session;
         }
@@ -3134,6 +3135,13 @@ namespace RavenNest.BusinessLogic.Data
         public IReadOnlyList<GameSession> GetActiveSessions() => gameSessions.Entities
                     .OrderByDescending(x => x.Started)
                     .AsList(x => x.Stopped == null && DateTime.UtcNow - x.Updated <= TimeSpan.FromSeconds(SessionTimeoutSeconds));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<GameSession> GetLatestSessions() => gameSessions.Entities
+                .OrderByDescending(x => x.Started)
+                .GroupBy(x => x.UserId)
+                .Select(x => x.FirstOrDefault()).ToList();
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<GameSession> GetSessions() => gameSessions.Entities.OrderByDescending(x => x.Started).ToList();

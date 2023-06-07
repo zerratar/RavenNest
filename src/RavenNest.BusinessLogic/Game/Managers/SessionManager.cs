@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Net;
+using RavenNest.BusinessLogic.ScriptParser;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.Models;
 using RavenNest.Sessions;
@@ -364,6 +365,7 @@ namespace RavenNest.BusinessLogic.Game
             return data;
         }
 
+
         public bool EndSessionAndRaid(
             SessionToken token, string userIdOrUsername, bool isWarRaid)
         {
@@ -374,7 +376,6 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
-            var sessionUser = gameData.GetUser(currentSession.UserId);
             if (userIdOrUsername.StartsWith("war ", StringComparison.OrdinalIgnoreCase))
             {
                 userIdOrUsername = userIdOrUsername.Replace("war ", "", StringComparison.OrdinalIgnoreCase);
@@ -395,28 +396,38 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
-            var characters = gameData.GetActiveSessionCharacters(currentSession);
+            return EndSessionAndRaid(currentSession, targetSession, isWarRaid);
+        }
 
+        public bool EndSessionAndRaid(DataModels.GameSession raider, DataModels.GameSession target, bool isWarRaid)
+        {
+            var characters = gameData.GetActiveSessionCharacters(raider);
+            var sessionUser = gameData.GetUser(raider.UserId);
+            var user = gameData.GetUser(target.UserId);
             //var state = gameData.GetSessionState(token.SessionId);
             var ge = gameData.CreateSessionEvent(isWarRaid ? GameEventType.WarRaid : GameEventType.Raid,
-                targetSession, new StreamRaidInfo
+                target, new StreamRaidInfo
                 {
                     RaiderUserName = sessionUser.UserName,
                     RaiderUserId = sessionUser.Id,
                     Players = characters.Select(x =>
                     {
                         var u = gameData.GetUser(x.UserId);
-                        return new StreamRaidPlayer { CharacterId = x.Id, UserId = u?.Id ?? Guid.Empty, Username = u?.UserName };
+                        return new StreamRaidPlayer
+                        {
+                            CharacterId = x.Id,
+                            UserId = u?.Id ?? Guid.Empty,
+                            Username = u?.UserName,
+                        };
                     }).ToList()
                 });
 
             gameData.EnqueueGameEvent(ge);
-            EndSession(token);
+            EndSession(raider);
 
 #if DEBUG
             logger.LogDebug(sessionUser + " is " + (isWarRaid ? "initiating a raid war on" : "raiding") + " " + user.DisplayName + " with " + characters.Count + " players.");
 #endif
-
             return true;
         }
 

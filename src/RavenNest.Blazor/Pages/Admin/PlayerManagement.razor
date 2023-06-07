@@ -10,7 +10,7 @@
     <div class="page-navigation">
         <button class="link-button" @onclick="PreviousPage"><i class="fas fa-chevron-left"></i></button>
         <div class="pages">
-            <div class="current-page">@(pageIndex+1)</div>&nbsp;/&nbsp;
+            <div class="current-page">@(pageIndex + 1)</div>&nbsp;/&nbsp;
             <div class="total-pages">@pageCount</div>
         </div>
         <button class="link-button" @onclick="NextPage"><i class="fas fa-chevron-right"></i></button>
@@ -27,12 +27,12 @@
 <table class="player-table">
     <thead>
         <tr>
-            <th>Id</th>
+            @*<th>Id</th>*@
             <th>UserName</th>
             <th>Name</th>
             <th>Session</th>
             <th>Admin</th>
-            <th>Moderator</th>
+            <th>Mod</th>
             <th></th>
         </tr>
     </thead>
@@ -46,15 +46,15 @@
             @foreach (var player in players)
             {
                 <tr class="player-row">
-                    <td>@player.Id</td>
+                    @*<td>@player.Id</td>*@
                     <td @onclick="(() => DisplayPlayer(player))">@player.UserName<span class='player-character-index' alt='Character Number'>#@player.CharacterIndex</span></td>
                     <td>
 
                         @*<span v-if="editingName(player.userId)">
-                            <input class="table-edit" v-model="player.name" />
-                            <button class="link-button" @click="applyEditName(player.id)"><i class="fas fa-check"></i></button>
-                            <button class="link-button" @click="cancelEditName(player.id)"><i class="fas fa-times"></i></button>
-                            </span>*@
+                <input class="table-edit" v-model="player.name" />
+                <button class="link-button" @click="applyEditName(player.id)"><i class="fas fa-check"></i></button>
+                <button class="link-button" @click="cancelEditName(player.id)"><i class="fas fa-times"></i></button>
+                </span>*@
 
                         <span>
                             @*v-if="!editingName(player.userId)"*@
@@ -64,9 +64,19 @@
 
                     </td>
                     <td>@player.SessionName</td>
-                    <td>@player.IsAdmin</td>
-                    <td>@player.IsModerator</td>
+                    <td>@(player.IsAdmin ? "Yes" : "No")</td>
+                    <td>@(player.IsModerator ? "Yes" : "No")</td>
                     <td>
+                        @if (!string.IsNullOrEmpty(player.SessionName))
+                        {
+                            <button title="Kick from game session" class="inline-button error" @onclick="(()=>KickPlayer(player))"><i class="fa-solid fa-user-xmark"></i></button>
+                        }
+
+                        @if (string.IsNullOrEmpty(player.SessionName) || !player.SessionName.Equals(session.UserName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            <button title="Add to game session" class="inline-button success" @onclick="(()=>AddToMyGame(player))"><i class="fa-solid fa-user-plus"></i></button>
+                        }
+
                     </td>
                 </tr>
             }
@@ -90,6 +100,20 @@
     {
         session = AuthService.GetSession();
         LoadPlayerPageAsync(pageIndex, pageSize);
+    }
+
+    private async void KickPlayer(WebsiteAdminPlayer player)
+    {
+        PlayerService.Kick(player);
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void AddToMyGame(WebsiteAdminPlayer player)
+    {
+        PlayerService.AddToMySession(player);
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private void DisplayPlayer(WebsiteAdminPlayer player)

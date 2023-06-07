@@ -18,16 +18,35 @@ namespace RavenNest.Blazor.Services
     {
         private readonly GameData gameData;
         private readonly PlayerManager playerManager;
+        private readonly SessionManager sessionManager;
 
         public UserService(
             GameData gameData,
             PlayerManager playerManager,
+            SessionManager sessionManager,
             IHttpContextAccessor accessor,
             SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
             this.gameData = gameData;
             this.playerManager = playerManager;
+            this.sessionManager = sessionManager;
+        }
+
+        public void InitiateRaid(WebsiteAdminUser user)
+        {
+            var s = this.GetSession();
+            var raiderGameSession = gameData.GetSessionByUserId(user.Id, false, false);
+            var targetSession = gameData.GetSessionByUserId(s.UserId);
+            sessionManager.EndSessionAndRaid(raiderGameSession, targetSession, false);
+        }
+
+        public void InitiateRaidWar(WebsiteAdminUser user)
+        {
+            var s = this.GetSession();
+            var raiderGameSession = gameData.GetSessionByUserId(user.Id, false, false);
+            var targetSession = gameData.GetSessionByUserId(s.UserId);
+            sessionManager.EndSessionAndRaid(raiderGameSession, targetSession, true);
         }
 
         public Task SetUserHiddenInHighscore(Guid userId, bool newValue)

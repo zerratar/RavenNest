@@ -9,7 +9,7 @@
     <div class="page-navigation">
         <button class="link-button" @onclick="PreviousPage"><i class="fas fa-chevron-left"></i></button>
         <div class="pages">
-            <div class="current-page">@(pageIndex+1)</div>&nbsp;/&nbsp;
+            <div class="current-page">@(pageIndex + 1)</div>&nbsp;/&nbsp;
             <div class="total-pages">@pageCount</div>
         </div>
         <button class="link-button" @onclick="NextPage"><i class="fas fa-chevron-right"></i></button>
@@ -27,14 +27,14 @@
     <thead>
         <tr>
             <th></th>
-            <th>UserId</th>
+            @*<th>UserId</th>*@
             <th>UserName</th>
             <th>Email</th>
             <th>Patreon</th>
             <th>Characters</th>
             <th>Admin</th>
             <th>Mod</th>
-            <th>Hidden in Highscore</th>
+            <th>No Hiscore</th>
             <th></th>
         </tr>
     </thead>
@@ -49,7 +49,7 @@
             {
                 <tr class="player-row">
                     <td><img src="/api/twitch/logo/@(user.Id)" class="profile-picture" /></td>
-                    <td>@user.Id</td>
+                    @*<td>@user.Id</td>*@
                     <td>
                         <span>@user.UserName</span>
                         @if (user.Status >= 1)
@@ -75,7 +75,7 @@
                                     else
                                     {
                                         <option id="@i" value="@i">
-                                            @(i >= patreonNames.Length?@patreonNames[patreonNames.Length - 1]:patreonNames[i])
+                                            @(i >= patreonNames.Length ? @patreonNames[patreonNames.Length - 1] : patreonNames[i])
                                         </option>
                                     }
                                 }
@@ -99,26 +99,29 @@
                         <input type="checkbox" value="@user.IsHiddenInHighscore" @onchange="ev => IsHiddenInHighscoreChanged(user, ev.Value)"></input>
                     </td>
                     <td>
+@*                        <button title="(TEST) Make this user initiate a Raid against our game session" class="inline-button raid" @onclick="(()=> RaidOurSession(user))"><i class="fa-solid fa-people-group"></i>&nbps;Raid</button>
+                        <button title="(TEST) Make this user initiate a Raid War against our game session" class="inline-button raidwar" @onclick="(()=> RaidWarOurSession(user))"><i class="fa-solid fa-swords"></i>&nbps;War</button>
+*@
                         @if (!string.IsNullOrEmpty(user.Comment))
                         {
-                            <button class="link-button edit" @onclick="(()=> EditRemark(user))"><i class="fa-solid fa-comment-pen"></i></button>
+                            <button class="inline-button edit" @onclick="(()=> EditRemark(user))"><i class="fa-solid fa-comment-pen"></i></button>
                         }
                         else
                         {
-                            <button class="link-button" @onclick="(()=> EditRemark(user))"><i class="fa-solid fa-comment-plus"></i></button>
+                            <button class="inline-button" @onclick="(()=> EditRemark(user))"><i class="fa-solid fa-comment-plus"></i></button>
                         }
                         @if (user.HasClan && !user.Clan.CanChangeName)
                         {
-                            <button class="link-button" @onclick="(()=> ResetClanNameChangeCounter(user))">Allow Clan Rename</button>
+                            <button class="inline-button" @onclick="(()=> ResetClanNameChangeCounter(user))">Allow Clan Rename</button>
                         }
-                        <button class="link-button" @onclick="(()=> EditPatreon(user))">Patreon</button>
+                        <button class="inline-button" @onclick="(()=> EditPatreon(user))">Patreon</button>
                         @if (user.Status >= 1)
                         {
-                            <button class="link-button" @onclick="(()=> UnbanUser(user))">Unban</button>
+                            <button class="inline-button" @onclick="(()=> UnbanUser(user))">Unban</button>
                         }
                         else
                         {
-                            <button class="link-button" @onclick="(()=> BanUser(user))">Ban</button>
+                            <button class="inline-button" @onclick="(()=> BanUser(user))">Ban</button>
                         }
                     </td>
                 </tr>
@@ -173,6 +176,16 @@
     {
         session = AuthService.GetSession();
         LoadUserPageAsync(pageIndex, pageSize);
+    }
+
+    private void RaidOurSession(WebsiteAdminUser user)
+    {
+        UserService.InitiateRaid(user);
+    }
+
+    private void RaidWarOurSession(WebsiteAdminUser user)
+    {
+        UserService.InitiateRaidWar(user);
     }
 
     private void IsHiddenInHighscoreChanged(WebsiteAdminUser user, object newValue)

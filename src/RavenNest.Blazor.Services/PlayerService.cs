@@ -16,16 +16,19 @@ namespace RavenNest.Blazor.Services
     {
         private readonly GameData gameData;
         private readonly PlayerManager playerManager;
+        private readonly AdminManager adminManager;
 
         public PlayerService(
             GameData gameData,
             PlayerManager playerManager,
+            AdminManager adminManager,
             IHttpContextAccessor accessor,
             SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
             this.gameData = gameData;
             this.playerManager = playerManager;
+            this.adminManager = adminManager;
         }
 
         public void SetActiveCharacter(WebsitePlayer player)
@@ -37,6 +40,33 @@ namespace RavenNest.Blazor.Services
         {
             var session = GetSession();
             sessionInfoProvider.SetActiveCharacter(session, player.Id);
+        }
+
+        public void Kick(WebsiteAdminPlayer player)
+        {
+            adminManager.KickPlayer(player.Id);
+            player.SessionInfo = null;
+            player.SessionName = null;
+        }
+
+        public void AddToMySession(WebsiteAdminPlayer player)
+        {
+            var session = GetSession();
+            var gameSession = gameData.GetSessionByUserId(session.UserId);
+            if (gameSession != null)
+            {
+                var character = gameData.GetCharacter(player.Id);
+                var owner = gameData.GetUser(gameSession.UserId);
+                playerManager.SendPlayerAddToSession(character, gameSession);
+
+                player.SessionInfo = new CharacterSessionInfo
+                {
+                    OwnerDisplayName = owner.DisplayName,
+                    OwnerUserName = owner.UserName,
+                };
+
+                player.SessionName = owner.UserName;
+            }
         }
 
         public Task<bool> UpdatePlayerSkillAsync(Guid characterId, string skillName, int level, float levelProgress)

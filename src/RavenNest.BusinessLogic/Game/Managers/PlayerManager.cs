@@ -55,9 +55,6 @@ namespace RavenNest.BusinessLogic.Game
             this.gameData = gameData;
             this.integrityChecker = integrityChecker;
             this.extensionWsConnectionProvider = extensionWsConnectionProvider;
-
-            // extension is not enabled yet
-            extensionWsConnectionProvider.Enabled = false;
         }
 
         public int GetHighscore(SessionToken sessionToken, Guid characterId, string skillName)
@@ -122,6 +119,12 @@ namespace RavenNest.BusinessLogic.Game
             if (user == null)
             {
                 return;
+            }
+
+            if (task.ToLower() == "all")
+            {
+                task = "fighting";
+                taskArgument = "all";
             }
 
             var state = gameData.GetCharacterState(character.StateId);
@@ -3322,9 +3325,15 @@ namespace RavenNest.BusinessLogic.Game
             gameData.EnqueueGameEvent(gameEvent);
         }
 
-        private void SendPlayerAddToSession(Character character, DataModels.GameSession gameSession)
+        public void SendPlayerAddToSession(Character character, DataModels.GameSession gameSession)
         {
             var characterUser = gameData.GetUser(character.UserId);
+
+            var uac = gameData.GetUserAccess(character.UserId);
+            var platform = uac.FirstOrDefault();
+
+            character.UserIdLock = gameSession.UserId;
+
             var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerAdd,
                 gameSession,
                 new PlayerAdd()
@@ -3332,7 +3341,9 @@ namespace RavenNest.BusinessLogic.Game
                     Identifier = character.Identifier,
                     UserName = characterUser.UserName,
                     UserId = characterUser.Id,
-                    CharacterId = character.Id
+                    CharacterId = character.Id,
+                    Platform = platform?.Platform,
+                    PlatformId = platform?.PlatformId,
                 });
 
             gameData.EnqueueGameEvent(gameEvent);
