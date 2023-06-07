@@ -8,6 +8,7 @@ using System.Threading;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Twitch.Extension;
+using System.Collections.Generic;
 
 namespace RavenNest.BusinessLogic.Net
 {
@@ -74,20 +75,31 @@ namespace RavenNest.BusinessLogic.Net
 
         public void Stop(SessionToken sessionToken)
         {
-            if (sessionToken == null)
+            try
             {
-                return;
-            }
+                if (sessionToken == null)
+                {
+                    return;
+                }
 
-            var uid = sessionToken.UserId;
-            if (!gameInstances.TryGetValue(uid, out var instance))
+                var uid = sessionToken.UserId;
+                if (!gameInstances.TryGetValue(uid, out var instance))
+                {
+                    return;
+                }
+
+                // do something
+                if (instance != null)
+                {
+                    instance.Dispose();
+                }
+
+                gameInstances.Remove(uid, out _);
+            }
+            catch (Exception exc)
             {
-                return;
+                logger.LogError("Failed to stop session with ID " + sessionToken.SessionId + " (" + sessionToken.UserName + "): " + exc);
             }
-
-            // do something
-            instance.Dispose();
-            gameInstances[uid] = null;
         }
     }
 

@@ -108,7 +108,7 @@ namespace RavenNest
                 return new SessionInfo();
 
             //var activeSession = gameData.GetActiveSessions().FirstOrDefault(x => x.UserId == broadcaster.Id);
-            var activeSession = gameData.GetSessions().FirstOrDefault(x => x.UserId == broadcaster.Id);
+            var activeSession = gameData.GetSessionByUserId(broadcaster.Id);
             if (activeSession == null)
                 return new SessionInfo();
 

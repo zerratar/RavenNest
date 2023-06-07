@@ -9,8 +9,8 @@ namespace RavenNest.DiscordBot
 {
     class Program
     {
-        const string OPENAI_TOKEN  = "";
-        const string DISCORD_TOKEN = "";
+        const string OPENAI_TOKEN  = "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";
+        const string DISCORD_TOKEN = "MTA3NTcyNDA5NTAyODc0MDA5Ng.G1WI4L.PXHoIVwKEP20T30eJYqw4iTDgSr9hSYmkoqaCY";
         // Program entry point
         static Task Main(string[] args)
         {
@@ -301,7 +301,7 @@ namespace RavenNest.DiscordBot
             });
         }
 
-        private List<ChatMessage> context = new List<ChatMessage>();
+        private readonly List<ChatMessage> context = new List<ChatMessage>();
 
         private ChatMessage[] GetChatHistory()
         {
@@ -326,10 +326,10 @@ namespace RavenNest.DiscordBot
             msg = msg.Trim();
             var rvn = "RavenNest#3613:";
             if (msg.StartsWith(rvn, StringComparison.OrdinalIgnoreCase))
-                msg = msg.Substring(rvn.Length);
+                msg = msg[rvn.Length..];
 
             if (msg.StartsWith("RavenNest: ", StringComparison.OrdinalIgnoreCase))
-                msg = msg.Substring("RavenNest: ".Length).Trim();
+                msg = msg["RavenNest: ".Length..].Trim();
 
             if (msg.StartsWith("@"))
             {
@@ -356,7 +356,7 @@ namespace RavenNest.DiscordBot
             return msg;
         }
 
-        private static string ravenfall_knowledgeBase =
+        private static readonly string ravenfall_knowledgeBase =
         //"You are RavenNest, a chat bot and AI representing the game Ravenfall.\n" +
         //"Ravenfall was developed and created by Zerratar in 2019, a game developer from Sweden.\n" +
         //"\nReply with a text that can be used as key for a dictionary lookup.\n\n";
@@ -440,9 +440,9 @@ namespace RavenNest.DiscordBot
             return modes[r.Next(modes.Length)].Prompt;
         }
 
-        private Random r = new Random();
+        private readonly Random r = new Random();
 
-        private AIChatMode[] modes = new AIChatMode[]
+        private readonly AIChatMode[] modes = new AIChatMode[]
         {
             Mode("Using Discord formatting, not using double-quotes, what would you reply to the following message but in an encouraging and optimistic?", 500),
             Mode("Using Discord formatting, not using double-quotes, what would you reply to the following message but in a friendly way?", 50),

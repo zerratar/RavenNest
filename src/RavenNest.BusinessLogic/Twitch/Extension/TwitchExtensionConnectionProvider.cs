@@ -46,23 +46,37 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
             System.Net.WebSockets.WebSocket socket,
             IReadOnlyDictionary<string, string> requestHeaders)
         {
-            if (!Enabled) return null;
+            if (!Enabled)
+            {
+                return null;
+            }
+
             var sessionId = requestHeaders.GetSessionId();
             if (!sessionInfoProvider.TryGet(sessionId, out var session))
             {
+                logger.LogError("No session for SessionId: " + sessionId + ", extension websocket cannot be created");
                 return null;
             }
 
             if (socket == null)
             {
+                logger.LogError("Socket is NULL! For SessionId: " + sessionId + ", extension websocket cannot be created");
                 return null;
             }
 
             lock (mutex)
             {
-                var connection = new ExtensionWebSocketConnection(logger, socket, packetDataSerializer, session, requestHeaders["broadcasterId"]);
-                connections[sessionId] = connection;
-                return connection;
+                try
+                {
+                    var connection = new ExtensionWebSocketConnection(logger, socket, packetDataSerializer, session, requestHeaders["broadcasterId"]);
+                    connections[sessionId] = connection;
+                    return connection;
+                }
+                catch (Exception exc)
+                {
+                    logger.LogError("Failed to create extension web socket! " + exc);
+                    return null;
+                }
             }
         }
 
