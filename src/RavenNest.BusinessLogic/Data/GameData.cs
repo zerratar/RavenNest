@@ -3575,13 +3575,14 @@ namespace RavenNest.BusinessLogic.Data
             this.Flush();
         }
 
-        internal void SetNetworkStats(int threadId, long messageCount, long serverTransferRateKBps, string activePipes)
+        internal void SetNetworkStats(int threadId, long receiveMessageCount, long receiveRateKBps, long outMessageCount, long outRateKBps)
         {
             NetworkStats.ThreadId = threadId;
-            NetworkStats.MessageCount = messageCount;
-            NetworkStats.ServerTransferRateKBps = serverTransferRateKBps;
-            NetworkStats.ReceivePipeCount = activePipes;
-            NetworkStats.SampleDateTime = DateTime.UtcNow;
+            NetworkStats.InMessageCount = receiveMessageCount;
+            NetworkStats.InTrafficKBps = receiveRateKBps;
+            NetworkStats.OutMessageCount = outMessageCount;
+            NetworkStats.OutTrafficKBps = outRateKBps;
+            NetworkStats.InSampleDateTime = DateTime.UtcNow;
         }
 
         public readonly NetworkStats NetworkStats = new NetworkStats();
@@ -3590,10 +3591,11 @@ namespace RavenNest.BusinessLogic.Data
     public class NetworkStats
     {
         public int ThreadId { get; internal set; }
-        public long MessageCount { get; internal set; }
-        public long ServerTransferRateKBps { get; internal set; }
-        public string ReceivePipeCount { get; internal set; }
-        public DateTime SampleDateTime { get; internal set; }
+        public long InMessageCount { get; internal set; }
+        public long InTrafficKBps { get; internal set; }
+        public long OutMessageCount { get; internal set; }
+        public long OutTrafficKBps { get; internal set; }
+        public DateTime InSampleDateTime { get; internal set; }
     }
 
     public class DataSaveError

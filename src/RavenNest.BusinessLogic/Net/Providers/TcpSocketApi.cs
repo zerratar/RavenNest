@@ -35,8 +35,10 @@ namespace RavenNest.BusinessLogic.Net
         private bool running;
         private bool disposed;
 
+        static long messagesSent = 0;
         static long messagesReceived = 0;
         static long dataReceived = 0;
+        static long dataSent = 0;
 
         private readonly object clientMutex = new object();
         public GameData GameData => gameData;
@@ -78,8 +80,11 @@ namespace RavenNest.BusinessLogic.Net
                 return;
             }
 
-            dataReceived = 0;
             messagesReceived = 0;
+            messagesSent = 0;
+            dataReceived = 0;
+            dataSent = 0;
+
             var started = false;
             try
             {
@@ -104,25 +109,31 @@ namespace RavenNest.BusinessLogic.Net
                     Thread.Sleep(1000 / ServerRefreshRate);
 
                     // report every 10 seconds
-                    if (stopwatch.ElapsedMilliseconds > 10000 && (messagesReceived > 0))
+                    if (stopwatch.ElapsedMilliseconds > 10000 && (messagesReceived > 0 || messagesSent > 0))
                     {
-
                         var threadId = Thread.CurrentThread.ManagedThreadId;
-                        var messageCount = messagesReceived;
-                        var serverTransferRateKBps = (dataReceived * 1000 / (stopwatch.ElapsedMilliseconds * 1024));
-                        var activePipes = server.ReceivePipeTotalCount.ToString();
+
+                        var inMessageCount = messagesReceived;
+                        var inRateKBps = dataReceived > 0 ? (dataReceived * 1000 / (stopwatch.ElapsedMilliseconds * 1024)) : 0;
+
+                        var outMessageCount = messagesSent;
+                        var outRateKBps = dataSent > 0 ? (dataSent * 1000 / (stopwatch.ElapsedMilliseconds * 1024)) : 0;
 
                         if (gameData != null)
                         {
-                            gameData.SetNetworkStats(threadId, messageCount, serverTransferRateKBps, activePipes);
+                            gameData.SetNetworkStats(threadId, inMessageCount, inRateKBps, outMessageCount, outRateKBps);
                         }
 
                         //logger.LogDebug(string.Format("Thread[" + threadId + "]: Server in={0} ({1} KB/s)  out={0} ({1} KB/s) ReceiveQueue={2}", messageCount, serverTransferRateKBps, activePipes));
 
                         stopwatch.Stop();
                         stopwatch = Stopwatch.StartNew();
+
                         messagesReceived = 0;
                         dataReceived = 0;
+
+                        messagesSent = 0;
+                        dataSent = 0;
                     }
                 }
             }
@@ -161,6 +172,8 @@ namespace RavenNest.BusinessLogic.Net
         public void Send(int connectionId, ArraySegment<byte> message)
         {
             server.Send(connectionId, message);
+            dataSent += message.Count;
+            messagesSent++;
         }
 
         private void OnData(int connectionId, ReadOnlyMemory<byte> packetData)
