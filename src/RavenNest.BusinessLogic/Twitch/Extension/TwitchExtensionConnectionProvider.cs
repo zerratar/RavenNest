@@ -51,6 +51,12 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
                 return null;
             }
 
+            if (requestHeaders == null)
+            {
+                logger.LogError("Got a websocket request with requestHeaders being null! Extension websocket cannot be created");
+                return null;
+            }
+
             var sessionId = requestHeaders.GetSessionId();
             if (!sessionInfoProvider.TryGet(sessionId, out var session))
             {

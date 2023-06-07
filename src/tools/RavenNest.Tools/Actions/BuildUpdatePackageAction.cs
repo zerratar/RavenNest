@@ -15,6 +15,10 @@ namespace RavenNest.Tools.Actions
         private const string UnityBuildFolderWin = @"C:\git\Ravenfall Legacy\Build";
         private const string UnityBuildFolderLinux = @"C:\git\Ravenfall Legacy\Build Linux";
 
+        private const int MAX_REVISION = 10;
+        private const int MAX_BUILD = 10;
+        private const int MAX_MINOR = 10;
+
         /// <summary>
         /// Until we have an updated, the files are the same therefor we don't need to compress it twice.
         /// </summary>
@@ -177,19 +181,19 @@ namespace RavenNest.Tools.Actions
         private System.Version IncrementVersion(System.Version version, int major, int minor, int build, int revision)
         {
             revision = version.Revision < 0 ? revision : version.Revision + revision;
-            if (revision >= 10)
+            if (revision >= MAX_REVISION)
             {
                 revision = 0;
                 build++;
             }
 
-            if (build >= 10)
+            if (build >= MAX_BUILD)
             {
                 build = 0;
                 minor++;
             }
 
-            if (minor >= 10)
+            if (minor >= MAX_MINOR)
             {
                 minor = 0;
                 major++;
