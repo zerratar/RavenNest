@@ -2569,7 +2569,10 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (character.UserIdLock != sessionOwner.Id)
                 {
-                    logger.LogError("Trying to update a character that does not belong to the session owner. Session Owner: " + sessionOwner.UserName + " Character Owner: " + character.UserIdLock);
+                    var characterSessionOwner = character.UserIdLock != null ? gameData.GetUser(character.UserIdLock.GetValueOrDefault()) : null;
+                    var partOfSession = characterSessionOwner != null ? characterSessionOwner.UserName : "";
+
+                    logger.LogError("Trying to update a character that does not belong to the session owner. Current Session: " + sessionOwner.UserName + " Character: " + character.Name + ", UserIdLock: " + partOfSession);
                     // send remove from this session.
                     SendRemovePlayerFromSession(character, gameSession, "Character is part of another session.");
                     continue;
@@ -2679,15 +2682,16 @@ namespace RavenNest.BusinessLogic.Game
                     continue;
                 }
 
-
                 if (character.UserIdLock != sessionOwner.Id)
                 {
-                    logger.LogError("Trying to update a character that does not belong to the session owner. Session Owner: " + sessionOwner.UserName + " Character Owner: " + character.UserIdLock);
+                    var characterSessionOwner = character.UserIdLock != null ? gameData.GetUser(character.UserIdLock.GetValueOrDefault()) : null;
+                    var partOfSession = characterSessionOwner != null ? characterSessionOwner.UserName : "";
+
+                    logger.LogError("Trying to update a character that does not belong to the session owner. Current Session: " + sessionOwner.UserName + " Character: " + character.Name + ", UserIdLock: " + partOfSession);
                     // send remove from this session.
                     SendRemovePlayerFromSession(character, gameSession, "Character is part of another session.");
                     continue;
                 }
-
 
                 var characterSessionState = gameData.GetCharacterSessionState(sessionToken.SessionId, character.Id);
                 characterSessionState.LastStateSaveRequest = DateTime.UtcNow;
