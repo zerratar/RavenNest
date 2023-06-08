@@ -2567,6 +2567,14 @@ namespace RavenNest.BusinessLogic.Game
                     continue;
                 }
 
+                if (character.UserIdLock != sessionOwner.Id)
+                {
+                    logger.LogError("Trying to update a character that does not belong to the session owner. Session Owner: " + sessionOwner.UserName + " Character Owner: " + character.UserIdLock);
+                    // send remove from this session.
+                    SendRemovePlayerFromSession(character, gameSession, "Character is part of another session.");
+                    continue;
+                }
+
                 var characterSessionState = gameData.GetCharacterSessionState(sessionToken.SessionId, character.Id);
                 characterSessionState.LastExpSaveRequest = DateTime.UtcNow;
 
@@ -2670,6 +2678,16 @@ namespace RavenNest.BusinessLogic.Game
                     logger.LogError("Trying to update a character that does not exist. ID: " + data.CharacterId);
                     continue;
                 }
+
+
+                if (character.UserIdLock != sessionOwner.Id)
+                {
+                    logger.LogError("Trying to update a character that does not belong to the session owner. Session Owner: " + sessionOwner.UserName + " Character Owner: " + character.UserIdLock);
+                    // send remove from this session.
+                    SendRemovePlayerFromSession(character, gameSession, "Character is part of another session.");
+                    continue;
+                }
+
 
                 var characterSessionState = gameData.GetCharacterSessionState(sessionToken.SessionId, character.Id);
                 characterSessionState.LastStateSaveRequest = DateTime.UtcNow;
