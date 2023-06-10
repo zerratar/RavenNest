@@ -14,7 +14,7 @@ namespace RavenNest
 
         public static string GetSessionId(IReadOnlyDictionary<string, string> headers)
         {
-            if (headers.TryGetValue(SessionCookieName, out var sid) && !string.IsNullOrEmpty(sid))
+            if (headers.TryGetValue(SessionCookieName, out var sid) && !string.IsNullOrEmpty(sid) && sid != "null")
             {
                 return sid;
             }
@@ -26,14 +26,14 @@ namespace RavenNest
             if (context == null) return Guid.NewGuid().ToString();
             if (context.Request.Headers.ContainsKey(SessionCookieName) &&
                 context.Request.Headers.TryGetValue(SessionCookieName, out var sid) &&
-                !string.IsNullOrEmpty(sid))
+                !string.IsNullOrEmpty(sid) && sid != "null")
             {
                 return sid;
             }
 
             if (!context.Request.Cookies.TryGetValue(SessionCookieName, out var id))
             {
-                if (TryAppendSessionToken(context, sid, out id))
+                if (TryAppendSessionToken(context, sid, out id) && id != "null")
                 {
                     return id;
                 }

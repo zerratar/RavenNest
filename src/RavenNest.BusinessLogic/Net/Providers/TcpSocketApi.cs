@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using System.Diagnostics;
 using RavenNest.Models.TcpApi;
 using MessagePack;
+using Telepathy;
 
 namespace RavenNest.BusinessLogic.Net
 {
@@ -103,6 +104,12 @@ namespace RavenNest.BusinessLogic.Net
                 {
                     // tick and process as many as we can. will auto reply.
                     // (100k limit to avoid deadlocks)
+                    if (server == null)
+                    {
+                        // we have disposed this server.
+                        break;
+                    }
+
                     server.Tick(100000);
 
                     // sleep

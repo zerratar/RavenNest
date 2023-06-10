@@ -36,11 +36,13 @@ namespace RavenNest.Controllers
             {
                 if (HttpContext.WebSockets.IsWebSocketRequest)
                 {
+                    logger.LogError($"Getting Websocket Request for {broadcasterId}/{sessionId}");
+
                     var headers = new Dictionary<string, string>
-                {
-                    { "broadcasterId", broadcasterId },
-                    { SessionCookie.SessionCookieName, sessionId }
-                };
+                    {
+                        { "broadcasterId", broadcasterId },
+                        { SessionCookie.SessionCookieName, sessionId }
+                    };
 
                     var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
                     var socketSession = extensionWsConnectionProvider.Get(webSocket, headers);
@@ -58,6 +60,8 @@ namespace RavenNest.Controllers
 
                     await HttpContext.Session.CommitAsync();
                     await socketSession.KeepAlive();
+
+                    logger.LogError($"Twitch Extension WS Closing for {broadcasterId}/{sessionId}");
                 }
                 else
                 {
