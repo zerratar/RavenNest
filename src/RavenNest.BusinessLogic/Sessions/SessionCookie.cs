@@ -33,12 +33,20 @@ namespace RavenNest
 
             if (!context.Request.Cookies.TryGetValue(SessionCookieName, out var id))
             {
-                try
+                if (TryAppendSessionToken(context, sid, out id))
                 {
-                    return AppendSessionToken(context, sid);
+                    return id;
                 }
-                catch { }
             }
+
+            if (string.IsNullOrEmpty(id) || id == "null")
+            {
+                if (TryAppendSessionToken(context, null, out id))
+                {
+                    return id;
+                }
+            }
+
             return id;
         }
 
@@ -47,24 +55,31 @@ namespace RavenNest
             if (!context.Request.Cookies.ContainsKey(SessionCookieName))
             {
                 var id = context.GetSessionId();
-                AppendSessionToken(context, id);
+                TryAppendSessionToken(context, id, out _);
             }
 
             await next.Invoke();
         }
 
-        private static string AppendSessionToken(HttpContext context, string sessionId = null)
+        private static bool TryAppendSessionToken(HttpContext context, string sessionId, out string newSessionId)
         {
-            var id = sessionId != null ? sessionId : Guid.NewGuid().ToString();
-            if (context != null)
+            newSessionId = sessionId != null ? sessionId : Guid.NewGuid().ToString();
+            try
             {
-                context.Response.Cookies.Append(SessionCookieName, id, new CookieOptions
+                if (context != null)
                 {
-                    Expires = DateTime.UtcNow.Add(SessionTimeout),
-                    MaxAge = SessionTimeout
-                });
+                    context.Response.Cookies.Append(SessionCookieName, newSessionId, new CookieOptions
+                    {
+                        Expires = DateTime.UtcNow.Add(SessionTimeout),
+                        MaxAge = SessionTimeout
+                    });
+                }
+                return true;
             }
-            return id;
+            catch
+            {
+                return false;
+            }
         }
     }
 
