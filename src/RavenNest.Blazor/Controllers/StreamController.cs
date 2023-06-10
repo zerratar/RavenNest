@@ -7,8 +7,6 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using RavenNest.BusinessLogic.Game;
-using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Twitch.Extension;
 
 namespace RavenNest.Controllers
@@ -34,9 +32,11 @@ namespace RavenNest.Controllers
         {
             try
             {
-                if (HttpContext.WebSockets.IsWebSocketRequest)
+                var wsReq = HttpContext.WebSockets.IsWebSocketRequest;
+                logger.LogError($"Getting Websocket Request for {broadcasterId}/{sessionId}, WS: " + wsReq);
+
+                if (wsReq)
                 {
-                    logger.LogError($"Getting Websocket Request for {broadcasterId}/{sessionId}");
 
                     var headers = new Dictionary<string, string>
                     {
