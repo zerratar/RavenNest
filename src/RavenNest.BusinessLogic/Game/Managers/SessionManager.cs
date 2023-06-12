@@ -10,6 +10,7 @@ using RavenNest.BusinessLogic.ScriptParser;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.Models;
 using RavenNest.Sessions;
+using static RavenNest.Twitch.TwitchRequests;
 
 namespace RavenNest.BusinessLogic.Game
 {
@@ -23,6 +24,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly VillageManager villageManager;
         private readonly ITwitchExtensionConnectionProvider extWsConnectionProvider;
         private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
+
         private readonly int[] MaxMultiplier = new int[]
         {
             //0, 10, 15, 20
@@ -124,6 +126,8 @@ namespace RavenNest.BusinessLogic.Game
             sessionState.ClientVersion = clientVersion;
 
             var sessionToken = GenerateSessionToken(token, user, newGameSession, clientVersion);
+
+
 
             return Task.FromResult(new BeginSessionResult
             {
@@ -516,6 +520,8 @@ namespace RavenNest.BusinessLogic.Game
             var session = gameData.GetSessionByCharacterId(characterId, allowInactiveSessions);
             if (session == null) return null;
             var user = gameData.GetUser(session.UserId);
+
+            var twitch = gameData.GetUserAccess(user.Id, "twitch");
             return new SessionToken
             {
                 SessionId = session.Id,
@@ -524,19 +530,20 @@ namespace RavenNest.BusinessLogic.Game
                 UserId = user.Id,
                 DisplayName = user.DisplayName,
                 UserName = user.UserName,
-                TwitchDisplayName = user.DisplayName,
-                TwitchUserId = user.UserId,
-                TwitchUserName = user.UserName,
+                TwitchDisplayName = twitch?.PlatformUsername,
+                TwitchUserId = twitch?.PlatformId,
+                TwitchUserName = twitch?.PlatformUsername,
             };
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static SessionToken GenerateSessionToken(
+        private SessionToken GenerateSessionToken(
             AuthToken token,
             DataModels.User user,
             DataModels.GameSession session,
             string clientVersion)
         {
+            var twitch = gameData.GetUserAccess(user.Id, "twitch");
             return new SessionToken
             {
                 AuthToken = token.Token,
@@ -546,9 +553,9 @@ namespace RavenNest.BusinessLogic.Game
                 UserId = user.Id,
                 DisplayName = user.DisplayName,
                 UserName = user.UserName,
-                TwitchDisplayName = user.DisplayName,
-                TwitchUserId = user.UserId,
-                TwitchUserName = user.UserName,
+                TwitchDisplayName = twitch?.PlatformUsername,
+                TwitchUserId = twitch?.PlatformId,
+                TwitchUserName = twitch?.PlatformUsername,
                 ClientVersion = clientVersion
             };
         }
@@ -605,5 +612,54 @@ namespace RavenNest.BusinessLogic.Game
             //}
         }
 
+        public StreamerInfo GetStreamerInfo(string broadcasterId, Guid userId)
+        {
+            var streamer = gameData.GetUserByTwitchId(broadcasterId);
+            var result = new StreamerInfo();
+            if (streamer != null)
+            {
+                result.StreamerUserId = broadcasterId;
+                result.StreamerUserName = streamer.UserName;
+
+                var gameSession = gameData.GetOwnedSessionByUserId(streamer.Id);
+
+                result.IsRavenfallRunning = gameSession != null;
+                result.StreamerSessionId = gameSession?.Id;
+
+                if (gameSession != null)
+                {
+                    result.Started = gameSession.Started;
+
+                    var state = gameData.GetSessionState(gameSession.Id);
+                    if (state != null)
+                    {
+                        result.ClientVersion = state.ClientVersion;
+
+                        if (!state.IsConnectedToClient)
+                        {
+                            result.IsRavenfallRunning = false;
+                        }
+                    }
+
+                    var charactersInSession = gameData.GetActiveSessionCharacters(gameSession);
+                    if (charactersInSession != null)
+                    {
+                        var u = gameData.GetUser(userId);
+                        if (u != null)
+                        {
+                            var c = charactersInSession.FirstOrDefault(x => x.UserId == u.Id);
+                            if (c != null)
+                            {
+                                result.JoinedCharacterId = c.Id;
+                            }
+                        }
+
+                        result.PlayerCount = charactersInSession.Count;
+                    }
+                }
+            }
+
+            return result;
+        }
     }
 }

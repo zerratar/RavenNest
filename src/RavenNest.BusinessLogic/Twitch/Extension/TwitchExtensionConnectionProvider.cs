@@ -109,7 +109,14 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
             lock (mutex)
             {
                 var streamer = gameData.GetUser(streamerUserId);
-                return (connections = this.connections.SelectWhere(x => x.Value.BroadcasterTwitchUserId == streamer.UserId, x => x.Value)).Count > 0;
+                var twitch = gameData.GetUserAccess(streamer.Id, "twitch");
+                if (twitch == null)
+                {
+                    connections = Array.Empty<IExtensionConnection>();
+                    return false;
+                }
+
+                return (connections = this.connections.SelectWhere(x => x.Value.BroadcasterTwitchUserId == twitch.PlatformId, x => x.Value)).Count > 0;
             }
         }
 

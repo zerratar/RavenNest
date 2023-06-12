@@ -33,6 +33,7 @@ namespace RavenNest.Models.TcpApi
         public Guid CharacterId { get; set; }
         public short Health { get; set; }
         public Island Island { get; set; }
+        public Island Destination { get; set; }
         public CharacterState State { get; set; }
         public int TrainingSkillIndex { get; set; }
         public short X { get; set; }
@@ -47,6 +48,7 @@ namespace RavenNest.Models.TcpApi
         public Guid CharacterId { get; set; }
         public short Health { get; set; }
         public Island Island { get; set; }
+        public Island Destination { get; set; }
         public CharacterState State { get; set; }
         public string Task { get; set; }
         public string TaskArgument { get; set; }

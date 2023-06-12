@@ -8,6 +8,6 @@ namespace RavenNest.BusinessLogic.Net
         public int SkillIndex { get; set; }
         public int Level { get; set; }
         public double Experience { get; set; }
+        public float Percent { get; set; }
     }
-
 }

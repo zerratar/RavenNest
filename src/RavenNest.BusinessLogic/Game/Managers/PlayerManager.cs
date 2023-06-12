@@ -10,12 +10,10 @@ using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Models;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
-using RavenNest.BusinessLogic.ScriptParser;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Models.TcpApi;
-using static RavenNest.BusinessLogic.Models.Patreon.API.PatreonIdentity;
 using Appearance = RavenNest.DataModels.Appearance;
 using Gender = RavenNest.DataModels.Gender;
 using Item = RavenNest.DataModels.Item;
@@ -106,6 +104,66 @@ namespace RavenNest.BusinessLogic.Game
                 UserName = userName,
                 Identifier = identifier,
             });
+        }
+
+        public void SendPlayerTravelToGame(
+            DataModels.GameSession activeSession,
+            Character character,
+            string target)
+        {
+            gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.PlayerTravel, activeSession, new PlayerTravel
+            {
+                Island = target,
+                PlayerId = character.Id
+            }));
+        }
+
+        public void SendRaidJoinToGame(DataModels.GameSession gameSession, Character character)
+        {
+            gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.PlayerJoinRaid, gameSession, new PlayerId
+            {
+                Id = character.Id
+            }));
+        }
+
+        public void SendDungeonJoinToGame(DataModels.GameSession gameSession, Character character)
+        {
+            gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.PlayerJoinDungeon, gameSession, new PlayerId
+            {
+                Id = character.Id
+            }));
+        }
+
+        public void SendRaidStartToGame(DataModels.GameSession gameSession, Character character)
+        {
+            gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.PlayerStartRaid, gameSession, new PlayerId
+            {
+                Id = character.Id
+            }));
+        }
+
+        public void SendDungeonStartToGame(DataModels.GameSession gameSession, Character character)
+        {
+            gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.PlayerStartDungeon, gameSession, new PlayerId
+            {
+                Id = character.Id
+            }));
+        }
+
+        public void SendPlayerEnterOnsenToGame(DataModels.GameSession gameSession, Character character)
+        {
+            gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.PlayerBeginRest, gameSession, new PlayerId
+            {
+                Id = character.Id
+            }));
+        }
+
+        public void SendPlayerExitOnsenToGame(DataModels.GameSession gameSession, Character character)
+        {
+            gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.PlayerEndRest, gameSession, new PlayerId
+            {
+                Id = character.Id
+            }));
         }
 
         public void SendPlayerTaskToGame(
@@ -579,7 +637,7 @@ namespace RavenNest.BusinessLogic.Game
 
                 await SendUserRoleToRavenBotAsync(user);
 
-                await this.TrySendToExtensionAsync(character, new PlayerAdd
+                await this.TrySendToExtensionAsync(session, character, new PlayerAdd
                 {
                     Identifier = character.Identifier,
                     UserId = user.Id,
@@ -617,17 +675,17 @@ namespace RavenNest.BusinessLogic.Game
             if (sessionOwner.Id != character.UserIdLock)
                 return false;
 
-            character.UserIdLock = null;
-
-#if DEBUG
-            logger.LogDebug(character.Name + " removed from " + sessionOwner.UserName + "'s session.");
-#endif
-            await this.TrySendToExtensionAsync(character, new PlayerRemove
+            await this.TrySendToExtensionAsync(session, character, new PlayerRemove
             {
                 CharacterId = characterId,
                 Reason = "Left Game",
             });
 
+            character.UserIdLock = null;
+
+#if DEBUG
+            logger.LogDebug(character.Name + " removed from " + sessionOwner.UserName + "'s session.");
+#endif
             return true;
         }
 
@@ -2638,7 +2696,8 @@ namespace RavenNest.BusinessLogic.Game
                         CharacterId = character.Id,
                         Experience = experience,
                         Level = level,
-                        SkillIndex = skill.Index
+                        SkillIndex = skill.Index,
+                        Percent = SkillsExtended.GetPercentForNextLevel(skill.Level, skill.Experience),
                     });
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 }
@@ -2714,6 +2773,12 @@ namespace RavenNest.BusinessLogic.Game
                     var state = gameData.GetCharacterState(character.StateId);
                     SetCharacterState(state, data);
                 }
+
+
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                TrySendToExtensionAsync(character, data);
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+
             }
         }
 
@@ -2852,7 +2917,8 @@ namespace RavenNest.BusinessLogic.Game
                     CharacterId = character.Id,
                     Experience = experience,
                     Level = level,
-                    SkillIndex = skill.Index
+                    SkillIndex = skill.Index,
+                    Percent = SkillsExtended.GetPercentForNextLevel(skill.Level, skill.Experience),
                 });
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             }
@@ -2963,7 +3029,8 @@ namespace RavenNest.BusinessLogic.Game
                         CharacterId = character.Id,
                         Experience = experience,
                         Level = level,
-                        SkillIndex = skillIndex
+                        SkillIndex = skillIndex,
+                        Percent = SkillsExtended.GetPercentForNextLevel(level, experience),
                     });
                 }
 
@@ -3168,6 +3235,7 @@ namespace RavenNest.BusinessLogic.Game
                     SkillIndex = skill.Index,
                     Experience = skill.Experience,
                     Level = level,
+                    Percent = SkillsExtended.GetPercentForNextLevel(skill.Level, skill.Experience),
                 });
             });
 
@@ -3259,6 +3327,30 @@ namespace RavenNest.BusinessLogic.Game
             inventoryProvider.Get(character.Id).EquipBestItems();
         }
 
+        internal async Task<bool> TrySendToExtensionAsync<T>(DataModels.GameSession session, Character character, T data)
+        {
+            if (extensionWsConnectionProvider.TryGetAllByStreamer(session.UserId, out var connections))
+            {
+                foreach (var connection in connections)
+                {
+                    if (connection.Session.UserId != character.UserId)
+                    {
+                        continue;
+                    }
+                    try
+                    {
+                        await connection.SendAsync(data);
+                        return true;
+                    }
+                    catch (Exception exc)
+                    {
+                        logger.LogError("Unable to send extension data to " + character?.Name + " of type " + typeof(T).FullName + ": " + exc);
+                    }
+                }
+            }
+
+            return false;
+        }
         internal async Task<bool> TrySendToExtensionAsync<T>(Character character, T data)
         {
             if (extensionWsConnectionProvider.TryGet(character.Id, out var connection))
@@ -3697,6 +3789,7 @@ namespace RavenNest.BusinessLogic.Game
             state.InDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.Dungeon;
             state.InOnsen = update.State == RavenNest.Models.TcpApi.CharacterState.Onsen;
             state.Island = update.Island != Island.Ferry ? update.Island.ToString() : null;
+            state.Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null;
             state.Task = task;
             state.TaskArgument = taskArgument ?? task;
             state.X = update.X;
@@ -3716,12 +3809,14 @@ namespace RavenNest.BusinessLogic.Game
             state.InDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.Dungeon;
             state.InOnsen = update.State == RavenNest.Models.TcpApi.CharacterState.Onsen;
             state.Island = update.Island != Island.Ferry ? update.Island.ToString() : null;
+            state.Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null;
             state.Task = task;
             state.TaskArgument = taskArgument;
             state.X = update.X;
             state.Y = update.Y;
             state.Z = update.Z;
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static DataModels.CharacterState CreateCharacterState(CharacterStateUpdate update)
         {
@@ -3737,6 +3832,7 @@ namespace RavenNest.BusinessLogic.Game
                 InDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.Dungeon,
                 InOnsen = update.State == RavenNest.Models.TcpApi.CharacterState.Onsen,
                 Island = update.Island != Island.Ferry ? update.Island.ToString() : null,
+                Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null,
                 Task = task,
                 TaskArgument = taskArgument ?? task,
                 X = update.X,
@@ -3761,6 +3857,7 @@ namespace RavenNest.BusinessLogic.Game
                 InDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.Dungeon,
                 InOnsen = update.State == RavenNest.Models.TcpApi.CharacterState.Onsen,
                 Island = update.Island != Island.Ferry ? update.Island.ToString() : null,
+                Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null,
                 Task = task,
                 TaskArgument = taskArgument,
                 X = update.X,
@@ -3906,5 +4003,6 @@ namespace RavenNest.BusinessLogic.Game
         {
             return character.UserIdLock == session.UserId;
         }
+
     }
 }

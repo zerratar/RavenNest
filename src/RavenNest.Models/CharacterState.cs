@@ -13,6 +13,7 @@ namespace RavenNest.Models
         public string Task { get; set; }
         public string TaskArgument { get; set; }
         public string Island { get; set; }
+        public string Destination { get; set; }
         public double? X { get; set; }
         public double? Y { get; set; }
         public double? Z { get; set; }

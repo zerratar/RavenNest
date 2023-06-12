@@ -256,6 +256,14 @@ namespace RavenNest.Controllers
             }
         }
 
+        [HttpGet("clear-players")]
+        public bool ClearPlayers()
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            return gameManager.ClearPlayers(session);
+        }
+
         [HttpGet("get-scrolls/{characterId}")]
         public ScrollInfoCollection GetScrolls(Guid characterId)
         {

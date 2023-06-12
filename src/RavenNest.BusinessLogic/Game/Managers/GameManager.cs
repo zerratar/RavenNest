@@ -3,6 +3,7 @@ using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
 using RavenNest.Models;
+using RavenNest.Sessions;
 using System;
 using System.Linq;
 
@@ -249,6 +250,24 @@ namespace RavenNest.BusinessLogic.Game
 
             return new ScrollInfoCollection(scrolls.Select(x => new ScrollInfo(x.ItemId, x.Item?.Name, x.Amount)));
         }
+
+        public bool ClearPlayers(SessionToken session)
+        {
+            var gameSession = gameData.GetSession(session.SessionId);
+            if (gameSession == null)
+            {
+                return false;
+            }
+
+            var characters = gameData.GetCharactersByUserLock(gameSession.UserId);
+            foreach (var c in characters)
+            {
+                c.UserIdLock = null;
+            }
+
+            return true;
+        }
+
 
         //public bool WalkTo(string userId, int x, int y, int z)
         //{

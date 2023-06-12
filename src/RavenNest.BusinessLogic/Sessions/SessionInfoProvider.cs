@@ -109,25 +109,28 @@ namespace RavenNest
 
             //var activeSession = gameData.GetActiveSessions().FirstOrDefault(x => x.UserId == broadcaster.Id);
             var activeSession = gameData.GetSessionByUserId(broadcaster.Id);
-            if (activeSession == null)
-                return new SessionInfo();
-
-            var activeCharacter = gameData.GetCharacterBySession(activeSession.Id, twitchUserId, "twitch", false);
-            if (activeCharacter != null)
+            if (activeSession != null)
             {
-                foreach (var sd in sessions.Values)
+                // in case the streamer is not having a game active, we should still create a proper session Info
+                //return new SessionInfo();
+
+                var activeCharacter = gameData.GetCharacterBySession(activeSession.Id, twitchUserId, "twitch", false);
+                if (activeCharacter != null)
                 {
-                    if (sd.SessionInfo != null && sd.SessionInfo.ActiveCharacterId == activeCharacter.Id && sd.SessionInfo.Extension)
+                    foreach (var sd in sessions.Values)
                     {
-                        si = sd.SessionInfo;
-                        RemoveSessionData(si.SessionId);
-                        break;
+                        if (sd.SessionInfo != null && sd.SessionInfo.ActiveCharacterId == activeCharacter.Id && sd.SessionInfo.Extension)
+                        {
+                            si = sd.SessionInfo;
+                            RemoveSessionData(si.SessionId);
+                            break;
+                        }
                     }
+
+                    si.ActiveCharacterId = activeCharacter.Id;
                 }
-
-                si.ActiveCharacterId = activeCharacter.Id;
             }
-
+            
             si.Extension = true;
             si.SessionId = sessionId;
             UpdateSessionInfoData(si, user);

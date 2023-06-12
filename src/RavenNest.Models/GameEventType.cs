@@ -20,6 +20,13 @@
         PlayerDuelDecline = 25,
         PlayerDuelRequest = 26,
         PlayerTravel = 27,
+
+        PlayerBeginRest = 36,
+        PlayerEndRest = 37,
+
+        PlayerStartRaid = 38,
+        PlayerStartDungeon = 39,
+
         ItemBuy = 6,
         ItemSell = 7,
         ItemEquip = 8,

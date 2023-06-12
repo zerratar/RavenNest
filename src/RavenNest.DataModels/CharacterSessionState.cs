@@ -34,6 +34,7 @@ namespace RavenNest.DataModels
         public ConcurrentDictionary<Guid, NPCState> NPCStates { get; set; } = new ConcurrentDictionary<Guid, NPCState>();
         public DateTime LastStateRequest { get; set; }
         public DateTime LastExpRequest { get; set; }
+        public bool IsConnectedToClient { get; set; }
     }
 
     public class NPCState

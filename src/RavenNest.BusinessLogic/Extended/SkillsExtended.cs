@@ -27,7 +27,7 @@ namespace RavenNest.BusinessLogic.Extended
         public float HealingProcent => GetPercentForNextLevel(HealingLevel, Healing);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static float GetPercentForNextLevel(int level, double exp)
+        public static float GetPercentForNextLevel(int level, double exp)
         {
             var nextLevel = GameMath.ExperienceForLevel(level + 1);
             var thisLevel = exp;

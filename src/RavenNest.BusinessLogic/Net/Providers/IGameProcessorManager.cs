@@ -9,6 +9,10 @@ using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using System.Collections.Generic;
+using RavenNest.Sessions;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using static RavenNest.BusinessLogic.Models.Patreon.API.PatreonIdentity;
+using System.Diagnostics;
 
 namespace RavenNest.BusinessLogic.Net
 {
@@ -67,10 +71,30 @@ namespace RavenNest.BusinessLogic.Net
                 return;
             }
 
+            var state = gameData.GetSessionState(sessionToken.SessionId);
+            if (state != null)
+            {
+                state.IsConnectedToClient = true;
+            }
+
             // do something
             var instance = new GameInstance(sessionToken, ravenbotApi, extWsProvider, tcpConnectionProvider, sessionManager, inventoryProvider, gameData, logger);
             gameInstances[uid] = instance;
             instance.Start();
+
+            if (extWsProvider.TryGetAllByStreamer(sessionToken.UserId, out var allConnections))
+            {
+                var twitch = gameData.GetUserAccess(sessionToken.UserId, "twitch");
+                var twitchUserId = twitch?.PlatformId ?? sessionToken.TwitchUserId;
+
+                foreach (var c in allConnections)
+                {
+
+                    var data = sessionManager.GetStreamerInfo(twitchUserId, c.Session.UserId);
+                    data.IsRavenfallRunning = true;
+                    c.SendAsync(data);
+                }
+            }
         }
 
         public void Stop(SessionToken sessionToken)
@@ -88,11 +112,39 @@ namespace RavenNest.BusinessLogic.Net
                     return;
                 }
 
+                var state = gameData.GetSessionState(sessionToken.SessionId);
+                if (state != null)
+                {
+                    state.IsConnectedToClient = false;
+                }
+
                 // do something
                 if (instance != null)
                 {
                     instance.Dispose();
                 }
+
+                if (extWsProvider.TryGetAllByStreamer(sessionToken.UserId, out var allConnections))
+                {
+                    var data = new StreamerInfo();
+                    var twitch = gameData.GetUserAccess(sessionToken.UserId, "twitch");
+                    data.StreamerUserId = twitch?.PlatformId ?? sessionToken.TwitchUserId;
+                    data.StreamerUserName = twitch?.PlatformUsername ?? sessionToken.UserName;
+                    data.IsRavenfallRunning = false;
+                    data.StreamerSessionId = null;
+                    data.Started = null;
+
+                    if (state != null)
+                    {
+                        data.ClientVersion = state.ClientVersion;
+                    }
+
+                    foreach (var c in allConnections)
+                    {
+                        c.SendAsync(data);
+                    }
+                }
+
 
                 gameInstances.Remove(uid, out _);
             }

@@ -14,6 +14,7 @@ using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.BusinessLogic.Models;
 using RavenNest.Models;
 using RavenNest.Sessions;
 using RavenNest.Twitch;
@@ -28,6 +29,7 @@ namespace RavenNest.Controllers
         private readonly PlayerManager playerManager;
         private readonly GameData gameData;
         private readonly SessionInfoProvider sessionInfoProvider;
+        private readonly SessionManager sessionManager;
         private readonly IAuthManager authManager;
         private readonly LogoService logoService;
         private readonly AppSettings settings;
@@ -42,12 +44,14 @@ namespace RavenNest.Controllers
             PlayerManager playerManager,
             GameData gameData,
             SessionInfoProvider sessionInfoProvider,
+            SessionManager sessionManager,
             IAuthManager authManager,
             LogoService logoService)
         {
             this.playerManager = playerManager;
             this.gameData = gameData;
             this.sessionInfoProvider = sessionInfoProvider;
+            this.sessionManager = sessionManager;
             this.authManager = authManager;
             this.logoService = logoService;
             this.settings = settings.Value;
@@ -200,48 +204,118 @@ namespace RavenNest.Controllers
             }
             return result.SessionInfo;
         }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("extension/join-raid/{broadcasterId}/{characterId}")]
+        public bool JoinRaidAsync(string broadcasterId, Guid characterId)
+        {
+            if (!TryGetRequestContext(broadcasterId, characterId, out var ctx))
+            {
+                return false;
+            }
+
+            playerManager.SendRaidJoinToGame(ctx.GameSession, ctx.Character);
+            return true;
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("extension/join-dungeon/{broadcasterId}/{characterId}")]
+        public bool JoinDungeonAsync(string broadcasterId, Guid characterId)
+        {
+            if (!TryGetRequestContext(broadcasterId, characterId, out var ctx))
+            {
+                return false;
+            }
+
+            playerManager.SendDungeonJoinToGame(ctx.GameSession, ctx.Character);
+            return true;
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("extension/start-raid/{broadcasterId}/{characterId}")]
+        public bool StartRaidnAsync(string broadcasterId, Guid characterId)
+        {
+            if (!TryGetRequestContext(broadcasterId, characterId, out var ctx))
+            {
+                return false;
+            }
+
+            playerManager.SendRaidStartToGame(ctx.GameSession, ctx.Character);
+            return true;
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("extension/start-dungeon/{broadcasterId}/{characterId}")]
+        public bool StartDungeonAsync(string broadcasterId, Guid characterId)
+        {
+            if (!TryGetRequestContext(broadcasterId, characterId, out var ctx))
+            {
+                return false;
+            }
+
+            playerManager.SendDungeonStartToGame(ctx.GameSession, ctx.Character);
+            return true;
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("extension/enter-onsen/{broadcasterId}/{characterId}")]
+        public bool EnterOnsenAsync(string broadcasterId, Guid characterId)
+        {
+            if (!TryGetRequestContext(broadcasterId, characterId, out var ctx))
+            {
+                return false;
+            }
+
+            playerManager.SendPlayerEnterOnsenToGame(ctx.GameSession, ctx.Character);
+            return true;
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("extension/exit-onsen/{broadcasterId}/{characterId}")]
+        public bool ExitOnsenAsync(string broadcasterId, Guid characterId)
+        {
+            if (!TryGetRequestContext(broadcasterId, characterId, out var ctx))
+            {
+                return false;
+            }
+
+            playerManager.SendPlayerExitOnsenToGame(ctx.GameSession, ctx.Character);
+            return true;
+        }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/set-task/{broadcasterId}/{characterId}/{task}")]
         public bool SetTask(string broadcasterId, Guid characterId, string task)
         {
             return SetTask(broadcasterId, characterId, task, null);
         }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/set-task/{broadcasterId}/{characterId}/{task}/{taskArgument}")]
         public bool SetTask(string broadcasterId, Guid characterId, string task, string taskArgument)
         {
-            if (string.IsNullOrEmpty(broadcasterId))
+            if (!TryGetRequestContext(broadcasterId, characterId, out var ctx))
             {
                 return false;
             }
 
-            if (!TryGetSession(out var sessionInfo))
-            {
-                return false;
-            }
-
-            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId, "twitch");
-            if (activeSession == null)
-            {
-                return false;
-            }
-
-            var user = gameData.GetUser(sessionInfo.UserId);
-            if (user == null)
-            {
-                return false;
-            }
-
-            var myCharacters = gameData.GetCharacters(c => c.UserId == user.Id && c.Id == characterId);
-            var character = myCharacters.FirstOrDefault();
-            if (character == null)
-            {
-                return false;
-            }
-
-            playerManager.SendPlayerTaskToGame(activeSession, character, task, taskArgument);
+            playerManager.SendPlayerTaskToGame(ctx.GameSession, ctx.Character, task, taskArgument);
             return true;
         }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("extension/travel/{broadcasterId}/{characterId}/{target}")]
+        public bool Travel(string broadcasterId, Guid characterId, string target)
+        {
+            if (!TryGetRequestContext(broadcasterId, characterId, out var ctx))
+            {
+                return false;
+            }
+
+            playerManager.SendPlayerTravelToGame(ctx.GameSession, ctx.Character, target);
+            return true;
+        }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/player/{broadcasterId}")]
         public WebsitePlayer GetActivePlayer(string broadcasterId)
@@ -266,39 +340,15 @@ namespace RavenNest.Controllers
         [HttpGet("extension/leave/{broadcasterId}/{characterId}")]
         public bool PlayerLeave(string broadcasterId, Guid characterId)
         {
-            if (string.IsNullOrEmpty(broadcasterId))
+            if (!TryGetRequestContext(broadcasterId, characterId, out var ctx))
             {
                 return false;
             }
 
-            if (!TryGetSession(out var sessionInfo))
+            if (playerManager.SendRemovePlayerFromSessionToGame(ctx.Character))
             {
-                return false;
-            }
-
-            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId, "twitch");
-            if (activeSession == null)
-            {
-                return false;
-            }
-
-            var user = gameData.GetUser(sessionInfo.UserId);
-            if (user == null)
-            {
-                return false;
-            }
-
-            var myCharacters = gameData.GetCharacters(c => c.UserId == user.Id && c.Id == characterId);
-            var character = myCharacters.FirstOrDefault();
-            if (character == null)
-            {
-                return false;
-            }
-
-            if (playerManager.SendRemovePlayerFromSessionToGame(character))
-            {
-                sessionInfoProvider.SetActiveCharacter(sessionInfo, null);
-                character.UserIdLock = null;
+                sessionInfoProvider.SetActiveCharacter(ctx.SessionInfo, null);
+                ctx.Character.UserIdLock = null;
                 return true;
             }
             // playerManager.RemovePlayerFromActiveSession(activeSession, characterId)
@@ -474,50 +524,11 @@ namespace RavenNest.Controllers
         [HttpGet("extension/{broadcasterId}")]
         public StreamerInfo GetStreamerInfo(string broadcasterId)
         {
-            var streamer = gameData.GetUserByTwitchId(broadcasterId);
-            var result = new StreamerInfo();
-            if (streamer != null)
-            {
-                result.StreamerUserId = broadcasterId;
-                result.StreamerUserName = streamer.UserName;
-
-                var gameSession = gameData.GetOwnedSessionByUserId(streamer.Id);
-                result.IsRavenfallRunning = gameSession != null;
-                result.StreamerSessionId = gameSession?.Id;
-
-                if (gameSession != null)
-                {
-                    result.Started = gameSession.Started;
-
-                    var state = gameData.GetSessionState(gameSession.Id);
-                    if (state != null)
-                    {
-                        result.ClientVersion = state.ClientVersion;
-                    }
-
-                    var charactersInSession = gameData.GetActiveSessionCharacters(gameSession);
-                    if (charactersInSession != null)
-                    {
-                        var session = this.HttpContext.GetSessionId();
-                        if (sessionInfoProvider.TryGet(session, out var sessionInfo))
-                        {
-                            var u = gameData.GetUser(sessionInfo.UserId);
-                            if (u != null)
-                            {
-                                var c = charactersInSession.FirstOrDefault(x => x.UserId == u.Id);
-                                if (c != null)
-                                {
-                                    result.JoinedCharacterId = c.Id;
-                                }
-                            }
-                        }
-                        result.PlayerCount = charactersInSession.Count;
-                    }
-                }
-            }
-
-            return result;
+            var session = this.HttpContext.GetSessionId();
+            sessionInfoProvider.TryGet(session, out var sessionInfo);
+            return sessionManager.GetStreamerInfo(broadcasterId, sessionInfo?.UserId ?? Guid.Empty);
         }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/{broadcasterId}/{viewerId}")]
         public SessionInfo SetExtensionViewer(string broadcasterId, string viewerId)
@@ -685,5 +696,48 @@ namespace RavenNest.Controllers
             }
             return null;
         }
+
+        private bool TryGetRequestContext(
+            string broadcasterId, Guid characterId,
+            out TwitchExtensionRequestContext result)
+        {
+            result = new TwitchExtensionRequestContext();
+            if (string.IsNullOrEmpty(broadcasterId))
+            {
+                return false;
+            }
+
+            if (!TryGetSession(out var sessionInfo))
+            {
+                return false;
+            }
+
+            var activeSession = gameData.GetOwnedSessionByUserId(broadcasterId, "twitch");
+            if (activeSession == null)
+            {
+                return false;
+            }
+
+            var user = gameData.GetUser(sessionInfo.UserId);
+            if (user == null)
+            {
+                return false;
+            }
+
+            var myCharacters = gameData.GetCharacters(c => c.UserId == user.Id && c.Id == characterId);
+            var character = myCharacters.FirstOrDefault();
+            if (character == null)
+            {
+                return false;
+            }
+
+            result.SessionInfo = sessionInfo;
+            result.GameSession = activeSession;
+            result.Character = character;
+            result.Principal = user;
+
+            return true;
+        }
+
     }
 }

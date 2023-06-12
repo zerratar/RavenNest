@@ -10,6 +10,9 @@ using System.Diagnostics;
 using RavenNest.Models.TcpApi;
 using MessagePack;
 using Telepathy;
+using static RavenNest.BusinessLogic.Models.Patreon.API.PatreonIdentity;
+using RavenNest.BusinessLogic.Twitch.Extension;
+using RavenNest.Sessions;
 
 namespace RavenNest.BusinessLogic.Net
 {
