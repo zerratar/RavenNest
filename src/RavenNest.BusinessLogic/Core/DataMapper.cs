@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 
@@ -81,7 +82,29 @@ namespace RavenNest.BusinessLogic
                         if (prop.PropertyType.IsEnum)
                             p.SetValue(output, Convert.ToInt32(value));
                         else
+                        {
+                            if ((p.PropertyType == typeof(DateTime?) || p.PropertyType == typeof(DateTime)) && value is string dateString)
+                            {
+                                if (DateTime.TryParse(dateString, out var dt))
+                                {
+                                    p.SetValue(output, dt);
+                                    continue;
+                                }
+
+                                string format = "MMM dd yyyy h:mmtt";
+                                DateTime dateTime;
+
+                                if (DateTime.TryParseExact(dateString, format, CultureInfo.InvariantCulture,
+                                                           DateTimeStyles.AdjustToUniversal, out dateTime))
+                                {
+                                    DateTime utcDateTime = DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
+                                    p.SetValue(output, utcDateTime);
+                                    continue;
+                                }
+                            }
+
                             p.SetValue(output, value);
+                        }
                     }
                     catch
                     {
