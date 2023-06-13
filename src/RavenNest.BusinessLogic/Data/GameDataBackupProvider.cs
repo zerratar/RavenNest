@@ -87,7 +87,7 @@ namespace RavenNest.BusinessLogic.Data
                 {
                     // if its today, keep backupsToKeep
                     // otherwise, only keep 1.
-                    var skip= 1;
+                    var skip = 1;
                     if (b.Key.Date == DateTime.Today.Date)
                     {
                         skip = backupsToKeep;

@@ -3816,7 +3816,7 @@ namespace RavenNest.BusinessLogic.Game
             state.Island = update.Island != Island.Ferry ? update.Island.ToString() : null;
             state.Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null;
             state.ExpPerHour = update.ExpPerHour;
-            state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString();
+            state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
             state.Task = task;
             state.TaskArgument = taskArgument ?? task;
             state.X = update.X;
@@ -3865,7 +3865,7 @@ namespace RavenNest.BusinessLogic.Game
                 Island = update.Island != Island.Ferry ? update.Island.ToString() : null,
                 Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null,
                 ExpPerHour = update.ExpPerHour,
-                EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString(),
+                EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString("yyyy-MM-ddTHH:mm:ss.fffffff"),
                 Task = task,
                 TaskArgument = taskArgument ?? task,
                 X = update.X,

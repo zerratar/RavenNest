@@ -13,7 +13,7 @@ namespace RavenNest.Tools
         private int LogoLabelWidth = 54;
 
         private TextBlock ToolStatus;
-        private MenuItem ExpBump, BuildUpdatePackage, SkillRollbackv0788;
+        private MenuItem ExpBump, BuildUpdatePackage, SkillRollbackv0788, RestoreInventory;
         //private Shinobytes.Console.Forms.Image Logo;
 
         public void InitializeComponents()
@@ -92,6 +92,10 @@ namespace RavenNest.Tools
                 SkillRollbackv0788.Invoke += SkillRollbackv0788_Invoke;
                 editMenu.SubItems.Add(SkillRollbackv0788);
 
+                RestoreInventory = new MenuItem("Restore Inventory Items");
+                RestoreInventory.Invoke += RestoreInventoryItems_Invoke;
+                editMenu.SubItems.Add(RestoreInventory);
+
                 menuStrip.Controls.Add(editMenu);
             }
 
@@ -107,6 +111,11 @@ namespace RavenNest.Tools
                 ForegroundColor = ConsoleColor.Black
             });
             statusStrip.Controls.Add(new TextBlock("F3=Patreon Sync")
+            {
+                ForegroundColor = ConsoleColor.Black
+            });
+
+            statusStrip.Controls.Add(new TextBlock("F5=Restore Items")
             {
                 ForegroundColor = ConsoleColor.Black
             });

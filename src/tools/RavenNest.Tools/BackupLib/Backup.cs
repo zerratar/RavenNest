@@ -48,6 +48,11 @@ namespace RavenNest.Tools.BackupLib
             return backup;
         }
 
+        public static List<DataModels.InventoryItem> GetInventoryItems(string inputFolder)
+        {
+            return List<DataModels.InventoryItem>(inputFolder);
+        }
+
         public static List<BackupInfo> GetBackups(string inputFolder)
         {
             var result = new List<BackupInfo>();
