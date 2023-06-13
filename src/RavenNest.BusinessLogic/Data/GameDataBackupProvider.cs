@@ -14,6 +14,7 @@ namespace RavenNest.BusinessLogic.Data
 {
     public class GameDataBackupProvider
     {
+        const int backupsToKeep = 10;
         //#if RELEASE || Linux
         private const string FileTypeExt = ".json";
         private readonly string FullBackupsPath = Path.Combine(FolderPaths.GeneratedData, FolderPaths.Backups);
@@ -81,12 +82,25 @@ namespace RavenNest.BusinessLogic.Data
             try
             {
                 var backupFolders = System.IO.Directory.GetDirectories(FullBackupsPath);
-                if (backupFolders.Length > 10)
+                var backupsDay = backupFolders.Select(x => new System.IO.DirectoryInfo(x)).GroupBy(x => x.CreationTime.Date).ToList();
+                foreach (var b in backupsDay)
                 {
-                    var toDelete = backupFolders.OrderByDescending(x => new System.IO.DirectoryInfo(x).CreationTime).Skip(10);
-                    foreach (var old in toDelete)
+                    // if its today, keep backupsToKeep
+                    // otherwise, only keep 1.
+                    var skip= 1;
+                    if (b.Key.Date == DateTime.Today.Date)
                     {
-                        System.IO.Directory.Delete(old, true);
+                        skip = backupsToKeep;
+                    }
+
+                    var list = b.ToList();
+                    if (list.Count > backupsToKeep)
+                    {
+                        var toDelete = list.OrderByDescending(x => x.CreationTime).Skip(skip);
+                        foreach (var old in toDelete)
+                        {
+                            old.Delete(true);
+                        }
                     }
                 }
             }
