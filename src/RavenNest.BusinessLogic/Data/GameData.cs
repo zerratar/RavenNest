@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using MessagePack;
 using Microsoft.Extensions.Logging;
@@ -413,7 +414,7 @@ namespace RavenNest.BusinessLogic.Data
                 //RemoveBadUsers(users);
 
                 ProcessInventoryItems(inventoryItems);
-
+                MergeInventoryItems();
                 //RemoveEmptyPlayers();
 
                 EnsureClanLevels(clans);
@@ -444,6 +445,38 @@ namespace RavenNest.BusinessLogic.Data
             {
                 InitializedSuccessful = false;
                 System.IO.File.WriteAllText("ravenfall-error.log", "[" + DateTime.UtcNow + "] " + exc.ToString());
+            }
+        }
+
+        private void MergeInventoryItems()
+        {
+            bool CanMerge(InventoryItem i)
+            {
+                return !i.Equipped && string.IsNullOrEmpty(i.Enchantment) && string.IsNullOrEmpty(i.Tag) && i.TransmogrificationId == null;
+            }
+
+            foreach (var c in this.characters.Entities)
+            {
+                var items = GetInventoryItems(c.Id);
+                var mergable = new Dictionary<Guid, DataModels.InventoryItem>();
+                foreach (var item in items)
+                {
+                    if (!CanMerge(item))
+                    {
+                        continue;
+                    }
+
+                    if (mergable.TryGetValue(item.ItemId, out var other))
+                    {
+                        other.Amount += item.Amount;
+                        item.Amount = 0;
+                        Remove(item);
+                    }
+                    else
+                    {
+                        mergable[item.ItemId] = item;
+                    }
+                }
             }
         }
 
@@ -1711,6 +1744,11 @@ namespace RavenNest.BusinessLogic.Data
             {
                 logger.LogError("(Not actual error) Remove " + toRemove.Count + " inventory items of characters that dont exist. Most likely item reached 0 in stack size but was never removed, this can happen if ID of the stack has changed.");
             }
+
+
+
+
+
         }
 
         private void RemoveCharacterIfEmpty(Character c)
