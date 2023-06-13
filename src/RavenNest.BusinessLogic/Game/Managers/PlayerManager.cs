@@ -2787,6 +2787,7 @@ namespace RavenNest.BusinessLogic.Game
         /// </summary>
         /// <param name=""></param>
         /// <returns></returns>
+        [Obsolete]
         public bool UpdateCharacter(SessionToken token, CharacterUpdate data)
         {
             // seem to happen on server restarts.
@@ -3134,6 +3135,9 @@ namespace RavenNest.BusinessLogic.Game
                     toState.RestedTime = fromState.RestedTime;
                     toState.Island = fromState.Island;
                     toState.InOnsen = fromState.InOnsen;
+                    toState.JoinedDungeon = fromState.JoinedDungeon;
+                    toState.EstimatedTimeForLevelUp = fromState.EstimatedTimeForLevelUp;
+                    toState.ExpPerHour = fromState.ExpPerHour;
                     toState.X = fromState.X;
                     toState.Y = fromState.Y;
                     toState.Z = fromState.Z;
@@ -3325,6 +3329,24 @@ namespace RavenNest.BusinessLogic.Game
         public void EquipBestItems(Character character)
         {
             inventoryProvider.Get(character.Id).EquipBestItems();
+        }
+
+        internal void SendGameStateToTwitchExtension(SessionToken sessionToken, GameStateRequest gameState)
+        {
+            if (extensionWsConnectionProvider.TryGetAllByStreamer(sessionToken.UserId, out var connections))
+            {
+                foreach (var connection in connections)
+                {
+                    try
+                    {
+                        connection.SendAsync(gameState);
+                    }
+                    catch (Exception exc)
+                    {
+                        logger.LogError("Unable to send extension data to " + connection.Session?.UserName + ": " + exc);
+                    }
+                }
+            }
         }
 
         internal async Task<bool> TrySendToExtensionAsync<T>(DataModels.GameSession session, Character character, T data)
@@ -3787,9 +3809,12 @@ namespace RavenNest.BusinessLogic.Game
             state.InArena = update.State == RavenNest.Models.TcpApi.CharacterState.Arena;
             state.InRaid = update.State == RavenNest.Models.TcpApi.CharacterState.Raid;
             state.InDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.Dungeon;
+            state.JoinedDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.JoinedDungeon;
             state.InOnsen = update.State == RavenNest.Models.TcpApi.CharacterState.Onsen;
             state.Island = update.Island != Island.Ferry ? update.Island.ToString() : null;
             state.Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null;
+            state.ExpPerHour = update.ExpPerHour;
+            state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp;
             state.Task = task;
             state.TaskArgument = taskArgument ?? task;
             state.X = update.X;
@@ -3808,8 +3833,11 @@ namespace RavenNest.BusinessLogic.Game
             state.InRaid = update.State == RavenNest.Models.TcpApi.CharacterState.Raid;
             state.InDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.Dungeon;
             state.InOnsen = update.State == RavenNest.Models.TcpApi.CharacterState.Onsen;
+            state.JoinedDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.JoinedDungeon;
             state.Island = update.Island != Island.Ferry ? update.Island.ToString() : null;
             state.Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null;
+            state.ExpPerHour = update.ExpPerHour;
+            state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp;
             state.Task = task;
             state.TaskArgument = taskArgument;
             state.X = update.X;
@@ -3831,8 +3859,11 @@ namespace RavenNest.BusinessLogic.Game
                 InRaid = update.State == RavenNest.Models.TcpApi.CharacterState.Raid,
                 InDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.Dungeon,
                 InOnsen = update.State == RavenNest.Models.TcpApi.CharacterState.Onsen,
+                JoinedDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.JoinedDungeon,
                 Island = update.Island != Island.Ferry ? update.Island.ToString() : null,
                 Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null,
+                ExpPerHour = update.ExpPerHour,
+                EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp,
                 Task = task,
                 TaskArgument = taskArgument ?? task,
                 X = update.X,
@@ -3855,9 +3886,12 @@ namespace RavenNest.BusinessLogic.Game
                 InArena = update.State == RavenNest.Models.TcpApi.CharacterState.Arena,
                 InRaid = update.State == RavenNest.Models.TcpApi.CharacterState.Raid,
                 InDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.Dungeon,
+                JoinedDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.JoinedDungeon,
                 InOnsen = update.State == RavenNest.Models.TcpApi.CharacterState.Onsen,
                 Island = update.Island != Island.Ferry ? update.Island.ToString() : null,
                 Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null,
+                ExpPerHour = update.ExpPerHour,
+                EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp,
                 Task = task,
                 TaskArgument = taskArgument,
                 X = update.X,

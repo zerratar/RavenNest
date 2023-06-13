@@ -7,7 +7,39 @@ namespace RavenNest.Models.TcpApi
     {
         public string SessionToken { get; set; }
     }
+    public class GameStateRequest
+    {
+        public string SessionToken { get; set; }
+        public int PlayerCount { get; set; }
+        public DungeonState Dungeon { get; set; }
+        public RaidState Raid { get; set; }
+    }
 
+    public class RaidState
+    {
+        public bool IsActive { get; set; }
+        public int BossCombatLevel { get; set; }
+        public int CurrentBossHealth { get; set; }
+        public int MaxBossHealth { get; set; }
+        public int PlayersJoined { get; set; }
+        public DateTime EndTime { get; set; }
+        public DateTime NextRaid { get; set; }
+    }
+
+    public class DungeonState
+    {
+        public bool IsActive { get; set; }
+        public string Name { get; set; }
+        public bool HasStarted { get; set; }
+        public int BossCombatLevel { get; set; }
+        public int CurrentBossHealth { get; set; }
+        public int MaxBossHealth { get; set; }
+        public int PlayersAlive { get; set; }
+        public int PlayersJoined { get; set; }
+        public int EnemiesLeft { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime NextDungeon { get; set; }
+    }
 
     public class SaveExperienceRequest
     {
@@ -36,6 +68,9 @@ namespace RavenNest.Models.TcpApi
         public Island Destination { get; set; }
         public CharacterState State { get; set; }
         public int TrainingSkillIndex { get; set; }
+        public long ExpPerHour { get; set; }
+        public DateTime EstimatedTimeForLevelUp { get; set; }
+
         public short X { get; set; }
         public short Y { get; set; }
         public short Z { get; set; }
@@ -55,6 +90,8 @@ namespace RavenNest.Models.TcpApi
         public float X { get; set; }
         public float Y { get; set; }
         public float Z { get; set; }
+        public long ExpPerHour { get; set; }
+        public DateTime EstimatedTimeForLevelUp { get; set; }
         public SkillUpdate[] Skills { get; set; }
     }
 
@@ -84,5 +121,6 @@ namespace RavenNest.Models.TcpApi
         Onsen = 4,
         Duel = 5,
         StreamRaidWar = 6,
+        JoinedDungeon = 7,
     }
 }

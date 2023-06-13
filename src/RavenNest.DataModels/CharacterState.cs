@@ -10,10 +10,13 @@ namespace RavenNest.DataModels
         private bool inArena; public bool InArena { get => inArena; set => Set(ref inArena, value); }
         private bool? inDungeon; public bool? InDungeon { get => inDungeon; set => Set(ref inDungeon, value); }
         private bool? inOnsen; public bool? InOnsen { get => inOnsen; set => Set(ref inOnsen, value); }
+        private bool? joinedDungeon; public bool? JoinedDungeon { get => joinedDungeon; set => Set(ref joinedDungeon, value); }
         private string task; public string Task { get => task; set => Set(ref task, value); }
         private string taskArgument; public string TaskArgument { get => taskArgument; set => Set(ref taskArgument, value); }
         private string island; public string Island { get => island; set => Set(ref island, value); }
         private string destination; public string Destination { get => destination; set => Set(ref destination, value); }
+        private DateTime? estimatedTimeForLevelUp; public DateTime? EstimatedTimeForLevelUp { get => estimatedTimeForLevelUp; set => Set(ref estimatedTimeForLevelUp, value); }
+        private long? expPerHour; public long? ExpPerHour { get => expPerHour; set => Set(ref expPerHour, value); }
         private double? x; public double? X { get => x; set => Set(ref x, value); }
         private double? y; public double? Y { get => y; set => Set(ref y, value); }
         private double? z; public double? Z { get => z; set => Set(ref z, value); }

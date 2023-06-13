@@ -238,6 +238,15 @@ namespace RavenNest.BusinessLogic.Net
 
                         playerManager.UpdateCharacter(connection.SessionToken, updatePacket);
                     }
+                    else if (TryDeserializePacket<GameStateRequest>(packetData, out var gameState))
+                    {
+                        if (!HandleSessionToken(gameState.SessionToken, connection))
+                        {
+                            return;
+                        }
+
+                        playerManager.SendGameStateToTwitchExtension(connection.SessionToken, gameState);
+                    }
                     else if (TryDeserializePacket<AuthenticationRequest>(packetData, out var authPacket))
                     {
                         if (!HandleSessionToken(stateUpdate.SessionToken, connection))
@@ -322,6 +331,11 @@ namespace RavenNest.BusinessLogic.Net
         private static bool Validate<T>(T value) where T : class
         {
             // ugly hax to validate if our packets are correct.
+
+            if (value is GameStateRequest stateReq)
+            {
+                return !string.IsNullOrEmpty(stateReq.SessionToken) ;
+            }
 
             if (value is SaveExperienceRequest saveRequest)
             {

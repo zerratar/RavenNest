@@ -10,10 +10,13 @@ namespace RavenNest.Models
         public bool InArena { get; set; }
         public bool InDungeon { get; set; }
         public bool InOnsen { get; set; }
+        public bool JoinedDungeon { get; set; }
         public string Task { get; set; }
         public string TaskArgument { get; set; }
         public string Island { get; set; }
         public string Destination { get; set; }
+        public long? ExpPerHour { get; set; }
+        public DateTime? EstimatedTimeForLevelUp { get; set; }
         public double? X { get; set; }
         public double? Y { get; set; }
         public double? Z { get; set; }

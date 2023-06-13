@@ -102,6 +102,8 @@ namespace RavenNest.BusinessLogic.Extensions
                     state.InRaid = data.InRaid;
                     state.Island = data.Island;
                     state.RestedTime = data.RestedTime ?? 0d;
+                    state.EstimatedTimeForLevelUp = data.EstimatedTimeForLevelUp;
+                    state.ExpPerHour = data.ExpPerHour;
                     state.X = data.X;
                     state.Y = data.Y;
                     state.Z = data.Z;
@@ -113,6 +115,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 state.InDungeon = data.InDungeon.GetValueOrDefault();
                 state.InOnsen = data.InOnsen.GetValueOrDefault();
                 state.RestedTime = data.RestedTime.GetValueOrDefault();
+                state.JoinedDungeon = data.JoinedDungeon ?? false;
             }
 
             return state;
