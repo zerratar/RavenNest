@@ -3393,7 +3393,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 logger.LogError("ERROR SAVING DATA [Type: "+ entityType + "](CREATING RESTORE POINT!!) " + exc);
 
-                File.WriteAllText(Path.Combine(FolderPaths.GeneratedData, "error_query.sql"), lastQuery);
+                File.WriteAllText(Path.Combine(FolderPaths.GeneratedData, entityType+"_error_query.sql"), lastQuery);
             }
             catch (Exception exc)
             {

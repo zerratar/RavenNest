@@ -14,6 +14,7 @@ using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Models.TcpApi;
+using static RavenNest.BusinessLogic.Models.Patreon.API.PatreonIdentity;
 using Appearance = RavenNest.DataModels.Appearance;
 using Gender = RavenNest.DataModels.Gender;
 using Item = RavenNest.DataModels.Item;
@@ -3805,6 +3806,7 @@ namespace RavenNest.BusinessLogic.Game
             var task = GetTaskBySkillIndex(update.TrainingSkillIndex);
             var taskArgument = GetTaskArgumentBySkillIndex(update.TrainingSkillIndex);
             if (string.IsNullOrEmpty(taskArgument)) taskArgument = task;
+
             state.Health = update.Health;
             state.InArena = update.State == RavenNest.Models.TcpApi.CharacterState.Arena;
             state.InRaid = update.State == RavenNest.Models.TcpApi.CharacterState.Raid;
@@ -3814,7 +3816,7 @@ namespace RavenNest.BusinessLogic.Game
             state.Island = update.Island != Island.Ferry ? update.Island.ToString() : null;
             state.Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null;
             state.ExpPerHour = update.ExpPerHour;
-            state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp;
+            state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString();
             state.Task = task;
             state.TaskArgument = taskArgument ?? task;
             state.X = update.X;
@@ -3837,7 +3839,7 @@ namespace RavenNest.BusinessLogic.Game
             state.Island = update.Island != Island.Ferry ? update.Island.ToString() : null;
             state.Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null;
             state.ExpPerHour = update.ExpPerHour;
-            state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp;
+            state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString();
             state.Task = task;
             state.TaskArgument = taskArgument;
             state.X = update.X;
@@ -3863,7 +3865,7 @@ namespace RavenNest.BusinessLogic.Game
                 Island = update.Island != Island.Ferry ? update.Island.ToString() : null,
                 Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null,
                 ExpPerHour = update.ExpPerHour,
-                EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp,
+                EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString(),
                 Task = task,
                 TaskArgument = taskArgument ?? task,
                 X = update.X,
@@ -3891,7 +3893,7 @@ namespace RavenNest.BusinessLogic.Game
                 Island = update.Island != Island.Ferry ? update.Island.ToString() : null,
                 Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null,
                 ExpPerHour = update.ExpPerHour,
-                EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp,
+                EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString(),
                 Task = task,
                 TaskArgument = taskArgument,
                 X = update.X,

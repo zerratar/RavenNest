@@ -93,6 +93,10 @@ namespace RavenNest.BusinessLogic.Extensions
             var state = DataMapper.Map<RavenNest.Models.CharacterState>(data);
             if (state == null)
             {
+                DateTime estimatedTimeForLevelUp = DateTime.MaxValue;
+                if (!string.IsNullOrEmpty(data.EstimatedTimeForLevelUp))
+                    DateTime.TryParse(data.EstimatedTimeForLevelUp, out estimatedTimeForLevelUp);
+
                 state = new RavenNest.Models.CharacterState();
                 if (data != null)
                 {
@@ -102,7 +106,7 @@ namespace RavenNest.BusinessLogic.Extensions
                     state.InRaid = data.InRaid;
                     state.Island = data.Island;
                     state.RestedTime = data.RestedTime ?? 0d;
-                    state.EstimatedTimeForLevelUp = data.EstimatedTimeForLevelUp;
+                    state.EstimatedTimeForLevelUp = estimatedTimeForLevelUp;
                     state.ExpPerHour = data.ExpPerHour;
                     state.X = data.X;
                     state.Y = data.Y;
