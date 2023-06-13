@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -3342,6 +3343,8 @@ namespace RavenNest.BusinessLogic.Data
         {
             kernel.ClearTimeout(scheduleHandler);
             scheduleHandler = null;
+            var lastQuery = "";
+            var entityType = "";
             try
             {
                 lock (SyncLock)
@@ -3368,9 +3371,9 @@ namespace RavenNest.BusinessLogic.Data
                                 queue.Dequeue();
                                 continue;
                             }
-
+                            entityType = saveData.Entities[0]?.GetType().FullName;
                             var command = con.CreateCommand();
-                            command.CommandText = query.Command;
+                            lastQuery = command.CommandText = query.Command;
                             var result = command.ExecuteNonQuery();
 
                             ClearChangeSetState(saveData);
@@ -3386,10 +3389,11 @@ namespace RavenNest.BusinessLogic.Data
             {
                 CreateBackup();
 
-                //exc.
-
                 backupProvider.CreateRestorePoint(entitySets);
-                logger.LogError("ERROR SAVING DATA (CREATING RESTORE POINT!!) " + exc);
+
+                logger.LogError("ERROR SAVING DATA [Type: "+ entityType + "](CREATING RESTORE POINT!!) " + exc);
+
+                File.WriteAllText(Path.Combine(FolderPaths.GeneratedData, "error_query.sql"), lastQuery);
             }
             catch (Exception exc)
             {
