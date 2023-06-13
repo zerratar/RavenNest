@@ -412,7 +412,7 @@ namespace RavenNest.BusinessLogic.Data
                 //UpgradeSkillLevels(characterSkills);
                 //RemoveBadUsers(users);
 
-                RemoveBadInventoryItems(inventoryItems);
+                ProcessInventoryItems(inventoryItems);
 
                 //RemoveEmptyPlayers();
 
@@ -1689,14 +1689,16 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
-        private void RemoveBadInventoryItems(EntitySet<InventoryItem> inventoryItems)
+        private void ProcessInventoryItems(EntitySet<InventoryItem> inventoryItems)
         {
             var toRemove = new List<InventoryItem>();
             foreach (var ii in inventoryItems.Entities)
             {
-                if (ii.Amount <= 0 || GetCharacter(ii.CharacterId) == null)
+                var c = GetCharacter(ii.CharacterId);
+                if (ii.Amount <= 0 || c == null)
                 {
                     toRemove.Add(ii);
+                    continue;
                 }
             }
 
@@ -3391,9 +3393,9 @@ namespace RavenNest.BusinessLogic.Data
 
                 backupProvider.CreateRestorePoint(entitySets);
 
-                logger.LogError("ERROR SAVING DATA [Type: "+ entityType + "](CREATING RESTORE POINT!!) " + exc);
+                logger.LogError("ERROR SAVING DATA [Type: " + entityType + "](CREATING RESTORE POINT!!) " + exc);
 
-                File.WriteAllText(Path.Combine(FolderPaths.GeneratedData, entityType+"_error_query.sql"), lastQuery);
+                File.WriteAllText(Path.Combine(FolderPaths.GeneratedData, entityType + "_error_query.sql"), lastQuery);
             }
             catch (Exception exc)
             {

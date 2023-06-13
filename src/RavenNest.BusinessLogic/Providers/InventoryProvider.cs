@@ -179,9 +179,25 @@ namespace RavenNest.BusinessLogic.Providers
         private List<InventoryItem> GetInventoryItems(Guid characterId)
         {
             var output = new List<InventoryItem>();
+            var equippedTypes = new Dictionary<int, DataModels.InventoryItem>();
             var invItems = gameData?.GetAllPlayerItems(characterId)?.ToList() ?? new List<InventoryItem>();
             foreach (var i in invItems)
             {
+                /* Make sure we unequipped items of same type. */
+
+                if (i.Equipped)
+                {
+                    var itemType = gameData.GetItem(i.ItemId).Type;
+                    if (equippedTypes.ContainsKey(itemType))
+                    {
+                        i.Equipped = false;
+                    }
+                    else
+                    {
+                        equippedTypes[itemType] = i;
+                    }
+                }
+
                 output.Add(i);
             }
             return output;

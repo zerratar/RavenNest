@@ -19,7 +19,7 @@ namespace RavenNest.Tools
             buildUpdatePackage = new BuildUpdatePackageAction(ToolProgress, ToolStatus);
             skillRollbackv0788 = new PlayerSkillRollback(ToolProgress, ToolStatus, @"C:\Ravenfall\pre0.7.8.9-restorepoint\", @"C:\Ravenfall\pre0.7.8.9\");
             restoreInventoryItems = new RestoreInventoryItems(ToolProgress, ToolStatus,
-                @"C:\git\RavenNest\src\generated-data\backups\638222514196989528\", @"C:\git\RavenNest\src\generated-data\backups\DL");
+                @"C:\git\RavenNest\src\generated-data\backups\active", @"C:\git\RavenNest\src\generated-data\backups\newest");
             var nextVersion = buildUpdatePackage.GetNextVersion().ToString();
             if (!string.IsNullOrEmpty(nextVersion))
                 BuildUpdatePackage.Text = "Build Update Package (" + nextVersion + ")";

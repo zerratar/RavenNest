@@ -4,7 +4,6 @@ using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.DataModels;
 using RavenNest.Models;
-using RavenNest.Sessions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,6 +28,13 @@ namespace RavenNest.Blazor.Services
             this.gameData = gameData;
             this.playerManager = playerManager;
             this.adminManager = adminManager;
+        }
+
+        public void MakeNameMatchUsername(WebsitePlayer player)
+        {
+            player.Name = player.UserName;
+            var character = gameData.GetCharacter(player.Id);
+            character.Name = player.UserName;
         }
 
         public void SetActiveCharacter(WebsitePlayer player)

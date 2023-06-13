@@ -67,6 +67,11 @@
                     <td>@(player.IsAdmin ? "Yes" : "No")</td>
                     <td>@(player.IsModerator ? "Yes" : "No")</td>
                     <td>
+                        @if (!player.UserName.Equals(player.Name, StringComparison.OrdinalIgnoreCase))
+                        {
+                            <button title="Rename player to match Username" class="inline-button secondary" @onclick="(()=>MakeNameMatchUsername(player))"><i class="fa-sharp fa-regular fa-signature"></i></button>
+                        }
+
                         @if (!string.IsNullOrEmpty(player.SessionName))
                         {
                             <button title="Kick from game session" class="inline-button error" @onclick="(()=>KickPlayer(player))"><i class="fa-solid fa-user-xmark"></i></button>
@@ -113,6 +118,12 @@
     {
         PlayerService.AddToMySession(player);
 
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void MakeNameMatchUsername(WebsiteAdminPlayer player)
+    {
+        PlayerService.MakeNameMatchUsername(player);
         await InvokeAsync(StateHasChanged);
     }
 

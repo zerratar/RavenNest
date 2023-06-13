@@ -214,6 +214,10 @@ img.profile-image {
     transition: all 0.25s ease 0s;
 }
 
+.inline-button.secondary {
+    background: linear-gradient(90deg, rgb(162 255 48) 0%, rgb(58 162 0) 100%);
+}
+
 .inline-button.error {
 }
 
