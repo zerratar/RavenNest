@@ -60,13 +60,14 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 lastEvent[character.Id] = (lastEventUpdate = new PlayerRestedState());
             }
 
-            if (requireUpdate)
+            var sinceLastEvent = now - lastEventUpdate.Updated;
+            var timeForUpdate = sinceLastEvent >= RestedEventUpdateInterval;
+            if (requireUpdate || timeForUpdate)
             {
-                var sinceLastEvent = now - lastEventUpdate.Updated;
                 var restedTime = (double)(state.RestedTime ?? 0);
                 var isRested = restedTime > 0;
 
-                if (sinceLastEvent >= RestedEventUpdateInterval && (lastEventUpdate.RestedTime != restedTime || lastEventUpdate.Resting != isResting))
+                if (timeForUpdate && (lastEventUpdate.RestedTime != restedTime || lastEventUpdate.Resting != isResting))
                 {
                     var restedPercent = restedTime / MaxRestTime.TotalSeconds;
 
