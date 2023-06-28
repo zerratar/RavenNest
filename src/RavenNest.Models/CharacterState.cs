@@ -21,5 +21,6 @@ namespace RavenNest.Models
         public double? Y { get; set; }
         public double? Z { get; set; }
         public double RestedTime { get; set; }
+        public bool? IsCaptain { get; set; }
     }
 }

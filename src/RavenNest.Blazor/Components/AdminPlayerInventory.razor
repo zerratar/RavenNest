@@ -1,4 +1,5 @@
 ﻿@using RavenNest.BusinessLogic.Extended
+@using RavenNest.BusinessLogic.Game;
 @using RavenNest.Models
 @using Blazored.Typeahead
 
@@ -343,19 +344,7 @@
 
     public string GetItemAmount(InventoryItem item)
     {
-        var value = item.Amount;
-        if (value >= 1000_000)
-        {
-            var mils = value / 1000000.0;
-            return Math.Round(mils) + "M";
-        }
-        else if (value > 1000)
-        {
-            var ks = value / 1000m;
-            return Math.Round(ks) + "K";
-        }
-
-        return item.Amount.ToString();
+        return Utility.FormatAmount(item.Amount);
     }
 
 

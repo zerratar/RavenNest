@@ -31,31 +31,39 @@ namespace RavenNest.BusinessLogic.Game
             PlayerInventory inventory,
             ReadOnlyInventoryItem item)
         {
-            var invItem = inventory.Get(item);
-            if (invItem == null)
-            {
+            if (inventory.IsLocked(item.Id)) 
                 return ItemEnchantmentResult.Error();
-            }
 
-
-            if (string.IsNullOrEmpty(invItem.Enchantment))
+            try
             {
-                return ItemEnchantmentResult.Error();
-            }
-
-
-            if (inventory.RemoveItem(item, 1))
-            {
-                var disenchantedItem = inventory.AddItem(item.ItemId, amount: 1, equipped: item.Equipped).FirstOrDefault();
-                return new ItemEnchantmentResult
+                var invItem = inventory.Get(item, true);
+                if (invItem == null)
                 {
-                    EnchantedItem = DataMapper.Map<RavenNest.Models.InventoryItem, DataModels.InventoryItem>(disenchantedItem),
-                    OldItemStack = DataMapper.Map<RavenNest.Models.InventoryItem, DataModels.InventoryItem>(invItem),
-                    Result = ItemEnchantmentResultValue.Success
-                };
-            }
+                    return ItemEnchantmentResult.Error();
+                }
 
-            return ItemEnchantmentResult.Error();
+                if (string.IsNullOrEmpty(invItem.Enchantment))
+                {
+                    return ItemEnchantmentResult.Error();
+                }
+
+                if (inventory.RemoveItem(item, 1))
+                {
+                    var disenchantedItem = inventory.AddItem(item.ItemId, amount: 1, equipped: item.Equipped).FirstOrDefault();
+                    return new ItemEnchantmentResult
+                    {
+                        EnchantedItem = DataMapper.Map<RavenNest.Models.InventoryItem, DataModels.InventoryItem>(disenchantedItem),
+                        OldItemStack = DataMapper.Map<RavenNest.Models.InventoryItem, DataModels.InventoryItem>(invItem),
+                        Result = ItemEnchantmentResultValue.Success
+                    };
+                }
+
+                return ItemEnchantmentResult.Error();
+            }
+            finally
+            {
+                inventory.Unlock(item.Id);
+            }
         }
 
         public ItemEnchantmentResult EnchantItem(
@@ -66,129 +74,142 @@ namespace RavenNest.BusinessLogic.Game
             ReadOnlyInventoryItem item,
             DataModels.Resources resources)
         {
-            var user = gameData.GetUser(character.UserId);
-
-            var invItem = inventory.Get(item);
-            if (invItem == null)
-            {
-                // No such item in our inventory
+            if (inventory.IsLocked(item.Id))
                 return ItemEnchantmentResult.Error();
-            }
 
-            var i = item.Item;
-            var enchantable =
-                // i.Type == (int)DataModels.ItemCategory.Pet || // in the future. :)
-                i.Category == (int)DataModels.ItemCategory.Weapon ||
-                i.Category == (int)DataModels.ItemCategory.Armor ||
-                i.Category == (int)DataModels.ItemCategory.Ring ||
-                i.Category == (int)DataModels.ItemCategory.Amulet;
-
-            if (!enchantable)
+            try
             {
-                return ItemEnchantmentResult.NotEnchantable;
-            }
+                var user = gameData.GetUser(character.UserId);
+                var invItem = inventory.Get(item, true);
+                if (invItem == null)
+                {
+                    // No such item in our inventory
+                    return ItemEnchantmentResult.Error();
+                }
 
-            var cd = gameData.GetClanSkillCooldown(character.Id, clanSkill.Id);
+                var i = item.Item;
+                var enchantable =
+                    // i.Type == (int)DataModels.ItemCategory.Pet || // in the future. :)
+                    i.Category == (int)DataModels.ItemCategory.Weapon ||
+                    i.Category == (int)DataModels.ItemCategory.Armor ||
+                    i.Category == (int)DataModels.ItemCategory.Ring ||
+                    i.Category == (int)DataModels.ItemCategory.Amulet;
 
-            //var characterSessionState = gameData.GetCharacterSessionState(sessionId, character.Id);
-            if (cd.CooldownEnd > DateTime.MinValue && cd.CooldownEnd > DateTime.UtcNow)
-            {
-                return ItemEnchantmentResult.NotReady(cd.CooldownEnd);
-            }
+                if (!enchantable)
+                {
+                    return ItemEnchantmentResult.NotEnchantable;
+                }
 
-            var itemLvReq = (i.RequiredAttackLevel + i.RequiredDefenseLevel + i.RequiredMagicLevel + i.RequiredRangedLevel + i.RequiredSlayerLevel);
-            var isStack = item.Amount > 1;
+                var cd = gameData.GetClanSkillCooldown(character.Id, clanSkill.Id);
 
-            var itemPercent = itemLvReq / (float)GameMath.MaxLevel;
-            var itemMaxAttrCount = Math.Max(1, (int)Math.Floor(Math.Floor(itemLvReq / 10f) / 5));
-            var success = clanSkill.Level / (float)itemLvReq;
-            var targetAttributeCount = 0;
-            var rng = random.NextDouble();
-            var cooldownFactor = Math.Min(1d, 1d / success);
+                //var characterSessionState = gameData.GetCharacterSessionState(sessionId, character.Id);
+                if (cd.CooldownEnd > DateTime.MinValue && cd.CooldownEnd > DateTime.UtcNow)
+                {
+                    return ItemEnchantmentResult.NotReady(cd.CooldownEnd);
+                }
 
-            if (rng <= success)
-            {
-                targetAttributeCount = Math.Max(1, itemMaxAttrCount);
-            }
-            else if (rng <= success * 1.33f)
-            {
-                targetAttributeCount = Math.Max(1, (int)Math.Floor(itemMaxAttrCount * 0.5f));
-            }
-            else if (rng <= success * 2f)
-            {
-                targetAttributeCount = Math.Max(1, (int)Math.Floor(itemMaxAttrCount * 0.33f));
-            }
-            else if (rng >= 0.75f)
-            {
-                targetAttributeCount = 1;
-            }
+                var itemLvReq = (i.RequiredAttackLevel + i.RequiredDefenseLevel + i.RequiredMagicLevel + i.RequiredRangedLevel + i.RequiredSlayerLevel);
+                var isStack = item.Amount > 1;
 
-            var maxEnchantments = (int)Math.Floor(Math.Max(MaximumEnchantmentCount, Math.Floor((float)clanSkill.Level / 3f)));
+                var itemPercent = itemLvReq / (float)GameMath.MaxLevel;
+                var itemMaxAttrCount = Math.Max(1, (int)Math.Floor(Math.Floor(itemLvReq / 10f) / 5));
+                var success = clanSkill.Level / (float)itemLvReq;
+                var targetAttributeCount = 0;
+                var rng = random.NextDouble();
+                var cooldownFactor = Math.Min(1d, 1d / success);
 
-            targetAttributeCount = Math.Max(0, Math.Min(maxEnchantments, targetAttributeCount));
+                if (rng <= success)
+                {
+                    targetAttributeCount = Math.Max(1, itemMaxAttrCount);
+                }
+                else if (rng <= success * 1.33f)
+                {
+                    targetAttributeCount = Math.Max(1, (int)Math.Floor(itemMaxAttrCount * 0.5f));
+                }
+                else if (rng <= success * 2f)
+                {
+                    targetAttributeCount = Math.Max(1, (int)Math.Floor(itemMaxAttrCount * 0.33f));
+                }
+                else if (rng >= 0.75f)
+                {
+                    targetAttributeCount = 1;
+                }
 
-            if (targetAttributeCount == 0)
-            {
+                var maxEnchantments = (int)Math.Floor(Math.Max(MaximumEnchantmentCount, Math.Floor((float)clanSkill.Level / 3f)));
+
+                targetAttributeCount = Math.Max(0, Math.Min(maxEnchantments, targetAttributeCount));
+
+                if (targetAttributeCount == 0)
+                {
+                    cd.CooldownStart = DateTime.UtcNow;
+                    cd.CooldownEnd = GetCooldown(clanSkill.Level, user, cooldownFactor * 0.1d);
+                    return ItemEnchantmentResult.Failed(cd.CooldownEnd);
+                }
+
+                DataModels.InventoryItem enchantedItem = null;
+                if (isStack)
+                {
+                    if (!inventory.RemoveItem(item, 1))
+                    {
+                        return ItemEnchantmentResult.Error();
+                    }
+
+                    enchantedItem = inventory.AddItemStack(item, 1);
+                }
+                else
+                {
+                    enchantedItem = invItem;
+                }
+
+                var enchantmentAttributes = inventory.CreateRandomAttributes(enchantedItem, targetAttributeCount);
+                enchantedItem.Soulbound = true;
+                enchantedItem.Enchantment = FormatEnchantment(enchantmentAttributes);
+
+                var itemName = gameData.GetItem(item.ItemId)?.Name;
+
+                // Really stupid naming right now.
+                enchantedItem.Name = GetEnchantedName(itemName, enchantmentAttributes);
+
+                var multiplier = gameData.GetActiveExpMultiplierEvent()?.Multiplier ?? 1d;
+                var gainedExp = GameMath.GetEnchantingExperience(clanSkill.Level, targetAttributeCount, itemLvReq) * multiplier;
+
+                // 1. Add exp whenever user successefully enchants an item
+
+                clanSkill.Experience = Math.Floor(clanSkill.Experience + gainedExp);
+
+                var gainedLevels = 0;
+                var nextLevel = GameMath.ExperienceForLevel(clanSkill.Level + 1);
+
+                while (clanSkill.Experience >= nextLevel)
+                {
+                    clanSkill.Experience -= nextLevel;
+                    nextLevel = GameMath.ExperienceForLevel(clanSkill.Level + 1);
+                    ++clanSkill.Level;
+                    ++gainedLevels;
+                }
+
+                // TODO: 2. Send exp update to clients where players in same clan is regarding current state of the clan skill
+                // Set a time limit on how often/frequently a player can use enchanting after they have enchanted an item.
+                // Success: add n Hours based on what type of item
+                // Fail: Add 10% of n Hours based on what type of item
+
                 cd.CooldownStart = DateTime.UtcNow;
-                cd.CooldownEnd = GetCooldown(clanSkill.Level, user, cooldownFactor * 0.1d);
-                return ItemEnchantmentResult.Failed(cd.CooldownEnd);
+                cd.CooldownEnd = GetCooldown(clanSkill.Level, user, cooldownFactor);
+
+                return new ItemEnchantmentResult()
+                {
+                    GainedExperience = gainedExp,
+                    GainedLevels = gainedLevels,
+                    EnchantedItem = DataMapper.Map<RavenNest.Models.InventoryItem, DataModels.InventoryItem>(enchantedItem),
+                    OldItemStack = Transform(item),//DataMapper.Map<RavenNest.Models.InventoryItem, DataModels.InventoryItem>(invItem),
+                    Result = ItemEnchantmentResultValue.Success,
+                    Cooldown = cd.CooldownEnd
+                };
             }
-
-            DataModels.InventoryItem enchantedItem = null;
-            if (isStack)
+            finally
             {
-                inventory.RemoveItem(item, 1);
-                enchantedItem = inventory.AddItemStack(item, 1);
+                inventory.Unlock(item.Id);
             }
-            else
-            {
-                enchantedItem = invItem;
-            }
-
-            var enchantmentAttributes = inventory.CreateRandomAttributes(enchantedItem, targetAttributeCount);
-            enchantedItem.Soulbound = true;
-            enchantedItem.Enchantment = FormatEnchantment(enchantmentAttributes);
-
-            var itemName = gameData.GetItem(item.ItemId)?.Name;
-
-            // Really stupid naming right now.
-            enchantedItem.Name = GetEnchantedName(itemName, enchantmentAttributes);
-
-            var multiplier = gameData.GetActiveExpMultiplierEvent()?.Multiplier ?? 1d;
-            var gainedExp = GameMath.GetEnchantingExperience(clanSkill.Level, targetAttributeCount, itemLvReq) * multiplier;
-
-            // 1. Add exp whenever user successefully enchants an item
-
-            clanSkill.Experience = Math.Floor(clanSkill.Experience + gainedExp);
-
-            var gainedLevels = 0;
-            var nextLevel = GameMath.ExperienceForLevel(clanSkill.Level + 1);
-
-            while (clanSkill.Experience >= nextLevel)
-            {
-                clanSkill.Experience -= nextLevel;
-                nextLevel = GameMath.ExperienceForLevel(clanSkill.Level + 1);
-                ++clanSkill.Level;
-                ++gainedLevels;
-            }
-
-            // TODO: 2. Send exp update to clients where players in same clan is regarding current state of the clan skill
-            // Set a time limit on how often/frequently a player can use enchanting after they have enchanted an item.
-            // Success: add n Hours based on what type of item
-            // Fail: Add 10% of n Hours based on what type of item
-
-            cd.CooldownStart = DateTime.UtcNow;
-            cd.CooldownEnd = GetCooldown(clanSkill.Level, user, cooldownFactor);
-
-            return new ItemEnchantmentResult()
-            {
-                GainedExperience = gainedExp,
-                GainedLevels = gainedLevels,
-                EnchantedItem = DataMapper.Map<RavenNest.Models.InventoryItem, DataModels.InventoryItem>(enchantedItem),
-                OldItemStack = Transform(item),//DataMapper.Map<RavenNest.Models.InventoryItem, DataModels.InventoryItem>(invItem),
-                Result = ItemEnchantmentResultValue.Success,
-                Cooldown = cd.CooldownEnd
-            };
         }
 
         private static RavenNest.Models.InventoryItem Transform(ReadOnlyInventoryItem item)

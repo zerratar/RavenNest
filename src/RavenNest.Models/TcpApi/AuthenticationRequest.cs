@@ -70,7 +70,7 @@ namespace RavenNest.Models.TcpApi
         public int TrainingSkillIndex { get; set; }
         public long ExpPerHour { get; set; }
         public DateTime EstimatedTimeForLevelUp { get; set; }
-
+        public bool IsCaptain { get; set; }
         public short X { get; set; }
         public short Y { get; set; }
         public short Z { get; set; }

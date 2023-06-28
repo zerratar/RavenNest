@@ -120,6 +120,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 state.InOnsen = data.InOnsen.GetValueOrDefault();
                 state.RestedTime = data.RestedTime.GetValueOrDefault();
                 state.JoinedDungeon = data.JoinedDungeon ?? false;
+                state.IsCaptain = data.IsCaptain.GetValueOrDefault();
             }
 
             return state;

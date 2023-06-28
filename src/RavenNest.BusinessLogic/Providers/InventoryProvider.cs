@@ -18,6 +18,8 @@ namespace RavenNest.BusinessLogic.Providers
         private readonly object mutex = new object();
         private readonly InventoryItemCollection items;
 
+        private readonly HashSet<Guid> locked = new HashSet<Guid>();
+
         private static readonly TimeSpan PatreonRewardFrequency = TimeSpan.FromDays(1);
         private static readonly Random random = new Random();
         public PlayerInventory(ILogger logger, GameData gameData, Guid characterId)
@@ -1067,11 +1069,34 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
-        public InventoryItem Get(ReadOnlyInventoryItem item)
+        public InventoryItem Get(ReadOnlyInventoryItem item, bool lockItem = false)
         {
             lock (mutex)
             {
-                return items.FirstOrDefault(x => x.Id == item.Id);
+                var i = items.FirstOrDefault(x => x.Id == item.Id);
+
+                if (lockItem)
+                {
+                    locked.Add(i.Id);
+                }
+
+                return i;
+            }
+        }
+
+        public bool IsLocked(Guid inventoryItemId)
+        {
+            lock (mutex)
+            {
+                return locked.Contains(inventoryItemId);
+            }
+        }
+
+        public void Unlock(Guid inventoryItemId)
+        {
+            lock (mutex)
+            {
+                locked.Remove(inventoryItemId);
             }
         }
 
@@ -1219,6 +1244,11 @@ namespace RavenNest.BusinessLogic.Providers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.UserBankItem a, RavenNest.Models.InventoryItem b)
+        {
+            return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool CanBeStacked(DataModels.UserBankItem a, DataModels.InventoryItem b)
         {
             return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
         }

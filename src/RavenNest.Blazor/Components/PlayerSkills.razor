@@ -1,6 +1,7 @@
 ﻿@using RavenNest.BusinessLogic
 @using RavenNest.BusinessLogic.Extended
 @using System.Timers
+@using RavenNest.BusinessLogic.Game;
 
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject RavenNest.Blazor.Services.AuthService AuthService
@@ -338,7 +339,7 @@
 
     private string ExpDisplay(double value)
     {
-        return Math.Floor(value) + " exp";
+        return Utility.FormatExp(value) + " exp"; //Math.Floor(value) + " exp";
     }
 
     private string StyleWidth(int value)

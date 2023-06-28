@@ -130,20 +130,22 @@ namespace RavenNest.BusinessLogic.Game
             return result;
         }
 
+        private static readonly Dictionary<string, double> amountLookup = new Dictionary<string, double>
+        {
+            { "k", 1_000 },
+            { "m", 1_000_000 },
+            { "g", 1_000_000_000 },
+            { "b", 1_000_000_000 },
+            { "t", 1_000_000_000_000 },
+        };
+
         private static bool TryParseAmount(Token token, out long amount)
         {
             if (long.TryParse(token.Value, out amount))
             {
                 return true;
             }
-
-            var values = new Dictionary<string, double>
-            {
-                { "k", 1000 },
-                { "m", 1000_000 },
-                { "b", 1000_000_000 },
-            };
-
+            var values = amountLookup;
             if (token.Value.StartsWith("x", StringComparison.OrdinalIgnoreCase))
             {
                 var lastChar = token.Value[^1];

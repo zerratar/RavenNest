@@ -1959,6 +1959,7 @@ namespace RavenNest.BusinessLogic.Game
             var item = inventory.Get(itemId);
             if (item.IsNull() || item.Soulbound) return 0;
             var gift = item;
+            if (inventory.IsLocked(gift.Id)) return 0;
             var recvInventory = inventoryProvider.Get(receiver.Id);
             var amountToGift = gift.Amount >= amount ? amount : (int)gift.Amount;
             if (recvInventory.AddItem(gift, amountToGift) && inventory.RemoveItem(gift, amountToGift))
@@ -2000,6 +2001,8 @@ namespace RavenNest.BusinessLogic.Game
                 var inventory = inventoryProvider.Get(gifter.Id);
                 var gift = inventory.GetUnequippedItem(itemId, tag: itemTag);
 
+                if (inventory.IsLocked(gift.Id)) return 0;
+
                 if (gift.IsNull() || gift.Amount == 0)
                     return 0;
 
@@ -2027,7 +2030,7 @@ namespace RavenNest.BusinessLogic.Game
             var character = gameData.GetCharacter(characterId);
             if (character == null) return false;
             var inventory = inventoryProvider.Get(character.Id);
-
+            if (inventory.IsLocked(item.Id)) return false;
             var stack = gameData.GetInventoryItem(item.Id);
             if (stack == null) return false;
 
@@ -2060,13 +2063,14 @@ namespace RavenNest.BusinessLogic.Game
             }
             return false;
         }
-        public bool SendToStash(Guid characterId, RavenNest.Models.InventoryItem item, long amount)
+
+        public bool SendToStash(Guid characterId, RavenNest.Models.InventoryItem invItemInput, long amount)
         {
             var character = gameData.GetCharacter(characterId);
             if (character == null) return false;
             var inventory = inventoryProvider.Get(character.Id);
-
-            var stack = gameData.GetInventoryItem(item.Id);
+            if (inventory.IsLocked(invItemInput.Id)) return false;
+            var stack = gameData.GetInventoryItem(invItemInput.Id);
             if (stack == null) return false;
             if (inventory.RemoveItem(stack, amount))
             {
@@ -2076,11 +2080,11 @@ namespace RavenNest.BusinessLogic.Game
 
                 try
                 {
-                    var canBeStacked = PlayerInventory.CanBeStacked(item);
+                    var canBeStacked = PlayerInventory.CanBeStacked(stack);
                     if (canBeStacked)
                     {
                         var bankItems = gameData.GetUserBankItems(character.UserId);
-                        var existing = bankItems.FirstOrDefault(x => PlayerInventory.CanBeStacked(x, item));
+                        var existing = bankItems.FirstOrDefault(x => PlayerInventory.CanBeStacked(x, stack));
                         if (existing != null)
                         {
                             existing.Amount += amount;
@@ -2088,7 +2092,7 @@ namespace RavenNest.BusinessLogic.Game
                         }
                     }
 
-                    gameData.Add(CreateBankItem(character, item, amount));
+                    gameData.Add(CreateBankItem(character, stack, amount));
                     return true;
                 }
                 finally
@@ -2100,14 +2104,14 @@ namespace RavenNest.BusinessLogic.Game
             return false;
         }
 
-        private static DataModels.UserBankItem CreateBankItem(Character character, RavenNest.Models.InventoryItem item, long amount)
+        private static DataModels.UserBankItem CreateBankItem(Character character, DataModels.InventoryItem item, long amount)
         {
             return new DataModels.UserBankItem
             {
                 Id = Guid.NewGuid(),
                 Amount = amount,
                 Enchantment = item.Enchantment,
-                Flags = item.Flags,
+                Flags = item.Flags ?? 0,
                 ItemId = item.ItemId,
                 Name = item.Name,
                 Soulbound = item.Soulbound.GetValueOrDefault(),
@@ -2668,6 +2672,15 @@ namespace RavenNest.BusinessLogic.Game
                     var experience = update.Experience;
                     var timeSinceLastSkillUpdate = DateTime.UtcNow - characterSessionState.LastExpUpdate;
                     var existingLevel = skill.Level;
+
+                    if (skill.Level == GameMath.MaxLevel)
+                    {
+                        var maxExp = GameMath.ExperienceForLevel(GameMath.MaxLevel + 1);
+                        if (experience >= maxExp)
+                        {
+                            experience = maxExp;
+                        }
+                    }
 
                     if (!user.IsAdmin.GetValueOrDefault() && user.IsModerator.GetValueOrDefault())
                     {
@@ -3819,6 +3832,7 @@ namespace RavenNest.BusinessLogic.Game
             state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
             state.Task = task;
             state.TaskArgument = taskArgument ?? task;
+            state.IsCaptain = update.IsCaptain;
             state.X = update.X;
             state.Y = update.Y;
             state.Z = update.Z;
@@ -3842,6 +3856,7 @@ namespace RavenNest.BusinessLogic.Game
             state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString();
             state.Task = task;
             state.TaskArgument = taskArgument;
+            //state.IsCaptain = update.IsCaptain;
             state.X = update.X;
             state.Y = update.Y;
             state.Z = update.Z;
@@ -3868,6 +3883,7 @@ namespace RavenNest.BusinessLogic.Game
                 EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString("yyyy-MM-ddTHH:mm:ss.fffffff"),
                 Task = task,
                 TaskArgument = taskArgument ?? task,
+                IsCaptain = update.IsCaptain,
                 X = update.X,
                 Y = update.Y,
                 Z = update.Z,
