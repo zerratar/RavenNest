@@ -4,8 +4,42 @@ using RavenNest.BusinessLogic.Data;
 
 namespace RavenNest.BusinessLogic.Game
 {
+    public static class GameUpdates
+    {
+        public const string RequiresExpTransformation = "0.8.8.4a";
+
+        public const string DisableExpSave_LessThanOrEquals = "0.8.8.4a";
+
+        private static Version[] requiredUpdates = new Version[]
+        {
+            GameVersion.Parse("0.8.8.5a")
+        };
+
+        public static bool IsRequiredUpdate(string update)
+        {
+            if (!GameVersion.TryParse(update, out var v))
+            {
+                return false;
+            }
+
+            foreach (var ver in requiredUpdates)
+            {
+                if (ver.Equals(v))
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
     public static class GameVersion
     {
+        public static Version Parse(string input)
+        {
+            TryParse(input, out var value);
+            return value ?? new Version();
+        }
+
         public static bool TryParse(string input, out Version version)
         {
             if (string.IsNullOrEmpty(input))
@@ -63,6 +97,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             return version >= gameData.GetClientVersion();
         }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsLessThanOrEquals(string version, string comparison)

@@ -35,10 +35,13 @@ namespace Shinobytes.OpenAI.Models
         }
 
         [JsonProperty("messages")]
-        public ChatMessage[] Messages
+        public Message[] Messages
         {
             get;
             set;
         }
+
+        [JsonProperty("functions")]
+        public Function[] Functions { get; set; }
     }
 }

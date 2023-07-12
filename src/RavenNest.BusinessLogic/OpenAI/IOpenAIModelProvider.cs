@@ -21,25 +21,16 @@
  * THE SOFTWARE.  
  **/
 
-using Newtonsoft.Json;
+using Shinobytes.OpenAI.Models;
 
-namespace Shinobytes.OpenAI.Models
+namespace Shinobytes.OpenAI
 {
-    public class ChatMessage
+    public interface IOpenAIModelProvider
     {
-
-        [JsonProperty("role")]
-        public string Role { get; set; }
-        [JsonProperty("content")]
-        public string Content { get; set; }
-
-        internal static ChatMessage Create(string role, string prompt)
-        {
-            return new ChatMessage
-            {
-                Role = role,
-                Content = prompt,
-            };
-        }
+        OpenAIModel GPT35_4K { get; }
+        OpenAIModel GPT35_16K { get; }
+        OpenAIModel GPT4_8K { get; }
+        OpenAIModel GPT4_32K { get; }
+        OpenAIModel Get(int tokenUsage, OpenAIModelSelection selection = OpenAIModelSelection.GPT3_5);
     }
 }

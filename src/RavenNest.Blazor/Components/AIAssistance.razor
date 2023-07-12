@@ -1,0 +1,197 @@
+﻿@using RavenNest.Blazor.Services;
+@using Shinobytes.OpenAI.Models;
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.Blazor.Services.AIAssistanceService AIService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JS
+
+
+@if (isAdmin)
+{
+    <div class="ai-assistance @(assistanceVisible ? "enabled" : "disabled")">
+        @if (assistanceVisible)
+        {
+            <div class="ai-assistance-header">
+                <div class="ai-assistance-title">AI Assisted Interactions (Admin Only)</div>
+                <div class="ai-assistance-toggle" @onclick="ToggleAssistance">&times;</div>
+            </div>
+            <div class="ai-assistance-chat">
+                <div class="@ElementMessageListContainer" id="@ElementMessageListContainer">
+                    @if (conversation != null)
+                    {
+                        foreach (var message in conversation.Messages)
+                        {
+                            var content = message.Message.Content;
+                            var role = message.Message.Role;
+                            if (!string.IsNullOrEmpty(content))
+                            {
+                                <div class="ai-assistance-chat-message">
+                                    <div class="ai-assistance-chat-message-user">@GetUserName(role)</div>
+                                    <div class="ai-assistance-chat-message-text">
+                                        @AIService.FormatMessage(content)
+                                    </div>
+                                </div>
+                            }
+                        }
+                    }
+                </div>
+                @if (waitingForResponse)
+                {
+                    <LoadingEllipsis></LoadingEllipsis>
+                }
+                else if (canRegenerateMessage)
+                {
+                    <div class="btn-regenerate" @onclick="RegenerateResponse">
+                        Re-generate Response
+                    </div>
+                }
+
+                <div class="ai-assistance-chat-input">
+                    <div class="ai-assistance-prompt">
+                        <div class="btn-send" @onclick="@(async (e) => await SendMessageAsync())">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="send-icon" viewBox="0 0 16 16" fill="none" stroke-width="2"><path d="M.5 1.163A1 1 0 0 1 1.97.28l12.868 6.837a1 1 0 0 1 0 1.766L1.969 15.72A1 1 0 0 1 .5 14.836V10.33a1 1 0 0 1 .816-.983L8.5 8 1.316 6.653A1 1 0 0 1 .5 5.67V1.163Z" fill="#8e8ea0"></path></svg>
+                        </div>
+                        <textarea @ref="textareaRef" type="text" id="promptArea" placeholder="Send a message" @bind="inputMessage" @bind:event="oninput" @onkeydown="@(async (e) => OnKeyDown(e))" />
+                    </div>
+
+                    <div class="action-buttons">
+                        <div class="checkbox-input">
+                            <label for="cb-gpt4">Use GPT4 (This is expensive for Karl)</label>
+                            <input type="checkbox" id="cb-gpt4" name="cb-gpt4" @bind="useGPT4"></input>
+                        </div>
+                        <div class="btn-clear" @onclick="ClearChat">
+                            Clear Chat History
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="ai-assistance-header">
+                <div class="ai-assistance-toggle" @onclick="ToggleAssistance">Chat with AI</div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private const string ElementMessageListContainer = "ai-assistance-chat-messages";
+    private const string ElementPromptArea = "promptArea";
+
+
+    public RavenNest.Models.SessionInfo session;
+    private AIConversation conversation;
+
+
+    private bool assistanceVisible;
+    private bool isAdmin;
+    private bool useGPT4;
+    private bool waitingForResponse;
+    private bool canRegenerateMessage;
+
+    private string inputMessage;
+    private ElementReference textareaRef;
+
+    private string GetUserName(ChatMessageRole role)
+    {
+        if (role == ChatMessageRole.User)
+        {
+            return session.UserName;
+        }
+
+        return "AI Assistant";
+    }
+
+    private async void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            await SendMessageAsync();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        session = AuthService.GetSession();
+        isAdmin = session != null && session.Administrator;
+        if (isAdmin)
+        {
+            messages = await AIService.GetMessagesAsync();
+            if (messages.Count > 0)
+            {
+                canRegenerateMessage = messages[^1].Role == "user";
+            }
+        }
+    }
+    private async void ToggleAssistance()
+    {
+        assistanceVisible = !assistanceVisible;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void ClearChat()
+    {
+        AIService.ClearChatHistory();
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void RegenerateResponse()
+    {
+        await SendAsync();
+    }
+
+    private async Task SendMessageAsync()
+    {
+        if (string.IsNullOrEmpty(inputMessage))
+        {
+            return;
+        }
+        messages = AIService.AddToChatHistory(inputMessage);
+        inputMessage = null;
+        await InvokeAsync(StateHasChanged);
+        await JS.InvokeVoidAsync("scrollToBottom", ElementMessageListContainer);
+        await SendAsync();
+    }
+
+    private async Task<bool> SendAsync()
+    {
+        try
+        {
+            waitingForResponse = true;
+            var response = await AIService.SendMessageAsync(messages.ToArray(), useGPT4);
+            messages = AIService.AddToChatHistory(response);
+            waitingForResponse = false;
+            await InvokeAsync(StateHasChanged);
+            await JS.InvokeVoidAsync("scrollToBottom", ElementMessageListContainer);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+        finally
+        {
+            if (messages.Count > 0)
+            {
+                canRegenerateMessage = messages[^1].Role == "user";
+            }
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (session == null || session.UserName == null || !isAdmin)
+        {
+            NavigationManager.NavigateTo("/login");
+            return;
+        }
+
+        if (assistanceVisible)
+        {
+            await JS.InvokeVoidAsync("scrollToBottom", ElementMessageListContainer);
+            await JS.InvokeAsync<object>("setupTextArea", ElementPromptArea, 200);
+        }
+    }
+}

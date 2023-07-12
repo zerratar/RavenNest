@@ -54,7 +54,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             if (now - state.LastTaskUpdate >= TimeSpan.FromSeconds(ItemDropRateSettings.ResourceGatherInterval))
             {
                 session.Updated = DateTime.UtcNow;
-                var resources = gameData.GetResources(character.ResourcesId);
+                var resources = gameData.GetResources(character);
                 var oldWood = resources.Wood;
                 var oldWheat = resources.Wheat;
                 var oldFish = resources.Fish;

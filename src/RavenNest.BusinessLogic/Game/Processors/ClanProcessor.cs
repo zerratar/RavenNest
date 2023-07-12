@@ -111,12 +111,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             if (clan.Level == 0)
                 clan.Level = 1;
 
-            var exp = elapsed.TotalSeconds;
-            //var multi = gameData.GetActiveExpMultiplierEvent();
-            //if (multi != null)
-            //{
-            //    exp *= multi.Multiplier;
-            //}
+            var exp = GameMath.GetClanExperience(clan.Level, elapsed.TotalSeconds);
 
             clan.Experience += exp;
 

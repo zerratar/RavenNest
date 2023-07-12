@@ -32,8 +32,8 @@
     public enum ExpGainType
     {
         Fixed,
-        FixedMin,
-        FixedMinMax,
+        //FixedMin,
+        //FixedMinMax,
     }
 
     public class SkillLevelingSimulation : ISimulation
@@ -49,7 +49,7 @@
             var targetLevel = simSettings.MultiplierFactor;
             var boost = simSettings.ExpBoost;
 
-            var value = GameMath.Exp.GetMinExpGainPercent(nextLevel, Skill.Woodcutting, playersInArea);
+            var value = GameMath.Exp.GetMinExpGainPercent(nextLevel, skill, playersInArea);
             Console.WriteLine("╔═══════════════╦═══════╦═══════════════════════╗");
             Console.WriteLine("║ Skill\t\t║ Value\t║ Secondary             ║");
             Console.WriteLine("╠═══════════════╬═══════╬═══════════════════════╣");
@@ -73,22 +73,22 @@
             var maxExpGain = expForNextLevel / bTicksForLevel; // should this be min exp gain instead? 
             var minExpGainPercent = GameMath.Exp.GetMinExpGainPercent(nextLevel, skill, playersInArea);
             var minExpGain = GameMath.ExperienceForLevel(nextLevel) * minExpGainPercent;
-            var expInput = simSettings.Exp ?? GameMath.GetWoodcuttingExperience((int)(nextLevel * simSettings.MultiplierFactor));
-            var expRaw = expInput * effectiveBoost;
+            //var expInput = simSettings.Exp ?? GameMath.GetWoodcuttingExperience((int)(nextLevel * simSettings.MultiplierFactor));
+            //var expRaw = expInput * effectiveBoost;
 
-            double exp;
-            switch (simSettings.ExpGainType)
-            {
-                case ExpGainType.Fixed:
-                    exp = Lerp(0, Lerp(minExpGain, maxExpGain, simSettings.MultiplierFactor), simSettings.ExpFactor);
-                    break;
-                case ExpGainType.FixedMin:
-                    exp = Math.Max(expInput, Math.Min(maxExpGain, Math.Max(expRaw, minExpGain)));
-                    break;
-                default:
-                    exp = Math.Min(maxExpGain, Math.Max(expRaw, minExpGain));
-                    break;
-            }
+            double exp = Lerp(0, Lerp(minExpGain, maxExpGain, simSettings.MultiplierFactor), simSettings.ExpFactor);
+            //switch (simSettings.ExpGainType)
+            //{
+            //    case ExpGainType.Fixed:
+            //        exp = Lerp(0, Lerp(minExpGain, maxExpGain, simSettings.MultiplierFactor), simSettings.ExpFactor);
+            //        break;
+            //    case ExpGainType.FixedMin:
+            //        exp = Math.Max(expInput, Math.Min(maxExpGain, Math.Max(expRaw, minExpGain)));
+            //        break;
+            //    default:
+            //        exp = Math.Min(maxExpGain, Math.Max(expRaw, minExpGain));
+            //        break;
+            //}
 
             var percent = (exp / expForNextLevel) * 100;
             var percentPerSeconds = ticksPerSeconds * (percent / 100.0);
@@ -99,6 +99,9 @@
             Console.WriteLine("║ Ticks Per Seconds: " + ticksPerSeconds);
             Console.WriteLine("║ Ticks For Level:   " + ticksForLevel);
             Console.WriteLine("║ Time For Level:    " + timeLeftToLevel);
+            Console.WriteLine("║ Max Exp Gain:   " + maxExpGain);
+            Console.WriteLine("║ Min Exp Gain %: " + (minExpGainPercent * 100) + "%");
+            Console.WriteLine("║ Min Exp Gain:   " + minExpGain);
             Console.WriteLine("╠════════════════════════════════════════════════");
             Console.WriteLine("║ »                 With Boost                 «");
             Console.WriteLine("║------------------------------------------------");
@@ -109,14 +112,6 @@
             Console.WriteLine("╚═══════════════════════════════════════════════╝");
             Console.WriteLine();
             Console.WriteLine("   Exp For Level:  " + expForNextLevel);
-            if (simSettings.ExpGainType != ExpGainType.Fixed)
-            {
-                Console.WriteLine("   Max Exp Gain:   " + maxExpGain);
-                Console.WriteLine("   Min Exp Gain %: " + (minExpGainPercent * 100) + "%");
-                Console.WriteLine("   Min Exp Gain:   " + minExpGain);
-                Console.WriteLine("   Exp Input:      " + expInput);
-                Console.WriteLine("   Exp Raw:        " + expRaw);
-            }
             Console.WriteLine("   Gained Exp:     " + exp);
             Console.WriteLine("   Increment %:    " + percent + "%");
             Console.WriteLine("   % Per Sec:      " + (percentPerSeconds * 100.0) + "%");

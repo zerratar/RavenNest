@@ -11,7 +11,7 @@ namespace RavenNest.DataModels
         //          WITH: private $1 _$2; public $1 $2 { get => _$2; set => Set(ref _$2, value); }
         // To save some time. uggah
 
-        private string userId; 
+        private string userId;
         [Obsolete("Use UserAccess.PlatformId")]
         public string UserId { get => userId; set => Set(ref userId, value); }
         private string userName; public string UserName { get => userName; set => Set(ref userName, value); }
@@ -23,6 +23,7 @@ namespace RavenNest.DataModels
         private int? patreonTier; public int? PatreonTier { get => patreonTier; set => Set(ref patreonTier, value); }
         private int? status; public int? Status { get => status; set => Set(ref status, value); }
         private bool? isHiddenInHighscore; public bool? IsHiddenInHighscore { get => isHiddenInHighscore; set => Set(ref isHiddenInHighscore, value); }
+        private Guid? resources; public Guid? Resources { get => resources; set => Set(ref resources, value); }
         private DateTime? lastReward; public DateTime? LastReward { get => lastReward; set => Set(ref lastReward, value); }
         private DateTime created; public DateTime Created { get => created; set => Set(ref created, value); }
     }

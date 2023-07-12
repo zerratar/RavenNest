@@ -29,7 +29,9 @@ namespace Shinobytes.OpenAI
 {
     public interface IOpenAIClient
     {
-        Task<ChatCompletionResponse> GetCompletionAsync(string prompt, CancellationToken cancellationToken, params ChatMessage[] previousMessages);
+        Task<ChatCompletionResponse> GetCompletionAsync(string prompt, CancellationToken cancellationToken, params Message[] previousMessages);
+        Task<ChatCompletionResponse> GetCompletionAsync(ChatCompletionRequest prompt, CancellationToken cancellationToken);
         Task<ImageResponse> GenerateImageAsync(string prompt, CancellationToken cancellationToken, string size = "512x512", int count = 1);
+        IOpenAIRequestBuilder GetRequestBuilder();
     }
 }

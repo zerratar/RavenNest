@@ -3,10 +3,10 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 using MessagePack;
 using Microsoft.Extensions.Logging;
@@ -14,7 +14,7 @@ using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.DataModels;
-
+using TwitchLib.Api.Helix;
 
 namespace RavenNest.BusinessLogic.Data
 {
@@ -38,6 +38,8 @@ namespace RavenNest.BusinessLogic.Data
         private readonly ConcurrentDictionary<Guid, ConcurrentDictionary<Guid, CharacterSessionState>> characterSessionStates = new();
 
         private readonly ConcurrentDictionary<Guid, SessionState> sessionStates = new();
+
+        private readonly EntitySet<ServerSettings> serverSettings;
 
         private readonly EntitySet<Agreements> agreements;
         private readonly EntitySet<DailyAggregatedMarketplaceData> dailyAggregatedMarketplaceData;
@@ -182,6 +184,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(ItemCraftingRequirement),
                         typeof(CharacterSessionActivity),
                         typeof(Agreements),
+                        typeof(ServerSettings),
                         typeof(UserBankItem),
                         typeof(ExpMultiplierEvent)
                 });
@@ -200,6 +203,8 @@ namespace RavenNest.BusinessLogic.Data
                 using (var ctx = this.db.Get())
                 {
                     agreements = new EntitySet<Agreements>(restorePoint?.Get<Agreements>() ?? ctx.Agreements.ToList());
+
+                    serverSettings = new EntitySet<ServerSettings>(restorePoint?.Get<ServerSettings>() ?? ctx.ServerSettings.ToList());
 
                     resourceItemDrops = new EntitySet<ResourceItemDrop>(restorePoint?.Get<ResourceItemDrop>() ?? ctx.ResourceItemDrop.ToList());
 
@@ -371,6 +376,7 @@ namespace RavenNest.BusinessLogic.Data
                     entitySets = new IEntitySet[]
                     {
                         redeemableItems,
+                        serverSettings,
                         itemAttributes,
                         dailyAggregatedMarketplaceData,
                         dailyAggregatedEconomyReport,
@@ -409,8 +415,10 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureCharacterSkillRecords();
                 EnsureMagicAttributes();
                 EnsureResources();
+                RemoveOldData();
 
-                //UpgradeSkillLevels(characterSkills);
+                TransformExperience();
+
                 //RemoveBadUsers(users);
 
                 ProcessInventoryItems(inventoryItems);
@@ -445,6 +453,34 @@ namespace RavenNest.BusinessLogic.Data
             {
                 InitializedSuccessful = false;
                 System.IO.File.WriteAllText("ravenfall-error.log", "[" + DateTime.UtcNow + "] " + exc.ToString());
+            }
+        }
+
+        private void RemoveOldData()
+        {
+            foreach (var c in this.characters.Entities)
+            {
+                c.Revision = null;
+
+                if (c.ResourcesId != null)
+                {
+                    c.ResourcesId = null;
+                }
+
+                if (c.AppearanceId != null)
+                {
+                    var appearance = GetAppearance(c.AppearanceId);
+                    if (appearance != null)
+                    {
+                        Remove(appearance);
+                    }
+                    c.AppearanceId = null;
+                }
+            }
+
+            foreach (var a in this.appearances.Entities)
+            {
+                Remove(a);
             }
         }
 
@@ -489,24 +525,6 @@ namespace RavenNest.BusinessLogic.Data
                 if (GetCharacter(act.CharacterId) == null)
                 {
                     Remove(act);
-                }
-            }
-
-            foreach (var appearance in appearances.Entities)
-            {
-                var match = false;
-                foreach (var character in characters.Entities)
-                {
-                    if (character.AppearanceId == appearance.Id)
-                    {
-                        match = true;
-                        break;
-                    }
-                }
-
-                if (!match)
-                {
-                    Remove(appearance);
                 }
             }
 
@@ -1051,19 +1069,126 @@ namespace RavenNest.BusinessLogic.Data
                 }
             }
 
-            foreach (var character in this.characters.Entities)
+            HashSet<Guid> userIdMissing = new HashSet<Guid>();
+            HashSet<Guid> charProcessed = new HashSet<Guid>();
+
+            int deletedCharacters = 0;
+            int movedCharacters = 0;
+            var beforeProcess = this.characters.Entities.ToArray();
+            foreach (var c in beforeProcess)
             {
-                var resources = this.GetResourcesByCharacterId(character.Id);
-                if (resources == null)
+                if (charProcessed.Contains(c.Id))
                 {
-                    resources = new DataModels.Resources
+                    continue;
+                }
+
+                var user = GetUser(c.UserId);
+                if (user == null)
+                {
+                    userIdMissing.Add(c.UserId);
+                    // seem like we might have missing users, these are probably really old records from back in 2020.
+                    // but make sure to clean these up as it will definitely cause an exception elsewhere.
+                    var maybe = this.GetUserByUsername(c.Name);
+                    if (maybe != null)
                     {
-                        Id = Guid.NewGuid(),
-                    };
-                    Add(resources);
-                    character.ResourcesId = resources.Id;
+                        var otherChars = GetCharactersByUserId(maybe.Id);
+                        var otherAvailable = PlayerManager.MaxCharacterCount - otherChars.Count;
+                        var missingChars = characters[nameof(User), c.UserId];// GetCharactersByUserId(c.UserId);
+
+                        if (otherAvailable >= missingChars.Count)
+                        {
+                            // we can fit these in our existing account, so lets change owner.
+                            foreach (var oc in missingChars)
+                            {
+                                movedCharacters++;
+                                charProcessed.Add(oc.Id);
+                                var newCharIndex = otherChars.Count;
+
+                                // player has already been lost, resources wont be joined.
+                                if (oc.ResourcesId != null)
+                                {
+                                    var resx = GetResources(oc.ResourcesId.Value);
+                                    if (resx != null)
+                                    {
+                                        Remove(resx);
+                                    }
+                                }
+
+                                oc.ResourcesId = null;
+                                oc.UserId = maybe.Id;
+                                oc.UserIdLock = null;
+                                oc.CharacterIndex = newCharIndex;
+                                oc.Identifier = oc.CharacterIndex.ToString();
+                            }
+
+                            continue;
+                        }
+
+                        foreach (var oc in missingChars)
+                        {
+                            CascadeRemoveCharacter(c);
+                            deletedCharacters++;
+                            charProcessed.Add(oc.Id);
+                        }
+
+                        continue;
+                    }
+
+                    CascadeRemoveCharacter(c);
+                    deletedCharacters++;
+                    charProcessed.Add(c.Id);
                 }
             }
+
+            var ohNo = userIdMissing.Count;
+
+            foreach (var user in this.users.Entities)
+            {
+                if (user.Resources != null && user.Resources.Value != Guid.Empty)
+                {
+                    continue;
+                }
+
+                var chars = GetCharactersByUserId(user.Id);
+
+                var coins = 0d;
+                var wheat = 0d;
+                var fish = 0d;
+                var wood = 0d;
+                var ore = 0d;
+
+                foreach (var c in chars)
+                {
+                    if (c.ResourcesId != null)
+                    {
+                        var r = GetResources(c.ResourcesId.Value);
+                        if (r != null)
+                        {
+                            coins += r.Coins;
+                            wood += r.Wood;
+                            fish += r.Fish;
+                            wheat += r.Wheat;
+                            ore += r.Ore;
+                            Remove(r);
+                        }
+                        c.ResourcesId = null;
+                    }
+                }
+                var res = new DataModels.Resources
+                {
+                    Coins = coins,
+                    Wheat = wheat,
+                    Fish = fish,
+                    Wood = wood,
+                    Ore = ore,
+                    Id = Guid.NewGuid(),
+                };
+
+                Add(res);
+
+                user.Resources = res.Id;
+            }
+
         }
         #endregion
 
@@ -1744,11 +1869,74 @@ namespace RavenNest.BusinessLogic.Data
             {
                 logger.LogError("(Not actual error) Remove " + toRemove.Count + " inventory items of characters that dont exist. Most likely item reached 0 in stack size but was never removed, this can happen if ID of the stack has changed.");
             }
+        }
 
+        /// <summary>
+        ///     Remove a character and any of its assocciated entries such as Resources, Inventory Items, Clan Details, Statistics, Etc.
+        /// </summary>
+        /// <param name="c"></param>
+        private void CascadeRemoveCharacter(Character c)
+        {
+            var s = GetCharacterSkills(c.SkillsId);
+            if (s != null)
+            {
+                Remove(s);
+            }
 
+            if (c.ResourcesId != null)
+            {
+                var resx = GetResources(c.ResourcesId.Value);
+                if (resx != null)
+                {
+                    Remove(resx);
+                }
+            }
 
+            var invItems = GetInventoryItems(c.Id);
+            foreach (var invItem in invItems)
+            {
+                Remove(invItem);
+            }
 
+            var marketItems = GetMarketItems();
+            foreach (var item in marketItems)
+            {
+                if (item.SellerCharacterId == c.Id)
+                {
+                    Remove(item);
+                }
+            }
 
+            var records = GetCharacterSkillRecords(c.Id);
+            foreach (var r in records)
+            {
+                Remove(r);
+            }
+
+            var appearance = GetAppearance(c.AppearanceId);
+            if (appearance != null)
+            {
+                Remove(appearance);
+            }
+
+            var statistics = GetStatistics(c.StatisticsId);
+            if (statistics != null)
+            {
+                Remove(statistics);
+            }
+
+            var mem = GetClanMembership(c.Id);
+            if (mem != null)
+            {
+                Remove(mem);
+            }
+
+            var invites = GetClanInvitesByCharacter(c.Id);
+            if (invites != null && invites.Count > 0)
+            {
+                foreach (var i in invites)
+                    Remove(i);
+            }
         }
 
         private void RemoveCharacterIfEmpty(Character c)
@@ -1762,15 +1950,13 @@ namespace RavenNest.BusinessLogic.Data
                     return;
                 }
 
-                var resx = GetResources(c.ResourcesId);
-                if (resx != null && (resx.Wheat != 0 || resx.Coins != 0 || resx.Fish != 0 || resx.Wood != 0 || resx.Ore != 0))
+                if (c.ResourcesId != null)
                 {
-                    return;
-                }
-
-                if (resx != null)
-                {
-                    Remove(resx);
+                    var resx = GetResources(c.ResourcesId.Value);
+                    if (resx != null)
+                    {
+                        Remove(resx);
+                    }
                 }
 
                 if (s != null)
@@ -2064,50 +2250,125 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
-        private void UpgradeSkillLevels(EntitySet<Skills> skills)
+        private bool InvokeIfSettingsMatch(string name, Func<ServerSettings, bool> check, Action invoke, Func<ServerSettings, string> onSuccess, Func<ServerSettings, string> onFail)
         {
-            // total exp 170: 0
-            // 170 + overflow
-
-            // (total) exp required for current level
-            // 170: 170totalexp - total exp for current level
-            // 
-
-            var skillsChanged = false;
-            foreach (var skill in skills.Entities)
+            var settings = GetOrCreateServerSettings(name);
+            if (check(settings))
             {
-                var data = skill.GetSkills();
-                foreach (var s in data)
+                try
                 {
-                    var lv = s.Level;
-
-                    if (lv > GameMath.MaxLevel)
-                    {
-                        s.Level = GameMath.MaxLevel;
-                        skillsChanged = true;
-                        continue;
-                    }
-
-                    if (lv > 0)
-                        continue;
-
-                    lv = 1;
-                    var xp = s.Experience;
-                    var expForNextLevel = GameMath.ExperienceForLevel(lv + 1);
-                    while (xp >= expForNextLevel)
-                    {
-                        xp -= expForNextLevel;
-                        ++lv;
-                        expForNextLevel = GameMath.ExperienceForLevel(lv + 1);
-                    }
-
-                    s.Experience = xp;
-                    s.Level = lv;
-                    skillsChanged = true;
+                    invoke();
+                    onSuccess(settings);
+                    return true;
+                }
+                catch
+                {
+                    onFail(settings);
                 }
             }
 
-            if (skillsChanged)
+            return false;
+        }
+
+        private void TransformExperience()
+        {
+            /*
+                Only if we are migrating from 0.8.8.4a or older
+             */
+            if (!GameVersion.IsLessThanOrEquals(this.Client.ClientVersion, GameUpdates.RequiresExpTransformation))
+            {
+                return;
+            }
+
+            /*
+                1) Transform Character Skill Experiences
+            */
+            var migrationName = "exp_migration_885";
+            var requireSave = false;
+            requireSave = InvokeIfSettingsMatch(migrationName + "_characterSkills", x => x.Value != "1", () =>
+            {
+                foreach (var skill in this.characterSkills.Entities)
+                {
+                    var data = skill.GetSkills();
+                    foreach (var s in data)
+                    {
+                        var level = s.Level;
+                        var nextLevel = level + 1;
+                        var expRatio = s.Experience / GameMath.OldExperienceForLevel(nextLevel);
+                        s.Experience = GameMath.ExperienceForLevel(nextLevel) * expRatio;
+                    }
+                }
+
+            }, x => x.Value = "1", x => x.Value = "0") || requireSave;
+
+            /*
+                 2) Transform Clan Exp
+              */
+
+            requireSave = InvokeIfSettingsMatch(migrationName + "_clans", x => x.Value != "1", () =>
+            {
+                foreach (var entity in this.clans.Entities)
+                {
+                    var level = entity.Level;
+                    var nextLevel = level + 1;
+                    var expRatio = entity.Experience / GameMath.OldExperienceForLevel(nextLevel);
+                    entity.Experience = GameMath.ExperienceForLevel(nextLevel) * expRatio;
+                }
+
+            }, x => x.Value = "1", x => x.Value = "0") || requireSave;
+
+            /*
+                3) Transform Clan Skill Exp
+             */
+            requireSave = InvokeIfSettingsMatch(migrationName + "_clanSkills", x => x.Value != "1", () =>
+            {
+                foreach (var entity in this.clanSkills.Entities)
+                {
+                    var level = entity.Level;
+                    var nextLevel = level + 1;
+                    var expRatio = entity.Experience / GameMath.OldExperienceForLevel(nextLevel);
+                    entity.Experience = GameMath.ExperienceForLevel(nextLevel) * expRatio;
+                }
+            }, x => x.Value = "1", x => x.Value = "0") || requireSave;
+
+
+            /*
+                4) Transform Village Exp
+            */
+            requireSave = InvokeIfSettingsMatch(migrationName + "_villages", x => x.Value != "1", () =>
+            {
+                foreach (var entity in this.villages.Entities)
+                {
+                    var level = entity.Level;
+                    var nextLevel = level + 1;
+                    var expRatio = entity.Experience / GameMath.OldExperienceForLevel(nextLevel);
+
+                    var exp = Math.Truncate(GameMath.ExperienceForLevel(nextLevel) * expRatio);
+                    if (exp > long.MaxValue)
+                    {
+                        // uh oh...
+                        exp = long.MaxValue;
+                    }
+
+                    entity.Experience = (long)exp;
+                }
+            }, x => x.Value = "1", x => x.Value = "0") || requireSave;
+
+            /*
+                5) Transform Character Skill Records
+            */
+            requireSave = InvokeIfSettingsMatch(migrationName + "_characterSkillRecords", x => x.Value != "1", () =>
+            {
+                foreach (var s in this.characterSkillRecords.Entities)
+                {
+                    var level = s.SkillLevel;
+                    var nextLevel = level + 1;
+                    var expRatio = s.SkillExperience / GameMath.OldExperienceForLevel(nextLevel);
+                    s.SkillExperience = GameMath.ExperienceForLevel(nextLevel) * expRatio;
+                }
+            }, x => x.Value = "1", x => x.Value = "0") || requireSave;
+
+            if (requireSave)
             {
                 ScheduleNextSave();
             }
@@ -2116,6 +2377,10 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Add Methods
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(ServerSettings item) => Update(() => serverSettings.Add(item));
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(VendorItem item) => Update(() => vendorItems.Add(item));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2426,6 +2691,27 @@ namespace RavenNest.BusinessLogic.Data
             return state;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ServerSettings GetServerSettings(string name)
+        {
+            return serverSettings.Entities.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ServerSettings GetOrCreateServerSettings(string name)
+        {
+            var settings = GetServerSettings(name);
+            if (settings == null)
+            {
+                settings = new ServerSettings()
+                {
+                    Id = Guid.NewGuid(),
+                    Name = name
+                };
+                Add(settings);
+            }
+            return settings;
+        }
 
         // This is not code, it is a shrimp. Cant you see?
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3022,8 +3308,24 @@ namespace RavenNest.BusinessLogic.Data
         public Resources GetResources(Guid resourcesId) => resources[resourcesId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public Resources GetResourcesByCharacterId(Guid sellerCharacterId) =>
-            GetResources(GetCharacter(sellerCharacterId).ResourcesId);
+        public Resources GetResources(Character character)
+        {
+            var user = GetUser(character.UserId);
+            if (user == null)
+            {
+                // what?
+            }
+            return GetResources(user);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Resources GetResources(User user)
+        {
+            if (user.Resources == null) return null;
+            if (resources.TryGet(user.Resources.Value, out var rsx))
+                return rsx;
+            return null;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Statistics GetStatistics(Guid statisticsId) => statistics[statisticsId];

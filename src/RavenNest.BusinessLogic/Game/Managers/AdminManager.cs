@@ -183,19 +183,7 @@ namespace RavenNest.BusinessLogic.Game
             var amount = query.Split(' ').LastOrDefault();
             if (long.TryParse(amount, out var amountValue))
             {
-                var resx = gameData.GetResourcesByCharacterId(character.Id);
-                if (resx == null)
-                {
-                    resx = new DataModels.Resources
-                    {
-                        Id = Guid.NewGuid(),
-                        Coins = amountValue
-                    };
-                    character.ResourcesId = resx.Id;
-                    gameData.Add(resx);
-                    return true;
-                }
-
+                var resx = gameData.GetResources(character);
                 resx.Coins += amountValue;
                 return true;
             }
@@ -272,7 +260,7 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
 
             var characterUser = gameData.GetUser(character.UserId);
-            
+
             character.UserIdLock = null;
 
             var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRemove,
@@ -285,7 +273,7 @@ namespace RavenNest.BusinessLogic.Game
                 });
 
             gameData.EnqueueGameEvent(gameEvent);
-            
+
             return true;
         }
 
@@ -460,7 +448,6 @@ namespace RavenNest.BusinessLogic.Game
 
             var characters = gameData
                 .GetCharacters(x => x.Name.Equals(user.UserName, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(x => x.Revision)
                 .ToList();
 
             var main = gameData.GetCharacterByUserId(user.Id, "1");
@@ -468,7 +455,7 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
 
             var mainSkills = gameData.GetCharacterSkills(main.SkillsId);
-            var mainResources = gameData.GetResources(main.ResourcesId);
+            //var mainResources = gameData.GetResources(main.ResourcesId);
 
             var mainInventory = gameData.GetInventoryItems(main.Id);
             var mainStatistics = gameData.GetStatistics(main.StatisticsId);
@@ -485,11 +472,14 @@ namespace RavenNest.BusinessLogic.Game
                     gameData.Remove(altSkills);
                 }
 
-                var altResources = gameData.GetResources(alt.ResourcesId);
-                if (altResources != null)
+                if (alt.ResourcesId != null)
                 {
-                    MergeResources(mainResources, altResources);
-                    gameData.Remove(altResources);
+                    var altResources = gameData.GetResources(alt.ResourcesId.Value);
+                    if (altResources != null)
+                    {
+                        gameData.Remove(altResources);
+                    }
+                    alt.ResourcesId = null;
                 }
 
                 var altItems = gameData.GetAllPlayerItems(alt.Id);

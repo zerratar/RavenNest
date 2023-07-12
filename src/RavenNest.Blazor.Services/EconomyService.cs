@@ -36,12 +36,12 @@ namespace RavenNest.Blazor.Services
             return gameData.GetMarketItemTransactions(startDate, endDate);
         }
 
-        public async Task<IReadOnlyList<Character>> GetTopRichestPlayers(int count)
+        public async Task<IReadOnlyList<User>> GetTopRichestPlayers(int count)
         {
             return await Task.Run(() =>
             {
-                var characters = gameData.GetCharacters();
-                return characters.OrderByDescending(c => gameData.GetResources(c.ResourcesId)?.Coins ?? 0)
+                var characters = gameData.GetUsers();
+                return characters.OrderByDescending(c => gameData.GetResources(c)?.Coins ?? 0)
                                  .Take(count)
                                  .ToList();
             });

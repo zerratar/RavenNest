@@ -32,7 +32,7 @@ namespace RavenNest.BusinessLogic.Game
 
         public static string FormatExp(double value)
         {
-            return FormatValue(value, ExpValuePostfix);
+            return FormatValue(value, AmountPostFix, "");//ExpValuePostfix);
         }
 
         public static string FormatValue(double value, string[] postfix, string secondary = "Q")

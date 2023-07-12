@@ -32,6 +32,7 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<UserLoyaltyReward> UserLoyaltyReward { get; set; }
         public virtual DbSet<UserAccess> UserAccess { get; set; }
         public virtual DbSet<UserClaimedLoyaltyReward> UserClaimedLoyaltyReward { get; set; }
+        public virtual DbSet<ServerSettings> ServerSettings { get; set; }
         public virtual DbSet<ResourceItemDrop> ResourceItemDrop { get; set; }
         public virtual DbSet<PatreonSettings> PatreonSettings { get; set; }
         public virtual DbSet<Appearance> Appearance { get; set; }
@@ -105,7 +106,7 @@ namespace RavenNest.BusinessLogic.Data
                 entity.Property(e => e.Id).ValueGeneratedNever();
             });
 
-
+            modelBuilder.Entity<ServerSettings>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<DailyAggregatedEconomyReport>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
             modelBuilder.Entity<PatreonSettings>(entity => entity.Property(e => e.Id).ValueGeneratedNever());

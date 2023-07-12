@@ -10,6 +10,8 @@
     public class OpenAISettings
     {
         public string AccessToken { get; set; }
+        public int MaxTokens { get; } = 4000;
+        public int MaxPromptTokens { get; } = 2500;
     }
 
     public class AppSettings

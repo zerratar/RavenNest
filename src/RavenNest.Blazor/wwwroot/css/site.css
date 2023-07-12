@@ -1228,7 +1228,12 @@ td span.item-stat i {
     background: linear-gradient(90deg, rgba(0,60,130,1) 0%, rgba(0,41,94,1) 100%);
 }
 
-
+pre {
+    background-color: #2f2f2f;
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+}
 
 @media (max-width: 641px) {
     h1 .page-title {

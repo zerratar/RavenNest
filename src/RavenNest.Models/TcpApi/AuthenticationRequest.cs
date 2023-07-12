@@ -66,11 +66,10 @@ namespace RavenNest.Models.TcpApi
         public short Health { get; set; }
         public Island Island { get; set; }
         public Island Destination { get; set; }
-        public CharacterState State { get; set; }
+        public CharacterFlags State { get; set; }
         public int TrainingSkillIndex { get; set; }
         public long ExpPerHour { get; set; }
         public DateTime EstimatedTimeForLevelUp { get; set; }
-        public bool IsCaptain { get; set; }
         public short X { get; set; }
         public short Y { get; set; }
         public short Z { get; set; }
@@ -84,7 +83,7 @@ namespace RavenNest.Models.TcpApi
         public short Health { get; set; }
         public Island Island { get; set; }
         public Island Destination { get; set; }
-        public CharacterState State { get; set; }
+        public CharacterFlags State { get; set; }
         public string Task { get; set; }
         public string TaskArgument { get; set; }
         public float X { get; set; }
@@ -112,15 +111,18 @@ namespace RavenNest.Models.TcpApi
         Heim = 5
     }
 
-    public enum CharacterState : byte
+    [Flags]
+    public enum CharacterFlags : int
     {
         None = 0,
-        Raid = 1,
-        Arena = 2,
-        Dungeon = 3,
-        Onsen = 4,
-        Duel = 5,
-        StreamRaidWar = 6,
-        JoinedDungeon = 7,
+        InRaid = /*         */ 0b000000001,
+        InArena = /*        */ 0b000000010,
+        InDungeon = /*      */ 0b000000100,
+        InOnsen = /*        */ 0b000001000,
+        InDuel = /*         */ 0b000010000,
+        InStreamRaidWar = /**/ 0b000100000,
+        InDungeonQueue = /* */ 0b001000000,
+        OnFerry = /*        */ 0b010000000,
+        IsCaptain = /*      */ 0b100000000,
     }
 }

@@ -119,7 +119,7 @@ namespace RavenNest.Tools.Actions
                                 var saLevel = sa.Level;
                                 for (var j = 1; j <= levelDelta; ++j)
                                 {
-                                    expDelta += GameMath.ExperienceForLevel(level + j);
+                                    expDelta += GameMath.OldExperienceForLevel(level + j);
                                 }
                             }
 

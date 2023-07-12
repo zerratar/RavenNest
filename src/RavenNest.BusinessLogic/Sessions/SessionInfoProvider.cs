@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -89,7 +90,7 @@ namespace RavenNest
         /// </summary>
         /// <param name="twitchUserId"></param>
         /// <returns></returns>
-        public SessionInfo CreateTwitchUserSession(string sessionId, string broadcasterId, string twitchUserId)
+        public async Task<SessionInfo> CreateTwitchUserSessionAsync(string sessionId, string twitchExtensionToken, string broadcasterId, string twitchUserId)
         {
             var si = new SessionInfo();
 
@@ -100,13 +101,23 @@ namespace RavenNest
                 twitchUserId = twitchUserId[1..]; // remove starting U
 
             var broadcaster = gameData.GetUserByTwitchId(broadcasterId);
-            if (broadcaster == null)
-                return new SessionInfo();
+            if (broadcaster == null) return si;
 
             var user = gameData.GetUserByTwitchId(twitchUserId);
-            if (user == null)
-                return new SessionInfo();
+            if (user == null) return si;
 
+            // Verify the provided twitchExtensionToken
+            if (string.IsNullOrEmpty(twitchExtensionToken))
+            {
+                // for release of the extension we need to return here
+                //return si;
+            }
+
+            if (!string.IsNullOrEmpty(twitchExtensionToken))
+            {
+                // verify...
+            }
+            
             //var activeSession = gameData.GetActiveSessions().FirstOrDefault(x => x.UserId == broadcaster.Id);
             var activeSession = gameData.GetSessionByUserId(broadcaster.Id);
             if (activeSession != null)

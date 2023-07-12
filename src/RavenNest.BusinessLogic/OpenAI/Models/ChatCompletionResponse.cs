@@ -29,7 +29,7 @@ namespace Shinobytes.OpenAI.Models
     public class ChatCompletionResponse
     {
         [JsonProperty("choices")]
-        public List<ChatGPTChoice> Choices
+        public ChatGPTChoice[] Choices
         {
             get;
             set;

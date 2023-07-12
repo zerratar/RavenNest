@@ -31,7 +31,7 @@ namespace RavenNest.BusinessLogic.Data.Aggregators
             var totalCoins = 0L;
             var newPlayers = 0;
             var playerCount = 0;
-            var characterCount = 0;
+            var userCount = 0;
             int activePlayers = 0;
 
             var oneDayAgo = now.AddDays(-1);
@@ -49,22 +49,23 @@ namespace RavenNest.BusinessLogic.Data.Aggregators
                     newPlayers++;
                 }
 
+                var resources = gameData.GetResources(user);
+
+                totalCoins += (long)resources.Coins;
+
                 foreach (var c in characters)
                 {
-                    var resources = gameData.GetResources(c.ResourcesId);
                     // this should not happen, but if it does I don't want it to cause the report to crash.
                     if (resources == null)
                         continue;
-
-                    totalCoins += (long)resources.Coins;
 
                     if (c.LastUsed >= oneDayAgo || c.UserIdLock != null)
                     {
                         isActivePlayer = true;
                     }
-
-                    characterCount++;
                 }
+                
+                userCount++;
 
                 if (isActivePlayer)
                 {
@@ -119,7 +120,7 @@ namespace RavenNest.BusinessLogic.Data.Aggregators
                 Date = now,
                 ActivePlayers = activePlayers,
                 TotalCoins = totalCoins,
-                AvgCoinsPerPlayer = totalCoins / characterCount,
+                AvgCoinsPerPlayer = totalCoins / userCount,
                 NewPlayers = newPlayers,
                 TotalPlayers = playerCount,
                 CoinsGainedFromActivities = coinsGainedFromActivities,

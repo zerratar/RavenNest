@@ -8,6 +8,13 @@
         PlayerRemove = 3,
         PlayerAppearance = 4,
         PlayerTask = 5,
+        ItemBuy = 6,
+        ItemSell = 7,
+        ItemEquip = 8,
+        ItemUnEquip = 9,
+        ItemAdd = 10,
+        ItemRemove = 34,
+
         PlayerNameUpdate = 16,
         PlayerExpUpdate = 17,
         PlayerJoinRaid = 18,
@@ -21,18 +28,6 @@
         PlayerDuelRequest = 26,
         PlayerTravel = 27,
 
-        PlayerBeginRest = 36,
-        PlayerEndRest = 37,
-
-        PlayerStartRaid = 38,
-        PlayerStartDungeon = 39,
-
-        ItemBuy = 6,
-        ItemSell = 7,
-        ItemEquip = 8,
-        ItemUnEquip = 9,
-        ItemAdd = 10,
-        ItemRemove = 34,
 
         ResourceUpdate = 11,
         ServerMessage = 12,
@@ -47,6 +42,13 @@
         PubSubToken = 33,
         // Next = 35, since ItemRemove = 34
 
-        StreamerPvP = 35
+        StreamerPvP = 35,
+        PlayerBeginRest = 36,
+        PlayerEndRest = 37,
+
+        PlayerStartRaid = 38,
+        PlayerStartDungeon = 39,
+
+        GameUpdated = 40,
     }
 }

@@ -29,6 +29,7 @@ using System;
 using System.Text.Json.Serialization;
 using Blazorise.Icons.FontAwesome;
 using RavenNest.BusinessLogic.Data.Aggregators;
+using Shinobytes.OpenAI;
 
 namespace RavenNest.Blazor
 {
@@ -327,10 +328,14 @@ namespace RavenNest.Blazor
             services.AddSingleton<AccountService>();
             services.AddSingleton<UserService>();
             services.AddSingleton<ServerService>();
+            services.AddSingleton<AIAssistanceService>();
             services.AddSingleton<LoyaltyService>();
             services.AddSingleton<CookieService>();
             services.AddSingleton<TownService>();
 
+            services.AddSingleton<IOpenAIRequestBuilderFactory, OpenAIRequestBuilderFactory>();
+            services.AddSingleton<IOpenAIModelProvider, OpenAIModelProvider>();
+            services.AddSingleton<IOpenAIClient, OpenAIClient>();
             services.AddSingleton<RavenfallTvManager>();
 
             services.AddSingleton<IRavenBotApiClient, RavenBotApiClient>();

@@ -21,7 +21,6 @@
  * THE SOFTWARE.  
  **/
 
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,6 +29,11 @@ using Newtonsoft.Json;
 
 using Shinobytes.OpenAI.Models;
 using System.Threading;
+using System.IO;
+using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic;
+using Microsoft.Extensions.Options;
+using Message = Shinobytes.OpenAI.Models.Message;
 
 namespace Shinobytes.OpenAI
 {
@@ -37,19 +41,15 @@ namespace Shinobytes.OpenAI
     {
         private bool disposed;
         private readonly HttpClient client;
-        private readonly IOpenAIClientSettings settings;
-        private readonly Func<IOpenAIClientSettings> getSettings;
+        private readonly OpenAISettings settings;
+        private readonly IOpenAIRequestBuilderFactory reqBuilderFactory;
 
-        public OpenAIClient(Func<IOpenAIClientSettings> getSettings)
+        public OpenAIClient(
+            IOptions<OpenAISettings> settings,
+            IOpenAIRequestBuilderFactory reqBuilderFactory)
         {
-            client = new HttpClient();
-            client.Timeout = TimeSpan.FromMinutes(3);
-            this.getSettings = getSettings;
-        }
-
-        public OpenAIClient(IOpenAIClientSettings settings)
-        {
-            this.settings = settings;
+            this.settings = settings.Value;
+            this.reqBuilderFactory = reqBuilderFactory;
             client = new HttpClient();
             client.Timeout = TimeSpan.FromMinutes(3);
         }
@@ -59,29 +59,27 @@ namespace Shinobytes.OpenAI
             return await RequestAsync<ImageRequest, ImageResponse>("https://api.openai.com/v1/images/generations", ImageRequest.Create(prompt, size, count), cancellationToken);
         }
 
-        public async Task<ChatCompletionResponse> GetCompletionAsync(string prompt, CancellationToken cancellationToken, params ChatMessage[] previousMessages)
+        public Task<ChatCompletionResponse> GetCompletionAsync(string prompt, CancellationToken cancellationToken, params Message[] previousMessages)
         {
-            var msgs = new List<ChatMessage>();
-            msgs.AddRange(previousMessages);
-            msgs.Add(ChatMessage.Create("user", prompt));
+            //BuildPrompt(prompt, previousMessages)
+            var builder = GetRequestBuilder();
+            var request = builder.AddMessages(previousMessages).SetPrompt(prompt).Build(OpenAIModelSelection.GPT3_5);
+            return GetCompletionAsync(request, cancellationToken);
+        }
 
-            return await RequestAsync<ChatCompletionRequest, ChatCompletionResponse>("https://api.openai.com/v1/chat/completions", new ChatCompletionRequest
-            {
-                //Model = "text-davinci-003",
-                Model = "gpt-3.5-turbo",
-                //Model = "davinci:ft-shinobytes-2023-02-20-14-02-16",
-                // Prompt = "What if Nicholas Cage played the lead role in Superman?",
-                Messages = msgs.ToArray()
-            }, cancellationToken);
+        public IOpenAIRequestBuilder GetRequestBuilder()
+        {
+            return reqBuilderFactory.Create();
+        }
+
+        public async Task<ChatCompletionResponse> GetCompletionAsync(ChatCompletionRequest request, CancellationToken cancellationToken)
+        {
+            return await RequestAsync<ChatCompletionRequest, ChatCompletionResponse>("https://api.openai.com/v1/chat/completions", request, cancellationToken);
         }
 
         private async Task<TResult> RequestAsync<TRequest, TResult>(string url, TRequest model, CancellationToken cancellationToken)
         {
             var s = settings;
-            if (s == null)
-            {
-                s = getSettings();
-            }
 
             using (var httpReq = new HttpRequestMessage(HttpMethod.Post, url))
             {
@@ -93,13 +91,31 @@ namespace Shinobytes.OpenAI
                     var responseString = await httpResponse.Content.ReadAsStringAsync(cancellationToken);
                     if (!string.IsNullOrWhiteSpace(responseString))
                     {
-                        return JsonConvert.DeserializeObject<TResult>(responseString);
+                        var obj = JsonConvert.DeserializeObject<TResult>(responseString);
+                        if (obj == null)
+                        {
+                            LogErrorResponse(responseString);
+                        }
+                        return obj;
                     }
 
                     return default;
                 }
             }
         }
+
+        private void LogErrorResponse(string responseString)
+        {
+            var folder = Path.Combine(FolderPaths.GeneratedData, FolderPaths.OpenAILogs);
+            if (!Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
+
+            var path = Path.Combine(folder, DateTime.Now.ToString("yyyy-MM-dd") + ".txt");
+            File.AppendAllText(path, "[" + DateTime.Now + "]\t" + responseString);
+        }
+
 
         public void Dispose()
         {

@@ -31,6 +31,11 @@
         @if (IsAuthenticated)
         {
             <TwitchStreams Session="session"></TwitchStreams>
+
+            if (session.Administrator)
+            {
+                <AIAssistance></AIAssistance>
+            }
         }
     </div>
 </div>

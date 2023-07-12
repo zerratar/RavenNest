@@ -31,7 +31,7 @@ namespace RavenNest.BusinessLogic.Game
             PlayerInventory inventory,
             ReadOnlyInventoryItem item)
         {
-            if (inventory.IsLocked(item.Id)) 
+            if (inventory.IsLocked(item.Id))
                 return ItemEnchantmentResult.Error();
 
             try
@@ -172,18 +172,18 @@ namespace RavenNest.BusinessLogic.Game
 
                 var multiplier = gameData.GetActiveExpMultiplierEvent()?.Multiplier ?? 1d;
                 var gainedExp = GameMath.GetEnchantingExperience(clanSkill.Level, targetAttributeCount, itemLvReq) * multiplier;
+                var nextLevelReq = GameMath.ExperienceForLevel(clanSkill.Level + 1);
 
                 // 1. Add exp whenever user successefully enchants an item
 
                 clanSkill.Experience = Math.Floor(clanSkill.Experience + gainedExp);
 
                 var gainedLevels = 0;
-                var nextLevel = GameMath.ExperienceForLevel(clanSkill.Level + 1);
 
-                while (clanSkill.Experience >= nextLevel)
+                while (clanSkill.Experience >= nextLevelReq)
                 {
-                    clanSkill.Experience -= nextLevel;
-                    nextLevel = GameMath.ExperienceForLevel(clanSkill.Level + 1);
+                    clanSkill.Experience -= nextLevelReq;
+                    nextLevelReq = GameMath.ExperienceForLevel(clanSkill.Level + 1);
                     ++clanSkill.Level;
                     ++gainedLevels;
                 }

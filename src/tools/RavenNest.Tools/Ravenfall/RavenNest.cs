@@ -30,7 +30,7 @@ namespace RavenNest.Tools.Ravenfall
                     expLeftToRemove -= expBefore;
 
                     var lv = skill.Level;
-                    var requirement = GameMath.ExperienceForLevel(lv);
+                    var requirement = GameMath.OldExperienceForLevel(lv);
                     --expLeftToRemove;
                     skill.Experience = requirement - 1;
                     skill.Level = lv - 1;

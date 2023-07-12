@@ -21,15 +21,26 @@
  * THE SOFTWARE.  
  **/
 
-namespace Shinobytes.OpenAI
+namespace Shinobytes.OpenAI.Models
 {
-    public class OpenAITokenString : IOpenAIClientSettings
+    public enum OpenAIModelSelection
     {
-        public string AccessToken { get; }
+        GPT3_5,
+        GPT4,
+        Any
+    }
 
-        public OpenAITokenString(string accessToken)
+    public class OpenAIModel
+    {
+        public string Name { get; set; }
+        public int MaxTokens { get; set; }
+        public int MaxPromptTokens { get; set; }
+        public double PriceInput { get; set; }
+        public double PriceOutput { get; set; }
+
+        public double CalculateCost(int inputTokenCount, int outputTokenCount)
         {
-            AccessToken = accessToken;
+            return PriceInput * inputTokenCount + PriceOutput * outputTokenCount;
         }
     }
 }

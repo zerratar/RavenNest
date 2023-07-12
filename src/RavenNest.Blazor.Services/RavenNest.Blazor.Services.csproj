@@ -11,6 +11,7 @@
     <PackageReference Include="Blazorise.Components" Version="1.2.2" />
     <PackageReference Include="Blazorise.DataGrid" Version="1.2.2" />
     <PackageReference Include="Blazorise.TreeView" Version="1.2.2" />
+    <PackageReference Include="Markdig" Version="0.31.0" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Features" Version="5.0.12" />
     <PackageReference Include="System.ServiceModel.Syndication" Version="5.0.0" />

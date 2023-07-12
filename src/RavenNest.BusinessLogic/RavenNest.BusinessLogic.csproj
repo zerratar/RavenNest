@@ -23,8 +23,15 @@
   <ItemGroup>
     <Folder Include="Game\Achievements\" />
     <Folder Include="Game\Quests\" />
-    <Folder Include="OpenAI\" />
     <Folder Include="Telepathy\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="encoder.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="vocab.bpe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>
 

@@ -3,8 +3,8 @@
 
 <div class="page front-page">
     @*<div class="sidebar">
-        <NavMenu Authenticated="IsAuthenticated" Administrator="IsAdministrator"></NavMenu>
-        </div>*@
+    <NavMenu Authenticated="IsAuthenticated" Administrator="IsAdministrator"></NavMenu>
+    </div>*@
 
     <div class="main">
         <div class="top-nav px-4">
@@ -76,7 +76,8 @@
                         {
                             <NavLink class="nav-link dd-item" href="/admin" Match="NavLinkMatch.All">ADMIN</NavLink>
                         }
-                    } else 
+                    }
+                    else
                     {
                         <NavLink class="nav-link dd-item" href="/login/redirect/characters" Match="NavLinkMatch.All">
                             DASHBOARD
@@ -101,8 +102,8 @@
                         <i class="fab fa-patreon"></i>
                     </a>
                     @*<a class="nav-link" href="#">
-                        <i class="fab fa-reddit"></i>
-                        </a>*@
+                    <i class="fab fa-reddit"></i>
+                    </a>*@
                 </div>
             </div>
         </div>
@@ -124,6 +125,11 @@
         @if (IsAuthenticated)
         {
             <TwitchStreams Session="session"></TwitchStreams>
+
+            if (session.Administrator)
+            {
+                <AIAssistance></AIAssistance>
+            }
         }
     </div>
 </div>

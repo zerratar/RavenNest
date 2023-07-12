@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Sessions;
+using Shinobytes.OpenAI.Models;
 using System.Text.Json.Serialization;
 
 namespace RavenNest.Controllers
@@ -42,7 +43,7 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet]
-        public ChatMessage[] Get()
+        public Message[] Get()
         {
             var serverTime = System.DateTime.UtcNow;
             var facts = new string[]
@@ -53,26 +54,8 @@ namespace RavenNest.Controllers
 
             return new[]
             {
-                ChatMessage.Create("system", string.Join("\n", facts))
+                Message.Create("system", string.Join("\n", facts))
             };
         }
-
-        public class ChatMessage
-        {
-            [JsonPropertyName("role")]
-            public string Role { get; set; }
-            [JsonPropertyName("content")]
-            public string Content { get; set; }
-
-            internal static ChatMessage Create(string role, string prompt)
-            {
-                return new ChatMessage
-                {
-                    Role = role,
-                    Content = prompt,
-                };
-            }
-        }
-
     }
 }

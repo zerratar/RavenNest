@@ -235,7 +235,7 @@ namespace RavenNest.BusinessLogic.Game
             var possibleMarketItems = gameData.GetMarketItems(itemId, itemTag);
             var requestAmount = amount;
 
-            var resources = gameData.GetResources(character.ResourcesId);
+            var resources = gameData.GetResources(character);
             var coins = resources.Coins;
             //var coins = character.Resources.Coins;
             var insufficientCoins = false;
@@ -338,9 +338,9 @@ namespace RavenNest.BusinessLogic.Game
             double pricePerItem)
         {
             // todo(zerratar): Rewrite this!! This is horrible
-
+            var buyer = gameData.GetUser(character.UserId);
             var buyAmount = marketItem.Amount >= amount ? amount : marketItem.Amount;
-            var buyerResources = gameData.GetResourcesByCharacterId(character.Id);
+            var buyerResources = gameData.GetResources(buyer);
             var totalCost = buyAmount * pricePerItem;
             if (totalCost > buyerResources.Coins)
             {
@@ -352,13 +352,12 @@ namespace RavenNest.BusinessLogic.Game
             else
                 marketItem.Amount -= buyAmount;
 
-            var sellerResources = gameData.GetResourcesByCharacterId(marketItem.SellerCharacterId);
-            sellerResources.Coins += totalCost;
-            buyerResources.Coins -= totalCost;
-
             var sellerCharacter = gameData.GetCharacter(marketItem.SellerCharacterId);
             var seller = gameData.GetUser(sellerCharacter.UserId);
-            var buyer = gameData.GetUser(character.UserId);
+
+            var sellerResources = gameData.GetResources(seller);
+            sellerResources.Coins += totalCost;
+            buyerResources.Coins -= totalCost;
 
             var inventory = inventoryProvider.Get(character.Id);
             inventory.AddItem(itemId, buyAmount, tag: marketItem.Tag);

@@ -1,44 +1,86 @@
-﻿using System.Runtime.CompilerServices;
+﻿using RavenNest.BusinessLogic.Net;
+using System;
+using System.Runtime.CompilerServices;
 
 namespace GameDataSimulation
 {
     public static class GameMath
     {
         public const int MaxLevel = 999;
+        public const int MaxVillageLevel = 300;
+
         public readonly static double[] ExperienceArray = new double[MaxLevel];
+        public const float MaxExpBonusPerSlot = 200f;
+
         static GameMath()
         {
+            var expForLevel = 100d;
             for (var levelIndex = 0; levelIndex < MaxLevel; levelIndex++)
             {
-                var level = levelIndex + 1M;
-                var expForLevel = Math.Floor(300D * Math.Pow(2D, (double)(level / 7M)));
-                ExperienceArray[levelIndex] = Math.Round(expForLevel / 4d, 0, MidpointRounding.ToEven);
+                var level = levelIndex + 1;
+
+                // Old formula
+                //var xp = Math.Floor(300D * Math.Pow(2D, (double)(level / 7M)));
+                //expForLevel = Math.Round(xp / 4d, 0, MidpointRounding.ToEven);
+
+                // new
+                var tenth = Math.Truncate(level / 10d) + 1;
+                var incrementor = tenth * 100d + Math.Pow(tenth, 3d);
+                expForLevel += Math.Truncate(incrementor);
+
+                ExperienceArray[levelIndex] = expForLevel;
             }
         }
 
-        public static double GetFishingExperience(int level)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double Lerp(double v1, double v2, double t)
         {
-            return (level * 0.66d) + (level * (level / 40d)) + (level * level * 0.005d) + level * 0.5d;
-        }
-        public static double GetFarmingExperience(int level)
-        {
-            /*
-                Following formula will generate:
-                Level   Exp
-                15		24,15
-                30		61,8
-                45		112,95
-                60		177,6
-                75		255,75
-                90		347,4
-                110		490,6
-             */
-            return (level * 0.66d) + (level * (level / 40d)) + (level * level * 0.005d) + level * 0.5d;
+            return v1 + (v2 - v1) * t;
         }
 
-        public static double GetWoodcuttingExperience(int level)
+        public static TownHouseSlotType GetHouseTypeBySkill(this Skill skill)
         {
-            return (level * 0.66d) + (level * (level / 40d)) + (level * level * 0.005d) + level * 0.5d;
+            switch (skill)
+            {
+                case Skill.Cooking: return TownHouseSlotType.Cooking;
+                case Skill.Crafting: return TownHouseSlotType.Crafting;
+                case Skill.Farming: return TownHouseSlotType.Farming;
+                case Skill.Mining: return TownHouseSlotType.Mining;
+                case Skill.Sailing: return TownHouseSlotType.Sailing;
+                case Skill.Slayer: return TownHouseSlotType.Slayer;
+                case Skill.Woodcutting: return TownHouseSlotType.Woodcutting;
+                case Skill.Fishing: return TownHouseSlotType.Fishing;
+                case Skill.Healing: return TownHouseSlotType.Healing;
+                case Skill.Ranged: return TownHouseSlotType.Ranged;
+                case Skill.Magic: return TownHouseSlotType.Magic;
+                default: return TownHouseSlotType.Melee;
+            }
+        }
+
+        public static bool IsCombatSkill(this Skill skill)
+        {
+            switch (skill)
+            {
+                //case Skill.All:
+                case Skill.Attack:
+                case Skill.Defense:
+                case Skill.Strength:
+                case Skill.Health:
+                case Skill.Ranged:
+                case Skill.Magic:
+                case Skill.Healing:
+                    return true;
+            }
+            return false;
+        }
+
+
+        public static int MaxHit(int level, int power)
+        {
+            var w1 = power * 0.00175D;
+            var w2 = w1 + 0.1d;
+            var w3 = (level + 3) * w2 + 1.05D;
+            return (int)(w3 * 0.95d);
         }
 
 
@@ -48,13 +90,8 @@ namespace GameDataSimulation
             {
                 return ExperienceArray[ExperienceArray.Length - 1];
             }
-            return (level - 2 < 0 ? 0 : ExperienceArray[level - 2]);
-        }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static double Lerp(double v1, double v2, double t)
-        {
-            return v1 + (v2 - v1) * t;
+            return (level - 2 < 0 ? 0 : ExperienceArray[level - 2]);
         }
 
         public static class Exp
@@ -62,7 +99,7 @@ namespace GameDataSimulation
             /// <summary>
             /// The level where time between level has peaked at <see cref="IncrementMins"/>.
             /// </summary>
-            public const double EasyLevel = 75.0;
+            public const double EasyLevel = 70.0;
 
             public const double IncrementMins = 14.0;
             public const double IncrementHours = IncrementMins / 60.0;
@@ -154,7 +191,7 @@ namespace GameDataSimulation
             {
                 if (level <= EasyLevel)
                 {
-                    return (level - 1) * GameMath.Lerp(IncrementMins / 4.0d, IncrementMins, level / EasyLevel);
+                    return (level - 1) * GameMath.Lerp(IncrementMins / 8.0d, IncrementMins, level / EasyLevel);
                 }
 
                 return (level - 1) * IncrementMins;
@@ -194,6 +231,9 @@ namespace GameDataSimulation
 
                     case Skill.Mining:
                         return 0.5;
+
+                    case (Skill.Health or Skill.Attack or Skill.Defense or Skill.Strength or Skill.Magic or Skill.Ranged) when playersInArea < 10:
+                        return 0.25;
 
                     case (Skill.Health or Skill.Attack or Skill.Defense or Skill.Strength or Skill.Magic or Skill.Ranged) when playersInArea < 100:
                         return 0.75;

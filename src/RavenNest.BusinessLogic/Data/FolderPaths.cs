@@ -7,6 +7,8 @@
         // all paths below are acombined with GeneratedDataFolder
         // so the real paths are "GeneratedData/..."
 
+        public const string OpenAILogs = "openai-logs";
+
         public const string PatreonRequestData = "patreon";
         public const string BinaryCache = "cache";
 

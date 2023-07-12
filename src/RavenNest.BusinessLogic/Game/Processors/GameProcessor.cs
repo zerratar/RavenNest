@@ -3,6 +3,7 @@ using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Twitch.Extension;
+using RavenNest.DataModels;
 using RavenNest.Models;
 using System;
 using System.Collections.Concurrent;
@@ -40,6 +41,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private DateTime lastPermissionInfoPush;
         private DateTime lastExpMultiPush;
         private DateTime lastPubsubPush;
+        private DateTime lastVersionUpdateSent;
 
         public GameProcessor(
             IRavenBotApiClient ravenbotApi,
@@ -98,12 +100,46 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
             //PushServerTime();
 
-            PushGameEvents();
+            PushGameUpdated(now);
 
             PushPermissionDataInfo(now);
 
-            PushPubSubDetailsAsync(now);
+            PushGameEvents();
 
+            PushPubSubDetailsAsync(now);
+        }
+
+        private void PushGameUpdated(DateTime now)
+        {
+            var session = gameData.GetSession(sessionToken.SessionId);
+            if (session == null)
+            {
+                return;
+            }
+            var updateRequiredKey = "sent_update_required";
+            var state = gameData.GetSessionState(session.Id);
+            if (gameData.IsExpectedVersion(state.ClientVersion))
+            {
+                lastVersionUpdateSent = DateTime.MinValue;
+                state[updateRequiredKey] = false;
+                return;
+            }
+
+            var value = state.GetOrDefault<bool>(updateRequiredKey);
+            if (value || (now - lastVersionUpdateSent >= TimeSpan.FromSeconds(5)))
+            {
+                var version = gameData.Client.ClientVersion;
+                var gameEvent = gameData.CreateSessionEvent(GameEventType.GameUpdated, session, new GameUpdatedRequest
+                {
+                    ExpectedVersion = version,
+                    UpdateRequired = GameUpdates.IsRequiredUpdate(version)
+                });
+
+                gameData.EnqueueGameEvent(gameEvent);
+            }
+
+            lastVersionUpdateSent = now;
+            state[updateRequiredKey] = true;
         }
 
         private async Task PushPubSubDetailsAsync(DateTime utcNow)

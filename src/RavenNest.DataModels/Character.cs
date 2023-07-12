@@ -5,17 +5,21 @@ namespace RavenNest.DataModels
     public partial class Character : Entity<Character>
     {
         private Guid userId; public Guid UserId { get => userId; set => Set(ref userId, value); }
-        private Guid? appearanceId; public Guid? AppearanceId { get => appearanceId; set => Set(ref appearanceId, value); }
+        private Guid? appearanceId;
+        [Obsolete] public Guid? AppearanceId { get => appearanceId; set => Set(ref appearanceId, value); }
         private Guid syntyAppearanceId; public Guid SyntyAppearanceId { get => syntyAppearanceId; set => Set(ref syntyAppearanceId, value); }
         private Guid skillsId; public Guid SkillsId { get => skillsId; set => Set(ref skillsId, value); }
-        private Guid statisticsId; public Guid StatisticsId { get => statisticsId; set => Set(ref statisticsId, value); }
-        private Guid resourcesId; public Guid ResourcesId { get => resourcesId; set => Set(ref resourcesId, value); }
+        private Guid statisticsId;
+        [Obsolete] public Guid StatisticsId { get => statisticsId; set => Set(ref statisticsId, value); }
+        private Guid? resourcesId;
+        [Obsolete("Use User.Resources instead!")] public Guid? ResourcesId { get => resourcesId; set => Set(ref resourcesId, value); }
         private Guid? stateId; public Guid? StateId { get => stateId; set => Set(ref stateId, value); }
         private Guid originUserId; public Guid OriginUserId { get => originUserId; set => Set(ref originUserId, value); }
         private DateTime created; public DateTime Created { get => created; set => Set(ref created, value); }
         private string name; public string Name { get => name; set => Set(ref name, value); }
         private string description; public string Description { get => description; set => Set(ref description, value); }
-        private int? revision; public int? Revision { get => revision; set => Set(ref revision, value); }
+        private int? revision; 
+        [Obsolete] public int? Revision { get => revision; set => Set(ref revision, value); }
         private Guid? userIdLock; public Guid? UserIdLock { get => userIdLock; set => Set(ref userIdLock, value); }
         private DateTime? lastUsed; public DateTime? LastUsed { get => lastUsed; set => Set(ref lastUsed, value); }
 

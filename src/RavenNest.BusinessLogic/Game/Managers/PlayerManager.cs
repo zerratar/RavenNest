@@ -10,6 +10,7 @@ using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Models;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
+using RavenNest.BusinessLogic.ScriptParser;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
@@ -581,20 +582,6 @@ namespace RavenNest.BusinessLogic.Game
                 if (character.UserIdLock != null)
                 {
                     SendRemovePlayerFromSessionToGame(character, session);
-                }
-
-                var resx = gameData.GetResourcesByCharacterId(character.Id);
-                if (resx == null)
-                {
-                    // uh oh!
-                    logger.LogError(character.Name + " does not have any resources saved!! Did this get lost in a recover step?");
-                    resx = new Resources
-                    {
-                        Id = Guid.NewGuid()
-                    };
-
-                    character.ResourcesId = resx.Id;
-                    gameData.Add(resx);
                 }
 
                 var app = gameData.GetAppearance(character.SyntyAppearanceId);
@@ -1221,7 +1208,7 @@ namespace RavenNest.BusinessLogic.Game
             if (!integrityChecker.VerifyPlayer(token.SessionId, character.Id, 0))
                 return ItemEnchantmentResult.Error();
 
-            var resources = gameData.GetResources(character.ResourcesId);
+            var resources = gameData.GetResources(character);
             if (resources == null)
                 return ItemEnchantmentResult.Error();
 
@@ -1307,7 +1294,7 @@ namespace RavenNest.BusinessLogic.Game
             var item = gameData.GetItem(itemId);
             if (item == null) return CraftItemResult.NoSuchItem;
 
-            var resources = gameData.GetResources(character.ResourcesId);
+            var resources = gameData.GetResources(character);
             var skills = gameData.GetCharacterSkills(character.SkillsId);
             if (skills == null || resources == null)
                 return CraftItemResult.Error;
@@ -1703,7 +1690,7 @@ namespace RavenNest.BusinessLogic.Game
                 return 0;
             }
 
-            var resources = gameData.GetResources(player.ResourcesId);
+            var resources = gameData.GetResources(player);
             if (resources == null) return 0;
 
             var session = gameData.GetSession(sessionToken.SessionId);
@@ -1748,7 +1735,7 @@ namespace RavenNest.BusinessLogic.Game
                 var itemToVendor = inventory.GetUnequippedItem(itemId);
                 if (itemToVendor.IsNull()) return 0;
 
-                var resources = gameData.GetResources(player.ResourcesId);
+                var resources = gameData.GetResources(player);
                 if (resources == null) return 0;
 
                 var session = gameData.GetSession(token.SessionId);
@@ -2044,7 +2031,7 @@ namespace RavenNest.BusinessLogic.Game
 
             if (inventory.RemoveItem(stack, amountToVendor))
             {
-                var resources = gameData.GetResources(character.ResourcesId);
+                var resources = gameData.GetResources(character);
                 if (resources == null) return false;
                 var price = i.ShopSellPrice * amountToVendor;
                 resources.Coins += price;
@@ -2614,6 +2601,18 @@ namespace RavenNest.BusinessLogic.Game
                 sessionState.LastExpRequest = DateTime.UtcNow;
             }
 
+            if (GameVersion.IsLessThanOrEquals(sessionState.ClientVersion, GameUpdates.DisableExpSave_LessThanOrEquals))
+            {
+                var hasBeenReported = sessionState.GetOrDefault<bool>(GameUpdates.DisableExpSave_LessThanOrEquals);
+                if (!hasBeenReported)
+                {
+                    // to avoid spamming, lets only log this once per session.
+                    sessionState[GameUpdates.DisableExpSave_LessThanOrEquals] = true;
+                    logger.LogError("Save Exp Request received an old game client. Session=" + sessionToken.UserName + ", Version=" + sessionState.ClientVersion);
+                }
+                return;
+            }
+
             var sessionOwner = gameData.GetUser(gameSession.UserId);
             if (sessionOwner.Status >= 1)
             {
@@ -2845,6 +2844,25 @@ namespace RavenNest.BusinessLogic.Game
                 return true;
             }
 
+            var sessionState = gameData.GetSessionState(gameSession.Id);
+            if (sessionState != null)
+            {
+                sessionState.LastExpRequest = DateTime.UtcNow;
+            }
+
+
+            if (GameVersion.IsLessThanOrEquals(sessionState.ClientVersion, GameUpdates.DisableExpSave_LessThanOrEquals))
+            {
+                var hasBeenReported = sessionState.GetOrDefault<bool>(GameUpdates.DisableExpSave_LessThanOrEquals);
+                // to avoid spamming, lets only log this once per session.
+                if (!hasBeenReported)
+                {
+                    sessionState[GameUpdates.DisableExpSave_LessThanOrEquals] = true;
+                    logger.LogError("Save Exp Request received an old game client. Session=" + token.UserName + ", Version=" + sessionState.ClientVersion);
+                }
+                return false;
+            }
+
             /*
                 Update Character State
              */
@@ -2969,6 +2987,18 @@ namespace RavenNest.BusinessLogic.Game
                 // Temporary solution to skill rollback, block saving skills from clients other than the one definied.
                 if (!sessionOwner.IsAdmin.GetValueOrDefault() && !gameData.IsExpectedVersion(gameSession))
                 {
+                    return true;
+                }
+
+                if (GameVersion.IsLessThanOrEquals(sessionState.ClientVersion, GameUpdates.DisableExpSave_LessThanOrEquals))
+                {
+                    var hasBeenReported = sessionState.GetOrDefault<bool>(GameUpdates.DisableExpSave_LessThanOrEquals);
+                    if (!hasBeenReported)
+                    {
+                        // to avoid spamming, lets only log this once per session.
+                        sessionState[GameUpdates.DisableExpSave_LessThanOrEquals] = true;
+                        logger.LogError("Save Exp Request received an old game client. Session=" + token.UserName + ", Version=" + sessionState.ClientVersion);
+                    }
                     return true;
                 }
 
@@ -3405,36 +3435,6 @@ namespace RavenNest.BusinessLogic.Game
             return false;
         }
 
-        public bool UpdateResources(
-            SessionToken token,
-            string userId,
-            double[] resources)
-        {
-            try
-            {
-                var index = 0;
-
-                var character = GetCharacter(token, userId);
-                if (character == null) return false;
-                if (!AcquiredUserLock(token, character)) return false;
-
-                var characterResources = gameData.GetResources(character.ResourcesId);
-                characterResources.Wood += resources[index++];
-                characterResources.Fish += resources[index++];
-                characterResources.Ore += resources[index++];
-                characterResources.Wheat += resources[index++];
-                characterResources.Coins += resources[index++];
-                characterResources.Magic += resources[index++];
-                characterResources.Arrows += resources[index];
-                return true;
-            }
-            catch (Exception exc)
-            {
-                logger.LogError(exc.ToString());
-                return false;
-            }
-        }
-
         private void SendRemovePlayerFromSession(Character character, DataModels.GameSession gameSession, string reason)
         {
             if (gameSession == null)
@@ -3556,11 +3556,19 @@ namespace RavenNest.BusinessLogic.Game
                     return null;
                 }
 
+                var resources = new Resources
+                {
+                    Id = Guid.NewGuid()
+                };
+
+                gameData.Add(resources);
+
                 user = new User
                 {
                     Id = Guid.NewGuid(),
                     UserId = playerData.PlatformId,
                     UserName = playerData.UserName,
+                    Resources = resources.Id,
                     Created = DateTime.UtcNow
                 };
 
@@ -3607,11 +3615,9 @@ namespace RavenNest.BusinessLogic.Game
                 CharacterIndex = index
             };
 
-            var appearance = GenerateRandomAppearance();
             var syntyAppearance = GenerateRandomSyntyAppearance();
 
             var skills = gameData.GenerateSkills();
-            var resources = GenerateResources();
             var statistics = GenerateStatistics();
             var state = new DataModels.CharacterState()
             {
@@ -3628,13 +3634,9 @@ namespace RavenNest.BusinessLogic.Game
             gameData.Add(syntyAppearance);
             gameData.Add(statistics);
             gameData.Add(skills);
-            gameData.Add(appearance);
-            gameData.Add(resources);
 
             character.StateId = state.Id;
             character.SyntyAppearanceId = syntyAppearance.Id;
-            character.ResourcesId = resources.Id;
-            character.AppearanceId = appearance.Id;
             character.StatisticsId = statistics.Id;
             character.SkillsId = skills.Id;
             character.LastUsed = DateTime.UtcNow;
@@ -3814,6 +3816,24 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool HasFlag(DataModels.CharacterState a, CharacterFlags b)
+        {
+            if (a.InRaid && b == CharacterFlags.InRaid) return true;
+            if (a.InDungeon.GetValueOrDefault() && b == CharacterFlags.InDungeon) return true;
+            if (a.InOnsen.GetValueOrDefault() && b == CharacterFlags.InOnsen) return true;
+            if (a.IsCaptain.GetValueOrDefault() && b == CharacterFlags.IsCaptain) return true;
+            if (a.InArena && b == CharacterFlags.InArena) return true;
+            return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool HasFlag(CharacterUpdate a, CharacterFlags b) => HasFlag(a.State, b);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool HasFlag(CharacterStateUpdate a, CharacterFlags b) => HasFlag(a.State, b);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool HasFlag(CharacterFlags a, CharacterFlags b) => (a & b) == b;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void SetCharacterState(DataModels.CharacterState state, CharacterStateUpdate update)
         {
             var task = GetTaskBySkillIndex(update.TrainingSkillIndex);
@@ -3821,18 +3841,18 @@ namespace RavenNest.BusinessLogic.Game
             if (string.IsNullOrEmpty(taskArgument)) taskArgument = task;
 
             state.Health = update.Health;
-            state.InArena = update.State == RavenNest.Models.TcpApi.CharacterState.Arena;
-            state.InRaid = update.State == RavenNest.Models.TcpApi.CharacterState.Raid;
-            state.InDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.Dungeon;
-            state.JoinedDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.JoinedDungeon;
-            state.InOnsen = update.State == RavenNest.Models.TcpApi.CharacterState.Onsen;
+            state.InArena = HasFlag(update, CharacterFlags.InArena);
+            state.InRaid = HasFlag(update, CharacterFlags.InRaid);
+            state.InDungeon = HasFlag(update, CharacterFlags.InDungeon);
+            state.JoinedDungeon = HasFlag(update, CharacterFlags.InDungeonQueue);
+            state.InOnsen = HasFlag(update, CharacterFlags.InOnsen);
+            state.IsCaptain = HasFlag(update, CharacterFlags.IsCaptain);
             state.Island = update.Island != Island.Ferry ? update.Island.ToString() : null;
             state.Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null;
             state.ExpPerHour = update.ExpPerHour;
             state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
             state.Task = task;
             state.TaskArgument = taskArgument ?? task;
-            state.IsCaptain = update.IsCaptain;
             state.X = update.X;
             state.Y = update.Y;
             state.Z = update.Z;
@@ -3845,11 +3865,12 @@ namespace RavenNest.BusinessLogic.Game
             var taskArgument = update.TaskArgument;
             if (string.IsNullOrEmpty(taskArgument)) taskArgument = task;
             state.Health = update.Health;
-            state.InArena = update.State == RavenNest.Models.TcpApi.CharacterState.Arena;
-            state.InRaid = update.State == RavenNest.Models.TcpApi.CharacterState.Raid;
-            state.InDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.Dungeon;
-            state.InOnsen = update.State == RavenNest.Models.TcpApi.CharacterState.Onsen;
-            state.JoinedDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.JoinedDungeon;
+            state.InArena = HasFlag(update, CharacterFlags.InArena);
+            state.InRaid = HasFlag(update, CharacterFlags.InRaid);
+            state.InDungeon = HasFlag(update, CharacterFlags.InDungeon);
+            state.JoinedDungeon = HasFlag(update, CharacterFlags.InDungeonQueue);
+            state.InOnsen = HasFlag(update, CharacterFlags.InOnsen);
+            state.IsCaptain = HasFlag(update, CharacterFlags.IsCaptain);
             state.Island = update.Island != Island.Ferry ? update.Island.ToString() : null;
             state.Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null;
             state.ExpPerHour = update.ExpPerHour;
@@ -3868,22 +3889,23 @@ namespace RavenNest.BusinessLogic.Game
             var task = GetTaskBySkillIndex(update.TrainingSkillIndex);
             var taskArgument = GetTaskArgumentBySkillIndex(update.TrainingSkillIndex);
             if (string.IsNullOrEmpty(taskArgument)) taskArgument = task;
+
             var state = new DataModels.CharacterState
             {
                 Id = Guid.NewGuid(),
                 Health = update.Health,
-                InArena = update.State == RavenNest.Models.TcpApi.CharacterState.Arena,
-                InRaid = update.State == RavenNest.Models.TcpApi.CharacterState.Raid,
-                InDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.Dungeon,
-                InOnsen = update.State == RavenNest.Models.TcpApi.CharacterState.Onsen,
-                JoinedDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.JoinedDungeon,
+                InArena = HasFlag(update, CharacterFlags.InArena),
+                InRaid = HasFlag(update, CharacterFlags.InRaid),
+                InDungeon = HasFlag(update, CharacterFlags.InDungeon),
+                InOnsen = HasFlag(update, CharacterFlags.InOnsen),
+                JoinedDungeon = HasFlag(update, CharacterFlags.InDungeonQueue),
+                IsCaptain = HasFlag(update, CharacterFlags.IsCaptain),
                 Island = update.Island != Island.Ferry ? update.Island.ToString() : null,
                 Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null,
                 ExpPerHour = update.ExpPerHour,
                 EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString("yyyy-MM-ddTHH:mm:ss.fffffff"),
                 Task = task,
                 TaskArgument = taskArgument ?? task,
-                IsCaptain = update.IsCaptain,
                 X = update.X,
                 Y = update.Y,
                 Z = update.Z,
@@ -3901,11 +3923,12 @@ namespace RavenNest.BusinessLogic.Game
             {
                 Id = Guid.NewGuid(),
                 Health = update.Health,
-                InArena = update.State == RavenNest.Models.TcpApi.CharacterState.Arena,
-                InRaid = update.State == RavenNest.Models.TcpApi.CharacterState.Raid,
-                InDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.Dungeon,
-                JoinedDungeon = update.State == RavenNest.Models.TcpApi.CharacterState.JoinedDungeon,
-                InOnsen = update.State == RavenNest.Models.TcpApi.CharacterState.Onsen,
+                InArena = HasFlag(update, CharacterFlags.InArena),
+                InRaid = HasFlag(update, CharacterFlags.InRaid),
+                InDungeon = HasFlag(update, CharacterFlags.InDungeon),
+                InOnsen = HasFlag(update, CharacterFlags.InOnsen),
+                JoinedDungeon = HasFlag(update, CharacterFlags.InDungeonQueue),
+                IsCaptain = HasFlag(update, CharacterFlags.IsCaptain),
                 Island = update.Island != Island.Ferry ? update.Island.ToString() : null,
                 Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null,
                 ExpPerHour = update.ExpPerHour,
@@ -4014,33 +4037,6 @@ namespace RavenNest.BusinessLogic.Game
                 default:
                     return "#40251e";
             }
-        }
-
-        private static Appearance GenerateRandomAppearance()
-        {
-            return new Appearance
-            {
-                Id = Guid.NewGuid(),
-                Gender = Utility.Random<DataModels.Gender>(),
-                SkinColor = Utility.Random<DataModels.SkinColor>(),
-                HairColor = Utility.Random<DataModels.HairColor>(),
-                BrowColor = Utility.Random<DataModels.HairColor>(),
-                BeardColor = Utility.Random<DataModels.HairColor>(),
-                EyeColor = Utility.Random<DataModels.EyeColor>(),
-                CostumeColor = Utility.Random<DataModels.CostumeColor>(),
-                BaseModelNumber = Utility.Random(1, 20),
-                TorsoModelNumber = Utility.Random(1, 7),
-                BottomModelNumber = Utility.Random(1, 7),
-                FeetModelNumber = 1,
-                HandModelNumber = 1,
-                BeltModelNumber = Utility.Random(0, 10),
-                EyesModelNumber = Utility.Random(1, 7),
-                BrowsModelNumber = Utility.Random(1, 15),
-                MouthModelNumber = Utility.Random(1, 10),
-                MaleHairModelNumber = Utility.Random(0, 10),
-                FemaleHairModelNumber = Utility.Random(0, 20),
-                BeardModelNumber = Utility.Random(0, 10),
-            };
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

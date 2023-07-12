@@ -40,19 +40,18 @@ namespace RavenNest.BusinessLogic.Tv
         private readonly int episodeLimit = 50;
         private readonly TimeSpan generateInterval = TimeSpan.FromMinutes(0.1);
 
-        private readonly OpenAIClient openAI;
+        private readonly IOpenAIClient openAI;
         private readonly TimeSpan throttlePeriod;
         private readonly TransformBlock<GenerateUserEpisodeRequest, Episode> throttler;
 
         public RavenfallTvManager(
             ILogger<RavenfallTvManager> logger,
-            IOptions<OpenAISettings> openAISettings,
+            IOpenAIClient openAI,
             GameData gameData)
         {
             this.cancellationTokenSource = new CancellationTokenSource();
             this.cancellationToken = cancellationTokenSource.Token;
 
-            this.openAISettings = openAISettings.Value;
             this.logger = logger;
             this.gameData = gameData;
 
@@ -61,8 +60,8 @@ namespace RavenNest.BusinessLogic.Tv
             episodeRequests = new JsonRepository<GenerateUserEpisodeRequest>("../ravenfall-tv/episode-requests/");
 
             requestQueue = new ConcurrentQueue<GenerateUserEpisodeRequest>(episodeRequests.OrderedBy(x => x.Created));
-            openAI = new OpenAIClient(new OpenAITokenString(this.openAISettings.AccessToken));
-
+            
+            this.openAI = openAI;
             this.throttlePeriod = TimeSpan.FromMinutes(1) / MaxRequestsPerMinute;
             this.throttler = new TransformBlock<GenerateUserEpisodeRequest, Episode>(
                 async request => await ProcessRequestAsync(request, cancellationToken),

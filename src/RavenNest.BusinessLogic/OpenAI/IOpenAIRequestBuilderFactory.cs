@@ -23,8 +23,8 @@
 
 namespace Shinobytes.OpenAI
 {
-    public interface IOpenAIClientSettings
+    public interface IOpenAIRequestBuilderFactory
     {
-        string AccessToken { get; }
+        IOpenAIRequestBuilder Create();
     }
 }

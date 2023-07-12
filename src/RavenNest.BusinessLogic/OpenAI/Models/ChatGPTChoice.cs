@@ -1,4 +1,4 @@
-/* 
+﻿/* 
  * This file is part of RavenBot (https://www.github.com/zerratar/ravenbot/).
  * Copyright (c) 2017-2023 Shinobytes, Karl Patrik Johansson, zerratar@gmail.com
  *
@@ -25,6 +25,7 @@ using Newtonsoft.Json;
 
 namespace Shinobytes.OpenAI.Models
 {
+
     public class ChatGPTChoice
     {
         [JsonProperty("index")]
@@ -42,7 +43,7 @@ namespace Shinobytes.OpenAI.Models
         }
 
         [JsonProperty("message")]
-        public ChatMessage Message
+        public Message Message
         {
             get;
             set;

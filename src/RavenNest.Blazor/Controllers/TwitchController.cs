@@ -517,7 +517,8 @@ namespace RavenNest.Controllers
                 if (userId.StartsWith("u")) userId = userId[1..];
                 await playerManager.CreatePlayerIfNotExists(userId, "twitch", username, "1");
             }
-            return SetExtensionViewer(broadcasterId, userId);
+
+            return await SetExtensionViewer(broadcasterId, userId);
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -531,13 +532,14 @@ namespace RavenNest.Controllers
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/{broadcasterId}/{viewerId}")]
-        public SessionInfo SetExtensionViewer(string broadcasterId, string viewerId)
+        public async Task<SessionInfo> SetExtensionViewer(string broadcasterId, string viewerId)
         {
             var session = this.HttpContext.GetSessionId();
+            var twitchExtensionToken = GetExtensionToken();
 
             // We need to clear out previous sessions of the combinations of broadcasterId and viewerId.
             // we will use the pair to retake existing one
-            return sessionInfoProvider.CreateTwitchUserSession(session, broadcasterId, viewerId);
+            return await sessionInfoProvider.CreateTwitchUserSessionAsync(session, twitchExtensionToken, broadcasterId, viewerId);
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]

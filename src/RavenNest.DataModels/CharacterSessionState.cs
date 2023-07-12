@@ -35,18 +35,36 @@ namespace RavenNest.DataModels
         public DateTime LastStateRequest { get; set; }
         public DateTime LastExpRequest { get; set; }
         public bool IsConnectedToClient { get; set; }
-    }
 
-    public class NPCState
-    {
-        public Guid NpcId { get; set; }
-        public Guid InstanceId { get; set; }
-        public int X { get; set; }
-        public int Y { get; set; }
-        public int Z { get; set; }
-        public int Health { get; set; }
-    }
+        public readonly ConcurrentDictionary<string, object> Variables = new ConcurrentDictionary<string, object>();
+        public object this[string varName]
+        {
+            get
+            {
+                if (Variables.TryGetValue(varName, out var v))
+                    return v;
+                return null;
+            }
+            set => Variables[varName] = value;
+        }
 
+        public T GetOrDefault<T>(string name)
+        {
+            if (Variables.TryGetValue(name, out var v))
+                return (T)v;
+            return default;
+        }
+
+        public class NPCState
+        {
+            public Guid NpcId { get; set; }
+            public Guid InstanceId { get; set; }
+            public int X { get; set; }
+            public int Y { get; set; }
+            public int Z { get; set; }
+            public int Health { get; set; }
+        }
+    }
     public class ExpSkillGainCollection
     {
         public ExpGain Attack { get; set; } = new ExpGain();
