@@ -26,6 +26,7 @@ using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -124,7 +125,6 @@ namespace Shinobytes.OpenAI.Models
         [EnumMember(Value = "system")] System
     }
 
-
     public class Function
     {
         private MethodInfo invocationTarget;
@@ -208,8 +208,20 @@ namespace Shinobytes.OpenAI.Models
             this.instance = instance;
             this.Name = invocationTarget.Name;
             this.Parameters = invocationTarget.GetParameters();
-            this.Description = description;
             this.PreventDefault = preventDefault;
+
+            if (string.IsNullOrEmpty(description))
+            {
+                var descAttribute = invocationTarget.GetCustomAttribute<DescriptionAttribute>();
+                if (descAttribute == null)
+                {
+                    return;
+                }
+
+                description = descAttribute.Description;
+            }
+
+            this.Description = description;
         }
 
         public Function() { }
@@ -292,19 +304,6 @@ namespace Shinobytes.OpenAI.Models
                 writer.WriteEndObject();
             }
             writer.WriteEndObject();
-
-            //JToken t = JToken.FromObject(value);
-            //if (t.Type != JTokenType.Object)
-            //{
-            //    t.WriteTo(writer);
-            //}
-            //else
-            //{
-            //    JObject o = (JObject)t;
-            //    IList<string> propertyNames = o.Properties().Select(p => p.Name).ToList();
-            //    o.AddFirst(new JProperty("Keys", new JArray(propertyNames)));
-            //    o.WriteTo(writer);
-            //}
         }
 
         private void WriteType(JsonWriter writer, string name, Type type, string description)
@@ -417,15 +416,5 @@ namespace Shinobytes.OpenAI.Models
         {
             return typeof(Function) == objectType;
         }
-    }
-
-    public class DescriptionAttribute : Attribute
-    {
-        public DescriptionAttribute(string description)
-        {
-            this.Description = description;
-        }
-
-        public string Description { get; }
     }
 }

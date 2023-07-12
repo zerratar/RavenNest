@@ -1,7 +1,7 @@
 ﻿using Shinobytes.OpenAI.Models;
 using System;
 
-namespace RavenNest.Blazor.Services
+namespace RavenNest.BusinessLogic.OpenAI.Conversations
 {
     public class AIConversationMessage
     {

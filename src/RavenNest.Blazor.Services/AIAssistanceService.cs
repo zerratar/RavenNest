@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Http;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.OpenAI.Conversations;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using Shinobytes.OpenAI;
 using Shinobytes.OpenAI.Models;
 using System;
-using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
-using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace RavenNest.Blazor.Services
@@ -28,11 +28,13 @@ namespace RavenNest.Blazor.Services
             this.gameData = gameData;
         }
 
+        [Description("Gets active amount of game sessions, how many twitch streamers that are currently running ravenfall")]
         public int GetActiveSessionsCount()
         {
             return gameData.GetActiveSessions().Count;
         }
 
+        [Description("Gets details about the user using a provided guid user id.")]
         public User GetUserById(Guid userId)
         {
             return gameData.GetUser(userId);
@@ -41,6 +43,7 @@ namespace RavenNest.Blazor.Services
 
     public class AIAssistanceService : RavenNestService
     {
+        private static readonly string KnowledgeBase = "You are an AI Assistant for Administrators of the Twitch Idle RPG game Ravenfall. You will take upon any request and try to help out any way you can. You are able to do administrative actions that directly interacts with the backend, gameserver, APIs and website. Use provided functions when necessary. Ravenfall was created by a Swedish Developer named Karl but goes under the username/nick Zerratar, when referring to the creator always use Zerratar unless someone asks for the real name.";
         private readonly GameData gameData;
         private readonly IOpenAIClient openAI;
         private readonly IAIAssistanceFunctionCallbacks functionCallbacks;
@@ -61,10 +64,10 @@ namespace RavenNest.Blazor.Services
             this.conversations = new AIConversationManager(gameData);
             this.functions = new[]
             {
-                Function.Create(ClearCurrentConversation, this, description:"Clears the current conversation's chat history with the AI Assistant.", preventDefault: true),
-                Function.Create(GetSession, this, description:"Gets the session info of the current logged in user that contains details such as username, whether or not user is an administator and more."),
-                Function.Create<Guid, User>(functionCallbacks.GetUserById, functionCallbacks, description:"Gets details about the user using a provided guid user id."),
-                Function.Create(functionCallbacks.GetActiveSessionsCount, functionCallbacks, description:"Gets active amount of game sessions, how many twitch streamers that are currently running ravenfall")
+                Function.Create(ClearCurrentConversation, this, preventDefault: true),
+                Function.Create(GetSession, this),
+                Function.Create<Guid, User>(functionCallbacks.GetUserById, functionCallbacks),
+                Function.Create(functionCallbacks.GetActiveSessionsCount, functionCallbacks)
             };
         }
         public bool ShowFunctionCallResults { get; set; } = false;
@@ -79,6 +82,7 @@ namespace RavenNest.Blazor.Services
             return new MarkupString(Markdig.Markdown.ToHtml(message.Message.Content));
         }
 
+        [Description("Remove all conversations for the current user.")]
         public bool RemoveAllConversations()
         {
             var session = GetSession();
@@ -88,6 +92,7 @@ namespace RavenNest.Blazor.Services
             return conversations.RemoveAll(uid);
         }
 
+        [Description("Clears the current conversation's chat history with the AI Assistant.")]
         public bool ClearCurrentConversation()
         {
             var session = GetSession();
@@ -192,6 +197,7 @@ namespace RavenNest.Blazor.Services
 
         private async Task<AIConversation> HandleMessageResponseAsync(SessionInfo session, AIConversation conversation, AIConversationMessage prompt, AIConversationMessage response, bool useGPT4)
         {
+            // not implemented yet.
             return conversation;
         }
 
@@ -238,14 +244,5 @@ namespace RavenNest.Blazor.Services
             return true;
         }
 
-        private static readonly string KnowledgeBase = "You are an AI Assistant for Administrators of the Twitch Idle RPG game Ravenfall. You will take upon any request and try to help out any way you can. You are able to do administrative actions that directly interacts with the backend, gameserver, APIs and website. Use provided functions when necessary. Ravenfall was created by a Swedish Developer named Karl but goes under the username/nick Zerratar, when referring to the creator always use Zerratar unless someone asks for the real name.";
     }
-
-    //public class AIFunctionRegistry
-    //{
-    //    public FunctionReference<TOutput> Register<TInput, TOutput>(Action<TInput> action)
-    //    {
-    //    }
-    //}
-    //public class FunctionReference
 }

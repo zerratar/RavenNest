@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace RavenNest.Blazor.Services
+namespace RavenNest.BusinessLogic.OpenAI.Conversations
 {
     public class AIConversation
     {
@@ -61,29 +61,6 @@ namespace RavenNest.Blazor.Services
             return msgs.ToArray();
         }
 
-        ///// <summary>
-        /////     Gets all messages with the exception of the provided messages.
-        ///// </summary>
-        ///// <param name="exception"></param>
-        ///// <returns></returns>
-        //public AIConversationMessage[] GetMessages(params Message[] exception)
-        //{
-        //    if (Messages.Count == 0)
-        //    {
-        //        return new AIConversationMessage[0];
-        //    }
-        //    var msgs = new List<AIConversationMessage>();
-        //    foreach (var msg in Messages)
-        //    {
-        //        if (exception.Any(x => x.Equals(msg.Message)))
-        //        {
-        //            continue;
-        //        }
-        //        msgs.Add(msg);
-        //    }
-        //    return msgs.ToArray();
-        //}
-
         public AIConversationMessage GetLastMessage()
         {
             if (Messages.Count == 0)
@@ -99,7 +76,7 @@ namespace RavenNest.Blazor.Services
         /// </summary>
         /// <param name="prompt"></param>
         /// <returns></returns>
-        internal AIConversationMessage GetMessageByContent(string prompt)
+        public AIConversationMessage GetMessageByContent(string prompt)
         {
             if (Messages.Count == 0) return null;
             for (var i = Messages.Count - 1; i >= 0; i--)
@@ -140,7 +117,7 @@ namespace RavenNest.Blazor.Services
             return StartTime;
         }
 
-        internal void Init(AIConversationManager manager)
+        public void Init(AIConversationManager manager)
         {
             this.manager = manager;
         }

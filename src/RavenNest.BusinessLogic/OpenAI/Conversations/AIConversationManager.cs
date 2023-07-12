@@ -4,7 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace RavenNest.Blazor.Services
+namespace RavenNest.BusinessLogic.OpenAI.Conversations
 {
     public class AIConversationManager
     {
