@@ -120,7 +120,7 @@ namespace RavenNest.Blazor.Services
         /// </summary>
         /// <param name="userId"></param>
         /// <returns></returns>
-        public bool ClearLatestConversation(Guid userId)
+        public bool ClearCurrentConversation(Guid userId)
         {
             if (!TryGetLatest(userId, out var convo))
                 return false;

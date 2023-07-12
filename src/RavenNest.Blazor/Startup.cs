@@ -333,6 +333,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<CookieService>();
             services.AddSingleton<TownService>();
 
+            services.AddSingleton<IAIAssistanceFunctionCallbacks, AIAssistanceFunctionCallbacks>();
             services.AddSingleton<IOpenAIRequestBuilderFactory, OpenAIRequestBuilderFactory>();
             services.AddSingleton<IOpenAIModelProvider, OpenAIModelProvider>();
             services.AddSingleton<IOpenAIClient, OpenAIClient>();

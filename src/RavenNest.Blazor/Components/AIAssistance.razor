@@ -21,6 +21,11 @@
                     {
                         foreach (var message in conversation.Messages)
                         {
+                            if (message.Message.Role == MessageRole.Function && !AIService.ShowFunctionCallResults)
+                            {
+                                continue;
+                            }
+
                             var content = message.Message.Content;
                             var role = message.Message.Role;
                             if (!string.IsNullOrEmpty(content))
@@ -28,14 +33,18 @@
                                 <div class="ai-assistance-chat-message">
                                     <div class="ai-assistance-chat-message-user">@GetUserName(role)</div>
                                     <div class="ai-assistance-chat-message-text">
-                                        @AIService.FormatMessage(content)
+                                        @AIService.FormatMessage(message)
                                     </div>
                                 </div>
                             }
                         }
                     }
+                    else
+                    {
+                        <p>Oh dear. We must likely hit an error loading your conversation. Try refreshing the page.</p>
+                    }
                 </div>
-                @if (waitingForResponse)
+                @if (showLoadingIndicator)
                 {
                     <LoadingEllipsis></LoadingEllipsis>
                 }
@@ -87,7 +96,7 @@
     private bool assistanceVisible;
     private bool isAdmin;
     private bool useGPT4;
-    private bool waitingForResponse;
+    private bool showLoadingIndicator;
     private bool canRegenerateMessage;
 
     private string inputMessage;
@@ -98,6 +107,11 @@
         if (role == MessageRole.User)
         {
             return session.UserName;
+        }
+
+        if (role == MessageRole.Function)
+        {
+            return "Function Result";
         }
 
         return "AI Assistant";
@@ -150,21 +164,35 @@
             return;
         }
 
-        conversation = AIService.AddMessage(inputMessage);
-        inputMessage = null;
+        showLoadingIndicator = true;
+        try
+        {
+            conversation = AIService.AddMessage(inputMessage);
+            inputMessage = null;
 
-        await InvokeAsync(StateHasChanged);
-        await JS.InvokeVoidAsync("scrollToBottom", ElementMessageListContainer);
-        await SendConversationAsync();
+            await InvokeAsync(StateHasChanged);
+            await JS.InvokeVoidAsync("scrollToBottom", ElementMessageListContainer);
+            await SendConversationAsync();
+
+        }
+        finally
+        {
+            showLoadingIndicator = false;
+        }
     }
 
     private async Task<bool> SendConversationAsync()
     {
         try
         {
-            waitingForResponse = true;
+            if (conversation == null)
+            {
+                return false;
+            }
+
+            showLoadingIndicator = true;
             conversation = await AIService.SendConversationAsync(conversation, useGPT4);
-            waitingForResponse = false;
+            showLoadingIndicator = false;
             await InvokeAsync(StateHasChanged);
             await JS.InvokeVoidAsync("scrollToBottom", ElementMessageListContainer);
             return true;
@@ -175,10 +203,14 @@
         }
         finally
         {
-            var lastMsg = conversation.GetLastMessage();
-            if (lastMsg != null)
+            showLoadingIndicator = false;
+            if (conversation != null)
             {
-                canRegenerateMessage = lastMsg.Message.Role == MessageRole.User;
+                var lastMsg = conversation.GetLastMessage();
+                if (lastMsg != null)
+                {
+                    canRegenerateMessage = lastMsg.Message.Role == MessageRole.User;
+                }
             }
         }
     }

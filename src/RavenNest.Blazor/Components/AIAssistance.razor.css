@@ -6,8 +6,9 @@
     width: fit-content;
     max-width: 100%;
     background-color: rgba(52,53,65,1);
-    max-height: 100%;
+    max-height: 95%;
     overflow-y: auto;
+    z-index: 10;
 }
 
 .ai-assistance.enabled {
@@ -44,8 +45,8 @@
     padding: 5px 15px;
     margin-top: -10px;
     margin-right: -10px;
-    margin-bottom:0;
-    margin-left:0;
+    margin-bottom: 0;
+    margin-left: 0;
 }
 
 .disabled .ai-assistance-header {
@@ -68,6 +69,7 @@
     margin-top: 15px;
     cursor: pointer;
 }
+
 .btn-regenerate {
     width: fit-content;
     margin-left: auto;
@@ -80,6 +82,7 @@
     font-weight: 300;
     cursor: pointer;
 }
+
 svg.send-icon {
     width: 20px;
 }
@@ -88,7 +91,6 @@ svg.send-icon {
     display: flex;
     flex-flow: column;
     color: #d1d5db;
-    height: 500px;
     width: 640px;
     overflow-y: auto;
     max-height: 100%;
@@ -117,10 +119,12 @@ svg.send-icon {
 .checkbox-input {
     color: white;
 }
+
 .checkbox-input label {
-    cursor:pointer;
-    user-select:none;
+    cursor: pointer;
+    user-select: none;
 }
+
 input#cb-gpt4 {
     position: relative;
     top: 2px;
@@ -151,7 +155,8 @@ textarea::placeholder {
     display: flex;
     justify-content: space-between;
 }
-.btn-clear{
-    color:white;
-    cursor:pointer;
+
+.btn-clear {
+    color: white;
+    cursor: pointer;
 }

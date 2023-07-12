@@ -12,6 +12,7 @@ namespace RavenNest.Blazor.Services
         public string Title { get; set; }
         public List<AIConversationMessage> Messages { get; set; }
         public DateTime StartTime { get; set; }
+        public DateTime LastModified { get; set; }
 
         private AIConversationManager manager;
 
@@ -125,13 +126,18 @@ namespace RavenNest.Blazor.Services
 
         public DateTime GetLastActivity()
         {
-            var a = StartTime;
-            if (Messages != null)
+            if (LastModified > StartTime)
             {
-                var b = Messages.Max(x => x.Created);
-                if (b > a) return b;
+                return LastModified;
             }
-            return a;
+
+            //var a = StartTime;
+            //if (Messages != null && Messages.Count > 0)
+            //{
+            //    var b = Messages.Max(x => x.Created);
+            //    if (b > a) return b;
+            //}
+            return StartTime;
         }
 
         internal void Init(AIConversationManager manager)
@@ -152,6 +158,7 @@ namespace RavenNest.Blazor.Services
             }
 
             Messages.Add(message);
+            LastModified = DateTime.UtcNow;
             manager.SaveConversationsJson(UserId);
         }
 
@@ -176,14 +183,14 @@ namespace RavenNest.Blazor.Services
             };
 
             Messages.Add(msg);
+            LastModified = DateTime.UtcNow;
             manager.SaveConversationsJson(UserId);
             return msg;
         }
 
         public AIConversationMessage Add(string prompt, MessageRole user)
         {
-
-            throw new NotImplementedException();
+            return Add(Message.Create(user, prompt));
         }
     }
 }

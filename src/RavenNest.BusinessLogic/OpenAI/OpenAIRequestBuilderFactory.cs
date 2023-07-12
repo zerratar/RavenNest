@@ -136,7 +136,7 @@ namespace Shinobytes.OpenAI
                 // 5. yay
                 return new ChatCompletionRequest
                 {
-                    Functions = functions.ToArray(),
+                    Functions = functions.Count > 0 ? functions.ToArray() : null,
                     Messages = requestMessages.ToArray(),
                     Model = model.Name
                 };

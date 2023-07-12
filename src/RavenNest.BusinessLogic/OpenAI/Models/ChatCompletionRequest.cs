@@ -41,7 +41,8 @@ namespace Shinobytes.OpenAI.Models
             set;
         }
 
-        [JsonProperty("functions")]
+        [JsonProperty("functions", NullValueHandling = NullValueHandling.Ignore)]
         public Function[] Functions { get; set; }
     }
+
 }

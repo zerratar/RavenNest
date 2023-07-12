@@ -77,14 +77,15 @@ namespace Shinobytes.OpenAI
             return await RequestAsync<ChatCompletionRequest, ChatCompletionResponse>("https://api.openai.com/v1/chat/completions", request, cancellationToken);
         }
 
+        private static readonly FunctionConverter functionConverter = new FunctionConverter();
+
         private async Task<TResult> RequestAsync<TRequest, TResult>(string url, TRequest model, CancellationToken cancellationToken)
         {
             var s = settings;
-
             using (var httpReq = new HttpRequestMessage(HttpMethod.Post, url))
             {
                 httpReq.Headers.Add("Authorization", $"Bearer {s.AccessToken}");
-                var requestString = JsonConvert.SerializeObject(model);
+                var requestString = JsonConvert.SerializeObject(model, Formatting.None, functionConverter);
                 httpReq.Content = new StringContent(requestString, Encoding.UTF8, "application/json");
                 using (var httpResponse = await client.SendAsync(httpReq))
                 {
