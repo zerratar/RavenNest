@@ -93,9 +93,9 @@
     private string inputMessage;
     private ElementReference textareaRef;
 
-    private string GetUserName(ChatMessageRole role)
+    private string GetUserName(MessageRole role)
     {
-        if (role == ChatMessageRole.User)
+        if (role == MessageRole.User)
         {
             return session.UserName;
         }
@@ -117,10 +117,11 @@
         isAdmin = session != null && session.Administrator;
         if (isAdmin)
         {
-            messages = await AIService.GetMessagesAsync();
-            if (messages.Count > 0)
+            conversation = AIService.GetLastConversion();
+            var lastMsg = conversation.GetLastMessage();
+            if (lastMsg != null)
             {
-                canRegenerateMessage = messages[^1].Role == "user";
+                canRegenerateMessage = lastMsg.Message.Role == MessageRole.User;
             }
         }
     }
@@ -132,14 +133,14 @@
 
     private async void ClearChat()
     {
-        AIService.ClearChatHistory();
-
+        //AIService.ClearChatHistory();
+        conversation = AIService.ClearConversationHistory(conversation.Id);
         await InvokeAsync(StateHasChanged);
     }
 
     private async void RegenerateResponse()
     {
-        await SendAsync();
+        await SendConversationAsync();
     }
 
     private async Task SendMessageAsync()
@@ -148,20 +149,21 @@
         {
             return;
         }
-        messages = AIService.AddToChatHistory(inputMessage);
+
+        conversation = AIService.AddMessage(inputMessage);
         inputMessage = null;
+
         await InvokeAsync(StateHasChanged);
         await JS.InvokeVoidAsync("scrollToBottom", ElementMessageListContainer);
-        await SendAsync();
+        await SendConversationAsync();
     }
 
-    private async Task<bool> SendAsync()
+    private async Task<bool> SendConversationAsync()
     {
         try
         {
             waitingForResponse = true;
-            var response = await AIService.SendMessageAsync(messages.ToArray(), useGPT4);
-            messages = AIService.AddToChatHistory(response);
+            conversation = await AIService.SendConversationAsync(conversation, useGPT4);
             waitingForResponse = false;
             await InvokeAsync(StateHasChanged);
             await JS.InvokeVoidAsync("scrollToBottom", ElementMessageListContainer);
@@ -173,9 +175,10 @@
         }
         finally
         {
-            if (messages.Count > 0)
+            var lastMsg = conversation.GetLastMessage();
+            if (lastMsg != null)
             {
-                canRegenerateMessage = messages[^1].Role == "user";
+                canRegenerateMessage = lastMsg.Message.Role == MessageRole.User;
             }
         }
     }

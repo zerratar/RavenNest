@@ -20,21 +20,21 @@ namespace RavenNest.Blazor.Services
         /// </summary>
         /// <param name="prompt"></param>
         /// <returns></returns>
-        public Message[] GetMessages(string prompt)
+        public AIConversationMessage[] GetMessages(string prompt)
         {
             if (Messages.Count == 0)
             {
-                return new Message[0];
+                return new AIConversationMessage[0];
             }
 
             var lastMessage = Messages[^1];
             var lastMessageContent = lastMessage.Message.Content;
             if (!string.IsNullOrEmpty(lastMessageContent) && MessageMatch(lastMessageContent, prompt))
             {
-                return Messages.Take(Messages.Count - 1).Select(x => x.Message).ToArray();
+                return Messages.Take(Messages.Count - 1).ToArray();
             }
 
-            return Messages.Select(x => x.Message).ToArray();
+            return Messages.ToArray();
         }
 
         /// <summary>
@@ -42,24 +42,55 @@ namespace RavenNest.Blazor.Services
         /// </summary>
         /// <param name="exception"></param>
         /// <returns></returns>
-        public Message[] GetMessages(params Message[] exception)
+        public AIConversationMessage[] GetMessages(params AIConversationMessage[] exception)
         {
             if (Messages.Count == 0)
             {
-                return new Message[0];
+                return new AIConversationMessage[0];
             }
-            var msgs = new List<Message>();
+
+            var msgs = new List<AIConversationMessage>();
+            var exceptionList = new HashSet<Guid>(exception.Select(x => x.Id));
             foreach (var msg in Messages)
             {
-                if (exception.Any(x => x.Equals(msg.Message)))
-                {
-                    continue;
-                }
-
-                msgs.Add(msg.Message);
+                if (exceptionList.Contains(msg.Id)) continue;
+                msgs.Add(msg);
             }
 
             return msgs.ToArray();
+        }
+
+        ///// <summary>
+        /////     Gets all messages with the exception of the provided messages.
+        ///// </summary>
+        ///// <param name="exception"></param>
+        ///// <returns></returns>
+        //public AIConversationMessage[] GetMessages(params Message[] exception)
+        //{
+        //    if (Messages.Count == 0)
+        //    {
+        //        return new AIConversationMessage[0];
+        //    }
+        //    var msgs = new List<AIConversationMessage>();
+        //    foreach (var msg in Messages)
+        //    {
+        //        if (exception.Any(x => x.Equals(msg.Message)))
+        //        {
+        //            continue;
+        //        }
+        //        msgs.Add(msg);
+        //    }
+        //    return msgs.ToArray();
+        //}
+
+        public AIConversationMessage GetLastMessage()
+        {
+            if (Messages.Count == 0)
+            {
+                return null;
+            }
+
+            return Messages[^1];
         }
 
         /// <summary>
@@ -97,7 +128,7 @@ namespace RavenNest.Blazor.Services
             var a = StartTime;
             if (Messages != null)
             {
-                var b = Messages.Max(x => x.Time);
+                var b = Messages.Max(x => x.Created);
                 if (b > a) return b;
             }
             return a;
@@ -139,8 +170,9 @@ namespace RavenNest.Blazor.Services
 
             var msg = new AIConversationMessage
             {
+                Id = Guid.NewGuid(),
                 Message = prompt,
-                Time = DateTime.UtcNow
+                Created = DateTime.UtcNow
             };
 
             Messages.Add(msg);
@@ -148,7 +180,7 @@ namespace RavenNest.Blazor.Services
             return msg;
         }
 
-        public AIConversationMessage Add(string prompt, ChatMessageRole user)
+        public AIConversationMessage Add(string prompt, MessageRole user)
         {
 
             throw new NotImplementedException();

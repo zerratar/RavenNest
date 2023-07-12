@@ -50,13 +50,22 @@ namespace RavenNest.Blazor.Services
             return conversations.ClearConversation(conversation);
         }
 
-        public AIConversation GetLatestConversion()
+        public AIConversation GetLastConversion()
         {
             var session = GetSession();
             return conversations.GetLatestOrCreate(session.UserId);
         }
 
-        public async Task<AIConversation> SendMessageAsync(string input, bool useGPT4)
+        public AIConversation AddMessage(string input)
+        {
+            var session = GetSession();
+            var uid = session.UserId;
+            var conversation = conversations.GetLatestOrCreate(uid);
+            conversation.Add(input, MessageRole.User);
+            return conversation;
+        }
+
+        public Task<AIConversation> SendMessageAsync(string input, bool useGPT4)
         {
             var session = GetSession();
             var uid = session.UserId;
@@ -68,16 +77,27 @@ namespace RavenNest.Blazor.Services
             // to the same prompt later.
             if (prompt == null)
             {
-                prompt = conversation.Add(input, ChatMessageRole.User);
+                prompt = conversation.Add(input, MessageRole.User);
             }
 
-            var messages = conversation.GetMessages();
+            return SendConversationAsync(conversation, prompt, useGPT4);
+        }
+
+        public Task<AIConversation> SendConversationAsync(AIConversation conversation, bool useGPT4)
+        {
+            var prompt = conversation.GetLastMessage();
+            return SendConversationAsync(conversation, prompt, useGPT4);
+        }
+
+        public async Task<AIConversation> SendConversationAsync(AIConversation conversation, AIConversationMessage prompt, bool useGPT4)
+        {
+            var session = GetSession();
 
             var builder = openAI.GetRequestBuilder();
             var request = builder
                 .SetKnowledgeBase(KnowledgeBase)
                 .AddFunctions(GetFunctions())
-                .AddMessages(messages)
+                .AddMessages(Transform(conversation.GetMessages()))
                 .Build(useGPT4 ? OpenAIModelSelection.GPT4 : OpenAIModelSelection.GPT3_5);
 
             var result = await openAI.GetCompletionAsync(request, System.Threading.CancellationToken.None);
@@ -94,8 +114,15 @@ namespace RavenNest.Blazor.Services
             }
         }
 
-        public async Task<AIConversation> SendConversationAsync(AIConversation conversation, bool useGPT4)
+        private Message[] Transform(AIConversationMessage[] msgs)
         {
+            Message[] output = new Message[msgs.Length];
+            for (var i = 0; i < msgs.Length; ++i)
+            {
+                msgs[i].DateSent = DateTime.UtcNow;
+                output[i] = msgs[i].Message;
+            }
+            return output;
         }
 
         private async Task<AIConversation> HandleMessageResponseAsync(SessionInfo session, AIConversation conversation, AIConversationMessage prompt, AIConversationMessage response)
@@ -109,12 +136,19 @@ namespace RavenNest.Blazor.Services
             return conversation;
         }
 
-
         private Function[] GetFunctions()
         {
             return new Function[0];
         }
 
-        private static readonly string KnowledgeBase = "You are an AI Assistant for Administrators of the Twitch Idle RPG game Ravenfall. You will take upon any request and try to help out any way you can. You are able to do administrative actions that directly interacts with the backend, gameserver, APIs and website. Use provided functions when necessary.";
+        private static readonly string KnowledgeBase = "You are an AI Assistant for Administrators of the Twitch Idle RPG game Ravenfall. You will take upon any request and try to help out any way you can. You are able to do administrative actions that directly interacts with the backend, gameserver, APIs and website. Use provided functions when necessary. Ravenfall was created by a Swedish Developer named Karl but goes under the username/nick Zerratar, when referring to the creator always use Zerratar unless someone asks for the real name.";
     }
+
+    //public class AIFunctionRegistry
+    //{
+    //    public FunctionReference<TOutput> Register<TInput, TOutput>(Action<TInput> action)
+    //    {
+    //    }
+    //}
+    //public class FunctionReference
 }

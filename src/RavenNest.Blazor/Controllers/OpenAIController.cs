@@ -54,7 +54,7 @@ namespace RavenNest.Controllers
 
             return new[]
             {
-                Message.Create("system", string.Join("\n", facts))
+                Message.Create(MessageRole.System, string.Join("\n", facts))
             };
         }
     }

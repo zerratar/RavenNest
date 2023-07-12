@@ -30,13 +30,13 @@ namespace Shinobytes.OpenAI.Models
     public class Message
     {
         [JsonProperty("role")]
-        public ChatMessageRole Role { get; set; }
+        public MessageRole Role { get; set; }
         [JsonProperty("content")]
         public string Content { get; set; }
         [JsonProperty("function_call")]
         public FunctionCall FunctionCall { get; set; }
 
-        public static Message Create(ChatMessageRole role, string content)
+        public static Message Create(MessageRole role, string content)
         {
             return new Message
             {
@@ -98,7 +98,7 @@ namespace Shinobytes.OpenAI.Models
         }
     }
 
-    public enum ChatMessageRole
+    public enum MessageRole
     {
         [EnumMember(Value = "user")] User,
         [EnumMember(Value = "assistant")] Assistant,
