@@ -127,17 +127,17 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
-        public void SendExpMultiplierEventAsync(int multiplier, string message, DateTime? startTime, DateTime endTime)
+        public ExpMultiplierEvent SendExpMultiplierEventAsync(int multiplier, string message, DateTime? startTime, DateTime endTime)
         {
             var start = startTime ?? DateTime.UtcNow;
             var activeEvent = gameData.GetActiveExpMultiplierEvent();
+
             if (activeEvent != null)
             {
                 // if the start time 
                 if (startTime >= activeEvent.EndTime)
                 {
-                    AddExpMultiplierr(multiplier, message, start, endTime);
-                    return;
+                    return AddExpMultiplierr(multiplier, message, start, endTime);
                 }
 
                 if ((start >= activeEvent.StartTime && start <= activeEvent.EndTime) || (endTime >= activeEvent.EndTime && startTime <= activeEvent.StartTime))
@@ -157,8 +157,8 @@ namespace RavenNest.BusinessLogic.Game
                         activeEvent.EndTime = endTime.Add(remaining);
 
                         // finally, add the new multiplier
-                        AddExpMultiplierr(multiplier, message, start, endTime);
-                        return;
+
+                        return AddExpMultiplierr(multiplier, message, start, endTime);
                     }
 
                     // otherwise we will update the current multiplier with the new values
@@ -166,14 +166,14 @@ namespace RavenNest.BusinessLogic.Game
                     activeEvent.StartTime = start;
                     activeEvent.EndTime = endTime;
                     activeEvent.EventName = message;
-                    return;
+                    return activeEvent;
                 }
             }
 
-            AddExpMultiplierr(multiplier, message, start, endTime);
+            return AddExpMultiplierr(multiplier, message, start, endTime);
         }
 
-        private void AddExpMultiplierr(int multiplier, string eventName, DateTime startTime, DateTime endTime, bool startedByPlayer = false)
+        private ExpMultiplierEvent AddExpMultiplierr(int multiplier, string eventName, DateTime startTime, DateTime endTime, bool startedByPlayer = false)
         {
             if (endTime < startTime)
             {
@@ -190,6 +190,7 @@ namespace RavenNest.BusinessLogic.Game
             ev.StartTime = startTime;
             ev.EndTime = endTime;
             gameData.Add(ev);
+            return ev;
         }
 
         public void UpdateBotStats(string data)

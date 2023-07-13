@@ -34,6 +34,7 @@ using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic;
 using Microsoft.Extensions.Options;
 using Message = Shinobytes.OpenAI.Models.Message;
+using Microsoft.Extensions.Logging;
 
 namespace Shinobytes.OpenAI
 {
@@ -42,13 +43,16 @@ namespace Shinobytes.OpenAI
         private bool disposed;
         private readonly HttpClient client;
         private readonly OpenAISettings settings;
+        private readonly ILogger<OpenAIClient> logger;
         private readonly IOpenAIRequestBuilderFactory reqBuilderFactory;
 
         public OpenAIClient(
+            ILogger<OpenAIClient> logger,
             IOptions<OpenAISettings> settings,
             IOpenAIRequestBuilderFactory reqBuilderFactory)
         {
             this.settings = settings.Value;
+            this.logger = logger;
             this.reqBuilderFactory = reqBuilderFactory;
             client = new HttpClient();
             client.Timeout = TimeSpan.FromMinutes(3);

@@ -145,20 +145,47 @@ namespace Shinobytes.OpenAI.Models
             return new Function(method.GetMethodInfo(), obj, description, preventDefault);
         }
 
+        public override string ToString()
+        {
+            return invocationTarget.ReturnType.Name + " " + Name + "(" + string.Join(", ", Parameters.Select(x => x.ParameterType.Name + " " + x.Name)) + ")";
+        }
+
         public object? Invoke(string argumentsJson)
         {
             var obj = JToken.Parse(argumentsJson);
-            var parameters = new List<object>();
-            foreach (var p in this.Parameters)
+            var parameterValue = string.Empty;
+            try
             {
-                var pobj = obj[p.Name];
-                var json = pobj.ToString();
-                var value = ParseParameter(json, p.ParameterType);
-                parameters.Add(value);
-            }
+                var parameters = new List<object>();
+                foreach (var p in this.Parameters)
+                {
+                    var pobj = obj[p.Name];
+                    var json = pobj.ToString();
+                    parameterValue = json;
+                    var value = ParseParameter(json, p.ParameterType);
+                    parameters.Add(value);
+                }
 
-            return invocationTarget.Invoke(instance, parameters.ToArray());
+                return invocationTarget.Invoke(instance, parameters.ToArray());
+            }
+            catch (Exception exc)
+            {
+                return "Using value: '" + parameterValue + "' when calling '" + Name + "' threw an exception: " + exc.ToString();
+            }
         }
+
+        public object? Invoke()
+        {
+            try
+            {
+                return invocationTarget.Invoke(instance, null);
+            }
+            catch (Exception exc)
+            {
+                return "The function '" + Name + "' threw an exception: " + exc.ToString();
+            }
+        }
+
 
         private object ParseParameter(string json, Type t)
         {
@@ -168,7 +195,7 @@ namespace Shinobytes.OpenAI.Models
                 return json;
             }
 
-            if (json == "null")
+            if (json == "null" || string.IsNullOrEmpty(json))
             {
                 return null;
             }
@@ -195,11 +222,6 @@ namespace Shinobytes.OpenAI.Models
             }
 
             return json;
-        }
-
-        public object? Invoke()
-        {
-            return invocationTarget.Invoke(instance, null);
         }
 
         public Function(MethodInfo invocationTarget, object instance, string description, bool preventDefault)

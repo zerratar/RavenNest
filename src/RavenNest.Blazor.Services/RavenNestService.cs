@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
 using RavenNest.Models;
-using RavenNest.Sessions;
 using System.ComponentModel;
 
 namespace RavenNest.Blazor.Services
@@ -21,7 +20,7 @@ namespace RavenNest.Blazor.Services
         public HttpContext Context => accessor.HttpContext;
         public ISession Session => accessor.HttpContext.Session;
 
-        [Description("Gets the session info of the current logged in user that contains details such as username, whether or not user is an administator and more.")]
+        [Description("Gets the session info of the current logged in user that contains details such as username, user id, patreon status, whether or not user is an administator and more.")]
         public RavenNest.Models.SessionInfo GetSession()
         {
             var id = SessionCookie.GetSessionId(Context);

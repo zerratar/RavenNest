@@ -11,7 +11,7 @@ namespace RavenNest.BusinessLogic.Game
         bool CanIncreaseGlobalExpMultiplier();
         bool CanIncreaseGlobalExpMultiplier(int count);
         void BroadcastMessageAsync(string message, int time);
-        void SendExpMultiplierEventAsync(int multiplier, string message, DateTime? startTime, DateTime endTime);
+        ExpMultiplierEvent SendExpMultiplierEventAsync(int multiplier, string message, DateTime? startTime, DateTime endTime);
         int GetIncreasableGlobalExpAmount();
         void UpdateBotStats(string stats);
     }

@@ -1,7 +1,9 @@
 ﻿using Shinobytes.OpenAI.Models;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Reflection;
 
 namespace RavenNest.BusinessLogic.OpenAI.Conversations
 {
