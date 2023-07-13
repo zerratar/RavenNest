@@ -317,7 +317,7 @@ namespace RavenNest.Blazor.Services
         {
             var str = "";
             var state = gameData.GetCharacterState(character.StateId);
-            var trainingSkill = !string.IsNullOrEmpty(state.TaskArgument) ? state.TaskArgument : "";
+            var trainingSkill = !string.IsNullOrEmpty(state.TaskArgument) ? state.TaskArgument : state.Task;
             if (state != null && state.InOnsen.GetValueOrDefault())
             {
                 str += "Currently resting and have " + GetRestedTime(state.RestedTime) + " of rested time ";
