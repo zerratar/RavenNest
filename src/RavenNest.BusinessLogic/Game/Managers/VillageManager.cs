@@ -114,12 +114,20 @@ namespace RavenNest.BusinessLogic.Game
             // we have to ensure we don't go beyond certain limit for the different versions of the game clients.
 
             var maxHouseCount = GameMath.MaxVillageLevel / 10;
+            var resources = gameData.GetResources(village.ResourcesId);
 
             return new VillageInfo
             {
                 Name = village.Name,
                 Level = villageLevel,
                 Experience = village.Experience,
+
+                Coins = (long)resources.Coins,
+                Fish = (long)resources.Fish,
+                Wood = (long)resources.Wood,
+                Ore = (long)resources.Ore,
+                Wheat = (long)resources.Wheat,
+
                 Houses = villageHouses
                     .OrderBy(x => x.Slot)
                     .Take(maxHouseCount)

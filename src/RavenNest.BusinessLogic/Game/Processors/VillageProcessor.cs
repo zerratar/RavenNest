@@ -27,7 +27,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             }
 
             var elapsed = DateTime.UtcNow - lastUpdate;
-            if (players.Count == 0 && elapsed < updateInterval || !GameData.VillageExpMigrationCompleted)
+            if (players.Count == 0 && elapsed < updateInterval)
             {
                 return;
             }

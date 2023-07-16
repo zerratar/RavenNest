@@ -417,7 +417,7 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureResources();
                 RemoveOldData();
 
-                FixVillageLevels();
+                //FixVillageLevels();
                 //TransformExperience();
 
                 //RemoveBadUsers(users);
@@ -457,50 +457,49 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
-        public static volatile bool VillageExpMigrationCompleted = false;
+        //public static volatile bool VillageExpMigrationCompleted = false;
+        //private void FixVillageLevels()
+        //{
+        //    VillageExpMigrationCompleted = false;
+        //    try
+        //    {
+        //        var maxExp = GameMath.ExperienceForLevel(GameMath.MaxVillageLevel);
+        //        if (this.villages.Entities.All(x =>
+        //            x.Experience < maxExp ||
+        //            x.Level <= GameMath.MaxVillageLevel))
+        //        {
+        //            return;
+        //        }
 
-        private void FixVillageLevels()
-        {
-            VillageExpMigrationCompleted = false;
-            try
-            {
-                var maxExp = GameMath.ExperienceForLevel(GameMath.MaxVillageLevel);
-                if (this.villages.Entities.All(x =>
-                    x.Experience < maxExp ||
-                    x.Level <= GameMath.MaxVillageLevel))
-                {
-                    return;
-                }
+        //        foreach (var entity in this.villages.Entities)
+        //        {
+        //            var level = entity.Level;
+        //            if (level > GameMath.MaxVillageLevel)
+        //            {
+        //                entity.Level = GameMath.MaxVillageLevel;
+        //            }
 
-                foreach (var entity in this.villages.Entities)
-                {
-                    var level = entity.Level;
-                    if (level > GameMath.MaxVillageLevel)
-                    {
-                        entity.Level = GameMath.MaxVillageLevel;
-                    }
+        //            var nextLevel = level + 1;
+        //            var expRatio = entity.Experience / GameMath.OldExperienceForLevel(nextLevel);
+        //            if (expRatio > 1)
+        //            {
+        //                expRatio = 0.75;
+        //            }
 
-                    var nextLevel = level + 1;
-                    var expRatio = entity.Experience / GameMath.OldExperienceForLevel(nextLevel);
-                    if (expRatio > 1)
-                    {
-                        expRatio = 0.75;
-                    }
+        //            var exp = Math.Truncate(GameMath.ExperienceForLevel(nextLevel) * expRatio);
+        //            if (exp > maxExp)
+        //            {
+        //                exp = maxExp - 1L;
+        //            }
 
-                    var exp = Math.Truncate(GameMath.ExperienceForLevel(nextLevel) * expRatio);
-                    if (exp > maxExp)
-                    {
-                        exp = maxExp - 1L;
-                    }
-
-                    entity.Experience = (long)exp;
-                }
-            }
-            finally
-            {
-                VillageExpMigrationCompleted = true;
-            }
-        }
+        //            entity.Experience = (long)exp;
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        VillageExpMigrationCompleted = true;
+        //    }
+        //}
 
         private void RemoveOldData()
         {
