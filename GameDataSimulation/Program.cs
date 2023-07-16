@@ -5,17 +5,17 @@ using GameDataSimulation;
 using GMath = RavenNest.BusinessLogic.GameMath;
 
 
-var itemLevel = 124;
-var enchantingLevel = 50;
-var exp = GMath.GetEnchantingExperience(enchantingLevel, itemLevel);
+var playerCount = 300;
+var villageLevel = 170;
+var exp = GMath.GetVillageExperience(villageLevel, playerCount, TimeSpan.FromSeconds(1));
 Console.WriteLine("Enchanting exp gained from a Abraxas 2h Sword (Max Exp)");
 
-var expNextLevel = GMath.ExperienceForLevel(enchantingLevel + 1);
+var expNextLevel = GMath.ExperienceForLevel(villageLevel + 1);
 var percentGain = exp / expNextLevel * 100.0;
 
-Console.WriteLine("Skill Level: " + enchantingLevel);
-Console.WriteLine("Item Level: " + itemLevel);
-Console.WriteLine("Attribute Count: " + GMath.GetMaxEnchantingAttributeCount(itemLevel));
+Console.WriteLine("Skill Level: " + villageLevel);
+Console.WriteLine("Item Level: " + playerCount);
+Console.WriteLine("Attribute Count: " + GMath.GetMaxEnchantingAttributeCount(playerCount));
 Console.WriteLine("Exp: " + exp);
 Console.WriteLine("Gained %: " + percentGain);
 Console.ReadKey();

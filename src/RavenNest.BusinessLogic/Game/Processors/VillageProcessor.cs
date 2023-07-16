@@ -20,6 +20,12 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             CharacterState state)
         {
             var players = gameData.GetActiveSessionCharacters(session);
+
+            if (lastUpdate == DateTime.MinValue)
+            {
+                lastUpdate = DateTime.UtcNow;
+            }
+
             var elapsed = DateTime.UtcNow - lastUpdate;
             if (players.Count == 0 && elapsed < updateInterval || !GameData.VillageExpMigrationCompleted)
             {
@@ -29,6 +35,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             var village = gameData.GetOrCreateVillageBySession(session);
             var expForNextLevel = GameMath.ExperienceForLevel(village.Level + 1);
 
+            village.Experience += (long)GameMath.GetVillageExperience(village.Level, players.Count, elapsed);
             // check if this village gone mad.
             var percentage = village.Experience / (double)expForNextLevel;
             if (percentage > 2)
@@ -36,10 +43,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 // this should not happen.
                 return;
             }
-
-
-            village.Experience += (long)GameMath.GetVillageExperience(village.Level, players.Count, elapsed);
-
             if (village.Experience >= expForNextLevel && (village.Level + 1 > GameMath.MaxLevel))
             {
                 village.Experience = (long)expForNextLevel - 1L;
