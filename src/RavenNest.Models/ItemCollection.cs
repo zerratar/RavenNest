@@ -6,7 +6,6 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace RavenNest.Models
 {
-
     public class ItemCollection : IList<Item>
     {
         private readonly List<Item> items = new List<Item>();

@@ -301,7 +301,7 @@
 
     public void Vendor()
     {
-        Player = PlayerService.Vendor(Player.Id, itemDetailsDialogItem, itemDetailsDialogItem.Amount);
+        Player = PlayerService.SellToVendor(Player.Id, itemDetailsDialogItem, itemDetailsDialogItem.Amount);
         CloseVendorDialog();
         CloseItemDetails();
     }

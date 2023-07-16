@@ -1,5 +1,6 @@
 ﻿@layout AdminLayout
 @page "/admin/economy/marketplace/avg-price"
+@using RavenNest.BusinessLogic.Game;
 
 @inject RavenNest.BusinessLogic.Data.GameData GameData;
 @inject RavenNest.Blazor.Services.AuthService AuthService
@@ -30,7 +31,7 @@
                     <img class="item-image" src="/imgs/items/@(lcd.ItemId).png" />
                     <div class="details">
                         <h4>@lcd.ItemName</h4>
-                        <p>Sold a total of <b>@lcd.TotalSoldCount</b></p>
+                        <p>Sold a total of <b>@lcd.TotalSoldCount</b>, for <b>@Utility.FormatAmount(lcd.TotalAvgAmount)</b></p>
                     </div>
                 </div>
 
@@ -119,7 +120,8 @@
                         ChartData = lcd,
                         ItemId = item.Id,
                         ItemName = itemName,
-                        TotalSoldCount = itemGroup.Sum(x => x.Amount)
+                        TotalSoldCount = itemGroup.Sum(x => x.Amount),
+                        TotalAvgAmount = itemGroup.Average(x => x.TotalPrice)
                     });
 
 
@@ -149,6 +151,7 @@
         public Guid ItemId { get; set; }
         public string ItemName { get; set; }
         public long TotalSoldCount { get; set; }
+        public double TotalAvgAmount { get; set; }
         public ChartData<double> ChartData { get; set; }
     }
 }

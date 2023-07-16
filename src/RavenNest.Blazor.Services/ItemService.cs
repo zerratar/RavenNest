@@ -1,14 +1,13 @@
 ﻿using Microsoft.AspNetCore.Http;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
-using RavenNest.Sessions;
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
 using System.Threading.Tasks;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic;
 
 namespace RavenNest.Blazor.Services
 {
@@ -48,6 +47,28 @@ namespace RavenNest.Blazor.Services
                 return items.Where(x => x.Name.Contains(search, StringComparison.OrdinalIgnoreCase));
             });
         }
+
+        public async Task<IReadOnlyList<VendorItemRecord>> GetVendorItemsAsync()
+        {
+            return await Task.Run(() =>
+            {
+                List<VendorItemRecord> records = new();
+                foreach (var item in gameData.GetVendorItems())
+                {
+                    var i = gameData.GetItem(item.ItemId);
+                    records.Add(new VendorItemRecord
+                    {
+                        VendorItem = item,
+                        Item = i,
+                        BuyFromVendorPrice = GameMath.CalculateVendorBuyPrice(i, item.Stock),
+                        SellToVendorPrice = GameMath.CalculateVendorSellPrice(i, item.Stock)
+                    });
+                }
+
+                return records;
+            });
+        }
+
         public async Task<ItemCollection> GetItemsAsync()
         {
             return await Task.Run(() => itemManager.GetAllItems());
@@ -375,5 +396,13 @@ namespace RavenNest.Blazor.Services
         public string Name { get; set; }
         public int Value { get; set; }
         public int Bonus { get; set; }
+    }
+
+    public class VendorItemRecord
+    {
+        public DataModels.VendorItem VendorItem { get; set; }
+        public DataModels.Item Item { get; set; }
+        public long BuyFromVendorPrice { get; set; }
+        public long SellToVendorPrice { get; set; }
     }
 }

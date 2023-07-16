@@ -214,6 +214,81 @@ namespace RavenNest.BusinessLogic
             return v1 + (v2 - v1) * t;
         }
 
+        /// <summary>
+        ///     How much will you have to pay to buy an item from the vendor?
+        /// </summary>
+        /// <param name="i"></param>
+        /// <param name="inStock"></param>
+        /// <returns></returns>
+        public static long CalculateVendorBuyPrice(DataModels.Item i, long inStock)
+        {
+            var minPrice = i.ShopSellPrice;
+            if (i.ShopBuyPrice > i.ShopSellPrice)
+            {
+                minPrice = i.ShopBuyPrice;
+            }
+
+            var price = (double)Math.Truncate(minPrice * 1.25d);
+
+            // full buy price until there are more than 10 items in stock
+            if (inStock - 10 <= 0)
+            {
+                return (long)price;
+            }
+
+            // reduce 1% price every 10 items in stock
+            // until we reach 75% off
+
+            var min = Math.Max(1, (long)Math.Truncate(price * 0.25d));
+            var reductionCount = Math.Truncate(inStock / 10.0);
+            price -= reductionCount * price * 0.01d;
+            if ((long)price <= min) return min;
+            return (long)price;
+            //var minPrice = Math.Max(i.ShopBuyPrice, i.ShopSellPrice);
+
+
+            //inStock = inStock - 10;
+            // reduce 5% price every 10 items in stock
+            //var reductionCount = Math.Truncate(inStock / 10.0);
+            //double price = minPrice;
+            //for (var j = 0; j < reductionCount; ++j)
+            //{
+            //    if (price <= 1) return 1;
+            //    price -= (minPrice * 0.05d);
+            //}
+
+            //return Math.Max(1, (long)price);
+        }
+
+        /// <summary>
+        ///     How much will you get for selling an item to the vendor?
+        /// </summary>
+        /// <param name="i"></param>
+        /// <param name="inStock"></param>
+        /// <returns></returns>
+        public static long CalculateVendorSellPrice(DataModels.Item i, long inStock)
+        {
+            var minPrice = i.ShopSellPrice;
+            // if there are more than 5 items in stock, we will start selling for less.
+            if (inStock - 5 <= 0)
+            {
+                return minPrice;
+            }
+
+            inStock = inStock - 5;
+
+            // reduce 5% price every 5 items in stock
+            var reductionCount = Math.Truncate(inStock / 5.0d);
+            double price = minPrice;
+            for (var j = 0; j < reductionCount; ++j)
+            {
+                if (price <= 1) return 1;
+                price -= (minPrice * 0.05d);
+            }
+
+            return Math.Max(1, (long)price);
+        }
+
         public static class Exp
         {
             /// <summary>

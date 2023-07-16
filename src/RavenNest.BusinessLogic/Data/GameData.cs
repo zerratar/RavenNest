@@ -893,7 +893,7 @@ namespace RavenNest.BusinessLogic.Data
                     }
                 }
 
-                var appearance = GetAppearance(c.AppearanceId);
+                var appearance = GetAppearance(c.SyntyAppearanceId);
                 if (appearance != null)
                 {
                     Remove(appearance);

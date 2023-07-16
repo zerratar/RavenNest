@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -1689,7 +1690,6 @@ namespace RavenNest.BusinessLogic.Game
             {
                 return 0;
             }
-
             var resources = gameData.GetResources(player);
             if (resources == null) return 0;
 
@@ -1712,71 +1712,46 @@ namespace RavenNest.BusinessLogic.Game
             return (int)itemToVendor.Amount;
         }
 
-        public long SellItemToVendorByItemId(
-            SessionToken token,
-            string userId,
-            Guid itemId,
-            long amount)
+        public bool SellItemToVendor(Guid characterId, RavenNest.Models.InventoryItem item, long amount)
         {
-            try
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return false;
+            var inventory = inventoryProvider.Get(character.Id);
+            if (inventory.IsLocked(item.Id)) return false;
+            var stack = gameData.GetInventoryItem(item.Id);
+            if (stack == null) return false;
+
+
+            var amountToVendor = Math.Min(amount, stack.Amount.GetValueOrDefault());
+            if (amountToVendor <= 0) return false;
+
+            var i = gameData.GetItem(item.ItemId);
+            if (i == null || i.Category == (int)DataModels.ItemCategory.StreamerToken)
+                return false;
+
+            if (inventory.RemoveItem(stack, amountToVendor))
             {
-                var player = GetCharacter(token, userId);
-                if (player == null) return 0;
+                var resources = gameData.GetResources(character);
+                if (resources == null) return false;
+                var price = i.ShopSellPrice * amountToVendor;
+                resources.Coins += price;
 
-                if (!integrityChecker.VerifyPlayer(token.SessionId, player.Id, 0))
-                    return 0;
+                UpdateStockAndLogTransaction(characterId, item.ItemId, amount, price, false);
 
-                var item = gameData.GetItem(itemId);
-                if (item == null || item.Category == (int)DataModels.ItemCategory.StreamerToken)
-                    return 0;
-
-                var inventory = inventoryProvider.Get(player.Id);
-
-                var itemToVendor = inventory.GetUnequippedItem(itemId);
-                if (itemToVendor.IsNull()) return 0;
-
-                var resources = gameData.GetResources(player);
-                if (resources == null) return 0;
-
-                var session = gameData.GetSession(token.SessionId);
-
-                if (amount <= itemToVendor.Amount)
+                var sessionUserId = character.UserIdLock;
+                if (sessionUserId != null)
                 {
-                    var price = item.ShopSellPrice * amount;
-                    inventory.RemoveItem(itemToVendor, amount);
-                    resources.Coins += item.ShopSellPrice * amount;
-                    UpdateResources(session, player, resources);
-                    UpdateStockAndLogTransaction(player.Id, itemToVendor.ItemId, amount, price, false);
-                    return amount;
+                    var session = gameData.GetSessionByUserId(sessionUserId.Value);
+                    if (session != null)
+                    {
+                        UpdateResources(session, character, resources);
+                        SendItemRemoveEvent(session, stack, amountToVendor, character);
+                    }
                 }
-
-                inventory.RemoveStack(itemToVendor);
-                var totalPrice = itemToVendor.Amount * item.ShopSellPrice;
-                resources.Coins += totalPrice;
-                UpdateResources(session, player, resources);
-                UpdateStockAndLogTransaction(player.Id, itemToVendor.ItemId, itemToVendor.Amount, totalPrice, false);
-                return (int)itemToVendor.Amount;
+                return true;
             }
-            catch (Exception exc)
-            {
-                logger.LogError($"Unable to vendor item (u {userId}, i {itemId}, a x{amount}): " + exc);
-                return 0;
-            }
+            return false;
         }
-
-        //private void LogGiftTransaction(Guid characterId, Guid receiverCharacterId, Guid itemId, long amount, double totalPrice)
-        //{
-        //    gameData.Add(
-        //        new GiftTransaction
-        //        {
-        //            Id = Guid.NewGuid(),
-        //            Amount = amount,
-        //            FromCharacterId = characterId,
-        //            ToCharacterId = receiverCharacterId,
-        //            ItemId = itemId,
-        //            Created = DateTime.UtcNow
-        //        });
-        //}
 
         /// <summary>
         /// Logs a vendor transaction to the database. This is used for reporting.
@@ -2012,44 +1987,6 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        public bool VendorItem(Guid characterId, RavenNest.Models.InventoryItem item, long amount)
-        {
-            var character = gameData.GetCharacter(characterId);
-            if (character == null) return false;
-            var inventory = inventoryProvider.Get(character.Id);
-            if (inventory.IsLocked(item.Id)) return false;
-            var stack = gameData.GetInventoryItem(item.Id);
-            if (stack == null) return false;
-
-
-            var amountToVendor = Math.Min(amount, stack.Amount.GetValueOrDefault());
-            if (amountToVendor <= 0) return false;
-
-            var i = gameData.GetItem(item.ItemId);
-            if (i == null || i.Category == (int)DataModels.ItemCategory.StreamerToken)
-                return false;
-
-            if (inventory.RemoveItem(stack, amountToVendor))
-            {
-                var resources = gameData.GetResources(character);
-                if (resources == null) return false;
-                var price = i.ShopSellPrice * amountToVendor;
-                resources.Coins += price;
-
-                var sessionUserId = character.UserIdLock;
-                if (sessionUserId != null)
-                {
-                    var session = gameData.GetSessionByUserId(sessionUserId.Value);
-                    if (session != null)
-                    {
-                        UpdateResources(session, character, resources);
-                        SendItemRemoveEvent(session, stack, amountToVendor, character);
-                    }
-                }
-                return true;
-            }
-            return false;
-        }
 
         public bool SendToStash(Guid characterId, RavenNest.Models.InventoryItem invItemInput, long amount)
         {

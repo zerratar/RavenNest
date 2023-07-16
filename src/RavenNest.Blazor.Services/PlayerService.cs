@@ -112,9 +112,9 @@ namespace RavenNest.Blazor.Services
             return playerManager.GetWebsitePlayer(characterId);
         }
 
-        public WebsitePlayer Vendor(Guid characterId, RavenNest.Models.InventoryItem item, long amount)
+        public WebsitePlayer SellToVendor(Guid characterId, RavenNest.Models.InventoryItem item, long amount)
         {
-            playerManager.VendorItem(characterId, item, amount);
+            playerManager.SellItemToVendor(characterId, item, amount);
             return playerManager.GetWebsitePlayer(characterId);
         }
 
