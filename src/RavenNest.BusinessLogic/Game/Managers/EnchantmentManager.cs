@@ -14,7 +14,6 @@ namespace RavenNest.BusinessLogic.Game
         private readonly ILogger<EnchantmentManager> logger;
         private readonly GameData gameData;
         private readonly Random random;
-        private const int MaximumEnchantmentCount = 10;
         private const double EnchantmentInterval = 60;
         private const double MinEnchantmentTime = 30;
 
@@ -108,11 +107,9 @@ namespace RavenNest.BusinessLogic.Game
                     return ItemEnchantmentResult.NotReady(cd.CooldownEnd);
                 }
 
-                var itemLvReq = (i.RequiredAttackLevel + i.RequiredDefenseLevel + i.RequiredMagicLevel + i.RequiredRangedLevel + i.RequiredSlayerLevel);
+                var itemLvReq = GameMath.GetItemLevel(i);
                 var isStack = item.Amount > 1;
-
-                var itemPercent = itemLvReq / (float)GameMath.MaxLevel;
-                var itemMaxAttrCount = Math.Max(1, (int)Math.Floor(Math.Floor(itemLvReq / 10f) / 5));
+                var itemMaxAttrCount = GameMath.GetMaxEnchantingAttributeCount(itemLvReq);
                 var success = clanSkill.Level / (float)itemLvReq;
                 var targetAttributeCount = 0;
                 var rng = random.NextDouble();
@@ -135,9 +132,25 @@ namespace RavenNest.BusinessLogic.Game
                     targetAttributeCount = 1;
                 }
 
-                var maxEnchantments = (int)Math.Floor(Math.Max(MaximumEnchantmentCount, Math.Floor((float)clanSkill.Level / 3f)));
+                var maxEnchantments = GameMath.GetMaxEnchantmentCountBySkill(clanSkill.Level);
 
                 targetAttributeCount = Math.Max(0, Math.Min(maxEnchantments, targetAttributeCount));
+
+                // if the success chance is higher or equal to 5%, there is a low level luck of always succeeding with minimum 50% chance when below level 10.
+                // if the success chance is higher or equal to 10%, there is a low level luck of always succeeding with minimum 25% chance when below level 20.
+
+                if (targetAttributeCount == 0)
+                {
+                    if (success >= 0.05 && clanSkill.Level < 10 && rng <= 0.5)
+                    {
+                        targetAttributeCount = 1;
+                    }
+
+                    if (success >= 0.1 && clanSkill.Level < 20 && rng <= 0.25)
+                    {
+                        targetAttributeCount = 1;
+                    }
+                }
 
                 if (targetAttributeCount == 0)
                 {
@@ -170,8 +183,7 @@ namespace RavenNest.BusinessLogic.Game
                 // Really stupid naming right now.
                 enchantedItem.Name = GetEnchantedName(itemName, enchantmentAttributes);
 
-                var multiplier = gameData.GetActiveExpMultiplierEvent()?.Multiplier ?? 1d;
-                var gainedExp = GameMath.GetEnchantingExperience(clanSkill.Level, targetAttributeCount, itemLvReq) * multiplier;
+                var gainedExp = Math.Truncate(GameMath.GetEnchantingExperience(clanSkill.Level, targetAttributeCount, itemLvReq));
                 var nextLevelReq = GameMath.ExperienceForLevel(clanSkill.Level + 1);
 
                 // 1. Add exp whenever user successefully enchants an item

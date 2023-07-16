@@ -1,4 +1,5 @@
 ﻿using RavenNest.DataModels;
+using RavenNest.Models;
 using System;
 using System.Runtime.CompilerServices;
 
@@ -8,6 +9,10 @@ namespace RavenNest.BusinessLogic
     {
         public const int MaxLevel = 999;
         public const int MaxVillageLevel = 300;
+        public const int MaximumEnchantmentCount = 10;
+
+        public const double MaxExpGainPercentageForEnchanting = 1.5;
+        public const double MinExpGainPercentageForEnchanting = 0.001;
 
         public readonly static double[] ExperienceArray = new double[MaxLevel];
 
@@ -141,28 +146,66 @@ namespace RavenNest.BusinessLogic
             var experience = GameMath.Exp.CalculateExperience(level + 1, 1, elapsedTime.TotalSeconds, 1d, multiplier);
             return experience;
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double GetClanExperience(int level, TimeSpan elapsedTime)
         {
             return GameMath.Exp.CalculateExperience(level + 1, 1, elapsedTime.TotalSeconds, 1d, 0.1d);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetItemLevel(DataModels.Item i)
+        {
+            var lv = (i.RequiredAttackLevel + i.RequiredDefenseLevel + i.RequiredMagicLevel + i.RequiredRangedLevel + i.RequiredSlayerLevel);
+            if (lv > i.Level) return lv;
+            return i.Level;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetMaxEnchantingAttributeCount(DataModels.Item i)
+        {
+            var itemLvReq = GetItemLevel(i);
+            return GetMaxEnchantingAttributeCount(itemLvReq);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetMaxEnchantingAttributeCount(int itemLevel)
+        {
+            return Math.Max(1, (int)Math.Floor(Math.Floor(itemLevel / 10f) / 5));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetMaxEnchantmentCountBySkill(int skillLevel)
+        {
+            return (int)Math.Floor(Math.Max(MaximumEnchantmentCount, Math.Floor(skillLevel / 3f)));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double GetEnchantingExperience(int skillLevel, DataModels.Item i)
+        {
+            var itemLvReq = GetItemLevel(i);
+            return GetEnchantingExperience(skillLevel, itemLvReq);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static double GetEnchantingExperience(int skillLevel, int itemLevel)
+        {
+            var attributeCount = GetMaxEnchantingAttributeCount(itemLevel);
+            var maxEnchantments = GetMaxEnchantmentCountBySkill(skillLevel);
+            var targetAttributeCount = Math.Max(0, Math.Min(maxEnchantments, attributeCount));
+            return GetEnchantingExperience(skillLevel, targetAttributeCount, itemLevel);
+        }
+
         public static double GetEnchantingExperience(int skillLevel, int attributeCount, int itemLevel)
         {
-            var rawExp = (attributeCount * (((1d + (skillLevel / 100d) + (skillLevel / 75d)) * (double)Math.Pow(2, (double)(skillLevel / 20d)) / 20d) + 1d)) + (attributeCount * 8.3d);
-            var attrExp = (itemLevel * (attributeCount * ((double)itemLevel / MaxLevel))) * 10.0;
-            var expMulti = Math.Pow(2.0, skillLevel * 0.05);
-            var expToGain = (rawExp + attrExp) * expMulti * 0.4;
+            var exp = itemLevel * 100d;
+            exp += attributeCount * 25d;
+            var lv = (double)skillLevel / MaxLevel;
+            exp += (exp * lv * 0.25d);
+            var expForLevel = ExperienceForLevel(skillLevel + 1);
 
-            // scale the old exp gain to new one.
-            var oldNextLevelReq = OldExperienceForLevel(skillLevel + 1);
-            var nextLevelReq = ExperienceForLevel(skillLevel + 1);
-            var percentGain = expToGain / oldNextLevelReq;
-
-            expToGain = nextLevelReq * percentGain;
-
-
-            return expToGain;
+            return Math.Truncate(
+                Math.Max(expForLevel * MinExpGainPercentageForEnchanting, Math.Min(exp, expForLevel * MaxExpGainPercentageForEnchanting))
+            );
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
