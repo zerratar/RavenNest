@@ -417,7 +417,8 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureResources();
                 RemoveOldData();
 
-                TransformExperience();
+                FixVillageLevels();
+                //TransformExperience();
 
                 //RemoveBadUsers(users);
 
@@ -453,6 +454,46 @@ namespace RavenNest.BusinessLogic.Data
             {
                 InitializedSuccessful = false;
                 System.IO.File.WriteAllText("ravenfall-error.log", "[" + DateTime.UtcNow + "] " + exc.ToString());
+            }
+        }
+
+        public static volatile bool VillageExpMigrationCompleted = false;
+
+        private void FixVillageLevels()
+        {
+            VillageExpMigrationCompleted = false;
+            try
+            {
+                var maxExp = GameMath.ExperienceForLevel(GameMath.MaxVillageLevel);
+                if (this.villages.Entities.All(x =>
+                    x.Experience < maxExp ||
+                    x.Level <= GameMath.MaxVillageLevel))
+                {
+                    return;
+                }
+
+                foreach (var entity in this.villages.Entities)
+                {
+                    var level = entity.Level;
+                    if (level > GameMath.MaxVillageLevel)
+                    {
+                        entity.Level = GameMath.MaxVillageLevel;
+                    }
+
+                    var nextLevel = level + 1;
+                    var expRatio = entity.Experience / GameMath.OldExperienceForLevel(nextLevel);
+                    var exp = Math.Truncate(GameMath.ExperienceForLevel(nextLevel) * expRatio);
+                    if (exp > maxExp)
+                    {
+                        exp = maxExp - 1L;
+                    }
+
+                    entity.Experience = (long)exp;
+                }
+            }
+            finally
+            {
+                VillageExpMigrationCompleted = true;
             }
         }
 
@@ -2145,111 +2186,6 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
-        private void MergeVillages()
-        {
-            // slow process.
-            foreach (var user in users.Entities)
-            {
-                var userId = user.Id;
-                var userVillages = villages[nameof(User), userId];
-                if (userVillages.Count > 1)
-                {
-                    var toKeep = userVillages.OrderByDescending(x => x.Level).FirstOrDefault();
-                    var resourceToKeep = GetResources(toKeep.ResourcesId);
-
-                    foreach (var village in userVillages)
-                    {
-                        if (village == toKeep)
-                        {
-                            continue;
-                        }
-
-                        toKeep.Experience += village.Experience;
-
-                        for (var i = 1; i < village.Level; ++i)
-                        {
-                            toKeep.Experience += (long)GameMath.ExperienceForLevel(i);
-                        }
-
-                        var resources0 = GetResources(village.ResourcesId);
-                        if (resourceToKeep != null && resources0 != null)
-                        {
-                            resourceToKeep.Wheat += resources0.Wheat;
-                            resourceToKeep.Arrows += resources0.Arrows;
-                            resourceToKeep.Ore += resources0.Ore;
-                            resourceToKeep.Coins += resources0.Coins;
-                            resourceToKeep.Fish += resources0.Fish;
-                            resourceToKeep.Wood += resources0.Wood;
-                        }
-
-                        var houses = GetVillageHouses(village);
-                        foreach (var house in houses)
-                        {
-                            Remove(house);
-                        }
-
-                        Remove(resources0);
-                        Remove(village);
-                    }
-
-                    var expForNext = GameMath.ExperienceForLevel(toKeep.Level + 1);
-                    while (toKeep.Experience > expForNext)
-                    {
-                        toKeep.Experience -= (long)expForNext;
-                        toKeep.Level++;
-
-                        expForNext = GameMath.ExperienceForLevel(toKeep.Level + 1);
-                    }
-                }
-            }
-        }
-
-        private void UpgradeVillageLevels()
-        {
-            var updated = false;
-            foreach (var village in villages.Entities)
-            {
-                var targetLevel = 170;
-                if (village.Level != targetLevel)
-                {
-                    continue;
-                }
-
-                if (village.Level >= GameMath.MaxVillageLevel)
-                {
-                    village.Level = GameMath.MaxVillageLevel;
-                    village.Experience = (long)GameMath.ExperienceForLevel(village.Level + 1) - 1;
-                    continue;
-                }
-
-                var nextLevel = village.Level + 1;
-                var expForLevel = GameMath.ExperienceForLevel(nextLevel);
-                while (village.Experience >= expForLevel)
-                {
-                    var expLeft = (long)(village.Experience - expForLevel);
-
-                    village.Experience = expLeft;
-                    village.Level++;
-                    updated = true;
-                    expForLevel = GameMath.ExperienceForLevel(village.Level + 1);
-                }
-
-                // ensure village houses are within limits
-                var houses = GetOrCreateVillageHouses(village);
-                var maxHouses = GameMath.MaxVillageLevel / 10;
-                var houseCount = houses.Count;
-                while (houseCount > maxHouses)
-                {
-                    Remove(houses[houseCount - 1]);
-                    houseCount--;
-                }
-            }
-            if (updated)
-            {
-                ScheduleNextSave();
-            }
-        }
-
         private bool InvokeIfSettingsMatch(string name, Func<ServerSettings, bool> check, Action invoke, Func<ServerSettings, string> onSuccess, Func<ServerSettings, string> onFail)
         {
             var settings = GetOrCreateServerSettings(name);
@@ -2268,110 +2204,6 @@ namespace RavenNest.BusinessLogic.Data
             }
 
             return false;
-        }
-
-        private void TransformExperience()
-        {
-            /*
-                Only if we are migrating from 0.8.8.4a or older
-             */
-            if (!GameVersion.IsLessThanOrEquals(this.Client.ClientVersion, GameUpdates.RequiresExpTransformation))
-            {
-                return;
-            }
-
-            /*
-                1) Transform Character Skill Experiences
-            */
-            var migrationName = "exp_migration_885";
-            var requireSave = false;
-            requireSave = InvokeIfSettingsMatch(migrationName + "_characterSkills", x => x.Value != "1", () =>
-            {
-                foreach (var skill in this.characterSkills.Entities)
-                {
-                    var data = skill.GetSkills();
-                    foreach (var s in data)
-                    {
-                        var level = s.Level;
-                        var nextLevel = level + 1;
-                        var expRatio = s.Experience / GameMath.OldExperienceForLevel(nextLevel);
-                        s.Experience = GameMath.ExperienceForLevel(nextLevel) * expRatio;
-                    }
-                }
-
-            }, x => x.Value = "1", x => x.Value = "0") || requireSave;
-
-            /*
-                 2) Transform Clan Exp
-              */
-
-            requireSave = InvokeIfSettingsMatch(migrationName + "_clans", x => x.Value != "1", () =>
-            {
-                foreach (var entity in this.clans.Entities)
-                {
-                    var level = entity.Level;
-                    var nextLevel = level + 1;
-                    var expRatio = entity.Experience / GameMath.OldExperienceForLevel(nextLevel);
-                    entity.Experience = GameMath.ExperienceForLevel(nextLevel) * expRatio;
-                }
-
-            }, x => x.Value = "1", x => x.Value = "0") || requireSave;
-
-            /*
-                3) Transform Clan Skill Exp
-             */
-            requireSave = InvokeIfSettingsMatch(migrationName + "_clanSkills", x => x.Value != "1", () =>
-            {
-                foreach (var entity in this.clanSkills.Entities)
-                {
-                    var level = entity.Level;
-                    var nextLevel = level + 1;
-                    var expRatio = entity.Experience / GameMath.OldExperienceForLevel(nextLevel);
-                    entity.Experience = GameMath.ExperienceForLevel(nextLevel) * expRatio;
-                }
-            }, x => x.Value = "1", x => x.Value = "0") || requireSave;
-
-
-            /*
-                4) Transform Village Exp
-            */
-            requireSave = InvokeIfSettingsMatch(migrationName + "_villages", x => x.Value != "1", () =>
-            {
-                foreach (var entity in this.villages.Entities)
-                {
-                    var level = entity.Level;
-                    var nextLevel = level + 1;
-                    var expRatio = entity.Experience / GameMath.OldExperienceForLevel(nextLevel);
-
-                    var exp = Math.Truncate(GameMath.ExperienceForLevel(nextLevel) * expRatio);
-                    if (exp > long.MaxValue)
-                    {
-                        // uh oh...
-                        exp = long.MaxValue;
-                    }
-
-                    entity.Experience = (long)exp;
-                }
-            }, x => x.Value = "1", x => x.Value = "0") || requireSave;
-
-            /*
-                5) Transform Character Skill Records
-            */
-            requireSave = InvokeIfSettingsMatch(migrationName + "_characterSkillRecords", x => x.Value != "1", () =>
-            {
-                foreach (var s in this.characterSkillRecords.Entities)
-                {
-                    var level = s.SkillLevel;
-                    var nextLevel = level + 1;
-                    var expRatio = s.SkillExperience / GameMath.OldExperienceForLevel(nextLevel);
-                    s.SkillExperience = GameMath.ExperienceForLevel(nextLevel) * expRatio;
-                }
-            }, x => x.Value = "1", x => x.Value = "0") || requireSave;
-
-            if (requireSave)
-            {
-                ScheduleNextSave();
-            }
         }
 
         #endregion

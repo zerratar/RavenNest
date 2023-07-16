@@ -21,7 +21,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         {
             var players = gameData.GetActiveSessionCharacters(session);
             var elapsed = DateTime.UtcNow - lastUpdate;
-            if (players.Count == 0 && elapsed < updateInterval)
+            if (players.Count == 0 && elapsed < updateInterval || !GameData.VillageExpMigrationCompleted)
             {
                 return;
             }
@@ -29,10 +29,15 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             var village = gameData.GetOrCreateVillageBySession(session);
 
             village.Experience += (long)GameMath.GetVillageExperience(village.Level, players.Count, elapsed);
-
             var expForNextLevel = GameMath.ExperienceForLevel(village.Level + 1);
+
+            if (village.Experience >= expForNextLevel && (village.Level + 1 > GameMath.MaxLevel))
+            {
+                village.Experience = (long)expForNextLevel - 1L;
+            }
+
             var levelDelta = 0;
-            while (village.Experience >= expForNextLevel)
+            while (village.Experience >= expForNextLevel && village.Level < GameMath.MaxVillageLevel)
             {
                 village.Experience -= (long)expForNextLevel;
                 village.Level++;

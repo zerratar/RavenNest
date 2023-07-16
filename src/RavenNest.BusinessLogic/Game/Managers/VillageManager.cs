@@ -108,13 +108,12 @@ namespace RavenNest.BusinessLogic.Game
             var villageHouses = gameData.GetOrCreateVillageHouses(village);
 
             var state = gameData.GetSessionState(session.Id);
-            var beforeUpgrade = GameVersion.IsLessThanOrEquals(state.ClientVersion, "0.8.0.0a");
-            var villageLevel = Math.Min(village.Level, beforeUpgrade ? 170 : GameMath.MaxVillageLevel);
+            var villageLevel = Math.Min(village.Level, GameMath.MaxVillageLevel);
 
             // since we can only have limited amount of houses.
             // we have to ensure we don't go beyond certain limit for the different versions of the game clients.
 
-            var maxHouseCount = beforeUpgrade ? 17 : (GameMath.MaxVillageLevel / 10);
+            var maxHouseCount = GameMath.MaxVillageLevel / 10;
 
             return new VillageInfo
             {
