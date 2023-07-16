@@ -1,6 +1,5 @@
 ﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Net;
-using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
 using System;
 
@@ -20,13 +19,16 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             Character character,
             CharacterState state)
         {
-            if (DateTime.UtcNow - lastUpdate < updateInterval)
+            var players = gameData.GetActiveSessionCharacters(session);
+            var elapsed = DateTime.UtcNow - lastUpdate;
+            if (players.Count == 0 && elapsed < updateInterval)
+            {
                 return;
+            }
 
             var village = gameData.GetOrCreateVillageBySession(session);
-            var players = gameData.GetActiveSessionCharacters(session);
 
-            village.Experience += (long)GameMath.GetVillageExperience(village.Level, players.Count * 20);
+            village.Experience += (long)GameMath.GetVillageExperience(village.Level, players.Count, elapsed);
 
             var expForNextLevel = GameMath.ExperienceForLevel(village.Level + 1);
             var levelDelta = 0;

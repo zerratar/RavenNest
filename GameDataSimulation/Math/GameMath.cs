@@ -1,4 +1,5 @@
 ﻿using RavenNest.BusinessLogic.Net;
+using RavenNest.DataModels;
 using System;
 using System.Runtime.CompilerServices;
 
@@ -129,6 +130,16 @@ namespace GameDataSimulation
                 return Lerp(0, Lerp(minExpGain, maxExpGain, multiplierFactor), factor);
             }
 
+            public static double CalculateExperience(int nextLevel, double ticksPerSeconds, double factor = 1, double boost = 1, double multiplierFactor = 1)
+            {
+                var bTicksForLevel = GetTotalTicksForLevel(nextLevel, ticksPerSeconds);
+                var expForNextLevel = ExperienceForLevel(nextLevel);
+                var maxExpGain = expForNextLevel / bTicksForLevel;
+                var minExpGainPercent = GetMinExpGainPercent(nextLevel, ticksPerSeconds);
+                var minExpGain = ExperienceForLevel(nextLevel) * minExpGainPercent;
+                return Lerp(0, Lerp(minExpGain, maxExpGain, multiplierFactor), factor);
+            }
+
             /// <summary>
             /// Gets the total amount of "Ticks" to level up to the given target level after applying the exp boost.
             /// </summary>
@@ -157,6 +168,17 @@ namespace GameDataSimulation
             }
 
             /// <summary>
+            /// Gets the total amount of "Ticks" to level up to the given target level. Without applying any exp boost.
+            /// </summary>
+            /// <param name="level"></param>
+            /// <returns></returns>
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static double GetTotalTicksForLevel(int level, double ticksPerSeconds)
+            {
+                return GetMaxMinutesForLevel(level) * (ticksPerSeconds * 60);
+            }
+
+            /// <summary>
             /// Gets the effective exp multiplier given the current multiplier and player level; 
             /// This is multiplied by the exp given by one "Tick"
             /// </summary>
@@ -179,6 +201,12 @@ namespace GameDataSimulation
             public static double GetMinExpGainPercent(int nextLevel, Skill skill, int playersInArea = 100)
             {
                 return 1d / (GetTicksPerMinute(skill, playersInArea) * GetMaxMinutesForLevel(nextLevel));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static double GetMinExpGainPercent(int nextLevel, double ticksPerSeceond)
+            {
+                return 1d / ((ticksPerSeceond * 60) * GetMaxMinutesForLevel(nextLevel));
             }
 
             /// <summary>
