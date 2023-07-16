@@ -27,9 +27,18 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             }
 
             var village = gameData.GetOrCreateVillageBySession(session);
+            var expForNextLevel = GameMath.ExperienceForLevel(village.Level + 1);
+
+            // check if this village gone mad.
+            var percentage = village.Experience / (double)expForNextLevel;
+            if (percentage > 2)
+            {
+                // this should not happen.
+                return;
+            }
+
 
             village.Experience += (long)GameMath.GetVillageExperience(village.Level, players.Count, elapsed);
-            var expForNextLevel = GameMath.ExperienceForLevel(village.Level + 1);
 
             if (village.Experience >= expForNextLevel && (village.Level + 1 > GameMath.MaxLevel))
             {

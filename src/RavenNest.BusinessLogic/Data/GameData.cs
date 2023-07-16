@@ -482,6 +482,11 @@ namespace RavenNest.BusinessLogic.Data
 
                     var nextLevel = level + 1;
                     var expRatio = entity.Experience / GameMath.OldExperienceForLevel(nextLevel);
+                    if (expRatio > 1)
+                    {
+                        expRatio = 0.75;
+                    }
+
                     var exp = Math.Truncate(GameMath.ExperienceForLevel(nextLevel) * expRatio);
                     if (exp > maxExp)
                     {
