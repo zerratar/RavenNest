@@ -2,6 +2,7 @@
 using RavenNest.BusinessLogic.Net;
 using RavenNest.DataModels;
 using System;
+using System.Collections.Concurrent;
 
 namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
@@ -11,6 +12,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         private readonly TimeSpan updateExpInterval = TimeSpan.FromSeconds(15);
         private DateTime lastUpdate = DateTime.MinValue;
         private DateTime lastExpSend = DateTime.MinValue;
+
+        private readonly ConcurrentDictionary<Guid, double> villageExperience = new ConcurrentDictionary<Guid, double>();
 
         public override void Process(
             GameData gameData,
@@ -35,7 +38,17 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             var village = gameData.GetOrCreateVillageBySession(session);
             var expForNextLevel = GameMath.ExperienceForLevel(village.Level + 1);
 
-            village.Experience += GameMath.GetVillageExperience(village.Level, players.Count, elapsed);
+            var expGain = GameMath.GetVillageExperience(village.Level, players.Count, elapsed);
+
+            if (villageExperience.TryGetValue(village.Id, out var villageExp))
+            {
+                villageExp = (villageExperience[village.Id] = villageExp + expGain);
+            }
+            else
+            {
+                villageExp = (villageExperience[village.Id] = village.Experience + expGain);
+            }
+
             // check if this village gone mad.
             var percentage = village.Experience / (double)expForNextLevel;
             if (percentage > 2)
@@ -43,20 +56,22 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 // this should not happen.
                 return;
             }
-            if (village.Experience >= expForNextLevel && (village.Level + 1 > GameMath.MaxLevel))
+
+            if (villageExp >= expForNextLevel && (village.Level + 1 > GameMath.MaxLevel))
             {
-                village.Experience = (long)expForNextLevel - 1L;
+                villageExp = (long)expForNextLevel - 1L;
             }
 
             var levelDelta = 0;
-            while (village.Experience >= expForNextLevel && village.Level < GameMath.MaxVillageLevel)
+            while (villageExp >= expForNextLevel && village.Level < GameMath.MaxVillageLevel)
             {
-                village.Experience -= (long)expForNextLevel;
+                villageExp -= (long)expForNextLevel;
                 village.Level++;
                 levelDelta++;
                 expForNextLevel = GameMath.ExperienceForLevel(village.Level + 1);
             }
 
+            village.Experience = (long)villageExp;
             var villageHouses = gameData.GetOrCreateVillageHouses(village);
 
             if (levelDelta > 0 || DateTime.UtcNow - lastExpSend > updateExpInterval)

@@ -140,11 +140,11 @@ namespace RavenNest.BusinessLogic
             return 25;
         }
 
-        public static long GetVillageExperience(int level, int playerCount, TimeSpan elapsedTime)
+        public static double GetVillageExperience(int level, int playerCount, TimeSpan elapsedTime)
         {
-            var multiplier = playerCount / 50d;
-            var experience = (long)(GameMath.Exp.CalculateExperience(level + 1, 1) * elapsedTime.TotalSeconds * multiplier);
-            return Math.Max(1, experience);
+            var multiplier = playerCount / 100d;
+            var experience = GameMath.Exp.CalculateExperience(level + 1, 1) * elapsedTime.TotalSeconds * multiplier;
+            return experience;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
