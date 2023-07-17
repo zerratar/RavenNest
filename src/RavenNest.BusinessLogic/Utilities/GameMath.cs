@@ -140,12 +140,13 @@ namespace RavenNest.BusinessLogic
             return 25;
         }
 
-        public static double GetVillageExperience(int level, int playerCount, TimeSpan elapsedTime)
+        public static long GetVillageExperience(int level, int playerCount, TimeSpan elapsedTime)
         {
-            var multiplier = playerCount / 100d;
-            var experience = GameMath.Exp.CalculateExperience(level + 1, 1) * elapsedTime.TotalSeconds * multiplier;
-            return experience;
+            var multiplier = playerCount / 50d;
+            var experience = (long)(GameMath.Exp.CalculateExperience(level + 1, 1) * elapsedTime.TotalSeconds * multiplier);
+            return Math.Max(1, experience);
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double GetClanExperience(int level, TimeSpan elapsedTime)
         {
@@ -244,20 +245,6 @@ namespace RavenNest.BusinessLogic
             price -= reductionCount * price * 0.01d;
             if ((long)price <= min) return min;
             return (long)price;
-            //var minPrice = Math.Max(i.ShopBuyPrice, i.ShopSellPrice);
-
-
-            //inStock = inStock - 10;
-            // reduce 5% price every 10 items in stock
-            //var reductionCount = Math.Truncate(inStock / 10.0);
-            //double price = minPrice;
-            //for (var j = 0; j < reductionCount; ++j)
-            //{
-            //    if (price <= 1) return 1;
-            //    price -= (minPrice * 0.05d);
-            //}
-
-            //return Math.Max(1, (long)price);
         }
 
         /// <summary>
