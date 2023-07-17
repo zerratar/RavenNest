@@ -5,19 +5,38 @@ using GameDataSimulation;
 using GMath = RavenNest.BusinessLogic.GameMath;
 
 
-var playerCount = 300;
-var villageLevel = 170;
-var exp = GMath.GetVillageExperience(villageLevel, playerCount, TimeSpan.FromSeconds(1));
-Console.WriteLine("Enchanting exp gained from a Abraxas 2h Sword (Max Exp)");
+var villages = new UserVillage[]
+{
+    new UserVillage { Level = 170, Population = 352, Name = "LosCautroAmigos" },
+    new UserVillage { Level = 182, Population = 585, Name = "RavenMMO" },
+    new UserVillage { Level = 197, Population = 481, Name = "KeyPandora" },
+};
 
-var expNextLevel = GMath.ExperienceForLevel(villageLevel + 1);
-var percentGain = exp / expNextLevel * 100.0;
+/*
 
-Console.WriteLine("Skill Level: " + villageLevel);
-Console.WriteLine("Item Level: " + playerCount);
-Console.WriteLine("Attribute Count: " + GMath.GetMaxEnchantingAttributeCount(playerCount));
-Console.WriteLine("Exp: " + exp);
-Console.WriteLine("Gained %: " + percentGain);
+loscuatroamigos lv 170, 352, 2.83 xp/h/p
+ravenmmo lv 182, 585, 1.97xp/h/p
+KeyPandora lv 197, 481, 2.85xp/h/p
+
+ */
+
+foreach (var v in villages)
+{
+    var exp = GMath.GetVillageExperience(v.Level, v.Population, TimeSpan.FromSeconds(1));
+    var expNextLevel = GMath.ExperienceForLevel(v.Level + 1);
+    var percentGain = (exp / expNextLevel);
+
+    var expPerHour = exp * 60 * 60;
+
+    Console.WriteLine("Name: " + v.Name);
+    Console.WriteLine("Lv: " + v.Level);
+    Console.WriteLine("Players: " + v.Population);
+    Console.Write("Exp Per Hour: " + expPerHour);
+    Console.WriteLine(" Per Player: " + (expPerHour / v.Population));
+    Console.WriteLine("% Per Hour: " + (percentGain * 60 * 60) * 100.0);
+    Console.WriteLine("Exp Requried: " + expNextLevel);
+    Console.WriteLine();
+}
 Console.ReadKey();
 
 double expBoost = 250;
@@ -74,3 +93,12 @@ while (true)
 //});
 
 while (true) { System.Threading.Thread.Sleep(1000); }
+
+
+
+struct UserVillage
+{
+    public string Name;
+    public int Level;
+    public int Population;
+}
