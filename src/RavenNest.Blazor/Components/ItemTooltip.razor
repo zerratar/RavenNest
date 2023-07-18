@@ -42,7 +42,7 @@
         return base.OnAfterRenderAsync(firstRender);
     }
 
-    public IReadOnlyList<RavenNest.Blazor.Services.ItemStat> GetItemStats()
+    public IReadOnlyList<RavenNest.Models.ItemStat> GetItemStats()
     {
         return ItemService.GetItemStats(Item);
     }

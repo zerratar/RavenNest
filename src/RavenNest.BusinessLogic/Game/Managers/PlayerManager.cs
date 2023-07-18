@@ -8,15 +8,14 @@ using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Extensions;
+using RavenNest.BusinessLogic.Game.Enchantment;
 using RavenNest.BusinessLogic.Models;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
-using RavenNest.BusinessLogic.ScriptParser;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Models.TcpApi;
-using static RavenNest.BusinessLogic.Models.Patreon.API.PatreonIdentity;
 using Appearance = RavenNest.DataModels.Appearance;
 using Gender = RavenNest.DataModels.Gender;
 using Item = RavenNest.DataModels.Item;
@@ -1300,7 +1299,9 @@ namespace RavenNest.BusinessLogic.Game
             if (skills == null || resources == null)
                 return CraftItemResult.Error;
 
-            var craftingLevel = skills.CraftingLevel;
+            var craftingBonus = GetCraftingBonus(character);
+            var craftingLevel = skills.CraftingLevel + craftingBonus;
+
             if (craftingLevel < item.RequiredCraftingLevel)
                 return CraftItemResult.TooLowLevel(item.Id, item.RequiredCraftingLevel);
 
@@ -1393,6 +1394,28 @@ namespace RavenNest.BusinessLogic.Game
             result.InventoryItemId = itemStack.Id;
             result.ItemId = itemId;
             return result;
+        }
+
+        private int GetCraftingBonus(Character character)
+        {
+            var inventory = inventoryProvider.Get(character.Id);
+            var equipped = inventory.GetEquippedItems();
+
+            var skills = ModelMapper.MapForWebsite(gameData.GetCharacterSkills(character.SkillsId));
+            var playerSkills = skills.AsList();
+            var craftingBonus = 0d;
+            foreach (var item in equipped)
+            {
+                var bonuses = item.GetSkillBonuses(playerSkills, gameData);
+                foreach (var bonus in bonuses)
+                {
+                    if (bonus.Skill.Name == "Crafting")
+                    {
+                        craftingBonus += bonus.Bonus;
+                    }
+                }
+            }
+            return (int)craftingBonus;
         }
 
         private static bool CanCraftItems(Item item, Resources resources, int craftingLevel, int amount, out int maxAmount)

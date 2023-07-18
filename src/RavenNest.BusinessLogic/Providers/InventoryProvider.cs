@@ -1298,6 +1298,60 @@ namespace RavenNest.BusinessLogic.Providers
             return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment) && !item.Soulbound.GetValueOrDefault();
         }
 
+
+        public static IReadOnlyList<RavenNest.Models.ItemEnchantment> GetItemEnchantments(string enchantmentString)
+        {
+            List<RavenNest.Models.ItemEnchantment> enchantments = null;
+
+            if (enchantmentString == null)
+            {
+                return enchantments;
+            }
+
+            if (!string.IsNullOrEmpty(enchantmentString))
+            {
+                enchantments = new List<RavenNest.Models.ItemEnchantment>();
+                var en = enchantmentString.Split(';');
+                foreach (var e in en)
+                {
+                    var data = e.Split(':');
+                    var key = data[0];
+                    var value = GetValue(data[1], out var type);
+
+                    //var attr = availableAttributes.FirstOrDefault(x => x.Name == key);
+                    string description;
+
+                    if (type == RavenNest.Models.AttributeValueType.Percent)
+                    {
+                        //if (attr != null)
+                        //{
+                        //    description = attr.Description.Replace(attr.MaxValue, value + "%");
+                        //}
+
+                        description = "Increases " + key.ToLower() + " by " + value + "%";
+                        value = value / 100d;
+                    }
+                    else
+                    {
+                        description = "Increases " + key.ToLower() + " by " + value;
+                        //if (attr != null)
+                        //{
+                        //    description = attr.Description.Replace(attr.MaxValue, value.ToString());
+                        //}
+                    }
+
+                    enchantments.Add(new RavenNest.Models.ItemEnchantment
+                    {
+                        Name = (key[0] + key.ToLower().Substring(1)),
+                        Value = value,
+                        ValueType = type,
+                        Description = description,
+                    });
+                }
+            }
+            return enchantments;
+        }
+
         #endregion
     }
 
