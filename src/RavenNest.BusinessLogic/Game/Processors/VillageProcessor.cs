@@ -8,7 +8,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
     public class VillageProcessor : PlayerTaskProcessor
     {
-        private readonly TimeSpan updateInterval = TimeSpan.FromSeconds(30);
         private readonly TimeSpan updateExpInterval = TimeSpan.FromSeconds(15);
         private DateTime lastUpdate = DateTime.MinValue;
         private DateTime lastExpSend = DateTime.MinValue;
@@ -30,14 +29,19 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             }
 
             var elapsed = DateTime.UtcNow - lastUpdate;
-            if (players.Count == 0 && elapsed < updateInterval)
+            if (players.Count == 0 && elapsed < updateExpInterval)
             {
                 return;
             }
 
-            var village = gameData.GetOrCreateVillageBySession(session);
-            var expForNextLevel = GameMath.ExperienceForLevel(village.Level + 1);
+            if (elapsed > updateExpInterval)
+            {
+                elapsed = updateExpInterval;
+            }
 
+            var village = gameData.GetOrCreateVillageBySession(session);
+            var nextLevel = village.Level + 1;
+            var expForNextLevel = GameMath.ExperienceForLevel(nextLevel);
             var expGain = GameMath.GetVillageExperience(village.Level, players.Count, elapsed);
 
             if (villageExperience.TryGetValue(village.Id, out var villageExp))
@@ -57,7 +61,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 return;
             }
 
-            if (villageExp >= expForNextLevel && (village.Level + 1 > GameMath.MaxLevel))
+            if (villageExp >= expForNextLevel && (nextLevel > GameMath.MaxLevel))
             {
                 villageExp = (long)expForNextLevel - 1L;
             }
