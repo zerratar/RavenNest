@@ -120,7 +120,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 Name = village.Name,
                 Level = villageLevel,
-                Experience = village.Experience,
+                Experience = (long)village.Experience,
 
                 Coins = (long)resources.Coins,
                 Fish = (long)resources.Fish,

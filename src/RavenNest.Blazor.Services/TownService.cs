@@ -149,7 +149,7 @@ namespace RavenNest.Blazor.Services
     {
         public Guid Id { get; set; }
         public int Level { get; set; }
-        public long Experience { get; set; }
+        public double Experience { get; set; }
         public string Name { get; set; }
         public TownOwnerData Owner { get; set; }
         public IReadOnlyList<TownHouseData> TownHouses { get; set; }
