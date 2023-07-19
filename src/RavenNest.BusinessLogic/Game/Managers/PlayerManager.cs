@@ -2589,6 +2589,13 @@ namespace RavenNest.BusinessLogic.Game
                     continue;
                 }
 
+                // lets take ownership of thie character.
+                if (character.UserIdLock == null)
+                {
+                    character.UserIdLock = sessionOwner.Id;
+                    logger.LogWarning("Session Ownership changed! Trying to update a character without session owner. Current Session: " + sessionOwner.UserName + " Character: " + character.Name);
+                }
+
                 if (character.UserIdLock != sessionOwner.Id)
                 {
                     var characterSessionOwner = character.UserIdLock != null ? gameData.GetUser(character.UserIdLock.GetValueOrDefault()) : null;
@@ -2712,6 +2719,13 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     logger.LogError("Trying to update a character that does not exist. ID: " + data.CharacterId);
                     continue;
+                }
+
+                // lets take ownership of thie character.
+                if (character.UserIdLock == null)
+                {
+                    character.UserIdLock = sessionOwner.Id;
+                    logger.LogWarning("Session Ownership changed! Trying to update a character without session owner. Current Session: " + sessionOwner.UserName + " Character: " + character.Name);
                 }
 
                 if (character.UserIdLock != sessionOwner.Id)
