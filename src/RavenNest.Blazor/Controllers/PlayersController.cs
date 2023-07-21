@@ -109,6 +109,13 @@ namespace RavenNest.Controllers
             return GetPlayerAsync();
         }
 
+
+        [HttpGet("user/min")] // due to a misspelling in the customization tool. god darnit :P
+        public Task<Player> GetUserMin()
+        {
+            return GetPlayerInfoAsync();
+        }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{userId}")]
         [Obsolete]
@@ -528,7 +535,39 @@ namespace RavenNest.Controllers
 
             return new System.Collections.Generic.List<WebsitePlayer>();
         }
+        private async Task<Player> GetPlayerInfoAsync()
+        {
+            var sessionId = HttpContext.GetSessionId();
 
+            if (sessionInfoProvider.TryGet(sessionId, out var si) && si.ActiveCharacterId != null)
+            {
+                return playerManager.GetPlayer(si.ActiveCharacterId.Value);
+            }
+
+            var twitchUser = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.GetSessionId());
+            if (twitchUser != null)
+            {
+                return playerManager.GetPlayer(twitchUser.Id, "twitch", "1");
+            }
+
+            var sessionToken = GetSessionToken();
+            if (sessionToken == null || sessionToken.Expired || string.IsNullOrEmpty(sessionToken.AuthToken))
+            {
+                var auth = GetAuthToken();
+                if (auth != null && !auth.Expired)
+                {
+                    var player = playerManager.GetPlayer(auth.UserId, "1");
+                    player.InventoryItems = new List<RavenNest.Models.InventoryItem>();
+                    return player;
+                }
+
+                return null;
+            }
+
+            var p = playerManager.GetPlayer(sessionToken);
+            p.InventoryItems = new List<RavenNest.Models.InventoryItem>();
+            return p;
+        }
         private async Task<Player> GetPlayerAsync()
         {
             var sessionId = HttpContext.GetSessionId();

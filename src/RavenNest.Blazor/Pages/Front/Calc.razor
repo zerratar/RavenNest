@@ -1,0 +1,49 @@
+﻿@page "/calc"
+@using RavenNest.Blazor.Services.Models
+@using Microsoft.AspNetCore.WebUtilities
+@using RavenNest.Blazor.Services
+@inject NavigationManager NavigationManager
+@inject AuthService AuthService
+
+
+<div class="top-section">
+    <div class="hero-text">
+        <h1>Game and Exp Calculator</h1>
+    </div>
+</div>
+
+<div class="calculator">
+    <div class="calculator-area">
+        <h2>Village</h2>
+        @if (session.Authenticated)
+        {
+           <p>When will my Village reach level...</p>
+          <input name="target-village-level" type="number" class="input" value="@targetVillageLevelStr" @onchange="OnTargetVillageLevelChanged" />
+        }
+    </div>
+</div>
+
+@code {
+    private string myVillageLevelStr;
+    private string targetVillageLevelStr;
+    
+    private int targetVillageLevel;
+
+    private double myVillageExp;
+    private RavenNest.Models.SessionInfo session;
+    protected override void OnInitialized()
+    {
+        session = AuthService.GetSession();
+
+    }
+
+    private void OnTargetVillageLevelChanged(ChangeEventArgs evt)
+    {
+        if (evt.Value != null && int.TryParse(evt.Value?.ToString() ?? targetVillageLevelStr, out var newLevel))
+        {
+            targetVillageLevel = newLevel;
+        }
+    }
+
+    //
+}

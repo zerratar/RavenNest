@@ -930,6 +930,21 @@ namespace RavenNest.BusinessLogic.Game
             return result;
         }
 
+        /// <summary>
+        /// Gets a mapped Player without Inventory
+        /// </summary>
+        /// <param name="characterId"></param>
+        /// <returns></returns>
+        public Player GetPlayerInfo(Guid characterId)
+        {
+            var chara = gameData.GetCharacter(characterId);
+            if (chara == null) return null;
+            var user = gameData.GetUser(chara.UserId);
+            var player = chara.Map(gameData, user);
+            player.InventoryItems = new List<RavenNest.Models.InventoryItem>();
+            return player;
+        }
+
         public Player GetPlayer(Guid characterId)
         {
             var chara = gameData.GetCharacter(characterId);
@@ -938,7 +953,8 @@ namespace RavenNest.BusinessLogic.Game
             return chara.Map(gameData, user);
         }
 
-        public Player GetPlayer(string userId, string platform, string identifier)
+
+        public Player GetPlayer(string userId, string platform, string identifier, bool includeInventoryItems = true)
         {
             if (Guid.TryParse(userId, out var characterId))
             {
@@ -947,7 +963,10 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     var user = gameData.GetUser(character.UserId);
                     if (user == null) return null;
-                    return character.Map(gameData, user);
+                    var player = character.Map(gameData, user);
+                    if (!includeInventoryItems)
+                        player.InventoryItems = new List<RavenNest.Models.InventoryItem>();
+                    return player;
                 }
                 return null;
             }
@@ -958,7 +977,10 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     return null;
                 }
-                return GetPlayerByUser(user, identifier);
+                var player = GetPlayerByUser(user, identifier);
+                if (!includeInventoryItems)
+                    player.InventoryItems = new List<RavenNest.Models.InventoryItem>();
+                return player;
             }
         }
 
