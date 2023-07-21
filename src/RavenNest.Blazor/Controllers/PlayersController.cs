@@ -13,6 +13,7 @@ using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
 using RavenNest;
 using System.IO;
+using System.Numerics;
 
 namespace RavenNest.Controllers
 {
@@ -541,13 +542,13 @@ namespace RavenNest.Controllers
 
             if (sessionInfoProvider.TryGet(sessionId, out var si) && si.ActiveCharacterId != null)
             {
-                return playerManager.GetPlayer(si.ActiveCharacterId.Value);
+                return Min(playerManager.GetPlayer(si.ActiveCharacterId.Value));
             }
 
             var twitchUser = await sessionInfoProvider.GetTwitchUserAsync(HttpContext.GetSessionId());
             if (twitchUser != null)
             {
-                return playerManager.GetPlayer(twitchUser.Id, "twitch", "1");
+                return Min(playerManager.GetPlayer(twitchUser.Id, "twitch", "1"));
             }
 
             var sessionToken = GetSessionToken();
@@ -556,18 +557,25 @@ namespace RavenNest.Controllers
                 var auth = GetAuthToken();
                 if (auth != null && !auth.Expired)
                 {
-                    var player = playerManager.GetPlayer(auth.UserId, "1");
-                    player.InventoryItems = new List<RavenNest.Models.InventoryItem>();
-                    return player;
+                    return Min(playerManager.GetPlayer(auth.UserId, "1"));
                 }
 
                 return null;
             }
 
-            var p = playerManager.GetPlayer(sessionToken);
+            return Min(playerManager.GetPlayer(sessionToken));
+        }
+
+        private Player Min(Player p)
+        {
             p.InventoryItems = new List<RavenNest.Models.InventoryItem>();
+            p.Statistics = null;
+            p.State = null;
+            p.Skills = null;
+            p.Resources = null;
             return p;
         }
+
         private async Task<Player> GetPlayerAsync()
         {
             var sessionId = HttpContext.GetSessionId();
