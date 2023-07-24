@@ -142,6 +142,11 @@ namespace RavenNest.BusinessLogic
 
         public static double GetVillageExperience(int level, int playerCount, TimeSpan elapsedTime)
         {
+            if (playerCount <= 0)
+            {
+                return 0;
+            }
+
             // there is a 1% increase of exp per player up to 300 players. (3x max)
             // Base Speed is 1/10th of a skill like cooking,crafting,mining,fishing,farming that has a constant exp gain.
             // every level above 75 (EasyLevel) will add 140 minutes per level, every level below 75 will add a lerped amount from 17,5 minutes to 140 with the amount of (current Level-2) / 75.
@@ -155,7 +160,7 @@ namespace RavenNest.BusinessLogic
             var expForNextLevel = ExperienceForLevel(nextlevel);
             var expGain = expForNextLevel / bTicksForLevel;
             var value = Lerp(0, expGain, factor);
-            if (double.IsNaN(value))
+            if (double.IsNaN(value) || double.IsInfinity(value))
             {
                 return 0;
             }
