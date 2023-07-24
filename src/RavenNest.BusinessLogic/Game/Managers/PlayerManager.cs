@@ -16,7 +16,6 @@ using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Models.TcpApi;
-using Appearance = RavenNest.DataModels.Appearance;
 using Gender = RavenNest.DataModels.Gender;
 using Item = RavenNest.DataModels.Item;
 using Resources = RavenNest.DataModels.Resources;
@@ -2496,23 +2495,6 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        public int[] ToAppearanceData(Appearance appearance)
-        {
-            return new int[]
-            {
-                (int)appearance.Gender,
-                appearance.Gender == Gender.Female ? appearance.FemaleHairModelNumber : appearance.MaleHairModelNumber,
-                (int)appearance.HairColor,
-                appearance.EyesModelNumber,
-                (int)appearance.SkinColor,
-                appearance.BeardModelNumber,
-                (int)appearance.BeardColor,
-                appearance.BrowsModelNumber,
-                (int)appearance.BrowColor,
-                appearance.MouthModelNumber
-            };
-        }
-
         private Player GetPlayerByUser(User user, string identifier)
         {
             var character = gameData.GetCharacterByUserId(user.Id, identifier);
@@ -3978,26 +3960,6 @@ namespace RavenNest.BusinessLogic.Game
                 Head = Utility.Random(0, 23),
                 HelmetVisible = true,
                 Cape = -1,
-            };
-        }
-
-        private static DataModels.SyntyAppearance GenerateSyntyAppearance(Appearance appearance)
-        {
-            return new DataModels.SyntyAppearance
-            {
-                Id = Guid.NewGuid(),
-                Gender = appearance.Gender,
-                SkinColor = GetHexColor(appearance.SkinColor),
-                HairColor = GetHexColor(appearance.HairColor),
-                BeardColor = GetHexColor(appearance.BeardColor),
-                StubbleColor = GetHexColor(appearance.BeardColor),
-                WarPaintColor = GetHexColor(appearance.BeardColor),
-                Hair = 0,
-                FacialHair = 0,
-                Head = 0,
-                Eyebrows = 0,
-                EyeColor = "#000000",
-                HelmetVisible = appearance.HelmetVisible
             };
         }
 

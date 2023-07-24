@@ -103,7 +103,6 @@ namespace RavenNest.BusinessLogic.Data
                 var skills = restorePoint.Get<Skills>();
                 var marketplaceItems = restorePoint.Get<MarketItem>();
                 var syntyAppearance = restorePoint.Get<SyntyAppearance>();
-                var appearances = restorePoint.Get<Appearance>();
                 var resources = restorePoint.Get<Resources>();
                 var charStates = restorePoint.Get<CharacterState>();
                 var charStats = restorePoint.Get<Statistics>();
@@ -142,7 +141,6 @@ namespace RavenNest.BusinessLogic.Data
                             marketplaceItems,
                             skills,
                             syntyAppearance,
-                            appearances,
                             resources,
                             charStates,
                             charStats,
@@ -239,7 +237,6 @@ namespace RavenNest.BusinessLogic.Data
             IReadOnlyList<MarketItem> marketplaceItems,
             IReadOnlyList<Skills> skills,
             IReadOnlyList<SyntyAppearance> syntyAppearances,
-            IReadOnlyList<Appearance> appearances,
             IReadOnlyList<Resources> resources,
             IReadOnlyList<CharacterState> charStates,
             IReadOnlyList<Statistics> charStats,
@@ -266,10 +263,6 @@ namespace RavenNest.BusinessLogic.Data
             SyntyAppearance appearance = syntyAppearances.FirstOrDefault(x => x.Id == character.SyntyAppearanceId);
             if (appearance != null)
                 query.AppendLine(qb.Insert(appearance));
-
-            Appearance appearance_old = appearances.FirstOrDefault(x => x.Id == character.AppearanceId);
-            if (appearance_old != null)
-                query.AppendLine(qb.Insert(appearance_old));
 
             Resources resx = resources.FirstOrDefault(x => x.Id == character.ResourcesId);
             if (resx != null)

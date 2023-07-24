@@ -35,7 +35,6 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<ServerSettings> ServerSettings { get; set; }
         public virtual DbSet<ResourceItemDrop> ResourceItemDrop { get; set; }
         public virtual DbSet<PatreonSettings> PatreonSettings { get; set; }
-        public virtual DbSet<Appearance> Appearance { get; set; }
         public virtual DbSet<SyntyAppearance> SyntyAppearance { get; set; }
         public virtual DbSet<Character> Character { get; set; }
         public virtual DbSet<CharacterState> CharacterState { get; set; }
@@ -124,7 +123,6 @@ namespace RavenNest.BusinessLogic.Data
 
             modelBuilder.Entity<ExpMultiplierEvent>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<CharacterSessionActivity>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
-            modelBuilder.Entity<Appearance>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<SyntyAppearance>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<ServerLogs>(entity => entity.Property<ServerLogSeverity>(x => x.Severity).HasConversion<int>());
 

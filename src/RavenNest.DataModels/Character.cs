@@ -5,8 +5,6 @@ namespace RavenNest.DataModels
     public partial class Character : Entity<Character>
     {
         private Guid userId; public Guid UserId { get => userId; set => Set(ref userId, value); }
-        private Guid? appearanceId;
-        [Obsolete] public Guid? AppearanceId { get => appearanceId; set => Set(ref appearanceId, value); }
         private Guid syntyAppearanceId; public Guid SyntyAppearanceId { get => syntyAppearanceId; set => Set(ref syntyAppearanceId, value); }
         private Guid skillsId; public Guid SkillsId { get => skillsId; set => Set(ref skillsId, value); }
         private Guid statisticsId;
@@ -18,13 +16,8 @@ namespace RavenNest.DataModels
         private DateTime created; public DateTime Created { get => created; set => Set(ref created, value); }
         private string name; public string Name { get => name; set => Set(ref name, value); }
         private string description; public string Description { get => description; set => Set(ref description, value); }
-        private int? revision; 
-        [Obsolete] public int? Revision { get => revision; set => Set(ref revision, value); }
         private Guid? userIdLock; public Guid? UserIdLock { get => userIdLock; set => Set(ref userIdLock, value); }
         private DateTime? lastUsed; public DateTime? LastUsed { get => lastUsed; set => Set(ref lastUsed, value); }
-
-        [Obsolete]
-        private Guid? clanId; public Guid? ClanId { get => clanId; set => Set(ref clanId, value); }
         private int characterIndex; public int CharacterIndex { get => characterIndex; set => Set(ref characterIndex, value); }
         private string identifier; public string Identifier { get => identifier; set => Set(ref identifier, value); }
     }

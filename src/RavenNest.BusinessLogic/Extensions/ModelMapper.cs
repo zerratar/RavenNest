@@ -7,7 +7,6 @@ using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Models;
 using RavenNest.DataModels;
 using RavenNest.Models;
-using Appearance = RavenNest.DataModels.Appearance;
 using InventoryItem = RavenNest.DataModels.InventoryItem;
 using Item = RavenNest.DataModels.Item;
 using Resources = RavenNest.DataModels.Resources;

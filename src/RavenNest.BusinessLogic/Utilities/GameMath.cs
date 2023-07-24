@@ -151,7 +151,7 @@ namespace RavenNest.BusinessLogic
             var factor = playerFactor * elapsedTime.TotalSeconds;
 
             var nextlevel = level + 1;
-            var bTicksForLevel = Exp.GetMaxMinutesForLevel(level) * 60; // 1 tick per second
+            var bTicksForLevel = Exp.GetMaxMinutesForLevel(level) * 60; // multiply by 60 to get seconds, since we have 1 tick per second
             var expForNextLevel = ExperienceForLevel(nextlevel);
             var expGain = expForNextLevel / bTicksForLevel;
             return Lerp(0, expGain, factor);

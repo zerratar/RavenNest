@@ -71,13 +71,13 @@ namespace RavenNest.Tools.Actions
                 ToolStatus.Text = "RavenBot built!";
                 // wait for a second to ensure the ravenbot build was done.
                 await Task.Delay(1000);
+                buildState = BuildState.Full_Windows;
             }
 
             BuildVersion = GetNextVersion();
 
             ToolStatus.Text = "Building Release Package...";
             ToolProgress.Indeterminate = false;
-            buildState = BuildState.Full_Windows;
             await BuildPackageAsync();
         }
 

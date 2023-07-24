@@ -69,7 +69,6 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<UserPatreon> patreons;
         private readonly EntitySet<UserAccess> userAccess;
         private readonly EntitySet<CharacterSessionActivity> characterSessionActivities;
-        private readonly EntitySet<Appearance> appearances;
         private readonly EntitySet<SyntyAppearance> syntyAppearances;
         private readonly EntitySet<Character> characters;
         private readonly EntitySet<CharacterState> characterStates;
@@ -157,7 +156,6 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(UserClaimedLoyaltyReward),
                         typeof(UserPatreon),
                         typeof(UserProperty),
-                        typeof(Appearance),
                         typeof(SyntyAppearance),
                         typeof(Character),
                         typeof(CharacterState),
@@ -260,10 +258,6 @@ namespace RavenNest.BusinessLogic.Data
 
                     expMultiplierEvents = new EntitySet<ExpMultiplierEvent>(
                         ctx.ExpMultiplierEvent.ToList());
-
-                    appearances = new EntitySet<Appearance>(
-                        restorePoint?.Get<Appearance>() ??
-                        ctx.Appearance.ToList());
 
                     syntyAppearances = new EntitySet<SyntyAppearance>(restorePoint?.Get<SyntyAppearance>() ?? ctx.SyntyAppearance.ToList());
                     characters = new EntitySet<Character>(restorePoint?.Get<Character>() ?? ctx.Character.ToList());
@@ -383,7 +377,7 @@ namespace RavenNest.BusinessLogic.Data
                         pets,
                         patreons, loyalty, loyaltyRewards, loyaltyRanks, claimedLoyaltyRewards,
                         expMultiplierEvents, notifications,
-                        appearances, syntyAppearances, characters, characterStates,
+                        syntyAppearances, characters, characterStates,
                         userProperties, vendorTransaction,
                         userBankItems,
                         characterSkillRecords,
@@ -505,27 +499,10 @@ namespace RavenNest.BusinessLogic.Data
         {
             foreach (var c in this.characters.Entities)
             {
-                c.Revision = null;
-
                 if (c.ResourcesId != null)
                 {
                     c.ResourcesId = null;
                 }
-
-                if (c.AppearanceId != null)
-                {
-                    var appearance = GetAppearance(c.AppearanceId);
-                    if (appearance != null)
-                    {
-                        Remove(appearance);
-                    }
-                    c.AppearanceId = null;
-                }
-            }
-
-            foreach (var a in this.appearances.Entities)
-            {
-                Remove(a);
             }
         }
 
@@ -1958,12 +1935,6 @@ namespace RavenNest.BusinessLogic.Data
                 Remove(r);
             }
 
-            var appearance = GetAppearance(c.AppearanceId);
-            if (appearance != null)
-            {
-                Remove(appearance);
-            }
-
             var statistics = GetStatistics(c.StatisticsId);
             if (statistics != null)
             {
@@ -2013,12 +1984,6 @@ namespace RavenNest.BusinessLogic.Data
                 foreach (var r in records)
                 {
                     Remove(r);
-                }
-
-                var appearance = GetAppearance(c.AppearanceId);
-                if (appearance != null)
-                {
-                    Remove(appearance);
                 }
 
                 var statistics = GetStatistics(c.StatisticsId);
@@ -2092,12 +2057,6 @@ namespace RavenNest.BusinessLogic.Data
                         foreach (var r in records)
                         {
                             Remove(r);
-                        }
-
-                        var appearance = GetAppearance(c.AppearanceId);
-                        if (appearance != null)
-                        {
-                            Remove(appearance);
                         }
 
                         var statistics = GetStatistics(c.StatisticsId);
@@ -2314,9 +2273,6 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(Skills entity) => Update(() => characterSkills.Add(entity));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public AddEntityResult Add(Appearance entity) => Update(() => appearances.Add(entity));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(Resources entity) => Update(() => resources.Add(entity));
@@ -3362,8 +3318,6 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(UserPatreon item) => patreons.Remove(item);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public RemoveEntityResult Remove(Appearance item) => appearances.Remove(item);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(CharacterClanSkillCooldown item) => characterClanSkillCooldown.Remove(item);
 
