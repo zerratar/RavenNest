@@ -116,6 +116,16 @@ namespace RavenNest.BusinessLogic.Game
             var maxHouseCount = GameMath.MaxVillageLevel / 10;
             var resources = gameData.GetResources(village.ResourcesId);
 
+            if (resources == null)
+            {
+                resources = new DataModels.Resources
+                {
+                    Id = Guid.NewGuid(),
+                };
+                gameData.Add(resources);
+                village.ResourcesId = resources.Id;
+            }
+
             return new VillageInfo
             {
                 Name = village.Name,

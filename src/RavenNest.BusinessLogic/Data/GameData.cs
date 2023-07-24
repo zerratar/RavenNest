@@ -1053,6 +1053,19 @@ namespace RavenNest.BusinessLogic.Data
 
         private void EnsureResources()
         {
+            foreach (var village in villages.Entities)
+            {
+                var resources = GetResources(village.ResourcesId);
+                if (resources == null)
+                {
+                    resources = new DataModels.Resources
+                    {
+                        Id = Guid.NewGuid(),
+                    };
+                    Add(resources);
+                    village.ResourcesId = resources.Id;
+                }
+            }
 
             if (resourceItemDrops.Entities.Count == 0)
             {
