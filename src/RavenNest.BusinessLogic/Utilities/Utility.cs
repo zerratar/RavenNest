@@ -27,32 +27,32 @@ namespace RavenNest.BusinessLogic.Game
 
         public static string FormatTime(TimeSpan time)
         {
-            if (time.TotalSeconds < 60) return time.TotalSeconds + " seconds";
+            if (time.TotalSeconds < 60) return time.TotalSeconds + "s";
             if (time.TotalMinutes < 60)
             {
                 if (time.Seconds > 0)
                 {
-                    return time.Minutes + " minutes, " + time.Seconds + " seconds";
+                    return time.Minutes + "m, " + time.Seconds + "s";
                 }
-                return time.Minutes + " minutes";
+                return time.Minutes + "m";
             }
 
             if (time.TotalDays > 1)
             {
                 if (time.Hours > 0)
                 {
-                    return $"{time.Days} days, {time.Hours} hours";
+                    return $"{time.Days}d, {time.Hours}h";
                 }
 
-                return $"{time.Days} days";
+                return $"{time.Days}d";
             }
 
             if (time.Minutes > 0)
             {
-                return $"{time.Hours} hours, {time.Minutes} minutes";
+                return $"{time.Hours}h, {time.Minutes}m";
             }
 
-            return $"{time.Hours} hours";
+            return $"{time.Hours}h";
         }
         public static string FormatAmount(double value)
         {

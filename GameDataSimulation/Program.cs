@@ -7,12 +7,12 @@ using System.Drawing.Text;
 using GMath = RavenNest.BusinessLogic.GameMath;
 
 var villages = new List<UserVillage>();
-for (var j = 0; j < 5; j++)
+for (var j = 0; j < 7; j++)
 {
-    var level = 1 + (j * 50);
+    var level = j == 0 ? 1 : (j * 50) - 1;
     for (var i = 0; i < 4; i++)
     {
-        var population = (i % 4) * 100;
+        var population = (i % 4) * 10;//100;
         villages.Add(new UserVillage
         {
             Level = level,
@@ -45,6 +45,79 @@ void ConsoleValue(string label, object value)
     Console.WriteLine(value.ToString());
 }
 
+void WriteHeader(int padding, params object[] columns)
+{
+    var strValues = columns.Select(x => x.ToString()).ToArray();
+    //var padding = strValues.Max(x => x.Length);
+    var tableWidth = (padding + 2) * columns.Length + 4;
+
+    //╔═══════════════╦═══════╦═══════════════════════╗
+    Console.Write("╔");
+    for (var i = 0; i < columns.Length; ++i)
+    {
+        for (var j = 0; j < padding + 2; ++j)
+            Console.Write("═");
+        if (i < columns.Length - 1)
+            Console.Write("╦");
+    }
+    Console.WriteLine("╗");
+
+    Console.Write("║");
+    for (var i = 0; i < columns.Length; i++)
+    {
+        var value = " " + strValues[i].PadRight(padding, ' ') + " ";
+        Console.Write(value);
+        Console.Write("║");
+    }
+
+    Console.WriteLine();
+}
+
+void WriteRow(int padding, params object[] values)
+{
+    BeginRow(padding, values.Length);
+
+    Console.Write("║");
+    for (var i = 0; i < values.Length; i++)
+    {
+        var value = " " + values[i].ToString().PadRight(padding, ' ') + " ";
+        Console.Write(value);
+        Console.Write("║");
+    }
+    Console.WriteLine();
+}
+
+void BeginRow(int padding, int columns)
+{
+    Console.Write("╠");//╚
+    for (var i = 0; i < columns; ++i)
+    {
+        for (var j = 0; j < padding + 2; ++j)
+            Console.Write("═");
+        if (i < columns - 1)
+            Console.Write("╬");//╩
+    }
+    Console.WriteLine("╣");//╝
+}
+
+void EndTable(int padding, int columns)
+{
+    Console.Write("╚");
+    for (var i = 0; i < columns; ++i)
+    {
+        for (var j = 0; j < padding + 2; ++j)
+            Console.Write("═");
+        if (i < columns - 1)
+            Console.Write("╩");
+    }
+    Console.WriteLine("╝");
+}
+
+var tablePadding = 10;
+var decimalRounding = 3;
+var columns = new string[] { "Lv From", "Lv To", "Players", "XP/H", "%/H", "TTL" };
+WriteHeader(tablePadding, columns);
+
 foreach (var v in villages)
 {
     var exp = GMath.GetVillageExperience(v.Level, v.Population, TimeSpan.FromSeconds(1));
@@ -55,16 +128,16 @@ foreach (var v in villages)
     var percentPerHour = (percentGain * 60 * 60);
 
     var secondsForLevel = expNextLevel / exp;
-    var ttl = TimeSpan.FromSeconds(secondsForLevel);
 
-    ConsoleValue("Lv:", v.Level);
-    ConsoleValue("Players:", v.Population);
-    ConsoleValue("XP/H and %/H:", expPerHour + "\t" + (percentPerHour * 100.0));
-    if (v.Population > 0)
-        ConsoleValue("XP/P/H:", (expPerHour / v.Population));
-    ConsoleValue("Time To Lv:", Utility.FormatTime(ttl));
-    Console.WriteLine();
+    var ttl = exp == 0 ? "never" : Utility.FormatTime(TimeSpan.FromSeconds(secondsForLevel));
+
+    WriteRow(tablePadding, v.Level, v.Level + 1, v.Population,
+        Math.Round(expPerHour, decimalRounding),
+        Math.Round(percentPerHour * 100.0d, decimalRounding), ttl);
+    //Console.WriteLine();
 }
+
+EndTable(tablePadding, columns.Length);
 
 Console.ReadKey();
 

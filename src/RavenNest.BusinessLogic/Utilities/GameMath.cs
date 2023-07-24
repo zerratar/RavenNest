@@ -147,9 +147,14 @@ namespace RavenNest.BusinessLogic
             // every level above 75 (EasyLevel) will add 140 minutes per level, every level below 75 will add a lerped amount from 17,5 minutes to 140 with the amount of (current Level-2) / 75.
             // multiplier effects time, not the actual exp amount. so 3x is 3 times less time to level up compared to the base time.
             // this means, 17min, 30s / 4 (max gain where 1+3) = 4 min, 22s, more players are not linear in exp gain but they most certainly help still.
-            var playerFactor = 0.1d + (Math.Min(0.3, playerCount / 1000d));
+            var playerFactor = (Math.Min(0.3, playerCount / 1000d));//0.1d + 
             var factor = playerFactor * elapsedTime.TotalSeconds;
-            return Exp.CalculateExperience(level + 1, 1, factor);
+
+            var nextlevel = level + 1;
+            var bTicksForLevel = Exp.GetMaxMinutesForLevel(level) * 60; // 1 tick per second
+            var expForNextLevel = ExperienceForLevel(nextlevel);
+            var expGain = expForNextLevel / bTicksForLevel;
+            return Lerp(0, expGain, factor);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
