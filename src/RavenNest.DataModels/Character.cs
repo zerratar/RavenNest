@@ -9,7 +9,7 @@ namespace RavenNest.DataModels
         private Guid skillsId; public Guid SkillsId { get => skillsId; set => Set(ref skillsId, value); }
         private Guid statisticsId;
         [Obsolete] public Guid StatisticsId { get => statisticsId; set => Set(ref statisticsId, value); }
-        private Guid? stateId; public Guid? StateId { get => stateId; set => Set(ref stateId, value); }
+        private Guid stateId; public Guid StateId { get => stateId; set => Set(ref stateId, value); }
         private Guid originUserId; public Guid OriginUserId { get => originUserId; set => Set(ref originUserId, value); }
         private DateTime created; public DateTime Created { get => created; set => Set(ref created, value); }
         private string name; public string Name { get => name; set => Set(ref name, value); }
