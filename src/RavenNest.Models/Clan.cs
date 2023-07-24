@@ -4,6 +4,7 @@ namespace RavenNest.Models
 {
     public class Clan
     {
+        public Clan() { }
         public Guid Id { get; set; }
         [Obsolete("Use Owner User Id instead")]
         public string Owner { get; set; }

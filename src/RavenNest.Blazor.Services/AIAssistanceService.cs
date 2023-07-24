@@ -365,7 +365,7 @@ namespace RavenNest.Blazor.Services
         {
             return FormatTime(System.TimeSpan.FromSeconds(restedTime ?? 0));
         }
-        private string FormatTime(TimeSpan time)
+        public static string FormatTime(TimeSpan time)
         {
             if (time.TotalSeconds < 60) return time.TotalSeconds + " seconds";
             if (time.TotalMinutes < 60)

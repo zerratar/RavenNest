@@ -6,6 +6,7 @@ namespace RavenNest.Models
     // Want to rename this to ItemInstance
     public class InventoryItem
     {
+        public InventoryItem() { }
         public Guid Id { get; set; }
 
         public Guid ItemId { get; set; }
@@ -24,6 +25,7 @@ namespace RavenNest.Models
 
     public class UserBankItem
     {
+        public UserBankItem() { }
         public Guid Id { get; set; }
         public Guid UserId { get; set; }
         public Guid ItemId { get; set; }
@@ -38,6 +40,7 @@ namespace RavenNest.Models
 
     public class InventoryItemAttribute
     {
+        public InventoryItemAttribute() { }
         public Guid Id { get; set; }
         public Guid InventoryItemId { get; set; }
         public ItemAttribute Attribute { get; set; }
@@ -46,6 +49,7 @@ namespace RavenNest.Models
 
     public class ItemAttribute
     {
+        public ItemAttribute() { }
         public int AttributeIndex { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }

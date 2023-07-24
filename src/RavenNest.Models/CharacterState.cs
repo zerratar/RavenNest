@@ -4,6 +4,7 @@ namespace RavenNest.Models
 {
     public class CharacterState
     {
+        public CharacterState() { }
         public Guid Id { get; set; }
         public int Health { get; set; }
         public bool InRaid { get; set; }

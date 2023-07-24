@@ -4,6 +4,7 @@ namespace RavenNest.Models
 {
     public class BattlePet
     {
+        public BattlePet() { }
         public Guid Id { get; set; }
         public Guid CharacterId { get; set; }
         public BattlePetType Type { get; set; }

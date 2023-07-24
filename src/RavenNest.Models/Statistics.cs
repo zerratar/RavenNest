@@ -4,6 +4,7 @@ namespace RavenNest.Models
 {
     public class Statistics
     {
+        public Statistics() { }
         public Guid Id { get; set; }
 
         public int RaidsWon { get; set; }

@@ -142,15 +142,20 @@ namespace RavenNest.BusinessLogic
 
         public static double GetVillageExperience(int level, int playerCount, TimeSpan elapsedTime)
         {
-            var multiplier = Math.Min(0.1, Math.Max(1, playerCount / 1000d));
-            var experience = GameMath.Exp.CalculateExperience(level + 1, 1) * elapsedTime.TotalSeconds * multiplier;
-            return experience;
+            // there is a 1% increase of exp per player up to 300 players. (3x max)
+            // Base Speed is 1/10th of a skill like cooking,crafting,mining,fishing,farming that has a constant exp gain.
+            // every level above 75 (EasyLevel) will add 140 minutes per level, every level below 75 will add a lerped amount from 17,5 minutes to 140 with the amount of (current Level-2) / 75.
+            // multiplier effects time, not the actual exp amount. so 3x is 3 times less time to level up compared to the base time.
+            // this means, 17min, 30s / 4 (max gain where 1+3) = 4 min, 22s, more players are not linear in exp gain but they most certainly help still.
+            var playerFactor = 0.1d + (Math.Min(0.3, playerCount / 1000d));
+            var factor = playerFactor * elapsedTime.TotalSeconds;
+            return Exp.CalculateExperience(level + 1, 1, factor);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double GetClanExperience(int level, TimeSpan elapsedTime)
         {
-            return GameMath.Exp.CalculateExperience(level + 1, 1) * elapsedTime.TotalSeconds * 0.025d;
+            return Exp.CalculateExperience(level + 1, 1) * elapsedTime.TotalSeconds * 0.025d;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -307,7 +312,7 @@ namespace RavenNest.BusinessLogic
                 var expForNextLevel = ExperienceForLevel(nextLevel);
                 var maxExpGain = expForNextLevel / bTicksForLevel;
                 var minExpGainPercent = GetMinExpGainPercent(nextLevel, skill);
-                var minExpGain = ExperienceForLevel(nextLevel) * minExpGainPercent;
+                var minExpGain = expForNextLevel * minExpGainPercent;
                 return Lerp(0, Lerp(minExpGain, maxExpGain, multiplierFactor), factor);
             }
 
@@ -317,7 +322,7 @@ namespace RavenNest.BusinessLogic
                 var expForNextLevel = ExperienceForLevel(nextLevel);
                 var maxExpGain = expForNextLevel / bTicksForLevel;
                 var minExpGainPercent = GetMinExpGainPercent(nextLevel, ticksPerSeconds);
-                var minExpGain = ExperienceForLevel(nextLevel) * minExpGainPercent;
+                var minExpGain = expForNextLevel * minExpGainPercent;
                 return Lerp(0, Lerp(minExpGain, maxExpGain, multiplierFactor), factor);
             }
 
@@ -400,7 +405,8 @@ namespace RavenNest.BusinessLogic
             {
                 if (level <= EasyLevel)
                 {
-                    return (level - 1) * GameMath.Lerp(IncrementMins / 8.0d, IncrementMins, level / EasyLevel);
+                    var increment = Lerp(IncrementMins / 8.0d, IncrementMins, (level - 2) / EasyLevel);
+                    return (level - 1) * increment;
                 }
 
                 return (level - 1) * IncrementMins;

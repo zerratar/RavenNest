@@ -4,6 +4,7 @@ namespace RavenNest.Models
 {
     public class SyntyAppearance
     {
+        public SyntyAppearance() { }
         public Guid Id { get; set; }
         public Gender Gender { get; set; }
         public int Hair { get; set; }

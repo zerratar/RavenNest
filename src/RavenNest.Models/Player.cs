@@ -6,10 +6,10 @@ namespace RavenNest.Models
 {
     public class Player
     {
+        public Player() { }
         public Guid Id { get; set; }
         public Guid UserId { get; set; }
         public string UserName { get; set; }
-
         public string Name { get; set; }
 
         public Statistics Statistics { get; set; }
@@ -39,6 +39,7 @@ namespace RavenNest.Models
 
     public class AuthServiceConnection
     {
+        public AuthServiceConnection() { }
         public string Platform { get; set; }
         public string PlatformId { get; set; }
         public string PlatformUserName { get; set; }

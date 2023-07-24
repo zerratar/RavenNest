@@ -25,6 +25,35 @@ namespace RavenNest.BusinessLogic.Game
             return random.Next(min, max);
         }
 
+        public static string FormatTime(TimeSpan time)
+        {
+            if (time.TotalSeconds < 60) return time.TotalSeconds + " seconds";
+            if (time.TotalMinutes < 60)
+            {
+                if (time.Seconds > 0)
+                {
+                    return time.Minutes + " minutes, " + time.Seconds + " seconds";
+                }
+                return time.Minutes + " minutes";
+            }
+
+            if (time.TotalDays > 1)
+            {
+                if (time.Hours > 0)
+                {
+                    return $"{time.Days} days, {time.Hours} hours";
+                }
+
+                return $"{time.Days} days";
+            }
+
+            if (time.Minutes > 0)
+            {
+                return $"{time.Hours} hours, {time.Minutes} minutes";
+            }
+
+            return $"{time.Hours} hours";
+        }
         public static string FormatAmount(double value)
         {
             return FormatValue(value, AmountPostFix, "");

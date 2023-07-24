@@ -2,16 +2,32 @@
 
 
 using GameDataSimulation;
+using RavenNest.BusinessLogic.Game;
+using System.Drawing.Text;
 using GMath = RavenNest.BusinessLogic.GameMath;
 
-
-var villages = new UserVillage[]
+var villages = new List<UserVillage>();
+for (var j = 0; j < 5; j++)
 {
-    new UserVillage { Level = 170, Population = 352, Name = "LosCautroAmigos" },
-    new UserVillage { Level = 182, Population = 585, Name = "RavenMMO" },
-    new UserVillage { Level = 197, Population = 481, Name = "KeyPandora" },
-};
-
+    var level = 1 + (j * 50);
+    for (var i = 0; i < 4; i++)
+    {
+        var population = (i % 4) * 100;
+        villages.Add(new UserVillage
+        {
+            Level = level,
+            Name = "Village " + j + "#" + i,
+            Population = population
+        });
+    }
+}
+//var villages = new UserVillage[]
+//{
+//    new UserVillage { Level = 10, Population = 25, Name = "Someone" },
+//    new UserVillage { Level = 170, Population = 352, Name = "LosCautroAmigos" },
+//    new UserVillage { Level = 182, Population = 585, Name = "RavenMMO" },
+//    new UserVillage { Level = 200, Population = 481, Name = "KeyPandora" },
+//};
 /*
 
 loscuatroamigos lv 170, 352, 2.83 xp/h/p
@@ -20,6 +36,15 @@ KeyPandora lv 197, 481, 2.85xp/h/p
 
  */
 
+void ConsoleValue(string label, object value)
+{
+    Console.ResetColor();
+    Console.ForegroundColor = ConsoleColor.Gray;
+    Console.Write(label.PadRight(14, ' '));
+    Console.ForegroundColor = ConsoleColor.Cyan;
+    Console.WriteLine(value.ToString());
+}
+
 foreach (var v in villages)
 {
     var exp = GMath.GetVillageExperience(v.Level, v.Population, TimeSpan.FromSeconds(1));
@@ -27,16 +52,20 @@ foreach (var v in villages)
     var percentGain = (exp / expNextLevel);
 
     var expPerHour = exp * 60 * 60;
+    var percentPerHour = (percentGain * 60 * 60);
 
-    Console.WriteLine("Name: " + v.Name);
-    Console.WriteLine("Lv: " + v.Level);
-    Console.WriteLine("Players: " + v.Population);
-    Console.Write("Exp Per Hour: " + expPerHour);
-    Console.WriteLine(" Per Player: " + (expPerHour / v.Population));
-    Console.WriteLine("% Per Hour: " + (percentGain * 60 * 60) * 100.0);
-    Console.WriteLine("Exp Requried: " + expNextLevel);
+    var secondsForLevel = expNextLevel / exp;
+    var ttl = TimeSpan.FromSeconds(secondsForLevel);
+
+    ConsoleValue("Lv:", v.Level);
+    ConsoleValue("Players:", v.Population);
+    ConsoleValue("XP/H and %/H:", expPerHour + "\t" + (percentPerHour * 100.0));
+    if (v.Population > 0)
+        ConsoleValue("XP/P/H:", (expPerHour / v.Population));
+    ConsoleValue("Time To Lv:", Utility.FormatTime(ttl));
     Console.WriteLine();
 }
+
 Console.ReadKey();
 
 double expBoost = 250;

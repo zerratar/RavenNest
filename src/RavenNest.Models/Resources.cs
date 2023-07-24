@@ -4,6 +4,7 @@ namespace RavenNest.Models
 {
     public class Resources
     {
+        public Resources() { }
         public Guid Id { get; set; }
         public double Wood { get; set; }
         public double Ore { get; set; }

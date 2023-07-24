@@ -5,6 +5,7 @@ namespace RavenNest.Models
 
     public class Skills
     {
+        public Skills() { }
         public Guid Id { get; set; }
         public double Attack { get; set; }
         public double Defense { get; set; }
