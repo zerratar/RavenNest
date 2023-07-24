@@ -154,7 +154,12 @@ namespace RavenNest.BusinessLogic
             var bTicksForLevel = Exp.GetMaxMinutesForLevel(level) * 60; // multiply by 60 to get seconds, since we have 1 tick per second
             var expForNextLevel = ExperienceForLevel(nextlevel);
             var expGain = expForNextLevel / bTicksForLevel;
-            return Lerp(0, expGain, factor);
+            var value = Lerp(0, expGain, factor);
+            if (double.IsNaN(value))
+            {
+                return 0;
+            }
+            return value;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

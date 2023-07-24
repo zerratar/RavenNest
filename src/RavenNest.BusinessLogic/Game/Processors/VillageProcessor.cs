@@ -41,6 +41,11 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             var expForNextLevel = GameMath.ExperienceForLevel(nextLevel);
             village.Experience += GameMath.GetVillageExperience(village.Level, players.Count, elapsed);
 
+            if (double.IsNaN(village.Experience))
+            {
+                village.Experience = 0;
+            }
+
             // check if this village gone mad.
             var percentage = village.Experience / (double)expForNextLevel;
             if (percentage > 2)
