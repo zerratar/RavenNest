@@ -409,7 +409,6 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureCharacterSkillRecords();
                 EnsureMagicAttributes();
                 EnsureResources();
-                RemoveOldData();
 
                 //FixVillageLevels();
                 //TransformExperience();
@@ -495,17 +494,6 @@ namespace RavenNest.BusinessLogic.Data
         //    }
         //}
 
-        private void RemoveOldData()
-        {
-            foreach (var c in this.characters.Entities)
-            {
-                if (c.ResourcesId != null)
-                {
-                    c.ResourcesId = null;
-                }
-            }
-        }
-
         private void MergeInventoryItems()
         {
             bool CanMerge(InventoryItem i)
@@ -571,15 +559,6 @@ namespace RavenNest.BusinessLogic.Data
             foreach (var res in resources.Entities)
             {
                 var match = false;
-                foreach (var character in characters.Entities)
-                {
-                    if (character.ResourcesId == res.Id)
-                    {
-                        match = true;
-                        break;
-                    }
-                }
-
                 foreach (var village in villages.Entities)
                 {
                     if (village.ResourcesId == res.Id)
@@ -1126,17 +1105,6 @@ namespace RavenNest.BusinessLogic.Data
                                 charProcessed.Add(oc.Id);
                                 var newCharIndex = otherChars.Count;
 
-                                // player has already been lost, resources wont be joined.
-                                if (oc.ResourcesId != null)
-                                {
-                                    var resx = GetResources(oc.ResourcesId.Value);
-                                    if (resx != null)
-                                    {
-                                        Remove(resx);
-                                    }
-                                }
-
-                                oc.ResourcesId = null;
                                 oc.UserId = maybe.Id;
                                 oc.UserIdLock = null;
                                 oc.CharacterIndex = newCharIndex;
@@ -1179,23 +1147,6 @@ namespace RavenNest.BusinessLogic.Data
                 var wood = 0d;
                 var ore = 0d;
 
-                foreach (var c in chars)
-                {
-                    if (c.ResourcesId != null)
-                    {
-                        var r = GetResources(c.ResourcesId.Value);
-                        if (r != null)
-                        {
-                            coins += r.Coins;
-                            wood += r.Wood;
-                            fish += r.Fish;
-                            wheat += r.Wheat;
-                            ore += r.Ore;
-                            Remove(r);
-                        }
-                        c.ResourcesId = null;
-                    }
-                }
                 var res = new DataModels.Resources
                 {
                     Coins = coins,
@@ -1905,15 +1856,6 @@ namespace RavenNest.BusinessLogic.Data
                 Remove(s);
             }
 
-            if (c.ResourcesId != null)
-            {
-                var resx = GetResources(c.ResourcesId.Value);
-                if (resx != null)
-                {
-                    Remove(resx);
-                }
-            }
-
             var invItems = GetInventoryItems(c.Id);
             foreach (var invItem in invItems)
             {
@@ -1964,15 +1906,6 @@ namespace RavenNest.BusinessLogic.Data
                 if (items != null && items.Count > 0)
                 {
                     return;
-                }
-
-                if (c.ResourcesId != null)
-                {
-                    var resx = GetResources(c.ResourcesId.Value);
-                    if (resx != null)
-                    {
-                        Remove(resx);
-                    }
                 }
 
                 if (s != null)

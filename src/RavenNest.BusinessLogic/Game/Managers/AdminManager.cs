@@ -472,16 +472,6 @@ namespace RavenNest.BusinessLogic.Game
                     gameData.Remove(altSkills);
                 }
 
-                if (alt.ResourcesId != null)
-                {
-                    var altResources = gameData.GetResources(alt.ResourcesId.Value);
-                    if (altResources != null)
-                    {
-                        gameData.Remove(altResources);
-                    }
-                    alt.ResourcesId = null;
-                }
-
                 var altItems = gameData.GetAllPlayerItems(alt.Id);
                 foreach (var altItem in altItems)
                 {

@@ -264,10 +264,6 @@ namespace RavenNest.BusinessLogic.Data
             if (appearance != null)
                 query.AppendLine(qb.Insert(appearance));
 
-            Resources resx = resources.FirstOrDefault(x => x.Id == character.ResourcesId);
-            if (resx != null)
-                query.AppendLine(qb.Insert(resx));
-
             CharacterState state = charStates.FirstOrDefault(x => x.Id == character.StateId);
             if (state != null)
                 query.AppendLine(qb.Insert(state));

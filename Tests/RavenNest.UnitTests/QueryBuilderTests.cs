@@ -17,7 +17,6 @@ namespace RavenNest.UnitTests
             GameDataBackupProvider backupProvider = new GameDataBackupProvider(null);
 
             IEntityRestorePoint restorePoint = backupProvider.GetRestorePoint(new[] {
-                        typeof(Appearance),
                         typeof(SyntyAppearance),
                         typeof(Character),
                         typeof(CharacterState),

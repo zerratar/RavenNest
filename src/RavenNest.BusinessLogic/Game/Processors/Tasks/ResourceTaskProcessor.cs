@@ -92,16 +92,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             Character character,
             DataModels.Resources resources)
         {
-            if (resources == null)
-            {
-                resources = new DataModels.Resources
-                {
-                    Id = Guid.NewGuid(),
-                };
-                gameData.Add(resources);
-                character.ResourcesId = resources.Id;
-            }
-
             var user = gameData.GetUser(character.UserId);
             var gameEvent = gameData.CreateSessionEvent(GameEventType.ResourceUpdate, session,
                 new ResourceUpdate
