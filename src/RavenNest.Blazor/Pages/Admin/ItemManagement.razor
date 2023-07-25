@@ -617,7 +617,7 @@
 
     private async void HandleSaveItem()
     {
-        if (context.IsModified())
+        //if (context.IsModified())
         {
             if (!string.IsNullOrEmpty(editedItem.IdString) && Guid.TryParse(editedItem.IdString, out var newId))
             {
