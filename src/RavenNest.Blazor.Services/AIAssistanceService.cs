@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Http;
+using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Extensions;
@@ -22,14 +23,17 @@ namespace RavenNest.Blazor.Services
     {
         private readonly GameData gameData;
         private readonly IServerManager serverManager;
+        private readonly IItemManager itemManager;
 
         public AIAssistanceFunctionCallbacks(
             GameData gameData,
-            IServerManager serverManager)
+            IServerManager serverManager,
+            IItemManager itemManager)
             : base()
         {
             this.gameData = gameData;
             this.serverManager = serverManager;
+            this.itemManager = itemManager;
         }
 
         [Description("Gets active amount of game sessions, how many twitch streamers that are currently running ravenfall")]
@@ -49,7 +53,7 @@ namespace RavenNest.Blazor.Services
         {
             return gameData.GetItems();
         }
-
+        /*
         [Description("Gets a list of character Ids owned by the specified user. ")]
         public IReadOnlyList<DataModels.Character> GetCharactersByUserId(Guid userId)
         {
@@ -98,6 +102,8 @@ namespace RavenNest.Blazor.Services
             if (skills == null) return 3;
             return (int)(((skills.AttackLevel + skills.DefenseLevel + skills.HealthLevel + skills.StrengthLevel) / 4f) + ((skills.RangedLevel + skills.MagicLevel + skills.HealingLevel) / 8f));
         }
+        */
+        /*
 
         [Description("Adds X amount of coins to the player of given userId")]
         public double AddCoins(Guid userId, long coins)
@@ -115,6 +121,164 @@ namespace RavenNest.Blazor.Services
             if (resources == null) return 0;
             resources.Coins = coins;
             return resources.Coins;
+        }
+        */
+
+
+        [Description("Creates and add a new item that can be found by Mining. (Items related to mining only, eg. Copper Ore, Tin, Coal, Iron Ore, Gold Nugget, etc) along with a required mining level (Max 999), a droprate 0..1 and sell price")]
+        public RavenNest.Models.Item AddMiningDrop(string name, int requiredMiningLevel, double dropRate, long sellPrice)
+        {
+            var item = new RavenNest.Models.Item()
+            {
+                Id = Guid.NewGuid(),
+                Category = RavenNest.Models.ItemCategory.Resource,
+                Type = RavenNest.Models.ItemType.Ore,
+                Name = name,
+                ShopSellPrice = sellPrice,
+                RequiredCraftingLevel = GameMath.MaxLevel + 1,
+            };
+
+            if (itemManager.TryAddItem(item))
+            {
+                TryGetSkillIndex("Mining", out var fishingIndex);
+
+                var dropToAdd = new ResourceItemDrop
+                {
+                    ItemId = item.Id,
+                    DropChance = dropRate,
+                    Id = Guid.NewGuid(),
+                    ItemName = name,
+                    LevelRequirement = requiredMiningLevel,
+                    Skill = fishingIndex
+                };
+                gameData.Add(dropToAdd);
+
+                return item;
+            }
+
+            return null;
+        }
+
+        [Description("Creates and add a new item that can be found by Woodcutting. (Items related to woodcutting only, eg. Regular Logs, Oak Logs, Pine Logs, Cursed Willow Logs, etc) along with a required woodcutting level (Max 999), a droprate 0..1 and sell price")]
+        public RavenNest.Models.Item AddWoodcuttingDrop(string name, int requiredWoodcuttingLevel, double dropRate, long sellPrice)
+        {
+            var item = new RavenNest.Models.Item()
+            {
+                Id = Guid.NewGuid(),
+                Category = RavenNest.Models.ItemCategory.Resource,
+                Type = RavenNest.Models.ItemType.Wood,
+                Name = name,
+                ShopSellPrice = sellPrice,
+                RequiredCraftingLevel = GameMath.MaxLevel + 1,
+            };
+
+            if (itemManager.TryAddItem(item))
+            {
+                TryGetSkillIndex("Woodcutting", out var fishingIndex);
+
+                var dropToAdd = new ResourceItemDrop
+                {
+                    ItemId = item.Id,
+                    DropChance = dropRate,
+                    Id = Guid.NewGuid(),
+                    ItemName = name,
+                    LevelRequirement = requiredWoodcuttingLevel,
+                    Skill = fishingIndex
+                };
+                gameData.Add(dropToAdd);
+
+                return item;
+            }
+
+            return null;
+        }
+
+        [Description("Creates and add a new item that can be found by farming. (Items related to farming only, eg. Wheat, Apple, Carrot, Onion, etc) along with a required farming level (Max 999), a droprate 0..1 and sell price")]
+        public RavenNest.Models.Item AddFarmingDrop(string name, int requiredFarmingLevel, double dropRate, long sellPrice)
+        {
+            var item = new RavenNest.Models.Item()
+            {
+                Id = Guid.NewGuid(),
+                Category = RavenNest.Models.ItemCategory.Resource,
+                Type = RavenNest.Models.ItemType.Wheat,
+                Name = name,
+                ShopSellPrice = sellPrice,
+                RequiredCraftingLevel = GameMath.MaxLevel + 1,
+            };
+
+            if (itemManager.TryAddItem(item))
+            {
+                TryGetSkillIndex("Farming", out var fishingIndex);
+
+                var dropToAdd = new ResourceItemDrop
+                {
+                    ItemId = item.Id,
+                    DropChance = dropRate,
+                    Id = Guid.NewGuid(),
+                    ItemName = name,
+                    LevelRequirement = requiredFarmingLevel,
+                    Skill = fishingIndex,
+                };
+                gameData.Add(dropToAdd);
+
+                return item;
+            }
+
+            return null;
+        }
+
+        [Description("Creates and add a new item that can be found by fishing. (Fish only) along with a required fishing level (Max 999), a droprate 0..1 and sell price")]
+        public RavenNest.Models.Item AddFishingDrop(string name, int requiredFishingLevel, double dropRate, long sellPrice)
+        {
+            var item = new RavenNest.Models.Item()
+            {
+                Id = Guid.NewGuid(),
+                Category = RavenNest.Models.ItemCategory.Resource,
+                Type = RavenNest.Models.ItemType.Fish,
+                Name = name,
+                ShopSellPrice = sellPrice,
+                RequiredCraftingLevel = GameMath.MaxLevel + 1,
+            };
+
+            if (itemManager.TryAddItem(item))
+            {
+                TryGetSkillIndex("Fishing", out var fishingIndex);
+
+                var dropToAdd = new ResourceItemDrop
+                {
+                    ItemId = item.Id,
+                    DropChance = dropRate,
+                    Id = Guid.NewGuid(),
+                    ItemName = name,
+                    LevelRequirement = requiredFishingLevel,
+                    Skill = fishingIndex
+                };
+                gameData.Add(dropToAdd);
+
+                return item;
+            }
+
+            return null;
+        }
+
+        private bool TryGetSkillIndex(string Skill, out int index)
+        {
+            index = -1;
+            if (!string.IsNullOrEmpty(Skill))
+            {
+                if (int.TryParse(Skill, out var si))
+                {
+                    index = si;
+                }
+                else
+                {
+                    // try get index by name.
+                    var i = RavenNest.DataModels.Skills.IndexOf(Skill);
+                    if (i != -1)
+                        index = i;
+                }
+            }
+            return index != -1;
         }
 
         [Description("Gets the current Server Time in UTC.")]

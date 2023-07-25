@@ -3,6 +3,7 @@ using RavenNest.DataModels;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -11,6 +12,14 @@ using System.Text;
 
 namespace RavenNest.BusinessLogic.Data
 {
+    public class DataMigrationException : Exception
+    {
+        public DataMigrationException(string message)
+            : base(message)
+        {
+        }
+    }
+
     public class GameDataMigration
     {
         private readonly ILogger<GameDataMigration> logger;
@@ -20,8 +29,11 @@ namespace RavenNest.BusinessLogic.Data
             this.logger = logger;
         }
 
-        public void Migrate(IRavenfallDbContextProvider db, IEntityRestorePoint restorePoint)
+        public bool TryMigrate(IRavenfallDbContextProvider db, IEntityRestorePoint restorePoint, out List<Type> migratedTypes, out List<Type> failedTypes)
         {
+            migratedTypes = new List<Type>();
+            failedTypes = new List<Type>();
+
             try
             {
                 logger.LogWarning("Restoring data from restorepoint..");
@@ -41,53 +53,69 @@ namespace RavenNest.BusinessLogic.Data
                             continue;
 
                         var table = $"[DB_A3551F_ravenfall].[dbo].[{restoreType.Name}]";
-                        try
+
+                        var entities = restorePoint.Get(restoreType);
+                        if (entities == null)
                         {
-                            var entities = restorePoint.Get(restoreType);
-                            if (entities == null)
-                            {
-                                continue;
-                            }
+                            continue;
+                        }
 
-                            logger.LogWarning("Restoring " + restoreType.Name + " with " + entities.Count + " records.");
+                        logger.LogWarning("Restoring " + restoreType.Name + " with " + entities.Count + " records.");
 
-                            using (var cmd = con.CreateCommand())
-                            {
-                                cmd.CommandText = $"truncate table {table};";
-                                cmd.ExecuteNonQuery();
-                            }
-
+                        if (TryTruncateTable(con, table))
+                        {
                             logger.LogInformation($"Migrating {table} data...");
-
-                            var queries = BuildInsertQuery(queryBuilder, entities);
-                            var queryIndex = 0;
-                            foreach (var q in queries)
+                            try
                             {
-                                using (var cmd = con.CreateCommand())
+
+                                var queries = BuildInsertQuery(queryBuilder, entities);
+                                foreach (var q in queries)
                                 {
-                                    cmd.CommandText = q;
-                                    cmd.ExecuteNonQuery();
+                                    using (var cmd = con.CreateCommand())
+                                    {
+                                        cmd.CommandText = q;
+                                        cmd.ExecuteNonQuery();
+                                    }
                                 }
-                                queryIndex++;
+                                migratedTypes.Add(restoreType);
+                            }
+                            catch (Exception exc)
+                            {
+                                failedTypes.Add(restoreType);
+                                TryTruncateTable(con, table); // truncate it again to leave it empty for quicker restore next time.
+                                logger.LogError($"Failed to migrate data in {table}. Table skipped and restorepoint kept. Exception: " + exc);
                             }
                         }
-                        catch (Exception exc)
-                        {
-                            logger.LogError($"Failed to truncate table {table}! Aborting migration!! Exc: " + exc);
-                            return;
-                        }
-
                     }
                     con.Close();
                 }
-
-                logger.LogWarning("Data restore completed in " + sw.Elapsed.TotalSeconds + " seconds.");
-
+                var typeCount = migratedTypes.Count + failedTypes.Count;
+                logger.LogWarning(migratedTypes.Count + " / " + typeCount + " tables was restored, process took " + sw.Elapsed.TotalSeconds + " seconds.");
                 sw.Stop();
+                return failedTypes.Count == 0;
             }
             catch (Exception exc)
             {
                 logger.LogError($"Data migration failed!! " + exc);
+                return false;
+            }
+        }
+
+        private bool TryTruncateTable(SqlConnection con, string table)
+        {
+            try
+            {
+                using (var cmd = con.CreateCommand())
+                {
+                    cmd.CommandText = $"truncate table {table};";
+                    cmd.ExecuteNonQuery();
+                    return true;
+                }
+            }
+            catch (Exception exc)
+            {
+                logger.LogError($"Failed to truncate table {table}! Table wont be migrated!! Exc: " + exc);
+                return false;
             }
         }
 

@@ -42,6 +42,26 @@ namespace RavenNest.BusinessLogic.Data
             this.logger = logger;
         }
 
+        public void ClearRestorePoint(IEntitySet entitySet)
+        {
+            lock (ioMutex)
+            {
+                ClearRestorePoint(entitySet.GetEntityType());
+            }
+        }
+
+        public void ClearRestorePoint(Type type)
+        {
+            lock (ioMutex)
+            {
+                var restorepointFile = GetEntityFilePath(type, FullRestorePointPath);
+                if (System.IO.File.Exists(restorepointFile))
+                {
+                    System.IO.File.Delete(restorepointFile);
+                }
+            }
+        }
+
         public void ClearRestorePoint()
         {
             lock (ioMutex)

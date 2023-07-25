@@ -27,6 +27,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -211,9 +212,9 @@ namespace Shinobytes.OpenAI.Models
             if (t == typeof(uint) || t == typeof(uint?)) return uint.Parse(json);
             if (t == typeof(long) || t == typeof(long?)) return long.Parse(json);
             if (t == typeof(ulong) || t == typeof(ulong?)) return ulong.Parse(json);
-            if (t == typeof(float) || t == typeof(float?)) return float.Parse(json);
-            if (t == typeof(double) || t == typeof(double?)) return double.Parse(json);
-            if (t == typeof(decimal) || t == typeof(decimal?)) return decimal.Parse(json);
+            if (t == typeof(float) || t == typeof(float?)) return float.Parse(json, System.Globalization.NumberStyles.Any, CultureInfo.CreateSpecificCulture("en-US"));
+            if (t == typeof(double) || t == typeof(double?)) return double.Parse(json, System.Globalization.NumberStyles.Any, CultureInfo.CreateSpecificCulture("en-US"));
+            if (t == typeof(decimal) || t == typeof(decimal?)) return decimal.Parse(json, System.Globalization.NumberStyles.Any, CultureInfo.CreateSpecificCulture("en-US"));
             if (t == typeof(Guid) || t == typeof(Guid?)) return Guid.Parse(json);
 
             if (!FunctionConverter.IsSimpleType(t))

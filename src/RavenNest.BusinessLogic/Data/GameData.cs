@@ -191,8 +191,23 @@ namespace RavenNest.BusinessLogic.Data
                 logger.LogInformation($"Checking for restore points.");
                 if (restorePoint != null)
                 {
-                    dataMigration.Migrate(this.db, restorePoint);
-                    backupProvider.ClearRestorePoint();
+                    if (dataMigration.TryMigrate(this.db, restorePoint, out var migrated, out var failed))
+                    {
+                        // if all was good, clear whole restore point
+                        backupProvider.ClearRestorePoint();
+                    }
+                    else
+                    {
+                        foreach (var migratedType in migrated)
+                        {
+                            backupProvider.ClearRestorePoint(migratedType);
+                        }
+
+                        var failedTypeNames = failed.Select(x => x.Name).ToArray();
+                        var errorMessage = failedTypeNames.Length + " table(s) failed to migrate: " + string.Join(", ", failedTypeNames) + ". Server start interrupted to prevent dataloss.";
+                        logger.LogError(errorMessage);
+                        throw new DataMigrationException(errorMessage);
+                    }
                 }
                 #endregion
 
@@ -3423,56 +3438,94 @@ namespace RavenNest.BusinessLogic.Data
             scheduleHandler = null;
             var lastQuery = "";
             var entityType = "";
+            var errorSaving = false;
             try
             {
                 lock (SyncLock)
                 {
                     logger.LogDebug("Saving all pending changes to the database.");
 
-                    var queue = BuildSaveQueue();
-
-                    while (queue.TryPeek(out var saveData))
+                    foreach (var entitySet in entitySets)
                     {
-                        if (saveData.Entities.Count == 0)
+                        try
                         {
-                            queue.Dequeue();
-                            continue;
-                        }
-
-                        using (var con = db.GetConnection())
-                        {
-                            con.Open();
-
-                            var query = queryBuilder.Build(saveData);
-                            if (query == null || string.IsNullOrEmpty(query.Command))
+                            var queue = BuildSaveQueue(entitySet);
+                            while (queue.TryPeek(out var saveData))
                             {
-                                queue.Dequeue();
-                                continue;
-                            }
-                            entityType = saveData.Entities[0]?.GetType().FullName;
-                            var command = con.CreateCommand();
-                            lastQuery = command.CommandText = query.Command;
-                            var result = command.ExecuteNonQuery();
+                                if (saveData.Entities.Count == 0)
+                                {
+                                    queue.Dequeue();
+                                    continue;
+                                }
 
-                            ClearChangeSetState(saveData);
-                            queue.Dequeue();
-                            con.Close();
+                                using (var con = db.GetConnection())
+                                {
+                                    con.Open();
+
+                                    var query = queryBuilder.Build(saveData);
+                                    if (query == null || string.IsNullOrEmpty(query.Command))
+                                    {
+                                        queue.Dequeue();
+                                        continue;
+                                    }
+                                    entityType = saveData.Entities[0]?.GetType().FullName;
+                                    var command = con.CreateCommand();
+                                    lastQuery = command.CommandText = query.Command;
+                                    var result = command.ExecuteNonQuery();
+
+                                    ClearChangeSetState(saveData);
+                                    queue.Dequeue();
+                                    con.Close();
+                                }
+                            }
+
+                            backupProvider.ClearRestorePoint(entitySet);
+                        }
+                        catch (SqlException exc)
+                        {
+                            errorSaving = true;
+                            backupProvider.CreateRestorePoint(new[] { entitySet });
+                            logger.LogError("Failed to save " + entityType + " to DB! Restorepoint Created and query saved. Exception: " + exc);
+                            File.WriteAllText(Path.Combine(FolderPaths.GeneratedData, entityType + "_error_query.sql"), lastQuery);
                         }
                     }
 
-                    backupProvider.ClearRestorePoint();
+                    //var queue = BuildSaveQueue();
+                    //while (queue.TryPeek(out var saveData))
+                    //{
+                    //    if (saveData.Entities.Count == 0)
+                    //    {
+                    //        queue.Dequeue();
+                    //        continue;
+                    //    }
+                    //    using (var con = db.GetConnection())
+                    //    {
+                    //        con.Open();
+                    //        var query = queryBuilder.Build(saveData);
+                    //        if (query == null || string.IsNullOrEmpty(query.Command))
+                    //        {
+                    //            queue.Dequeue();
+                    //            continue;
+                    //        }
+                    //        entityType = saveData.Entities[0]?.GetType().FullName;
+                    //        var command = con.CreateCommand();
+                    //        lastQuery = command.CommandText = query.Command;
+                    //        var result = command.ExecuteNonQuery();
+                    //        ClearChangeSetState(saveData);
+                    //        queue.Dequeue();
+                    //        con.Close();
+                    //    }
+                    //}
+                    //backupProvider.ClearRestorePoint();
                 }
             }
-            catch (SqlException exc)
-            {
-                CreateBackup();
-
-                backupProvider.CreateRestorePoint(entitySets);
-
-                logger.LogError("ERROR SAVING DATA [Type: " + entityType + "](CREATING RESTORE POINT!!) " + exc);
-
-                File.WriteAllText(Path.Combine(FolderPaths.GeneratedData, entityType + "_error_query.sql"), lastQuery);
-            }
+            //catch (SqlException exc)
+            //{
+            //    CreateBackup();
+            //    backupProvider.CreateRestorePoint(entitySets);
+            //    logger.LogError("ERROR SAVING DATA [Type: " + entityType + "](CREATING RESTORE POINT!!) " + exc);
+            //    File.WriteAllText(Path.Combine(FolderPaths.GeneratedData, entityType + "_error_query.sql"), lastQuery);
+            //}
             catch (Exception exc)
             {
                 logger.LogError("ERROR SAVING DATA!! " + exc);
@@ -3481,6 +3534,11 @@ namespace RavenNest.BusinessLogic.Data
             finally
             {
                 ScheduleNextSave();
+            }
+
+            if (errorSaving)
+            {
+                CreateBackup();
             }
         }
 
@@ -3527,6 +3585,31 @@ namespace RavenNest.BusinessLogic.Data
                     set.Clear(items.Entities);
             }
         }
+
+        private Queue<EntityStoreItems> BuildSaveQueue(IEntitySet set)
+        {
+            var queue = new Queue<EntityStoreItems>();
+            var addedItems = JoinChangeSets(set.Added);
+            foreach (var batch in CreateBatches(EntityState.Added, addedItems, SaveMaxBatchSize))
+            {
+                queue.Enqueue(batch);
+            }
+
+            var updateItems = JoinChangeSets(set.Updated);
+            foreach (var batch in CreateBatches(EntityState.Modified, updateItems, SaveMaxBatchSize))
+            {
+                queue.Enqueue(batch);
+            }
+
+            var deletedItems = JoinChangeSets(set.Removed);
+            foreach (var batch in CreateBatches(EntityState.Deleted, deletedItems, SaveMaxBatchSize))
+            {
+                queue.Enqueue(batch);
+            }
+
+            return queue;
+        }
+
 
         private Queue<EntityStoreItems> BuildSaveQueue()
         {
