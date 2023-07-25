@@ -164,7 +164,15 @@ namespace RavenNest.BusinessLogic.Game
 
             // remove all inventory items using this item
             // remove all inventory item attributes using this item
-
+            // remove all stash using this item
+            // remove all item drops using this item
+            // remove all crafting requirements using this item
+            // remove all market items
+            // remove all vendor items
+            // remove all redeemable items
+            // remove all market transactions
+            // remove all vendor transactions
+            // remove all loyalty reward
             //gameData.Remove(dataItem);
 
             return false;
@@ -176,7 +184,7 @@ namespace RavenNest.BusinessLogic.Game
             var collection = new ItemCollection();
             foreach (var item in items)
             {
-                if (item.Hidden.GetValueOrDefault())
+                if (item.Hidden)
                 {
                     continue;
                 }

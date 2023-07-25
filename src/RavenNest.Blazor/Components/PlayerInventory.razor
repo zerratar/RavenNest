@@ -136,7 +136,7 @@
 
                     <div class="item-details-content">
                         <div class="item-type">@GetItemType()</div>
-                        @if (itemDetailsDialogItem.Soulbound.GetValueOrDefault())
+                        @if (itemDetailsDialogItem.Soulbound)
                         {
                             <div class="item-soulbound">Soulbound - this item can't be gifted</div>
                         }

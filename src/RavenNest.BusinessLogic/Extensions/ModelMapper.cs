@@ -264,7 +264,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 Enchantment = items.Enchantment,
                 Flags = items.Flags ?? 0,
                 Name = items.Name,
-                Soulbound = items.Soulbound,
+                Soulbound = items.Soulbound.GetValueOrDefault(),
                 TransmogrificationId = items.TransmogrificationId,
             };
         }

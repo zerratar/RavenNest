@@ -94,14 +94,6 @@ namespace RavenNest.Controllers
         }
 
 
-        [HttpGet("merge-accounts/confirm")]
-        public async Task<string[]> MergePlayerAccounts()
-        {
-            await AssertAdminAccessAsync();
-            return await adminManager.MergePlayerAccounts();
-        }
-
-
         [HttpGet("fix-loyalties")]
         public async Task<bool> FixLoyaltyPoints()
         {

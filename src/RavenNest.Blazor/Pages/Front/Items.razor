@@ -181,7 +181,7 @@
                             <td class='item'>@ItemService.GetTypeName(item)</td>
                             <td class='item'>@ItemService.GetMaterialName(item)</td>
                             <td class='item'>
-                                @if (item.Craftable.GetValueOrDefault())
+                                @if (item.Craftable)
                                 {
                                     <span>@item.RequiredCraftingLevel</span>
                                 }
@@ -205,7 +205,7 @@
                                 {
                                     <span>Wood x@(item.WoodCost)&nbsp;</span>
                                 }
-                                @if (!item.Craftable.GetValueOrDefault())
+                                @if (!item.Craftable)
                                 {
                                     <span>Not craftable</span>
                                 }

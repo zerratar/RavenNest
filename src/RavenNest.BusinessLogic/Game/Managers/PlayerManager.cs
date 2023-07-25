@@ -862,11 +862,11 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     SendItemRemoveEvent(new DataModels.InventoryItem
                     {
-                        ItemId = redeemable.CurrencyItemId
+                        ItemId = redeemable.CurrencyItemId,
                     }, redeemable.Cost > currencyItem.Amount ? currencyItem.Amount : redeemable.Cost, character);
                 }
 
-                SendItemAddEvent(new DataModels.InventoryItem { ItemId = redeemable.ItemId }, redeemable.Amount, character);
+                SendItemAddEvent(new DataModels.InventoryItem { ItemId = redeemable.ItemId, Soulbound = false }, redeemable.Amount, character);
 
                 return new RedeemItemResult
                 {
@@ -1702,7 +1702,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var inventory = inventoryProvider.Get(character.Id);
 
-            itemStack = inventory.AddItem(itemId, tag: tag, soulbound: item.Soulbound.GetValueOrDefault()).FirstOrDefault();
+            itemStack = inventory.AddItem(itemId, tag: tag, soulbound: item.Soulbound).FirstOrDefault();
 
             return AddItemResult.Added;
         }
@@ -1994,7 +1994,7 @@ namespace RavenNest.BusinessLogic.Game
                 if (receiver == null) return 0;
 
                 var item = gameData.GetItem(itemId);
-                if (item == null || item.Soulbound.GetValueOrDefault())
+                if (item == null || item.Soulbound)
                     return 0;
 
                 var session = gameData.GetSession(token.SessionId);

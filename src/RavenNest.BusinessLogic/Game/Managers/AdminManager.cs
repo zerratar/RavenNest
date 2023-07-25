@@ -420,26 +420,6 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
-        public async Task<string[]> MergePlayerAccounts()
-        {
-            var accounts = new List<string>();
-            foreach (var userGroup in gameData.GetDuplicateUsers())
-            {
-                foreach (var user in userGroup)
-                {
-                    await playerManager.RemoveUserFromSessions(user);
-                    accounts.Add(user.Id + " - " + user.UserName);
-                }
-            }
-
-            // give it 10s, hopefully the characters should be removed
-            await Task.Delay(10000);
-
-            gameData.MergeAccounts();
-
-            return accounts.ToArray();
-        }
-
         public bool MergePlayerAccounts(Guid userId)
         {
             var user = gameData.GetUser(userId);
@@ -455,8 +435,6 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
 
             var mainSkills = gameData.GetCharacterSkills(main.SkillsId);
-            //var mainResources = gameData.GetResources(main.ResourcesId);
-
             var mainInventory = gameData.GetInventoryItems(main.Id);
             var mainStatistics = gameData.GetStatistics(main.StatisticsId);
 
@@ -491,7 +469,8 @@ namespace RavenNest.BusinessLogic.Game
                                 Amount = altItem.Amount,
                                 CharacterId = main.Id,
                                 Equipped = false,
-                                ItemId = altItem.ItemId
+                                ItemId = altItem.ItemId,
+                                Soulbound = false,
                             });
                         }
                     }

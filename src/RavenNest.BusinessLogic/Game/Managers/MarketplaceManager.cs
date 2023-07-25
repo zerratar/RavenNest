@@ -137,7 +137,7 @@ namespace RavenNest.BusinessLogic.Game
             var item = gameData.GetItem(itemId);
             string itemTag = null;
 
-            if (item.Soulbound.GetValueOrDefault())
+            if (item.Soulbound)
                 return new ItemSellResult(ItemTradeState.Untradable);
 
             if (item.Category == (int)DataModels.ItemCategory.StreamerToken)

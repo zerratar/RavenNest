@@ -28,14 +28,14 @@ namespace RavenNest.Models
         public string GenericPrefab { get; set; }
         public string MalePrefab { get; set; }
         public string FemalePrefab { get; set; }
-        public bool? IsGenericModel { get; set; }
-        public bool? Craftable { get; set; }
+        public bool IsGenericModel { get; set; }
+        public bool Craftable { get; set; }
         public int RequiredCraftingLevel { get; set; }
         public long WoodCost { get; set; }
         public long OreCost { get; set; }
         public long ShopBuyPrice { get; set; }
         public long ShopSellPrice { get; set; }
         public List<ItemCraftingRequirement> CraftingRequirements { get; set; }
-        public bool? Soulbound { get; set; }
+        public bool Soulbound { get; set; }
     }
 }

@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Game.Enchantment;
@@ -104,6 +103,18 @@ namespace RavenNest.Blazor.Services
             return await Task.Run(() => gameData.GetResourceItemDrops().OrderBy(x => x.LevelRequirement).ToList());
         }
 
+        public async Task<bool> DeleteItemAsync(Guid itemId)
+        {
+            return await Task.Run(() =>
+            {
+                var session = GetSession();
+                if (!session.Authenticated || !session.Administrator)
+                    return false;
+
+                return itemManager.RemoveItem(itemId);
+            }).ConfigureAwait(false);
+        }
+
         public async Task<bool> AddOrUpdateItemAsync(Item item)
         {
             return await Task.Run(() =>
@@ -112,16 +123,7 @@ namespace RavenNest.Blazor.Services
                 if (!session.Authenticated || !session.Administrator)
                     return false;
 
-
                 return itemManager.Upsert(item);
-
-                //var existing = itemManager.GetItem(item.Id);
-                //if (existing != null)
-                //{
-                //    return itemManager.TryUpdateItem(item);
-                //}
-                //return itemManager.TryAddItem(item);
-
             }).ConfigureAwait(false);
         }
 

@@ -598,42 +598,6 @@ namespace RavenNest.BusinessLogic.Data
                 .ToList();
         }
 
-        public void MergeAccounts()
-        {
-            var duplicates = GetDuplicateUsers();
-
-            foreach (var group in duplicates)
-            {
-                // Merge all the users in the group, this will put all characters, user bank items, etc into one user account
-                var mergedUser = MergeUser(group);
-
-                // with all merged characters, which may just as well be beyond the maximum of 3.
-                // start removing them
-                var characters = GetCharactersByUserId(mergedUser.Id);
-                foreach (var c in characters)
-                {
-                    RemoveCharacterIfEmpty(c);
-                }
-
-                // now with removed characters in first step, get the updated list of characters
-                characters = GetCharactersByUserId(mergedUser.Id);
-
-                // if we have more than 3 characters, we have to merge characters if possible.
-                if (characters.Count > 3)
-                {
-                    // do not merge right now, its going to be too risky.
-                }
-
-                // finally, with one last step, we will assign new character indices
-                characters = GetCharactersByUserId(mergedUser.Id);
-                var index = 0;
-                foreach (var c in characters.OrderBy(x => x.Created))
-                {
-                    c.CharacterIndex = index++;
-                }
-            }
-        }
-
         private User MergeUser(List<User> group)
         {
             // move everything over to one and the same user. Its okay if its the latest one,
@@ -735,21 +699,6 @@ namespace RavenNest.BusinessLogic.Data
             Remove(sourcePatreon);
         }
 
-        private void RemoveUser(User user)
-        {
-            var props = GetUserProperties(user.Id);
-            foreach (var prop in props)
-            {
-                Remove(prop);
-            }
-
-            var uac = GetUserAccess(user.Id);
-            foreach (var a in uac)
-            {
-                Remove(a);
-            }
-        }
-
         public Dictionary<string, object> GetUserSettings(Guid userId)
         {
             var props = GetUserProperties(userId);
@@ -805,81 +754,6 @@ namespace RavenNest.BusinessLogic.Data
                 {
                     user.UserId = null;
                 }
-            }
-        }
-
-        private void RewardRollbackPlayers()
-        {
-            string[] data = null;
-            if (System.IO.File.Exists("changes.txt"))
-            {
-                // rename this shit.
-                var dt = DateTime.UtcNow;
-                data = System.IO.File.ReadAllLines("changes.txt");
-                System.IO.File.Move("changes.txt", $"restored-changes_{dt:yyyy-MM-dd_hhMMss}.txt", true);
-            }
-
-            if (data == null)
-                return;
-
-
-            Guid[] rewardItems = new Guid[] {
-                Guid.Parse("AD431ADB-9001-4BAF-8125-1D0D0525A247"),
-                Guid.Parse("9C364DAF-7985-42DB-A116-2D58139D14A3"),
-                Guid.Parse("1E9D818D-6EEE-46D5-B47F-2E2ECDC2FEDE"),
-                Guid.Parse("D28DC33E-E256-4DAF-B0A7-3487E7E1532A"),
-                Guid.Parse("704D9F4D-7CF5-4491-8950-7383F81B5F30"),
-                Guid.Parse("F927197A-5DDF-4CA4-95F1-871FA3A49BE6"),
-                Guid.Parse("BF4F3CD5-B126-4588-9F35-885B94C240A0"),
-                Guid.Parse("9ABF2A4B-9D6F-4893-8FEC-8F17C28CD4CD"),
-                Guid.Parse("C35032FB-79E4-4DEB-ADD3-9E3AAEA27060"),
-                Guid.Parse("79C1E673-93D3-4DA3-A48E-A58E4A2FD1AD"),
-                Guid.Parse("AC8DBEC9-3D49-4294-88D2-B820BA7393D5"),
-                Guid.Parse("35EC855D-EEC7-4737-BF04-B8AFD6051E41"),
-                Guid.Parse("B18A15B1-629F-4B8C-920E-BAB3DDBE877B"),
-                Guid.Parse("41A8E82D-3DE3-45D9-967B-BC93C447406D"),
-                Guid.Parse("B8DE84CE-1C1F-4509-A505-D3A893398138"),
-                Guid.Parse("EFCE022C-54E3-42ED-8F7B-E34C46F0187E"),
-                Guid.Parse("612A99C9-8AE6-4422-AFDC-EA58056F7FAA"),
-                Guid.Parse("E40AFF21-A40C-4013-99A4-F4DB5AB6296A"),
-                Guid.Parse("B2DD7C43-9F9F-4A77-A702-F9DD23CBDF2D")
-            };
-            var random = new Random();
-
-            var rewardCount = 0;
-
-            for (var i = 0; i < data.Length; ++i)
-            {
-                // go through each line, check which player affected. Reward random item out of latest hats.
-                var line = data[i];
-                if (line.IndexOf('#') > 0)
-                {
-                    var d = line.Split('#');
-                    var name = d[0];
-                    var index = d[1];
-                    var c = GetCharacterByName(name, index);
-                    if (c != null)
-                    {
-                        var itemId = rewardItems[random.Next(0, rewardItems.Length)];
-
-                        var ii = new InventoryItem
-                        {
-                            Amount = 1,
-                            CharacterId = c.Id,
-                            Id = Guid.NewGuid(),
-                            ItemId = itemId,
-                        };
-
-                        rewardCount++;
-
-                        Add(ii);
-                    }
-                }
-            }
-
-            if (rewardCount > 0)
-            {
-                logger.LogError("(Not actual error) " + rewardCount + " items was rewarded to various players.");
             }
         }
 
@@ -1199,20 +1073,20 @@ namespace RavenNest.BusinessLogic.Data
         {
             switch (material)
             {
-                case ItemMaterial.Bronze: return 10;
-                case ItemMaterial.Iron: return 150;
-                case ItemMaterial.Steel: return 500;
-                case ItemMaterial.Black: return 1000;
-                case ItemMaterial.Mithril: return 2000;
-                case ItemMaterial.Adamantite: return 3500;
-                case ItemMaterial.Rune: return 6000;
-                case ItemMaterial.Dragon: return 10000;
-                case ItemMaterial.Ultima: return 20000;
-                case ItemMaterial.Phantom: return 35000;
-                case ItemMaterial.Lionsbane: return 50000;
-                case ItemMaterial.Ether: return 60000;
-                case ItemMaterial.Ancient: return 75000;
-                case ItemMaterial.Atlarus: return 100_000;
+                case ItemMaterial.Bronze: return 5;
+                case ItemMaterial.Iron: return 25;
+                case ItemMaterial.Steel: return 50;
+                case ItemMaterial.Black: return 100;
+                case ItemMaterial.Mithril: return 200;
+                case ItemMaterial.Adamantite: return 500;
+                case ItemMaterial.Rune: return 1000;
+                case ItemMaterial.Dragon: return 1200;
+                case ItemMaterial.Ultima: return 2000;
+                case ItemMaterial.Phantom: return 5000;
+                case ItemMaterial.Lionsbane: return 7000;
+                case ItemMaterial.Ether: return 10000;
+                case ItemMaterial.Ancient: return 15000;
+                case ItemMaterial.Atlarus: return 25000;
             }
             return 1;
         }
@@ -1301,7 +1175,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 var itemMaterial = GetMaterial(item);
                 var lower = item.Name.ToLower();
-                var craftable = item.Craftable.GetValueOrDefault();
+                var craftable = item.Craftable;
                 if (item.ShopSellPrice == 1 || craftable) // phantom is special case, as we want to adjust the price on this one.
                 {
                     var requirements = craftable ? GetCraftingRequirements(item.Id) : null;

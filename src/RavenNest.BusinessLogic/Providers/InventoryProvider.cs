@@ -1295,7 +1295,7 @@ namespace RavenNest.BusinessLogic.Providers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(RavenNest.Models.InventoryItem item)
         {
-            return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment) && !item.Soulbound.GetValueOrDefault();
+            return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment) && !item.Soulbound;
         }
 
 

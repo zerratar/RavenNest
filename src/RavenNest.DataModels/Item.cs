@@ -24,8 +24,8 @@
         private string genericPrefab; public string GenericPrefab { get => genericPrefab; set => Set(ref genericPrefab, value); }
         private string malePrefab; public string MalePrefab { get => malePrefab; set => Set(ref malePrefab, value); }
         private string femalePrefab; public string FemalePrefab { get => femalePrefab; set => Set(ref femalePrefab, value); }
-        private bool? isGenericModel; public bool? IsGenericModel { get => isGenericModel; set => Set(ref isGenericModel, value); }
-        private bool? craftable; public bool? Craftable { get => craftable; set => Set(ref craftable, value); }
+        private bool isGenericModel; public bool IsGenericModel { get => isGenericModel; set => Set(ref isGenericModel, value); }
+        private bool craftable; public bool Craftable { get => craftable; set => Set(ref craftable, value); }
         private int requiredCraftingLevel; public int RequiredCraftingLevel { get => requiredCraftingLevel; set => Set(ref requiredCraftingLevel, value); }
 
         // Todo: remove
@@ -49,8 +49,8 @@
         /// Vendor Amount, how much a player will receive by vendoring this item
         /// </summary>
         public long ShopSellPrice { get => shopSellPrice; set => Set(ref shopSellPrice, value); }
-        private bool? soulbound; public bool? Soulbound { get => soulbound; set => Set(ref soulbound, value); }
-        private bool? hidden; public bool? Hidden { get => hidden; set => Set(ref hidden, value); }
+        private bool soulbound; public bool Soulbound { get => soulbound; set => Set(ref soulbound, value); }
+        private bool hidden; public bool Hidden { get => hidden; set => Set(ref hidden, value); }
 
         // private bool stackable; public bool Stackable { get => stackable; set => Set(ref stackable, value); }
     }
