@@ -1442,6 +1442,9 @@ namespace RavenNest.BusinessLogic.Game
         private static bool CanCraftItems(Item item, Resources resources, int craftingLevel, int amount, out int maxAmount)
         {
             maxAmount = 0;
+            if (!item.Craftable)
+                return false;
+
             if (item.RequiredCraftingLevel > craftingLevel)
                 return false;
 

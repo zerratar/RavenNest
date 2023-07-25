@@ -1,4 +1,5 @@
-﻿using System;
+﻿using RavenNest.BusinessLogic.ScriptParser;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -54,6 +55,11 @@ namespace RavenNest.BusinessLogic
                 result.Add(Map<TTo>(dataItem));
             }
             return result;
+        }
+
+        public static T Clone<T>(T obj) where T : new()
+        {
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(Newtonsoft.Json.JsonConvert.SerializeObject(obj));
         }
 
 

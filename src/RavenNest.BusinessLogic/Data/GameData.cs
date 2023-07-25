@@ -1263,7 +1263,6 @@ namespace RavenNest.BusinessLogic.Data
                     item.RequiredCraftingLevel = GameMath.MaxLevel + 1;
                     item.Craftable = false;
                 }
-
                 var isAtlarus = nl.StartsWith("atlarus");
 
                 if (item.RequiredCraftingLevel < GameMath.MaxLevel || isAtlarus)
@@ -1441,7 +1440,7 @@ namespace RavenNest.BusinessLogic.Data
 
                     if (ingotCount > 0 && ingot != null)
                     {
-
+                        item.Craftable = true;
                         AddOrReplace(requirements, new ItemCraftingRequirement()
                         {
                             Id = Guid.NewGuid(),
@@ -1453,6 +1452,7 @@ namespace RavenNest.BusinessLogic.Data
 
                     if (woodCount > 0 && wood != null)
                     {
+                        item.Craftable = true;
                         AddOrReplace(requirements, new ItemCraftingRequirement()
                         {
                             Id = Guid.NewGuid(),
@@ -1464,6 +1464,7 @@ namespace RavenNest.BusinessLogic.Data
 
                     if (goldCount > 0 && gold != null)
                     {
+                        item.Craftable = true;
                         AddOrReplace(requirements, new ItemCraftingRequirement()
                         {
                             Id = Guid.NewGuid(),
@@ -1475,6 +1476,7 @@ namespace RavenNest.BusinessLogic.Data
 
                     if (resCount > 0 && resType != null)
                     {
+                        item.Craftable = true;
                         AddOrReplace(requirements, new ItemCraftingRequirement()
                         {
                             Id = Guid.NewGuid(),

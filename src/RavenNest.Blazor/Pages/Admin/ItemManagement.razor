@@ -1,9 +1,12 @@
 ﻿@layout AdminLayout
 @page "/admin/items"
+@using Microsoft.AspNetCore.Hosting;
 @using RavenNest.Models;
+@using System.IO;
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.ItemService ItemService
 @inject IJSRuntime JsRuntime
+@inject IWebHostEnvironment Environment
 
 @if (isAdmin)
 {
@@ -12,66 +15,271 @@
     {
         <div class="item-editor-background">
             <div class="item-editor-modal">
-                <EditForm Model="editedItem" OnValidSubmit="HandleSaveItem">
+                <EditForm class="item-editor-form" Model="editedItem" OnValidSubmit="HandleSaveItem">
                     <DataAnnotationsValidator />
                     <ValidationSummary />
 
-                    <InputText id="name" @bind-Value="editedItem.Name" />
+                    <div class="edit-content">
+                        <div class="edit-section general">
+                            <h2>General</h2>
 
-                    <InputNumber id="level" @bind-Value="editedItem.Level" />
+                            <div class="input-row">
+                                @if (ItemImageExists())
+                                {
+                                    <img src="/imgs/items/@(editedItem.Id).png" class="item-image" />
+                                }
+                                else
+                                {
+                                    <img src="https://placehold.co/100x100" class="item-image" />
+                                }
+                                <InputFile OnChange="@UploadImage" />
+                            </div>
+
+                            <div class="input-row">
+                                <InputText id="name" @bind-Value="editedItem.Name" />
+                            </div>
 
 
-                    @*<InputCheck id="level" @bind-Value="editedItem.Soulbound" />*@
+                            <div class="input-row">
+                                <label class="input-label">Level</label>
+                                <InputNumber id="level" @bind-Value="editedItem.Level" />
+                            </div>
 
-                    <!-- ... repeat for all other fields ... -->
 
-                    <InputSelect id="itemCategory" @bind-Value="editedItem.Category">
-                        @foreach (var option in Enum.GetValues<ItemCategory>())
-                        {
-                            <option value="@option">@option</option>
-                        }
-                    </InputSelect>
+                            <div class="input-row inline">
+                                <label class="input-label">Soulbound</label>
+                                <InputCheckbox id="soulbound" @bind-Value="editedItem.Soulbound" />
+                            </div>
 
-                    <InputSelect id="itemType" @bind-Value="editedItem.Type">
-                        @foreach (var option in Enum.GetValues<ItemType>())
-                        {
-                            <option value="@option">@option</option>
-                        }
-                    </InputSelect>
 
-                    <InputSelect id="itemMaterial" @bind-Value="editedItem.Material">
-                        @foreach (var option in Enum.GetValues<ItemMaterial>())
-                        {
-                            <option value="@option">@option</option>
-                        }
-                    </InputSelect>
+                            <div class="input-row">
+                                <label class="input-label">Category</label>
+                                <InputSelect id="itemCategory" @bind-Value="editedItem.Category">
+                                    @foreach (var option in Enum.GetValues<ItemCategory>())
+                                    {
+                                        <option value="@option">@option</option>
+                                    }
+                                </InputSelect>
+                            </div>
 
-                    <div class="crafting-requirements">
 
-                        @if (editedItem.CraftingRequirements != null)
-                        {
-                            foreach (var req in editedItem.CraftingRequirements)
+                            <div class="input-row">
+                                <label class="input-label">Type (Sub Category)</label>
+                                <InputSelect id="itemType" @bind-Value="editedItem.Type">
+                                    @foreach (var option in Enum.GetValues<ItemType>())
+                                    {
+                                        <option value="@option">@option</option>
+                                    }
+                                </InputSelect>
+                            </div>
+
+
+                            <div class="input-row">
+                                <label class="input-label">Material (Used for ingame skinning, non-generic items only)</label>
+                                <InputSelect id="itemMaterial" @bind-Value="editedItem.Material">
+                                    @foreach (var option in Enum.GetValues<ItemMaterial>())
+                                    {
+                                        <option value="@option">@option</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                        </div>
+
+                        <div class="edit-section level-requirements">
+                            <h2>Level Requirements</h2>
+                            <div class="input-row">
+                                <label class="input-label">Required Attack Level</label>
+                                <InputNumber id="reqAttackLevel" @bind-Value="editedItem.RequiredAttackLevel" />
+                            </div>
+                            <div class="input-row">
+                                <label class="input-label">Required Defense Level</label>
+                                <InputNumber id="reqDefenseLevel" @bind-Value="editedItem.RequiredDefenseLevel" />
+                            </div>
+                            <div class="input-row">
+                                <label class="input-label">Required Magic Level</label>
+                                <InputNumber id="reqMagicLevel" @bind-Value="editedItem.RequiredMagicLevel" />
+                            </div>
+                            <div class="input-row">
+                                <label class="input-label">Required Ranged Level</label>
+                                <InputNumber id="reqRangedLevel" @bind-Value="editedItem.RequiredRangedLevel" />
+                            </div>
+                            <div class="input-row">
+                                <label class="input-label">Required Slayer Level</label>
+                                <InputNumber id="reqSlayerLevel" @bind-Value="editedItem.RequiredSlayerLevel" />
+                            </div>
+                        </div>
+
+                        <div class="edit-section appearance">
+                            <h2>Appearance</h2>
+                            <div class="input-row inline">
+                                <label class="input-label">Use Generic Model (Same model for all characters)</label>
+                                <InputCheckbox id="genericModel" @bind-Value="editedItem.IsGenericModel" />
+                            </div>
+
+
+                            @if (editedItem.IsGenericModel)
                             {
-                                <div class="crafting-requirement">
-                                    <InputSelect @bind-Value="req.ResourceItemId">
-                                        @foreach (var item in items)
-                                        {
-                                            <option value="@item.Id">@item.Name</option>
-                                        }
-                                    </InputSelect>
-                                    <InputNumber @bind-Value="req.Amount" />
-                                    <button @onclick="(() => RemoveCraftingRequirement(req))">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                <div class="input-row">
+                                    <label class="input-label">Generic Prefab Path</label>
+                                    <InputText id="genericPrefab" @bind-Value="editedItem.GenericPrefab" />
+                                </div>
+
+                            }
+                            else
+                            {
+                                <div class="input-row">
+                                    <label class="input-label">Male Prefab Path</label>
+                                    <InputText id="malePrefab" @bind-Value="editedItem.MalePrefab" />
+                                </div>
+
+
+                                <div class="input-row">
+                                    <label class="input-label">Male Model Attributes</label>
+                                    <InputText id="maleModelId" @bind-Value="editedItem.MaleModelId" />
+                                </div>
+
+
+                                <div class="input-row">
+                                    <label class="input-label">Female Prefab Path</label>
+                                    <InputText id="femalePrefab" @bind-Value="editedItem.FemalePrefab" />
+                                </div>
+
+                                <div class="input-row">
+                                    <label class="input-label">Female Model Attributes</label>
+                                    <InputText id="femaleModelId" @bind-Value="editedItem.FemaleModelId" />
                                 </div>
                             }
-                        }
 
+                        </div>
+
+                        <div class="edit-section stats">
+                            <h2>Item Stats</h2>
+                            @if (CanHaveDefensiveStats())
+                            {
+                                <div class="input-row">
+                                    <label class="input-label">Armor Power</label>
+                                    <InputNumber id="armorPower" @bind-Value="editedItem.ArmorPower" />
+                                </div>
+
+                            }
+                            @if (CanHaveOffensiveStats())
+                            {
+                                <div class="input-row">
+                                    <label class="input-label">Weapon Power</label>
+                                    <InputNumber id="weaponPower" @bind-Value="editedItem.WeaponPower" />
+                                </div>
+
+                                <div class="input-row">
+                                    <label class="input-label">Weapon Aim</label>
+                                    <InputNumber id="weaponAim" @bind-Value="editedItem.WeaponAim" />
+                                </div>
+
+                                <div class="input-row">
+                                    <label class="input-label">Magic Power</label>
+                                    <InputNumber id="magicPower" @bind-Value="editedItem.MagicPower" />
+                                </div>
+
+                                <div class="input-row">
+                                    <label class="input-label">Magic Aim</label>
+                                    <InputNumber id="magicAim" @bind-Value="editedItem.MagicAim" />
+                                </div>
+
+                                <div class="input-row">
+                                    <label class="input-label">Ranged Power</label>
+                                    <InputNumber id="rangedPower" @bind-Value="editedItem.RangedPower" />
+                                </div>
+
+                                <div class="input-row">
+                                    <label class="input-label">Ranged Aim</label>
+                                    <InputNumber id="rangedAim" @bind-Value="editedItem.RangedAim" />
+                                </div>
+                            }
+                        </div>
+
+                        <div class="edit-section vendor">
+                            <h2>Vendor</h2>
+                            <div class="input-row">
+                                <label class="input-label">Shop Sell Price (How much do we get when !vendor?)</label>
+                                <InputNumber id="shopSellPrice" @bind-Value="editedItem.ShopSellPrice" />
+                            </div>
+
+                            <div class="input-row">
+                                <label class="input-label">Shop Buy Price (How much does it cost to buy?)</label>
+                                <InputNumber id="shopBuyPrice" @bind-Value="editedItem.ShopBuyPrice" />
+                            </div>
+                        </div>
+
+                        <div class="edit-section crafting">
+                            <h2>Crafting Requirements</h2>
+                            <div class="input-row inline">
+                                <label class="input-label">Is Craftable?</label>
+                                <InputCheckbox id="craftable" @bind-Value="editedItem.Craftable" />
+                            </div>
+
+                            @if (editedItem.Craftable)
+                            {
+                                <div class="input-row">
+                                    <label class="input-label">Required Crafting Level</label>
+                                    <InputNumber id="craftingLevel" @bind-Value="editedItem.RequiredCraftingLevel" />
+                                </div>
+
+
+                                <div class="crafting-resource-requirements">
+
+                                    <div class="input-row">
+                                        <label class="input-label">Ore Cost</label>
+                                        <InputNumber id="oreCost" @bind-Value="editedItem.OreCost" />
+                                    </div>
+
+
+                                    <div class="input-row">
+                                        <label class="input-label">Wood Cost</label>
+                                        <InputNumber id="woodCost" @bind-Value="editedItem.WoodCost" />
+                                    </div>
+
+
+                                </div>
+
+                                <div class="crafting-item-requirements">
+                                    @if (editedItem.CraftingRequirements != null)
+                                    {
+                                        foreach (var req in editedItem.CraftingRequirements)
+                                        {
+                                            <div class="crafting-requirement">
+
+                                                <div class="input-row">
+                                                    <label class="input-label">Resource Item</label>
+                                                    <InputSelect @bind-Value="req.ResourceItemId">
+                                                        @foreach (var item in items.Where(x => x.Category == ItemCategory.Resource))
+                                                        {
+                                                            <option value="@item.Id">@item.Name</option>
+                                                        }
+                                                    </InputSelect>
+                                                </div>
+
+                                                <div class="input-row">
+                                                    <label class="input-label">Amount</label>
+                                                    <InputNumber @bind-Value="req.Amount" />
+                                                </div>
+
+                                                <div class="btn delete-crafting-requirement" @onclick="(() => RemoveCraftingRequirement(req))">
+                                                    <i class="fas fa-trash"></i>
+                                                </div>
+                                            </div>
+                                        }
+                                    }
+
+                                </div>
+
+                                <div class="btn add-crafting-requirement" @onclick="AddCraftingRequirement">Add Crafting Requirement</div>
+                            }
+                        </div>
                     </div>
-                    <button type="submit">Save</button>
+                    <div class="modal-buttons">
+                        <button type="submit" class="btn">Save</button>
+                        <div class="btn btn-close" @onclick="(() => ItemEditorVisible = false)">Cancel</div>
+                    </div>
                 </EditForm>
-                <button @onclick="AddCraftingRequirement">Add Crafting Requirement</button>
-                <button @onclick="(() => ItemEditorVisible = false)">Close</button>
             </div>
         </div>
     }
@@ -83,7 +291,7 @@
     }
     else
     {
-        <button @onclick="CreateNewItem">Create New Item</button>
+        <button class="btn" @onclick="CreateNewItem">Create New Item</button>
         <table class="items-list">
             <thead>
                 <tr>
@@ -183,10 +391,10 @@
                             }
                         </td>
                         <td class='item'>
-                            <button @onclick="(() => EditItem(item))">
+                            <button class="btn" @onclick="(() => EditItem(item))">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button @onclick="(() => HandleRemoveItem(item.Id))">
+                            <button class="btn" @onclick="(() => HandleRemoveItem(item.Id))">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -208,10 +416,46 @@
     private RavenNest.Models.SessionInfo session;
     private RavenNest.Models.ItemCollection items;
 
+    private bool ItemImageExists()
+    {
+        var fileName = editedItem.Id + ".png";
+        var path = Path.Combine(Environment.WebRootPath, "imgs", "items", fileName);
+        return File.Exists(path);
+    }
+
+    private async Task UploadImage(InputFileChangeEventArgs e)
+    {
+        var browserFile = e.File;
+
+        if (e.File.ContentType != "image/png")
+        {
+            updateError = "Only PNG images are supported.";
+            return;
+        }
+
+        var fileName = editedItem.Id + ".png";
+        var path = Path.Combine(Environment.WebRootPath, "imgs", "items", fileName);
+
+        if (File.Exists(path))
+        {
+            bool confirm = await JsRuntime.InvokeAsync<bool>("confirm", "An existing image already exists and this action will replace it. Are you sure?");
+            if (!confirm)
+            {
+                return;
+            }
+        }
+
+        await using FileStream fs = new(path, FileMode.Create);
+        await browserFile.OpenReadStream().CopyToAsync(fs);
+
+        StateHasChanged();
+    }
+
     private void CreateNewItem()
     {
         editedItem = new RavenNest.Models.Item()
             {
+                Id = Guid.NewGuid(),
                 CraftingRequirements = new List<ItemCraftingRequirement>()
             };
         ItemEditorVisible = true;
@@ -219,18 +463,23 @@
 
     private void EditItem(RavenNest.Models.Item item)
     {
-        editedItem = item;
+        editedItem = DataMapper.Clone(item);
         ItemEditorVisible = true;
+    }
+
+    private bool CanHaveDefensiveStats()
+    {
+        return editedItem.Category == ItemCategory.Ring || editedItem.Category == ItemCategory.Amulet || editedItem.Category == ItemCategory.Armor || editedItem.Category == ItemCategory.Skin;
+    }
+
+    private bool CanHaveOffensiveStats()
+    {
+        return editedItem.Category == ItemCategory.Ring || editedItem.Category == ItemCategory.Amulet || editedItem.Category == ItemCategory.Weapon || editedItem.Category == ItemCategory.Skin;
     }
 
     private async Task RemoveCraftingRequirement(ItemCraftingRequirement req)
     {
         if (editedItem == null) return;
-        bool confirm = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this requirement?");
-        if (!confirm)
-        {
-            return;
-        }
         editedItem.CraftingRequirements.Remove(req);
         StateHasChanged();
     }
@@ -268,8 +517,8 @@
         else
         {
             updateError = "Failed to update or create item";
-            // Handle error
         }
+
         ItemEditorVisible = false;
         StateHasChanged();
     }

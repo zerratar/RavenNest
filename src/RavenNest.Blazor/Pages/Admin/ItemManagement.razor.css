@@ -74,3 +74,134 @@ table.items-list tr.isMe {
         padding: 20px 30px 50px 20px;
     }
 }
+
+
+/* Item Editor Modal */
+.item-editor-background {
+    position: fixed;
+    z-index: 10;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-color: rgba(0,0,0,0.25);
+}
+
+.item-editor-modal {
+    padding: 10px;
+    display: flex;
+    flex-flow: column;
+    position: relative;
+    box-sizing: border-box;
+    width: 90%;
+    height: 90%;
+    background-color: white;
+    margin-left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    max-width: 1500px;
+    max-height: 1000px;
+}
+
+.edit-section.crafting {
+    background-color: #f5f5ff;
+    border-radius: 8px;
+}
+
+.crafting-resource-requirements,
+.input-row {
+    display: flex;
+    flex-direction: column;
+}
+
+.crafting-requirement {
+    display: flex;
+    align-items: flex-end;
+    flex-direction: row;
+}
+.crafting-item-requirements {
+    background-color: #ecebff;
+    margin-top: 10px;
+    border-radius: 5px;
+    padding: 10px;
+}
+.crafting-requirement .input-row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    align-content: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+    flex-grow: 1;
+    padding: 5px;
+}
+
+.input-row label {
+    font-size: 9pt;
+    font-weight: 400;
+}
+
+.input-row.inline {
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.edit-content {
+    display: flex;
+    flex-flow: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    flex-wrap: wrap;
+    flex-grow: 1;
+    overflow: auto;
+    flex-direction: column;
+}
+.modal-buttons {
+    display: flex;
+    flex-flow: row;
+    justify-content: space-between;    
+}
+.edit-section {
+    display: flex;
+    flex-flow: column;
+    flex-wrap: wrap;
+    padding: 10px;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+label.input-label {
+    margin-bottom: 2px;
+    margin-top: 5px;
+}
+
+.btn {
+    font-size: 9pt;
+    font-family: 'Heebo', sans-serif;
+    text-decoration: none;
+    padding: 9px 17px;
+    border: 0;
+    /*    background: rgb(255,88,131);
+    background: linear-gradient(90deg, rgba(255,88,131,1) 0%, rgba(139,24,255,1) 100%);*/
+    box-shadow: 1px 1px 7px 3px rgba(0,0,0,0.1), inset 1px 1px 7px 3px rgba(0,0,0,0.1);
+    border-radius: 7px;
+    margin: 5px;
+    color: white;
+    transition: all 0.25s ease;
+    background: rgb(0,117,255);
+    background: linear-gradient(90deg, rgba(0,117,255,1) 0%, rgba(0,88,205,1) 100%);
+}
+
+.btn:active {
+    background: rgb(0,60,130);
+    background: linear-gradient(90deg, rgba(0,60,130,1) 0%, rgba(0,41,94,1) 100%);
+}
+.btn:hover {
+    background: rgb(0,60,130);
+    background: linear-gradient(90deg, rgba(0,60,130,1) 0%, rgba(0,88,205,1) 100%);
+}
+
+h2 {
+    font-size: 16pt;
+}
+

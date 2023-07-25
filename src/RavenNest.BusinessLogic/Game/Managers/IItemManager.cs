@@ -91,8 +91,30 @@ namespace RavenNest.BusinessLogic.Game
         private void AddItem(Item item)
         {
             var entity = ModelMapper.Map(item);
+
+            if (item.CraftingRequirements != null)
+            {
+                foreach (var req in item.CraftingRequirements)
+                {
+                    var mapped = Map(req);
+                    mapped.ItemId = item.Id;
+                    gameData.Add(mapped);
+                }
+            }
+
             gameData.Add(entity);
             InvalidateCache();
+        }
+
+        private static DataModels.ItemCraftingRequirement Map(ItemCraftingRequirement req)
+        {
+            return new DataModels.ItemCraftingRequirement
+            {
+                Id = req.Id == Guid.Empty ? Guid.NewGuid() : req.Id,
+                Amount = req.Amount,
+                ItemId = req.ItemId,
+                ResourceItemId = req.ResourceItemId,
+            };
         }
 
         public bool TryUpdateItem(Item item)
@@ -103,7 +125,40 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
+            if (item.CraftingRequirements != null)
+            {
+                var updateList = item.CraftingRequirements.ToList();
+                var storedRequirements = gameData.GetCraftingRequirements(item.Id);
+
+                // check if we have matching requirement, if so, update values
+                foreach (var oldRequirement in storedRequirements)
+                {
+                    var updated = updateList.FirstOrDefault(x => x.Id == oldRequirement.Id || x.ResourceItemId == oldRequirement.ResourceItemId);
+                    if (updated != null)
+                    {
+                        oldRequirement.Amount = updated.Amount;
+                        // since we use same resource id, remove the updated now so we don't process it again.
+                        updateList.Remove(updated);
+                    }
+                    else
+                    {
+                        // we didnt have this item in the update list, we should therefor remove from existing requirements.
+                        gameData.Remove(oldRequirement);
+                    }
+                }
+
+                // go through the update list and add all new requirements
+                foreach (var newReq in updateList)
+                {
+                    var mapped = Map(newReq);
+                    mapped.ItemId = item.Id; // ensure item id is correct.
+                    gameData.Add(mapped);
+                }
+            }
+
+
             UpdateItem(item, dataItem);
+
             return true;
         }
 
