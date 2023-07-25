@@ -111,32 +111,32 @@
                                         </div>
                                     </div>
 
-                                    <div class="edit-section level-requirements">
-                                        <h2>Level Requirements</h2>
-                                        <div class="input-row">
-                                            <label class="input-label">Required Attack Level</label>
-                                            <InputNumber id="reqAttackLevel" @bind-Value="editedItem.RequiredAttackLevel" />
-                                        </div>
-                                        <div class="input-row">
-                                            <label class="input-label">Required Defense Level</label>
-                                            <InputNumber id="reqDefenseLevel" @bind-Value="editedItem.RequiredDefenseLevel" />
-                                        </div>
-                                        <div class="input-row">
-                                            <label class="input-label">Required Magic Level</label>
-                                            <InputNumber id="reqMagicLevel" @bind-Value="editedItem.RequiredMagicLevel" />
-                                        </div>
-                                        <div class="input-row">
-                                            <label class="input-label">Required Ranged Level</label>
-                                            <InputNumber id="reqRangedLevel" @bind-Value="editedItem.RequiredRangedLevel" />
-                                        </div>
-                                        <div class="input-row">
-                                            <label class="input-label">Required Slayer Level</label>
-                                            <InputNumber id="reqSlayerLevel" @bind-Value="editedItem.RequiredSlayerLevel" />
-                                        </div>
-                                    </div>
-
                                     @if (CanBeEquipped())
                                     {
+
+                                          <div class="edit-section level-requirements">
+                                              <h2>Level Requirements</h2>
+                                              <div class="input-row">
+                                                  <label class="input-label">Required Attack Level</label>
+                                                  <InputNumber id="reqAttackLevel" @bind-Value="editedItem.RequiredAttackLevel" />
+                                              </div>
+                                              <div class="input-row">
+                                                  <label class="input-label">Required Defense Level</label>
+                                                  <InputNumber id="reqDefenseLevel" @bind-Value="editedItem.RequiredDefenseLevel" />
+                                              </div>
+                                              <div class="input-row">
+                                                  <label class="input-label">Required Magic Level</label>
+                                                  <InputNumber id="reqMagicLevel" @bind-Value="editedItem.RequiredMagicLevel" />
+                                              </div>
+                                              <div class="input-row">
+                                                  <label class="input-label">Required Ranged Level</label>
+                                                  <InputNumber id="reqRangedLevel" @bind-Value="editedItem.RequiredRangedLevel" />
+                                              </div>
+                                              <div class="input-row">
+                                                  <label class="input-label">Required Slayer Level</label>
+                                                  <InputNumber id="reqSlayerLevel" @bind-Value="editedItem.RequiredSlayerLevel" />
+                                              </div>
+                                          </div>
 
                                         <div class="edit-section appearance">
                                             <h2>Appearance</h2>

@@ -3,8 +3,6 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
-using RavenNest.BusinessLogic.Models.Patreon.API;
-using RavenNest.Sessions;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;

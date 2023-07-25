@@ -102,6 +102,12 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
 
+            if (!item.Craftable)
+            {
+                item.RequiredCookingLevel = GameMath.MaxLevel + 1;
+                item.RequiredCraftingLevel = GameMath.MaxLevel + 1;
+            }
+
             gameData.Add(entity);
             InvalidateCache();
         }
@@ -164,6 +170,12 @@ namespace RavenNest.BusinessLogic.Game
 
         private void UpdateItem(Item item, DataModels.Item dataItem)
         {
+            if (!item.Craftable)
+            {
+                item.RequiredCookingLevel = GameMath.MaxLevel + 1;
+                item.RequiredCraftingLevel = GameMath.MaxLevel + 1;
+            }
+
             dataItem.Level = item.Level;
             dataItem.ArmorPower = item.ArmorPower;
             dataItem.Category = (int)item.Category;
@@ -191,6 +203,9 @@ namespace RavenNest.BusinessLogic.Game
             dataItem.WeaponAim = item.WeaponAim;
             dataItem.WeaponPower = item.WeaponPower;
             dataItem.WoodCost = item.WoodCost;
+
+
+
             InvalidateCache();
         }
 
