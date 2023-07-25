@@ -119,12 +119,14 @@ table.items-list tr.isMe {
     align-items: flex-end;
     flex-direction: row;
 }
+
 .crafting-item-requirements {
     background-color: #ecebff;
     margin-top: 10px;
     border-radius: 5px;
     padding: 10px;
 }
+
 .crafting-requirement .input-row {
     display: flex;
     flex-direction: column;
@@ -155,12 +157,23 @@ table.items-list tr.isMe {
     flex-grow: 1;
     overflow: auto;
     flex-direction: column;
+    position: absolute;
+    left: 0px;
+    right: 0px;
+    top: 0px;
+    bottom: 0px;
 }
+
 .modal-buttons {
     display: flex;
     flex-flow: row;
-    justify-content: space-between;    
+    justify-content: space-between;
+    position: absolute;
+    left:25px;
+    right:25px;
+    bottom: -55px;
 }
+
 .edit-section {
     display: flex;
     flex-flow: column;
@@ -196,6 +209,7 @@ label.input-label {
     background: rgb(0,60,130);
     background: linear-gradient(90deg, rgba(0,60,130,1) 0%, rgba(0,41,94,1) 100%);
 }
+
 .btn:hover {
     background: rgb(0,60,130);
     background: linear-gradient(90deg, rgba(0,60,130,1) 0%, rgba(0,88,205,1) 100%);
@@ -205,3 +219,31 @@ h2 {
     font-size: 16pt;
 }
 
+.tabs {
+    display: flex;
+    flex-grow: 1;
+    flex-direction: column;
+}
+
+.tab-content {
+    display: flex;
+    flex-grow: 1;
+    width: 100%;
+    height: 100%;
+}
+
+.tab-buttons {
+    display: flex;
+    flex-flow: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-tab {
+    padding: 5px 10px;
+    cursor: pointer;
+}
+
+.btn-tab.active {
+    background-color: #ebebeb;
+}

@@ -34,8 +34,8 @@ namespace RavenNest.Models
         public int RequiredCraftingLevel { get; set; }
         public int RequiredCookingLevel { get; set; }
 
-        public long WoodCost { get; set; }
-        public long OreCost { get; set; }
+        [Obsolete("Should be removed, use crafting requirement instead.")] public long WoodCost { get; set; }
+        [Obsolete("Should be removed, use crafting requirement instead.")] public long OreCost { get; set; }
         public long ShopBuyPrice { get; set; }
         public long ShopSellPrice { get; set; }
         public List<ItemCraftingRequirement> CraftingRequirements { get; set; }

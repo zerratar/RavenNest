@@ -243,12 +243,30 @@ namespace RavenNest.BusinessLogic
         /// <returns></returns>
         public static long CalculateVendorBuyPrice(DataModels.Item i, long inStock)
         {
-            var minPrice = i.ShopSellPrice;
-            if (i.ShopBuyPrice > i.ShopSellPrice)
-            {
-                minPrice = i.ShopBuyPrice;
-            }
+            var minPrice = Math.Max(i.ShopSellPrice, i.ShopBuyPrice);
+            return CalculateVendorBuyPrice(minPrice, inStock);
+        }
 
+        /// <summary>
+        ///     How much will you have to pay to buy an item from the vendor?
+        /// </summary>
+        /// <param name="i"></param>
+        /// <param name="inStock"></param>
+        /// <returns></returns>
+        public static long CalculateVendorBuyPrice(RavenNest.Models.Item i, long inStock)
+        {
+            var minPrice = Math.Max(i.ShopSellPrice, i.ShopBuyPrice);
+            return CalculateVendorBuyPrice(minPrice, inStock);
+        }
+
+        /// <summary>
+        ///     How much will you have to pay to buy an item from the vendor?
+        /// </summary>
+        /// <param name="i"></param>
+        /// <param name="inStock"></param>
+        /// <returns></returns>
+        public static long CalculateVendorBuyPrice(long minPrice, long inStock = 0)
+        {
             var price = (double)Math.Truncate(minPrice * 1.25d);
 
             // full buy price until there are more than 10 items in stock

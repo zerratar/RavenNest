@@ -1,4 +1,6 @@
-﻿namespace RavenNest.DataModels
+﻿using System;
+
+namespace RavenNest.DataModels
 {
     public partial class Item : Entity<Item>
     {
@@ -29,30 +31,24 @@
         private int requiredCraftingLevel; public int RequiredCraftingLevel { get => requiredCraftingLevel; set => Set(ref requiredCraftingLevel, value); }
         private int requiredCookingLevel; public int RequiredCookingLevel { get => requiredCraftingLevel; set => Set(ref requiredCookingLevel, value); }
 
-        // Todo: remove
-        private long woodCost; public long WoodCost { get => woodCost; set => Set(ref woodCost, value); }
+        private long woodCost; 
+        [Obsolete("Should be removed, use crafting requirement instead.")] public long WoodCost { get => woodCost; set => Set(ref woodCost, value); }
 
-        // Todo: remove
-        private long oreCost; public long OreCost { get => oreCost; set => Set(ref oreCost, value); }
+        private long oreCost;
+        [Obsolete("Should be removed, use crafting requirement instead.")] public long OreCost { get => oreCost; set => Set(ref oreCost, value); }
 
-        // Todo: remove
         private long shopBuyPrice;
         /// <summary>
         /// Amount it costs to buy this item from the Shop.
         /// </summary>
         public long ShopBuyPrice { get => shopBuyPrice; set => Set(ref shopBuyPrice, value); }
 
-        // Todo: remove
-
         private long shopSellPrice;
-
         /// <summary>
         /// Vendor Amount, how much a player will receive by vendoring this item
         /// </summary>
         public long ShopSellPrice { get => shopSellPrice; set => Set(ref shopSellPrice, value); }
         private bool soulbound; public bool Soulbound { get => soulbound; set => Set(ref soulbound, value); }
         private bool hidden; public bool Hidden { get => hidden; set => Set(ref hidden, value); }
-
-        // private bool stackable; public bool Stackable { get => stackable; set => Set(ref stackable, value); }
     }
 }

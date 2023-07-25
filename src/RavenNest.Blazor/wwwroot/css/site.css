@@ -1391,17 +1391,12 @@ pre {
 
 
 form.item-editor-form {
-    justify-content: space-evenly;
-    flex-direction: row;
+    position: absolute;
+    left: 25px;
+    right: 25px;
+    top: 40px;
+    bottom: 70px;
     display: flex;
-    flex-flow: column;
-    justify-content: flex-start;
-    flex-wrap: nowrap;
-    height: 100%;
-    width: 100%;
-    flex-grow: 1;
-    align-items: stretch;
-    align-content: stretch;
 }
 
 .input-row input,
@@ -1416,4 +1411,9 @@ img.item-image {
     width: 100px;
     margin-left: auto;
     margin-right: auto;
+}
+
+textarea.item-editor-json {
+    width: 100%;
+    height: 100%;
 }
