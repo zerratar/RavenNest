@@ -1584,8 +1584,7 @@ namespace RavenNest.BusinessLogic.Game
         }
 
 
-
-        public AddItemInstanceResult AddItemInstanceDetailed(SessionToken token, string userId, RavenNest.Models.InventoryItem instance)
+        public AddItemInstanceResult AddItemInstanceDetailed(SessionToken token, string userId, RavenNest.Models.AddItemRequest instance)
         {
             var character = GetCharacter(token, userId);
             if (character == null)
@@ -1594,7 +1593,7 @@ namespace RavenNest.BusinessLogic.Game
             return AddItemToCharacter(token, instance, character);
         }
 
-        public AddItemInstanceResult AddItem(SessionToken token, Guid characterId, RavenNest.Models.InventoryItem instance)
+        public AddItemInstanceResult AddItem(SessionToken token, Guid characterId, RavenNest.Models.AddItemRequest instance)
         {
             var character = GetCharacter(token, characterId);
             if (character == null)
@@ -1603,7 +1602,7 @@ namespace RavenNest.BusinessLogic.Game
             return AddItemToCharacter(token, instance, character);
         }
 
-        private AddItemInstanceResult AddItemToCharacter(SessionToken token, RavenNest.Models.InventoryItem instance, Character character)
+        private AddItemInstanceResult AddItemToCharacter(SessionToken token, RavenNest.Models.AddItemRequest instance, Character character)
         {
             var item = gameData.GetItem(instance.ItemId);
             if (item == null)
@@ -1632,7 +1631,7 @@ namespace RavenNest.BusinessLogic.Game
             return AddItemInstanceResult.ItemAdded(addedItem.Id);
         }
 
-        public Guid AddItemInstance(SessionToken token, string userId, RavenNest.Models.InventoryItem instance)
+        public Guid AddItemInstance(SessionToken token, string userId, RavenNest.Models.AddItemRequest instance)
         {
             var item = gameData.GetItem(instance.ItemId);
             if (item == null)

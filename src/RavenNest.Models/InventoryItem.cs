@@ -18,9 +18,12 @@ namespace RavenNest.Models
         public string Name { get; set; }
         public Guid? TransmogrificationId { get; set; }
         public int Flags { get; set; }
+    }
 
-        // TODO: Enable attributes
-        //public InventoryItemAttribute[] Attributes { get; set; }
+    public class AddItemRequest
+    {
+        public AddItemRequest() { }
+        public Guid ItemId { get; set; }
     }
 
     public class UserBankItem

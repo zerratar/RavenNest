@@ -548,6 +548,35 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
+        public DataModels.InventoryItem AddItemInstance(RavenNest.Models.AddItemRequest itemInstanceToCopy, long amount = 1)
+        {
+            try
+            {
+                lock (mutex)
+                {
+                    var i = itemInstanceToCopy;
+                    // in this case, unless its Id is Empty guid, we even want to use the ID. GIven, there is no such id already present in the game.
+                    InventoryItem resultStack = null;
+                    if (CanBeStacked(i))
+                    {
+                        var existing = GetUnequipped(i);
+                        if (existing != null)
+                        {
+                            existing.Amount += amount;
+                            resultStack = existing;
+                            return resultStack;
+                        }
+                    }
+                    resultStack = Copy(i, amount);
+                    this.items.Add(resultStack);
+                    return resultStack;
+                }
+            }
+            finally
+            {
+                ValidateInventory();
+            }
+        }
         public DataModels.InventoryItem AddItemInstance(RavenNest.Models.InventoryItem itemInstanceToCopy, long amount = 1)
         {
             try
@@ -649,6 +678,19 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
+        private InventoryItem Copy(RavenNest.Models.AddItemRequest item, long amount)
+        {
+            var itemToCopy = gameData.GetItem(item.ItemId);
+            return new InventoryItem
+            {
+                Id = Guid.NewGuid(),
+                CharacterId = this.characterId,
+                ItemId = itemToCopy.Id,
+                Name = itemToCopy.Name,
+                Amount = amount,
+                Soulbound = itemToCopy.Soulbound,
+            };
+        }
         private InventoryItem Copy(RavenNest.Models.InventoryItem itemToCopy, long amount)
         {
             return new InventoryItem
@@ -1031,6 +1073,11 @@ namespace RavenNest.BusinessLogic.Providers
 
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private InventoryItem GetUnequipped(RavenNest.Models.AddItemRequest i)
+        {
+            lock (mutex) return items.FirstOrDefault(x => CanBeStacked(x, i) && !x.Equipped);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private InventoryItem GetUnequipped(RavenNest.Models.InventoryItem i)
         {
             lock (mutex) return items.FirstOrDefault(x => CanBeStacked(x, i) && !x.Equipped);
@@ -1258,6 +1305,11 @@ namespace RavenNest.BusinessLogic.Providers
             return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool CanBeStacked(DataModels.InventoryItem a, RavenNest.Models.AddItemRequest b)
+        {
+            return CanBeStacked(a) && CanBeStacked(b) && a.ItemId == b.ItemId;
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.InventoryItem a, ReadOnlyInventoryItem b)
         {
             return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
@@ -1296,6 +1348,11 @@ namespace RavenNest.BusinessLogic.Providers
         public static bool CanBeStacked(RavenNest.Models.InventoryItem item)
         {
             return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment) && !item.Soulbound;
+        }
+
+        public static bool CanBeStacked(RavenNest.Models.AddItemRequest itemAdd)
+        {
+            return true;
         }
 
 

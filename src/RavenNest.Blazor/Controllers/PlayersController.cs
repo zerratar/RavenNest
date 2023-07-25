@@ -294,21 +294,21 @@ namespace RavenNest.Controllers
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("v2/{characterId}/item")]
-        public AddItemInstanceResult AddItemInstanceDetailed(Guid characterId, [FromBody] RavenNest.Models.InventoryItem instance)
+        public AddItemInstanceResult AddItemInstanceDetailed(Guid characterId, [FromBody] AddItemRequest instance)
         {
             return playerManager.AddItem(AssertGetSessionToken(), characterId, instance);
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{userId}/item-instance")]
-        public Guid AddItemInstance(string userId, [FromBody] RavenNest.Models.InventoryItem instance)
+        public Guid AddItemInstance(string userId, [FromBody] AddItemRequest instance)
         {
             return playerManager.AddItemInstance(AssertGetSessionToken(), userId, instance);
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{userId}/item-instance-detailed")]
-        public AddItemInstanceResult AddItemInstanceDetailed(string userId, [FromBody] RavenNest.Models.InventoryItem instance)
+        public AddItemInstanceResult AddItemInstanceDetailed(string userId, [FromBody] AddItemRequest instance)
         {
             return playerManager.AddItemInstanceDetailed(AssertGetSessionToken(), userId, instance);
         }
