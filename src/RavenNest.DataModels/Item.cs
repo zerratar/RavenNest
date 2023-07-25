@@ -27,6 +27,7 @@
         private bool isGenericModel; public bool IsGenericModel { get => isGenericModel; set => Set(ref isGenericModel, value); }
         private bool craftable; public bool Craftable { get => craftable; set => Set(ref craftable, value); }
         private int requiredCraftingLevel; public int RequiredCraftingLevel { get => requiredCraftingLevel; set => Set(ref requiredCraftingLevel, value); }
+        private int requiredCookingLevel; public int RequiredCookingLevel { get => requiredCraftingLevel; set => Set(ref requiredCookingLevel, value); }
 
         // Todo: remove
         private long woodCost; public long WoodCost { get => woodCost; set => Set(ref woodCost, value); }
