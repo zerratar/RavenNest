@@ -14,12 +14,12 @@ namespace RavenNest.Blazor.Services
     public class ItemService : RavenNestService
     {
         private readonly GameData gameData;
-        private readonly IItemManager itemManager;
+        private readonly ItemManager itemManager;
         private readonly IReadOnlyList<DataModels.ItemAttribute> availableAttributes;
 
         public ItemService(
             GameData gameData,
-            IItemManager itemManager,
+            ItemManager itemManager,
             IHttpContextAccessor accessor,
             SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)

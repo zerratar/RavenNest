@@ -511,9 +511,49 @@ namespace RavenNest.BusinessLogic.Data
 
         private void MergeInventoryItems()
         {
-            bool CanMerge(InventoryItem i)
+            bool CanMergeInvItem(InventoryItem i)
             {
                 return !i.Equipped && string.IsNullOrEmpty(i.Enchantment) && string.IsNullOrEmpty(i.Tag) && i.TransmogrificationId == null;
+            }
+
+            bool CanMergeStashItem(UserBankItem i)
+            {
+                return string.IsNullOrEmpty(i.Enchantment) && string.IsNullOrEmpty(i.Tag) && i.TransmogrificationId == null;
+            }
+
+            foreach (var ubi in this.userBankItems.Entities)
+            {
+                if (!ubi.Soulbound)
+                {
+                    // see if we should be soulbound or not.
+                    var item = GetItem(ubi.ItemId);
+                    if (item == null || !item.Soulbound) continue;
+                    ubi.Soulbound = item.Soulbound;
+                }
+            }
+
+            foreach (var u in this.users.Entities)
+            {
+                var items = GetUserBankItems(u.Id);
+                var mergable = new Dictionary<Guid, DataModels.UserBankItem>();
+                foreach (var item in items)
+                {
+                    if (!CanMergeStashItem(item))
+                    {
+                        continue;
+                    }
+
+                    if (mergable.TryGetValue(item.ItemId, out var other))
+                    {
+                        other.Amount += item.Amount;
+                        item.Amount = 0;
+                        Remove(item);
+                    }
+                    else
+                    {
+                        mergable[item.ItemId] = item;
+                    }
+                }
             }
 
             foreach (var c in this.characters.Entities)
@@ -522,7 +562,16 @@ namespace RavenNest.BusinessLogic.Data
                 var mergable = new Dictionary<Guid, DataModels.InventoryItem>();
                 foreach (var item in items)
                 {
-                    if (!CanMerge(item))
+                    if (!item.Soulbound)
+                    {
+                        var i = GetItem(item.ItemId);
+                        if (item.Soulbound != i.Soulbound)
+                        {
+                            item.Soulbound = i.Soulbound;
+                        }
+                    }
+
+                    if (!CanMergeInvItem(item))
                     {
                         continue;
                     }

@@ -1341,7 +1341,7 @@ namespace RavenNest.BusinessLogic.Providers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.InventoryItem item)
         {
-            return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment) && !item.Soulbound.GetValueOrDefault();
+            return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment) && !item.Soulbound;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1495,7 +1495,7 @@ namespace RavenNest.BusinessLogic.Providers
                 item.Equipped,
                 item.Tag,
                 item.Flags.GetValueOrDefault(),
-                item.Soulbound.GetValueOrDefault(),
+                item.Soulbound,
                 i,
                 GetEquipmentSlot((ItemType)i.Type));
         }

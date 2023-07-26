@@ -356,7 +356,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<HighScoreManager>();
 
             services.AddSingleton<IAuthManager, AuthManager>();
-            services.AddSingleton<IItemManager, ItemManager>();
+            services.AddSingleton<ItemManager>();
             services.AddSingleton<AdminManager>();
             services.AddSingleton<IServerManager, ServerManager>();
             services.AddSingleton<VillageManager>();

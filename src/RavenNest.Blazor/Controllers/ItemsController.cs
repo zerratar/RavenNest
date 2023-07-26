@@ -15,13 +15,13 @@ namespace RavenNest.Controllers
     {
         private readonly GameData gameData;
         private readonly SessionInfoProvider sessionInfoProvider;
-        private readonly IItemManager itemManager;
+        private readonly ItemManager itemManager;
         private readonly IAuthManager authManager;
 
         public ItemsController(
             GameData gameData,
             SessionInfoProvider sessionInfoProvider,
-            IItemManager itemManager,
+            ItemManager itemManager,
             IAuthManager authManager)
         {
             this.gameData = gameData;

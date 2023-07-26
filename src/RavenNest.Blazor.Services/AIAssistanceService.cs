@@ -23,12 +23,12 @@ namespace RavenNest.Blazor.Services
     {
         private readonly GameData gameData;
         private readonly IServerManager serverManager;
-        private readonly IItemManager itemManager;
+        private readonly ItemManager itemManager;
 
         public AIAssistanceFunctionCallbacks(
             GameData gameData,
             IServerManager serverManager,
-            IItemManager itemManager)
+            ItemManager itemManager)
             : base()
         {
             this.gameData = gameData;

@@ -1,6 +1,7 @@
 ﻿@layout AdminLayout
 @page "/admin/items"
 @using Microsoft.AspNetCore.Hosting;
+@using RavenNest.BusinessLogic.Game;
 @using RavenNest.Models;
 @using System.IO;
 @inject RavenNest.Blazor.Services.AuthService AuthService
@@ -16,7 +17,7 @@
         <div class="item-editor-background">
             <div class="item-editor-modal">
                 @*Model="editedItem"*@
-
+                <div class="btn btn-close" @onclick="(() => ItemEditorVisible = false)">&times;</div>
                 <div class="tabs">
                     <div class="tab-buttons">
                         <div class="btn-tab @(activeTab == ItemEditTab.Form ? "active" : "")" @onclick="ShowForm">Form</div>
@@ -114,29 +115,29 @@
                                     @if (CanBeEquipped())
                                     {
 
-                                          <div class="edit-section level-requirements">
-                                              <h2>Level Requirements</h2>
-                                              <div class="input-row">
-                                                  <label class="input-label">Required Attack Level</label>
-                                                  <InputNumber id="reqAttackLevel" @bind-Value="editedItem.RequiredAttackLevel" />
-                                              </div>
-                                              <div class="input-row">
-                                                  <label class="input-label">Required Defense Level</label>
-                                                  <InputNumber id="reqDefenseLevel" @bind-Value="editedItem.RequiredDefenseLevel" />
-                                              </div>
-                                              <div class="input-row">
-                                                  <label class="input-label">Required Magic Level</label>
-                                                  <InputNumber id="reqMagicLevel" @bind-Value="editedItem.RequiredMagicLevel" />
-                                              </div>
-                                              <div class="input-row">
-                                                  <label class="input-label">Required Ranged Level</label>
-                                                  <InputNumber id="reqRangedLevel" @bind-Value="editedItem.RequiredRangedLevel" />
-                                              </div>
-                                              <div class="input-row">
-                                                  <label class="input-label">Required Slayer Level</label>
-                                                  <InputNumber id="reqSlayerLevel" @bind-Value="editedItem.RequiredSlayerLevel" />
-                                              </div>
-                                          </div>
+                                        <div class="edit-section level-requirements">
+                                            <h2>Level Requirements</h2>
+                                            <div class="input-row">
+                                                <label class="input-label">Required Attack Level</label>
+                                                <InputNumber id="reqAttackLevel" @bind-Value="editedItem.RequiredAttackLevel" />
+                                            </div>
+                                            <div class="input-row">
+                                                <label class="input-label">Required Defense Level</label>
+                                                <InputNumber id="reqDefenseLevel" @bind-Value="editedItem.RequiredDefenseLevel" />
+                                            </div>
+                                            <div class="input-row">
+                                                <label class="input-label">Required Magic Level</label>
+                                                <InputNumber id="reqMagicLevel" @bind-Value="editedItem.RequiredMagicLevel" />
+                                            </div>
+                                            <div class="input-row">
+                                                <label class="input-label">Required Ranged Level</label>
+                                                <InputNumber id="reqRangedLevel" @bind-Value="editedItem.RequiredRangedLevel" />
+                                            </div>
+                                            <div class="input-row">
+                                                <label class="input-label">Required Slayer Level</label>
+                                                <InputNumber id="reqSlayerLevel" @bind-Value="editedItem.RequiredSlayerLevel" />
+                                            </div>
+                                        </div>
 
                                         <div class="edit-section appearance">
                                             <h2>Appearance</h2>
@@ -253,7 +254,7 @@
                                             </div>
 
                                             <div class="input-row">
-                                                <label class="input-label">Required Crafting Level</label>
+                                                <label class="input-label">Required Cooking Level</label>
                                                 <InputNumber id="craftingLevel" @bind-Value="editedItem.RequiredCookingLevel" />
                                             </div>
 
@@ -311,7 +312,6 @@
                                 </div>
                                 <div class="modal-buttons">
                                     <button type="submit" class="btn">Save</button>
-                                    <div class="btn btn-close" @onclick="(() => ItemEditorVisible = false)">Cancel</div>
                                 </div>
                             </EditForm>
                         </div>
@@ -330,19 +330,72 @@
     else
     {
         <button class="btn" @onclick="CreateNewItem">Create New Item</button>
+
+        <div class="stash item-filters">
+            <button class="item-filter @(itemFilter == ItemFilter.All ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.All)">
+                <span class="item-filter-text">All</span>
+                <i class="fa-sharp fa-solid fa-rectangles-mixed"></i>
+            </button>
+            <button class="item-filter @(itemFilter == ItemFilter.Swords ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Swords)">
+                <span class="item-filter-text">Swords</span>
+                <i class="fa-sharp fa-solid fa-sword"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Bows ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Bows)">
+                <span class="item-filter-text">Bows</span>
+                <i class="fa-sharp fa-solid fa-bow-arrow"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Staves ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Staves)">
+                <span class="item-filter-text">Staves</span>
+                <i class="fa-sharp fa-solid fa-staff"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Shields ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Shields)">
+                <span class="item-filter-text">Shields</span>
+                <i class="fa-sharp fa-solid fa-shield"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Armors ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Armors)">
+                <span class="item-filter-text">Armors</span>
+                <i class="fa-sharp fa-solid fa-helmet-battle"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Accessories ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Accessories)">
+                <span class="item-filter-text">Accessories</span>
+                <i class="fa-sharp fa-solid fa-gem"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Pets ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Pets)">
+                <span class="item-filter-text">Pets</span>
+                <i class="fa-sharp fa-solid fa-dog"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Resources ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Resources)">
+                <span class="item-filter-text">Resources</span>
+                <i class="fa-sharp fa-solid fa-hammer"></i>
+            </button>
+
+
+            <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
+                <span class="item-filter-text">Scrolls</span>
+                <i class="fa-sharp fa-solid fa-scroll"></i>
+            </button>
+        </div>
+
         <table class="items-list">
             <thead>
                 <tr>
                     <th></th>
-                    <th>Name</th>
-                    <th>Stats</th>
-                    <th>Level Req</th>
-                    <th>Category</th>
-                    <th>Item Type</th>
-                    <th>Material Type</th>
-                    <th>Crafting Level</th>
-                    <th>Vendor Price</th>
-                    <th>Crafting Requirements</th>
+                    <th class="name">Name</th>
+                    <th class="stats">Stats</th>
+                    <th class="level-requirement">Level Req</th>
+                    <th class="category">Category</th>
+                    <th class="type">Item Type</th>
+                    <th class="material">Material Type</th>
+                    <th class="required-crafting-level">Crafting Level</th>
+                    <th class="shop-sell-price">Vendor Price</th>
+                    <th class="crafting-requirement">Crafting Requirements</th>
                 </tr>
             </thead>
             <tbody>
@@ -350,8 +403,8 @@
                 {
                     <tr id="@item.Id" class="item-row">
                         <td><img src="/imgs/items/@(item.Id).png" style="width: 40px" /></td>
-                        <td class='item'>@item.Name</td>
-                        <td class='item'>
+                        <td class='item name'>@item.Name</td>
+                        <td class='item stats'>
                             @if (item.WeaponAim > 0)
                             {
                                 <span class="item-stat" title="Weapon Aim - Increases your hit rate in melee"><i class="fas fa-crosshairs"></i>@item.WeaponAim</span>
@@ -386,7 +439,7 @@
                                 <span class="item-stat" title="Armor Power - Decreases the hit rate of your attacker"><i class="fas fa-shield"></i>@item.ArmorPower</span>
                             }
                         </td>
-                        <td class='item'>
+                        <td class='item level-requirement'>
                             @if (item.RequiredAttackLevel > 0)
                             {
                                 <span class="item-stat" title="Required Attack Level">
@@ -416,19 +469,19 @@
                                 </span>
                             }
                         </td>
-                        <td class='item'>@item.Category</td>
-                        <td class='item'>@item.Type</td>
-                        <td class='item'>@item.Material</td>
-                        <td class='item'>@item.RequiredCraftingLevel</td>
-                        <td class='item'>@item.ShopSellPrice&nbsp;<img class="ravenCoins" src="/favicon.png" /></td>
-                        <td class='item'>
+                        <td class='item category'>@item.Category</td>
+                        <td class='item type'>@item.Type</td>
+                        <td class='item material'>@item.Material</td>
+                        <td class='item required-crafting-level'>@item.RequiredCraftingLevel</td>
+                        <td class='item shop-sell-price'>@item.ShopSellPrice&nbsp;<img class="ravenCoins" src="/favicon.png" /></td>
+                        <td class='item crafting-requirement'>
                             @foreach (var req in item.CraftingRequirements)
                             {
-                                var reqItem = items.First(x => x.Id == req.ResourceItemId);
+                                var reqItem = availableItems.First(x => x.Id == req.ResourceItemId);
                                 <span>@(reqItem.Name) x@(req.Amount)&nbsp;</span>
                             }
                         </td>
-                        <td class='item'>
+                        <td class='item actions'>
                             <button class="btn" @onclick="(() => EditItem(item))">
                                 <i class="fas fa-edit"></i>
                             </button>
@@ -458,7 +511,9 @@
     private string unmodifiedJson;
 
     private RavenNest.Models.SessionInfo session;
+    private RavenNest.Models.ItemCollection availableItems;
     private RavenNest.Models.ItemCollection items;
+    private ItemFilter itemFilter = ItemFilter.All;
 
     private void ShowForm()
     {
@@ -503,12 +558,19 @@
         jsonPresentation = Newtonsoft.Json.JsonConvert.SerializeObject(editedItem, Newtonsoft.Json.Formatting.Indented);
     }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         CreateContext();
         session = AuthService.GetSession();
         isAdmin = session != null && session.Administrator;
-        LoadItems();
+        await LoadItems();
+    }
+
+    private void SelectItemFilter(ItemFilter newItemFilter)
+    {
+        itemFilter = newItemFilter;
+        items = new Models.ItemCollection(availableItems.Where(x => Filter(x)).OrderBy(x => x.Name));
+        InvokeAsync(StateHasChanged);
     }
 
     private bool ItemImageExists()
@@ -604,7 +666,7 @@
         var result = await ItemService.DeleteItemAsync(itemId);
         if (result)
         {
-            items = new Models.ItemCollection((await ItemService.GetItemsAsync()).OrderBy(x => x.Name));
+            await LoadItems();
             updateError = "";
         }
         else
@@ -627,7 +689,7 @@
             var result = await ItemService.AddOrUpdateItemAsync(editedItem);
             if (result)
             {
-                items = new Models.ItemCollection((await ItemService.GetItemsAsync()).OrderBy(x => x.Name));
+                await LoadItems();
                 updateError = "";
             }
             else
@@ -645,10 +707,15 @@
         editedItem.CraftingRequirements.Add(new ItemCraftingRequirement());
     }
 
-    private async void LoadItems()
+    private async Task LoadItems()
     {
-        items = new Models.ItemCollection((await ItemService.GetItemsAsync()).OrderBy(x => x.Name));
-        StateHasChanged();
+        availableItems = new Models.ItemCollection((await ItemService.GetItemsAsync()).OrderBy(x => x.Name));
+        items = new Models.ItemCollection(availableItems.OrderBy(x => x.Name));
+    }
+
+    private bool Filter(Models.Item item)
+    {
+        return ItemService.Filter(itemFilter, item);
     }
 
     public class ItemEdit : RavenNest.Models.Item

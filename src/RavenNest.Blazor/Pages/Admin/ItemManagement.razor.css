@@ -215,6 +215,12 @@ label.input-label {
     background: linear-gradient(90deg, rgba(0,60,130,1) 0%, rgba(0,88,205,1) 100%);
 }
 
+.btn.btn-close {
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
 h2 {
     font-size: 16pt;
 }

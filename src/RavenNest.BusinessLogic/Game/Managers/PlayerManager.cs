@@ -1532,7 +1532,7 @@ namespace RavenNest.BusinessLogic.Game
                 TransmogrificationId = item.TransmogrificationId,
                 Flags = item.Flags.GetValueOrDefault(),
                 Tag = item.Tag,
-                Soulbound = item.Soulbound.GetValueOrDefault(),
+                Soulbound = item.Soulbound,
             };
 
             var session = gameData.GetSessionByUserId(sessionUserId.Value);
@@ -2084,7 +2084,7 @@ namespace RavenNest.BusinessLogic.Game
                 Flags = item.Flags ?? 0,
                 ItemId = item.ItemId,
                 Name = item.Name,
-                Soulbound = item.Soulbound.GetValueOrDefault(),
+                Soulbound = item.Soulbound,
                 Tag = item.Tag,
                 TransmogrificationId = item.TransmogrificationId,
                 UserId = character.UserId

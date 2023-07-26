@@ -7,22 +7,10 @@ using RavenNest.Models;
 
 namespace RavenNest.BusinessLogic.Game
 {
-    public interface IItemManager
-    {
-        bool Upsert(Item item);
-        ItemCollection GetAllItems();
-        Item GetItem(Guid itemId);
-        bool TryAddItem(Item item);
-        bool TryUpdateItem(Item item);
-        bool RemoveItem(Guid itemId);
-        RedeemableItemCollection GetRedeemableItems();
-    }
-
-    public class ItemManager : IItemManager
+    public sealed class ItemManager
     {
         private const double ItemCacheDurationSeconds = 10 * 60;
         private readonly IMemoryCache memoryCache;
-
         private readonly GameData gameData;
 
         public ItemManager(
