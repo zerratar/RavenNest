@@ -1329,25 +1329,25 @@ namespace RavenNest.BusinessLogic.Providers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.UserBankItem item)
         {
-            return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment) && !item.Soulbound;
+            return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(ReadOnlyInventoryItem item)
         {
-            return !item.IsNull() && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment) && !item.Soulbound;
+            return !item.IsNull() && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.InventoryItem item)
         {
-            return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment) && !item.Soulbound;
+            return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(RavenNest.Models.InventoryItem item)
         {
-            return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment) && !item.Soulbound;
+            return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment);
         }
 
         public static bool CanBeStacked(RavenNest.Models.AddItemRequest itemAdd)
