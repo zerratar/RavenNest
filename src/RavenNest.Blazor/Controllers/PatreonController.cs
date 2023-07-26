@@ -222,6 +222,7 @@ namespace RavenNest.Controllers
             info.Status = (string)json["data"]["attributes"]["patron_status"];
             info.PledgeAmountCents = (decimal)json["data"]["attributes"]["pledge_amount_cents"];
             info.PledgeAmountDollars = info.PledgeAmountCents / 100; // Convert cents to dollars
+
             return info;
         }
 

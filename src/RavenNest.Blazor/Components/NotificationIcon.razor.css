@@ -71,6 +71,26 @@
     margin-right: 15px;
 }
 
+.--icon.new::before {
+    content: "NEW";
+    position: absolute;
+    color: white;
+    background: #56ab2f;
+    background: -webkit-linear-gradient(to right, #a8e063, #56ab2f);
+    background: linear-gradient(to right, #a8e063, #56ab2f);
+    font-size: 7pt;
+    font-weight: 500;
+    border-radius: 5px;
+    margin-top: -8px;
+    height: 20px;
+    line-height: 20px;
+    width: 37px;
+}
+
+.--icon.new {
+    /*background: #56ab2f;*/
+}
+
 .--content {
     display: flex;
     flex-flow: column;
@@ -133,7 +153,6 @@ li.notification-item:hover {
     outline: none;
     line-height: 64px;
 }
-
 
 @media screen and (max-width: 641px) {
     .notification-list {
