@@ -1,0 +1,110 @@
+﻿@page "/commands"
+@using RavenNest.Blazor.Services.Models
+@using Microsoft.AspNetCore.WebUtilities
+@using RavenNest.Blazor.Services
+@inject NavigationManager NavigationManager
+@inject AuthService AuthService
+
+
+<div class="top-section">
+    <div class="hero-text">
+        <h1>Ravenfall Command List</h1>
+        <p>Discover all the commands you can use to control your character in Ravenfall.</p>
+    </div>
+</div>
+
+<div class="white-section-break"></div>
+
+<div class="page-content">
+    @if (commands == null)
+    {
+        <LoadIndicator></LoadIndicator>
+    }
+    else
+    {
+        <div class="section">
+            <h2>All Game Commands (Unsorted)</h2>
+            <p>Not all commands have been docummented yet, and some commands are not available yet, this page is a work in progress.</p>
+            <div class="command-list">
+                @foreach (var group in commands.GroupBy(x => x.Category))
+                {
+                    <div class="category-title">@group.Key</div>
+                    foreach (var cmd in group)
+                    {
+                        <details class="command">
+                            <summary>
+                                <h3 class="name">!@cmd.Name</h3>
+                                <div class="format">@GetCommandArgumentsMarkup(cmd)</div>
+                                @if (!string.IsNullOrEmpty(cmd.Alias))
+                                {
+                                    <p class="alias"><strong>Alias:</strong> @cmd.Alias</p>
+                                }
+
+                                @if (!string.IsNullOrEmpty(cmd.Description))
+                                {
+                                    <div class="header-description"><strong>Description:</strong>  @cmd.Description</div>
+                                }
+                            </summary>
+
+                            <div class="command-details">
+                                @*                                @if (!string.IsNullOrEmpty(cmd.Category))
+                    {
+                    <p class="Category"><strong>Category:</strong> @cmd.Category</p>
+                    }*@
+                                <p class="description">@cmd.Description</p>
+                                
+                                @if (cmd.RequiresBroadcaster)
+                                {
+                                    <p class="requires-broadcaster">Note: This command requires you to be a broadcaster</p>
+                                }
+                                
+                                @if (cmd.Options != null)
+                                {
+                                    <div class="options">
+                                        <h4>Arguments</h4>
+                                        @foreach (var option in cmd.Options)
+                                        {
+                                            <div class="option">
+                                                <h5 class="name">@option.Name</h5>
+                                                <p class="description">@option.Description</p>
+                                                @if (option.Choices != null)
+                                                {
+                                                    <div class="choice-list">
+                                                        <h6>Available choices</h6>
+                                                        <ul class="choices">
+                                                            @foreach (var choice in option.Choices)
+                                                            {
+                                                                <li class="choice">@choice</li>
+                                                            }
+                                                        </ul>
+                                                    </div>
+                                                }
+                                            </div>
+                                        }
+
+
+                                    </div>
+                                }
+
+                                @if (!string.IsNullOrEmpty(cmd.UsageExample) || cmd.Options != null)
+                                {
+                                    <div class="usage-example">
+                                        <h4>Usage Example</h4>
+                                        @if (!string.IsNullOrEmpty(cmd.UsageExample))
+                                        {
+                                            <div class="usage">@GetUsageExampleMarkup(cmd)</div>
+                                        }
+                                        @if (cmd.Options != null)
+                                        {
+                                            <div class="format">@GetCommandFormatMarkup(cmd)</div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </details>
+                    }
+                }
+            </div>
+        </div>
+    }
+</div>

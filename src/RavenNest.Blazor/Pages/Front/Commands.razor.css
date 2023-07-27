@@ -1,0 +1,136 @@
+﻿.top-section {
+    height: 335px;
+}
+
+.section:last-of-type {
+    padding-bottom: 220px;
+}
+
+.section:nth-child(even) {
+    background-color: #eae9e1;
+}
+
+.hero-text p {
+    color: white;
+}
+
+
+.section {
+    margin-bottom: 20px;
+}
+
+.command-list {
+    /*display: grid;*/
+    /*grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));*/
+    display: flex;
+    flex-flow: column;
+    gap: 10px;
+}
+
+.command {
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 2px 8px 0 rgba(0,0,0,0.2);
+}
+
+
+summary h3 {
+    display: inline-block;
+    margin-bottom: 0;
+    font-size: 16pt;
+}
+
+.command .name {
+    font-weight: bold;
+    font-size: 16pt;
+}
+
+.command .alias, .command .category {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.command .alias {
+    margin-bottom: 0;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.command .description {
+    margin-top: 10px;
+    font-size: 1.1em;
+}
+
+summary .format {
+    display: inline-block;
+}
+
+summary .header-description {
+    display: inline-block;
+    font-size: 10pt;
+    color: #666;
+    word-break: break-word;
+    margin-left: 5px;
+}
+
+summary .header-description {
+    display: none; /* for now */
+}
+
+details[open] .header-description,
+details[open] summary .format {
+    display: none;
+}
+
+.options {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.usage-example h4,
+.options h4 {
+    margin-top: 0;
+    font-size: 10pt;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.option .name {
+    font-weight: bold;
+}
+
+.requires-broadcaster {
+    margin-top: 10px;
+    color: red;
+    font-weight: bold;
+}
+
+.usage-example {
+    margin-top: 10px;
+    font-size: 1.1em;
+    font-family: monospace;
+    color: #333;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+}
+
+.format pre {
+    margin-bottom: 0 !important;
+}
+.category-title {
+    font-weight: bold;
+    font-size: 20pt;
+    margin-top: 10px;
+}
+@media screen and (max-width: 800px) {
+    .section {
+        padding: 20px 30px 50px 20px;
+    }
+}
