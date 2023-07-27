@@ -104,6 +104,15 @@
                     </NavLink>
                 </li>
 
+                @if (activeGame)
+                {
+                    <li class="nav-item">
+                        <NavLink class="nav-link" href="/session" Match="NavLinkMatch.All">
+                            <span class="fas fa-users" aria-hidden="true"></span>&nbsp;My Game Session
+                        </NavLink>
+                    </li>
+                }
+
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/loyalty" Match="NavLinkMatch.All">
                         <span class="fas fa-users" aria-hidden="true"></span>&nbsp;Loyalty
@@ -248,6 +257,7 @@
     public static NavMenu Instance { get; private set; }
 
     private RavenNest.Models.SessionInfo session;
+    private bool activeGame;
 
     private string MenuTitle => Dashboard ? "Dashboard" : "Ravenfall";
 
@@ -257,6 +267,7 @@
     protected override void OnInitialized()
     {
         session = AuthService.GetSession();
+        activeGame = AuthService.HasActiveGameSession();
         Instance = this;
     }
 

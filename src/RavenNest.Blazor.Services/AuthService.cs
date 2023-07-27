@@ -12,6 +12,7 @@ using RavenNest.Models;
 using RavenNest.Sessions;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace RavenNest.Blazor.Services
@@ -51,6 +52,17 @@ namespace RavenNest.Blazor.Services
         {
             var session = Context.GetSessionId();
             sessionInfoProvider.Clear(session);
+        }
+
+        public bool HasActiveGameSession()
+        {
+            return GetActiveGameSession() != null;
+        }
+
+        public DataModels.GameSession GetActiveGameSession()
+        {
+            var session = GetSession();
+            return gameData.GetActiveSessions().FirstOrDefault(x => x.UserId == session.UserId);
         }
 
         public async Task GrantPubSubAccessAsync(string accessToken)
