@@ -31,6 +31,21 @@ namespace RavenNest.Blazor.Services
         }
 
         public GameData GameData => gameData;
+        public async Task<IReadOnlyList<RavenbotLogFile>> DeleteLogFileAsync(RavenbotLogFile file)
+        {
+
+            var currentDir = new DirectoryInfo(Directory.GetCurrentDirectory());
+            var logsFolder = new DirectoryInfo(Path.Combine(currentDir.Parent.FullName, "logs"));
+
+            var f = Path.Combine(logsFolder.FullName, file.FileName);
+            if (System.IO.File.Exists(f))
+            {
+                System.IO.File.Delete(f);
+            }
+
+            return await GetLogFilesAsync();
+        }
+
 
         public async Task<IReadOnlyList<RavenbotLogFile>> GetLogFilesAsync()
         {

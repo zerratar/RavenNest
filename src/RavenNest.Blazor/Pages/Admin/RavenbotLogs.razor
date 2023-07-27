@@ -36,6 +36,7 @@
                         <td class='item'>@(FormatSize(item.FileSize))</td>
                         <td class='item'>
                             <a href="@(item.DownloadUrl)" target="_blank"><i class="fa-solid fa-download"></i></a>
+                            <a @onclick="()=>DeleteLog(item)" target="_blank"><i class="fa-solid fa-trash"></i></a>
                         </td>
                     </tr>
                 }
@@ -60,6 +61,11 @@
     private string FormatDate(DateTime input)
     {
         return input.ToString("yyyy-MM-dd");
+    }
+    
+    private async Task DeleteLog(RavenNest.Blazor.Services.RavenbotLogFile file)
+    {
+        logFiles = await ServerService.DeleteLogFileAsync(file);
     }
 
     private string FormatSize(long bytes)
