@@ -14,6 +14,7 @@ using RavenNest.Models;
 using RavenNest;
 using System.IO;
 using System.Numerics;
+using RavenNest.Blazor.Services;
 
 namespace RavenNest.Controllers
 {
@@ -21,6 +22,7 @@ namespace RavenNest.Controllers
     [ApiController]
     public class PlayersController : GameApiController
     {
+        private readonly LogoService logoService;
         private readonly SessionInfoProvider sessionInfoProvider;
         private readonly SessionManager sessionManager;
         private readonly PlayerManager playerManager;
@@ -35,16 +37,19 @@ namespace RavenNest.Controllers
         public PlayersController(
             ILogger<PlayersController> logger,
             GameData gameData,
+            LogoService logoService,
             SessionInfoProvider sessionInfoProvider,
             PlayerInventoryProvider inventoryProvider,
             SessionManager sessionManager,
             PlayerManager playerManager,
+
             IRavenfallDbContextProvider dbProvider,
             ISecureHasher secureHasher,
             IAuthManager authManager,
             IOptions<AppSettings> settings)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
+            this.logoService = logoService;
             this.sessionInfoProvider = sessionInfoProvider;
             this.sessionManager = sessionManager;
             this.playerManager = playerManager;
@@ -70,20 +75,22 @@ namespace RavenNest.Controllers
         {
             try
             {
-                //var imageData = await logoService.GetChannelPictureAsync(userId);
-                //if (imageData != null)
-                //{
-                //    return File(imageData, "image/png");
-                //}
-
-                // NOT IMPLEMENTED YET
-
+                //var user = GameData.GetUser(userId);
+                var twitchUserAccess = GameData.GetUserAccess(userId, "twitch");
+                if (twitchUserAccess != null)
+                {
+                    var imageData = await logoService.GetChannelPictureAsync(twitchUserAccess.PlatformId);
+                    if (imageData != null)
+                    {
+                        return File(imageData, "image/png");
+                    }
+                }
+                
                 if (unknownProfilePictureBytes == null)
                 {
                     return NotFound();
                 }
 
-                //return Redirect(unknownProfilePictureUrl);
                 return File(unknownProfilePictureBytes, "image/png");
             }
             catch { }

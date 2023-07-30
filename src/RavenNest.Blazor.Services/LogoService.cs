@@ -73,18 +73,18 @@ namespace RavenNest.Blazor.Services
             return success;
         }
 
-        public async Task<byte[]> GetChannelPictureAsync(string userId, string downloadUrl = null)
+        public async Task<byte[]> GetChannelPictureAsync(string twitchUserId, string downloadUrl = null)
         {
             try
             {
-                var forceRefreshLogo = userId.Contains('_');
+                var forceRefreshLogo = twitchUserId.Contains('_');
                 if (forceRefreshLogo)
                 {
-                    userId = userId.Split('_')[1];
+                    twitchUserId = twitchUserId.Split('_')[1];
                 }
                 else
                 {
-                    if (fileCache != null && fileCache.TryGetValue("logo_" + userId, out var logoData) && logoData is byte[] data)
+                    if (fileCache != null && fileCache.TryGetValue("logo_" + twitchUserId, out var logoData) && logoData is byte[] data)
                     {
                         return data;
                     }
@@ -93,7 +93,7 @@ namespace RavenNest.Blazor.Services
                 //var twitch = new TwitchRequests(clientId: settings.TwitchClientId, clientSecret: settings.TwitchClientSecret);
                 //var profile = await twitch.KGetUserAsync(userId);
 
-                return await DownloadLogoAsync(userId, downloadUrl);
+                return await DownloadLogoAsync(twitchUserId, downloadUrl);
 
             }
             catch { }
