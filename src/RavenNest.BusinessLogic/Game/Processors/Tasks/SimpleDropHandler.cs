@@ -1,5 +1,4 @@
 ﻿using RavenNest.BusinessLogic.Data;
-using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
 using System;
 using System.Collections.Generic;
@@ -11,6 +10,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     {
         private readonly string skill;
         private readonly List<ResourceDrop> drops = new List<ResourceDrop>();
+        private readonly Dictionary<string, DateTime> dropTimes = new Dictionary<string, DateTime>();
 
         private bool initialized;
         public SimpleDropHandler(string skill)
@@ -30,7 +30,14 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             }
         }
 
-        public bool TryDropItem(ResourceTaskProcessor resProcessor, GameData gameData, PlayerInventoryProvider inventoryProvider, GameSession session, Character character, int skillLevel, Func<ResourceDrop, bool> canDrop = null)
+        public bool TryDropItem(
+            ResourceTaskProcessor resProcessor,
+            GameData gameData,
+            PlayerInventoryProvider inventoryProvider,
+            GameSession session,
+            Character character,
+            int skillLevel,
+            Func<ResourceDrop, bool> canDrop = null)
         {
             var chance = resProcessor.Random.NextDouble();
             if (chance > ItemDropRateSettings.InitDropChance)
@@ -47,6 +54,23 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 {
                     if (canDrop == null || canDrop(res))
                     {
+                        // check for cooldown
+                        var cooldownKey = character.Id + "_" + res.Id;
+                        if (res.Cooldown > 0)
+                        {
+                            if (dropTimes.TryGetValue(cooldownKey, out var lastDrop))
+                            {
+                                if (DateTime.UtcNow - lastDrop < TimeSpan.FromSeconds(res.Cooldown))
+                                {
+                                    return false;
+                                }
+                            }
+                            else
+                            {
+                                dropTimes[cooldownKey] = DateTime.UtcNow;
+                            }
+                        }
+
                         resProcessor.IncrementItemStack(gameData, inventoryProvider, session, character, res.Id);
                         return true;
                     }

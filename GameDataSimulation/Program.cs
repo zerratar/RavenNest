@@ -7,20 +7,32 @@ using System.Drawing.Text;
 using GMath = RavenNest.BusinessLogic.GameMath;
 
 var villages = new List<UserVillage>();
-for (var j = 0; j < 7; j++)
+//for (var j = 0; j < 7; j++)
+//{
+//    var level = j == 0 ? 1 : (j * 50) - 1;
+//    for (var i = 0; i < 4; i++)
+//    {
+//        var population = (i % 4) * 10;//100;
+//        villages.Add(new UserVillage
+//        {
+//            Level = level,
+//            Name = "Village " + j + "#" + i,
+//            Population = population
+//        });
+//    }
+//}
+
+for (var i = 0; i < 15; i++)
 {
-    var level = j == 0 ? 1 : (j * 50) - 1;
-    for (var i = 0; i < 4; i++)
+    var population = i * 10;//100;
+    villages.Add(new UserVillage
     {
-        var population = (i % 4) * 10;//100;
-        villages.Add(new UserVillage
-        {
-            Level = level,
-            Name = "Village " + j + "#" + i,
-            Population = population
-        });
-    }
+        Level = 1,
+        Name = "Village " + 1 + "#" + i,
+        Population = population
+    });
 }
+
 //var villages = new UserVillage[]
 //{
 //    new UserVillage { Level = 10, Population = 25, Name = "Someone" },

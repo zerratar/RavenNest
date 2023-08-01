@@ -9,5 +9,6 @@ namespace RavenNest.DataModels
         private double dropChance; public double DropChance { get => dropChance; set => Set(ref dropChance, value); }
         private int levelRequirement; public int LevelRequirement { get => levelRequirement; set => Set(ref levelRequirement, value); }
         private int? skill; public int? Skill { get => skill; set => Set(ref skill, value); }
+        private double? cooldown; public double? Cooldown { get => cooldown; set => Set(ref cooldown, value); }
     }
 }

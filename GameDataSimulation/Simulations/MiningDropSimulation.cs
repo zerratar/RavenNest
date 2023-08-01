@@ -125,7 +125,7 @@ namespace GameDataSimulation
             }
         }
 
-        private void AddDrop(int miningLevel, Action<ResourceDrop> onDrop)
+        private void AddDrop(int skillLevel, Action<ResourceDrop> onDrop)
         {
             var multiDrop = Random.NextDouble();
             var isMultiDrop = multiDrop <= 0.1;
@@ -135,7 +135,7 @@ namespace GameDataSimulation
                 foreach (var res in ResourceTaskProcessor.DefaultDroppableResources.OrderByDescending(x => x.SkillLevel))
                 {
                     chance = Random.NextDouble();
-                    if (miningLevel >= res.SkillLevel && (chance <= res.GetDropChance(miningLevel)))
+                    if (skillLevel >= res.SkillLevel && (chance <= res.GetDropChance(skillLevel)))
                     {
                         onDrop(res);
 

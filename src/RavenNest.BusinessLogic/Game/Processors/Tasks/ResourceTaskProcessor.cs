@@ -26,20 +26,20 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         {
             DefaultDroppableResources = new List<ResourceDrop>()
             {
-                new ResourceDrop(Guid.Parse("49D53A1E-55F7-4537-9A5B-0560B1C0F465"), "Ethereum", 0.003, 280, 6),
-                new ResourceDrop(Guid.Parse("BA6ED0AD-2FE6-46BF-9A99-5528657FF40E"), "Lionite", 0.005, 240, 6),
-                new ResourceDrop(Guid.Parse("17c3f9b1-57d6-4219-bbc7-9e929757babf"), "Phantom Core", 0.01, 200, 6),
-                new ResourceDrop(Guid.Parse("f9b7e6a3-4e4a-4e4a-b79d-42a3cf2a16c8"), "Abraxas Spirit", 0.02, 170, 6),
-                new ResourceDrop(Guid.Parse("0dc620c2-b726-4928-9f1c-fcf61aaa2542"), "Dragon Scale", 0.025, 130, 6),
-                new ResourceDrop(Guid.Parse("40781EB8-1EBF-4C0C-9A11-6E8033C9953C"), "Rune Nugget", 0.075, 70, 6),
-                new ResourceDrop(Guid.Parse("E32A6F17-653C-4AF3-A3A1-D0C6674FE4D5"), "Adamantite Nugget", 0.1, 50, 6),
-                new ResourceDrop(Guid.Parse("FEE5E07E-4397-44A9-9E3A-ED0465CE29FC"), "Gold Nugget", 0.135, 30, 6),
-                new ResourceDrop(Guid.Parse("B3411B33-59F6-4443-A70C-6576B6EC74EC"), "Mithril Nugget", 0.135, 30, 6),
-                new ResourceDrop(Guid.Parse("F5A6063F-CC99-48BF-BC79-F764CD87373A"), "Ruby", 0.135, 25, 6),
-                new ResourceDrop(Guid.Parse("48C94F6C-6119-48A2-88EA-F7649F816DA4"), "Emerald", 0.135, 20, 6),
-                new ResourceDrop(Guid.Parse("723A48A0-E3CB-4EBD-9966-EE8323B11DC0"), "Sapphire", 0.15, 10, 6),
-                new ResourceDrop(Guid.Parse("EF674846-817E-41B7-B378-85E64D2CCF5D"), "Steel Nugget", 0.185, 10, 6),
-                new ResourceDrop(Guid.Parse("CC61E4A3-B00E-4FD4-9160-16A6466787E6"), "Iron Nugget", 0.2, 1, 6),
+                new ResourceDrop(Guid.Parse("49D53A1E-55F7-4537-9A5B-0560B1C0F465"), "Ethereum", 0.003, 0, 280, 6),
+                new ResourceDrop(Guid.Parse("BA6ED0AD-2FE6-46BF-9A99-5528657FF40E"), "Lionite", 0.005, 0,240, 6),
+                new ResourceDrop(Guid.Parse("17c3f9b1-57d6-4219-bbc7-9e929757babf"), "Phantom Core", 0.01, 0, 200, 6),
+                new ResourceDrop(Guid.Parse("f9b7e6a3-4e4a-4e4a-b79d-42a3cf2a16c8"), "Abraxas Spirit", 0.02, 0, 170, 6),
+                new ResourceDrop(Guid.Parse("0dc620c2-b726-4928-9f1c-fcf61aaa2542"), "Dragon Scale", 0.025, 0, 130, 6),
+                new ResourceDrop(Guid.Parse("40781EB8-1EBF-4C0C-9A11-6E8033C9953C"), "Rune Nugget", 0.075, 0, 70, 6),
+                new ResourceDrop(Guid.Parse("E32A6F17-653C-4AF3-A3A1-D0C6674FE4D5"), "Adamantite Nugget", 0.1, 0, 50, 6),
+                new ResourceDrop(Guid.Parse("FEE5E07E-4397-44A9-9E3A-ED0465CE29FC"), "Gold Nugget", 0.135, 0, 30, 6),
+                new ResourceDrop(Guid.Parse("B3411B33-59F6-4443-A70C-6576B6EC74EC"), "Mithril Nugget", 0.135, 0, 30, 6),
+                new ResourceDrop(Guid.Parse("F5A6063F-CC99-48BF-BC79-F764CD87373A"), "Ruby", 0.135, 0, 25, 6),
+                new ResourceDrop(Guid.Parse("48C94F6C-6119-48A2-88EA-F7649F816DA4"), "Emerald", 0.135, 0, 20, 6),
+                new ResourceDrop(Guid.Parse("723A48A0-E3CB-4EBD-9966-EE8323B11DC0"), "Sapphire", 0.15, 0, 10, 6),
+                new ResourceDrop(Guid.Parse("EF674846-817E-41B7-B378-85E64D2CCF5D"), "Steel Nugget", 0.185, 0, 10, 6),
+                new ResourceDrop(Guid.Parse("CC61E4A3-B00E-4FD4-9160-16A6466787E6"), "Iron Nugget", 0.2, 0, 1, 6),
             };
         }
 
@@ -114,14 +114,16 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public Guid Id { get; }
         public string Name { get; }
         public double DropChance { get; }
+        public double Cooldown { get; }
         public int SkillLevel { get; set; }
         public int? SkillIndex { get; set; }
 
-        public ResourceDrop(Guid id, string name, double dropChance, int skillLevel, int? skillIndex)
+        public ResourceDrop(Guid id, string name, double dropChance, double cooldown, int skillLevel, int? skillIndex)
         {
             Id = id;
             Name = name;
             DropChance = dropChance;
+            Cooldown = cooldown;
             SkillLevel = skillLevel;
             SkillIndex = skillIndex;
         }
@@ -133,7 +135,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
         public static implicit operator ResourceDrop(ResourceItemDrop source)
         {
-            return new ResourceDrop(source.ItemId, source.ItemName, source.DropChance, source.LevelRequirement, source.Skill);
+            return new ResourceDrop(source.ItemId, source.ItemName, source.DropChance, source.Cooldown ?? 0, source.LevelRequirement, source.Skill);
         }
     }
 }

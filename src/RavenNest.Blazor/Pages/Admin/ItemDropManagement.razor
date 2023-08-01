@@ -44,6 +44,11 @@
                     </div>
 
                     <div class="form-row">
+                        <label>Cooldown</label>
+                        <InputText class="modal-input" @bind-Value="dataModel.Cooldown" />
+                    </div>
+
+                    <div class="form-row">
                         <label>Required Skill Level</label>
                         <InputNumber class="modal-input" @bind-Value="dataModel.SkillLevel" />
                     </div>
@@ -118,6 +123,7 @@
                     <th>Skill</th>
                     <th>Level Req</th>
                     <th>Drop Chance</th>
+                    <th>Cooldown</th>
                     <th></th>
                 </tr>
             </thead>
@@ -130,6 +136,7 @@
                         <td class='item'>@(item.Skill != null ? RavenNest.DataModels.Skills.SkillNames[item.Skill.Value] : "")</td>
                         <td class='item'>@item.LevelRequirement</td>
                         <td class='item'>@item.DropChance</td>
+                        <td class='item'>@item.Cooldown</td>
                         <td class='item'>
                             <button class="link-button" @onclick="() => ShowConfirmDelete(item)"><i class="fa-solid fa-trash-can"></i></button>
                             <button class="link-button" @onclick="() => ShowModal(item)"><i class="fas fa-pencil-alt"></i></button>
@@ -269,6 +276,7 @@
             if (d != null)
             {
                 DropChance = d.DropChance.ToString();
+                Cooldown = d.Cooldown.GetValueOrDefault().ToString();
                 ItemName = d.ItemName;
                 ItemId = d.ItemId.ToString();
 
@@ -282,6 +290,7 @@
                 return;
             }
 
+            Cooldown = 0.ToString();
             DropChance = 0.01.ToString();
             SkillLevel = 1;
         }
@@ -293,6 +302,7 @@
             Drop.ItemId = toCopy.ItemId;
             Drop.ItemName = toCopy.ItemName;
             Drop.DropChance = toCopy.DropChance;
+            Drop.Cooldown = toCopy.Cooldown;
             Drop.LevelRequirement = toCopy.LevelRequirement;
             Drop.Skill = toCopy.Skill;
             return true;
@@ -340,6 +350,12 @@
                 double.TryParse(DropChance, out dropChance);
             }
 
+            var cooldown = 0.0;
+            if (!string.IsNullOrEmpty(Cooldown))
+            {
+                double.TryParse(Cooldown, out cooldown);
+            }
+
             if (TargetItem != null)
             {
                 return new RavenNest.DataModels.ResourceItemDrop
@@ -349,7 +365,8 @@
                         ItemName = TargetItem.Name,
                         DropChance = dropChance,
                         LevelRequirement = SkillLevel,
-                        Skill = index
+                        Skill = index,
+                        Cooldown = cooldown
                     };
             }
 
@@ -362,6 +379,7 @@
         public string ItemId { get; set; }
         public string Skill { get; set; }
         public string DropChance { get; set; }
+        public string Cooldown { get; set; }
         public int SkillLevel { get; set; }
     }
 }

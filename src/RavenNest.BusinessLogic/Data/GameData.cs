@@ -54,6 +54,10 @@ namespace RavenNest.BusinessLogic.Data
 
         private readonly EntitySet<VendorItem> vendorItems;
 
+        private readonly EntitySet<Achievement> achievements;
+        private readonly EntitySet<UserAchievement> userAchievements;
+        private readonly EntitySet<CharacterAchievement> characterAchievements;
+
         private readonly EntitySet<CharacterClanInvite> clanInvites;
         private readonly EntitySet<Clan> clans;
         private readonly EntitySet<ClanRole> clanRoles;
