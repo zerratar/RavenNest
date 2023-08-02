@@ -356,7 +356,7 @@ namespace RavenNest.BusinessLogic.Game
             }
             finally
             {
-                if (result.Success)
+                if (result.Success && ravenbotApi != null)
                 {
                     ravenbotApi.UpdateUserSettings(result.Player.UserId);
                 }
@@ -841,29 +841,34 @@ namespace RavenNest.BusinessLogic.Game
                     return insufficient;
                 }
 
-                if (inventory.RemoveItem(currencyItem, redeemable.Cost, out var toRemove))
-                {
-                    if (toRemove > 0)
-                    {
-                        if (stashCurrencyItem != null)
-                        {
-                            gameData.RemoveFromStash(stashCurrencyItem, (int)toRemove);
-                        }
-                        else
-                        {
-                            logger.LogError("Redeem Bug: Unable to remove items from stash (Res Id: " + redeemable.CurrencyItemId + ", Char Id: " + character.UserId + ", Amount: " + toRemove + ")");
-                        }
-                    }
-
-                    inventory.AddItem(redeemable.ItemId, Math.Max(1, redeemable.Amount));
-                }
-
+                // if we don't have any in inventory, we should only remove from the stash
                 if (currencyItem.Amount > 0)
                 {
+                    if (inventory.RemoveItem(currencyItem, redeemable.Cost, out var toRemove))
+                    {
+                        if (toRemove > 0)
+                        {
+                            if (stashCurrencyItem != null)
+                            {
+                                gameData.RemoveFromStash(stashCurrencyItem, (int)toRemove);
+                            }
+                            else
+                            {
+                                logger.LogError("Redeem Bug: Unable to remove items from stash (Res Id: " + redeemable.CurrencyItemId + ", Char Id: " + character.UserId + ", Amount: " + toRemove + ")");
+                            }
+                        }
+
+                        inventory.AddItem(redeemable.ItemId, Math.Max(1, redeemable.Amount));
+                    }
+
                     SendItemRemoveEvent(new DataModels.InventoryItem
                     {
                         ItemId = redeemable.CurrencyItemId,
                     }, redeemable.Cost > currencyItem.Amount ? currencyItem.Amount : redeemable.Cost, character);
+                }
+                else
+                {
+                    gameData.RemoveFromStash(stashCurrencyItem, redeemable.Cost);
                 }
 
                 SendItemAddEvent(new DataModels.InventoryItem { ItemId = redeemable.ItemId, Soulbound = false }, redeemable.Amount, character);
