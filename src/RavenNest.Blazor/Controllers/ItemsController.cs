@@ -46,6 +46,18 @@ namespace RavenNest.Controllers
             return itemCollection;
         }
 
+        [HttpGet("delta/{timestamp}")]
+        public async Task<ActionResult<ItemCollection>> Get(DateTime timestamp)
+        {
+            if (itemManager == null)
+            {
+                return new ItemCollection();
+            }
+
+            var itemCollection = itemManager.GetAllItems(timestamp);
+            return itemCollection;
+        }
+
         /// <summary>
         /// Get all redeemable items
         /// </summary>

@@ -38,6 +38,22 @@ namespace RavenNest.BusinessLogic.Game
             return InvalidateCache();
         }
 
+        public ItemCollection GetAllItems(DateTime timestamp)
+        {
+            var items = gameData.GetItems();
+            var collection = new ItemCollection();
+            foreach (var item in items)
+            {
+                if (item.Hidden || item.Modified < timestamp)
+                {
+                    continue;
+                }
+
+                collection.Add(ModelMapper.Map(gameData, item));
+            }
+            return collection;
+        }
+
         public Item GetItem(Guid itemId)
         {
             var dataItem = gameData.GetItem(itemId);
@@ -95,6 +111,8 @@ namespace RavenNest.BusinessLogic.Game
                 item.RequiredCookingLevel = GameMath.MaxLevel + 1;
                 item.RequiredCraftingLevel = GameMath.MaxLevel + 1;
             }
+
+            entity.Modified = DateTime.UtcNow;
 
             gameData.Add(entity);
             InvalidateCache();
@@ -166,6 +184,13 @@ namespace RavenNest.BusinessLogic.Game
 
             dataItem.Level = item.Level;
             dataItem.ArmorPower = item.ArmorPower;
+            dataItem.WeaponAim = item.WeaponAim;
+            dataItem.WeaponPower = item.WeaponPower;
+            dataItem.MagicPower = item.MagicPower;
+            dataItem.MagicAim = item.MagicAim;
+            dataItem.RangedPower = item.RangedPower;
+            dataItem.RangedAim = item.RangedAim;
+
             dataItem.Category = (int)item.Category;
             dataItem.Craftable = item.Craftable;
             dataItem.FemaleModelId = item.FemaleModelId;
@@ -188,11 +213,8 @@ namespace RavenNest.BusinessLogic.Game
             dataItem.ShopSellPrice = item.ShopSellPrice;
             dataItem.Soulbound = item.Soulbound;
             dataItem.Type = (int)item.Type;
-            dataItem.WeaponAim = item.WeaponAim;
-            dataItem.WeaponPower = item.WeaponPower;
             dataItem.WoodCost = item.WoodCost;
-
-
+            dataItem.Modified = DateTime.UtcNow;
 
             InvalidateCache();
         }

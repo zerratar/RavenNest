@@ -40,5 +40,6 @@ namespace RavenNest.Models
         public long ShopSellPrice { get; set; }
         public List<ItemCraftingRequirement> CraftingRequirements { get; set; }
         public bool Soulbound { get; set; }
+        public DateTime? Modified { get; set; }
     }
 }
