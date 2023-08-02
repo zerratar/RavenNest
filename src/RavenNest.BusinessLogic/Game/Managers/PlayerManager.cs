@@ -800,15 +800,15 @@ namespace RavenNest.BusinessLogic.Game
 
         public RedeemItemResult RedeemItem(SessionToken sessionToken, Guid characterId, Guid itemId)
         {
+            var character = GetCharacter(sessionToken, characterId);
+            if (character == null)
+            {
+                logger.LogError("Unable to redeem item for " + characterId + ". Character not found in session: " + sessionToken.SessionId);
+                return RedeemItemResult.Error("Player not in session.");
+            }
+
             try
             {
-                var character = GetCharacter(sessionToken, characterId);
-                if (character == null)
-                {
-                    logger.LogError("Unable to redeem item for " + characterId + ". Character not found in session: " + sessionToken.SessionId);
-                    return RedeemItemResult.Error("Player not in session.");
-                }
-
                 var session = gameData.GetSession(sessionToken.SessionId);
                 var inventory = inventoryProvider.Get(character.Id);
                 var redeemable = gameData.GetRedeemableItemByItemId(itemId);
@@ -880,6 +880,16 @@ namespace RavenNest.BusinessLogic.Game
             }
             catch (Exception exc)
             {
+                var targetItem = gameData.GetItem(itemId);
+                if (targetItem != null)
+                {
+                    logger.LogError(character.Name + " is unable to redeem a " + targetItem.Name + ": " + exc);
+                }
+                else
+                {
+                    logger.LogError(character.Name + " is unable to redeem item with ID: " + itemId + " " + exc);
+                }
+
                 return RedeemItemResult.Error("Unknown Error");
             }
         }

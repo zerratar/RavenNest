@@ -13,6 +13,8 @@ namespace RavenNest.BusinessLogic.Game
         private readonly IMemoryCache memoryCache;
         private readonly GameData gameData;
 
+        private DateTime lastCacheInvalidation;
+
         public ItemManager(
             IMemoryCache memoryCache,
             GameData gameData)
@@ -51,6 +53,13 @@ namespace RavenNest.BusinessLogic.Game
 
                 collection.Add(ModelMapper.Map(gameData, item));
             }
+
+            if (timestamp > lastCacheInvalidation && collection.Count > 0)
+            {
+                // force update the cache as we have new items
+                InvalidateCache();
+            }
+
             return collection;
         }
 
@@ -260,6 +269,7 @@ namespace RavenNest.BusinessLogic.Game
 
         private ItemCollection InvalidateCache()
         {
+            lastCacheInvalidation = DateTime.UtcNow;
             var items = gameData.GetItems();
             var collection = new ItemCollection();
             foreach (var item in items)
