@@ -150,6 +150,13 @@ else
                                 }
                             </td>
                             <td class='item requirement'>
+                                @if (item.RequiredSlayerLevel > 0)
+                                {
+                                    <span class="item-stat" title="Required Slayer Level">
+                                        <i class="fas fa-skull"></i>
+                                        @item.RequiredSlayerLevel
+                                    </span>
+                                }
                                 @if (item.RequiredAttackLevel > 0)
                                 {
                                     <span class="item-stat" title="Required Attack Level">

@@ -440,6 +440,13 @@
                             }
                         </td>
                         <td class='item level-requirement'>
+                            @if (item.RequiredSlayerLevel > 0)
+                            {
+                                <span class="item-stat" title="Required Slayer Level">
+                                    <i class="fas fa-skull"></i>
+                                    @item.RequiredSlayerLevel
+                                </span>
+                            }
                             @if (item.RequiredAttackLevel > 0)
                             {
                                 <span class="item-stat" title="Required Attack Level">
@@ -710,7 +717,14 @@
     private async Task LoadItems()
     {
         availableItems = new Models.ItemCollection((await ItemService.GetItemsAsync()).OrderBy(x => x.Name));
-        items = new Models.ItemCollection(availableItems.OrderBy(x => x.Name));
+
+        if (itemFilter == ItemFilter.All)
+        {
+          items = new Models.ItemCollection(availableItems.OrderBy(x => x.Name));    
+          return;
+        }
+
+        SelectItemFilter(itemFilter);
     }
 
     private bool Filter(Models.Item item)
