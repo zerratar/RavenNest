@@ -1295,6 +1295,11 @@ namespace RavenNest.BusinessLogic.Data
                 return items.Entities.FirstOrDefault(x => (ItemCategory)x.Category == ItemCategory.Resource && x.Name.Contains(containsName, StringComparison.OrdinalIgnoreCase));
             }
 
+            Item GetItemByCategoryExact(ItemCategory category, string name)
+            {
+                return items.Entities.FirstOrDefault(x => (ItemCategory)x.Category == ItemCategory.Resource && x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            }
+
             var phantomCraftingLevel = 200; // change to 210 ?
             var lionCraftingLevel = 240;
             var etherCraftingLevel = 280;
@@ -1414,7 +1419,7 @@ namespace RavenNest.BusinessLogic.Data
 
                     if (nl.Contains("lionsbane"))
                     {
-                        resType = GetItemByCategory(ItemCategory.Resource, "lionite");
+                        resType = GetItemByCategoryExact(ItemCategory.Resource, "lionite");
                         ingotCount = 90;
                         woodCount = woodCount * 18;
                         resCount = 3;
@@ -1423,7 +1428,7 @@ namespace RavenNest.BusinessLogic.Data
 
                     if (nl.StartsWith("ether "))
                     {
-                        resType = GetItemByCategory(ItemCategory.Resource, "ethereum");
+                        resType = GetItemByCategoryExact(ItemCategory.Resource, "ethereum");
                         ingotCount = 120;
                         woodCount = woodCount * 24;
                         resCount = 5;
