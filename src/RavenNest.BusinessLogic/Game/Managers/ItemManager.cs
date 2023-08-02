@@ -44,7 +44,7 @@ namespace RavenNest.BusinessLogic.Game
             var collection = new ItemCollection();
             foreach (var item in items)
             {
-                if (item.Hidden || item.Modified < timestamp)
+                if (item.Hidden || item.Modified.GetValueOrDefault() < timestamp)
                 {
                     continue;
                 }
