@@ -3368,6 +3368,7 @@ namespace RavenNest.BusinessLogic.Data
 
         private void SaveChanges()
         {
+            SimpleDropHandler.SaveDropTimes();
             kernel.ClearTimeout(scheduleHandler);
             scheduleHandler = null;
             var lastQuery = "";
@@ -3679,7 +3680,6 @@ namespace RavenNest.BusinessLogic.Data
 
         public void Dispose()
         {
-            SimpleDropHandler.SaveDropTimes();
             this.Flush();
         }
 
