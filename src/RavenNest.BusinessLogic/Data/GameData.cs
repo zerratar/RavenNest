@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -14,7 +13,6 @@ using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.DataModels;
-using TwitchLib.Api.Helix;
 
 namespace RavenNest.BusinessLogic.Data
 {
@@ -85,6 +83,8 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<UserBankItem> userBankItems;
         private readonly EntitySet<InventoryItem> inventoryItems;
         private readonly EntitySet<ResourceItemDrop> resourceItemDrops;
+        private readonly EntitySet<ItemDrop> itemDrops;
+
         private readonly EntitySet<ItemAttribute> itemAttributes;
         private readonly EntitySet<RedeemableItem> redeemableItems;
 
@@ -123,7 +123,6 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Game Data Construction
-
 
         public GameData(
             GameDataBackupProvider backupProvider,
@@ -170,6 +169,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(RedeemableItem),
                         typeof(Pet),
                         typeof(ResourceItemDrop),
+                        typeof(ItemDrop),
                         typeof(VendorItem),
                         //typeof(UserNotification),
                         typeof(MarketItemTransaction),
@@ -188,7 +188,7 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(Agreements),
                         typeof(ServerSettings),
                         typeof(UserBankItem),
-                        typeof(ExpMultiplierEvent)
+                        typeof(ExpMultiplierEvent),
                 });
 
 
@@ -223,6 +223,7 @@ namespace RavenNest.BusinessLogic.Data
 
                     serverSettings = new EntitySet<ServerSettings>(restorePoint?.Get<ServerSettings>() ?? ctx.ServerSettings.ToList());
 
+                    itemDrops = new EntitySet<ItemDrop>(restorePoint?.Get<ItemDrop>() ?? ctx.ItemDrop.ToList());
                     resourceItemDrops = new EntitySet<ResourceItemDrop>(restorePoint?.Get<ResourceItemDrop>() ?? ctx.ResourceItemDrop.ToList());
 
                     patreonSettings = new EntitySet<PatreonSettings>(restorePoint?.Get<PatreonSettings>() ?? ctx.PatreonSettings.ToList());
@@ -407,6 +408,7 @@ namespace RavenNest.BusinessLogic.Data
                         gameClients,
                         userAccess,
                         vendorItems,
+                        itemDrops,
                         items, // so we can update items
                         gameSessions, /*gameEvents, */ inventoryItems, marketItems, marketTransactions,
                         resources, statistics, characterSkills, clanSkills, users, villages, villageHouses,
@@ -2156,7 +2158,8 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(Item entity) => Update(() => items.Add(entity));
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(ItemDrop entity) => Update(() => itemDrops.Add(entity));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(CharacterState entity) => Update(() => characterStates.Add(entity));
 
@@ -3155,6 +3158,10 @@ namespace RavenNest.BusinessLogic.Data
             clanRoles[nameof(Clan), clanId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<ItemDrop> GetItemDrops()
+            => itemDrops.Entities;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<ResourceItemDrop> GetResourceItemDrops()
             => resourceItemDrops.Entities;
 
@@ -3200,6 +3207,9 @@ namespace RavenNest.BusinessLogic.Data
         #region Remove Entities
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(VendorItem item) => vendorItems.Remove(item);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(ItemDrop entity) => itemDrops.Remove(entity);
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(DailyAggregatedMarketplaceData item) => dailyAggregatedMarketplaceData.Remove(item);
 

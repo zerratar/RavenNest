@@ -256,6 +256,40 @@ namespace RavenNest.Controllers
             }
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{tier}/dungeon-reward")]
+        public EventItemReward[] GetDungeonRewardsAsync(int tier, Many<Guid> characterIds)
+        {
+            try
+            {
+                var session = GetSessionToken();
+                AssertSessionTokenValidity(session);
+                return gameManager.GetDungeonRewardsAsync(session, tier, characterIds.Values);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                return null;
+            }
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("raid-reward")]
+        public EventItemReward[] GetRaidRewardsAsync(Many<Guid> characterIds)
+        {
+            try
+            {
+                var session = GetSessionToken();
+                AssertSessionTokenValidity(session);
+                return gameManager.GetRaidRewardsAsync(session, characterIds.Values);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                return null;
+            }
+        }
+
         [HttpGet("clear-players")]
         public bool ClearPlayers()
         {

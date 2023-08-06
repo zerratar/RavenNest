@@ -5,7 +5,10 @@ using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Sessions;
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
+using TwitchLib.Api.Helix.Models.Bits;
 
 namespace RavenNest.BusinessLogic.Game
 {
@@ -268,6 +271,140 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
+
+        public IReadOnlyList<ItemDrop> GetDungeonDropList(int tier)
+        {
+            return gameData.GetItemDrops().Where(x => x.SourceType == 1 && CanBeDropped(x, tier)).ToList();
+        }
+
+        public IReadOnlyList<ItemDrop> GetRaidDropList()
+        {
+            return gameData.GetItemDrops().Where(x => x.SourceType == 0 && CanBeDropped(x)).ToList();
+        }
+
+        public bool CanBeDropped(ItemDrop itemDrop, int tier = 0)
+        {
+            if (itemDrop.MinDifficultyTier > tier) return false;
+            if (itemDrop.DropStart == null || itemDrop.DropStart == DateTime.MinValue || itemDrop.DropDuration == null || itemDrop.DropDuration == TimeSpan.Zero)
+                return true; // no date restriction
+            var start = itemDrop.DropStart.Value;
+            var end = start.Add(itemDrop.DropDuration.Value);
+            var now = DateTime.UtcNow;
+            return now >= start && now <= end;
+        }
+
+
+        public EventItemReward[] GetDungeonRewardsAsync(SessionToken session, int tier, Guid[] characters)
+        {
+            var gameSession = gameData.GetSession(session.SessionId);
+            if (gameSession == null) return null;
+            var rewards = new List<EventItemReward>();
+            var sessionCharacters = gameData.GetActiveSessionCharacters(gameSession);
+            var rng = Random.Shared;
+            var dropList = GetDungeonDropList(tier);
+
+            foreach (var c in characters)
+            {
+                var character = sessionCharacters.FirstOrDefault(x => x.Id == c);
+                if (character == null) continue;
+
+                var value = rng.NextDouble();
+                var dropChance = value >= 0.75 ? 1f : 0.75f;
+                var skills = gameData.GetCharacterSkills(character.SkillsId);
+
+                var dl = dropList.Where(x => x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
+                if (dl.Count == 0) continue;
+
+                //dropList.OrderByRandomWeighted(x => GetDropRate(x, skills))
+
+                // pick an item at random based on highest drop rate
+                var item = dl.Weighted((x, index) => GetDropRate(x, index, dropList.Count, tier, skills));
+
+                if (rng.NextDouble() <= dropChance)
+                {
+                    rewards.Add(new EventItemReward
+                    {
+                        Amount = 1,
+                        CharacterId = character.Id,
+                        ItemId = item.ItemId
+                    });
+                }
+            }
+
+            return rewards.ToArray();
+        }
+
+        public EventItemReward[] GetRaidRewardsAsync(SessionToken session, Guid[] characters)
+        {
+            var gameSession = gameData.GetSession(session.SessionId);
+            if (gameSession == null) return null;
+            var rewards = new List<EventItemReward>();
+            var sessionCharacters = gameData.GetActiveSessionCharacters(gameSession);
+            var rng = Random.Shared;
+
+            var dropList = GetRaidDropList();
+            var dropChance = 0.25;
+            foreach (var c in characters)
+            {
+                var character = sessionCharacters.FirstOrDefault(x => x.Id == c);
+                if (character == null) continue;
+
+                var skills = gameData.GetCharacterSkills(character.SkillsId);
+
+                var dl = dropList.Where(x => x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
+                if (dl.Count == 0) continue;
+                // pick an item at random based on highest drop rate
+                var item = dl.Weighted((x, index) => GetDropRate(x, index, dropList.Count, 0, skills));
+
+                if (rng.NextDouble() <= dropChance)
+                {
+                    rewards.Add(new EventItemReward
+                    {
+                        Amount = 1,
+                        CharacterId = character.Id,
+                        ItemId = item.ItemId
+                    });
+                }
+            }
+
+            return rewards.ToArray();
+        }
+
+        private double GetDropRate(ItemDrop drop, int index, int count, int tier, DataModels.Skills skills)
+        {
+            var now = DateTime.UtcNow;
+
+            if (drop.DropStart == null || drop.DropStart.Value == DateTime.MinValue || drop.DropDuration == null || drop.DropDuration == TimeSpan.Zero)
+            {
+                return Math.Max(drop.MinDropRate, drop.MaxDropRate);
+            }
+
+            if (drop.SlayerLevelRequirement > skills.SlayerLevel) return 0;
+
+            var item = gameData.GetItem(drop.ItemId);
+            var attackScale = Math.Min(1f, skills.AttackLevel / (float)item.RequiredAttackLevel);
+            var defenseScale = Math.Min(1f, skills.DefenseLevel / (float)item.RequiredDefenseLevel);
+            var rangedScale = Math.Min(1f, skills.RangedLevel / (float)item.RequiredRangedLevel);
+            var magicScale = Math.Min(1f, skills.MagicLevel / (float)item.RequiredMagicLevel);
+            var healingScale = Math.Min(1f, Math.Max(magicScale, (skills.HealingLevel / (float)item.RequiredMagicLevel)));
+
+            var start = drop.DropStart.Value;
+            var end = start.Add(drop.DropDuration.Value);
+
+            var dropChance = (now.Date == start || now.Date >= end.AddDays(-1)
+                ? drop.MaxDropRate
+                : GameMath.Lerp(drop.MinDropRate, drop.MaxDropRate, (float)((end - now) / (end - start)))) *
+                Math.Clamp(attackScale * defenseScale * rangedScale * magicScale * healingScale, 0, 1.25);
+
+            var a = Math.Min(1d, (double)index / count);
+            var b = Math.Min(1d, skills.SlayerLevel / (double)GameMath.MaxLevel);
+
+            var rate = Math.Max(dropChance * a, dropChance * b);
+
+            // add tier scaling
+
+            return rate;
+        }
 
         //public bool WalkTo(string userId, int x, int y, int z)
         //{

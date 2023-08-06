@@ -3,6 +3,13 @@ using System.Collections.Generic;
 
 namespace RavenNest.Models
 {
+    public class EventItemReward
+    {
+        public Guid CharacterId { get; set; }
+        public Guid ItemId { get; set; }
+        public int Amount { get; set; }
+    }
+
     public class ItemCraftingRequirement
     {
         public Guid Id { get; set; }

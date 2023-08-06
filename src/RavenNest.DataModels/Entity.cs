@@ -32,11 +32,57 @@ namespace RavenNest.DataModels
     public static class EnumerableExtensions
     {
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Weighted<T>(this IReadOnlyList<T> items, Func<T, double> weight, Random random = null)
+        {
+            if (random == null) random = Random.Shared;
+            var selections = items;
+            var totalWeight = selections.Sum(weight);
+            var randomWeight = random.NextDouble() * totalWeight;
+            var weightSum = 0d;
+
+            for (int i = 0; i < selections.Count; i++)
+            {
+                weightSum += weight(selections[i]);
+                if (randomWeight < weightSum)
+                {
+                    return selections[i];
+                }
+            }
+
+            return selections[random.Next(0, selections.Count)];
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static T Weighted<T>(this IReadOnlyList<T> items, Func<T, int, double> weight, Random random = null)
+        {
+            if (random == null) random = Random.Shared;
+            var selections = items;
+
+            var totalWeight = 0;
+            for (var i = 0; i < selections.Count; i++)
+            {
+                totalWeight += (int)weight(selections[i], i);
+            }
+
+            var randomWeight = random.NextDouble() * totalWeight;
+            var weightSum = 0d;
+
+            for (int i = 0; i < selections.Count; i++)
+            {
+                var addedWeight = weight(selections[i], i);
+                weightSum += addedWeight;
+                if (randomWeight < weightSum)
+                {
+                    return selections[i];
+                }
+            }
+
+            return selections[random.Next(0, selections.Count)];
+        }
+
         public static IEnumerable<T> OrderByRandomWeighted<T>(this IEnumerable<T> source, Func<T, double> weightSelector, Random random = null)
         {
-            if (random == null)
-                random = new Random();
-
+            if (random == null) random = Random.Shared;
             var weightedList = source.Select(item => (item, weight: weightSelector(item))).ToList();
             var totalWeight = weightedList.Sum(x => x.weight);
             var orderedList = new List<T>();

@@ -33,12 +33,13 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<UserAccess> UserAccess { get; set; }
         public virtual DbSet<UserClaimedLoyaltyReward> UserClaimedLoyaltyReward { get; set; }
         public virtual DbSet<ServerSettings> ServerSettings { get; set; }
+
+        public virtual DbSet<ItemDrop> ItemDrop { get; set; }
         public virtual DbSet<ResourceItemDrop> ResourceItemDrop { get; set; }
         public virtual DbSet<PatreonSettings> PatreonSettings { get; set; }
         public virtual DbSet<SyntyAppearance> SyntyAppearance { get; set; }
         public virtual DbSet<Character> Character { get; set; }
         public virtual DbSet<CharacterState> CharacterState { get; set; }
-
         public virtual DbSet<Village> Village { get; set; }
         public virtual DbSet<VillageHouse> VillageHouse { get; set; }
         public virtual DbSet<Clan> Clan { get; set; }
@@ -48,7 +49,6 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<ClanSkill> ClanSkill { get; set; }
         public virtual DbSet<MarketItemTransaction> MarketItemTransaction { get; set; }
         public virtual DbSet<VendorTransaction> VendorTransaction { get; set; }
-
         public virtual DbSet<CharacterClanMembership> CharacterClanMembership { get; set; }
         public virtual DbSet<CharacterClanInvite> CharacterClanInvite { get; set; }
         public virtual DbSet<CharacterSessionActivity> CharacterSessionActivity { get; set; }
@@ -109,6 +109,7 @@ namespace RavenNest.BusinessLogic.Data
             modelBuilder.Entity<DailyAggregatedEconomyReport>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
             modelBuilder.Entity<PatreonSettings>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<ItemDrop>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<ResourceItemDrop>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<Agreements>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserProperty>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
