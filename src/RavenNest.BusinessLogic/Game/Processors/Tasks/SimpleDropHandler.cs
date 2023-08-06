@@ -9,9 +9,11 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     public class SimpleDropHandler
     {
         private static readonly Dictionary<string, DateTime> dropTimes;
+        private static readonly Random dropRandom;
 
         static SimpleDropHandler()
         {
+            dropRandom = new Random();
             dropTimes = new Dictionary<string, DateTime>();
             try
             {
@@ -78,8 +80,13 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             LoadDropsIfRequired(gameData);
 
+            if (drops.Count == 0)
+            {
+                return false;
+            }
+
             var now = DateTime.UtcNow;
-            foreach (var res in drops.OrderByDescending(x => x.SkillLevel))
+            foreach (var res in drops.OrderByRandomWeighted(x => x.SkillLevel, dropRandom))//drops.OrderByDescending(x => x.SkillLevel))
             {
                 var cooldownKey = character.Id + "_" + res.Id;
                 if (res.Cooldown > 0 && dropTimes.TryGetValue(cooldownKey, out var lastDrop))

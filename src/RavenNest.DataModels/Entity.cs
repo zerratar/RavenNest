@@ -32,6 +32,36 @@ namespace RavenNest.DataModels
     public static class EnumerableExtensions
     {
 
+        public static IEnumerable<T> OrderByRandomWeighted<T>(this IEnumerable<T> source, Func<T, double> weightSelector, Random random = null)
+        {
+            if (random == null)
+                random = new Random();
+
+            var weightedList = source.Select(item => (item, weight: weightSelector(item))).ToList();
+            var totalWeight = weightedList.Sum(x => x.weight);
+            var orderedList = new List<T>();
+
+            while (weightedList.Count > 0)
+            {
+                var target = random.NextDouble() * totalWeight;
+                double cumulativeWeight = 0;
+                for (int i = 0; i < weightedList.Count; i++)
+                {
+                    cumulativeWeight += weightedList[i].weight;
+                    if (cumulativeWeight >= target)
+                    {
+                        orderedList.Add(weightedList[i].item);
+                        totalWeight -= weightedList[i].weight;
+                        weightedList.RemoveAt(i);
+                        break;
+                    }
+                }
+            }
+
+            return orderedList;
+        }
+
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOf<T>(this T[] items, T value)
         {
