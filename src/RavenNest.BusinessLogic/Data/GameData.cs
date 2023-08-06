@@ -3679,6 +3679,7 @@ namespace RavenNest.BusinessLogic.Data
 
         public void Dispose()
         {
+            SimpleDropHandler.SaveDropTimes();
             this.Flush();
         }
 

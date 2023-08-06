@@ -305,6 +305,9 @@
             Drop.Cooldown = toCopy.Cooldown;
             Drop.LevelRequirement = toCopy.LevelRequirement;
             Drop.Skill = toCopy.Skill;
+
+
+            itemService.InvalidateDropHandlers();
             return true;
         }
 

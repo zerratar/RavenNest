@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Game.Enchantment;
+using RavenNest.BusinessLogic.Game.Processors.Tasks;
 
 namespace RavenNest.Blazor.Services
 {
@@ -79,6 +80,14 @@ namespace RavenNest.Blazor.Services
             return await Task.Run(() => itemManager.GetAllItems());
         }
 
+        public void InvalidateDropHandlers()
+        {
+            WoodcuttingTaskProcessor.Drops.ForceReloadDrops(gameData);
+            FishingTaskProcessor.Drops.ForceReloadDrops(gameData);
+            MiningTaskProcessor.Drops.ForceReloadDrops(gameData);
+            FarmingTaskProcessor.Drops.ForceReloadDrops(gameData);
+        }
+
         public async Task<bool> AddResourceDropAsync(RavenNest.DataModels.ResourceItemDrop dropToAdd)
         {
             if (dropToAdd == null || string.IsNullOrEmpty(dropToAdd.ItemName) || Guid.Empty == dropToAdd.ItemId)
@@ -86,7 +95,11 @@ namespace RavenNest.Blazor.Services
                 return false;
             }
 
-            await Task.Run(() => gameData.Add(dropToAdd));
+            await Task.Run(() =>
+            {
+                gameData.Add(dropToAdd);
+                InvalidateDropHandlers();
+            });
 
             return true;
         }

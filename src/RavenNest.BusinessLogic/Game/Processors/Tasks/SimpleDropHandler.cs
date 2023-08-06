@@ -8,14 +8,45 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
     public class SimpleDropHandler
     {
+        private static readonly Dictionary<string, DateTime> dropTimes;
+
+        static SimpleDropHandler()
+        {
+            dropTimes = new Dictionary<string, DateTime>();
+            try
+            {
+                var droptimesJson = System.IO.Path.Combine(FolderPaths.GeneratedData, "resource-droptimes.json");
+                if (System.IO.File.Exists(droptimesJson))
+                {
+                    dropTimes = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, DateTime>>(System.IO.File.ReadAllText(droptimesJson));
+                }
+            }
+            catch { }
+        }
+
+        public static void SaveDropTimes()
+        {
+            try
+            {
+                var droptimesJson = System.IO.Path.Combine(FolderPaths.GeneratedData, "resource-droptimes.json");
+                System.IO.File.WriteAllText(droptimesJson, Newtonsoft.Json.JsonConvert.SerializeObject(dropTimes));
+            }
+            catch { }
+        }
+
         private readonly string skill;
         private readonly List<ResourceDrop> drops = new List<ResourceDrop>();
-        private readonly Dictionary<string, DateTime> dropTimes = new Dictionary<string, DateTime>();
 
         private bool initialized;
         public SimpleDropHandler(string skill)
         {
             this.skill = skill;
+        }
+
+        public void ForceReloadDrops(GameData gameData)
+        {
+            this.drops.Clear();
+            LoadDrops(gameData);
         }
 
         public void LoadDrops(GameData gameData)
@@ -47,30 +78,25 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             LoadDropsIfRequired(gameData);
 
+            var now = DateTime.UtcNow;
             foreach (var res in drops.OrderByDescending(x => x.SkillLevel))
             {
+                var cooldownKey = character.Id + "_" + res.Id;
+                if (res.Cooldown > 0 && dropTimes.TryGetValue(cooldownKey, out var lastDrop))
+                {
+                    var timeSinceLastDrop = now - lastDrop;
+                    if (timeSinceLastDrop < TimeSpan.FromSeconds(res.Cooldown))
+                    {
+                        return false;
+                    }
+                }
+
                 chance = resProcessor.Random.NextDouble();
                 if (skillLevel >= res.SkillLevel && (chance <= res.GetDropChance(skillLevel)))
                 {
                     if (canDrop == null || canDrop(res))
                     {
-                        // check for cooldown
-                        var cooldownKey = character.Id + "_" + res.Id;
-                        if (res.Cooldown > 0)
-                        {
-                            if (dropTimes.TryGetValue(cooldownKey, out var lastDrop))
-                            {
-                                if (DateTime.UtcNow - lastDrop < TimeSpan.FromSeconds(res.Cooldown))
-                                {
-                                    return false;
-                                }
-                            }
-                            else
-                            {
-                                dropTimes[cooldownKey] = DateTime.UtcNow;
-                            }
-                        }
-
+                        dropTimes[cooldownKey] = now;
                         resProcessor.IncrementItemStack(gameData, inventoryProvider, session, character, res.Id);
                         return true;
                     }
