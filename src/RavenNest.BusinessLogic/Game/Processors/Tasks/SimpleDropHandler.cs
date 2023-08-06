@@ -87,7 +87,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     var timeSinceLastDrop = now - lastDrop;
                     if (timeSinceLastDrop < TimeSpan.FromSeconds(res.Cooldown))
                     {
-                        return false;
+                        continue;
                     }
                 }
 
