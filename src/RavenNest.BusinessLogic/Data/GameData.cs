@@ -442,8 +442,10 @@ namespace RavenNest.BusinessLogic.Data
 
                 EnsureClanLevels(clans);
                 EnsureExpMultipliersWithinBounds(expMultiplierEvents);
+
                 EnsureCraftingRequirements(items);
                 //MergeLoyaltyData(loyalty);
+
                 MergeClans();
 
                 RemoveDuplicatedClanMembers();
@@ -1292,261 +1294,268 @@ namespace RavenNest.BusinessLogic.Data
 
         private void EnsureCraftingRequirements(EntitySet<Item> items)
         {
-            Item GetItemByCategory(ItemCategory category, string containsName)
-            {
-                return items.Entities.FirstOrDefault(x => (ItemCategory)x.Category == ItemCategory.Resource && x.Name.Contains(containsName, StringComparison.OrdinalIgnoreCase));
-            }
-
-            Item GetItemByCategoryExact(ItemCategory category, string name)
-            {
-                return items.Entities.FirstOrDefault(x => (ItemCategory)x.Category == ItemCategory.Resource && x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-            }
-
-            var phantomCraftingLevel = 200; // change to 210 ?
-            var lionCraftingLevel = 240;
-            var etherCraftingLevel = 280;
-            var atlarusCraftingLevel = 420;//etherCraftingLevel * 1.75;
-
-            var ingot = GetItemByCategory(ItemCategory.Resource, "ore ingot");
-            var wood = GetItemByCategory(ItemCategory.Resource, "wood plank");
-            var gold = GetItemByCategory(ItemCategory.Resource, "gold");
             foreach (var item in items.Entities)
             {
-                var isResource = item.Category == (int)ItemCategory.Resource || item.Type == (int)ItemType.Ore;
-                if (item.Category == (int)ItemCategory.Resource)
-                    continue;
-
-                // Make lionsbane craftable
-                var nl = item.Name.ToLower();
-                if (item.RequiredCraftingLevel > GameMath.MaxLevel)
-                {
-                    item.RequiredCraftingLevel = GameMath.MaxLevel + 1;
-                    item.Craftable = false;
-                }
-                var isAtlarus = nl.StartsWith("atlarus");
-
-                if (item.RequiredCraftingLevel < GameMath.MaxLevel || isAtlarus)
-                {
-                    item.Craftable = true;
-                    var requirements = GetCraftingRequirements(item.Id) ?? new List<ItemCraftingRequirement>();
-                    if (requirements != null && requirements.Count > 0 || item.WoodCost > 0 || item.OreCost > 0)
-                    {
-                        if (requirements != null && requirements.Count > 0)
-                        {
-                            foreach (var req in requirements)
-                            {
-                                if (req.Amount == 0)
-                                {
-                                    req.Amount = 3;
-                                }
-                            }
-                        }
-                        //continue;
-                    }
-
-                    Item resType = null;
-                    var type = (ItemType)item.Type;
-                    var ingotCount = 0;
-                    var woodCount = (type == ItemType.TwoHandedStaff || type == ItemType.TwoHandedBow || type == ItemType.TwoHandedSword || type == ItemType.Shield) ? 5 : 0;
-                    var goldCount = 0;
-                    var resCount = 0;
-
-                    if (nl.Contains("emerald"))
-                    {
-                        resType = GetItemByCategory(ItemCategory.Resource, "emerald");
-                        ingotCount = 5;
-                    }
-                    if (nl.Contains("ruby"))
-                    {
-                        resType = GetItemByCategory(ItemCategory.Resource, "ruby");
-                        ingotCount = 5;
-                    }
-                    if (nl.Contains("bronze"))
-                    {
-                        resType = ingot;
-                    }
-                    if (nl.Contains("iron"))
-                    {
-                        resType = GetItemByCategory(ItemCategory.Resource, "iron nugget");
-                        ingotCount = 5;
-                    }
-                    if (nl.Contains("steel"))
-                    {
-                        resType = GetItemByCategory(ItemCategory.Resource, "steel nugget");
-                        ingotCount = 5;
-                    }
-                    if (nl.Contains("gold "))
-                    {
-                        resType = gold;
-                        ingotCount = 5;
-                    }
-                    if (nl.Contains("mithril"))
-                    {
-                        resType = GetItemByCategory(ItemCategory.Resource, "mithril nugget");
-                        ingotCount = 10;
-                        woodCount = woodCount * 2;
-                    }
-                    if (nl.Contains("adamantite"))
-                    {
-                        resType = GetItemByCategory(ItemCategory.Resource, "adamantite nugget");
-                        ingotCount = 15;
-                        woodCount = woodCount * 3;
-                    }
-                    if (nl.Contains("rune"))
-                    {
-                        resType = GetItemByCategory(ItemCategory.Resource, "rune nugget");
-                        ingotCount = 25;
-                        woodCount = woodCount * 5;
-                    }
-                    if (nl.Contains("dragon"))
-                    {
-                        resType = GetItemByCategory(ItemCategory.Resource, "dragon scale");
-                        ingotCount = 35;
-                        woodCount = woodCount * 7;
-                    }
-                    if (nl.Contains("abraxas"))
-                    {
-                        resType = GetItemByCategory(ItemCategory.Resource, "abraxas spirit");
-                        ingotCount = 60;
-                        woodCount = woodCount * 12;
-                    }
-
-                    if (nl.Contains("phantom"))
-                    {
-                        resType = GetItemByCategory(ItemCategory.Resource, "phantom core");
-                        ingotCount = 75;
-                        woodCount = woodCount * 15;
-                        item.RequiredCraftingLevel = phantomCraftingLevel;
-                    }
-
-                    if (nl.Contains("lionsbane"))
-                    {
-                        resType = GetItemByCategoryExact(ItemCategory.Resource, "lionite");
-                        ingotCount = 90;
-                        woodCount = woodCount * 18;
-                        resCount = 3;
-                        item.RequiredCraftingLevel = lionCraftingLevel;
-                    }
-
-                    if (nl.StartsWith("ether "))
-                    {
-                        resType = GetItemByCategoryExact(ItemCategory.Resource, "ethereum");
-                        ingotCount = 120;
-                        woodCount = woodCount * 24;
-                        resCount = 5;
-                        item.RequiredCraftingLevel = etherCraftingLevel;
-                    }
-
-                    if (isAtlarus)
-                    {
-                        resType = GetItemByCategory(ItemCategory.Resource, "atlarus light");
-                        ingotCount = 210;
-                        woodCount = woodCount * 42;
-                        //resCount = 2;
-                        item.RequiredCraftingLevel = atlarusCraftingLevel;
-                    }
-
-                    switch (type)
-                    {
-                        case ItemType.Amulet:
-                            resCount += 1;
-                            goldCount = 10;
-                            break;
-
-                        case ItemType.Ring:
-                            resCount += 1;
-                            goldCount = 5;
-                            break;
-
-                        case ItemType.OneHandedSword:
-                            resCount += 3;
-                            break;
-
-                        case ItemType.TwoHandedAxe:
-                            resCount += 4;
-                            break;
-                        case ItemType.TwoHandedSword:
-                            resCount += 5;
-                            break;
-
-                        case ItemType.TwoHandedBow:
-                            resCount += 4;
-                            break;
-
-                        case ItemType.TwoHandedStaff:
-                            resCount += 4;
-                            break;
-
-                        case ItemType.Helmet:
-                            resCount += 3;
-                            break;
-                        case ItemType.Chest:
-                            resCount += 5;
-                            break;
-                        case ItemType.Leggings:
-                            resCount += 4;
-                            break;
-                        case ItemType.Gloves:
-                        case ItemType.Boots:
-                            resCount += 3;
-                            break;
-                        case ItemType.Shield:
-                            resCount += 4;
-                            break;
-                    }
-
-
-                    //if (resType == null || ingot == null) continue;
-
-                    if (ingotCount > 0 && ingot != null)
-                    {
-                        item.Craftable = true;
-                        AddOrReplace(requirements, new ItemCraftingRequirement()
-                        {
-                            Id = Guid.NewGuid(),
-                            Amount = ingotCount,
-                            ItemId = item.Id,
-                            ResourceItemId = ingot.Id
-                        });
-                    }
-
-                    if (woodCount > 0 && wood != null)
-                    {
-                        item.Craftable = true;
-                        AddOrReplace(requirements, new ItemCraftingRequirement()
-                        {
-                            Id = Guid.NewGuid(),
-                            Amount = woodCount,
-                            ItemId = item.Id,
-                            ResourceItemId = wood.Id
-                        });
-                    }
-
-                    if (goldCount > 0 && gold != null)
-                    {
-                        item.Craftable = true;
-                        AddOrReplace(requirements, new ItemCraftingRequirement()
-                        {
-                            Id = Guid.NewGuid(),
-                            Amount = goldCount,
-                            ItemId = item.Id,
-                            ResourceItemId = gold.Id
-                        });
-                    }
-
-                    if (resCount > 0 && resType != null)
-                    {
-                        item.Craftable = true;
-                        AddOrReplace(requirements, new ItemCraftingRequirement()
-                        {
-                            Id = Guid.NewGuid(),
-                            Amount = resCount,
-                            ItemId = item.Id,
-                            ResourceItemId = resType.Id
-                        });
-                    }
-                }
+                var requirements = GetCraftingRequirements(item.Id) ?? new List<ItemCraftingRequirement>();
+                item.Craftable = (requirements.Count != 0 || item.OreCost > 0 || item.WoodCost > 0) && item.RequiredCraftingLevel < GameMath.MaxLevel;
             }
+
+            return;
+            //Item GetItemByCategory(ItemCategory category, string containsName)
+            //{
+            //    return items.Entities.FirstOrDefault(x => (ItemCategory)x.Category == ItemCategory.Resource && x.Name.Contains(containsName, StringComparison.OrdinalIgnoreCase));
+            //}
+
+            //Item GetItemByCategoryExact(ItemCategory category, string name)
+            //{
+            //    return items.Entities.FirstOrDefault(x => (ItemCategory)x.Category == ItemCategory.Resource && x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            //}
+
+            //var phantomCraftingLevel = 200; // change to 210 ?
+            //var lionCraftingLevel = 240;
+            //var etherCraftingLevel = 280;
+            //var atlarusCraftingLevel = 420;//etherCraftingLevel * 1.75;
+
+            //var ingot = GetItemByCategory(ItemCategory.Resource, "ore ingot");
+            //var wood = GetItemByCategory(ItemCategory.Resource, "wood plank");
+            //var gold = GetItemByCategory(ItemCategory.Resource, "gold");
+            //foreach (var item in items.Entities)
+            //{
+            //    var isResource = item.Category == (int)ItemCategory.Resource || item.Type == (int)ItemType.Ore;
+            //    if (item.Category == (int)ItemCategory.Resource)
+            //        continue;
+
+            //    // Make lionsbane craftable
+            //    var nl = item.Name.ToLower();
+            //    if (item.RequiredCraftingLevel > GameMath.MaxLevel)
+            //    {
+            //        item.RequiredCraftingLevel = GameMath.MaxLevel + 1;
+            //        item.Craftable = false;
+            //    }
+            //    var isAtlarus = nl.StartsWith("atlarus");
+
+            //    if (item.RequiredCraftingLevel < GameMath.MaxLevel || isAtlarus)
+            //    {
+            //        item.Craftable = true;
+            //        var requirements = GetCraftingRequirements(item.Id) ?? new List<ItemCraftingRequirement>();
+            //        if (requirements != null && requirements.Count > 0 || item.WoodCost > 0 || item.OreCost > 0)
+            //        {
+            //            if (requirements != null && requirements.Count > 0)
+            //            {
+            //                foreach (var req in requirements)
+            //                {
+            //                    if (req.Amount == 0)
+            //                    {
+            //                        req.Amount = 3;
+            //                    }
+            //                }
+            //            }
+            //            //continue;
+            //        }
+
+            //        Item resType = null;
+            //        var type = (ItemType)item.Type;
+            //        var ingotCount = 0;
+            //        var woodCount = (type == ItemType.TwoHandedStaff || type == ItemType.TwoHandedBow || type == ItemType.TwoHandedSword || type == ItemType.Shield) ? 5 : 0;
+            //        var goldCount = 0;
+            //        var resCount = 0;
+
+            //        if (nl.Contains("emerald"))
+            //        {
+            //            resType = GetItemByCategory(ItemCategory.Resource, "emerald");
+            //            ingotCount = 5;
+            //        }
+            //        if (nl.Contains("ruby"))
+            //        {
+            //            resType = GetItemByCategory(ItemCategory.Resource, "ruby");
+            //            ingotCount = 5;
+            //        }
+            //        if (nl.Contains("bronze"))
+            //        {
+            //            resType = ingot;
+            //        }
+            //        if (nl.Contains("iron"))
+            //        {
+            //            resType = GetItemByCategory(ItemCategory.Resource, "iron nugget");
+            //            ingotCount = 5;
+            //        }
+            //        if (nl.Contains("steel"))
+            //        {
+            //            resType = GetItemByCategory(ItemCategory.Resource, "steel nugget");
+            //            ingotCount = 5;
+            //        }
+            //        if (nl.Contains("gold "))
+            //        {
+            //            resType = gold;
+            //            ingotCount = 5;
+            //        }
+            //        if (nl.Contains("mithril"))
+            //        {
+            //            resType = GetItemByCategory(ItemCategory.Resource, "mithril nugget");
+            //            ingotCount = 10;
+            //            woodCount = woodCount * 2;
+            //        }
+            //        if (nl.Contains("adamantite"))
+            //        {
+            //            resType = GetItemByCategory(ItemCategory.Resource, "adamantite nugget");
+            //            ingotCount = 15;
+            //            woodCount = woodCount * 3;
+            //        }
+            //        if (nl.Contains("rune"))
+            //        {
+            //            resType = GetItemByCategory(ItemCategory.Resource, "rune nugget");
+            //            ingotCount = 25;
+            //            woodCount = woodCount * 5;
+            //        }
+            //        if (nl.Contains("dragon"))
+            //        {
+            //            resType = GetItemByCategory(ItemCategory.Resource, "dragon scale");
+            //            ingotCount = 35;
+            //            woodCount = woodCount * 7;
+            //        }
+            //        if (nl.Contains("abraxas"))
+            //        {
+            //            resType = GetItemByCategory(ItemCategory.Resource, "abraxas spirit");
+            //            ingotCount = 60;
+            //            woodCount = woodCount * 12;
+            //        }
+
+            //        if (nl.Contains("phantom"))
+            //        {
+            //            resType = GetItemByCategory(ItemCategory.Resource, "phantom core");
+            //            ingotCount = 75;
+            //            woodCount = woodCount * 15;
+            //            item.RequiredCraftingLevel = phantomCraftingLevel;
+            //        }
+
+            //        if (nl.Contains("lionsbane"))
+            //        {
+            //            resType = GetItemByCategoryExact(ItemCategory.Resource, "lionite");
+            //            ingotCount = 90;
+            //            woodCount = woodCount * 18;
+            //            resCount = 3;
+            //            item.RequiredCraftingLevel = lionCraftingLevel;
+            //        }
+
+            //        if (nl.StartsWith("ether "))
+            //        {
+            //            resType = GetItemByCategoryExact(ItemCategory.Resource, "ethereum");
+            //            ingotCount = 120;
+            //            woodCount = woodCount * 24;
+            //            resCount = 5;
+            //            item.RequiredCraftingLevel = etherCraftingLevel;
+            //        }
+
+            //        if (isAtlarus)
+            //        {
+            //            resType = GetItemByCategory(ItemCategory.Resource, "atlarus light");
+            //            ingotCount = 210;
+            //            woodCount = woodCount * 42;
+            //            //resCount = 2;
+            //            item.RequiredCraftingLevel = atlarusCraftingLevel;
+            //        }
+
+            //        switch (type)
+            //        {
+            //            case ItemType.Amulet:
+            //                resCount += 1;
+            //                goldCount = 10;
+            //                break;
+
+            //            case ItemType.Ring:
+            //                resCount += 1;
+            //                goldCount = 5;
+            //                break;
+
+            //            case ItemType.OneHandedSword:
+            //                resCount += 3;
+            //                break;
+
+            //            case ItemType.TwoHandedAxe:
+            //                resCount += 4;
+            //                break;
+            //            case ItemType.TwoHandedSword:
+            //                resCount += 5;
+            //                break;
+
+            //            case ItemType.TwoHandedBow:
+            //                resCount += 4;
+            //                break;
+
+            //            case ItemType.TwoHandedStaff:
+            //                resCount += 4;
+            //                break;
+
+            //            case ItemType.Helmet:
+            //                resCount += 3;
+            //                break;
+            //            case ItemType.Chest:
+            //                resCount += 5;
+            //                break;
+            //            case ItemType.Leggings:
+            //                resCount += 4;
+            //                break;
+            //            case ItemType.Gloves:
+            //            case ItemType.Boots:
+            //                resCount += 3;
+            //                break;
+            //            case ItemType.Shield:
+            //                resCount += 4;
+            //                break;
+            //        }
+
+
+            //        //if (resType == null || ingot == null) continue;
+
+            //        if (ingotCount > 0 && ingot != null)
+            //        {
+            //            item.Craftable = true;
+            //            AddOrReplace(requirements, new ItemCraftingRequirement()
+            //            {
+            //                Id = Guid.NewGuid(),
+            //                Amount = ingotCount,
+            //                ItemId = item.Id,
+            //                ResourceItemId = ingot.Id
+            //            });
+            //        }
+
+            //        if (woodCount > 0 && wood != null)
+            //        {
+            //            item.Craftable = true;
+            //            AddOrReplace(requirements, new ItemCraftingRequirement()
+            //            {
+            //                Id = Guid.NewGuid(),
+            //                Amount = woodCount,
+            //                ItemId = item.Id,
+            //                ResourceItemId = wood.Id
+            //            });
+            //        }
+
+            //        if (goldCount > 0 && gold != null)
+            //        {
+            //            item.Craftable = true;
+            //            AddOrReplace(requirements, new ItemCraftingRequirement()
+            //            {
+            //                Id = Guid.NewGuid(),
+            //                Amount = goldCount,
+            //                ItemId = item.Id,
+            //                ResourceItemId = gold.Id
+            //            });
+            //        }
+
+            //        if (resCount > 0 && resType != null)
+            //        {
+            //            item.Craftable = true;
+            //            AddOrReplace(requirements, new ItemCraftingRequirement()
+            //            {
+            //                Id = Guid.NewGuid(),
+            //                Amount = resCount,
+            //                ItemId = item.Id,
+            //                ResourceItemId = resType.Id
+            //            });
+            //        }
+            //    }
+            //}
         }
 
         private void AddOrReplace(IReadOnlyList<ItemCraftingRequirement> requirements, ItemCraftingRequirement itemCraftingRequirement)

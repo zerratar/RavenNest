@@ -6,8 +6,7 @@ namespace RavenNest.DataModels
     {
         private Guid itemId; public Guid ItemId { get => itemId; set => Set(ref itemId, value); }
         // 0 for raid, 1 for dungeon, add more if necessary
-        private int sourceType; public int SourceType { get => sourceType; set => Set(ref sourceType, value); }
-        private int minDifficultyTier; public int MinDifficultyTier { get => minDifficultyTier; set => Set(ref minDifficultyTier, value); }
+        private int tier; public int Tier { get => tier; set => Set(ref tier, value); }
         private double minDropRate; public double MinDropRate { get => minDropRate; set => Set(ref minDropRate, value); }
         private double maxDropRate; public double MaxDropRate { get => maxDropRate; set => Set(ref maxDropRate, value); }
         private DateTime? dropStart; public DateTime? DropStart { get => dropStart; set => Set(ref dropStart, value); }
