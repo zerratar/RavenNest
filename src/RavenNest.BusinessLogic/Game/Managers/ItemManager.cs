@@ -185,6 +185,8 @@ namespace RavenNest.BusinessLogic.Game
 
         private void UpdateItem(Item item, DataModels.Item dataItem)
         {
+            UpdateCraftingRequirements(item, dataItem);
+
             if (!item.Craftable)
             {
                 item.RequiredCookingLevel = GameMath.MaxLevel + 1;
@@ -226,6 +228,50 @@ namespace RavenNest.BusinessLogic.Game
             dataItem.Modified = DateTime.UtcNow;
 
             InvalidateCache();
+        }
+
+        private void UpdateCraftingRequirements(Item item, DataModels.Item dataItem)
+        {
+            var reqs = item.CraftingRequirements;
+            var existingCraftingRequirements = gameData.GetCraftingRequirements(dataItem.Id);
+            if (existingCraftingRequirements != null)
+            {
+                foreach (var req in existingCraftingRequirements)
+                {
+                    if (reqs != null)
+                    {
+                        var newReq = reqs.FirstOrDefault(x => x.ResourceItemId == req.ResourceItemId);
+                        if (newReq != null)
+                        {
+                            req.Amount = newReq.Amount;
+                            req.ResourceItemId = newReq.ResourceItemId;
+                        }
+                        else
+                        {
+                            gameData.Remove(req);
+                        }
+                    }
+                    else
+                    {
+                        gameData.Remove(req);
+                    }
+                }
+            }
+
+            if (item.CraftingRequirements != null)
+            {
+                // load it one more time
+                existingCraftingRequirements = gameData.GetCraftingRequirements(dataItem.Id);
+                foreach (var req in item.CraftingRequirements)
+                {
+                    if (existingCraftingRequirements.Any(x => x.ResourceItemId == req.ResourceItemId))
+                        continue;
+
+                    var mapped = Map(req);
+                    mapped.ItemId = item.Id;
+                    gameData.Add(mapped);
+                }
+            }
         }
 
         private DataModels.Item GetItem(Item item)
