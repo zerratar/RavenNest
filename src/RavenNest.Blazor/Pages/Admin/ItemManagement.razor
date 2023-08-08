@@ -489,6 +489,9 @@
                             }
                         </td>
                         <td class='item actions'>
+                            <button class="btn" @onclick="(() => RemovePossessions(item))">
+                                <i class="fas fa-edit"></i>
+                            </button>
                             <button class="btn" @onclick="(() => EditItem(item))">
                                 <i class="fas fa-edit"></i>
                             </button>
@@ -587,6 +590,29 @@
         return File.Exists(path);
     }
 
+
+
+    private async void RemovePossessions(RavenNest.Models.Item item)
+    {
+        var totalPossesionCount = ItemService.GetPossessionCount(item.Id);
+        if (totalPossesionCount == 0)
+        {
+            return;
+        }
+
+        bool confirm = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to clear all " + totalPossesionCount + " possessions (marketplace, vendors, stash, inventories) for " + item.Name + "?");
+        if (!confirm)
+        {
+            return;
+        }
+
+        await ItemService.ClearPossessionsAsync(item.Id);
+
+        StateHasChanged();
+    }
+
+
+
     private async Task UploadImage(InputFileChangeEventArgs e)
     {
         var browserFile = e.File;
@@ -627,7 +653,6 @@
         CreateContext();
         ItemEditorVisible = true;
     }
-
     private void EditItem(RavenNest.Models.Item item)
     {
         editedItem = DataMapper.Map<ItemEdit>(DataMapper.Clone(item));
@@ -720,8 +745,8 @@
 
         if (itemFilter == ItemFilter.All)
         {
-          items = new Models.ItemCollection(availableItems.OrderBy(x => x.Name));    
-          return;
+            items = new Models.ItemCollection(availableItems.OrderBy(x => x.Name));
+            return;
         }
 
         SelectItemFilter(itemFilter);

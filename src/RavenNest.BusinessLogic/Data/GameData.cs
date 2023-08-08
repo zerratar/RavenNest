@@ -2536,7 +2536,9 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<UserBankItem> GetUserBankItems(Guid id)
             => userBankItems[nameof(User), id].ToList();
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<UserBankItem> GetUserBankItemsByItemId(Guid itemId)
+            => userBankItems.Entities.AsList(x => x.ItemId == itemId);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public UserBankItem GetUserBankItem(Guid id) => userBankItems[id];
@@ -2697,6 +2699,10 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<InventoryItem> GetInventoryItems(Guid characterId, Guid itemId) =>
             inventoryItems[nameof(Character), characterId].AsList(x => !x.Equipped && x.ItemId == itemId);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<InventoryItem> GetInventoryItemsByItemId(Guid itemId) =>
+            inventoryItems.Entities.AsList(x => x.ItemId == itemId);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Item GetItem(Guid id) => items[id];

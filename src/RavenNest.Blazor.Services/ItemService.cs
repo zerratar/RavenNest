@@ -30,6 +30,42 @@ namespace RavenNest.Blazor.Services
             this.availableAttributes = this.gameData.GetItemAttributes();
         }
 
+        public long GetPossessionCount(Guid itemId)
+        {
+            var invItems = gameData.GetInventoryItemsByItemId(itemId);
+            var bankItems = gameData.GetUserBankItemsByItemId(itemId);
+            var vendorItem = gameData.GetVendorItemByItemId(itemId);
+            var marketItems = gameData.GetMarketItems(itemId);
+            return invItems.Count + bankItems.Count + (vendorItem != null ? 1 : 0) + marketItems.Count;
+        }
+
+        public async Task ClearPossessionsAsync(Guid itemId)
+        {
+            await Task.Run(() =>
+            {
+                var invItems = gameData.GetInventoryItemsByItemId(itemId);
+                var bankItems = gameData.GetUserBankItemsByItemId(itemId);
+                var vendorItem = gameData.GetVendorItemByItemId(itemId);
+                var marketItems = gameData.GetMarketItems(itemId);
+                foreach (var item in invItems)
+                {
+                    gameData.Remove(item);
+                }
+                foreach (var item in bankItems)
+                {
+                    gameData.Remove(item);
+                }
+                if (vendorItem != null)
+                {
+                    gameData.Remove(vendorItem);
+                }
+                foreach (var item in marketItems)
+                {
+                    gameData.Remove(item);
+                }
+            });
+        }
+
         public Item GetItem(Guid itemId)
         {
             return itemManager.GetItem(itemId);
