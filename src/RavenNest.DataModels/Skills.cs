@@ -24,7 +24,9 @@ namespace RavenNest.DataModels
             nameof(Magic),
             nameof(Ranged),
             nameof(Sailing),
-            nameof(Healing)
+            nameof(Healing),
+            nameof(Gathering),
+            nameof(Alchemy)
         };
 
         private static readonly ConcurrentDictionary<string, PropertyInfo> expProperties = new ConcurrentDictionary<string, PropertyInfo>();
@@ -46,6 +48,9 @@ namespace RavenNest.DataModels
         private double slayer;
         private double sailing;
         private double healing;
+        private double gathering;
+        private double alchemy;
+
         private int attackLevel;
         private int defenseLevel;
         private int strengthLevel;
@@ -61,6 +66,8 @@ namespace RavenNest.DataModels
         private int slayerLevel;
         private int sailingLevel;
         private int healingLevel;
+        private int gatheringLevel;
+        private int alchemyLevel;
 
         public double Attack { get => attack; set => Set(ref attack, value); }
         public double Defense { get => defense; set => Set(ref defense, value); }
@@ -77,6 +84,8 @@ namespace RavenNest.DataModels
         public double Ranged { get => ranged; set => Set(ref ranged, value); }
         public double Sailing { get => sailing; set => Set(ref sailing, value); }
         public double Healing { get => healing; set => Set(ref healing, value); }
+        public double Gathering { get => gathering; set => Set(ref gathering, value); }
+        public double Alchemy { get => alchemy; set => Set(ref alchemy, value); }
         public int AttackLevel { get => attackLevel; set => Set(ref attackLevel, value); }
         public int DefenseLevel { get => defenseLevel; set => Set(ref defenseLevel, value); }
         public int StrengthLevel { get => strengthLevel; set => Set(ref strengthLevel, value); }
@@ -92,6 +101,8 @@ namespace RavenNest.DataModels
         public int RangedLevel { get => rangedLevel; set => Set(ref rangedLevel, value); }
         public int SailingLevel { get => sailingLevel; set => Set(ref sailingLevel, value); }
         public int HealingLevel { get => healingLevel; set => Set(ref healingLevel, value); }
+        public int GatheringLevel { get => gatheringLevel; set => Set(ref gatheringLevel, value); }
+        public int AlchemyLevel { get => alchemyLevel; set => Set(ref alchemyLevel, value); }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int IndexOf(string skillName)

@@ -132,7 +132,7 @@ namespace RavenNest.Blazor.Services
             {
                 Id = Guid.NewGuid(),
                 Category = RavenNest.Models.ItemCategory.Resource,
-                Type = RavenNest.Models.ItemType.Ore,
+                Type = RavenNest.Models.ItemType.Mining,
                 Name = name,
                 ShopSellPrice = sellPrice,
                 RequiredCraftingLevel = GameMath.MaxLevel + 1,
@@ -166,7 +166,7 @@ namespace RavenNest.Blazor.Services
             {
                 Id = Guid.NewGuid(),
                 Category = RavenNest.Models.ItemCategory.Resource,
-                Type = RavenNest.Models.ItemType.Wood,
+                Type = RavenNest.Models.ItemType.Woodcutting,
                 Name = name,
                 ShopSellPrice = sellPrice,
                 RequiredCraftingLevel = GameMath.MaxLevel + 1,
@@ -200,7 +200,7 @@ namespace RavenNest.Blazor.Services
             {
                 Id = Guid.NewGuid(),
                 Category = RavenNest.Models.ItemCategory.Resource,
-                Type = RavenNest.Models.ItemType.Wheat,
+                Type = RavenNest.Models.ItemType.Farming,
                 Name = name,
                 ShopSellPrice = sellPrice,
                 RequiredCraftingLevel = GameMath.MaxLevel + 1,
@@ -234,7 +234,7 @@ namespace RavenNest.Blazor.Services
             {
                 Id = Guid.NewGuid(),
                 Category = RavenNest.Models.ItemCategory.Resource,
-                Type = RavenNest.Models.ItemType.Fish,
+                Type = RavenNest.Models.ItemType.Fishing,
                 Name = name,
                 ShopSellPrice = sellPrice,
                 RequiredCraftingLevel = GameMath.MaxLevel + 1,

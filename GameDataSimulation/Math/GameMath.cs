@@ -48,6 +48,8 @@ namespace GameDataSimulation
                 case Skill.Farming: return TownHouseSlotType.Farming;
                 case Skill.Mining: return TownHouseSlotType.Mining;
                 case Skill.Sailing: return TownHouseSlotType.Sailing;
+                case Skill.Gathering: return TownHouseSlotType.Gathering;
+                case Skill.Alchemy: return TownHouseSlotType.Alchemy;
                 case Skill.Slayer: return TownHouseSlotType.Slayer;
                 case Skill.Woodcutting: return TownHouseSlotType.Woodcutting;
                 case Skill.Fishing: return TownHouseSlotType.Fishing;
@@ -254,6 +256,8 @@ namespace GameDataSimulation
                     case Skill.Farming:
                     case Skill.Crafting:
                     case Skill.Cooking:
+                    case Skill.Gathering:
+                    case Skill.Alchemy:
                     case Skill.Fishing:
                         return 1d / 3d;
 
@@ -295,5 +299,7 @@ namespace GameDataSimulation
         Ranged = 12,
         Sailing = 13,
         Healing = 14,
+        Gathering = 15,
+        Alchemy = 16
     }
 }

@@ -82,6 +82,8 @@ namespace RavenNest.DataModels
         public ExpGain Ranged { get; set; } = new ExpGain();
         public ExpGain Sailing { get; set; } = new ExpGain();
         public ExpGain Healing { get; set; } = new ExpGain();
+        public ExpGain Gathering { get; set; } = new ExpGain();
+        public ExpGain Alchemy { get; set; } = new ExpGain();
     }
 
     public class ExpGain

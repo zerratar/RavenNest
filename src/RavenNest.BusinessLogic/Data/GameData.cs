@@ -3685,7 +3685,7 @@ namespace RavenNest.BusinessLogic.Data
             var itemType = (ItemType)item.Type;
             var itemCategory = (ItemCategory)item.Category;
 
-            if (itemType == ItemType.Coins || itemType == ItemType.Ore || itemType == ItemType.Wood || itemType == ItemType.Fish)
+            if (itemType == ItemType.Coins || itemType == ItemType.Mining || itemType == ItemType.Woodcutting || itemType == ItemType.Fishing)
                 return ItemFilter.Resources;
 
             if (itemType == ItemType.OneHandedSword || itemType == ItemType.TwoHandedSword)

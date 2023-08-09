@@ -26,10 +26,13 @@
 
         // Resources
         Coins = 21,
-        Wood = 22,
-        Ore = 23,
-        Fish = 24,
-        Wheat = 25,
+        
+        Woodcutting = 22,
+        Mining = 23,
+        Fishing = 24,
+        Farming = 25,
+        Gathering = 33,
+
         Arrows = 26,
         Magic = 27,
         StreamerToken = 28,

@@ -2,7 +2,6 @@
 
 namespace RavenNest.Models
 {
-
     public class Skills
     {
         public Skills() { }
@@ -22,6 +21,8 @@ namespace RavenNest.Models
         public double Slayer { get; set; }
         public double Sailing { get; set; }
         public double Healing { get; set; }
+        public double Gathering { get; set; }
+        public double Alchemy { get; set; }
         public int AttackLevel { get; set; }
         public int DefenseLevel { get; set; }
         public int StrengthLevel { get; set; }
@@ -37,6 +38,8 @@ namespace RavenNest.Models
         public int SlayerLevel { get; set; }
         public int SailingLevel { get; set; }
         public int HealingLevel { get; set; }
+        public int GatheringLevel { get; set; }
+        public int AlchemyLevel { get; set; }
         public int Revision { get; set; }
     }
 }

@@ -474,7 +474,12 @@
     private ItemFilter GetItemFilter(Models.InventoryItem invItem)
     {
         var item = ItemService.GetItem(invItem.ItemId);
-        if (item.Type == ItemType.Coins || item.Type == ItemType.Ore || item.Type == ItemType.Wood || item.Type == ItemType.Fish)
+        if (item.Type == ItemType.Coins ||
+            item.Type == ItemType.Mining ||
+            item.Type == ItemType.Woodcutting ||
+            item.Type == ItemType.Fishing ||
+            item.Type == ItemType.Farming ||
+            item.Type == ItemType.Gathering)
             return ItemFilter.Resources;
 
         if (item.Type == ItemType.OneHandedSword || item.Type == ItemType.TwoHandedSword)

@@ -119,6 +119,8 @@ namespace RavenNest.Blazor.Services
                 case TownHouseSlotType.Healing: return new SkillStat(stats.HealingLevel, stats.Healing);
                 case TownHouseSlotType.Magic: return new SkillStat(stats.MagicLevel, stats.Magic);
                 case TownHouseSlotType.Ranged: return new SkillStat(stats.RangedLevel, stats.Ranged);
+                case TownHouseSlotType.Gathering: return new SkillStat(stats.GatheringLevel, stats.Gathering);
+                case TownHouseSlotType.Alchemy: return new SkillStat(stats.AlchemyLevel, stats.Alchemy);
                 default: return new SkillStat(stats.MiningLevel, stats.Mining);
             }
         }

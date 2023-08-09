@@ -476,6 +476,8 @@ namespace RavenNest.BusinessLogic
                     case Skill.Crafting:
                     case Skill.Cooking:
                     case Skill.Fishing:
+                    case Skill.Alchemy:
+                    case Skill.Gathering:
                         return 1d / 3d;
 
                     case Skill.Mining:
@@ -513,6 +515,8 @@ namespace RavenNest.BusinessLogic
             Ranged = 12,
             Sailing = 13,
             Healing = 14,
+            Gathering = 15,
+            Alchemy = 16,
         }
     }
 }

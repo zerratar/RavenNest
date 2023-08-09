@@ -25,6 +25,8 @@ namespace RavenNest.BusinessLogic.Extended
         public float SlayerProcent => GetPercentForNextLevel(SlayerLevel, Slayer);
         public float SailingProcent => GetPercentForNextLevel(SailingLevel, Sailing);
         public float HealingProcent => GetPercentForNextLevel(HealingLevel, Healing);
+        public float GatheringProcent => GetPercentForNextLevel(GatheringLevel, Gathering);
+        public float AlchemyProcent => GetPercentForNextLevel(AlchemyLevel, Alchemy);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float GetPercentForNextLevel(int level, double exp)

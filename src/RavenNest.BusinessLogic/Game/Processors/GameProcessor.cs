@@ -64,6 +64,8 @@ namespace RavenNest.BusinessLogic.Game.Processors
             RegisterPlayerTask<FightingTaskProcessor>("Fighting");
             RegisterPlayerTask<MiningTaskProcessor>("Mining");
             RegisterPlayerTask<FishingTaskProcessor>("Fishing");
+            RegisterPlayerTask<GatheringTaskProcessor>("Gathering");
+            RegisterPlayerTask<AlchemyTaskProcessor>("Alchemy");
             RegisterPlayerTask<FarmingTaskProcessor>("Farming");
             RegisterPlayerTask<SailingTaskProcessor>("Sailing");
             RegisterPlayerTask<WoodcuttingTaskProcessor>("Woodcutting");

@@ -311,27 +311,31 @@
 
     private bool IsTrainingSkill(PlayerSkill skill)
     {
+        var n = skill.Name.ToLower();
+
         if (isSailing && skill.Name.Equals("Sailing"))
             return true;
 
         if (string.IsNullOrEmpty(trainingSkill))
             return false;
 
-        if (skill.Name.StartsWith(trainingSkill, StringComparison.OrdinalIgnoreCase))
+        var t = trainingSkill.ToLower();
+
+        if (n.StartsWith(t, StringComparison.OrdinalIgnoreCase))
             return true;
 
-        if (trainingSkill == "heal")
-            return skill.Name.Equals("healing", StringComparison.OrdinalIgnoreCase);
+        if (t == "heal")
+            return n.Equals("healing", StringComparison.OrdinalIgnoreCase);
 
-        if (trainingSkill.ToLower() == "all")
-            return skill.Name.Equals("attack", StringComparison.OrdinalIgnoreCase) ||
-                            skill.Name.Equals("defense", StringComparison.OrdinalIgnoreCase) ||
-                            skill.Name.Equals("strength", StringComparison.OrdinalIgnoreCase);
+        if (t == "all")
+            return n.Equals("attack", StringComparison.OrdinalIgnoreCase) || n.Equals("defense", StringComparison.OrdinalIgnoreCase) || n.Equals("strength", StringComparison.OrdinalIgnoreCase);
 
-        if (skill.Name.ToLower() == "attack" && trainingSkill.ToLower() == "atk")
+        if (n.ToLower() == "attack" && t == "atk") return true;
+
+        if (t == "mine" && n.Equals("mining", StringComparison.OrdinalIgnoreCase))
             return true;
 
-        if (trainingSkill.ToLower() == "mine" && skill.Name.Equals("mining", StringComparison.OrdinalIgnoreCase))
+        if (t == "gather" && n.Equals("gathering", StringComparison.OrdinalIgnoreCase))
             return true;
 
         return false;
