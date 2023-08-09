@@ -5,6 +5,7 @@ namespace RavenNest.DataModels
     public partial class Item : Entity<Item>
     {
         private string name; public string Name { get => name; set => Set(ref name, value); }
+        private string description; public string Description { get => description; set => Set(ref description, value); }
         private int category; public int Category { get => category; set => Set(ref category, value); }
         private int type; public int Type { get => type; set => Set(ref type, value); }
         private int level; public int Level { get => level; set => Set(ref level, value); }

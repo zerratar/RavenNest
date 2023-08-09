@@ -7,6 +7,7 @@ namespace RavenNest.Models
     {
         public Guid Id { get; set; }
         public string Name { get; set; }
+        public string Description { get; set; }
         public int Level { get; set; }
         public int WeaponAim { get; set; }
         public int WeaponPower { get; set; }
@@ -40,6 +41,7 @@ namespace RavenNest.Models
         public long ShopSellPrice { get; set; }
         public List<ItemCraftingRequirement> CraftingRequirements { get; set; }
         public bool Soulbound { get; set; }
+        
         public DateTime? Modified { get; set; }
     }
 }

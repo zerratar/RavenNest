@@ -192,6 +192,7 @@ namespace RavenNest.BusinessLogic.Game
                 item.RequiredCookingLevel = GameMath.MaxLevel + 1;
                 item.RequiredCraftingLevel = GameMath.MaxLevel + 1;
             }
+            dataItem.Description = item.Description;
 
             dataItem.Level = item.Level;
             dataItem.ArmorPower = item.ArmorPower;
