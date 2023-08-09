@@ -28,6 +28,10 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class PlayerManager
     {
+        public const int Enchanting_CooldownCoinsPerSecond = 1000;
+        public const int AutoJoinDungeonCost = 5000;
+        public const int AutoJoinRaidCost = 3000;
+
         public const int MaxCharacterCount = 3;
         private readonly ILogger logger;
         private readonly IRavenBotApiClient ravenbotApi;
@@ -2117,7 +2121,7 @@ namespace RavenNest.BusinessLogic.Game
             if (cd.CooldownEnd <= DateTime.UtcNow) return new ClearEnchantmentCooldownResult { Success = true };
 
             var secondsLeft = (DateTime.UtcNow - cd.CooldownEnd).TotalSeconds;
-            var cost = (long)(EnchantmentManager.CooldownCoinsPerSecond * secondsLeft);
+            var cost = (long)(Enchanting_CooldownCoinsPerSecond * secondsLeft);
             if (cost > res.Coins) return new ClearEnchantmentCooldownResult();
             res.Coins -= cost;
             cd.CooldownEnd = DateTime.UtcNow;
@@ -2133,10 +2137,33 @@ namespace RavenNest.BusinessLogic.Game
             return new EnchantmentCooldownResult
             {
                 Cooldown = cd.CooldownEnd,
-                CoinsPerSeconds = EnchantmentManager.CooldownCoinsPerSecond
+                CoinsPerSeconds = Enchanting_CooldownCoinsPerSecond
             };
         }
 
+        public bool AutoJoinDungeon(SessionToken sessionToken, Guid characterId)
+        {
+            var character = GetCharacter(sessionToken, characterId);
+            if (character == null) return false;
+
+            var res = gameData.GetResources(character);
+            var cost = AutoJoinDungeonCost;
+            if (cost > res.Coins) return false;
+            res.Coins -= cost;
+            return true;
+        }
+
+        public bool AutoJoinRaid(SessionToken sessionToken, Guid characterId)
+        {
+            var character = GetCharacter(sessionToken, characterId);
+            if (character == null) return false;
+
+            var res = gameData.GetResources(character);
+            var cost = AutoJoinRaidCost;
+            if (cost > res.Coins) return false;
+            res.Coins -= cost;
+            return true;
+        }
 
         [Obsolete]
         public bool EquipItemInstance(SessionToken token, string userId, Guid inventoryItemId)

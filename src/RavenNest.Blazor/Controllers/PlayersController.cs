@@ -85,7 +85,7 @@ namespace RavenNest.Controllers
                         return File(imageData, "image/png");
                     }
                 }
-                
+
                 if (unknownProfilePictureBytes == null)
                 {
                     return NotFound();
@@ -360,6 +360,34 @@ namespace RavenNest.Controllers
         public EnchantmentCooldownResult GetEnchantmentCooldown(Guid characterId)
         {
             return playerManager.GetEnchantmentCooldown(AssertGetSessionToken(), characterId);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("{characterId}/raid-auto")]
+        public bool RaidAuto(Guid characterId)
+        {
+            return playerManager.AutoJoinRaid(AssertGetSessionToken(), characterId);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("dungeon-auto-cost")]
+        public int DungeonAutoCost()
+        {
+            return PlayerManager.AutoJoinDungeonCost;
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("raid-auto-cost")]
+        public int RaidAutoCost()
+        {
+            return PlayerManager.AutoJoinRaidCost;
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("{characterId}/dungeon-auto")]
+        public bool DungeonAuto(Guid characterId)
+        {
+            return playerManager.AutoJoinDungeon(AssertGetSessionToken(), characterId);
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
