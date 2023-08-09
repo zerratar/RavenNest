@@ -11,6 +11,8 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class EnchantmentManager
     {
+        public const int CooldownCoinsPerSecond = 1_000;
+
         private readonly ILogger<EnchantmentManager> logger;
         private readonly GameData gameData;
         private readonly Random random;

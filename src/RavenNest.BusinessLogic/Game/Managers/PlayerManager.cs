@@ -5,6 +5,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Extensions;
@@ -12,6 +13,7 @@ using RavenNest.BusinessLogic.Game.Enchantment;
 using RavenNest.BusinessLogic.Models;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
+using RavenNest.BusinessLogic.ScriptParser;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
@@ -2106,6 +2108,36 @@ namespace RavenNest.BusinessLogic.Game
             };
         }
 
+        public ClearEnchantmentCooldownResult ClearEnchantmentCooldown(SessionToken sessionToken, Guid characterId)
+        {
+            var character = GetCharacter(sessionToken, characterId);
+            if (character == null) return new ClearEnchantmentCooldownResult();
+            var res = gameData.GetResources(character);
+            var cd = gameData.GetEnchantmentCooldown(character.Id);
+            if (cd.CooldownEnd <= DateTime.UtcNow) return new ClearEnchantmentCooldownResult { Success = true };
+
+            var secondsLeft = (DateTime.UtcNow - cd.CooldownEnd).TotalSeconds;
+            var cost = (long)(EnchantmentManager.CooldownCoinsPerSecond * secondsLeft);
+            if (cost > res.Coins) return new ClearEnchantmentCooldownResult();
+            res.Coins -= cost;
+            cd.CooldownEnd = DateTime.UtcNow;
+            return new ClearEnchantmentCooldownResult { Success = true, TotalCost = cost };
+        }
+
+        public EnchantmentCooldownResult GetEnchantmentCooldown(SessionToken sessionToken, Guid characterId)
+        {
+            var character = GetCharacter(sessionToken, characterId);
+            if (character == null) return new EnchantmentCooldownResult();
+            var cd = gameData.GetEnchantmentCooldown(character.Id);
+            if (cd.CooldownEnd <= DateTime.UtcNow) return new EnchantmentCooldownResult();
+            return new EnchantmentCooldownResult
+            {
+                Cooldown = cd.CooldownEnd,
+                CoinsPerSeconds = EnchantmentManager.CooldownCoinsPerSecond
+            };
+        }
+
+
         [Obsolete]
         public bool EquipItemInstance(SessionToken token, string userId, Guid inventoryItemId)
         {
@@ -4026,6 +4058,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             return character.UserIdLock == session.UserId;
         }
+
 
     }
 }

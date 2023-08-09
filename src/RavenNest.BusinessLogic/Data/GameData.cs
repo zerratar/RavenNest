@@ -3125,6 +3125,21 @@ namespace RavenNest.BusinessLogic.Data
             return cd;
         }
 
+        public CharacterClanSkillCooldown GetEnchantmentCooldown(Guid characterId)
+        {
+            var clanMembership = GetClanMembership(characterId);
+            if (clanMembership == null)
+                return null;
+
+            var skills = GetClanSkills(clanMembership.ClanId);
+            if (skills == null || skills.Count == 0)
+                return null;
+
+            var enchantingSkill = GetSkills().FirstOrDefault(x => x.Name == "Enchanting");
+            //var clanSkill = skills.FirstOrDefault(x => x.SkillId == enchantingSkill.Id);
+            return GetClanSkillCooldown(characterId, enchantingSkill.Id);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<ClanSkill> GetClanSkills(Guid clanId) => clanSkills[nameof(Clan), clanId];
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
