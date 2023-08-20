@@ -194,7 +194,13 @@ namespace RavenNest.Blazor.Services
         {
             //var item = ItemService.GetItem(itemId);
             var itemType = (ItemType)item.Type;
-            if (itemType == ItemType.Coins || itemType == ItemType.Mining || itemType == ItemType.Woodcutting || itemType == ItemType.Fishing)
+            if (itemType == ItemType.Coins ||
+                itemType == ItemType.Mining ||
+                itemType == ItemType.Woodcutting ||
+                itemType == ItemType.Fishing ||
+                itemType == ItemType.Farming ||
+                itemType == ItemType.Gathering ||
+                item.Category == ItemCategory.Resource)
                 return ItemFilter.Resources;
 
             if (itemType == ItemType.OneHandedSword || itemType == ItemType.TwoHandedSword)

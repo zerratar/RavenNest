@@ -108,7 +108,9 @@ namespace RavenNest.Models.TcpApi
         Away = 2,
         Ironhill = 3,
         Kyo = 4,
-        Heim = 5
+        Heim = 5,
+        Atria = 6,
+        Eldara = 7
     }
 
     [Flags]

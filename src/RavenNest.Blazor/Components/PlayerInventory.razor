@@ -479,7 +479,8 @@
             item.Type == ItemType.Woodcutting ||
             item.Type == ItemType.Fishing ||
             item.Type == ItemType.Farming ||
-            item.Type == ItemType.Gathering)
+            item.Type == ItemType.Gathering || 
+            item.Category == ItemCategory.Resource)
             return ItemFilter.Resources;
 
         if (item.Type == ItemType.OneHandedSword || item.Type == ItemType.TwoHandedSword)
