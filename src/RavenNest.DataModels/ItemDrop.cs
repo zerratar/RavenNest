@@ -9,8 +9,8 @@ namespace RavenNest.DataModels
         private int tier; public int Tier { get => tier; set => Set(ref tier, value); }
         private double minDropRate; public double MinDropRate { get => minDropRate; set => Set(ref minDropRate, value); }
         private double maxDropRate; public double MaxDropRate { get => maxDropRate; set => Set(ref maxDropRate, value); }
-        private DateTime? dropStart; public DateTime? DropStart { get => dropStart; set => Set(ref dropStart, value); }
-        private TimeSpan? dropDuration; public TimeSpan? DropDuration { get => dropDuration; set => Set(ref dropDuration, value); }
+        private int? dropStartMonth; public int? DropStartMonth { get => dropStartMonth; set => Set(ref dropStartMonth, value); }
+        private int? dropDurationMonths; public int? DropDurationMonths { get => dropDurationMonths; set => Set(ref dropDurationMonths, value); }
 
         private bool uniqueDrop;
 

@@ -446,6 +446,8 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureCraftingRequirements(items);
                 //MergeLoyaltyData(loyalty);
 
+                EnsureDropLists();
+
                 MergeClans();
 
                 RemoveDuplicatedClanMembers();
@@ -516,6 +518,62 @@ namespace RavenNest.BusinessLogic.Data
         //        VillageExpMigrationCompleted = true;
         //    }
         //}
+
+        private void EnsureDropLists()
+        {
+            if (itemDrops.Entities.Count > 0)
+            {
+                return;
+            }
+
+            /*  DungeonTier
+                Common = 0,
+                Uncommon = 1,
+                Rare = 2,
+                Epic = 3,
+                Legendary = 4,
+                Dynamic = 5
+             */
+
+            /* Clear Out existing ones (if needed) */
+            // create normal tier drops (this is for raids and normal dungeons)
+
+            foreach (var drop in NormalTierDropList.itemDrops)
+            {
+                Add(drop);
+            }
+
+            Add(CreateDrop(12, 1, "cfb510cb-7916-4b2c-a17f-6048f5c6b282", 0.05f, 0.0175f)); // Santa hat 
+            Add(CreateDrop(12, 1, "061edf28-ca3f-4a00-992e-ba8b8a949631", 0.05f, 0.0175f)); // Christmas Token
+            Add(CreateDrop(10, 1, "91fc824a-0ede-4104-96d1-531cdf8d56a6", 0.05f, 0.0175f)); // Halloween Token
+
+            foreach (var drop in HeroicTierDropList.itemDrops)
+            {
+                Add(drop);
+            }
+
+            Add(CreateDrop(12, 1, "cfb510cb-7916-4b2c-a17f-6048f5c6b282", 0.05f, 0.0175f, 4)); // Santa hat 
+            Add(CreateDrop(12, 1, "061edf28-ca3f-4a00-992e-ba8b8a949631", 0.05f, 0.0175f, 4)); // Christmas Token
+            Add(CreateDrop(10, 1, "91fc824a-0ede-4104-96d1-531cdf8d56a6", 0.05f, 0.0175f, 4)); // Halloween Token
+            //HeroicTierDropList.itemDrops
+        }
+
+        private ItemDrop CreateDrop(int monthStart, int monthsLength, string id, double maxDrop, double minDrop, int tier = 0)
+        {
+            var now = DateTime.UtcNow;
+            return new ItemDrop
+            {
+                Id = Guid.NewGuid(),
+                ItemId = new Guid(id),
+                DropStartMonth = monthStart,
+                DropDurationMonths = monthsLength,
+                MinDropRate = minDrop,
+                MaxDropRate = maxDrop,
+                SlayerLevelRequirement = 0,
+                Tier = tier,
+                UniqueDrop = false
+            };
+        }
 
         private void MergeInventoryItems()
         {
