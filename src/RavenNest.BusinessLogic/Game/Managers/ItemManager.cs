@@ -27,7 +27,18 @@ namespace RavenNest.BusinessLogic.Game
         {
             return new RedeemableItemCollection(gameData
                 .GetRedeemableItems()
-                .Select(x => DataMapper.Map<RavenNest.Models.RedeemableItem, DataModels.RedeemableItem>(x)));
+                .Select(x => DataMapper.Map<RedeemableItem, DataModels.RedeemableItem>(x)));
+        }
+
+        public ItemRecipeCollection GetRecipes()
+        {
+            if (memoryCache.TryGetValue<ItemRecipeCollection>("GetRecipes", out var recipes))
+            {
+                return recipes;
+            }
+
+            var collection = new ItemRecipeCollection(gameData.GetItemRecipes().Select(x => ModelMapper.Map(gameData, x)));
+            return memoryCache.Set("GetRecipes", collection, DateTime.UtcNow.AddSeconds(ItemCacheDurationSeconds));
         }
 
         public ItemCollection GetAllItems()
@@ -331,6 +342,5 @@ namespace RavenNest.BusinessLogic.Game
 
             return memoryCache.Set("GetAllItems", collection, DateTime.UtcNow.AddSeconds(ItemCacheDurationSeconds));
         }
-
     }
 }

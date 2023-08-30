@@ -22,6 +22,41 @@ namespace RavenNest.BusinessLogic.Extensions
             return DataMapper.Map<RavenNest.Models.Appearance>(data);
         }
 
+        public static RavenNest.Models.ItemRecipe Map(GameData gameData, RavenNest.DataModels.ItemRecipe recipe)
+        {
+            var ingredients = gameData.GetRecipeIngredients(recipe.Id);
+            var result = new RavenNest.Models.ItemRecipe();
+
+            result.Id = recipe.Id;
+            result.Name = recipe.Name;
+            result.Description = recipe.Description;
+            result.ItemId = recipe.ItemId;
+            result.FailedItemId = recipe.FailedItemId;
+            result.MinSuccessRate = recipe.MinSuccessRate;
+            result.MaxSuccessRate = recipe.MaxSuccessRate;
+            result.FixedSuccessRate = recipe.FixedSuccessRate;
+            result.PreparationTime = recipe.PreparationTime;
+            result.RequiredLevel = recipe.RequiredLevel;
+            result.RequiredSkill = (RavenNest.Models.Skill)recipe.RequiredSkill;
+
+            result.Ingredients = new List<RavenNest.Models.ItemRecipeIngredient>();
+            foreach (var ingredient in ingredients)
+            {
+                result.Ingredients.Add(Map(ingredient));
+            }
+
+            return result;
+        }
+
+        public static RavenNest.Models.ItemRecipeIngredient Map(RavenNest.DataModels.ItemRecipeIngredient ingredient)
+        {
+            return new RavenNest.Models.ItemRecipeIngredient
+            {
+                Amount = ingredient.Amount,
+                ItemId = ingredient.ItemId,
+            };
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RavenNest.Models.GameSession Map(GameData gameData, DataModels.GameSession data)
         {
@@ -146,13 +181,12 @@ namespace RavenNest.BusinessLogic.Extensions
                 var s1 = gameData.GetSkill(s0.SkillId);
                 if (s1 == null)
                 {
-                    s1 = new Skill
+                    s1 = new DataModels.Skill
                     {
                         Name = "Err",
                         MaxLevel = 999,
                     };
                     Console.Error.WriteLine("gameData.GetSkill(s0.SkillId) returns null");
-
                 }
                 skills[i] = new RavenNest.Models.ClanSkill
                 {

@@ -9,28 +9,45 @@ namespace RavenNest.DataModels
         private int _Amount; public int Amount { get => _Amount; set => Set(ref _Amount, value); }
     }
 
-    public class ItemRecipe
+    public class ItemRecipe : Entity<ItemRecipe>
     {
-        public Guid Id { get; set; }
-        public string Name { get; set; }
-        public string Description { get; set; }
+        private string name;
+        private string description;
+        private Guid itemId;
+        private Guid? failedItemId;
+        private double successRate;
+        private double preparationTime;
+        private bool fixedSuccessRate;
+        private int requiredLevel;
+        private int requiredSkill;
 
-        public Guid ItemId { get; set; }
-        public Guid? FailedItemId { get; set; }
-        public double SuccessRate { get; set; }
+        public string Name { get => name; set => Set(ref name, value); }
+        public string Description { get => description; set => Set(ref description, value); }
+        public Guid ItemId { get => itemId; set => Set(ref itemId, value); }
+        public Guid? FailedItemId { get => failedItemId; set => Set(ref failedItemId, value); }
+        public double MaxSuccessRate { get => successRate; set => Set(ref successRate, value); }
+        public double MinSuccessRate { get => successRate; set => Set(ref successRate, value); }
+
+        /// <summary>
+        ///     How long in seconds will it take for this to be created (per item)
+        /// </summary>
+        public double PreparationTime { get => preparationTime; set => Set(ref preparationTime, value); }
         /// <summary>
         /// Whether or not the success rate is fixed or if it should be calculated based on the players skill level.
         /// </summary>
-        public bool FixedSuccessRate { get; set; }
-        public int RequiredLevel { get; set; }
-        public int RequiredSkill { get; set; }
+        public bool FixedSuccessRate { get => fixedSuccessRate; set => Set(ref fixedSuccessRate, value); }
+        public int RequiredLevel { get => requiredLevel; set => Set(ref requiredLevel, value); }
+        public int RequiredSkill { get => requiredSkill; set => Set(ref requiredSkill, value); }
     }
 
-    public class ItemRecipeIngredient
+    public class ItemRecipeIngredient : Entity<ItemRecipeIngredient>
     {
-        public Guid Id { get; set; }
-        public Guid RecipeId { get; set; }
-        public Guid ItemId { get; set; }
-        public int Amount { get; set; }
+        private Guid recipeId;
+        private Guid itemId;
+        private int amount;
+
+        public Guid RecipeId { get => recipeId; set => Set(ref recipeId, value); }
+        public Guid ItemId { get => itemId; set => Set(ref itemId, value); }
+        public int Amount { get => amount; set => Set(ref amount, value); }
     }
 }

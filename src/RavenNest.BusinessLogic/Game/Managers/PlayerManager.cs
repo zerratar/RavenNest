@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -1328,6 +1329,166 @@ namespace RavenNest.BusinessLogic.Game
             return CraftItems(token, itemId, ref amount, character);
         }
 
+        public ItemProductionResult ProduceItems(SessionToken sessionToken, Guid characterId, Guid recipeId, int amount)
+        {
+            var result = new ItemProductionResult();
+            result.Success = true;
+            if (amount <= 0) amount = 1;
+            amount = Math.Min(50_000_000, amount);
+
+            // make sure the character is part of the target session.
+            var character = GetCharacter(sessionToken, characterId);
+            if (character == null) return null;
+
+            // To ensure we don't mess with the stash right now, we will only use ingredients from inventory
+            // this should be updated later.
+
+            var recipe = gameData.GetItemRecipe(recipeId);
+            if (recipe == null) return null;
+
+            var skills = gameData.GetCharacterSkills(character.SkillsId);
+            var skillBonuses = GetSkillBonuses(character);
+
+            var craftingLevel = (int)(skills.CraftingLevel + skillBonuses[RavenNest.Models.Skill.Crafting]);
+            var alchemyLevel = (int)(skills.AlchemyLevel + skillBonuses[RavenNest.Models.Skill.Alchemy]);
+            var cookingLevel = (int)(skills.CookingLevel + skillBonuses[RavenNest.Models.Skill.Cooking]);
+
+            var skillLevel = 1;
+            // check required skill level. This will include bonus from enchantments.
+            var requiredSkill = (RavenNest.Models.Skill)recipe.RequiredSkill;
+            if (requiredSkill == RavenNest.Models.Skill.Crafting) skillLevel = craftingLevel;
+            if (requiredSkill == RavenNest.Models.Skill.Alchemy) skillLevel = alchemyLevel;
+            if (requiredSkill == RavenNest.Models.Skill.Cooking) skillLevel = cookingLevel;
+            if (recipe.RequiredLevel > skillLevel)
+                return result;
+
+            // next is to check for each item we try to craft, we can remove the needed ingredients.
+            var inventory = inventoryProvider.Get(character.Id);
+
+            // this will be simpler than trying to calculate the possible crafting count. It will be less effective performance wise but also less bug prone.
+            var ingredients = gameData.GetRecipeIngredients(recipeId);
+
+            if (ingredients.Count == 0)
+            {
+                // this must be a bug or data issue. DO NOT PRODUCE!
+                return null;
+            }
+
+            var tmpList = new List<ItemProductionResultItem>();
+
+            for (var i = 0; i < amount; ++i)
+            {
+                // try crafting one item at a time.
+                // if it was successful, it will be added to inventory there.
+                var producedItem = ProduceItem(skillLevel, inventory, recipe, ingredients);
+
+                // if this is null, we did not have enough resources to produce the item.
+                if (producedItem == null)
+                {
+                    break;
+                }
+
+                tmpList.Add(producedItem);
+            }
+
+            result.Items = new List<ItemProductionResultItem>();
+
+            // since we could end up with a ton of item rows, lets merge them. This could have been avoided if we passed along the amount of items we wanted to produce.
+            // but this is still a low cost compared to the complexity added otherwise.
+            foreach (var i in tmpList.GroupBy(x => x.InventoryItemId))
+            {
+                var inventoryItemId = i.Key; // we can group by inventory item id since it should share the same one if the item id is the same.
+                var addedAmount = i.Sum(x => x.Amount);
+                var stackAmount = i.Max(x => x.StackAmount); // the last item should have the correct stack amount. but we can just take max for simplicity.
+                var first = i.First();
+                var success = first.Success;
+                var itemId = first.ItemId;
+                result.Items.Add(new ItemProductionResultItem
+                {
+                    Success = success,
+                    StackAmount = stackAmount,
+                    Amount = addedAmount,
+                    InventoryItemId = inventoryItemId,
+                    ItemId = itemId,
+                });
+            }
+
+            return result;
+        }
+
+        private ItemProductionResultItem ProduceItem(int skillLevel, PlayerInventory inventory, DataModels.ItemRecipe recipe, IReadOnlyList<DataModels.ItemRecipeIngredient> ingredients)
+        {
+            // go through all ingredients and make sure we can remove it from the player inventory.
+            var result = new ItemProductionResultItem();
+
+            foreach (var ingredient in ingredients)
+            {
+                var i = inventory.GetByItemId(ingredient.ItemId);
+                if (i.Amount < ingredient.Amount)
+                    return null;// we don't have sufficient resources, return null.
+            }
+
+            // consume ingredients.
+            var removedItems = new List<ReadOnlyInventoryItem>();
+            foreach (var ingredient in ingredients)
+            {
+                // we should not have multiple stacks of the same item. so lets just get THE item.
+                var i = inventory.GetByItemId(ingredient.ItemId);
+
+                // it shouldnt happen, but in case it does. revert the removed items and return null.
+                if (!inventory.RemoveItem(i, ingredient.Amount))
+                {
+                    if (removedItems.Count > 0)
+                    {
+                        foreach (var item in removedItems)
+                        {
+                            inventory.AddItem(item, item.Amount);
+                        }
+                    }
+                    return null;
+                }
+                removedItems.Add(i);
+            }
+
+            // all good. no need to keep the removed items in memory.
+            removedItems.Clear();
+
+            void AddItem(Guid itemId, bool success)
+            {
+                var stack = inventory.AddItem(itemId)[0];
+                result.InventoryItemId = stack.Id;
+                result.ItemId = stack.ItemId;
+                result.StackAmount = stack.Amount ?? 1;
+                result.Amount = 1;
+                result.Success = success;
+            }
+
+            var canFail = recipe.FailedItemId != null && recipe.MinSuccessRate < 1;
+            if (!canFail)
+            {
+                // this one can't fail. So we will just create the target item.
+                AddItem(recipe.ItemId, true);
+            }
+            else
+            {
+                // if we can fail, we need to determine whether or not this was a success.
+                var rng = System.Random.Shared.NextDouble();
+                var isSuccess = rng <= System.Math.Max(recipe.MinSuccessRate, recipe.MaxSuccessRate);
+
+                if (!recipe.FixedSuccessRate)
+                {
+                    var max = GameMath.MaxLevel - recipe.RequiredLevel;
+                    var current = skillLevel - recipe.RequiredLevel;
+                    var factor = current / (double)max;
+                    isSuccess = rng <= GameMath.Lerp(recipe.MinSuccessRate, recipe.MaxSuccessRate, factor);
+                }
+
+                AddItem(isSuccess ? recipe.ItemId : recipe.FailedItemId.Value, isSuccess);
+            }
+
+            return result;
+        }
+
         private CraftItemResult CraftItems(SessionToken token, Guid itemId, ref int amount, Character character)
         {
             if (amount <= 0) amount = 1;
@@ -1437,27 +1598,37 @@ namespace RavenNest.BusinessLogic.Game
             result.ItemId = itemId;
             return result;
         }
-
-        private int GetCraftingBonus(Character character)
+        private Dictionary<RavenNest.Models.Skill, double> GetSkillBonuses(Character character)
         {
+            var dict = new Dictionary<RavenNest.Models.Skill, double>();
+            foreach (var value in Enum.GetValues<RavenNest.Models.Skill>())
+            {
+                dict[value] = 0;
+            }
+
             var inventory = inventoryProvider.Get(character.Id);
             var equipped = inventory.GetEquippedItems();
 
             var skills = ModelMapper.MapForWebsite(gameData.GetCharacterSkills(character.SkillsId));
             var playerSkills = skills.AsList();
-            var craftingBonus = 0d;
             foreach (var item in equipped)
             {
                 var bonuses = item.GetSkillBonuses(playerSkills, gameData);
                 foreach (var bonus in bonuses)
                 {
-                    if (bonus.Skill.Name == "Crafting")
+                    if (Enum.TryParse<RavenNest.Models.Skill>(bonus.Skill.Name, true, out var result))
                     {
-                        craftingBonus += bonus.Bonus;
+                        dict[result] += bonus.Bonus;
                     }
                 }
             }
-            return (int)craftingBonus;
+            return dict;
+        }
+
+        private int GetCraftingBonus(Character character)
+        {
+            var dict = GetSkillBonuses(character);
+            return (int)dict[RavenNest.Models.Skill.Crafting];
         }
 
         private static bool CanCraftItems(Item item, Resources resources, int craftingLevel, int amount, out int maxAmount)
@@ -4085,7 +4256,6 @@ namespace RavenNest.BusinessLogic.Game
         {
             return character.UserIdLock == session.UserId;
         }
-
 
     }
 }

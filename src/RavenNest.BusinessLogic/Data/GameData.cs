@@ -88,6 +88,9 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<ItemAttribute> itemAttributes;
         private readonly EntitySet<RedeemableItem> redeemableItems;
 
+        private readonly EntitySet<ItemRecipe> itemRecipes;
+        private readonly EntitySet<ItemRecipeIngredient> itemRecipeIngredients;
+
         private readonly EntitySet<MarketItem> marketItems;
         private readonly EntitySet<Item> items;
         private readonly EntitySet<NPC> npcs;
@@ -237,6 +240,12 @@ namespace RavenNest.BusinessLogic.Data
 
                     pets = new EntitySet<Pet>(restorePoint?.Get<Pet>() ?? ctx.Pet.ToList());
                     pets.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
+
+                    itemRecipes = new EntitySet<DataModels.ItemRecipe>(restorePoint?.Get<DataModels.ItemRecipe>() ?? ctx.ItemRecipe.ToList());
+                    itemRecipes.RegisterLookupGroup(nameof(Item), x => x.ItemId);
+
+                    itemRecipeIngredients = new EntitySet<DataModels.ItemRecipeIngredient>(restorePoint?.Get<DataModels.ItemRecipeIngredient>() ?? ctx.ItemRecipeIngredient.ToList());
+                    itemRecipeIngredients.RegisterLookupGroup(nameof(ItemRecipe), x => x.RecipeId);
 
                     redeemableItems = new EntitySet<RedeemableItem>(restorePoint?.Get<RedeemableItem>() ?? ctx.RedeemableItem.ToList());
                     redeemableItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
@@ -433,7 +442,6 @@ namespace RavenNest.BusinessLogic.Data
 
                 //FixVillageLevels();
                 //TransformExperience();
-
                 //RemoveBadUsers(users);
 
                 ProcessInventoryItems(inventoryItems);
@@ -453,7 +461,6 @@ namespace RavenNest.BusinessLogic.Data
                 RemoveDuplicatedClanMembers();
 
                 //MergeAccounts();
-
                 //UpgradeVillageLevels();
                 //MergeVillages();
                 //ApplyVendorPrices();
@@ -1352,268 +1359,7 @@ namespace RavenNest.BusinessLogic.Data
 
         private void EnsureCraftingRequirements(EntitySet<Item> items)
         {
-            foreach (var item in items.Entities)
-            {
-                var requirements = GetCraftingRequirements(item.Id) ?? new List<ItemCraftingRequirement>();
-                item.Craftable = (requirements.Count != 0 || item.OreCost > 0 || item.WoodCost > 0) && item.RequiredCraftingLevel < GameMath.MaxLevel;
-            }
 
-            return;
-            //Item GetItemByCategory(ItemCategory category, string containsName)
-            //{
-            //    return items.Entities.FirstOrDefault(x => (ItemCategory)x.Category == ItemCategory.Resource && x.Name.Contains(containsName, StringComparison.OrdinalIgnoreCase));
-            //}
-
-            //Item GetItemByCategoryExact(ItemCategory category, string name)
-            //{
-            //    return items.Entities.FirstOrDefault(x => (ItemCategory)x.Category == ItemCategory.Resource && x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-            //}
-
-            //var phantomCraftingLevel = 200; // change to 210 ?
-            //var lionCraftingLevel = 240;
-            //var etherCraftingLevel = 280;
-            //var atlarusCraftingLevel = 420;//etherCraftingLevel * 1.75;
-
-            //var ingot = GetItemByCategory(ItemCategory.Resource, "ore ingot");
-            //var wood = GetItemByCategory(ItemCategory.Resource, "wood plank");
-            //var gold = GetItemByCategory(ItemCategory.Resource, "gold");
-            //foreach (var item in items.Entities)
-            //{
-            //    var isResource = item.Category == (int)ItemCategory.Resource || item.Type == (int)ItemType.Ore;
-            //    if (item.Category == (int)ItemCategory.Resource)
-            //        continue;
-
-            //    // Make lionsbane craftable
-            //    var nl = item.Name.ToLower();
-            //    if (item.RequiredCraftingLevel > GameMath.MaxLevel)
-            //    {
-            //        item.RequiredCraftingLevel = GameMath.MaxLevel + 1;
-            //        item.Craftable = false;
-            //    }
-            //    var isAtlarus = nl.StartsWith("atlarus");
-
-            //    if (item.RequiredCraftingLevel < GameMath.MaxLevel || isAtlarus)
-            //    {
-            //        item.Craftable = true;
-            //        var requirements = GetCraftingRequirements(item.Id) ?? new List<ItemCraftingRequirement>();
-            //        if (requirements != null && requirements.Count > 0 || item.WoodCost > 0 || item.OreCost > 0)
-            //        {
-            //            if (requirements != null && requirements.Count > 0)
-            //            {
-            //                foreach (var req in requirements)
-            //                {
-            //                    if (req.Amount == 0)
-            //                    {
-            //                        req.Amount = 3;
-            //                    }
-            //                }
-            //            }
-            //            //continue;
-            //        }
-
-            //        Item resType = null;
-            //        var type = (ItemType)item.Type;
-            //        var ingotCount = 0;
-            //        var woodCount = (type == ItemType.TwoHandedStaff || type == ItemType.TwoHandedBow || type == ItemType.TwoHandedSword || type == ItemType.Shield) ? 5 : 0;
-            //        var goldCount = 0;
-            //        var resCount = 0;
-
-            //        if (nl.Contains("emerald"))
-            //        {
-            //            resType = GetItemByCategory(ItemCategory.Resource, "emerald");
-            //            ingotCount = 5;
-            //        }
-            //        if (nl.Contains("ruby"))
-            //        {
-            //            resType = GetItemByCategory(ItemCategory.Resource, "ruby");
-            //            ingotCount = 5;
-            //        }
-            //        if (nl.Contains("bronze"))
-            //        {
-            //            resType = ingot;
-            //        }
-            //        if (nl.Contains("iron"))
-            //        {
-            //            resType = GetItemByCategory(ItemCategory.Resource, "iron nugget");
-            //            ingotCount = 5;
-            //        }
-            //        if (nl.Contains("steel"))
-            //        {
-            //            resType = GetItemByCategory(ItemCategory.Resource, "steel nugget");
-            //            ingotCount = 5;
-            //        }
-            //        if (nl.Contains("gold "))
-            //        {
-            //            resType = gold;
-            //            ingotCount = 5;
-            //        }
-            //        if (nl.Contains("mithril"))
-            //        {
-            //            resType = GetItemByCategory(ItemCategory.Resource, "mithril nugget");
-            //            ingotCount = 10;
-            //            woodCount = woodCount * 2;
-            //        }
-            //        if (nl.Contains("adamantite"))
-            //        {
-            //            resType = GetItemByCategory(ItemCategory.Resource, "adamantite nugget");
-            //            ingotCount = 15;
-            //            woodCount = woodCount * 3;
-            //        }
-            //        if (nl.Contains("rune"))
-            //        {
-            //            resType = GetItemByCategory(ItemCategory.Resource, "rune nugget");
-            //            ingotCount = 25;
-            //            woodCount = woodCount * 5;
-            //        }
-            //        if (nl.Contains("dragon"))
-            //        {
-            //            resType = GetItemByCategory(ItemCategory.Resource, "dragon scale");
-            //            ingotCount = 35;
-            //            woodCount = woodCount * 7;
-            //        }
-            //        if (nl.Contains("abraxas"))
-            //        {
-            //            resType = GetItemByCategory(ItemCategory.Resource, "abraxas spirit");
-            //            ingotCount = 60;
-            //            woodCount = woodCount * 12;
-            //        }
-
-            //        if (nl.Contains("phantom"))
-            //        {
-            //            resType = GetItemByCategory(ItemCategory.Resource, "phantom core");
-            //            ingotCount = 75;
-            //            woodCount = woodCount * 15;
-            //            item.RequiredCraftingLevel = phantomCraftingLevel;
-            //        }
-
-            //        if (nl.Contains("lionsbane"))
-            //        {
-            //            resType = GetItemByCategoryExact(ItemCategory.Resource, "lionite");
-            //            ingotCount = 90;
-            //            woodCount = woodCount * 18;
-            //            resCount = 3;
-            //            item.RequiredCraftingLevel = lionCraftingLevel;
-            //        }
-
-            //        if (nl.StartsWith("ether "))
-            //        {
-            //            resType = GetItemByCategoryExact(ItemCategory.Resource, "ethereum");
-            //            ingotCount = 120;
-            //            woodCount = woodCount * 24;
-            //            resCount = 5;
-            //            item.RequiredCraftingLevel = etherCraftingLevel;
-            //        }
-
-            //        if (isAtlarus)
-            //        {
-            //            resType = GetItemByCategory(ItemCategory.Resource, "atlarus light");
-            //            ingotCount = 210;
-            //            woodCount = woodCount * 42;
-            //            //resCount = 2;
-            //            item.RequiredCraftingLevel = atlarusCraftingLevel;
-            //        }
-
-            //        switch (type)
-            //        {
-            //            case ItemType.Amulet:
-            //                resCount += 1;
-            //                goldCount = 10;
-            //                break;
-
-            //            case ItemType.Ring:
-            //                resCount += 1;
-            //                goldCount = 5;
-            //                break;
-
-            //            case ItemType.OneHandedSword:
-            //                resCount += 3;
-            //                break;
-
-            //            case ItemType.TwoHandedAxe:
-            //                resCount += 4;
-            //                break;
-            //            case ItemType.TwoHandedSword:
-            //                resCount += 5;
-            //                break;
-
-            //            case ItemType.TwoHandedBow:
-            //                resCount += 4;
-            //                break;
-
-            //            case ItemType.TwoHandedStaff:
-            //                resCount += 4;
-            //                break;
-
-            //            case ItemType.Helmet:
-            //                resCount += 3;
-            //                break;
-            //            case ItemType.Chest:
-            //                resCount += 5;
-            //                break;
-            //            case ItemType.Leggings:
-            //                resCount += 4;
-            //                break;
-            //            case ItemType.Gloves:
-            //            case ItemType.Boots:
-            //                resCount += 3;
-            //                break;
-            //            case ItemType.Shield:
-            //                resCount += 4;
-            //                break;
-            //        }
-
-
-            //        //if (resType == null || ingot == null) continue;
-
-            //        if (ingotCount > 0 && ingot != null)
-            //        {
-            //            item.Craftable = true;
-            //            AddOrReplace(requirements, new ItemCraftingRequirement()
-            //            {
-            //                Id = Guid.NewGuid(),
-            //                Amount = ingotCount,
-            //                ItemId = item.Id,
-            //                ResourceItemId = ingot.Id
-            //            });
-            //        }
-
-            //        if (woodCount > 0 && wood != null)
-            //        {
-            //            item.Craftable = true;
-            //            AddOrReplace(requirements, new ItemCraftingRequirement()
-            //            {
-            //                Id = Guid.NewGuid(),
-            //                Amount = woodCount,
-            //                ItemId = item.Id,
-            //                ResourceItemId = wood.Id
-            //            });
-            //        }
-
-            //        if (goldCount > 0 && gold != null)
-            //        {
-            //            item.Craftable = true;
-            //            AddOrReplace(requirements, new ItemCraftingRequirement()
-            //            {
-            //                Id = Guid.NewGuid(),
-            //                Amount = goldCount,
-            //                ItemId = item.Id,
-            //                ResourceItemId = gold.Id
-            //            });
-            //        }
-
-            //        if (resCount > 0 && resType != null)
-            //        {
-            //            item.Craftable = true;
-            //            AddOrReplace(requirements, new ItemCraftingRequirement()
-            //            {
-            //                Id = Guid.NewGuid(),
-            //                Amount = resCount,
-            //                ItemId = item.Id,
-            //                ResourceItemId = resType.Id
-            //            });
-            //        }
-            //    }
-            //}
         }
 
         private void AddOrReplace(IReadOnlyList<ItemCraftingRequirement> requirements, ItemCraftingRequirement itemCraftingRequirement)
@@ -2136,6 +1882,13 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Add Methods
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(ItemRecipe item) => Update(() => itemRecipes.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(ItemRecipeIngredient item) => Update(() => itemRecipeIngredients.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(ServerSettings item) => Update(() => serverSettings.Add(item));
@@ -3059,6 +2812,25 @@ namespace RavenNest.BusinessLogic.Data
         public IReadOnlyList<RedeemableItem> GetRedeemableItems() => redeemableItems.Entities;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IEnumerable<ItemRecipe> GetItemRecipes()
+        {
+            return itemRecipes.Entities;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ItemRecipe GetItemRecipe(Guid recipeId)
+        {
+            return itemRecipes[recipeId];
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<ItemRecipeIngredient> GetRecipeIngredients(Guid recipeId)
+        {
+            return itemRecipeIngredients[nameof(ItemRecipe), recipeId];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RedeemableItem GetRedeemableItemByItemId(Guid itemId) => redeemableItems[nameof(Item), itemId].FirstOrDefault(x => x.ItemId == itemId);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3293,6 +3065,14 @@ namespace RavenNest.BusinessLogic.Data
         #endregion
 
         #region Remove Entities
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(ItemRecipe item) => itemRecipes.Remove(item);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(ItemRecipeIngredient item) => itemRecipeIngredients.Remove(item);
+
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(VendorItem item) => vendorItems.Remove(item);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3722,6 +3502,8 @@ namespace RavenNest.BusinessLogic.Data
                 StrengthLevel = 1,
                 WoodcuttingLevel = 1,
                 HealingLevel = 1,
+                AlchemyLevel = 1,
+                GatheringLevel = 1,
             };
         }
 

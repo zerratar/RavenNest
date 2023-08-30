@@ -74,6 +74,19 @@ namespace RavenNest.Controllers
             return itemCollection;
         }
 
+        [HttpGet("recipes")]
+        public async Task<ActionResult<ItemRecipeCollection>> GetRecipes()
+        {
+            if (itemManager == null)
+            {
+                return new ItemRecipeCollection();
+            }
+
+            return itemManager.GetRecipes();
+        }
+
+
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost]
         public bool AddItemAsync(Item item)

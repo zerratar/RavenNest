@@ -11,9 +11,7 @@ using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
-using RavenNest;
 using System.IO;
-using System.Numerics;
 using RavenNest.Blazor.Services;
 
 namespace RavenNest.Controllers
@@ -232,6 +230,14 @@ namespace RavenNest.Controllers
         public bool AddTokens(Guid characterId, int amount)
         {
             return playerManager.AddTokens(AssertGetSessionToken(), characterId, amount);
+        }
+
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("{characterId}/produce/{recipeId}/{amount}")]
+        public ItemProductionResult ProduceItems(Guid characterId, Guid recipeId, int amount)
+        {
+            return playerManager.ProduceItems(AssertGetSessionToken(), characterId, recipeId, amount);
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]

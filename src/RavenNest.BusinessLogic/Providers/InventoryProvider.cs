@@ -278,10 +278,21 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
-        internal bool ContainsItem(Guid itemId)
+        internal bool ContainsItem(Guid itemId, int minAmount = 1)
         {
             lock (mutex)
             {
+                if (minAmount > 1)
+                {
+                    var count = 0L;
+                    foreach (var i in GetAllItems())
+                    {
+                        if (i.ItemId == itemId) count += i.Amount;
+                    }
+
+                    return count >= minAmount;
+                }
+
                 foreach (var i in GetAllItems())
                 {
                     if (i.ItemId == itemId)
