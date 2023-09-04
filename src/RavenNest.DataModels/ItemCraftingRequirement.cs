@@ -20,9 +20,11 @@ namespace RavenNest.DataModels
         private bool fixedSuccessRate;
         private int requiredLevel;
         private int requiredSkill;
+        public int amount;
 
         public string Name { get => name; set => Set(ref name, value); }
         public string Description { get => description; set => Set(ref description, value); }
+        public int Amount { get => amount; set => Set(ref amount, value); }
         public Guid ItemId { get => itemId; set => Set(ref itemId, value); }
         public Guid? FailedItemId { get => failedItemId; set => Set(ref failedItemId, value); }
         public double MaxSuccessRate { get => successRate; set => Set(ref successRate, value); }

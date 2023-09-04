@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -113,6 +114,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly GameDataBackupProvider backupProvider;
         private ITimeoutHandle scheduleHandler;
         private ITimeoutHandle backupHandler;
+        private TypedItems typedItems;
 
         #endregion
 
@@ -192,6 +194,8 @@ namespace RavenNest.BusinessLogic.Data
                         typeof(ServerSettings),
                         typeof(UserBankItem),
                         typeof(ExpMultiplierEvent),
+                        typeof(ItemRecipe),
+                        typeof(ItemRecipeIngredient)
                 });
 
 
@@ -228,6 +232,7 @@ namespace RavenNest.BusinessLogic.Data
 
                     itemDrops = new EntitySet<ItemDrop>(restorePoint?.Get<ItemDrop>() ?? ctx.ItemDrop.ToList());
                     resourceItemDrops = new EntitySet<ResourceItemDrop>(restorePoint?.Get<ResourceItemDrop>() ?? ctx.ResourceItemDrop.ToList());
+                    resourceItemDrops.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
                     patreonSettings = new EntitySet<PatreonSettings>(restorePoint?.Get<PatreonSettings>() ?? ctx.PatreonSettings.ToList());
 
@@ -414,6 +419,9 @@ namespace RavenNest.BusinessLogic.Data
                         characterClanSkillCooldown,
                         patreonSettings,
                         resourceItemDrops,
+
+                        itemRecipes, itemRecipeIngredients,
+
                         gameClients,
                         userAccess,
                         vendorItems,
@@ -1357,9 +1365,745 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
+        public Item GetOrCreateItem(string name, ItemCategory category, ItemType type)
+        {
+            return GetOrCreateItem(items.Entities, name, category, type);
+        }
+
+
+        public Item GetOrCreateItem(IReadOnlyList<Item> items, string name, ItemCategory category, ItemType type)
+        {
+            return GetOrCreateItem(items, name, null, category, type);
+        }
+
+        public Item GetOrCreateItem(IReadOnlyList<Item> items, string name, string description, ItemCategory category, ItemType type)
+        {
+            var item = items.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (item != null)
+            {
+                if (item.Description != description) item.Description = description;
+                if (item.Category != (int)category) item.Category = (int)category;
+                if (item.Type != (int)type) item.Type = (int)type;
+                return item;
+            }
+            item = new Item
+            {
+                Id = Guid.NewGuid(),
+                Name = name,
+                Description = description,
+                Category = (int)category,
+                Type = (int)type,
+                RequiredCraftingLevel = 1000,
+                RequiredCookingLevel = 1000,
+                Craftable = false,
+            };
+            Add(item);
+            return item;
+        }
+
+        public TypedItems GetKnownItems()
+        {
+            var i = this.items.Entities;
+            if (typedItems == null)
+            {
+                // ensure we have these items in the database
+                typedItems = new TypedItems
+                {
+                    // Item Drops
+                    Hearthstone = GetOrCreateItem(i, "Hearthstone", "A magically infused stone.", ItemCategory.Resource, ItemType.Alchemy),
+                    WanderersGem = GetOrCreateItem(i, "Wanderer's Gem", "A gem that has the essence of distant lands.", ItemCategory.Resource, ItemType.Alchemy),
+                    IronEmblem = GetOrCreateItem(i, "Iron Emblem", "A signet representing Ironhill", ItemCategory.Resource, ItemType.Alchemy),
+                    KyoCrystal = GetOrCreateItem(i, "Kyo Crystal", "A radiant crystal resonating with Kyo's energy", ItemCategory.Resource, ItemType.Alchemy),
+                    HeimRune = GetOrCreateItem(i, "Heim Rune", "A rune infused with Heim's magic", ItemCategory.Resource, ItemType.Alchemy),
+                    AtriasFeather = GetOrCreateItem(i, "Atria's Feather", "A magical feather tied to Atria", ItemCategory.Resource, ItemType.Alchemy),
+                    EldarasMark = GetOrCreateItem(i, "Eldara's Mark", "A seal bearing Eldara's mark", ItemCategory.Resource, ItemType.Alchemy),
+                    Realmstone = GetOrCreateItem(i, "Realmstone", "A precious stone allowing teleportation across islands.", ItemCategory.Resource, ItemType.Alchemy),
+
+                    // Gathering - Cooking
+                    Water = GetOrCreateItem(i, "Water", ItemCategory.Resource, ItemType.Gathering),
+                    Mushroom = GetOrCreateItem(i, "Mushroom", ItemCategory.Resource, ItemType.Gathering),
+                    Salt = GetOrCreateItem(i, "Salt", ItemCategory.Resource, ItemType.Gathering),
+                    BlackPepper = GetOrCreateItem(i, "Black Pepper", ItemCategory.Resource, ItemType.Gathering),
+
+                    // Gathering - Alchemy
+                    Sand = GetOrCreateItem(i, "Sand", ItemCategory.Resource, ItemType.Gathering),
+                    Hemp = GetOrCreateItem(i, "Hemp", ItemCategory.Resource, ItemType.Gathering),
+                    Resin = GetOrCreateItem(i, "Resin", ItemCategory.Resource, ItemType.Gathering),
+
+                    Yarrow = GetOrCreateItem(i, "Yarrow", ItemCategory.Resource, ItemType.Gathering),
+                    RedClover = GetOrCreateItem(i, "Red Clover", ItemCategory.Resource, ItemType.Gathering),
+                    Comfrey = GetOrCreateItem(i, "Comfrey", ItemCategory.Resource, ItemType.Gathering),
+                    Sage = GetOrCreateItem(i, "Sage", ItemCategory.Resource, ItemType.Gathering),
+                    Mugwort = GetOrCreateItem(i, "Mugwort", ItemCategory.Resource, ItemType.Gathering),
+                    Lavender = GetOrCreateItem(i, "Lavender", ItemCategory.Resource, ItemType.Gathering),
+                    Goldenrod = GetOrCreateItem(i, "Goldenrod", ItemCategory.Resource, ItemType.Gathering),
+                    Elderflower = GetOrCreateItem(i, "Elderflower", ItemCategory.Resource, ItemType.Gathering),
+                    Wormwood = GetOrCreateItem(i, "Wormwood", ItemCategory.Resource, ItemType.Gathering),
+                    Valerian = GetOrCreateItem(i, "Valerian", ItemCategory.Resource, ItemType.Gathering),
+                    Skullcap = GetOrCreateItem(i, "Skullcap", ItemCategory.Resource, ItemType.Gathering),
+                    Chamomile = GetOrCreateItem(i, "Chamomile", ItemCategory.Resource, ItemType.Gathering),
+                    LemonBalm = GetOrCreateItem(i, "Lemon Balm", ItemCategory.Resource, ItemType.Gathering),
+
+                    // Farming - Cooking
+                    Eggs = GetOrCreateItem(i, "Eggs", ItemCategory.Resource, ItemType.Gathering),
+                    Milk = GetOrCreateItem(i, "Milk", ItemCategory.Resource, ItemType.Gathering),
+                    RawChicken = GetOrCreateItem(i, "Raw Chicken", ItemCategory.Resource, ItemType.Gathering),
+                    RawBeef = GetOrCreateItem(i, "Raw Meat", ItemCategory.Resource, ItemType.Gathering),
+                    RawPork = GetOrCreateItem(i, "Raw Pork", ItemCategory.Resource, ItemType.Gathering),
+
+                    Wheat = GetOrCreateItem(i, "Wheat", ItemCategory.Resource, ItemType.Farming),
+                    Tomato = GetOrCreateItem(i, "Tomato", ItemCategory.Resource, ItemType.Farming),
+                    Potato = GetOrCreateItem(i, "Potato", ItemCategory.Resource, ItemType.Farming),
+                    Apple = GetOrCreateItem(i, "Apple", ItemCategory.Resource, ItemType.Farming),
+                    Carrot = GetOrCreateItem(i, "Carrot", ItemCategory.Resource, ItemType.Farming),
+                    Garlic = GetOrCreateItem(i, "Garlic", ItemCategory.Resource, ItemType.Farming),
+                    Cumin = GetOrCreateItem(i, "Cumin", ItemCategory.Resource, ItemType.Farming),
+
+                    Coriander = GetOrCreateItem(i, "Coriander", ItemCategory.Resource, ItemType.Farming),
+                    Paprika = GetOrCreateItem(i, "Paprika", ItemCategory.Resource, ItemType.Farming),
+                    Turmeric = GetOrCreateItem(i, "Turmeric", ItemCategory.Resource, ItemType.Farming),
+                    Onion = GetOrCreateItem(i, "Onion", ItemCategory.Resource, ItemType.Farming),
+                    Grapes = GetOrCreateItem(i, "Grapes", ItemCategory.Resource, ItemType.Farming),
+                    CacaoBeans = GetOrCreateItem(i, "Cacao Beans", ItemCategory.Resource, ItemType.Farming),
+                    Truffle = GetOrCreateItem(i, "Truffle", ItemCategory.Resource, ItemType.Farming),
+
+                    // Farming - Alchemy
+                    //LunarBlossom = GetOrCreateItem(i, "Lunar Blossom", "A flower with gentle curative properties.", ItemCategory.Resource, ItemType.Farming),
+                    //SolarBloom = GetOrCreateItem(i, "Solar Bloom", "A sun-loving flower that amplifies potion effects.", ItemCategory.Resource, ItemType.Farming),
+                    //Thornleaf = GetOrCreateItem(i, "Thornleaf", "A prickly plant that enhances offensive capabilities.", ItemCategory.Resource, ItemType.Farming),
+                    //GuardianFern = GetOrCreateItem(i, "Guardian Fern", "A sturdy plant that strengthens defenses.", ItemCategory.Resource, ItemType.Farming),
+                    //Windroot = GetOrCreateItem(i, "Windroot", "A tuber that can enhance movement and reflexes.", ItemCategory.Resource, ItemType.Farming),
+                    //Starflower = GetOrCreateItem(i, "Starflower", "A radiant flower that only blooms under starlit nights, rumored to hold cosmic power.", ItemCategory.Resource, ItemType.Farming), // lv 850
+
+                    // Alchemy - Ingredients
+                    String = GetOrCreateItem(i, "String", ItemCategory.Resource, ItemType.Alchemy),
+                    Paper = GetOrCreateItem(i, "Paper", ItemCategory.Resource, ItemType.Alchemy),
+                    Vial = GetOrCreateItem(i, "Vial", ItemCategory.Resource, ItemType.Alchemy),
+                    // should we add more types of wood pulp to create more types of paper?
+                    WoodPulp = GetOrCreateItem(i, "Wood Pulp", ItemCategory.Resource, ItemType.Alchemy),
+
+                    // Alchemy - Produced items                    
+                    TomeOfHome = GetOrCreateItem(i, "Tome of Home", "A magical tome that allows the user to teleport to Home island.", ItemCategory.Potion, ItemType.Potion),
+                    TomeOfAway = GetOrCreateItem(i, "Tome of Away", "A magical tome that allows the user to teleport to Away island.", ItemCategory.Potion, ItemType.Potion),
+                    TomeOfIronhill = GetOrCreateItem(i, "Tome of Ironhill", "A magical tome that allows the user to teleport to Ironhill.", ItemCategory.Potion, ItemType.Potion),
+                    TomeOfKyo = GetOrCreateItem(i, "Tome of Kyo", "A magical tome that allows the user to teleport to Kyo.", ItemCategory.Potion, ItemType.Potion),
+                    TomeOfHeim = GetOrCreateItem(i, "Tome of Heim", "A magical tome that allows the user to teleport to Heim.", ItemCategory.Potion, ItemType.Potion),
+                    TomeOfAtria = GetOrCreateItem(i, "Tome of Atria", "A magical tome that allows the user to teleport to Atria.", ItemCategory.Potion, ItemType.Potion),
+                    TomeOfEldara = GetOrCreateItem(i, "Tome of Eldara", "A magical tome that allows the user to teleport to Eldara.", ItemCategory.Potion, ItemType.Potion),
+                    TomeOfTeleportation = GetOrCreateItem(i, "Tome of Teleportation", "A magical tome that allows the user to teleport to a chosen island.", ItemCategory.Potion, ItemType.Potion),
+
+                    HealthPotion = GetOrCreateItem(i, "Health Potion", "Restores a small portion of health instantly.", ItemCategory.Potion, ItemType.Potion),
+                    GreatHealthPotion = GetOrCreateItem(i, "Great Health Potion", "Restores a large portion of health instantly.", ItemCategory.Potion, ItemType.Potion),
+                    RegenPotion = GetOrCreateItem(i, "Regen Potion", "Gradually restores health over a short duration.", ItemCategory.Potion, ItemType.Potion),
+                    DefensePotion = GetOrCreateItem(i, "Defense Potion", "Boosts defense, reducing damage taken for a limited time.", ItemCategory.Potion, ItemType.Potion),
+                    GreatDefensePotion = GetOrCreateItem(i, "Great Defense Potion", "Significantly boosts defense, greatly reducing damage taken for an extended period.", ItemCategory.Potion, ItemType.Potion),
+                    StrengthPotion = GetOrCreateItem(i, "Strength Potion", "Increases physical power for a limited duration.", ItemCategory.Potion, ItemType.Potion),
+                    GreatStrengthPotion = GetOrCreateItem(i, "Great Strength Potion", "Greatly increases physical power for an extended period.", ItemCategory.Potion, ItemType.Potion),
+                    MagicPotion = GetOrCreateItem(i, "Magic Potion", "Amplifies magical abilities for a short span.", ItemCategory.Potion, ItemType.Potion),
+                    GreatMagicPotion = GetOrCreateItem(i, "Great Magic Potion", "Significantly amplifies magical abilities for a longer duration.", ItemCategory.Potion, ItemType.Potion),
+                    RangedPotion = GetOrCreateItem(i, "Ranged Potion", "Enhances ranged accuracy and power for a short time.", ItemCategory.Potion, ItemType.Potion),
+                    GreatRangedPotion = GetOrCreateItem(i, "Great Ranged Potion", "Significantly enhances ranged accuracy and power for an extended period.", ItemCategory.Potion, ItemType.Potion),
+                    HealingPotion = GetOrCreateItem(i, "Healing Potion", "Boosts the effectiveness of healing spells and abilities for a limited time.", ItemCategory.Potion, ItemType.Potion),
+                    GreatHealingPotion = GetOrCreateItem(i, "Great Healing Potion", "Significantly boosts the effectiveness of healing spells and abilities for an extended duration.", ItemCategory.Potion, ItemType.Potion),
+
+                    // Woodcutting
+                    Logs = GetOrCreateItem(i, "Logs", ItemCategory.Resource, ItemType.Woodcutting),
+                    BristleLogs = GetOrCreateItem(i, "Bristle Logs", ItemCategory.Resource, ItemType.Woodcutting),
+                    GlowbarkLogs = GetOrCreateItem(i, "Glowbark Logs", ItemCategory.Resource, ItemType.Woodcutting),
+                    MystwoodLogs = GetOrCreateItem(i, "Mystwood Logs", ItemCategory.Resource, ItemType.Woodcutting),
+                    SandriftLogs = GetOrCreateItem(i, "Sandrift Logs", ItemCategory.Resource, ItemType.Woodcutting),
+                    PineheartLogs = GetOrCreateItem(i, "Pineheart Logs", ItemCategory.Resource, ItemType.Woodcutting),
+                    EbonshadeLogs = GetOrCreateItem(i, "Ebonshade Logs", ItemCategory.Resource, ItemType.Woodcutting),
+                    IronbarkLogs = GetOrCreateItem(i, "Ironbark Logs", ItemCategory.Resource, ItemType.Woodcutting),
+                    FrostbiteLogs = GetOrCreateItem(i, "Frostbite Logs", ItemCategory.Resource, ItemType.Woodcutting),
+                    DragonwoodLogs = GetOrCreateItem(i, "Dragonwood Logs", ItemCategory.Resource, ItemType.Woodcutting),
+                    GoldwillowLogs = GetOrCreateItem(i, "Goldwillow Logs", ItemCategory.Resource, ItemType.Woodcutting),
+                    ShadowoakLogs = GetOrCreateItem(i, "Shadowoak Logs", ItemCategory.Resource, ItemType.Woodcutting),
+
+                    // Fishing
+                    Sprat = GetOrCreateItem(i, "Sprat", ItemCategory.Resource, ItemType.Fishing),
+                    Shrimp = GetOrCreateItem(i, "Shrimp", ItemCategory.Resource, ItemType.Fishing),
+                    RedSeaBass = GetOrCreateItem(i, "Red Sea Bass", ItemCategory.Resource, ItemType.Fishing),
+                    Bass = GetOrCreateItem(i, "Bass", ItemCategory.Resource, ItemType.Fishing),
+                    Perch = GetOrCreateItem(i, "Perch", ItemCategory.Resource, ItemType.Fishing),
+                    Salmon = GetOrCreateItem(i, "Salmon", ItemCategory.Resource, ItemType.Fishing),
+                    Crab = GetOrCreateItem(i, "Crab", ItemCategory.Resource, ItemType.Fishing),
+                    Lobster = GetOrCreateItem(i, "Lobster", ItemCategory.Resource, ItemType.Fishing),
+                    BlueLobster = GetOrCreateItem(i, "Blue Lobster", ItemCategory.Resource, ItemType.Fishing),
+                    Swordfish = GetOrCreateItem(i, "Swordfish", ItemCategory.Resource, ItemType.Fishing),
+                    PufferFish = GetOrCreateItem(i, "Puffer Fish", ItemCategory.Resource, ItemType.Fishing),
+                    Octopus = GetOrCreateItem(i, "Octopus", ItemCategory.Resource, ItemType.Fishing),
+                    MantaRay = GetOrCreateItem(i, "Manta Ray", ItemCategory.Resource, ItemType.Fishing),
+                    Kraken = GetOrCreateItem(i, "Kraken", ItemCategory.Resource, ItemType.Fishing),
+                    Leviathian = GetOrCreateItem(i, "Leviathan", ItemCategory.Resource, ItemType.Fishing),
+                    PoseidonsGuardian = GetOrCreateItem(i, "Poseidon's Guardian", ItemCategory.Resource, ItemType.Fishing),
+
+                    // Cooking - Resource Creation
+                    Flour = GetOrCreateItem(i, "Flour", ItemCategory.Resource, ItemType.Cooking),
+                    Butter = GetOrCreateItem(i, "Butter", ItemCategory.Resource, ItemType.Cooking),
+                    Cheese = GetOrCreateItem(i, "Cheese", ItemCategory.Resource, ItemType.Cooking),
+                    SpiceMix = GetOrCreateItem(i, "Spice Mix", ItemCategory.Resource, ItemType.Cooking),
+                    Ham = GetOrCreateItem(i, "Ham", ItemCategory.Resource, ItemType.Cooking),
+                    Cacao = GetOrCreateItem(i, "Cacao", ItemCategory.Resource, ItemType.Cooking),
+                    Chocolate = GetOrCreateItem(i, "Chocolate", ItemCategory.Resource, ItemType.Cooking), // Food type?
+                    GoldenLeaf = GetOrCreateItem(i, "Golden Leaf", ItemCategory.Resource, ItemType.Cooking),
+
+                    // Cooking - Edibles and not so edible..
+                    RedWine = GetOrCreateItem(i, "Red Wine", ItemCategory.Food, ItemType.Food),
+                    CookedChicken = GetOrCreateItem(i, "Cooked Chicken", ItemCategory.Food, ItemType.Food),
+                    CookedPork = GetOrCreateItem(i, "Cooked Pork", ItemCategory.Food, ItemType.Food),
+                    CookedBeef = GetOrCreateItem(i, "Cooked Beef", ItemCategory.Food, ItemType.Food),
+                    CookedChickenLeg = GetOrCreateItem(i, "Cooked Chicken Leg", ItemCategory.Food, ItemType.Food),
+                    ChocolateChipCookies = GetOrCreateItem(i, "Chocolate Chip Cookies", ItemCategory.Food, ItemType.Food),
+                    ApplePie = GetOrCreateItem(i, "Apple Pie", ItemCategory.Food, ItemType.Food),
+                    Bread = GetOrCreateItem(i, "Bread", ItemCategory.Food, ItemType.Food),
+                    HamSandwich = GetOrCreateItem(i, "Ham Sandwich", ItemCategory.Food, ItemType.Food),
+                    Skewers = GetOrCreateItem(i, "Skewers", ItemCategory.Food, ItemType.Food),
+                    Steak = GetOrCreateItem(i, "Steak", ItemCategory.Food, ItemType.Food),
+
+                    BurnedChicken = GetOrCreateItem(i, "Burned Chicken", ItemCategory.Food, ItemType.Food),
+                    BurnedPork = GetOrCreateItem(i, "Burned Pork", ItemCategory.Food, ItemType.Food),
+                    BurnedBeef = GetOrCreateItem(i, "Burned Beef", ItemCategory.Food, ItemType.Food),
+                    BurnedChickenLeg = GetOrCreateItem(i, "Burned Chicken Leg", ItemCategory.Food, ItemType.Food),
+                    BurnedChocolateChipCookies = GetOrCreateItem(i, "Burned Chocolate Chip Cookies", ItemCategory.Food, ItemType.Food),
+                    BurnedApplePie = GetOrCreateItem(i, "Burned Apple Pie", ItemCategory.Food, ItemType.Food),
+                    BurnedBread = GetOrCreateItem(i, "Burned Bread", ItemCategory.Food, ItemType.Food),
+                    BurnedSkewers = GetOrCreateItem(i, "Burned Skewers", ItemCategory.Food, ItemType.Food),
+                    BurnedSteak = GetOrCreateItem(i, "Burned Steak", ItemCategory.Food, ItemType.Food),
+
+                    // Cooking - Fish
+                    CookedSprat = GetOrCreateItem(i, "Cooked Sprat", ItemCategory.Food, ItemType.Food),
+                    CookedShrimp = GetOrCreateItem(i, "Cooked Shrimp", ItemCategory.Food, ItemType.Food),
+                    CookedRedSeaBass = GetOrCreateItem(i, "Cooked Red Sea Bass", ItemCategory.Food, ItemType.Food),
+                    CookedBass = GetOrCreateItem(i, "Cooked Bass", ItemCategory.Food, ItemType.Food),
+                    CookedPerch = GetOrCreateItem(i, "Cooked Perch", ItemCategory.Food, ItemType.Food),
+                    CookedSalmon = GetOrCreateItem(i, "Cooked Salmon", ItemCategory.Food, ItemType.Food),
+                    CookedCrab = GetOrCreateItem(i, "Cooked Crab", ItemCategory.Food, ItemType.Food),
+                    CookedLobster = GetOrCreateItem(i, "Cooked Lobster", ItemCategory.Food, ItemType.Food),
+                    CookedBlueLobster = GetOrCreateItem(i, "Cooked Blue Lobster", ItemCategory.Food, ItemType.Food),
+                    CookedSwordfish = GetOrCreateItem(i, "Cooked Swordfish", ItemCategory.Food, ItemType.Food),
+                    CookedPufferFish = GetOrCreateItem(i, "Cooked Puffer Fish", ItemCategory.Food, ItemType.Food),
+                    CookedOctopus = GetOrCreateItem(i, "Cooked Octopus", ItemCategory.Food, ItemType.Food),
+                    CookedMantaRay = GetOrCreateItem(i, "Cooked Manta Ray", ItemCategory.Food, ItemType.Food),
+                    CookedKraken = GetOrCreateItem(i, "Cooked Kraken", ItemCategory.Food, ItemType.Food),
+
+                    LeviathansRoyalStew = GetOrCreateItem(i, "Leviathan's Royal Stew", ItemCategory.Food, ItemType.Food),
+                    PoseidonsGuardianFeast = GetOrCreateItem(i, "Poseidon's Guardian Feast", ItemCategory.Food, ItemType.Food),
+
+                    // Failed
+                    MuddledLeviathanBroth = GetOrCreateItem(i, "Muddled Leviathan Broth", ItemCategory.Food, ItemType.Food),
+                    RuinedGuardianDelight = GetOrCreateItem(i, "Ruined Guardian Delight", ItemCategory.Food, ItemType.Food),
+
+                    BurnedSprat = GetOrCreateItem(i, "Burned Sprat", ItemCategory.Food, ItemType.Food),
+                    BurnedShrimp = GetOrCreateItem(i, "Burned Shrimp", ItemCategory.Food, ItemType.Food),
+                    BurnedRedSeaBass = GetOrCreateItem(i, "Burned Red Sea Bass", ItemCategory.Food, ItemType.Food),
+                    BurnedBass = GetOrCreateItem(i, "Burned Bass", ItemCategory.Food, ItemType.Food),
+                    BurnedPerch = GetOrCreateItem(i, "Burned Perch", ItemCategory.Food, ItemType.Food),
+                    BurnedSalmon = GetOrCreateItem(i, "Burned Salmon", ItemCategory.Food, ItemType.Food),
+                    BurnedCrab = GetOrCreateItem(i, "Burned Crab", ItemCategory.Food, ItemType.Food),
+                    BurnedLobster = GetOrCreateItem(i, "Burned Lobster", ItemCategory.Food, ItemType.Food),
+                    BurnedBlueLobster = GetOrCreateItem(i, "Burned Blue Lobster", ItemCategory.Food, ItemType.Food),
+                    BurnedSwordfish = GetOrCreateItem(i, "Burned Swordfish", ItemCategory.Food, ItemType.Food),
+                    BurnedPufferFish = GetOrCreateItem(i, "Burned Puffer Fish", ItemCategory.Food, ItemType.Food),
+                    BurnedOctopus = GetOrCreateItem(i, "Burned Octopus", ItemCategory.Food, ItemType.Food),
+                    BurnedMantaRay = GetOrCreateItem(i, "Burned Manta Ray", ItemCategory.Food, ItemType.Food),
+                    BurnedKraken = GetOrCreateItem(i, "Burned Kraken", ItemCategory.Food, ItemType.Food),
+
+                    // Mining
+                    CopperOre = GetOrCreateItem(i, "Copper Ore", ItemCategory.Resource, ItemType.Mining),
+                    TinOre = GetOrCreateItem(i, "Tin Ore", ItemCategory.Resource, ItemType.Mining),
+                    IronOre = GetOrCreateItem(i, "Iron Ore", ItemCategory.Resource, ItemType.Mining),
+                    Coal = GetOrCreateItem(i, "Coal", ItemCategory.Resource, ItemType.Mining),
+                    Silver = GetOrCreateItem(i, "Silver", ItemCategory.Resource, ItemType.Mining),
+                    Gold = GetOrCreateItem(i, "Gold Nugget", ItemCategory.Resource, ItemType.Mining),
+
+                    MithrilOre = GetOrCreateItem(i, "Mithril Ore", ItemCategory.Resource, ItemType.Mining),
+                    AdamantiteOre = GetOrCreateItem(i, "Adamantite Ore", ItemCategory.Resource, ItemType.Mining),
+                    RuneOre = GetOrCreateItem(i, "Rune Ore", ItemCategory.Resource, ItemType.Mining),
+                    DragonOre = GetOrCreateItem(i, "Dragon Ore", ItemCategory.Resource, ItemType.Mining),
+                    AbraxasOre = GetOrCreateItem(i, "Abraxas Ore", ItemCategory.Resource, ItemType.Mining),
+                    PhantomOre = GetOrCreateItem(i, "Phantom Ore", ItemCategory.Resource, ItemType.Mining),
+                    LioniteOre = GetOrCreateItem(i, "Lionite Ore", ItemCategory.Resource, ItemType.Mining),
+                    EthereumOre = GetOrCreateItem(i, "Ethereum Ore", ItemCategory.Resource, ItemType.Mining),
+                    AncientOre = GetOrCreateItem(i, "Ancient Ore", ItemCategory.Resource, ItemType.Mining),
+                    AtlarusOre = GetOrCreateItem(i, "Atlarus Ore", ItemCategory.Resource, ItemType.Mining),
+                    Eldrium = GetOrCreateItem(i, "Eldrium", ItemCategory.Resource, ItemType.Mining),
+
+                    // Crafting
+                    BronzeBar = GetOrCreateItem(i, "Bronze Bar", ItemCategory.Resource, ItemType.Crafting),
+                    IronBar = GetOrCreateItem(i, "Iron Bar", ItemCategory.Resource, ItemType.Crafting),
+                    SteelBar = GetOrCreateItem(i, "Steel Bar", ItemCategory.Resource, ItemType.Crafting),
+                    MithrilBar = GetOrCreateItem(i, "Mithril Bar", ItemCategory.Resource, ItemType.Crafting),
+                    AdamantiteBar = GetOrCreateItem(i, "Adamantite Bar", ItemCategory.Resource, ItemType.Crafting),
+                    RuneBar = GetOrCreateItem(i, "Rune Bar", ItemCategory.Resource, ItemType.Crafting),
+                    DragonBar = GetOrCreateItem(i, "Dragon Bar", ItemCategory.Resource, ItemType.Crafting),
+                    AbraxasBar = GetOrCreateItem(i, "Abraxas Bar", ItemCategory.Resource, ItemType.Crafting),
+                    PhantomBar = GetOrCreateItem(i, "Phantom Bar", ItemCategory.Resource, ItemType.Crafting),
+                    LioniteBar = GetOrCreateItem(i, "Lionite Bar", ItemCategory.Resource, ItemType.Crafting),
+                    EthereumBar = GetOrCreateItem(i, "Ethereum Bar", ItemCategory.Resource, ItemType.Crafting),
+                    AncientBar = GetOrCreateItem(i, "Ancient Bar", ItemCategory.Resource, ItemType.Crafting),
+                    AtlarusBar = GetOrCreateItem(i, "Atlarus Bar", ItemCategory.Resource, ItemType.Crafting),
+
+                    ElderBronzeBar = GetOrCreateItem(i, "Elder Bronze Bar", ItemCategory.Resource, ItemType.Crafting),
+                    ElderIronBar = GetOrCreateItem(i, "Elder Iron Bar", ItemCategory.Resource, ItemType.Crafting),
+                    ElderSteelBar = GetOrCreateItem(i, "Elder Steel Bar", ItemCategory.Resource, ItemType.Crafting),
+                    ElderMithrilBar = GetOrCreateItem(i, "Elder Mithril Bar", ItemCategory.Resource, ItemType.Crafting),
+                    ElderAdamantiteBar = GetOrCreateItem(i, "Elder Adamantite Bar", ItemCategory.Resource, ItemType.Crafting),
+                    ElderRuneBar = GetOrCreateItem(i, "Elder Rune Bar", ItemCategory.Resource, ItemType.Crafting),
+                    ElderDragonBar = GetOrCreateItem(i, "Elder Dragon Bar", ItemCategory.Resource, ItemType.Crafting),
+                    ElderAbraxasBar = GetOrCreateItem(i, "Elder Abraxas Bar", ItemCategory.Resource, ItemType.Crafting),
+                    ElderPhantomBar = GetOrCreateItem(i, "Elder Phantom Bar", ItemCategory.Resource, ItemType.Crafting),
+                    ElderLioniteBar = GetOrCreateItem(i, "Elder Lionite Bar", ItemCategory.Resource, ItemType.Crafting),
+                    ElderEthereumBar = GetOrCreateItem(i, "Elder Ethereum Bar", ItemCategory.Resource, ItemType.Crafting),
+                    ElderAncientBar = GetOrCreateItem(i, "Elder Ancient Bar", ItemCategory.Resource, ItemType.Crafting),
+                    ElderAtlarusBar = GetOrCreateItem(i, "Elder Atlarus Bar", ItemCategory.Resource, ItemType.Crafting),
+
+                    SilverBar = GetOrCreateItem(i, "Silver Bar", ItemCategory.Resource, ItemType.Crafting),
+                    GoldBar = GetOrCreateItem(i, "Gold Bar", ItemCategory.Resource, ItemType.Crafting),
+                };
+
+                EnsureDropRates(typedItems);
+                EnsureItemRecipes(typedItems);
+            }
+            return typedItems;
+        }
+
+        private void EnsureDropRate(int level, Item item, double cooldown, double dropChance, RavenNest.Models.Skill skill)
+        {
+            var existingDrop = resourceItemDrops[nameof(Item), item.Id].FirstOrDefault();
+            if (existingDrop != null)
+            {
+                if (existingDrop.Cooldown != cooldown) existingDrop.Cooldown = cooldown;
+                if (existingDrop.DropChance != dropChance) existingDrop.DropChance = dropChance;
+                if (existingDrop.LevelRequirement != level) existingDrop.LevelRequirement = level;
+                return;
+            }
+
+            Add(new ResourceItemDrop
+            {
+                DropChance = dropChance,
+                ItemId = item.Id,
+                ItemName = item.Name,
+                LevelRequirement = level,
+                Skill = (int)skill,
+                Cooldown = cooldown,
+                Id = Guid.NewGuid(),
+            });
+        }
+
+        private void EnsureDropRates(TypedItems items)
+        {
+            var farming = RavenNest.Models.Skill.Farming;
+            var gathering = RavenNest.Models.Skill.Gathering;
+            var woodcutting = RavenNest.Models.Skill.Woodcutting;
+
+            #region Woodcutting, poor woodcutting have no resources.
+            EnsureDropRate(001, items.Logs, 10, 0.2, woodcutting);
+            EnsureDropRate(010, items.BristleLogs, 20, 0.15, woodcutting);
+            EnsureDropRate(015, items.GlowbarkLogs, 45, 0.14, woodcutting);
+            EnsureDropRate(030, items.MystwoodLogs, 60, 0.13, woodcutting);
+            EnsureDropRate(050, items.SandriftLogs, 120, 0.12, woodcutting);
+            EnsureDropRate(070, items.PineheartLogs, 180, 0.11, woodcutting);
+            EnsureDropRate(100, items.EbonshadeLogs, 300, 0.10, woodcutting);
+            EnsureDropRate(130, items.IronbarkLogs, 400, 0.10, woodcutting);
+            EnsureDropRate(170, items.FrostbiteLogs, 500, 0.09, woodcutting);
+            EnsureDropRate(200, items.DragonwoodLogs, 700, 0.09, woodcutting);
+            EnsureDropRate(240, items.GoldwillowLogs, 800, 0.08, woodcutting);
+            EnsureDropRate(300, items.ShadowoakLogs, 1000, 0.08, woodcutting);
+            #endregion
+
+
+            #region For Cooking
+            EnsureDropRate(1, items.Wheat, 10, 0.2, farming);
+            EnsureDropRate(1, items.Water, 10, 0.2, gathering);
+            EnsureDropRate(5, items.Potato, 15, 0.15, farming);
+            EnsureDropRate(10, items.Tomato, 20, 0.15, farming);
+            EnsureDropRate(15, items.Mushroom, 30, 0.12, gathering);
+            EnsureDropRate(20, items.Salt, 40, 0.12, gathering);
+            EnsureDropRate(25, items.BlackPepper, 50, 0.12, gathering);
+            EnsureDropRate(30, items.Cumin, 60, 0.10, farming);
+            EnsureDropRate(40, items.Coriander, 90, 0.10, farming);
+            EnsureDropRate(50, items.Paprika, 120, 0.10, farming);
+            EnsureDropRate(60, items.Turmeric, 150, 0.10, farming);
+            EnsureDropRate(70, items.Apple, 200, 0.10, farming);
+            EnsureDropRate(80, items.Carrot, 250, 0.10, farming);
+            EnsureDropRate(90, items.Garlic, 300, 0.10, farming);
+            EnsureDropRate(100, items.Onion, 360, 0.10, farming);
+            EnsureDropRate(120, items.Milk, 420, 0.09, farming);
+            EnsureDropRate(140, items.Eggs, 500, 0.09, farming);
+            EnsureDropRate(160, items.RawChicken, 600, 0.09, farming);
+            EnsureDropRate(200, items.RawPork, 750, 0.08, farming);
+            EnsureDropRate(240, items.RawBeef, 900, 0.08, farming);
+            EnsureDropRate(320, items.Grapes, 1080, 0.07, farming);
+            EnsureDropRate(400, items.CacaoBeans, 1320, 0.06, farming);
+            EnsureDropRate(800, items.Truffle, 7200, 0.05, farming);  // Added truffle as a rare ingredient at a higher level
+            #endregion
+
+            #region For Alchemy
+
+            // gathering
+
+            EnsureDropRate(10, items.Yarrow, 15, 0.2, gathering);
+            EnsureDropRate(20, items.Hemp, 30, 0.19, gathering);
+            EnsureDropRate(30, items.Resin, 30, 0.19, gathering);
+            EnsureDropRate(40, items.Comfrey, 60, 0.15, gathering);
+            EnsureDropRate(60, items.Sage, 180, 0.15, gathering);
+            EnsureDropRate(80, items.Lavender, 300, 0.12, gathering);
+            EnsureDropRate(100, items.Elderflower, 420, 0.12, gathering);
+            EnsureDropRate(120, items.Valerian, 600, 0.1, gathering);
+            EnsureDropRate(140, items.Chamomile, 600, 0.1, gathering);
+            EnsureDropRate(180, items.RedClover, 900, 0.1, gathering);
+            EnsureDropRate(230, items.Mugwort, 1800, 0.09, gathering);
+            EnsureDropRate(280, items.Goldenrod, 3600, 0.09, gathering);
+            EnsureDropRate(330, items.Wormwood, 3600, 0.08, gathering);
+            EnsureDropRate(400, items.Skullcap, 3600, 0.08, gathering);
+            EnsureDropRate(500, items.LemonBalm, 7200, 0.07, gathering);
+            //EnsureDropRate(740, items.GaleLeaf, 7200, 0.07, gathering);
+            //EnsureDropRate(810, items.PhoenixFlower, 7200, 0.06, gathering);
+            //EnsureDropRate(880, items.SteelFern, 14400, 0.06, gathering);
+            //EnsureDropRate(950, items.DivineBud, 14400, 0.05, gathering);
+            //EnsureDropRate(999, items.SageHerb, 21600, 0.05, gathering);
+            #endregion
+        }
+
+        private void EnsureItemRecipes(TypedItems items)
+        {
+            Ingredient Ingredient(Item item, int amount = 1)
+            {
+                return new Ingredient { Item = item, Amount = amount };
+            }
+
+            #region Alchemy            
+
+            //// Alchemy - Processed Ingredients
+            //EnsureAlchemyRecipe(200, items.DraconicEssence, items.DragonEye);
+            //EnsureAlchemyRecipe(220, items.BatWingPowder, items.BatWing);
+            //EnsureAlchemyRecipe(240, items.PhoenixEssence, items.PhoenixFeather);
+            //EnsureAlchemyRecipe(260, items.GorgonDust, items.GorgonScale);
+            //EnsureAlchemyRecipe(280, items.UnicornElixir, items.UnicornHorn);
+
+            // Potion Base
+            EnsureAlchemyRecipe(20, items.Vial, items.Sand, items.Coal);
+
+            // Tome Base
+            EnsureAlchemyRecipe(20, items.String, items.Hemp);
+            EnsureAlchemyRecipe(30, items.WoodPulp, items.Logs);
+            EnsureAlchemyRecipe(40, items.Paper, items.WoodPulp, items.Resin);
+
+            // Potions
+            EnsureAlchemyRecipe(10, items.HealthPotion, items.Vial, items.Yarrow);
+            EnsureAlchemyRecipe(30, items.RegenPotion, items.Vial, items.Comfrey);
+            EnsureAlchemyRecipe(50, items.DefensePotion, items.Vial, items.Sage);
+            EnsureAlchemyRecipe(70, items.StrengthPotion, items.Vial, items.Lavender);
+            EnsureAlchemyRecipe(80, items.MagicPotion, items.Vial, items.Elderflower);
+            EnsureAlchemyRecipe(100, items.RangedPotion, items.Vial, items.Valerian);
+            EnsureAlchemyRecipe(120, items.HealingPotion, items.Vial, items.Chamomile);
+            EnsureAlchemyRecipe(160, items.GreatHealthPotion, items.Vial, items.RedClover);
+            EnsureAlchemyRecipe(200, items.GreatDefensePotion, items.Vial, items.Mugwort);
+            EnsureAlchemyRecipe(240, items.GreatStrengthPotion, items.Vial, items.Goldenrod);
+            EnsureAlchemyRecipe(280, items.GreatMagicPotion, items.Vial, items.Wormwood);
+            EnsureAlchemyRecipe(360, items.GreatRangedPotion, items.Vial, items.Skullcap);
+            EnsureAlchemyRecipe(400, items.GreatHealingPotion, items.Vial, items.LemonBalm);
+
+            // Tomes
+            EnsureAlchemyRecipe(80, items.TomeOfHome, items.Paper, items.String, items.Hearthstone);
+            EnsureAlchemyRecipe(150, items.TomeOfAway, items.Paper, items.String, items.WanderersGem);
+            EnsureAlchemyRecipe(220, items.TomeOfIronhill, items.Paper, items.String, items.IronEmblem);
+            EnsureAlchemyRecipe(290, items.TomeOfKyo, items.Paper, items.String, items.KyoCrystal);
+            EnsureAlchemyRecipe(360, items.TomeOfHeim, items.Paper, items.String, items.HeimRune);
+            EnsureAlchemyRecipe(430, items.TomeOfAtria, items.Paper, items.String, items.AtriasFeather);
+            EnsureAlchemyRecipe(500, items.TomeOfEldara, items.Paper, items.String, items.EldarasMark);
+            EnsureAlchemyRecipe(700, items.TomeOfTeleportation, items.Paper, items.String, items.Realmstone);
+
+            #endregion
+
+            #region Crafting
+            // basic material crafting
+            EnsureCraftingRecipe(20, items.SilverBar, items.Silver);
+            EnsureCraftingRecipe(40, items.GoldBar, items.Gold);
+
+            EnsureCraftingRecipe(001, items.BronzeBar, items.CopperOre, items.TinOre);
+            EnsureCraftingRecipe(010, items.IronBar, items.IronOre, items.IronOre);
+            EnsureCraftingRecipe(015, items.SteelBar, items.IronOre, items.Coal);
+            EnsureCraftingRecipe(050, items.MithrilBar, (Ingredient)items.MithrilOre, new Ingredient { Item = items.Coal, Amount = 4 });
+            EnsureCraftingRecipe(070, items.AdamantiteBar, (Ingredient)items.AdamantiteOre, new Ingredient { Item = items.Coal, Amount = 6 });
+            EnsureCraftingRecipe(090, items.RuneBar, (Ingredient)items.RuneOre, new Ingredient { Item = items.Coal, Amount = 8 });
+            EnsureCraftingRecipe(120, items.DragonBar, (Ingredient)items.DragonOre, new Ingredient { Item = items.Coal, Amount = 10 });
+            EnsureCraftingRecipe(150, items.AbraxasBar, (Ingredient)items.AbraxasOre, new Ingredient { Item = items.Coal, Amount = 15 });
+            EnsureCraftingRecipe(180, items.PhantomBar, (Ingredient)items.PhantomOre, new Ingredient { Item = items.Coal, Amount = 20 });
+            EnsureCraftingRecipe(220, items.LioniteBar, (Ingredient)items.LioniteOre, new Ingredient { Item = items.Coal, Amount = 25 });
+            EnsureCraftingRecipe(260, items.EthereumBar, (Ingredient)items.EthereumOre, new Ingredient { Item = items.Coal, Amount = 30 });
+            EnsureCraftingRecipe(300, items.AncientBar, (Ingredient)items.AncientOre, new Ingredient { Item = items.Coal, Amount = 40 });
+            EnsureCraftingRecipe(350, items.AtlarusBar, (Ingredient)items.AtlarusOre, new Ingredient { Item = items.Coal, Amount = 50 });
+            EnsureCraftingRecipe(400, items.ElderBronzeBar, (Ingredient)items.BronzeBar, Ingredient(items.Eldrium, 2), Ingredient(items.Coal, 60));
+            EnsureCraftingRecipe(450, items.ElderIronBar, (Ingredient)items.IronBar, Ingredient(items.Eldrium, 4), Ingredient(items.Coal, 70));
+            EnsureCraftingRecipe(500, items.ElderSteelBar, (Ingredient)items.SteelBar, Ingredient(items.Eldrium, 6), Ingredient(items.Coal, 80));
+            EnsureCraftingRecipe(550, items.ElderMithrilBar, (Ingredient)items.MithrilBar, Ingredient(items.Eldrium, 8), Ingredient(items.Coal, 90));
+            EnsureCraftingRecipe(600, items.ElderAdamantiteBar, (Ingredient)items.AdamantiteBar, Ingredient(items.Eldrium, 10), Ingredient(items.Coal, 100));
+            EnsureCraftingRecipe(650, items.ElderRuneBar, (Ingredient)items.RuneBar, Ingredient(items.Eldrium, 15), Ingredient(items.Coal, 110));
+            EnsureCraftingRecipe(700, items.ElderDragonBar, (Ingredient)items.DragonBar, Ingredient(items.Eldrium, 20), Ingredient(items.Coal, 120));
+            EnsureCraftingRecipe(750, items.ElderAbraxasBar, (Ingredient)items.AbraxasBar, Ingredient(items.Eldrium, 25), Ingredient(items.Coal, 130));
+            EnsureCraftingRecipe(800, items.ElderPhantomBar, (Ingredient)items.PhantomBar, Ingredient(items.Eldrium, 30), Ingredient(items.Coal, 140));
+            EnsureCraftingRecipe(850, items.ElderLioniteBar, (Ingredient)items.LioniteBar, Ingredient(items.Eldrium, 35), Ingredient(items.Coal, 160));
+            EnsureCraftingRecipe(900, items.ElderEthereumBar, (Ingredient)items.EthereumBar, Ingredient(items.Eldrium, 40), Ingredient(items.Coal, 180));
+            EnsureCraftingRecipe(950, items.ElderAtlarusBar, (Ingredient)items.AtlarusBar, Ingredient(items.Eldrium, 50), Ingredient(items.Coal, 200));
+            #endregion
+
+            #region Cooking
+            // cooking fish
+            EnsureCookingRecipe(1, items.CookedSprat, items.BurnedSprat, 0.2, 1, items.Sprat);
+            EnsureCookingRecipe(5, items.CookedShrimp, items.BurnedShrimp, 0.2, 1, items.Shrimp);
+            EnsureCookingRecipe(20, items.CookedRedSeaBass, items.BurnedRedSeaBass, 0.2, 1, items.RedSeaBass);
+            EnsureCookingRecipe(50, items.CookedBass, items.BurnedBass, 0.2, 1, items.Bass);
+            EnsureCookingRecipe(70, items.CookedPerch, items.BurnedPerch, 0.2, 1, items.Perch);
+            EnsureCookingRecipe(100, items.CookedSalmon, items.BurnedSalmon, 0.2, 1, items.Salmon);
+            EnsureCookingRecipe(130, items.CookedCrab, items.BurnedCrab, 0.2, 1, items.Crab);
+            EnsureCookingRecipe(170, items.CookedLobster, items.BurnedLobster, 0.2, 1, items.Lobster);
+            EnsureCookingRecipe(220, items.CookedBlueLobster, items.BurnedBlueLobster, 0.2, 1, items.BlueLobster);
+            EnsureCookingRecipe(280, items.CookedSwordfish, items.BurnedSwordfish, 0.2, 1, items.Swordfish);
+            EnsureCookingRecipe(350, items.CookedPufferFish, items.BurnedPufferFish, 0.2, 1, items.PufferFish);
+            EnsureCookingRecipe(420, items.CookedOctopus, items.BurnedOctopus, 0.2, 1, items.Octopus);
+            EnsureCookingRecipe(500, items.CookedMantaRay, items.BurnedMantaRay, 0.2, 1, items.MantaRay);
+            EnsureCookingRecipe(700, items.CookedKraken, items.BurnedKraken, 0.2, 1, items.Kraken);
+
+            EnsureCookingRecipeGuaranteed(500, items.RedWine, Ingredient(items.Grapes, 10));
+
+            EnsureCookingRecipeGuaranteed(30,
+                "Spice Mix", "A masterful medley of choice spices, this mix is a culinary revelation. The robust warmth of cumin mingles with the golden glow of turmeric, while the citrusy zing of coriander dances with the deep richness of black pepper. A hint of paprika adds an extra layer of complexity. Together, these ingredients work in concert, seasoned by the foundational touch of salt. A must-have in every kitchen, ensuring every dish sings with flavor.",
+                items.SpiceMix, items.Salt, items.BlackPepper, items.Cumin, items.Coriander, items.Paprika, items.Turmeric);
+
+            EnsureCookingRecipeGuaranteed(850, 10,
+                "Golden Leaf", "A pinnacle of culinary luxury, the Golden Leaf is meticulously crafted from the purest gold nuggets. Each leaf, thin and delicate, gleams with an unmatched opulence. Its creation is a testament to the art of gastronomy, allowing chefs to garnish their creations with a touch of the sublime. Beyond its shimmering beauty, the Golden Leaf symbolizes the zenith of culinary achievement, turning any dish into a masterpiece of elegance and prestige. For those who seek to dazzle and awe, no ingredient is more coveted.",
+                items.Gold);
+
+            EnsureCookingRecipe(900,
+                "Leviathan's Royal Stew", "This is a hearty stew that combines the tender meat of the Leviathan with a variety of other ingredients to create a flavorful dish worthy of its namesake.",
+                items.LeviathansRoyalStew,
+                items.MuddledLeviathanBroth, 0.5, 1,
+                items.Leviathian, items.Water, items.SpiceMix, items.Onion, items.Tomato, items.Flour, items.Mushroom, items.CookedBeef, items.Butter, items.RedWine);
+
+            EnsureCookingRecipe(999,
+                "Poseidon's Guardian Feast", "A luxurious dish that showcases the divine nature of Poseidon's Guardian. It involves a series of preparations that results in a meal fit for a deity.",
+                items.PoseidonsGuardianFeast,
+                items.RuinedGuardianDelight, 0.5, 1,
+                items.PoseidonsGuardian, items.SpiceMix, items.Milk, items.Eggs, items.CookedChicken, items.Cheese, items.Tomato, items.Onion, items.Flour, items.GoldenLeaf);
+            #endregion
+        }
+
+        public ItemRecipe EnsureCookingRecipe(int levelRequirement, string name, string description, Item success, Item failed, double minSuccessRate, double maxSuccessRate, params Item[] ingredients)
+        {
+            return EnsureRecipe(RavenNest.Models.Skill.Cooking, levelRequirement, 1, name, description, success, failed, minSuccessRate, maxSuccessRate, Ingredient.FromArray(ingredients));
+        }
+        public ItemRecipe EnsureCookingRecipeGuaranteed(int levelRequirement, Item success, params Ingredient[] ingredients)
+        {
+            return EnsureRecipe(RavenNest.Models.Skill.Cooking, levelRequirement, 1, success.Name, success.Description, success, null, 1, 1, ingredients);
+        }
+
+        public ItemRecipe EnsureCookingRecipeGuaranteed(int levelRequirement, int amount, string name, string description, Item success, params Item[] ingredients)
+        {
+            return EnsureRecipe(RavenNest.Models.Skill.Cooking, levelRequirement, amount, name, description, success, null, 1, 1, Ingredient.FromArray(ingredients));
+        }
+
+        public ItemRecipe EnsureCookingRecipeGuaranteed(int levelRequirement, string name, string description, Item success, params Item[] ingredients)
+        {
+            return EnsureRecipe(RavenNest.Models.Skill.Cooking, levelRequirement, 1, name, description, success, null, 1, 1, Ingredient.FromArray(ingredients));
+        }
+
+        public ItemRecipe EnsureCookingRecipe(int levelRequirement, Item success, Item failed, double minSuccessRate, double maxSuccessRate, params Item[] ingredients)
+        {
+            return EnsureRecipe(RavenNest.Models.Skill.Cooking, levelRequirement, 1, null, null, success, failed, minSuccessRate, maxSuccessRate, Ingredient.FromArray(ingredients));
+        }
+
+        public ItemRecipe EnsureAlchemyRecipe(int levelRequirement, Item target, params Item[] ingredients)
+        {
+            return EnsureRecipe(RavenNest.Models.Skill.Alchemy, levelRequirement, 1, null, null, target, null, 1, 1, Ingredient.FromArray(ingredients));
+        }
+
+        public ItemRecipe EnsureCraftingRecipe(int levelRequirement, Item target, params Item[] ingredients)
+        {
+            return EnsureRecipe(RavenNest.Models.Skill.Crafting, levelRequirement, 1, null, null, target, null, 1, 1, Ingredient.FromArray(ingredients));
+        }
+
+        public ItemRecipe EnsureCraftingRecipe(int levelRequirement, Item target, params Ingredient[] ingredients)
+        {
+            return EnsureRecipe(RavenNest.Models.Skill.Crafting, levelRequirement, 1, null, null, target, null, 1, 1, ingredients);
+        }
+
+        public ItemRecipe EnsureRecipe(RavenNest.Models.Skill skill, int levelRequirement, int amount,
+            string name, string description,
+            Item target, Item failed, double minSuccessRate, double maxSuccessRate, params Ingredient[] ingredients)
+        {
+            var fixedSuccessRate = minSuccessRate == maxSuccessRate;
+            var recipe = GetItemRecipeByItem(target.Id);
+            if (recipe != null)
+            {
+                if (!string.IsNullOrEmpty(name) && name != recipe.Name) recipe.Name = name;
+                if (!string.IsNullOrEmpty(description) && description != recipe.Description) recipe.Description = name;
+                if (recipe.Amount != amount) recipe.Amount = amount;
+                if (recipe.RequiredLevel != levelRequirement) recipe.RequiredLevel = levelRequirement;
+                if (recipe.MinSuccessRate != minSuccessRate) recipe.MinSuccessRate = minSuccessRate;
+                if (recipe.MaxSuccessRate != maxSuccessRate) recipe.MaxSuccessRate = maxSuccessRate;
+                recipe.FixedSuccessRate = fixedSuccessRate;
+
+                var existingIngredients = GetRecipeIngredients(recipe.Id);
+                if (existingIngredients.Count != ingredients.Length || existingIngredients.Sum(x => x.Amount) != ingredients.Sum(x => x.Amount))
+                {
+                    // update requirements, easiest is to clear em out and add them again.
+                    foreach (var i in existingIngredients) Remove(i);
+                    foreach (var r in ingredients) AddRecipeIngredient(recipe, r);
+                }
+
+                return recipe;
+            }
+            // todo: check if we have the same ingredients, if not then clear out all ingredients and replace it with the ones provided.
+            //       that way we can easily update things.
+
+            recipe = new ItemRecipe
+            {
+                Id = Guid.NewGuid(),
+                ItemId = target.Id,
+                Name = target.Name,
+                Description = target.Description,
+                PreparationTime = 0,
+                Amount = amount,
+                FailedItemId = failed?.Id,
+                RequiredLevel = levelRequirement,
+                FixedSuccessRate = fixedSuccessRate,
+                MaxSuccessRate = maxSuccessRate,
+                MinSuccessRate = minSuccessRate,
+                RequiredSkill = (int)skill,
+            };
+
+            if (!string.IsNullOrEmpty(name)) recipe.Name = name;
+            if (!string.IsNullOrEmpty(description)) recipe.Description = name;
+
+            Add(recipe);
+
+            foreach (var r in ingredients) AddRecipeIngredient(recipe, r);
+
+            return recipe;
+        }
+
+        private void AddRecipeIngredient(ItemRecipe recipe, Ingredient r)
+        {
+            Add(new ItemRecipeIngredient
+            {
+                Id = Guid.NewGuid(),
+                Amount = r.Amount,
+                RecipeId = recipe.Id,
+                ItemId = r.Item.Id
+            });
+        }
+
         private void EnsureCraftingRequirements(EntitySet<Item> items)
         {
+            //return;
 
+            // ensure we have all base items
+            var knownItems = GetKnownItems();
+
+            return;
+            /*
+                Convert existing crafting requirements to new item recipes.
+             */
+
+            /*
+                We do not want to remove existing crafting requirements yet as it will still be used in previous version
+                Make sure we copy everything over. don't modify anything.
+             */
+
+            foreach (var item in GetItems())
+            {
+
+
+                var craftingRequirement = GetCraftingRequirements(item.Id);
+                if (craftingRequirement.Count > 0)
+                {
+                    if (item.RequiredCraftingLevel < 1000 || item.Craftable)
+                    {
+                        CreateItemRecipe(item, craftingRequirement, knownItems);
+                    }
+
+                    //foreach (var req in craftingRequirement)
+                    //{
+                    //    Remove(req);
+                    //}
+                }
+
+                //item.RequiredCraftingLevel = 1000;
+                //item.Craftable = false;
+            }
+        }
+
+
+
+        private void CreateItemRecipe(
+            Item item, IReadOnlyList<ItemCraftingRequirement> craftingRequirement,
+            TypedItems items)
+        {
+            var existingRecipe = this.itemRecipes[nameof(Item), item.Id];
+            if (existingRecipe != null && existingRecipe.Count > 0)
+            {
+                // we already have a recipe for this one. No need to create one.
+                return;
+            }
+
+            var recipe = new ItemRecipe();
+            recipe.Id = Guid.NewGuid();
+            recipe.Name = item.Name;
+            recipe.ItemId = item.Id;
+            recipe.Description = item.Description;
+            recipe.PreparationTime = 0; // instant for now.
+            recipe.RequiredLevel = item.RequiredCraftingLevel;
+            // 100 % success rate now.
+            recipe.MinSuccessRate = 1;
+            recipe.MaxSuccessRate = 1;
+            recipe.FixedSuccessRate = true;
+            recipe.RequiredSkill = (int)RavenNest.Models.Skill.Crafting;
+
+            Add(recipe);
+
+            // for basic items that used to require ore or wood, we will need to instead use bars and logs
+
+            //if (item.WoodCost > 0) // we convert 10 to 1
+            //{
+            //    AddIngredient(recipe, items.Logs, (int)(item.WoodCost / 10));
+            //}
+            //if (item.OreCost > 0)
+            //{
+            //    AddIngredient(recipe, items.Logs, (int)(item.WoodCost / 10));
+            //}
+
+            foreach (var r in craftingRequirement)
+            {
+                var ingredient = new ItemRecipeIngredient();
+                ingredient.Id = Guid.NewGuid();
+                ingredient.RecipeId = recipe.Id;
+                ingredient.Amount = r.Amount;
+                ingredient.ItemId = r.ResourceItemId;
+                Add(ingredient);
+            }
+
+            //var resx = GetKnownItems();
+
+            //if (item.OreCost > 0)
+            //{
+            //}
+            //if (item.WoodCost > 0)
+            //{
+            //}
+        }
+
+        private void AddIngredient(ItemRecipe recipe, Item item, int amount)
+        {
+            amount = Math.Max(1, amount);
+            Add(new ItemRecipeIngredient
+            {
+                Id = Guid.NewGuid(),
+                RecipeId = recipe.Id,
+                ItemId = item.Id,
+                Amount = amount
+            });
         }
 
         private void AddOrReplace(IReadOnlyList<ItemCraftingRequirement> requirements, ItemCraftingRequirement itemCraftingRequirement)
@@ -2822,7 +3566,11 @@ namespace RavenNest.BusinessLogic.Data
         {
             return itemRecipes[recipeId];
         }
-
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ItemRecipe GetItemRecipeByItem(Guid itemId)
+        {
+            return itemRecipes[nameof(Item), itemId].FirstOrDefault();
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<ItemRecipeIngredient> GetRecipeIngredients(Guid recipeId)
@@ -3540,7 +4288,14 @@ namespace RavenNest.BusinessLogic.Data
             var itemType = (ItemType)item.Type;
             var itemCategory = (ItemCategory)item.Category;
 
-            if (itemType == ItemType.Coins || itemType == ItemType.Mining || itemType == ItemType.Woodcutting || itemType == ItemType.Fishing)
+            if (itemCategory == ItemCategory.Resource ||
+                itemType == ItemType.Coins ||
+                itemType == ItemType.Mining ||
+                itemType == ItemType.Woodcutting ||
+                itemType == ItemType.Fishing ||
+                itemType == ItemType.Crafting ||
+                itemType == ItemType.Cooking ||
+                itemType == ItemType.Alchemy)
                 return ItemFilter.Resources;
 
             if (itemType == ItemType.OneHandedSword || itemType == ItemType.TwoHandedSword)
@@ -3591,4 +4346,281 @@ namespace RavenNest.BusinessLogic.Data
     }
 
     #endregion
+
+
+    public struct Ingredient
+    {
+        public Item Item;
+        public int Amount;
+
+        public static explicit operator Ingredient(Item item)
+        {
+            return new Ingredient
+            {
+                Item = item,
+                Amount = 1
+            };
+        }
+
+        public static Ingredient[] FromArray(Item[] i)
+        {
+            var ingr = new List<Ingredient>();
+            var req = i.GroupBy(x => x.Id);
+            foreach (var r in req)
+            {
+                ingr.Add(new Ingredient
+                {
+                    Amount = r.Count(),
+                    Item = r.FirstOrDefault()
+                });
+            }
+            return ingr.ToArray();
+        }
+    }
+
+    public class TypedItems
+    {
+        // Woodcutting
+        public Item Logs;
+        public Item BristleLogs;
+        public Item GlowbarkLogs;
+        public Item MystwoodLogs;
+        public Item SandriftLogs;
+        public Item PineheartLogs;
+        public Item EbonshadeLogs;
+        public Item IronbarkLogs;
+        public Item FrostbiteLogs;
+        public Item DragonwoodLogs;
+        public Item GoldwillowLogs;
+        public Item ShadowoakLogs;
+
+
+        // New drops for alchemy
+        public Item Hearthstone;
+        public Item WanderersGem;
+        public Item IronEmblem;
+        public Item KyoCrystal;
+        public Item HeimRune;
+        public Item AtriasFeather;
+        public Item EldarasMark;
+        public Item Realmstone;
+
+        // Gathering - Cooking
+        public Item Water;
+        public Item Mushroom;
+        public Item BlackPepper;
+        public Item Salt;
+
+        // Gathering - Alchemy
+        public Item Yarrow;
+        public Item Hemp;
+        public Item Sand;
+        public Item Resin;
+
+
+        public Item RedClover;
+        public Item Comfrey;
+        public Item Sage;
+        public Item Mugwort;
+        public Item Lavender;
+        public Item Goldenrod;
+        public Item Elderflower;
+        public Item Wormwood;
+        public Item Valerian;
+        public Item Skullcap;
+        public Item Chamomile;
+        public Item LemonBalm;
+
+        // Farming - Cooking
+        public Item Wheat;
+        public Item Tomato;
+        public Item Milk;
+        public Item Eggs;
+        public Item RawChicken;
+        public Item RawPork;
+        public Item RawBeef;
+        public Item Potato;
+        public Item Onion;
+        public Item Cumin;
+        public Item Coriander;
+        public Item Paprika;
+        public Item Turmeric;
+        public Item Apple;
+        public Item Carrot;
+        public Item Garlic;
+        public Item Grapes;
+        public Item CacaoBeans;
+        public Item Truffle;
+
+        // Fishing
+        public Item Sprat;
+        public Item Shrimp;
+        public Item RedSeaBass;
+        public Item Bass;
+        public Item Perch;
+        public Item Salmon;
+        public Item Crab;
+        public Item Lobster;
+        public Item BlueLobster;
+        public Item Swordfish;
+        public Item PufferFish;
+        public Item Octopus;
+        public Item MantaRay;
+        public Item Kraken;
+        public Item Leviathian;
+        public Item PoseidonsGuardian;
+
+        // Cooking
+        public Item Flour;
+        public Item Butter;
+        public Item Cheese;
+        public Item SpiceMix;
+        public Item Ham;
+        public Item Cacao;
+        public Item GoldenLeaf;
+        public Item Chocolate;
+
+        // Cooking Recipes
+        public Item RedWine;
+        public Item HamSandwich;
+        public Item CookedChicken;
+        public Item CookedBeef;
+        public Item CookedPork;
+        public Item CookedChickenLeg;
+        public Item Steak;
+        public Item ApplePie;
+        public Item Bread;
+        public Item Skewers;
+        public Item ChocolateChipCookies;
+
+        // Fish
+        public Item CookedSprat;
+        public Item CookedShrimp;
+        public Item CookedRedSeaBass;
+        public Item CookedBass;
+        public Item CookedPerch;
+        public Item CookedSalmon;
+        public Item CookedCrab;
+        public Item CookedLobster;
+        public Item CookedBlueLobster;
+        public Item CookedSwordfish;
+        public Item CookedPufferFish;
+        public Item CookedOctopus;
+        public Item CookedMantaRay;
+        public Item CookedKraken;
+        public Item LeviathansRoyalStew;
+        public Item PoseidonsGuardianFeast;
+
+        // Misc
+        public Item BurnedChicken;
+        public Item BurnedBeef;
+        public Item BurnedPork;
+        public Item BurnedChickenLeg;
+        public Item BurnedSteak;
+        public Item BurnedApplePie;
+        public Item BurnedBread;
+        public Item BurnedSkewers;
+        public Item BurnedChocolateChipCookies;
+        // Fish
+        public Item BurnedSprat;
+        public Item BurnedShrimp;
+        public Item BurnedRedSeaBass;
+        public Item BurnedBass;
+        public Item BurnedPerch;
+        public Item BurnedSalmon;
+        public Item BurnedCrab;
+        public Item BurnedLobster;
+        public Item BurnedBlueLobster;
+        public Item BurnedSwordfish;
+        public Item BurnedPufferFish;
+        public Item BurnedOctopus;
+        public Item BurnedMantaRay;
+        public Item BurnedKraken;
+
+        public Item MuddledLeviathanBroth;
+        public Item RuinedGuardianDelight;
+
+        // Alchemy Recipes
+        public Item Paper;
+        // public Item DragonwoodPaper; // maybe?
+
+        public Item Vial;
+        public Item String;
+        public Item WoodPulp;
+
+        public Item HealthPotion;
+        public Item GreatHealthPotion;
+        public Item RegenPotion;
+        public Item DefensePotion;
+        public Item GreatDefensePotion;
+        public Item StrengthPotion;
+        public Item GreatStrengthPotion;
+        public Item MagicPotion;
+        public Item GreatMagicPotion;
+        public Item RangedPotion;
+        public Item GreatRangedPotion;
+        public Item HealingPotion;
+        public Item GreatHealingPotion;
+
+
+        public Item TomeOfHome;
+        public Item TomeOfAway;
+        public Item TomeOfIronhill;
+        public Item TomeOfKyo;
+        public Item TomeOfHeim;
+        public Item TomeOfAtria;
+        public Item TomeOfEldara;
+        public Item TomeOfTeleportation;
+
+        // Mining
+        public Item CopperOre;
+        public Item TinOre;
+        public Item IronOre;
+        public Item Coal;
+        public Item Silver;
+        public Item Gold;
+        public Item MithrilOre;
+        public Item AdamantiteOre;
+        public Item RuneOre;
+        public Item DragonOre;
+        public Item AbraxasOre;
+        public Item PhantomOre;
+        public Item LioniteOre;
+        public Item EthereumOre;
+        public Item AncientOre;
+        public Item AtlarusOre;
+        public Item Eldrium;
+
+        // Crafting
+        public Item BronzeBar;
+        public Item IronBar;
+        public Item SteelBar;
+        public Item MithrilBar;
+        public Item AdamantiteBar;
+        public Item RuneBar;
+        public Item DragonBar;
+        public Item AbraxasBar;
+        public Item PhantomBar;
+        public Item LioniteBar;
+        public Item EthereumBar;
+        public Item AncientBar;
+        public Item AtlarusBar;
+
+        public Item ElderBronzeBar;
+        public Item ElderIronBar;
+        public Item ElderSteelBar;
+        public Item ElderMithrilBar;
+        public Item ElderAdamantiteBar;
+        public Item ElderRuneBar;
+        public Item ElderDragonBar;
+        public Item ElderAbraxasBar;
+        public Item ElderPhantomBar;
+        public Item ElderLioniteBar;
+        public Item ElderEthereumBar;
+        public Item ElderAncientBar;
+        public Item ElderAtlarusBar;
+
+        public Item SilverBar;
+        public Item GoldBar;
+    }
 }

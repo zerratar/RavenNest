@@ -33,13 +33,15 @@
         Farming = 25,
         Gathering = 33,
 
+        Crafting = 34,
+        Cooking = 35,
+        Alchemy = 36,
+
         Arrows = 26,
         Magic = 27,
         StreamerToken = 28,
         Scroll = 29,
 
-
-        // Appearance Again. TEEHEEE
         Hat = 30,
         Mask = 31,
         HeadCovering = 32
