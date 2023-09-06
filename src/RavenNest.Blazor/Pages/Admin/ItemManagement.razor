@@ -242,77 +242,65 @@
                                             <InputNumber id="shopBuyPrice" @bind-Value="editedItem.ShopBuyPrice" />
                                         </div>
                                     </div>
+                                    @*
+                        <div class="edit-section crafting">
+                        <h2>Crafting Requirements</h2>
+                        <div class="input-row inline">
+                        <label class="input-label">Is Craftable?</label>
+                        <InputCheckbox id="craftable" @bind-Value="editedItem.Craftable" />
+                        </div>
+                        @if (editedItem.Craftable)
+                        {
+                        <div class="input-row">
+                        <label class="input-label">Required Crafting Level</label>
+                        <InputNumber id="craftingLevel" @bind-Value="editedItem.RequiredCraftingLevel" />
+                        </div>
+                        <div class="input-row">
+                        <label class="input-label">Required Cooking Level</label>
+                        <InputNumber id="craftingLevel" @bind-Value="editedItem.RequiredCookingLevel" />
+                        </div>
+                        <div class="crafting-resource-requirements">
+                        <div class="input-row">
+                        <label class="input-label">Ore Cost (WILL BE REMOVED!!)</label>
+                        <InputNumber id="oreCost" @bind-Value="editedItem.OreCost" />
+                        </div>
+                        <div class="input-row">
+                        <label class="input-label">Wood Cost (WILL BE REMOVED!!)</label>
+                        <InputNumber id="woodCost" @bind-Value="editedItem.WoodCost" />
+                        </div>
+                        </div>
+                        <div class="crafting-item-requirements">
+                        @if (editedItem.CraftingRequirements != null)
+                        {
+                        foreach (var req in editedItem.CraftingRequirements)
+                        {
+                        <div class="crafting-requirement">
 
-                                    <div class="edit-section crafting">
-                                        <h2>Crafting Requirements</h2>
-                                        <div class="input-row inline">
-                                            <label class="input-label">Is Craftable?</label>
-                                            <InputCheckbox id="craftable" @bind-Value="editedItem.Craftable" />
-                                        </div>
+                        <div class="input-row">
+                        <label class="input-label">Resource Item</label>
+                        <InputSelect @bind-Value="req.ResourceItemId">
+                        @foreach (var item in items.Where(x => x.Category == ItemCategory.Resource))
+                        {
+                        <option value="@item.Id">@item.Name</option>
+                        }
+                        </InputSelect>
+                        </div>
 
-                                        @if (editedItem.Craftable)
-                                        {
-                                            <div class="input-row">
-                                                <label class="input-label">Required Crafting Level</label>
-                                                <InputNumber id="craftingLevel" @bind-Value="editedItem.RequiredCraftingLevel" />
-                                            </div>
+                        <div class="input-row">
+                        <label class="input-label">Amount</label>
+                        <InputNumber @bind-Value="req.Amount" />
+                        </div>
 
-                                            <div class="input-row">
-                                                <label class="input-label">Required Cooking Level</label>
-                                                <InputNumber id="craftingLevel" @bind-Value="editedItem.RequiredCookingLevel" />
-                                            </div>
-
-
-                                            <div class="crafting-resource-requirements">
-
-                                                <div class="input-row">
-                                                    <label class="input-label">Ore Cost (WILL BE REMOVED!!)</label>
-                                                    <InputNumber id="oreCost" @bind-Value="editedItem.OreCost" />
-                                                </div>
-
-
-                                                <div class="input-row">
-                                                    <label class="input-label">Wood Cost (WILL BE REMOVED!!)</label>
-                                                    <InputNumber id="woodCost" @bind-Value="editedItem.WoodCost" />
-                                                </div>
-
-
-                                            </div>
-
-                                            <div class="crafting-item-requirements">
-                                                @if (editedItem.CraftingRequirements != null)
-                                                {
-                                                    foreach (var req in editedItem.CraftingRequirements)
-                                                    {
-                                                        <div class="crafting-requirement">
-
-                                                            <div class="input-row">
-                                                                <label class="input-label">Resource Item</label>
-                                                                <InputSelect @bind-Value="req.ResourceItemId">
-                                                                    @foreach (var item in items.Where(x => x.Category == ItemCategory.Resource))
-                                                                    {
-                                                                        <option value="@item.Id">@item.Name</option>
-                                                                    }
-                                                                </InputSelect>
-                                                            </div>
-
-                                                            <div class="input-row">
-                                                                <label class="input-label">Amount</label>
-                                                                <InputNumber @bind-Value="req.Amount" />
-                                                            </div>
-
-                                                            <div class="btn delete-crafting-requirement" @onclick="(() => RemoveCraftingRequirement(req))">
-                                                                <i class="fas fa-trash"></i>
-                                                            </div>
-                                                        </div>
-                                                    }
-                                                }
-
-                                            </div>
-
-                                            <div class="btn add-crafting-requirement" @onclick="AddCraftingRequirement">Add Crafting Requirement</div>
-                                        }
-                                    </div>
+                        <div class="btn delete-crafting-requirement" @onclick="(() => RemoveCraftingRequirement(req))">
+                        <i class="fas fa-trash"></i>
+                        </div>
+                        </div>
+                        }
+                        }
+                        </div>
+                        <div class="btn add-crafting-requirement" @onclick="AddCraftingRequirement">Add Crafting Requirement</div>
+                        }
+                        </div>*@
                                 </div>
                                 <div class="modal-buttons">
                                     <button type="submit" class="btn">Save</button>
@@ -344,7 +332,14 @@
                 <span class="item-filter-text">Swords</span>
                 <i class="fa-sharp fa-solid fa-sword"></i>
             </button>
-
+            <button class="item-filter @(itemFilter == ItemFilter.Axes ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Axes)">
+                <span class="item-filter-text">Axes</span>
+                <i class="fa-sharp fa-solid fa-axe"></i>
+            </button>
+            <button class="item-filter @(itemFilter == ItemFilter.Spears ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Spears)">
+                <span class="item-filter-text">Spears</span>
+                <i class="fa-solid fa-scythe"></i>
+            </button>
             <button class="item-filter @(itemFilter == ItemFilter.Bows ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Bows)">
                 <span class="item-filter-text">Bows</span>
                 <i class="fa-sharp fa-solid fa-bow-arrow"></i>
@@ -375,15 +370,49 @@
                 <i class="fa-sharp fa-solid fa-dog"></i>
             </button>
 
-            <button class="item-filter @(itemFilter == ItemFilter.Resources ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Resources)">
-                <span class="item-filter-text">Resources</span>
-                <i class="fa-sharp fa-solid fa-hammer"></i>
-            </button>
-
-
             <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
                 <span class="item-filter-text">Scrolls</span>
                 <i class="fa-sharp fa-solid fa-scroll"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Woodcutting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Woodcutting)">
+                <span class="item-filter-text">Woodcutting</span>
+                <i class="fa-solid fa-tree"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Mining ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Mining)">
+                <span class="item-filter-text">Mining</span>
+                <i class="fa-solid fa-pickaxe"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Fishing ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Fishing)">
+                <span class="item-filter-text">Fishing</span>
+                <i class="fa-sharp fa-solid fa-fishing-rod"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Farming ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Farming)">
+                <span class="item-filter-text">Farming</span>
+                <i class="fa-solid fa-wheat"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Gathering ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Gathering)">
+                <span class="item-filter-text">Gathering</span>
+                <i class="fa-solid fa-mushroom"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Crafting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Crafting)">
+                <span class="item-filter-text">Crafting</span>
+                <i class="fa-sharp fa-solid fa-hammer"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Cooking ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Cooking)">
+                <span class="item-filter-text">Cooking</span>
+                <i class="fa-sharp fa-solid fa-user-chef"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Alchemy ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Alchemy)">
+                <span class="item-filter-text">Alchemy</span>
+                <i class="fa-sharp fa-solid fa-flask-round-potion"></i>
             </button>
         </div>
 
@@ -397,9 +426,8 @@
                     <th class="category">Category</th>
                     <th class="type">Item Type</th>
                     <th class="material">Material Type</th>
-                    <th class="required-crafting-level">Crafting Level</th>
                     <th class="shop-sell-price">Vendor Price</th>
-                    <th class="crafting-requirement">Crafting Requirements</th>
+                    <th class="crafting-requirement">Recipe</th>
                 </tr>
             </thead>
             <tbody>
@@ -483,13 +511,45 @@
                         <td class='item category'>@item.Category</td>
                         <td class='item type'>@item.Type</td>
                         <td class='item material'>@item.Material</td>
-                        <td class='item required-crafting-level'>@item.RequiredCraftingLevel</td>
                         <td class='item shop-sell-price'>@item.ShopSellPrice&nbsp;<img class="ravenCoins" src="/favicon.png" /></td>
-                        <td class='item crafting-requirement'>
-                            @foreach (var req in item.CraftingRequirements)
-                            {
-                                var reqItem = availableItems.First(x => x.Id == req.ResourceItemId);
-                                <span>@(reqItem.Name) x@(req.Amount)&nbsp;</span>
+                        <td class='item recipe'>
+                            @{
+                                var itemRecipe = ItemService.GetItemRecipe(item.Id);
+                                if (itemRecipe != null)
+                                {
+                                    <div class="recipe-details">
+                                        <div class="crafting-level">
+                                            <label>@itemRecipe.RequiredSkill.ToString() Level </label>
+                                            <span class='crafting-level-requirement'>@itemRecipe.RequiredLevel</span>
+                                        </div>
+                                        <div class="crafting-ingredients">
+                                            @{
+                                                var ingredients = itemRecipe.Ingredients;
+                                                foreach (var req in ingredients)
+                                                {
+                                                    var reqItem = availableItems.First(x => x.Id == req.ItemId);
+                                                    <span><a href="/items/@reqItem.Id">@(reqItem.Name)</a> x@(req.Amount)&nbsp;</span>
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                }
+
+                                // check if part of recipes.
+                                // check if this is part of a recipe, if so, show the recipe
+                                <div class="recipe-list">
+                                    @{
+                                        var itemRecipes = ItemService.GetItemRecipesByIngredient(item.Id);
+                                        if (itemRecipes != null && itemRecipes.Count > 0)
+                                        {
+                                            <label class='recipe-list-label'>Ingredient in</label>
+                                            @foreach (var r in itemRecipes)
+                                            {
+                                                <span><a href="/items/@r.ItemId">@(r.Name)</a>&nbsp;</span>
+                                            }
+                                        }
+                                    }
+                                </div>
                             }
                         </td>
                         <td class='item actions'>
@@ -651,7 +711,6 @@
         editedItem = new ItemEdit()
             {
                 Id = id,
-                CraftingRequirements = new List<ItemCraftingRequirement>(),
             };
 
         CreateContext();
@@ -684,12 +743,6 @@
         return editedItem.Category == ItemCategory.Ring || editedItem.Category == ItemCategory.Amulet || editedItem.Category == ItemCategory.Weapon || editedItem.Category == ItemCategory.Armor || editedItem.Category == ItemCategory.Skin;
     }
 
-    private async Task RemoveCraftingRequirement(ItemCraftingRequirement req)
-    {
-        if (editedItem == null) return;
-        editedItem.CraftingRequirements.Remove(req);
-        StateHasChanged();
-    }
 
     private async Task HandleRemoveItem(Guid itemId)
     {
@@ -738,10 +791,6 @@
         }
     }
 
-    private void AddCraftingRequirement()
-    {
-        editedItem.CraftingRequirements.Add(new ItemCraftingRequirement());
-    }
 
     private async Task LoadItems()
     {

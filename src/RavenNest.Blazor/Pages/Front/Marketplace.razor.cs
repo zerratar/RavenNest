@@ -106,11 +106,6 @@ namespace RavenNest.Blazor.Pages.Front
             SetSorting("material");
             await SortBy((m, x) => ItemService.GetMaterialIndex(x));
         }
-        private async void SortByCraftingLevel()
-        {
-            SetSorting("crafting");
-            await SortBy((m, x) => x.RequiredCraftingLevel);
-        }
         private async void SortByVendorPrice()
         {
             SetSorting("vendor");

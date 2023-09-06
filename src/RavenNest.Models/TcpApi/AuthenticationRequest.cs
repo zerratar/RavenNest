@@ -100,31 +100,4 @@ namespace RavenNest.Models.TcpApi
         public short Level { get; set; }
         public double Experience { get; set; }
     }
-
-    public enum Island : byte
-    {
-        Ferry = 0,
-        Home = 1,
-        Away = 2,
-        Ironhill = 3,
-        Kyo = 4,
-        Heim = 5,
-        Atria = 6,
-        Eldara = 7
-    }
-
-    [Flags]
-    public enum CharacterFlags : int
-    {
-        None = 0,
-        InRaid = /*         */ 0b000000001,
-        InArena = /*        */ 0b000000010,
-        InDungeon = /*      */ 0b000000100,
-        InOnsen = /*        */ 0b000001000,
-        InDuel = /*         */ 0b000010000,
-        InStreamRaidWar = /**/ 0b000100000,
-        InDungeonQueue = /* */ 0b001000000,
-        OnFerry = /*        */ 0b010000000,
-        IsCaptain = /*      */ 0b100000000,
-    }
 }

@@ -31,17 +31,12 @@ namespace RavenNest.Models
         public string FemalePrefab { get; set; }
         public bool IsGenericModel { get; set; }
 
-        public bool Craftable { get; set; }
-        public int RequiredCraftingLevel { get; set; }
-        public int RequiredCookingLevel { get; set; }
-
-        [Obsolete("Should be removed, use crafting requirement instead.")] public long WoodCost { get; set; }
-        [Obsolete("Should be removed, use crafting requirement instead.")] public long OreCost { get; set; }
         public long ShopBuyPrice { get; set; }
         public long ShopSellPrice { get; set; }
-        public List<ItemCraftingRequirement> CraftingRequirements { get; set; }
+
+        //[Obsolete("Do not use, use Item Recipes instead.")] public List<ItemCraftingRequirement> CraftingRequirements { get; set; }
         public bool Soulbound { get; set; }
-        
+
         public DateTime? Modified { get; set; }
     }
 }

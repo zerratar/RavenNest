@@ -243,7 +243,7 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         private string[] BuildInsertQuery(
-            QueryBuilder qb, IReadOnlyList<IEntity> entities, int batchSize = 50)
+            QueryBuilder qb, IReadOnlyList<IEntity> entities, int batchSize = 1000)
         {
             var queries = new List<string>();
             var i = 0;

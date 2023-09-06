@@ -24,7 +24,10 @@
 
         Food,
         Potions,
-        Scrolls
+        Scrolls,
+
+        Axes,
+        Spears
     }
 
     public enum SortDirection

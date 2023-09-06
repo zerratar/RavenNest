@@ -19,8 +19,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             UpdateResourceGain(gameData, session, character, resources =>
             {
                 session.Updated = DateTime.UtcNow;
-
-                ++resources.Ore;
+                
                 var villageResources = GetVillageResources(gameData, session);
                 if (villageResources != null)
                 {

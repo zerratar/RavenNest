@@ -16,7 +16,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         {
             UpdateResourceGain(gameData, session, character, resources =>
             {
-                ++resources.Wood;
                 var villageResources = GetVillageResources(gameData, session);
                 if (villageResources != null)
                 {

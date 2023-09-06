@@ -264,12 +264,7 @@ namespace RavenNest.BusinessLogic.Extensions
         public static RavenNest.Models.Item Map(GameData gameData, Item item)
         {
             if (item == null) return null;
-            var mapped = DataMapper.Map<RavenNest.Models.Item>(item);
-            mapped.CraftingRequirements = gameData.GetCraftingRequirements(item.Id)
-                .Select(x => DataMapper.Map<RavenNest.Models.ItemCraftingRequirement>(x))
-                .ToList();
-
-            return mapped;
+            return DataMapper.Map<RavenNest.Models.Item>(item);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -414,6 +409,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 State = Map(characterState),
                 InventoryItems = invItems,
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
+                StatusEffects = Map(gameData.GetCharacterStatusEffects(character.Id)),
                 ActiveBattlePet = activeBattlePet,
                 BattlePets = battlePets,
                 Clan = clan,
@@ -440,6 +436,24 @@ namespace RavenNest.BusinessLogic.Extensions
                 }
             }
             return (battlePets, activeBattlePet);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IReadOnlyList<RavenNest.Models.CharacterStatusEffect> Map(IReadOnlyList<RavenNest.DataModels.CharacterStatusEffect> effects)
+        {
+            return effects.AsList(x => new RavenNest.Models.CharacterStatusEffect
+            {
+                StartUtc = x.StartUtc,
+                ExpiresUtc = x.ExpiresUtc,
+                Type = Map(x.Type),
+                Amount = x.Amount,
+            });
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static RavenNest.Models.StatusEffectType Map(DataModels.StatusEffectType type)
+        {
+            return (RavenNest.Models.StatusEffectType)(int)type;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -489,6 +503,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 State = Map(gameData.GetCharacterState(character.StateId)),
                 InventoryItems = Map(gameData.GetAllPlayerItems(character.Id)),
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
+                StatusEffects = Map(gameData.GetCharacterStatusEffects(character.Id)),
                 ActiveBattlePet = activeBattlePet,
                 BattlePets = battlePets,
                 Clan = clan,
@@ -545,6 +560,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 State = Map(gameData.GetCharacterState(character.StateId)),
                 InventoryItems = Map(items),
                 Statistics = Map(gameData.GetStatistics(character.StatisticsId)),
+                StatusEffects = Map(gameData.GetCharacterStatusEffects(character.Id)),
                 ActiveBattlePet = activeBattlePet,
                 BattlePets = battlePets,
                 Clan = clan,

@@ -135,7 +135,6 @@ namespace RavenNest.Blazor.Services
                 Type = RavenNest.Models.ItemType.Mining,
                 Name = name,
                 ShopSellPrice = sellPrice,
-                RequiredCraftingLevel = GameMath.MaxLevel + 1,
             };
 
             if (itemManager.TryAddItem(item))
@@ -169,7 +168,6 @@ namespace RavenNest.Blazor.Services
                 Type = RavenNest.Models.ItemType.Woodcutting,
                 Name = name,
                 ShopSellPrice = sellPrice,
-                RequiredCraftingLevel = GameMath.MaxLevel + 1,
             };
 
             if (itemManager.TryAddItem(item))
@@ -203,7 +201,6 @@ namespace RavenNest.Blazor.Services
                 Type = RavenNest.Models.ItemType.Farming,
                 Name = name,
                 ShopSellPrice = sellPrice,
-                RequiredCraftingLevel = GameMath.MaxLevel + 1,
             };
 
             if (itemManager.TryAddItem(item))
@@ -237,7 +234,6 @@ namespace RavenNest.Blazor.Services
                 Type = RavenNest.Models.ItemType.Fishing,
                 Name = name,
                 ShopSellPrice = sellPrice,
-                RequiredCraftingLevel = GameMath.MaxLevel + 1,
             };
 
             if (itemManager.TryAddItem(item))

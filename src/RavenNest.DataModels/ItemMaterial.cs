@@ -11,7 +11,7 @@
         Adamantite,
         Rune,
         Dragon,
-        Ultima,
+        Abraxas,
         Phantom,
         Lionsbane,
         Ether,

@@ -9,7 +9,8 @@
         OneHandedAxe = 4,
         TwoHandedStaff = 5,
         TwoHandedBow = 6,
-        OneHandedMace = 7,
+        TwoHandedSpear = 7,
+
         Helmet = 8,
         Chest = 9,
         Gloves = 10,

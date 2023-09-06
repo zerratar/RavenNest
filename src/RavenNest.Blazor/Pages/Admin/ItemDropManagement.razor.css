@@ -70,7 +70,7 @@ button.btn.cancel:hover, button.btn.cancel:active {
 .confirm-modal-background,
 .item-editor-background {
     display: flex;
-    position: absolute;
+    position: fixed;
     background-color: rgba(0,0,0,0.2);
     left: 0;
     top: 0;

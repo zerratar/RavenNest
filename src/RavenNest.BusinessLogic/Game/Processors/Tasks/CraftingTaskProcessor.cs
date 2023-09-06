@@ -22,19 +22,17 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 state.LastTaskUpdate = DateTime.UtcNow;
                 state.SailingRewardAttempted = DateTime.MinValue;
 
-                if (resources.Ore >= OrePerIngot)
-                {
-                    resources.Ore -= OrePerIngot;
-                    IncrementItemStack(gameData, inventoryProvider, session, character, IngotId);
-                }
-
-                if (resources.Wood >= WoodPerPlank)
-                {
-                    resources.Wood -= WoodPerPlank;
-                    IncrementItemStack(gameData, inventoryProvider, session, character, PlankId);
-                }
-
-                UpdateResources(gameData, session, character, resources);
+                //if (resources.Ore >= OrePerIngot)
+                //{
+                //    resources.Ore -= OrePerIngot;
+                //    IncrementItemStack(gameData, inventoryProvider, session, character, IngotId);
+                //}
+                //if (resources.Wood >= WoodPerPlank)
+                //{
+                //    resources.Wood -= WoodPerPlank;
+                //    IncrementItemStack(gameData, inventoryProvider, session, character, PlankId);
+                //}
+                //UpdateResources(gameData, session, character, resources);
             }
         }
     }

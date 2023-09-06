@@ -1420,3 +1420,30 @@ textarea.item-editor-json {
 .format pre {
     margin-bottom: 0 !important;
 }
+
+label.recipe-list-label {
+    display: flex;
+    flex-direction: row-reverse;
+}
+
+td.item.recipe {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row-reverse;
+    justify-content: space-between;
+}
+
+td .crafting-level-requirement,
+td .recipe-list-label,
+td .crafting-level label {
+    margin-bottom: 0;
+    font-weight: bold;
+}
+/*
+td .crafting-ingredients{
+    margin-bottom: 10px;
+}*/
+
+td .recipe-details {
+}
+td .recipe-list{}

@@ -35,7 +35,14 @@
                     <span class="item-filter-text">Swords</span>
                     <i class="fa-sharp fa-solid fa-sword"></i>
                 </button>
-
+                <button class="item-filter @(itemFilter == ItemFilter.Axes ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Axes)">
+                    <span class="item-filter-text">Axes</span>
+                    <i class="fa-sharp fa-solid fa-axe"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Spears ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Spears)">
+                    <span class="item-filter-text">Spears</span>
+                    <i class="fa-solid fa-scythe"></i>
+                </button>
                 <button class="item-filter @(itemFilter == ItemFilter.Bows ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Bows)">
                     <span class="item-filter-text">Bows</span>
                     <i class="fa-sharp fa-solid fa-bow-arrow"></i>
@@ -66,15 +73,50 @@
                     <i class="fa-sharp fa-solid fa-dog"></i>
                 </button>
 
-                <button class="item-filter @(itemFilter == ItemFilter.Resources ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Resources)">
-                    <span class="item-filter-text">Resources</span>
-                    <i class="fa-sharp fa-solid fa-hammer"></i>
-                </button>
-
 
                 <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
                     <span class="item-filter-text">Scrolls</span>
                     <i class="fa-sharp fa-solid fa-scroll"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Woodcutting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Woodcutting)">
+                    <span class="item-filter-text">Woodcutting</span>
+                    <i class="fa-solid fa-tree"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Mining ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Mining)">
+                    <span class="item-filter-text">Mining</span>
+                    <i class="fa-solid fa-pickaxe"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Fishing ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Fishing)">
+                    <span class="item-filter-text">Fishing</span>
+                    <i class="fa-sharp fa-solid fa-fishing-rod"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Farming ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Farming)">
+                    <span class="item-filter-text">Farming</span>
+                    <i class="fa-solid fa-wheat"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Gathering ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Gathering)">
+                    <span class="item-filter-text">Gathering</span>
+                    <i class="fa-solid fa-mushroom"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Crafting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Crafting)">
+                    <span class="item-filter-text">Crafting</span>
+                    <i class="fa-sharp fa-solid fa-hammer"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Cooking ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Cooking)">
+                    <span class="item-filter-text">Cooking</span>
+                    <i class="fa-sharp fa-solid fa-user-chef"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Alchemy ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Alchemy)">
+                    <span class="item-filter-text">Alchemy</span>
+                    <i class="fa-sharp fa-solid fa-flask-round-potion"></i>
                 </button>
             </div>
 
@@ -88,14 +130,14 @@
                     <tr>
                         <th></th>
                         <th @onclick="SortByName">Name <span>@GetIndicator("name")</span></th>
+                        <th>Description</th>
                         <th @onclick="SortByStats">Stats <span>@GetIndicator("stats")</span></th>
                         <th @onclick="SortByLevelReq">Level Req <span>@GetIndicator("lev-req")</span></th>
                         <th @onclick="SortByCategory">Category <span>@GetIndicator("category")</span></th>
                         <th @onclick="SortByType">Item Type <span>@GetIndicator("type")</span></th>
                         <th @onclick="SortByMaterial">Material Type <span>@GetIndicator("material")</span></th>
-                        <th @onclick="SortByCraftingLevel">Crafting Level <span>@GetIndicator("crafting")</span></th>
                         <th @onclick="SortByVendorPrice">Vendor Price <span>@GetIndicator("vendor")</span></th>
-                        <th @onclick="SortByCrafting">Crafting Requirements <span>@GetIndicator("cra-req")</span></th>
+                        <th>Recipe</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -103,7 +145,8 @@
                     {
                         <tr id="@item.Id" class="@(Id == item.Id.ToString() ? "item-row selected" : "item-row")">
                             <td><img src="/imgs/items/@(item.Id).png" style="width: 40px" /></td>
-                            <td class='item'>@item.Name</td>
+                            <td class='item name'>@item.Name</td>
+                            <td class='item description'>@item.Description</td>
                             <td class='item'>
                                 @if (item.WeaponAim > 0)
                                 {
@@ -187,34 +230,45 @@
                             <td class='item'>@item.Category</td>
                             <td class='item'>@ItemService.GetTypeName(item)</td>
                             <td class='item'>@ItemService.GetMaterialName(item)</td>
-                            <td class='item'>
-                                @if (item.Craftable)
-                                {
-                                    <span>@item.RequiredCraftingLevel</span>
-                                }
-                                else
-                                {
-                                    <span>-</span>
-                                }
-                            </td>
                             <td class='item'>@item.ShopSellPrice&nbsp;<img class="ravenCoins" src="/favicon.png" /></td>
-                            <td class='item'>
-                                @foreach (var req in item.CraftingRequirements)
-                                {
-                                    var reqItem = availableItems.First(x => x.Id == req.ResourceItemId);
-                                    <span><a href="/items/@reqItem.Id">@(reqItem.Name)</a> x@(req.Amount)&nbsp;</span>
-                                }
-                                @if (item.OreCost > 0)
-                                {
-                                    <span>Ore x@(item.OreCost)&nbsp;</span>
-                                }
-                                @if (item.WoodCost > 0)
-                                {
-                                    <span>Wood x@(item.WoodCost)&nbsp;</span>
-                                }
-                                @if (!item.Craftable)
-                                {
-                                    <span>Not craftable</span>
+                            <td class='item recipe'>
+                                @{
+                                    var itemRecipe = ItemService.GetItemRecipe(item.Id);
+                                    if (itemRecipe != null)
+                                    {
+                                      <div class="recipe-details">
+                                        <div class="crafting-level">
+                                            <label>@itemRecipe.RequiredSkill.ToString() Level </label>
+                                            <span class='crafting-level-requirement'>@itemRecipe.RequiredLevel</span>
+                                        </div>
+                                        <div class="crafting-ingredients">
+                                            @{
+                                                var ingredients = itemRecipe.Ingredients;
+                                                foreach (var req in ingredients)
+                                                {
+                                                    var reqItem = availableItems.First(x => x.Id == req.ItemId);
+                                                    <span><a href="/items/@reqItem.Id">@(reqItem.Name)</a> x@(req.Amount)&nbsp;</span>
+                                                }
+                                            }
+                                        </div>
+                                      </div>
+                                    }
+
+                                    // check if part of recipes.
+                                    // check if this is part of a recipe, if so, show the recipe
+                                    <div class="recipe-list">
+                                        @{
+                                            var itemRecipes = ItemService.GetItemRecipesByIngredient(item.Id);
+                                            if (itemRecipes != null && itemRecipes.Count > 0)
+                                            {
+                                                <label class='recipe-list-label'>Ingredient in</label>
+                                                @foreach (var r in itemRecipes)
+                                                {
+                                                    <span><a href="/items/@r.ItemId">@(r.Name)</a>&nbsp;</span>
+                                                }
+                                            }
+                                        }
+                                    </div>
                                 }
                             </td>
                         </tr>
@@ -259,7 +313,7 @@
 
     private bool Filter(Models.Item item)
     {
-      return ItemService.Filter(itemFilter, item);
+        return ItemService.Filter(itemFilter, item);
     }
 
     protected override void OnAfterRender(bool firstRender)
@@ -304,21 +358,10 @@
         SetSorting("material");
         await SortBy(x => ItemService.GetMaterialIndex(x));
     }
-    private async void SortByCraftingLevel()
-    {
-        SetSorting("crafting");
-        await SortBy(x => x.RequiredCraftingLevel);
-    }
     private async void SortByVendorPrice()
     {
         SetSorting("vendor");
         await SortBy(x => x.ShopSellPrice);
-    }
-
-    private async void SortByCrafting()
-    {
-        //SetSorting("cra-req");
-        //await SortBy(x => x.RequiredCraftingLevel);
     }
 
     private async void SortByStats()

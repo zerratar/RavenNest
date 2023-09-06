@@ -83,6 +83,8 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<ServerLogs> ServerLogs { get; set; }
         public virtual DbSet<GameClient> GameClient { get; set; }
         public virtual DbSet<Agreements> Agreements { get; set; }
+        public virtual DbSet<CharacterStatusEffect> CharacterStatusEffect { get; set; }
+        public virtual DbSet<ItemStatusEffect> ItemStatusEffect { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -104,6 +106,21 @@ namespace RavenNest.BusinessLogic.Data
 
             modelBuilder.Entity<DailyAggregatedMarketplaceData>(entity =>
             {
+                entity.Property(e => e.Id).ValueGeneratedNever();
+            });
+
+            modelBuilder.Entity<CharacterStatusEffect>(entity =>
+            {
+                entity.Property(e => e.Type).HasConversion(v => (int)v, v => (StatusEffectType)v);
+                entity.Property(e => e.StartUtc).HasColumnType("datetime");
+                entity.Property(e => e.ExpiresUtc).HasColumnType("datetime");
+                entity.Property(e => e.Id).ValueGeneratedNever();
+            });
+
+            modelBuilder.Entity<ItemStatusEffect>(entity =>
+            {
+                entity.Property(e => e.Type).HasConversion(v => (int)v, v => (StatusEffectType)v);
+                entity.Property(e => e.Island).HasConversion(v => v == null ? -1 : (int?)v.Value, v => v == null ? (Island?)null : (Island?)v.Value);
                 entity.Property(e => e.Id).ValueGeneratedNever();
             });
 

@@ -805,6 +805,145 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
+        public ItemUseResult UseItem(SessionToken sessionToken, Guid characterId, Guid inventoryItemId, string arg)
+        {
+            var character = GetCharacter(sessionToken, characterId);
+            if (character == null)
+            {
+                logger.LogError("Unable to use item (invId: " + inventoryItemId + ") Character not found in session: " + sessionToken.SessionId);
+                return null;
+            }
+
+            var inventory = inventoryProvider.Get(character.Id);
+            var item = inventory.Get(inventoryItemId);
+            if (item.IsNull())
+            {
+                logger.LogError("Unable to use item (invId: " + inventoryItemId + ") Item does not exist.");
+                return null;
+            }
+
+            var knownItems = gameData.GetKnownItems();
+            if (item.ItemId == knownItems.TomeOfTeleportation.Id)
+            {
+                if (string.IsNullOrEmpty(arg) ||
+                    !Enum.TryParse<RavenNest.Models.Island>(arg, true, out var parsedIsland) ||
+                    parsedIsland == RavenNest.Models.Island.None ||
+                    parsedIsland == RavenNest.Models.Island.Ferry ||
+                    parsedIsland == RavenNest.Models.Island.Any)
+                {
+                    // not a suitable combination as this tome requires an argument to be used.
+                    return null;
+                }
+            }
+
+            var skills = gameData.GetCharacterSkills(character.SkillsId);
+            if (inventory.RemoveItem(item, 1))
+            {
+                item = inventory.Get(inventoryItemId); // if it does not exist amount will be 0
+
+                var shouldTeleport = false;
+
+                var itemEffects = gameData.GetItemStatusEffects(item.ItemId);
+                var island = RavenNest.Models.Island.None;
+                var effects = new List<RavenNest.Models.CharacterStatusEffect>();
+
+                foreach (var fx in itemEffects)
+                {
+                    if (fx.Type == DataModels.StatusEffectType.TeleportToIsland)
+                    {
+                        shouldTeleport = true;
+                        island = Enum.Parse<RavenNest.Models.Island>(arg, true);
+                        continue;
+                    }
+
+                    effects.Add(CreateCharacterEffect(character.Id, skills, fx));
+                }
+
+                var result = new ItemUseResult
+                {
+                    InventoryItemId = inventoryItemId,
+                    NewStackAmount = (int)item.Amount,
+                    Effects = effects,
+                    Teleport = shouldTeleport,
+                    EffectIsland = island
+                };
+
+
+                return result;
+            }
+
+            return null;
+        }
+
+        private RavenNest.Models.CharacterStatusEffect CreateCharacterEffect(Guid characterId, Skills skills, ItemStatusEffect fx)
+        {
+            // if this is an effect we should store, then also create a datamodel version and add to the gameData.
+            // but we will always replace existing effects with these ones.
+
+            var activeEffects = gameData.GetCharacterStatusEffects(characterId);
+            foreach (var ae in activeEffects)
+            {
+                if (ae.Type == fx.Type)
+                {
+                    // replace
+                    ae.StartUtc = DateTime.UtcNow;
+                    ae.ExpiresUtc = ae.StartUtc.AddSeconds(fx.Duration);
+                    ae.Amount = DetermineEffectAmount(skills, fx.Type, fx.Amount, fx.MinAmount);
+
+                    return new RavenNest.Models.CharacterStatusEffect
+                    {
+                        Type = (RavenNest.Models.StatusEffectType)fx.Type,
+                        Amount = ae.Amount,
+                        ExpiresUtc = ae.ExpiresUtc,
+                        StartUtc = ae.StartUtc,
+                    };
+                }
+            }
+
+            var now = DateTime.UtcNow;
+            var effect = new RavenNest.DataModels.CharacterStatusEffect
+            {
+                StartUtc = now,
+                ExpiresUtc = now.AddSeconds(fx.Duration),
+                Amount = DetermineEffectAmount(skills, fx.Type, fx.Amount, fx.MinAmount),
+                CharacterId = characterId,
+                Id = Guid.NewGuid(),
+                Type = fx.Type
+            };
+
+            gameData.Add(effect);
+
+            return new RavenNest.Models.CharacterStatusEffect
+            {
+                Type = (RavenNest.Models.StatusEffectType)fx.Type,
+                Amount = effect.Amount,
+                ExpiresUtc = effect.ExpiresUtc,
+                StartUtc = effect.StartUtc,
+            };
+        }
+
+        private float DetermineEffectAmount(Skills skills, DataModels.StatusEffectType type, float amount, float minAmount)
+        {
+            float scaledValue = 0f;
+            float value = 0f;
+            switch (type)
+            {
+#warning Implement the rest of the status effect amount, damages need to be adjusted too.
+                case DataModels.StatusEffectType.Heal:
+                case DataModels.StatusEffectType.HealOverTime:
+                    value = skills.HealthLevel;
+                    scaledValue = (skills.HealthLevel * amount);
+                    break;
+            }
+
+            if (scaledValue < minAmount && value > 0)
+            {
+                return minAmount / value;
+            }
+
+            return amount;
+        }
+
         public RedeemItemResult RedeemItem(SessionToken sessionToken, Guid characterId, Guid itemId)
         {
             var character = GetCharacter(sessionToken, characterId);
@@ -4072,8 +4211,8 @@ namespace RavenNest.BusinessLogic.Game
             state.JoinedDungeon = HasFlag(update, CharacterFlags.InDungeonQueue);
             state.InOnsen = HasFlag(update, CharacterFlags.InOnsen);
             state.IsCaptain = HasFlag(update, CharacterFlags.IsCaptain);
-            state.Island = update.Island != Island.Ferry ? update.Island.ToString() : null;
-            state.Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null;
+            state.Island = update.Island != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null;
+            state.Destination = update.Destination != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null;
             state.ExpPerHour = update.ExpPerHour;
             state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
             state.Task = task;
@@ -4096,8 +4235,8 @@ namespace RavenNest.BusinessLogic.Game
             state.JoinedDungeon = HasFlag(update, CharacterFlags.InDungeonQueue);
             state.InOnsen = HasFlag(update, CharacterFlags.InOnsen);
             state.IsCaptain = HasFlag(update, CharacterFlags.IsCaptain);
-            state.Island = update.Island != Island.Ferry ? update.Island.ToString() : null;
-            state.Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null;
+            state.Island = update.Island != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null;
+            state.Destination = update.Destination != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null;
             state.ExpPerHour = update.ExpPerHour;
             state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString();
             state.Task = task;
@@ -4125,8 +4264,8 @@ namespace RavenNest.BusinessLogic.Game
                 InOnsen = HasFlag(update, CharacterFlags.InOnsen),
                 JoinedDungeon = HasFlag(update, CharacterFlags.InDungeonQueue),
                 IsCaptain = HasFlag(update, CharacterFlags.IsCaptain),
-                Island = update.Island != Island.Ferry ? update.Island.ToString() : null,
-                Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null,
+                Island = update.Island != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null,
+                Destination = update.Destination != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null,
                 ExpPerHour = update.ExpPerHour,
                 EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString("yyyy-MM-ddTHH:mm:ss.fffffff"),
                 Task = task,
@@ -4154,8 +4293,8 @@ namespace RavenNest.BusinessLogic.Game
                 InOnsen = HasFlag(update, CharacterFlags.InOnsen),
                 JoinedDungeon = HasFlag(update, CharacterFlags.InDungeonQueue),
                 IsCaptain = HasFlag(update, CharacterFlags.IsCaptain),
-                Island = update.Island != Island.Ferry ? update.Island.ToString() : null,
-                Destination = update.Destination != Island.Ferry ? update.Island.ToString() : null,
+                Island = update.Island != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null,
+                Destination = update.Destination != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null,
                 ExpPerHour = update.ExpPerHour,
                 EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString(),
                 Task = task,
@@ -4256,6 +4395,5 @@ namespace RavenNest.BusinessLogic.Game
         {
             return character.UserIdLock == session.UserId;
         }
-
     }
 }

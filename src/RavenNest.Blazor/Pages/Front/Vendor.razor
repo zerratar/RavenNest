@@ -33,7 +33,14 @@
                     <span class="item-filter-text">Swords</span>
                     <i class="fa-sharp fa-solid fa-sword"></i>
                 </button>
-
+                <button class="item-filter @(itemFilter == ItemFilter.Axes ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Axes)">
+                    <span class="item-filter-text">Axes</span>
+                    <i class="fa-sharp fa-solid fa-axe"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Spears ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Spears)">
+                    <span class="item-filter-text">Spears</span>
+                    <i class="fa-solid fa-scythe"></i>
+                </button>
                 <button class="item-filter @(itemFilter == ItemFilter.Bows ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Bows)">
                     <span class="item-filter-text">Bows</span>
                     <i class="fa-sharp fa-solid fa-bow-arrow"></i>
@@ -64,15 +71,50 @@
                     <i class="fa-sharp fa-solid fa-dog"></i>
                 </button>
 
-                <button class="item-filter @(itemFilter == ItemFilter.Resources ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Resources)">
-                    <span class="item-filter-text">Resources</span>
-                    <i class="fa-sharp fa-solid fa-hammer"></i>
-                </button>
-
-
                 <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
                     <span class="item-filter-text">Scrolls</span>
                     <i class="fa-sharp fa-solid fa-scroll"></i>
+                </button>
+
+                            
+            <button class="item-filter @(itemFilter == ItemFilter.Woodcutting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Woodcutting)">
+                <span class="item-filter-text">Woodcutting</span>
+                <i class="fa-solid fa-tree"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Mining ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Mining)">
+                <span class="item-filter-text">Mining</span>
+                <i class="fa-solid fa-pickaxe"></i>
+            </button>
+            
+            <button class="item-filter @(itemFilter == ItemFilter.Fishing ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Fishing)">
+                <span class="item-filter-text">Fishing</span>
+                <i class="fa-sharp fa-solid fa-fishing-rod"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Farming ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Farming)">
+                <span class="item-filter-text">Farming</span>
+                <i class="fa-solid fa-wheat"></i>
+            </button>
+
+            <button class="item-filter @(itemFilter == ItemFilter.Gathering ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Gathering)">
+                <span class="item-filter-text">Gathering</span>
+                <i class="fa-solid fa-mushroom"></i>
+            </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Crafting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Crafting)">
+                    <span class="item-filter-text">Crafting</span>
+                    <i class="fa-sharp fa-solid fa-hammer"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Cooking ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Cooking)">
+                    <span class="item-filter-text">Cooking</span>
+                    <i class="fa-sharp fa-solid fa-user-chef"></i>
+                </button>
+
+                <button class="item-filter @(itemFilter == ItemFilter.Alchemy ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Alchemy)">
+                    <span class="item-filter-text">Alchemy</span>
+                    <i class="fa-sharp fa-solid fa-flask-round-potion"></i>
                 </button>
             </div>
 

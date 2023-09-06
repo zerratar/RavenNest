@@ -3,9 +3,11 @@ using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Twitch.Extension;
+using RavenNest.DataModels;
 using RavenNest.Models;
 using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -241,6 +243,8 @@ namespace RavenNest.BusinessLogic.Game.Processors
                     //    inventory.AddPatreonTierRewards();
                     //}
 
+                    UpdateActiveStatusEffects(utcNow, character);
+
                     var state = gameData.GetCharacterState(character.StateId);
                     if (state == null)
                     {
@@ -275,6 +279,21 @@ namespace RavenNest.BusinessLogic.Game.Processors
                     var task = GetTaskProcessor(taskName);
                     if (task != null)
                         task.Process(gameData, inventoryProvider, session, character, state);
+                }
+            }
+        }
+
+        private void UpdateActiveStatusEffects(DateTime utcNow, Character character)
+        {
+            var effects = gameData.GetCharacterStatusEffects(character.Id).ToList();
+            if (effects.Count > 0)
+            {
+                foreach (var effect in effects)
+                {
+                    if (utcNow >= effect.ExpiresUtc)
+                    {
+                        gameData.Remove(effect);
+                    }
                 }
             }
         }

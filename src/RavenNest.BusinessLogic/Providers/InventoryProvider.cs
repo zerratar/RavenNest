@@ -1529,7 +1529,7 @@ namespace RavenNest.BusinessLogic.Providers
                 case ItemType.Pet: return EquipmentSlot.Pet;
                 case ItemType.OneHandedAxe: return EquipmentSlot.MeleeWeapon;
                 case ItemType.TwoHandedAxe: return EquipmentSlot.MeleeWeapon;
-                case ItemType.OneHandedMace: return EquipmentSlot.MeleeWeapon;
+                case ItemType.TwoHandedSpear: return EquipmentSlot.MeleeWeapon;
                 case ItemType.OneHandedSword: return EquipmentSlot.MeleeWeapon;
                 case ItemType.TwoHandedSword: return EquipmentSlot.MeleeWeapon;
                 case ItemType.TwoHandedStaff: return EquipmentSlot.MagicWeapon;

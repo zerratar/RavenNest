@@ -1,20 +1,7 @@
-﻿
-using System;
+﻿using System;
 
 namespace RavenNest.Models
 {
-    public class EnchantmentCooldownResult
-    {
-        public DateTime? Cooldown { get; set; }
-        public int CoinsPerSeconds { get; set; }
-    }
-    
-    public class ClearEnchantmentCooldownResult
-    {
-        public bool Success { get; set; }
-        public long TotalCost { get; set; }
-    }
-
     public class ItemEnchantmentResult
     {
         public static ItemEnchantmentResult NotEnchantable { get; } = new ItemEnchantmentResult { Result = ItemEnchantmentResultValue.NotEnchantable };
@@ -47,16 +34,5 @@ namespace RavenNest.Models
         public DateTime? Cooldown { get; set; }
         public int GainedLevels { get; set; }
         public double GainedExperience { get; set; }
-    }
-
-
-    public enum ItemEnchantmentResultValue
-    {
-        Error,
-        NotAvailable,
-        NotEnchantable,
-        NotReady,
-        Failed,
-        Success,
     }
 }

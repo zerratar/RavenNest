@@ -116,22 +116,6 @@ namespace RavenNest.BusinessLogic.Game
         {
             var entity = ModelMapper.Map(item);
 
-            if (item.CraftingRequirements != null)
-            {
-                foreach (var req in item.CraftingRequirements)
-                {
-                    var mapped = Map(req);
-                    mapped.ItemId = item.Id;
-                    gameData.Add(mapped);
-                }
-            }
-
-            if (!item.Craftable)
-            {
-                item.RequiredCookingLevel = GameMath.MaxLevel + 1;
-                item.RequiredCraftingLevel = GameMath.MaxLevel + 1;
-            }
-
             entity.Modified = DateTime.UtcNow;
 
             gameData.Add(entity);
@@ -157,52 +141,12 @@ namespace RavenNest.BusinessLogic.Game
                 return false;
             }
 
-            if (item.CraftingRequirements != null)
-            {
-                var updateList = item.CraftingRequirements.ToList();
-                var storedRequirements = gameData.GetCraftingRequirements(item.Id);
-
-                // check if we have matching requirement, if so, update values
-                foreach (var oldRequirement in storedRequirements)
-                {
-                    var updated = updateList.FirstOrDefault(x => x.Id == oldRequirement.Id || x.ResourceItemId == oldRequirement.ResourceItemId);
-                    if (updated != null)
-                    {
-                        oldRequirement.Amount = updated.Amount;
-                        // since we use same resource id, remove the updated now so we don't process it again.
-                        updateList.Remove(updated);
-                    }
-                    else
-                    {
-                        // we didnt have this item in the update list, we should therefor remove from existing requirements.
-                        gameData.Remove(oldRequirement);
-                    }
-                }
-
-                // go through the update list and add all new requirements
-                foreach (var newReq in updateList)
-                {
-                    var mapped = Map(newReq);
-                    mapped.ItemId = item.Id; // ensure item id is correct.
-                    gameData.Add(mapped);
-                }
-            }
-
-
             UpdateItem(item, dataItem);
-
             return true;
         }
 
         private void UpdateItem(Item item, DataModels.Item dataItem)
         {
-            UpdateCraftingRequirements(item, dataItem);
-
-            if (!item.Craftable)
-            {
-                item.RequiredCookingLevel = GameMath.MaxLevel + 1;
-                item.RequiredCraftingLevel = GameMath.MaxLevel + 1;
-            }
             dataItem.Description = item.Description;
 
             dataItem.Level = item.Level;
@@ -215,7 +159,6 @@ namespace RavenNest.BusinessLogic.Game
             dataItem.RangedAim = item.RangedAim;
 
             dataItem.Category = (int)item.Category;
-            dataItem.Craftable = item.Craftable;
             dataItem.FemaleModelId = item.FemaleModelId;
             dataItem.FemalePrefab = item.FemalePrefab;
             dataItem.GenericPrefab = item.GenericPrefab;
@@ -223,11 +166,9 @@ namespace RavenNest.BusinessLogic.Game
             dataItem.MalePrefab = item.MalePrefab;
             dataItem.Material = (int)item.Material;
             dataItem.Name = item.Name;
-            dataItem.OreCost = item.OreCost;
             dataItem.RangedAim = item.RangedAim;
             dataItem.RangedPower = item.RangedPower;
             dataItem.RequiredAttackLevel = item.RequiredAttackLevel;
-            dataItem.RequiredCraftingLevel = item.RequiredCraftingLevel;
             dataItem.RequiredDefenseLevel = item.RequiredDefenseLevel;
             dataItem.RequiredMagicLevel = item.RequiredMagicLevel;
             dataItem.RequiredRangedLevel = item.RequiredRangedLevel;
@@ -236,54 +177,9 @@ namespace RavenNest.BusinessLogic.Game
             dataItem.ShopSellPrice = item.ShopSellPrice;
             dataItem.Soulbound = item.Soulbound;
             dataItem.Type = (int)item.Type;
-            dataItem.WoodCost = item.WoodCost;
             dataItem.Modified = DateTime.UtcNow;
 
             InvalidateCache();
-        }
-
-        private void UpdateCraftingRequirements(Item item, DataModels.Item dataItem)
-        {
-            var reqs = item.CraftingRequirements;
-            var existingCraftingRequirements = gameData.GetCraftingRequirements(dataItem.Id);
-            if (existingCraftingRequirements != null)
-            {
-                foreach (var req in existingCraftingRequirements)
-                {
-                    if (reqs != null)
-                    {
-                        var newReq = reqs.FirstOrDefault(x => x.ResourceItemId == req.ResourceItemId);
-                        if (newReq != null)
-                        {
-                            req.Amount = newReq.Amount;
-                            req.ResourceItemId = newReq.ResourceItemId;
-                        }
-                        else
-                        {
-                            gameData.Remove(req);
-                        }
-                    }
-                    else
-                    {
-                        gameData.Remove(req);
-                    }
-                }
-            }
-
-            if (item.CraftingRequirements != null)
-            {
-                // load it one more time
-                existingCraftingRequirements = gameData.GetCraftingRequirements(dataItem.Id);
-                foreach (var req in item.CraftingRequirements)
-                {
-                    if (existingCraftingRequirements.Any(x => x.ResourceItemId == req.ResourceItemId))
-                        continue;
-
-                    var mapped = Map(req);
-                    mapped.ItemId = item.Id;
-                    gameData.Add(mapped);
-                }
-            }
         }
 
         private DataModels.Item GetItem(Item item)

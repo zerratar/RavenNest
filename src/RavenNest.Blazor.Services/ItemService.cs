@@ -9,6 +9,7 @@ using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Game.Enchantment;
 using RavenNest.BusinessLogic.Game.Processors.Tasks;
+using RavenNest.BusinessLogic.Extensions;
 
 namespace RavenNest.Blazor.Services
 {
@@ -37,6 +38,25 @@ namespace RavenNest.Blazor.Services
             var vendorItem = gameData.GetVendorItemByItemId(itemId);
             var marketItems = gameData.GetMarketItems(itemId);
             return invItems.Count + bankItems.Count + (vendorItem != null ? 1 : 0) + marketItems.Count;
+        }
+
+        public IReadOnlyList<RavenNest.Models.ItemRecipe> GetItemRecipesByIngredient(Guid itemId)
+        {
+            var recipes = new List<RavenNest.Models.ItemRecipe>();
+            var ingredients = gameData.GetItemRecipeIngredientsByItem(itemId);
+            foreach (var ingredient in ingredients)
+            {
+                var recipe = gameData.GetItemRecipe(ingredient.RecipeId);
+                recipes.Add(ModelMapper.Map(gameData, recipe));
+            }
+            return recipes;
+        }
+
+        public RavenNest.Models.ItemRecipe GetItemRecipe(Guid itemId)
+        {
+            var recipe = gameData.GetItemRecipeByItem(itemId);
+            if (recipe == null) return null;
+            return ModelMapper.Map(gameData, recipe);
         }
 
         public async Task ClearPossessionsAsync(Guid itemId)
@@ -194,19 +214,25 @@ namespace RavenNest.Blazor.Services
         {
             //var item = ItemService.GetItem(itemId);
             var itemType = (ItemType)item.Type;
-            if (itemType == ItemType.Coins ||
-                itemType == ItemType.Mining ||
-                itemType == ItemType.Woodcutting ||
-                itemType == ItemType.Fishing ||
-                itemType == ItemType.Farming ||
-                itemType == ItemType.Gathering ||
-                item.Category == ItemCategory.Resource)
-                return ItemFilter.Resources;
+            if (itemType == ItemType.Coins) return ItemFilter.Resources;
+            if (itemType == ItemType.Mining) return ItemFilter.Mining;
+            if (itemType == ItemType.Woodcutting) return ItemFilter.Woodcutting;
+            if (itemType == ItemType.Gathering) return ItemFilter.Gathering;
+            if (itemType == ItemType.Fishing) return ItemFilter.Fishing;
+            if (itemType == ItemType.Farming) return ItemFilter.Farming;
+            if (itemType == ItemType.Crafting) return ItemFilter.Crafting;
+            if (itemType == ItemType.Cooking || itemType == ItemType.Food)
+                return ItemFilter.Cooking;
+
+            if (itemType == ItemType.Alchemy || itemType == ItemType.Potion)
+                return ItemFilter.Alchemy;
 
             if (itemType == ItemType.OneHandedSword || itemType == ItemType.TwoHandedSword)
                 return ItemFilter.Swords;
             if (itemType == ItemType.TwoHandedBow) return ItemFilter.Bows;
             if (itemType == ItemType.TwoHandedStaff) return ItemFilter.Staves;
+            if (itemType == ItemType.TwoHandedSpear) return ItemFilter.Spears;
+            if (itemType == ItemType.OneHandedAxe || itemType == ItemType.TwoHandedAxe) return ItemFilter.Axes;
             if (itemType == ItemType.Ring || itemType == ItemType.Amulet) return ItemFilter.Accessories;
             if (itemType == ItemType.Shield) return ItemFilter.Shields;
             if (itemType == ItemType.Pet) return ItemFilter.Pets;
@@ -240,7 +266,7 @@ namespace RavenNest.Blazor.Services
 
         public string GetMaterialName(RavenNest.Models.Item item)
         {
-            if (item.Material == RavenNest.Models.ItemMaterial.Ultima)
+            if (item.Material == RavenNest.Models.ItemMaterial.Abraxas)
             {
                 return "Abraxas";
             }
@@ -303,7 +329,7 @@ namespace RavenNest.Blazor.Services
                     return (int)RavenNest.Models.ItemMaterial.Adamantite;
 
                 if (itemNameMaterial.ToLower() == "abraxas")
-                    return (int)RavenNest.Models.ItemMaterial.Ultima;
+                    return (int)RavenNest.Models.ItemMaterial.Abraxas;
 
                 if (!string.IsNullOrEmpty(itemNameMaterial) && item.Material == RavenNest.Models.ItemMaterial.None)
                 {

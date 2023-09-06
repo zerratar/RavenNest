@@ -354,6 +354,14 @@ namespace RavenNest.Controllers
         {
             return playerManager.UnequipItem(AssertGetSessionToken(), characterId, item);
         }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("{characterId}/use/{inventoryItemId}/{arg}")]
+        public ItemUseResult UseItem(Guid characterId, Guid inventoryItemId, string arg)
+        {
+            return playerManager.UseItem(AssertGetSessionToken(), characterId, inventoryItemId, arg);
+        }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{characterId}/clear-enchantment-cooldown")]
         public ClearEnchantmentCooldownResult ClearEnchantmentCooldown(Guid characterId)

@@ -9,7 +9,8 @@
         OneHandedAxe = 4,
         TwoHandedStaff = 5,
         TwoHandedBow = 6,
-        OneHandedMace = 7,
+        TwoHandedSpear = 7,
+
         Helmet = 8,
         Chest = 9,
         Gloves = 10,
@@ -26,20 +27,22 @@
 
         // Resources
         Coins = 21,
-        
+
         Woodcutting = 22,
         Mining = 23,
         Fishing = 24,
         Farming = 25,
         Gathering = 33,
 
+        Crafting = 34,
+        Cooking = 35,
+        Alchemy = 36,
+
         Arrows = 26,
         Magic = 27,
         StreamerToken = 28,
         Scroll = 29,
 
-
-        // Appearance Again. TEEHEEE
         Hat = 30,
         Mask = 31,
         HeadCovering = 32
