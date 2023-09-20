@@ -18,7 +18,7 @@ namespace RavenNest.Blazor.Components
 
         [Parameter]
         public bool CanManage { get; set; }
-        private string trainingSkill;
+        private TrainingSkill trainingSkill;
         private int currentHealth;
 
         private SessionInfo session;
@@ -65,8 +65,8 @@ namespace RavenNest.Blazor.Components
 
             if (Player.State != null)
             {
-                trainingSkill = Player.State.InDungeon || !string.IsNullOrEmpty(Player.State.Island) ? (Player.State.TaskArgument ?? Player.State.Task) : null;
-                isSailing = string.IsNullOrEmpty(trainingSkill) && string.IsNullOrEmpty(Player.State.Island);
+                trainingSkill = PlayerService.GetTrainingSkill(Player.State); 
+                isSailing = trainingSkill == null && string.IsNullOrEmpty(Player.State.Island);
                 currentHealth = Player.State.Health;
             }
             else
@@ -165,16 +165,15 @@ namespace RavenNest.Blazor.Components
 
             return $"{time.Hours} hours, {time.Minutes} minutes";
         }
-
         private string GetTrainingSkillName()
         {
-            if (string.IsNullOrEmpty(trainingSkill))
+            if (trainingSkill == null)
                 return null;
 
-            if (trainingSkill.Equals("all", StringComparison.OrdinalIgnoreCase))
+            if (trainingSkill.Name.Equals("all", StringComparison.OrdinalIgnoreCase))
                 return "All";
 
-            if (trainingSkill.Equals("heal", StringComparison.OrdinalIgnoreCase))
+            if (trainingSkill.Name.Equals("heal", StringComparison.OrdinalIgnoreCase))
                 return "Healing";
 
             if (Player == null || Player.Skills == null)
@@ -184,33 +183,38 @@ namespace RavenNest.Blazor.Components
             return training?.Name;
         }
 
-        protected bool IsTrainingSkill(PlayerSkill skill)
+        private bool IsTrainingSkill(PlayerSkill skill)
         {
+            var n = skill.Name.ToLower();
+
             if (isSailing && skill.Name.Equals("Sailing"))
                 return true;
 
-            if (string.IsNullOrEmpty(trainingSkill))
+            if (trainingSkill == null)
                 return false;
 
-            if (skill.Name.StartsWith(trainingSkill, StringComparison.OrdinalIgnoreCase))
+            var t = trainingSkill.Name.ToLower();
+
+            if (n.StartsWith(t, StringComparison.OrdinalIgnoreCase))
                 return true;
 
-            if (trainingSkill == "heal")
-                return skill.Name.Equals("healing", StringComparison.OrdinalIgnoreCase);
+            if (t == "heal")
+                return n.Equals("healing", StringComparison.OrdinalIgnoreCase);
 
-            if (trainingSkill.ToLower() == "all")
-                return skill.Name.Equals("attack", StringComparison.OrdinalIgnoreCase) ||
-                                skill.Name.Equals("defense", StringComparison.OrdinalIgnoreCase) ||
-                                skill.Name.Equals("strength", StringComparison.OrdinalIgnoreCase);
+            if (t == "all")
+                return n.Equals("attack", StringComparison.OrdinalIgnoreCase) || n.Equals("defense", StringComparison.OrdinalIgnoreCase) || n.Equals("strength", StringComparison.OrdinalIgnoreCase);
 
-            if (skill.Name.ToLower() == "attack" && trainingSkill.ToLower() == "atk")
+            if (n.ToLower() == "attack" && t == "atk") return true;
+
+            if (t == "mine" && n.Equals("mining", StringComparison.OrdinalIgnoreCase))
                 return true;
 
-            if (trainingSkill.ToLower() == "mine" && skill.Name.Equals("mining", StringComparison.OrdinalIgnoreCase))
+            if (t == "gather" && n.Equals("gathering", StringComparison.OrdinalIgnoreCase))
                 return true;
 
             return false;
         }
+
 
         private string ExpDisplay(double value)
         {

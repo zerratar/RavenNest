@@ -1,7 +1,12 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
+using Microsoft.Extensions.Logging;
 using RavenNest.DataModels;
 using System;
+using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using System.Text;
+using Telepathy;
 
 namespace RavenNest.BusinessLogic.Data
 {
@@ -9,16 +14,17 @@ namespace RavenNest.BusinessLogic.Data
     {
         private void EnsureMagicAttributes()
         {
-            if (this.itemAttributes.Entities.Count > 0)
-            {
-                return;
-            }
 
-            logger.LogInformation($"Restoring magic attributes.");
+            var attributes = this.itemAttributes.Entities;
 
             for (var i = 0; i < DataModels.Skills.SkillNames.Length; ++i)
             {
                 var sn = DataModels.Skills.SkillNames[i];
+                var existing = attributes.FirstOrDefault(x => x.Name == sn.ToUpper());
+                if (existing != null)
+                {
+                    continue;
+                }
 
                 Add(new ItemAttribute
                 {
@@ -33,43 +39,50 @@ namespace RavenNest.BusinessLogic.Data
                 });
             }
 
-
-            Add(new ItemAttribute
+            if (attributes.FirstOrDefault(x => x.Name == "AIM") == null)
             {
-                Id = Guid.NewGuid(),
-                Description = "Increases Aim by 20%",
-                Name = "AIM",
-                AttributeIndex = DataModels.Skills.SkillNames.Length + 1,
-                DefaultValue = "5%",
-                MaxValue = "20%",
-                MinValue = "1%",
-                Type = 1
-            });
+                Add(new ItemAttribute
+                {
+                    Id = Guid.NewGuid(),
+                    Description = "Increases Aim by 20%",
+                    Name = "AIM",
+                    AttributeIndex = DataModels.Skills.SkillNames.Length + 1,
+                    DefaultValue = "5%",
+                    MaxValue = "20%",
+                    MinValue = "1%",
+                    Type = 1
+                });
+            }
 
-            Add(new ItemAttribute
+            if (attributes.FirstOrDefault(x => x.Name == "POWER") == null)
             {
-                Id = Guid.NewGuid(),
-                Description = "Increases Power by 20%",
-                Name = "POWER",
-                AttributeIndex = DataModels.Skills.SkillNames.Length + 2,
-                DefaultValue = "5%",
-                MaxValue = "20%",
-                MinValue = "1%",
-                Type = 1
-            });
+                Add(new ItemAttribute
+                {
+                    Id = Guid.NewGuid(),
+                    Description = "Increases Power by 20%",
+                    Name = "POWER",
+                    AttributeIndex = DataModels.Skills.SkillNames.Length + 2,
+                    DefaultValue = "5%",
+                    MaxValue = "20%",
+                    MinValue = "1%",
+                    Type = 1
+                });
+            }
 
-            Add(new ItemAttribute
+            if (attributes.FirstOrDefault(x => x.Name == "ARMOR") == null)
             {
-                Id = Guid.NewGuid(),
-                Description = "Increases Armor by 20%",
-                Name = "ARMOR",
-                AttributeIndex = DataModels.Skills.SkillNames.Length + 3,
-                DefaultValue = "5%",
-                MaxValue = "20%",
-                MinValue = "1%",
-                Type = 1
-            });
-
+                Add(new ItemAttribute
+                {
+                    Id = Guid.NewGuid(),
+                    Description = "Increases Armor by 20%",
+                    Name = "ARMOR",
+                    AttributeIndex = DataModels.Skills.SkillNames.Length + 3,
+                    DefaultValue = "5%",
+                    MaxValue = "20%",
+                    MinValue = "1%",
+                    Type = 1
+                });
+            }
         }
 
         public TypedItems GetKnownItems()
@@ -84,7 +97,6 @@ namespace RavenNest.BusinessLogic.Data
                     MithrilNugget = GetOrCreateItem(i, "Mithril Nugget", ItemCategory.Resource, ItemType.Mining),
                     AdamantiteNugget = GetOrCreateItem(i, "Adamantite Nugget", ItemCategory.Resource, ItemType.Mining),
                     RuneNugget = GetOrCreateItem(i, "Rune Nugget", ItemCategory.Resource, ItemType.Mining),
-                    OreIngot = GetOrCreateItem(i, "Ore ingot", ItemCategory.Resource, ItemType.Mining),
                     DragonScale = GetOrCreateItem(i, "Dragon Scale", ItemCategory.Resource, ItemType.Mining),
                     Lionite = GetOrCreateItem(i, "Lionite", ItemCategory.Resource, ItemType.Mining),
                     Ethereum = GetOrCreateItem(i, "Ethereum", ItemCategory.Resource, ItemType.Mining),
@@ -92,47 +104,53 @@ namespace RavenNest.BusinessLogic.Data
                     AbraxasSpirit = GetOrCreateItem(i, "Abraxas Spirit", ItemCategory.Resource, ItemType.Mining),
                     AncientHeart = GetOrCreateItem(i, "Ancient Heart", ItemCategory.Resource, ItemType.Mining),
                     AtlarusLight = GetOrCreateItem(i, "Atlarus Light", ItemCategory.Resource, ItemType.Mining),
+                    
+                    OreIngot = GetOrCreateItem(i, "Ore ingot", ItemCategory.Resource, ItemType.Mining),
+                    WoodPlank = GetOrCreateItem(i, "Wood Plank", ItemCategory.Resource, ItemType.Woodcutting),
                 };
 
-                ItemSet GetOrCreateItemSet(string typeName)
+                ItemSet GetOrCreateItemSet(string typeName, int levelRequirement = 0)
                 {
                     return new ItemSet
                     {
-                        Boots = GetOrCreateItem(i, typeName + " Boots", ItemCategory.Armor, ItemType.Boots),
-                        Gloves = GetOrCreateItem(i, typeName + " Gloves", ItemCategory.Armor, ItemType.Gloves),
-                        Helmet = GetOrCreateItem(i, typeName + " Helmet", ItemCategory.Armor, ItemType.Helmet),
-                        Leggings = GetOrCreateItem(i, typeName + " Leggings", ItemCategory.Armor, ItemType.Leggings),
-                        Chest = GetOrCreateItem(i, typeName + " Chest", ItemCategory.Armor, ItemType.Chest),
-                        Shield = GetOrCreateItem(i, typeName + " Shield", ItemCategory.Armor, ItemType.Shield),
-                        Sword = GetOrCreateItem(i, typeName + " Sword", ItemCategory.Weapon, ItemType.OneHandedSword),
-                        Axe = GetOrCreateItem(i, typeName + " Axe", ItemCategory.Weapon, ItemType.OneHandedAxe),
-                        Bow = GetOrCreateItem(i, typeName + " Bow", ItemCategory.Weapon, ItemType.TwoHandedBow),
-                        Spear = GetOrCreateItem(i, typeName + " Spear", ItemCategory.Weapon, ItemType.TwoHandedSpear, typeName + " 2H Spear"),
-                        Staff = GetOrCreateItem(i, typeName + " Staff", ItemCategory.Weapon, ItemType.TwoHandedStaff, typeName + " 2H Staff"),
-                        TwoHandedAxe = GetOrCreateItem(i, typeName + " 2H Axe", ItemCategory.Weapon, ItemType.TwoHandedAxe),
-                        TwoHandedSword = GetOrCreateItem(i, typeName + " 2H Sword", ItemCategory.Weapon, ItemType.TwoHandedSword),
-                        Katana = GetOrCreateItem(i, typeName + " Katana", ItemCategory.Weapon, ItemType.TwoHandedSword),
+                        Boots = GetOrCreateItem(i, typeName + " Boots", ItemCategory.Armor, ItemType.Boots).LevelRequirement(levelRequirement),
+                        Gloves = GetOrCreateItem(i, typeName + " Gloves", ItemCategory.Armor, ItemType.Gloves).LevelRequirement(levelRequirement),
+                        Helmet = GetOrCreateItem(i, typeName + " Helmet", ItemCategory.Armor, ItemType.Helmet).LevelRequirement(levelRequirement),
+                        Leggings = GetOrCreateItem(i, typeName + " Leggings", ItemCategory.Armor, ItemType.Leggings).LevelRequirement(levelRequirement),
+                        Chest = GetOrCreateItem(i, typeName + " Chest", ItemCategory.Armor, ItemType.Chest).LevelRequirement(levelRequirement),
+                        Shield = GetOrCreateItem(i, typeName + " Shield", ItemCategory.Armor, ItemType.Shield).GenericPrefab("Character/Weapons/Shields/" + typeName + " Shield", false).LevelRequirement(levelRequirement),
+                        Sword = GetOrCreateItem(i, typeName + " Sword", ItemCategory.Weapon, ItemType.OneHandedSword).GenericPrefab("Character/Weapons/Swords/" + typeName + " Sword").LevelRequirement(levelRequirement),
+                        Axe = GetOrCreateItem(i, typeName + " Axe", ItemCategory.Weapon, ItemType.OneHandedAxe).GenericPrefab("Character/Weapons/Axes/" + typeName + " Axe").LevelRequirement(levelRequirement),
+                        Bow = GetOrCreateItem(i, typeName + " Bow", ItemCategory.Weapon, ItemType.TwoHandedBow).LevelRequirement(levelRequirement),
+                        Spear = GetOrCreateItem(i, typeName + " Spear", ItemCategory.Weapon, ItemType.TwoHandedSpear, typeName + " 2H Spear").GenericPrefab("Character/Weapons/Spears/" + typeName + " Spear", false).LevelRequirement(levelRequirement),
+                        Staff = GetOrCreateItem(i, typeName + " Staff", ItemCategory.Weapon, ItemType.TwoHandedStaff, typeName + " 2H Staff").GenericPrefab("Character/Weapons/Staffs/" + typeName + " Staff", false).LevelRequirement(levelRequirement),
+                        TwoHandedAxe = GetOrCreateItem(i, typeName + " 2H Axe", ItemCategory.Weapon, ItemType.TwoHandedAxe).GenericPrefab("Character/Weapons/Axes/" + typeName + " 2H Axe").LevelRequirement(levelRequirement),
+                        TwoHandedSword = GetOrCreateItem(i, typeName + " 2H Sword", ItemCategory.Weapon, ItemType.TwoHandedSword).GenericPrefab("Character/Weapons/Swords/" + typeName + " 2H Sword").LevelRequirement(levelRequirement),
+                        Katana = GetOrCreateItem(i, typeName + " Katana", ItemCategory.Weapon, ItemType.TwoHandedSword).GenericPrefab("Character/Weapons/Swords/" + typeName + " Katana", false).LevelRequirement(levelRequirement),
                     };
                 }
 
                 // ensure we have these items in the database
                 typedItems = new TypedItems
                 {
+                    // Pets
+                    Pets = GetOrCreatePets(i),
+
                     // Item Sets
-                    Bronze = GetOrCreateItemSet("Bronze"),
-                    Iron = GetOrCreateItemSet("Iron"),
-                    Steel = GetOrCreateItemSet("Steel"),
-                    Black = GetOrCreateItemSet("Black"),
-                    Mithril = GetOrCreateItemSet("Mithril"),
-                    Adamantite = GetOrCreateItemSet("Adamantite"),
-                    Rune = GetOrCreateItemSet("Rune"),
-                    Dragon = GetOrCreateItemSet("Dragon"),
-                    Abraxas = GetOrCreateItemSet("Abraxas"),
-                    Phantom = GetOrCreateItemSet("Phantom"),
-                    Ether = GetOrCreateItemSet("Ether"),
-                    Lionsbane = GetOrCreateItemSet("Lionsbane"),
-                    Ancient = GetOrCreateItemSet("Ancient"),
-                    Atlarus = GetOrCreateItemSet("Atlarus"),
+                    Bronze = GetOrCreateItemSet("Bronze", 1),
+                    Iron = GetOrCreateItemSet("Iron", 1),
+                    Steel = GetOrCreateItemSet("Steel", 10),
+                    Black = GetOrCreateItemSet("Black", 20),
+                    Mithril = GetOrCreateItemSet("Mithril", 30),
+                    Adamantite = GetOrCreateItemSet("Adamantite", 50),
+                    Rune = GetOrCreateItemSet("Rune", 70),
+                    Dragon = GetOrCreateItemSet("Dragon", 90),
+                    Abraxas = GetOrCreateItemSet("Abraxas", 120),
+                    Phantom = GetOrCreateItemSet("Phantom", 150),
+                    Lionsbane = GetOrCreateItemSet("Lionsbane", 200),
+                    Ether = GetOrCreateItemSet("Ether", 280),
+                    Ancient = GetOrCreateItemSet("Ancient", 340),
+                    Atlarus = GetOrCreateItemSet("Atlarus", 400),
 
                     //ElderBronze = GetOrCreateItemSet("Elder Bronze"),
                     //ElderIron = GetOrCreateItemSet("Elder Iron"),
@@ -169,6 +187,24 @@ namespace RavenNest.BusinessLogic.Data
                     AtriasFeather = GetOrCreateItem(i, "Atria's Feather", "A magical feather tied to Atria", ItemCategory.Resource, ItemType.Alchemy),
                     EldarasMark = GetOrCreateItem(i, "Eldara's Mark", "A seal bearing Eldara's mark", ItemCategory.Resource, ItemType.Alchemy),
                     Realmstone = GetOrCreateItem(i, "Realmstone", "A precious stone allowing teleportation across islands.", ItemCategory.Resource, ItemType.Alchemy),
+
+                    SantaHat = GetOrCreateItem(i, "Santa Hat", "A festive hat worn by Santa.", ItemCategory.Armor, ItemType.Helmet),
+
+                    // accessories
+                    ArchersRing = GetOrCreateItem(i, "Archers Ring", ItemCategory.Ring, ItemType.Ring),
+                    ArchersRingII = GetOrCreateItem(i, "Archers Ring II", ItemCategory.Ring, ItemType.Ring),
+                    ArchersRingIII = GetOrCreateItem(i, "Archers Ring III", ItemCategory.Ring, ItemType.Ring),
+                    ArchersRingIV = GetOrCreateItem(i, "Archers Ring IV", ItemCategory.Ring, ItemType.Ring),
+                    MagesRing = GetOrCreateItem(i, "Mages Ring", ItemCategory.Ring, ItemType.Ring),
+                    MagesRingII = GetOrCreateItem(i, "Mages Ring II", ItemCategory.Ring, ItemType.Ring),
+                    MagesRingIII = GetOrCreateItem(i, "Mages Ring III", ItemCategory.Ring, ItemType.Ring),
+                    MagesRingIV = GetOrCreateItem(i, "Mages Ring IV", ItemCategory.Ring, ItemType.Ring),
+                    ArchmagesPendant = GetOrCreateItem(i, "Archmages Pendant", ItemCategory.Amulet, ItemType.Amulet),
+                    KnightsEmblem = GetOrCreateItem(i, "Knights Emblem", ItemCategory.Amulet, ItemType.Amulet),
+                    OwlsEyeRing = GetOrCreateItem(i, "Owls Eye Ring", ItemCategory.Ring, ItemType.Ring),
+                    RingOfTheCelestial = GetOrCreateItem(i, "Ring Of The Celestial", ItemCategory.Ring, ItemType.Ring),
+                    WarriorsMightRing = GetOrCreateItem(i, "Warriors Might Ring", ItemCategory.Ring, ItemType.Ring),
+                    WindcallersAmulet = GetOrCreateItem(i, "Windcallers Amulet", ItemCategory.Amulet, ItemType.Amulet),
 
                     // Tokens
                     ChristmasToken = GetOrCreateItem(i, "Christmas Token", ItemCategory.Scroll, ItemType.Scroll),
@@ -222,7 +258,6 @@ namespace RavenNest.BusinessLogic.Data
                     Turmeric = GetOrCreateItem(i, "Turmeric", "A golden spice, known for its earthy flavor.", ItemCategory.Resource, ItemType.Farming),
                     Onion = GetOrCreateItem(i, "Onion", "A flavorful bulb, adding zest to meals.", ItemCategory.Resource, ItemType.Farming),
                     Grapes = GetOrCreateItem(i, "Grapes", "Sweet fruits, enjoyed fresh or as wine.", ItemCategory.Resource, ItemType.Farming),
-                    CacaoBeans = GetOrCreateItem(i, "Cacao Beans", "The source of all things chocolate.", ItemCategory.Resource, ItemType.Farming),
                     Truffle = GetOrCreateItem(i, "Truffle", "A rare fungus, cherished in gourmet dishes.", ItemCategory.Resource, ItemType.Farming),
 
                     // Farming - Alchemy
@@ -278,22 +313,22 @@ namespace RavenNest.BusinessLogic.Data
                     ShadowoakLogs = GetOrCreateItem(i, "Shadowoak Logs", "Ancient timber that holds the secrets of the shadows.", ItemCategory.Resource, ItemType.Woodcutting),
 
                     // Fishing
-                    Sprat = GetOrCreateItem(i, "Sprat", "A tiny, silver fish. Great for a quick snack.", ItemCategory.Resource, ItemType.Fishing),
-                    Shrimp = GetOrCreateItem(i, "Shrimp", "Small and pinkish, they're a popular catch.", ItemCategory.Resource, ItemType.Fishing),
-                    RedSeaBass = GetOrCreateItem(i, "Red Sea Bass", "A vibrant fish with a strong flavor.", ItemCategory.Resource, ItemType.Fishing),
-                    Bass = GetOrCreateItem(i, "Bass", "A popular freshwater fish with a mild taste.", ItemCategory.Resource, ItemType.Fishing),
-                    Perch = GetOrCreateItem(i, "Perch", "Striped and feisty, a common catch in many lakes.", ItemCategory.Resource, ItemType.Fishing),
-                    Salmon = GetOrCreateItem(i, "Salmon", "A strong swimmer known for its rich, pink flesh.", ItemCategory.Resource, ItemType.Fishing),
-                    Crab = GetOrCreateItem(i, "Crab", "A crustacean with sharp pincers. Tasty when cooked.", ItemCategory.Resource, ItemType.Fishing),
-                    Lobster = GetOrCreateItem(i, "Lobster", "A sea delicacy with a tough shell but tender meat.", ItemCategory.Resource, ItemType.Fishing),
-                    BlueLobster = GetOrCreateItem(i, "Blue Lobster", "A rare and vibrant variation of lobster.", ItemCategory.Resource, ItemType.Fishing),
-                    Swordfish = GetOrCreateItem(i, "Swordfish", "A powerful fish known for its elongated bill.", ItemCategory.Resource, ItemType.Fishing),
-                    PufferFish = GetOrCreateItem(i, "Puffer Fish", "Inflates when threatened. Handle with care!", ItemCategory.Resource, ItemType.Fishing),
-                    Octopus = GetOrCreateItem(i, "Octopus", "Eight-armed creature of the deep. Slippery and smart.", ItemCategory.Resource, ItemType.Fishing),
-                    MantaRay = GetOrCreateItem(i, "Manta Ray", "Graceful glider of the ocean. Beware its tail.", ItemCategory.Resource, ItemType.Fishing),
-                    Kraken = GetOrCreateItem(i, "Kraken", "Mythical sea monster known to pull ships under.", ItemCategory.Resource, ItemType.Fishing),
-                    Leviathian = GetOrCreateItem(i, "Leviathan", "A gargantuan sea creature spoken of in legends.", ItemCategory.Resource, ItemType.Fishing),
-                    PoseidonsGuardian = GetOrCreateItem(i, "Poseidon's Guardian", "Said to be the protector of Poseidon's realm. A rare and majestic catch.", ItemCategory.Resource, ItemType.Fishing),
+                    RawSprat = GetOrCreateItem(i, "Raw Sprat", "A tiny, silver fish. Great for a quick snack.", ItemCategory.Resource, ItemType.Fishing),
+                    RawShrimp = GetOrCreateItem(i, "Raw Shrimp", "Small and pinkish, they're a popular catch.", ItemCategory.Resource, ItemType.Fishing),
+                    RawRedSeaBass = GetOrCreateItem(i, "Raw Red Sea Bass", "A vibrant fish with a strong flavor.", ItemCategory.Resource, ItemType.Fishing),
+                    RawBass = GetOrCreateItem(i, "Raw Bass", "A popular freshwater fish with a mild taste.", ItemCategory.Resource, ItemType.Fishing),
+                    RawPerch = GetOrCreateItem(i, "Raw Perch", "Striped and feisty, a common catch in many lakes.", ItemCategory.Resource, ItemType.Fishing),
+                    RawSalmon = GetOrCreateItem(i, "Raw Salmon", "A strong swimmer known for its rich, pink flesh.", ItemCategory.Resource, ItemType.Fishing),
+                    RawCrab = GetOrCreateItem(i, "Raw Crab", "A crustacean with sharp pincers. Tasty when cooked.", ItemCategory.Resource, ItemType.Fishing),
+                    RawLobster = GetOrCreateItem(i, "Raw Lobster", "A sea delicacy with a tough shell but tender meat.", ItemCategory.Resource, ItemType.Fishing),
+                    RawBlueLobster = GetOrCreateItem(i, "Raw Blue Lobster", "A rare and vibrant variation of lobster.", ItemCategory.Resource, ItemType.Fishing),
+                    RawSwordfish = GetOrCreateItem(i, "Raw Swordfish", "A powerful fish known for its elongated bill.", ItemCategory.Resource, ItemType.Fishing),
+                    RawPufferFish = GetOrCreateItem(i, "Raw Puffer Fish", "Inflates when threatened. Handle with care!", ItemCategory.Resource, ItemType.Fishing),
+                    RawOctopus = GetOrCreateItem(i, "Raw Octopus", "Eight-armed creature of the deep. Slippery and smart.", ItemCategory.Resource, ItemType.Fishing),
+                    RawMantaRay = GetOrCreateItem(i, "Raw Manta Ray", "Graceful glider of the ocean. Beware its tail.", ItemCategory.Resource, ItemType.Fishing),
+                    RawKraken = GetOrCreateItem(i, "Raw Kraken", "Mythical sea monster known to pull ships under.", ItemCategory.Resource, ItemType.Fishing),
+                    RawLeviathan = GetOrCreateItem(i, "Raw Leviathan", "A gargantuan sea creature spoken of in legends.", ItemCategory.Resource, ItemType.Fishing),
+                    RawPoseidonsGuardian = GetOrCreateItem(i, "Raw Poseidon's Guardian", "Said to be the protector of Poseidon's realm. A rare and majestic catch.", ItemCategory.Resource, ItemType.Fishing),
 
                     // Cooking - Resource Creation
                     Flour = GetOrCreateItem(i, "Flour", "Ground wheat, essential for baking and cooking.", ItemCategory.Resource, ItemType.Cooking),
@@ -309,9 +344,9 @@ namespace RavenNest.BusinessLogic.Data
 
                     // Cooking - Edibles and not so edible..
                     RedWine = GetOrCreateItem(i, "Red Wine", "Aged gracefully, pairs well with hearty dishes.", ItemCategory.Food, ItemType.Food),
-                    CookedChicken = GetOrCreateItem(i, "Cooked Chicken", "Roasted to a golden brown. Juicy and flavorful.", ItemCategory.Food, ItemType.Food),
-                    CookedPork = GetOrCreateItem(i, "Cooked Pork", "Tender and savory, perfect with applesauce.", ItemCategory.Food, ItemType.Food),
-                    CookedBeef = GetOrCreateItem(i, "Cooked Beef", "Grilled with care, boasting a robust flavor.", ItemCategory.Food, ItemType.Food),
+                    RoastedChicken = GetOrCreateItem(i, "Roasted Chicken", "Roasted to a golden brown. Juicy and flavorful.", ItemCategory.Food, ItemType.Food),
+                    RoastedPork = GetOrCreateItem(i, "Roasted Pork", "Tender and savory, perfect with applesauce.", ItemCategory.Food, ItemType.Food),
+                    RoastBeef = GetOrCreateItem(i, "Roast Beef", "Grilled with care, boasting a robust flavor.", ItemCategory.Food, ItemType.Food),
                     CookedChickenLeg = GetOrCreateItem(i, "Cooked Chicken Leg", "Crisp on the outside, tender within.", ItemCategory.Food, ItemType.Food),
                     ChocolateChipCookies = GetOrCreateItem(i, "Chocolate Chip Cookies", "Sweet bites filled with gooey chocolate.", ItemCategory.Food, ItemType.Food),
                     ApplePie = GetOrCreateItem(i, "Apple Pie", "A warm slice of home. Flaky crust with sweet filling.", ItemCategory.Food, ItemType.Food),
@@ -323,20 +358,20 @@ namespace RavenNest.BusinessLogic.Data
                     GrilledCheese = GetOrCreateItem(i, "Grilled Cheese", "A classic comfort dish, this grilled cheese sandwich oozes with melted cheese and is complemented by slices of savory ham. The bread, crisped to perfection with a buttery exterior, offers a delightful crunch with every bite.", ItemCategory.Food, ItemType.Food, "Grilled Ham and Cheese Sandwich"),
 
                     // Cooking - Fish
-                    CookedSprat = GetOrCreateItem(i, "Cooked Sprat", "Lightly fried with a golden crust.", ItemCategory.Food, ItemType.Food),
-                    CookedShrimp = GetOrCreateItem(i, "Cooked Shrimp", "Turned a delicate pink, succulent and flavorful.", ItemCategory.Food, ItemType.Food),
-                    CookedRedSeaBass = GetOrCreateItem(i, "Cooked Red Sea Bass", "Grilled to perfection, highlighting its natural flavors.", ItemCategory.Food, ItemType.Food),
-                    CookedBass = GetOrCreateItem(i, "Cooked Bass", "Flaky and tender, with a slight hint of the sea.", ItemCategory.Food, ItemType.Food),
-                    CookedPerch = GetOrCreateItem(i, "Cooked Perch", "Seared lightly, maintaining its juicy core.", ItemCategory.Food, ItemType.Food),
-                    CookedSalmon = GetOrCreateItem(i, "Cooked Salmon", "Rich in omega-3, cooked to enhance its natural richness.", ItemCategory.Food, ItemType.Food),
-                    CookedCrab = GetOrCreateItem(i, "Cooked Crab", "Steamed to bring out the sweetness in its flesh.", ItemCategory.Food, ItemType.Food),
-                    CookedLobster = GetOrCreateItem(i, "Cooked Lobster", "Red shell on the outside, tender meat on the inside.", ItemCategory.Food, ItemType.Food),
-                    CookedBlueLobster = GetOrCreateItem(i, "Cooked Blue Lobster", "A delicacy that combines visual appeal with taste.", ItemCategory.Food, ItemType.Food),
-                    CookedSwordfish = GetOrCreateItem(i, "Cooked Swordfish", "Thick steaks grilled to seal in the moisture.", ItemCategory.Food, ItemType.Food),
-                    CookedPufferFish = GetOrCreateItem(i, "Cooked Puffer Fish", "Skillfully prepared to ensure every bite is safe and delectable.", ItemCategory.Food, ItemType.Food),
-                    CookedOctopus = GetOrCreateItem(i, "Cooked Octopus", "Tenderized to perfection, a dish of exquisite taste.", ItemCategory.Food, ItemType.Food),
-                    CookedMantaRay = GetOrCreateItem(i, "Cooked Manta Ray", "Unique and flavorful, a treat from the deep.", ItemCategory.Food, ItemType.Food),
-                    CookedKraken = GetOrCreateItem(i, "Cooked Kraken", "Legends speak of its taste, as vast as its tales.", ItemCategory.Food, ItemType.Food),
+                    Sprat = GetOrCreateItem(i, "Sprat", "Lightly fried with a golden crust.", ItemCategory.Food, ItemType.Food),
+                    Shrimp = GetOrCreateItem(i, "Shrimp", "Turned a delicate pink, succulent and flavorful.", ItemCategory.Food, ItemType.Food),
+                    RedSeaBass = GetOrCreateItem(i, "Red Sea Bass", "Grilled to perfection, highlighting its natural flavors.", ItemCategory.Food, ItemType.Food),
+                    Bass = GetOrCreateItem(i, "Bass", "Flaky and tender, with a slight hint of the sea.", ItemCategory.Food, ItemType.Food),
+                    Perch = GetOrCreateItem(i, "Perch", "Seared lightly, maintaining its juicy core.", ItemCategory.Food, ItemType.Food),
+                    Salmon = GetOrCreateItem(i, "Salmon", "Rich in omega-3, cooked to enhance its natural richness.", ItemCategory.Food, ItemType.Food),
+                    Crab = GetOrCreateItem(i, "Crab", "Steamed to bring out the sweetness in its flesh.", ItemCategory.Food, ItemType.Food),
+                    Lobster = GetOrCreateItem(i, "Lobster", "Red shell on the outside, tender meat on the inside.", ItemCategory.Food, ItemType.Food),
+                    BlueLobster = GetOrCreateItem(i, "Blue Lobster", "A delicacy that combines visual appeal with taste.", ItemCategory.Food, ItemType.Food),
+                    Swordfish = GetOrCreateItem(i, "Swordfish", "Thick steaks grilled to seal in the moisture.", ItemCategory.Food, ItemType.Food),
+                    PufferFish = GetOrCreateItem(i, "Puffer Fish", "Skillfully prepared to ensure every bite is safe and delectable.", ItemCategory.Food, ItemType.Food),
+                    Octopus = GetOrCreateItem(i, "Octopus", "Tenderized to perfection, a dish of exquisite taste.", ItemCategory.Food, ItemType.Food),
+                    MantaRay = GetOrCreateItem(i, "Manta Ray", "Unique and flavorful, a treat from the deep.", ItemCategory.Food, ItemType.Food),
+                    Kraken = GetOrCreateItem(i, "Kraken", "Legends speak of its taste, as vast as its tales.", ItemCategory.Food, ItemType.Food),
 
                     LeviathansRoyalStew = GetOrCreateItem(i, "Leviathan's Royal Stew", "This is a hearty stew that combines the tender meat of the Leviathan with a variety of other ingredients to create a flavorful dish worthy of its namesake.", ItemCategory.Food, ItemType.Food),
                     PoseidonsGuardianFeast = GetOrCreateItem(i, "Poseidon's Guardian Feast", "A luxurious dish that showcases the divine nature of Poseidon's Guardian. It involves a series of preparations that results in a meal fit for a deity.", ItemCategory.Food, ItemType.Food),
@@ -385,7 +420,6 @@ namespace RavenNest.BusinessLogic.Data
                     Coal = GetOrCreateItem(i, "Coal", "Dark and dusty, it's a primary source of energy for various industries.", ItemCategory.Resource, ItemType.Mining),
                     Silver = GetOrCreateItem(i, "Silver", "A shiny and ductile metal, often associated with luxury and wealth.", ItemCategory.Resource, ItemType.Mining),
                     Gold = GetOrCreateItem(i, "Gold Nugget", "A small chunk of this precious metal known for its distinct shine and value.", ItemCategory.Resource, ItemType.Mining),
-
                     MithrilOre = GetOrCreateItem(i, "Mithril Ore", "A rare, silver-like metal known for its strength and lightweight properties. Found deep within mountain cores.", ItemCategory.Resource, ItemType.Mining),
                     AdamantiteOre = GetOrCreateItem(i, "Adamantite Ore", "A green-tinted metal, famed for its nearly impenetrable nature.", ItemCategory.Resource, ItemType.Mining),
                     RuneOre = GetOrCreateItem(i, "Rune Ore", "A mystical ore infused with ancient magics. Often seen glowing with a soft blue hue.", ItemCategory.Resource, ItemType.Mining),
@@ -431,20 +465,208 @@ namespace RavenNest.BusinessLogic.Data
                     GoldBar = GetOrCreateItem(i, "Gold Bar", "This opulent bar of pure gold exudes wealth and prestige. Prized by royalty and artisans alike, it has been a symbol of power and luxury for eons.", ItemCategory.Resource, ItemType.Crafting),
                 };
 
-                EnsureDropRates(typedItems);
+                // Make sure new equipments have stats.
+                EnsureEquipmentStatsOnSets(typedItems);
                 EnsureItemRecipes(typedItems);
                 EnsureItemEffects(typedItems);
                 UpgradeItemsAndRemoveDrops(typedItems, obsoleteItems);
+                EnsureDungeonAndRaidDrops(typedItems);
+                EnsureResourceDropRates(typedItems);
             }
             return typedItems;
         }
 
-        private void EnsureDropRates(TypedItems items)
+        private ItemPets GetOrCreatePets(IReadOnlyList<Item> i)
+        {
+            return new ItemPets
+            {
+                BaconRavenPet = GetOrCreateItem(i, "Bacon Raven Pet", ItemCategory.Pet, ItemType.Pet),
+                BatPet = GetOrCreateItem(i, "Bat Pet", ItemCategory.Pet, ItemType.Pet),
+                BearPet = GetOrCreateItem(i, "Bear Pet", ItemCategory.Pet, ItemType.Pet),
+                BlackSantaRaven = GetOrCreateItem(i, "Black Santa Raven", ItemCategory.Pet, ItemType.Pet),
+                BlueOrbPet = GetOrCreateItem(i, "Blue Orb Pet", ItemCategory.Pet, ItemType.Pet),
+                DeerPet = GetOrCreateItem(i, "Deer Pet", ItemCategory.Pet, ItemType.Pet),
+                DiamondRavenPet = GetOrCreateItem(i, "Diamond Raven Pet", ItemCategory.Pet, ItemType.Pet),
+                DiscoRavenPet = GetOrCreateItem(i, "Disco Raven Pet", ItemCategory.Pet, ItemType.Pet),
+                FoxPet = GetOrCreateItem(i, "Fox Pet", ItemCategory.Pet, ItemType.Pet),
+                GhostPet = GetOrCreateItem(i, "Ghost Pet", ItemCategory.Pet, ItemType.Pet),
+                GreenOrbPet = GetOrCreateItem(i, "Green Orb Pet", ItemCategory.Pet, ItemType.Pet),
+                GreenSantaMetalon = GetOrCreateItem(i, "Green Santa Metalon", ItemCategory.Pet, ItemType.Pet),
+                MagicSantaRaven = GetOrCreateItem(i, "Magic Santa Raven", ItemCategory.Pet, ItemType.Pet),
+                PolarBearPet = GetOrCreateItem(i, "Polar Bear Pet", ItemCategory.Pet, ItemType.Pet),
+                PumpkinPet = GetOrCreateItem(i, "Pumpkin Pet", ItemCategory.Pet, ItemType.Pet),
+                PurpleSantaMetalon = GetOrCreateItem(i, "Purple Santa Metalon", ItemCategory.Pet, ItemType.Pet),
+                Rajah = GetOrCreateItem(i, "Rajah", ItemCategory.Pet, ItemType.Pet),
+                RavenPet = GetOrCreateItem(i, "Raven Pet", ItemCategory.Pet, ItemType.Pet),
+                RedOrbPet = GetOrCreateItem(i, "Red Orb Pet", ItemCategory.Pet, ItemType.Pet),
+                RedPandaPet = GetOrCreateItem(i, "Red Panda Pet", ItemCategory.Pet, ItemType.Pet),
+                RedSantaMetalon = GetOrCreateItem(i, "Red Santa Metalon", ItemCategory.Pet, ItemType.Pet),
+                SantaRaven = GetOrCreateItem(i, "Santa Raven", ItemCategory.Pet, ItemType.Pet),
+                SpiderPet = GetOrCreateItem(i, "Spider Pet", ItemCategory.Pet, ItemType.Pet),
+                TurdRavenPet = GetOrCreateItem(i, "Turd Raven Pet", ItemCategory.Pet, ItemType.Pet),
+                WerewolfPet = GetOrCreateItem(i, "Werewolf Pet", ItemCategory.Pet, ItemType.Pet),
+                WolfPet = GetOrCreateItem(i, "Wolf Pet", ItemCategory.Pet, ItemType.Pet),
+                YetiPet = GetOrCreateItem(i, "Yeti Pet", ItemCategory.Pet, ItemType.Pet),
+            };
+        }
+
+        private void EnsureEquipmentStatsOnSets(TypedItems typedItems)
+        {
+            // Shield should have same stats as leggings
+            EnsureEquipmentStats(typedItems.Bronze);
+            EnsureEquipmentStats(typedItems.Iron);
+            EnsureEquipmentStats(typedItems.Steel);
+            EnsureEquipmentStats(typedItems.Black);
+            EnsureEquipmentStats(typedItems.Mithril);
+            EnsureEquipmentStats(typedItems.Adamantite);
+            EnsureEquipmentStats(typedItems.Rune);
+            EnsureEquipmentStats(typedItems.Dragon);
+            EnsureEquipmentStats(typedItems.Abraxas);
+            EnsureEquipmentStats(typedItems.Phantom);
+            EnsureEquipmentStats(typedItems.Ether);
+            EnsureEquipmentStats(typedItems.Lionsbane);
+            EnsureEquipmentStats(typedItems.Ancient);
+            EnsureEquipmentStats(typedItems.Atlarus);
+        }
+
+        private void EnsureEquipmentStats(ItemSet current)
+        {
+            // make sure new shield has stats, same as leggings
+            const float katanaPowerFactor = 1.06f;
+            const float katanaAimFactor = 0.94f;
+            const float spearPowerFactor = 1.04f;
+            const float spearAimFactor = 0.95f;
+            const float axeOneHandedPowerFactor = 1.06f;
+            const float axeOneHandedAimFactor = 0.94f;
+            const float axePowerFactor = 1.1f;
+            const float axeAimFactor = 0.88f;
+            const float oneHandedSword = 0.7f;
+
+            if (current.Sword.WeaponPower == 0) current.Sword.WeaponPower = (int)(current.TwoHandedSword.WeaponPower * oneHandedSword);
+            if (current.Sword.WeaponAim == 0) current.Sword.WeaponAim = (int)(current.TwoHandedSword.WeaponAim * oneHandedSword);
+            if (current.Shield.ArmorPower == 0) current.Shield.ArmorPower = current.Leggings.ArmorPower;
+            if (current.Axe != null)
+            {
+                if (current.Axe.WeaponPower == 0) current.Axe.WeaponPower = (int)(current.Sword.WeaponPower * axeOneHandedPowerFactor);
+                if (current.Axe.WeaponAim == 0) current.Axe.WeaponAim = (int)(current.Sword.WeaponAim * axeOneHandedAimFactor);
+            }
+            if (current.TwoHandedAxe != null)
+            {
+                if (current.TwoHandedAxe.WeaponPower == 0) current.TwoHandedAxe.WeaponPower = (int)(current.TwoHandedSword.WeaponPower * axePowerFactor);
+                if (current.TwoHandedAxe.WeaponAim == 0) current.TwoHandedAxe.WeaponAim = (int)(current.TwoHandedSword.WeaponAim * axeAimFactor);
+            }
+            /*if (current.Spear.WeaponPower == 0) */
+            current.Spear.WeaponPower = (int)(current.TwoHandedSword.WeaponPower * spearPowerFactor);
+            /*if (current.Spear.WeaponAim == 0) */
+            current.Spear.WeaponAim = (int)(current.TwoHandedSword.WeaponAim * spearAimFactor);
+            if (current.Katana.WeaponPower == 0) current.Katana.WeaponPower = (int)(current.TwoHandedSword.WeaponPower * katanaPowerFactor);
+            if (current.Katana.WeaponAim == 0) current.Katana.WeaponAim = (int)(current.TwoHandedSword.WeaponAim * katanaAimFactor);
+        }
+
+        private void EnsureDungeonAndRaidDrops(TypedItems typedItems)
+        {
+            EnsureDrop(12, 1, typedItems.SantaHat, 0.05f, 0.0175f); // Santa hat 
+            EnsureDrop(12, 1, typedItems.ChristmasToken, 0.05f, 0.0175f); // Christmas Token
+            EnsureDrop(10, 1, typedItems.HalloweenToken, 0.05f, 0.0175f); // Halloween Token
+
+            // Pet drops, available in all types of dungeon or raids
+            EnsureDrop(typedItems.Pets.FoxPet, 0.05);
+            EnsureDrop(typedItems.Pets.DeerPet, 0.05);
+            EnsureDrop(typedItems.Pets.BearPet, 0.05);
+            EnsureDrop(typedItems.Pets.BlueOrbPet, 0.05);
+            EnsureDrop(typedItems.Pets.WolfPet, 0.05);
+            EnsureDrop(typedItems.Pets.GreenOrbPet, 0.05);
+            EnsureDrop(typedItems.Pets.PolarBearPet, 0.05);
+            EnsureDrop(typedItems.Pets.RedOrbPet, 0.05);
+            EnsureDrop(typedItems.Pets.RedPandaPet, 0.05);
+            EnsureDrop(typedItems.BronzeBar, 0.05);
+            EnsureDrop(typedItems.IronBar, 0.05);
+            EnsureDrop(typedItems.SteelBar, 0.05);
+            EnsureDrop(typedItems.MithrilBar, 0.05);
+            EnsureDrop(typedItems.AdamantiteBar, 0.05);
+
+            // drop resources! this should be mid tier resources
+            EnsureDrop(typedItems.Lavender, 0.05);
+            EnsureDrop(typedItems.Elderflower, 0.05);
+            EnsureDrop(typedItems.Valerian, 0.05);
+            EnsureDrop(typedItems.Chamomile, 0.05);
+            EnsureDrop(typedItems.Coriander, 0.05);
+            EnsureDrop(typedItems.Paprika, 0.05);
+            EnsureDrop(typedItems.Turmeric, 0.05);
+            EnsureDrop(typedItems.Sugar, 0.05);
+            EnsureDrop(typedItems.Cinnamon, 0.05);
+            EnsureDrop(typedItems.Apple, 0.05);
+            EnsureDrop(typedItems.Carrots, 0.05);
+            EnsureDrop(typedItems.Garlic, 0.05);
+            EnsureDrop(typedItems.Onion, 0.05);
+            EnsureDrop(typedItems.Milk, 0.05);
+
+            // make sure we drop black stuff
+            EnsureDrop(typedItems.Black.Helmet, 0.05);
+            EnsureDrop(typedItems.Black.Boots, 0.05);
+            EnsureDrop(typedItems.Black.Staff, 0.05);
+            EnsureDrop(typedItems.Black.Katana, 0.05);
+            EnsureDrop(typedItems.Black.Boots, 0.05);
+            EnsureDrop(typedItems.Black.Gloves, 0.05);
+            EnsureDrop(typedItems.Black.Axe, 0.05);
+            EnsureDrop(typedItems.Black.TwoHandedAxe, 0.05);
+            EnsureDrop(typedItems.Black.TwoHandedSword, 0.05);
+            EnsureDrop(typedItems.Black.Spear, 0.05);
+
+            // Dropping non-craftables
+            EnsureDrop(typedItems.ArchersRing, 0.05);
+            EnsureDrop(typedItems.ArchersRingII, 0.05);
+            EnsureDrop(typedItems.ArchersRingIII, 0.05, slayerLevelRequirement: 30);
+            EnsureDrop(typedItems.MagesRing, 0.05);
+            EnsureDrop(typedItems.MagesRingII, 0.05);
+            EnsureDrop(typedItems.MagesRingIII, 0.05, slayerLevelRequirement: 30);
+
+            // Dropping tome resources
+            EnsureDrop(typedItems.Hearthstone, 0.05);
+            EnsureDrop(typedItems.WanderersGem, 0.05);
+            EnsureDrop(typedItems.IronEmblem, 0.04);
+            EnsureDrop(typedItems.KyoCrystal, 0.04);
+            EnsureDrop(typedItems.HeimRune, 0.03);
+            EnsureDrop(typedItems.AtriasFeather, 0.03);
+            EnsureDrop(typedItems.EldarasMark, 0.03);
+
+            // Exclusive to Heroic
+            EnsureDrop(typedItems.MagesRingIV, 0.05, 4, slayerLevelRequirement: 60);
+            EnsureDrop(typedItems.ArchersRingIV, 0.05, 4, slayerLevelRequirement: 60);
+            EnsureDrop(typedItems.ArchmagesPendant, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.KnightsEmblem, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.OwlsEyeRing, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.RingOfTheCelestial, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.WarriorsMightRing, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.WindcallersAmulet, 0.05, 4, slayerLevelRequirement: 100);
+
+            EnsureDrop(typedItems.DragonBar, 0.05, 4);
+            EnsureDrop(typedItems.AbraxasBar, 0.05, 4);
+            EnsureDrop(typedItems.PhantomBar, 0.05, 4);
+            EnsureDrop(typedItems.LioniteBar, 0.05, 4);
+            EnsureDrop(typedItems.EthereumBar, 0.05, 4);
+            EnsureDrop(typedItems.AncientBar, 0.05, 4);
+            EnsureDrop(typedItems.AtlarusBar, 0.05, 4);
+            EnsureDrop(typedItems.RawPufferFish, 0.05, 4);
+            EnsureDrop(typedItems.RawOctopus, 0.05, 4);
+            EnsureDrop(typedItems.RawMantaRay, 0.05, 4);
+            EnsureDrop(typedItems.RawKraken, 0.05, 4);
+            EnsureDrop(typedItems.Cacao, 0.05, 4);
+            EnsureDrop(typedItems.Truffle, 0.05, 4);
+            EnsureDrop(typedItems.Goldenrod, 0.05, 4);
+            EnsureDrop(typedItems.Wormwood, 0.05, 4);
+            EnsureDrop(typedItems.Skullcap, 0.05, 4);
+            EnsureDrop(typedItems.LemonBalm, 0.05, 4);
+            EnsureDrop(typedItems.Realmstone, 0.05, 4);
+        }
+
+        private void EnsureResourceDropRates(TypedItems items)
         {
             var farming = RavenNest.Models.Skill.Farming;
             var gathering = RavenNest.Models.Skill.Gathering;
             var woodcutting = RavenNest.Models.Skill.Woodcutting;
             var mining = RavenNest.Models.Skill.Mining;
+            var fishing = RavenNest.Models.Skill.Fishing;
 
             #region Mining
             EnsureDropRate(10, items.Sapphire, 120, 0.2, mining);
@@ -452,6 +674,25 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDropRate(20, items.Emerald, 120, 0.2, mining);
             EnsureDropRate(30, items.Ruby, 120, 0.2, mining);
             EnsureDropRate(30, items.Gold, 120, 0.2, mining);
+
+            EnsureDropRate(1, items.CopperOre, 10, 0.2, mining);
+            EnsureDropRate(1, items.TinOre, 10, 0.2, mining);
+            EnsureDropRate(15, items.IronOre, 15, 0.2, mining);
+            EnsureDropRate(20, items.Silver, 20, 0.2, mining);
+            EnsureDropRate(30, items.Coal, 30, 0.2, mining);
+            EnsureDropRate(40, items.Gold, 60, 0.2, mining);
+            EnsureDropRate(60, items.MithrilOre, 90, 0.2, mining);
+            EnsureDropRate(80, items.AdamantiteOre, 150, 0.2, mining);
+            EnsureDropRate(110, items.RuneOre, 250, 0.2, mining);
+            EnsureDropRate(180, items.DragonOre, 400, 0.2, mining);
+            EnsureDropRate(250, items.Eldrium, 500, 0.2, mining);
+            EnsureDropRate(350, items.AbraxasOre, 700, 0.2, mining);
+            EnsureDropRate(450, items.PhantomOre, 1100, 0.2, mining);
+            EnsureDropRate(575, items.LioniteOre, 1600, 0.2, mining);
+            EnsureDropRate(700, items.EthereumOre, 2500, 0.2, mining);
+            EnsureDropRate(850, items.AncientOre, 10800, 0.2, mining);
+            EnsureDropRate(999, items.AtlarusOre, 21600, 0.2, mining);
+
             #endregion
 
             #region Woodcutting, poor woodcutting have no resources.
@@ -469,7 +710,6 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDropRate(300, items.ShadowoakLogs, 1000, 0.08, woodcutting);
             #endregion
 
-
             #region For Cooking
             EnsureDropRate(1, items.Wheat, 10, 0.2, farming);
             EnsureDropRate(1, items.Water, 10, 0.2, gathering);
@@ -484,10 +724,8 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDropRate(40, items.Coriander, 90, 0.10, farming);
             EnsureDropRate(50, items.Paprika, 120, 0.10, farming);
             EnsureDropRate(60, items.Turmeric, 150, 0.10, farming);
-
             EnsureDropRate(100, items.Sugar, 360, 0.09, gathering);
             EnsureDropRate(120, items.Cinnamon, 360, 0.09, gathering);
-
             EnsureDropRate(70, items.Apple, 200, 0.10, farming);
             EnsureDropRate(80, items.Carrots, 250, 0.10, farming);
             EnsureDropRate(90, items.Garlic, 300, 0.10, farming);
@@ -498,14 +736,15 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDropRate(200, items.RawPork, 750, 0.08, farming);
             EnsureDropRate(240, items.RawBeef, 900, 0.08, farming);
             EnsureDropRate(320, items.Grapes, 1080, 0.07, farming);
-            EnsureDropRate(400, items.CacaoBeans, 1320, 0.06, farming);
+            EnsureDropRate(400, items.Cacao, 1320, 0.06, farming);
             EnsureDropRate(800, items.Truffle, 7200, 0.05, farming);  // Added truffle as a rare ingredient at a higher level
+
             #endregion
 
             #region For Alchemy
 
             // gathering
-
+            EnsureDropRate(5, items.Sand, 15, 0.2, gathering);
             EnsureDropRate(10, items.Yarrow, 15, 0.2, gathering);
             EnsureDropRate(20, items.Hemp, 30, 0.19, gathering);
             EnsureDropRate(30, items.Resin, 30, 0.19, gathering);
@@ -527,6 +766,38 @@ namespace RavenNest.BusinessLogic.Data
             //EnsureDropRate(950, items.DivineBud, 14400, 0.05, gathering);
             //EnsureDropRate(999, items.SageHerb, 21600, 0.05, gathering);
             #endregion
+
+            #region Fishing
+            EnsureDropRate(1, items.RawSprat, 10, 0.2, fishing);
+            EnsureDropRate(5, items.RawShrimp, 20, 0.2, fishing);
+            EnsureDropRate(20, items.RawRedSeaBass, 60, 0.19, fishing);
+            EnsureDropRate(50, items.RawBass, 120, 0.19, fishing);
+            EnsureDropRate(70, items.RawPerch, 200, 0.17, fishing);
+            EnsureDropRate(100, items.RawSalmon, 300, 0.17, fishing);
+            EnsureDropRate(130, items.RawCrab, 500, 0.15, fishing);
+            EnsureDropRate(170, items.RawLobster, 800, 0.15, fishing);
+            EnsureDropRate(220, items.RawBlueLobster, 1400, 0.13, fishing);
+            EnsureDropRate(280, items.RawSwordfish, 1800, 0.13, fishing);
+            EnsureDropRate(350, items.RawPufferFish, 3600, 0.1, fishing);
+            EnsureDropRate(420, items.RawOctopus, 3600, 0.1, fishing);
+            EnsureDropRate(500, items.RawMantaRay, 7200, 0.09, fishing);
+            EnsureDropRate(700, items.RawKraken, 7200, 0.09, fishing);
+            EnsureDropRate(900, items.RawLeviathan, 14400, 0.07, fishing);
+            #endregion
+
+            RemoveMissingItemDrops();
+        }
+
+        private void RemoveMissingItemDrops()
+        {
+            var l = GetResourceItemDrops().ToList();
+            foreach (var drop in l)
+            {
+                if (GetItem(drop.ItemId) == null)
+                {
+                    Remove(drop);
+                }
+            }
         }
 
         private void EnsureItemRecipes(TypedItems items)
@@ -550,8 +821,6 @@ namespace RavenNest.BusinessLogic.Data
             //EnsureAlchemyRecipe(260, items.GorgonDust, items.GorgonScale);
             //EnsureAlchemyRecipe(280, items.UnicornElixir, items.UnicornHorn);
 
-            // Potion Base
-            EnsureAlchemyRecipe(20, items.Vial, items.Sand, items.Coal);
 
             // Tome Base
             EnsureAlchemyRecipe(20, items.String, items.Hemp);
@@ -586,8 +855,13 @@ namespace RavenNest.BusinessLogic.Data
             #endregion
 
             #region Crafting
+
             // basic material crafting
             EnsureCraftingRecipe(20, items.SilverBar, items.Silver, items.Coal);
+
+            // Potion Base
+            EnsureCraftingRecipe(20, items.Vial, items.Sand, items.Coal);
+
             EnsureCraftingRecipe(30, items.GoldBar, items.Gold, items.Coal, items.Coal);
             EnsureCraftingRecipe(30, items.GoldRing, items.GoldBar, items.GoldBar);
             EnsureCraftingRecipe(30, items.GoldAmulet, items.GoldBar, items.GoldBar);
@@ -664,31 +938,39 @@ namespace RavenNest.BusinessLogic.Data
 
             #region Cooking
             // cooking fish
-            EnsureCookingRecipe(1, items.CookedSprat, items.BurnedSprat, 0.2, 1, items.Sprat);
-            EnsureCookingRecipe(5, items.CookedShrimp, items.BurnedShrimp, 0.2, 1, items.Shrimp);
-            EnsureCookingRecipe(20, items.CookedRedSeaBass, items.BurnedRedSeaBass, 0.2, 1, items.RedSeaBass);
-            EnsureCookingRecipe(50, items.CookedBass, items.BurnedBass, 0.2, 1, items.Bass);
-            EnsureCookingRecipe(70, items.CookedPerch, items.BurnedPerch, 0.2, 1, items.Perch);
-            EnsureCookingRecipe(100, items.CookedSalmon, items.BurnedSalmon, 0.2, 1, items.Salmon);
-            EnsureCookingRecipe(130, items.CookedCrab, items.BurnedCrab, 0.2, 1, items.Crab);
-            EnsureCookingRecipe(170, items.CookedLobster, items.BurnedLobster, 0.2, 1, items.Lobster);
-            EnsureCookingRecipe(220, items.CookedBlueLobster, items.BurnedBlueLobster, 0.2, 1, items.BlueLobster);
-            EnsureCookingRecipe(280, items.CookedSwordfish, items.BurnedSwordfish, 0.2, 1, items.Swordfish);
-            EnsureCookingRecipe(350, items.CookedPufferFish, items.BurnedPufferFish, 0.2, 1, items.PufferFish);
-            EnsureCookingRecipe(420, items.CookedOctopus, items.BurnedOctopus, 0.2, 1, items.Octopus);
-            EnsureCookingRecipe(500, items.CookedMantaRay, items.BurnedMantaRay, 0.2, 1, items.MantaRay);
-            EnsureCookingRecipe(700, items.CookedKraken, items.BurnedKraken, 0.2, 1, items.Kraken);
+            EnsureCookingRecipe(1, items.Sprat, items.BurnedSprat, 0.2, 1, items.RawSprat);
+            EnsureCookingRecipe(5, items.Shrimp, items.BurnedShrimp, 0.2, 1, items.RawShrimp);
+            EnsureCookingRecipe(20, items.RedSeaBass, items.BurnedRedSeaBass, 0.2, 1, items.RawRedSeaBass);
+            EnsureCookingRecipe(50, items.Bass, items.BurnedBass, 0.2, 1, items.RawBass);
+            EnsureCookingRecipe(70, items.Perch, items.BurnedPerch, 0.2, 1, items.RawPerch);
+            EnsureCookingRecipe(100, items.Salmon, items.BurnedSalmon, 0.2, 1, items.RawSalmon);
+            EnsureCookingRecipe(130, items.Crab, items.BurnedCrab, 0.2, 1, items.RawCrab);
+            EnsureCookingRecipe(170, items.Lobster, items.BurnedLobster, 0.2, 1, items.RawLobster);
+            EnsureCookingRecipe(220, items.BlueLobster, items.BurnedBlueLobster, 0.2, 1, items.RawBlueLobster);
+            EnsureCookingRecipe(280, items.Swordfish, items.BurnedSwordfish, 0.2, 1, items.RawSwordfish);
+            EnsureCookingRecipe(350, items.PufferFish, items.BurnedPufferFish, 0.2, 1, items.RawPufferFish);
+            EnsureCookingRecipe(420, items.Octopus, items.BurnedOctopus, 0.2, 1, items.RawOctopus);
+            EnsureCookingRecipe(500, items.MantaRay, items.BurnedMantaRay, 0.2, 1, items.RawMantaRay);
+            EnsureCookingRecipe(700, items.Kraken, items.BurnedKraken, 0.2, 1, items.RawKraken);
 
             // cooking various meats and stuff
             EnsureCookingRecipeGuaranteed(10, items.Flour, Ingredient(items.Wheat));
             EnsureCookingRecipe(30, items.Bread, items.BurnedBread, 0.2, 1, items.Flour, items.Water, items.Salt, items.Yeast);
             EnsureCookingRecipeGuaranteed(60, items.HamSandwich, Ingredients(items.Bread, items.Butter));
-            EnsureCookingRecipe(80, items.CookedPork, items.BurnedPork, 0.2, 1, items.RawPork);
+            EnsureCookingRecipe(80, items.RoastedPork, items.BurnedPork, 0.2, 1, items.RawPork);
             EnsureCookingRecipeGuaranteed(90, items.Ham, Ingredients(items.Salt, items.BlackPepper, items.RawPork));
-            EnsureCookingRecipe(100, items.CookedChicken, items.BurnedChicken, 0.2, 1, items.RawChicken);
+
+            EnsureCookingRecipe(100, items.RoastedChicken, items.BurnedChicken, 0.2, 1, items.RawChicken);
+
+            EnsureCookingRecipeGuaranteed(110, items.Cheese, Ingredients(items.Milk, items.Yeast, items.Salt));
+
             EnsureCookingRecipe(150, items.GrilledCheese, items.BurnedGrilledCheese, 0.2, 1, items.Bread, items.Butter, items.Cheese, items.Ham);
-            EnsureCookingRecipe(180, items.CookedBeef, items.BurnedBeef, 0.2, 1, items.RawBeef);
+            EnsureCookingRecipe(180, items.RoastBeef, items.BurnedBeef, 0.2, 1, items.RawBeef);
             EnsureCookingRecipe(200, items.ApplePie, items.BurnedApplePie, 0.2, 1, items.Apple, items.Sugar, items.Butter, items.Flour, items.Cinnamon);
+
+            EnsureCookingRecipeGuaranteed(400, items.Chocolate, Ingredients(items.Cacao, items.Milk, items.Sugar));
+
+            EnsureCookingRecipe(450, items.ChocolateChipCookies, items.BurnedChocolateChipCookies, 0.2, 1, items.Chocolate, items.Sugar, items.Butter, items.Flour);
 
             EnsureCookingRecipeGuaranteed(500, items.RedWine, Ingredient(items.Grapes, 10));
 
@@ -706,13 +988,13 @@ namespace RavenNest.BusinessLogic.Data
                 "Leviathan's Royal Stew", "This is a hearty stew that combines the tender meat of the Leviathan with a variety of other ingredients to create a flavorful dish worthy of its namesake.",
                 items.LeviathansRoyalStew,
                 items.MuddledLeviathanBroth, 0.5, 1,
-                items.Leviathian, items.Water, items.SpiceMix, items.Onion, items.Tomato, items.Flour, items.Mushroom, items.CookedBeef, items.Butter, items.RedWine);
+                items.RawLeviathan, items.Water, items.SpiceMix, items.Onion, items.Tomato, items.Flour, items.Mushroom, items.RoastBeef, items.Butter, items.RedWine);
 
             EnsureCookingRecipe(999,
                 "Poseidon's Guardian Feast", "A luxurious dish that showcases the divine nature of Poseidon's Guardian. It involves a series of preparations that results in a meal fit for a deity.",
                 items.PoseidonsGuardianFeast,
                 items.RuinedGuardianDelight, 0.5, 1,
-                items.PoseidonsGuardian, items.SpiceMix, items.Milk, items.Eggs, items.CookedChicken, items.Cheese, items.Tomato, items.Onion, items.Flour, items.GoldenLeaf);
+                items.RawPoseidonsGuardian, items.SpiceMix, items.Milk, items.Eggs, items.RoastedChicken, items.Cheese, items.Tomato, items.Onion, items.Flour, items.GoldenLeaf);
             #endregion
         }
 
@@ -721,7 +1003,7 @@ namespace RavenNest.BusinessLogic.Data
             var effects = itemStatusEffects.Entities.ToList();
 
             // Eating cooked fish
-            GetOrCreateItemStatusEffect(effects, typedItems.CookedShrimp, StatusEffectType.Heal, 0.02f, 2);
+            GetOrCreateItemStatusEffect(effects, typedItems.Shrimp, StatusEffectType.Heal, 0.02f, 2);
 
             // Consuming Potions
 
@@ -748,27 +1030,27 @@ namespace RavenNest.BusinessLogic.Data
             GetOrCreateItemStatusEffect(effects, typedItems.RegenPotion, StatusEffectType.HealOverTime, 15, 0.25f, 50); // will heal total of 25% of max health or minimum 25 hp over the duration of 15 seconds.
 
             // Fish dishes
-            EnsureItemStatusEffects(typedItems.CookedSprat, Effect(StatusEffectType.Heal, 0.03f, 3));
-            EnsureItemStatusEffects(typedItems.CookedShrimp, Effect(StatusEffectType.Heal, 0.04f, 4));
-            EnsureItemStatusEffects(typedItems.CookedRedSeaBass, Effect(StatusEffectType.Heal, 0.06f, 10));
-            EnsureItemStatusEffects(typedItems.CookedBass, Effect(StatusEffectType.Heal, 0.08f, 12));
-            EnsureItemStatusEffects(typedItems.CookedPerch, Effect(StatusEffectType.Heal, 0.10f, 15));
-            EnsureItemStatusEffects(typedItems.CookedSalmon, Effect(StatusEffectType.Heal, 0.12f, 20), Effect(StatusEffectType.IncreasedStrength, 90, 0.05f, 2));
-            EnsureItemStatusEffects(typedItems.CookedCrab, Effect(StatusEffectType.Heal, 0.15f, 25), Effect(StatusEffectType.IncreasedDefense, 90, 0.05f, 2));
-            EnsureItemStatusEffects(typedItems.CookedLobster, Effect(StatusEffectType.Heal, 0.20f, 25), Effect(StatusEffectType.IncreasedAttackPower, 120, 0.07f, 3));
-            EnsureItemStatusEffects(typedItems.CookedBlueLobster, Effect(StatusEffectType.Heal, 0.25f, 30), Effect(StatusEffectType.IncreasedMagicPower, 120, 0.08f, 3));
-            EnsureItemStatusEffects(typedItems.CookedSwordfish, Effect(StatusEffectType.Heal, 0.25f, 30), Effect(StatusEffectType.IncreasedAttackSpeed, 180, 0.10f, 3));
-            EnsureItemStatusEffects(typedItems.CookedPufferFish, Effect(StatusEffectType.Heal, 0.30f, 35), Effect(StatusEffectType.IncreasedDodge, 150, 0.10f, 0));
-            EnsureItemStatusEffects(typedItems.CookedOctopus, Effect(StatusEffectType.Heal, 0.35f, 40), Effect(StatusEffectType.IncreasedMagicPower, 240, 0.12f, 4));
-            EnsureItemStatusEffects(typedItems.CookedMantaRay, Effect(StatusEffectType.Heal, 0.40f, 50), Effect(StatusEffectType.IncreasedMovementSpeed, 240, 0.10f, 0));
-            EnsureItemStatusEffects(typedItems.CookedKraken, Effect(StatusEffectType.Heal, 0.45f, 60), Effect(StatusEffectType.IncreasedExperienceGain, 300, 0.12f, 0));
+            EnsureItemStatusEffects(typedItems.Sprat, Effect(StatusEffectType.Heal, 0.03f, 3));
+            EnsureItemStatusEffects(typedItems.Shrimp, Effect(StatusEffectType.Heal, 0.04f, 4));
+            EnsureItemStatusEffects(typedItems.RedSeaBass, Effect(StatusEffectType.Heal, 0.06f, 10));
+            EnsureItemStatusEffects(typedItems.Bass, Effect(StatusEffectType.Heal, 0.08f, 12));
+            EnsureItemStatusEffects(typedItems.Perch, Effect(StatusEffectType.Heal, 0.10f, 15));
+            EnsureItemStatusEffects(typedItems.Salmon, Effect(StatusEffectType.Heal, 0.12f, 20), Effect(StatusEffectType.IncreasedStrength, 90, 0.05f, 2));
+            EnsureItemStatusEffects(typedItems.Crab, Effect(StatusEffectType.Heal, 0.15f, 25), Effect(StatusEffectType.IncreasedDefense, 90, 0.05f, 2));
+            EnsureItemStatusEffects(typedItems.Lobster, Effect(StatusEffectType.Heal, 0.20f, 25), Effect(StatusEffectType.IncreasedAttackPower, 120, 0.07f, 3));
+            EnsureItemStatusEffects(typedItems.BlueLobster, Effect(StatusEffectType.Heal, 0.25f, 30), Effect(StatusEffectType.IncreasedMagicPower, 120, 0.08f, 3));
+            EnsureItemStatusEffects(typedItems.Swordfish, Effect(StatusEffectType.Heal, 0.25f, 30), Effect(StatusEffectType.IncreasedAttackSpeed, 180, 0.10f, 3));
+            EnsureItemStatusEffects(typedItems.PufferFish, Effect(StatusEffectType.Heal, 0.30f, 35), Effect(StatusEffectType.IncreasedDodge, 150, 0.10f, 0));
+            EnsureItemStatusEffects(typedItems.Octopus, Effect(StatusEffectType.Heal, 0.35f, 40), Effect(StatusEffectType.IncreasedMagicPower, 240, 0.12f, 4));
+            EnsureItemStatusEffects(typedItems.MantaRay, Effect(StatusEffectType.Heal, 0.40f, 50), Effect(StatusEffectType.IncreasedMovementSpeed, 240, 0.10f, 0));
+            EnsureItemStatusEffects(typedItems.Kraken, Effect(StatusEffectType.Heal, 0.45f, 60), Effect(StatusEffectType.IncreasedExperienceGain, 300, 0.12f, 0));
 
             // other dishes
             EnsureItemStatusEffects(typedItems.RedWine, Effect(StatusEffectType.Heal, 0.05f, 5), Effect(StatusEffectType.ReducedHitChance, 180, 0.05f, 0), Effect(StatusEffectType.IncreasedStrength, 180, 0.05f, 2));
             EnsureItemStatusEffects(typedItems.HamSandwich, Effect(StatusEffectType.Heal, 0.08f, 10));
-            EnsureItemStatusEffects(typedItems.CookedChicken, Effect(StatusEffectType.Heal, 0.10f, 15));
-            EnsureItemStatusEffects(typedItems.CookedBeef, Effect(StatusEffectType.Heal, 0.15f, 25), Effect(StatusEffectType.IncreasedStrength, 180, 0.07f, 3));
-            EnsureItemStatusEffects(typedItems.CookedPork, Effect(StatusEffectType.Heal, 0.12f, 20), Effect(StatusEffectType.IncreasedDefense, 150, 0.06f, 3));
+            EnsureItemStatusEffects(typedItems.RoastedChicken, Effect(StatusEffectType.Heal, 0.10f, 15));
+            EnsureItemStatusEffects(typedItems.RoastBeef, Effect(StatusEffectType.Heal, 0.15f, 25), Effect(StatusEffectType.IncreasedStrength, 180, 0.07f, 3));
+            EnsureItemStatusEffects(typedItems.RoastedPork, Effect(StatusEffectType.Heal, 0.12f, 20), Effect(StatusEffectType.IncreasedDefense, 150, 0.06f, 3));
             EnsureItemStatusEffects(typedItems.CookedChickenLeg, Effect(StatusEffectType.Heal, 0.10f, 15));
             EnsureItemStatusEffects(typedItems.Steak, Effect(StatusEffectType.Heal, 0.18f, 28), Effect(StatusEffectType.IncreasedStrength, 200, 0.08f, 3));
             EnsureItemStatusEffects(typedItems.GrilledCheese, Effect(StatusEffectType.Heal, 0.09f, 12), Effect(StatusEffectType.IncreasedDefense, 100, 0.05f, 2));
@@ -822,7 +1104,7 @@ namespace RavenNest.BusinessLogic.Data
             GetOrCreateItemStatusEffect(effects, typedItems.TomeOfHeim, StatusEffectType.TeleportToIsland, Island.Heim);
             GetOrCreateItemStatusEffect(effects, typedItems.TomeOfAtria, StatusEffectType.TeleportToIsland, Island.Atria);
             GetOrCreateItemStatusEffect(effects, typedItems.TomeOfEldara, StatusEffectType.TeleportToIsland, Island.Eldara);
-            GetOrCreateItemStatusEffect(effects, typedItems.TomeOfEldara, StatusEffectType.TeleportToIsland, Island.Any);
+            GetOrCreateItemStatusEffect(effects, typedItems.TomeOfTeleportation, StatusEffectType.TeleportToIsland, Island.Any);
         }
 
         public struct StatusEffect
@@ -831,6 +1113,39 @@ namespace RavenNest.BusinessLogic.Data
             public float MinAmount;
             public float Duration;
             public StatusEffectType Type;
+        }
+    }
+
+    public static class ItemExtensions
+    {
+
+        public static Item LevelRequirement(this Item item, int levelRequirement)
+        {
+            if (levelRequirement == 0) return item;
+
+            var category = (ItemCategory)item.Category;
+            var type = (ItemType)item.Type;
+
+            if (type == ItemType.TwoHandedStaff)
+                item.RequiredMagicLevel = levelRequirement;
+            else if (type == ItemType.TwoHandedBow)
+                item.RequiredRangedLevel = levelRequirement;
+            else if (category == ItemCategory.Weapon)
+                item.RequiredAttackLevel = levelRequirement;
+            else if (category == ItemCategory.Armor)
+                item.RequiredDefenseLevel = levelRequirement;
+
+            return item;
+        }
+        public static Item GenericPrefab(this Item item, string path, bool overwrite = true)
+        {
+            if (item == null) return null;
+            if (overwrite || string.IsNullOrEmpty(item.GenericPrefab))
+            {
+                item.GenericPrefab = path;
+                item.IsGenericModel = string.IsNullOrEmpty(item.GenericPrefab);
+            }
+            return item;
         }
     }
 }

@@ -23,5 +23,7 @@ namespace RavenNest.Models
         public double? Z { get; set; }
         public double RestedTime { get; set; }
         public bool? IsCaptain { get; set; }
+        public int AutoJoinDungeonCounter { get; set; }
+        public int AutoJoinRaidCounter { get; set; }
     }
 }

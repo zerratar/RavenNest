@@ -151,7 +151,7 @@ else
 
                         <tr id="@item.Id" class="item-row">
                             <td class='item image'>
-                                <img src="/imgs/items/@(item.Id).png" style="width: 40px" />
+                                <img src="@(ItemService.GetItemImage(item.Id.ToString(), item.Name))" style="width: 40px" />
                                 <div class="stash-item-amount">@entry.Amount</div>
                             </td>
                             <td class='item name'>@((entry.Name ?? item.Name))</td>

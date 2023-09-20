@@ -141,7 +141,7 @@ namespace RavenNest.Blazor.Services
             {
                 TryGetSkillIndex("Mining", out var fishingIndex);
 
-                var dropToAdd = new ResourceItemDrop
+                var dropToAdd = new RavenNest.DataModels.ResourceItemDrop
                 {
                     ItemId = item.Id,
                     DropChance = dropRate,
@@ -174,7 +174,7 @@ namespace RavenNest.Blazor.Services
             {
                 TryGetSkillIndex("Woodcutting", out var fishingIndex);
 
-                var dropToAdd = new ResourceItemDrop
+                var dropToAdd = new RavenNest.DataModels.ResourceItemDrop
                 {
                     ItemId = item.Id,
                     DropChance = dropRate,
@@ -207,7 +207,7 @@ namespace RavenNest.Blazor.Services
             {
                 TryGetSkillIndex("Farming", out var fishingIndex);
 
-                var dropToAdd = new ResourceItemDrop
+                var dropToAdd = new RavenNest.DataModels.ResourceItemDrop
                 {
                     ItemId = item.Id,
                     DropChance = dropRate,
@@ -240,7 +240,7 @@ namespace RavenNest.Blazor.Services
             {
                 TryGetSkillIndex("Fishing", out var fishingIndex);
 
-                var dropToAdd = new ResourceItemDrop
+                var dropToAdd = new RavenNest.DataModels.ResourceItemDrop
                 {
                     ItemId = item.Id,
                     DropChance = dropRate,

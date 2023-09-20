@@ -52,6 +52,15 @@ namespace RavenNest.Models
         /// </summary>
         public long Amount { get; set; }
     }
+    
+    public partial class ResourceItemDrop
+    {
+        public Guid ItemId { get; set; }
+        public Skill RequiredSkill { get; set; }
+        public int LevelRequirement { get; set; }
+        public double DropChance { get; set; }
+        public double Cooldown { get; set; }
+    }
 
     public class ItemRecipe
     {

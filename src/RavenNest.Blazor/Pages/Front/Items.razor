@@ -137,14 +137,14 @@
                         <th @onclick="SortByType">Item Type <span>@GetIndicator("type")</span></th>
                         <th @onclick="SortByMaterial">Material Type <span>@GetIndicator("material")</span></th>
                         <th @onclick="SortByVendorPrice">Vendor Price <span>@GetIndicator("vendor")</span></th>
-                        <th>Recipe</th>
+                        <th>Use &amp; Source</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var item in items)
                     {
                         <tr id="@item.Id" class="@(Id == item.Id.ToString() ? "item-row selected" : "item-row")">
-                            <td><img src="/imgs/items/@(item.Id).png" style="width: 40px" /></td>
+                            <td><img src="@(ItemService.GetItemImage(item.Id.ToString(), item.Name))" style="width: 40px" /></td>
                             <td class='item name'>@item.Name</td>
                             <td class='item description'>@item.Description</td>
                             <td class='item'>
@@ -233,6 +233,18 @@
                             <td class='item'>@item.ShopSellPrice&nbsp;<img class="ravenCoins" src="/favicon.png" /></td>
                             <td class='item recipe'>
                                 @{
+                                    var drop = ItemService.GetResourceItemDrop(item.Id);
+                                    if (drop != null)
+                                    {
+                                        <div class="drop-details">
+                                            <label class='drop-label'>Dropped from</label>
+                                            <div class="drop-skill-level">
+                                                <label>@drop.RequiredSkill.ToString() Level </label>
+                                                <span class='drop-level-requirement'>@drop.LevelRequirement</span>
+                                            </div>
+                                        </div>
+                                    }
+
                                     var itemRecipe = ItemService.GetItemRecipe(item.Id);
                                     if (itemRecipe != null)
                                     {

@@ -22,5 +22,7 @@ namespace RavenNest.DataModels
         private double? z; public double? Z { get => z; set => Set(ref z, value); }
         private double? restedTime; public double? RestedTime { get => restedTime; set => Set(ref restedTime, value); }
         private bool? isCaptain; public bool? IsCaptain { get => isCaptain; set => Set(ref isCaptain, value); }
+        private int autoJoinDungeonCounter; public int AutoJoinDungeonCounter { get => autoJoinDungeonCounter; set => Set(ref autoJoinDungeonCounter, value); }
+        private int autoJoinRaidCounter; public int AutoJoinRaidCounter { get => autoJoinRaidCounter; set => Set(ref autoJoinRaidCounter, value); }
     }
 }

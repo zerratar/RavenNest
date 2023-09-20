@@ -10,6 +10,7 @@ using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Game.Enchantment;
 using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.BusinessLogic.Extensions;
+using System.IO;
 
 namespace RavenNest.Blazor.Services
 {
@@ -20,6 +21,7 @@ namespace RavenNest.Blazor.Services
         private readonly IReadOnlyList<DataModels.ItemAttribute> availableAttributes;
 
         public ItemService(
+            //Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment,
             GameData gameData,
             ItemManager itemManager,
             IHttpContextAccessor accessor,
@@ -40,6 +42,49 @@ namespace RavenNest.Blazor.Services
             return invItems.Count + bankItems.Count + (vendorItem != null ? 1 : 0) + marketItems.Count;
         }
 
+        public string GetItemImage(Guid itemId, string itemName)
+        {
+            return GetItemImage(itemId.ToString(), itemName);
+        }
+
+        public string GetItemImage(string itemId, string itemName)
+        {
+            //Environment.WebRootPath
+
+            var path = "/imgs/items/";
+            if (!System.IO.Directory.Exists("/imgs/items/"))
+                path = "wwwroot" + path;
+
+            if (!string.IsNullOrEmpty(itemName))
+            {
+                var fileNamePath = Path.Combine(path, itemName.ToLower().Replace("'", "").Replace(' ', '-') + ".png");
+                if (System.IO.File.Exists(fileNamePath))
+                {
+                    return fileNamePath.Replace("wwwroot/", "");
+                }
+            }
+
+            var usingItemId = Path.Combine(path, $"{itemId}.png");
+            if (System.IO.File.Exists(usingItemId))
+            {
+                return usingItemId.Replace("wwwroot/", "");
+            }
+
+            return string.Empty;
+        }
+
+        public string GetItemImage(Guid itemId)
+        {
+            var item = gameData.GetItem(itemId);
+            var itemName = "";
+            if (item != null)
+            {
+                itemName = item.Name;
+            }
+
+            return GetItemImage(itemId.ToString(), itemName);
+        }
+
         public IReadOnlyList<RavenNest.Models.ItemRecipe> GetItemRecipesByIngredient(Guid itemId)
         {
             var recipes = new List<RavenNest.Models.ItemRecipe>();
@@ -50,6 +95,13 @@ namespace RavenNest.Blazor.Services
                 recipes.Add(ModelMapper.Map(gameData, recipe));
             }
             return recipes;
+        }
+
+        public RavenNest.Models.ResourceItemDrop GetResourceItemDrop(Guid itemId)
+        {
+            var drop = gameData.GetResourceItemDrop(itemId);
+            if (drop == null) return null;
+            return ModelMapper.Map(drop);
         }
 
         public RavenNest.Models.ItemRecipe GetItemRecipe(Guid itemId)

@@ -32,13 +32,29 @@
                     <b>@GetRestedTime()</b>
                     <span>of rested time&nbsp;</span>
                 }
-                else if (!string.IsNullOrEmpty(trainingSkill))
+                else if (trainingSkill != null)
                 {
-                    <span>You're currently training&nbsp;</span>
+                    if (trainingSkill.IsCollectingItem)
+                    {
+                        <span>You're currently&nbsp;</span>
 
-                    <b>@GetTrainingSkillName()</b>
+                        <b>@GetTrainingSkillName()</b>
 
-                    <span>&nbsp;</span>
+                        <span>&nbsp;</span>
+                        
+                        <b>@(trainingSkill.ItemName)</b>
+                        
+                        <span>&nbsp;</span>
+                    }
+                    else
+                    {
+
+                        <span>You're currently training&nbsp;</span>
+
+                        <b>@GetTrainingSkillName()</b>
+
+                        <span>&nbsp;</span>
+                    }
                 }
                 else
                 {
@@ -143,7 +159,7 @@
 
     [Parameter]
     public bool CanManage { get; set; }
-    private string trainingSkill;
+    private TrainingSkill trainingSkill;
     private int currentHealth;
 
     private RavenNest.Models.SessionInfo session;
@@ -190,8 +206,8 @@
 
         if (Player.State != null)
         {
-            trainingSkill = Player.State.InDungeon || !string.IsNullOrEmpty(Player.State.Island) ? (Player.State.TaskArgument ?? Player.State.Task) : null;
-            isSailing = string.IsNullOrEmpty(trainingSkill) && string.IsNullOrEmpty(Player.State.Island);
+            trainingSkill = PlayerService.GetTrainingSkill(Player.State);
+            isSailing = trainingSkill == null && string.IsNullOrEmpty(Player.State.Island);
             currentHealth = Player.State.Health;
         }
         else
@@ -293,13 +309,13 @@
 
     private string GetTrainingSkillName()
     {
-        if (string.IsNullOrEmpty(trainingSkill))
+        if (trainingSkill == null)
             return null;
 
-        if (trainingSkill.Equals("all", StringComparison.OrdinalIgnoreCase))
+        if (trainingSkill.Name.Equals("all", StringComparison.OrdinalIgnoreCase))
             return "All";
 
-        if (trainingSkill.Equals("heal", StringComparison.OrdinalIgnoreCase))
+        if (trainingSkill.Name.Equals("heal", StringComparison.OrdinalIgnoreCase))
             return "Healing";
 
         if (Player == null || Player.Skills == null)
@@ -316,10 +332,10 @@
         if (isSailing && skill.Name.Equals("Sailing"))
             return true;
 
-        if (string.IsNullOrEmpty(trainingSkill))
+        if (trainingSkill == null)
             return false;
 
-        var t = trainingSkill.ToLower();
+        var t = trainingSkill.Name.ToLower();
 
         if (n.StartsWith(t, StringComparison.OrdinalIgnoreCase))
             return true;

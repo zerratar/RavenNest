@@ -67,7 +67,6 @@
                 @if (highscores == null)
                 {
                     <LoadIndicator></LoadIndicator>
-
                     <tr class="highscore-item">
                         <td class='player-rank'>**</td>
                         <td class='player-name'>Loading</td>
@@ -121,7 +120,7 @@
                                     </div>
                                 }
                             </td>
-                            <td class='player-experience'>@item.Experience</td>
+                            <td class='player-experience'>@((long)item.Experience)</td>
                         </tr>
                     }
                 }

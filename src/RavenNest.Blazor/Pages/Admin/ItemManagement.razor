@@ -45,7 +45,7 @@
                                         <div class="input-row">
                                             @if (ItemImageExists())
                                             {
-                                                <img src="/imgs/items/@(editedItem.IdString).png" class="item-image" />
+                                                <img src="@(ItemService.GetItemImage(editedItem.IdString, editedItem.Name))" class="item-image" />
                                             }
                                             else
                                             {
@@ -427,14 +427,14 @@
                     <th class="type">Item Type</th>
                     <th class="material">Material Type</th>
                     <th class="shop-sell-price">Vendor Price</th>
-                    <th class="crafting-requirement">Recipe</th>
+                    <th class="crafting-requirement">Use &amp; Source</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var item in items)
                 {
                     <tr id="@item.Id" class="item-row">
-                        <td><img src="/imgs/items/@(item.Id).png" style="width: 40px" /></td>
+                        <td><img src="@(ItemService.GetItemImage(item.Id.ToString(), item.Name))" style="width: 40px" /></td>
                         <td class='item name'>@item.Name</td>
                         <td class='item stats'>
                             @if (item.WeaponAim > 0)
@@ -514,6 +514,18 @@
                         <td class='item shop-sell-price'>@item.ShopSellPrice&nbsp;<img class="ravenCoins" src="/favicon.png" /></td>
                         <td class='item recipe'>
                             @{
+                                var drop = ItemService.GetResourceItemDrop(item.Id);
+                                if (drop != null)
+                                {
+                                    <div class="drop-details">
+                                        <label class='drop-label'>Dropped from</label>
+                                        <div class="drop-skill-level">
+                                            <label>@drop.RequiredSkill.ToString() Level </label>
+                                            <span class='drop-level-requirement'>@drop.LevelRequirement</span>
+                                        </div>
+                                    </div>
+                                }
+
                                 var itemRecipe = ItemService.GetItemRecipe(item.Id);
                                 if (itemRecipe != null)
                                 {
@@ -649,12 +661,12 @@
 
     private bool ItemImageExists()
     {
-        var fileName = editedItem.IdString + ".png";
-        var path = Path.Combine(Environment.WebRootPath, "imgs", "items", fileName);
-        return File.Exists(path);
+        //var fileName = ItemService.GetItemImage(editedItem.IdString, editedItem.Name);
+        //return File.Exists(fileName);
+        var pathId = Path.Combine(Environment.WebRootPath, "imgs", "items", editedItem.IdString + ".png");
+        var pathName = Path.Combine(Environment.WebRootPath, "imgs", "items", editedItem.Name.ToLower().Replace(" ", "-").Replace("'", "") + ".png");
+        return File.Exists(pathName) || File.Exists(pathId);
     }
-
-
 
     private async void RemovePossessions(RavenNest.Models.Item item)
     {
@@ -675,8 +687,6 @@
         StateHasChanged();
     }
 
-
-
     private async Task UploadImage(InputFileChangeEventArgs e)
     {
         var browserFile = e.File;
@@ -688,8 +698,9 @@
         }
 
         var fileName = editedItem.Id + ".png";
+        if (!string.IsNullOrEmpty(editedItem.Name))
+            fileName = editedItem.Name.ToLower().Replace(" ", "-").Replace("'", "") + ".png";
         var path = Path.Combine(Environment.WebRootPath, "imgs", "items", fileName);
-
         if (File.Exists(path))
         {
             bool confirm = await JsRuntime.InvokeAsync<bool>("confirm", "An existing image already exists and this action will replace it. Are you sure?");
@@ -790,7 +801,6 @@
             StateHasChanged();
         }
     }
-
 
     private async Task LoadItems()
     {

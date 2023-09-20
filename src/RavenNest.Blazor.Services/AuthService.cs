@@ -83,8 +83,8 @@ namespace RavenNest.Blazor.Services
 
                     gameData.SetUserProperty(u.Id, UserProperties.Twitch_PubSub, accessToken);
                     //await ravenbotApi.SendTwitchPubSubAccessTokenAsync(user.Id, user.Login, accessToken);
-                    ravenbotApi.UpdateUserSettings(u.Id);
                     await logoService.UpdateUserLogosAsync(user);
+                    await ravenbotApi.UpdateUserSettingsAsync(u.Id);
                 }
             }
         }
@@ -131,7 +131,7 @@ namespace RavenNest.Blazor.Services
 
                     gameData.SetUserProperty(u.Id, UserProperties.Twitch_PubSub, accessToken);
 
-                    ravenbotApi.UpdateUserSettings(u.Id);
+                    await ravenbotApi.UpdateUserSettingsAsync(u.Id);
 
                     //await ravenbotApi.SendTwitchPubSubAccessTokenAsync(user.Id, user.Login, accessToken);
                 }

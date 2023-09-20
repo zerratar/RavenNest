@@ -30,6 +30,13 @@ namespace RavenNest.BusinessLogic.Game
                 .Select(x => DataMapper.Map<RedeemableItem, DataModels.RedeemableItem>(x)));
         }
 
+        public ResourceItemDropCollection GetResourceItemDrops()
+        {
+            return new ResourceItemDropCollection(gameData
+                .GetResourceItemDrops()
+                .Select(x => ModelMapper.Map(x)));
+        }
+
         public ItemRecipeCollection GetRecipes()
         {
             if (memoryCache.TryGetValue<ItemRecipeCollection>("GetRecipes", out var recipes))

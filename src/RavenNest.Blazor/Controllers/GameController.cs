@@ -1,13 +1,11 @@
-﻿using System;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
-using RavenNest.BusinessLogic.Net;
 using RavenNest.Models;
-using RavenNest.Sessions;
+using System;
+using System.Threading.Tasks;
 
 namespace RavenNest.Controllers
 {
@@ -272,6 +270,7 @@ namespace RavenNest.Controllers
                 return null;
             }
         }
+
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("raid-reward")]

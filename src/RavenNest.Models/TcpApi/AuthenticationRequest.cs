@@ -68,11 +68,14 @@ namespace RavenNest.Models.TcpApi
         public Island Destination { get; set; }
         public CharacterFlags State { get; set; }
         public int TrainingSkillIndex { get; set; }
+        public string TaskArgument { get; set; }
         public long ExpPerHour { get; set; }
         public DateTime EstimatedTimeForLevelUp { get; set; }
         public short X { get; set; }
         public short Y { get; set; }
         public short Z { get; set; }
+        public int AutoJoinRaidCounter { get; set; }
+        public int AutoJoinDungeonCounter { get; set; }
     }
 
 
@@ -89,6 +92,8 @@ namespace RavenNest.Models.TcpApi
         public float X { get; set; }
         public float Y { get; set; }
         public float Z { get; set; }
+        public int AutoJoinRaidCounter { get; set; }
+        public int AutoJoinDungeonCounter { get; set; }
         public long ExpPerHour { get; set; }
         public DateTime EstimatedTimeForLevelUp { get; set; }
         public SkillUpdate[] Skills { get; set; }

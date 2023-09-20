@@ -339,7 +339,8 @@
         {
             return $"/api/twitch/logo/{tag}";
         }
-        return $"/imgs/items/{itemId}.png";
+
+        return ItemService.GetItemImage(itemId);//
     }
 
     public string GetItemAmount(InventoryItem item)

@@ -37,7 +37,6 @@ namespace RavenNest.Controllers
             GameData gameData,
             LogoService logoService,
             SessionInfoProvider sessionInfoProvider,
-            PlayerInventoryProvider inventoryProvider,
             SessionManager sessionManager,
             PlayerManager playerManager,
 
@@ -58,9 +57,8 @@ namespace RavenNest.Controllers
 
             var a = unknownProfilePictureUrl = "imgs/ravenfall_logo_tiny.png";
             if (!System.IO.File.Exists(a))
-            {
                 a = Path.Combine("wwwroot", a);
-            }
+
             if (System.IO.File.Exists(a))
             {
                 this.unknownProfilePictureBytes = System.IO.File.ReadAllBytes(a);
@@ -357,9 +355,16 @@ namespace RavenNest.Controllers
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{characterId}/use/{inventoryItemId}/{arg}")]
-        public ItemUseResult UseItem(Guid characterId, Guid inventoryItemId, string arg)
+        public ItemUseResult UseItemWithArgs(Guid characterId, Guid inventoryItemId, string arg)
         {
             return playerManager.UseItem(AssertGetSessionToken(), characterId, inventoryItemId, arg);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("{characterId}/use/{inventoryItemId}")]
+        public ItemUseResult UseItem(Guid characterId, Guid inventoryItemId)
+        {
+            return playerManager.UseItem(AssertGetSessionToken(), characterId, inventoryItemId, null);
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -384,6 +389,23 @@ namespace RavenNest.Controllers
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("raid-auto")]
+        public bool[] RaidAuto(Many<Guid> characterIds)
+        {
+            try
+            {
+                var session = GetSessionToken();
+                AssertSessionTokenValidity(session);
+                return playerManager.AutoJoinRaid(session, characterIds.Values);
+            }
+            catch (Exception exc)
+            {
+                return new bool[characterIds.Values.Length];
+            }
+        }
+
+
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("dungeon-auto-cost")]
         public int DungeonAutoCost()
         {
@@ -403,6 +425,23 @@ namespace RavenNest.Controllers
         {
             return playerManager.AutoJoinDungeon(AssertGetSessionToken(), characterId);
         }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("dungeon-auto")]
+        public bool[] DungeonAuto(Many<Guid> characterIds)
+        {
+            try
+            {
+                var session = GetSessionToken();
+                AssertSessionTokenValidity(session);
+                return playerManager.AutoJoinDungeon(session, characterIds.Values);
+            }
+            catch (Exception exc)
+            {
+                return new bool[characterIds.Values.Length];
+            }
+        }
+
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/unequip-instance/{inventoryItemId}")]

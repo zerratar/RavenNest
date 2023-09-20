@@ -56,18 +56,18 @@ namespace GameDataSimulation
             Console.WriteLine("Total drops: " + totalDrops);
             Console.WriteLine("");
             Console.WriteLine(result.Inventory.Count + " kinds of drops");
-            foreach (var item in result.Inventory.OrderByDescending(x => ResourceTaskProcessor.DefaultDroppableResources.FirstOrDefault(y => y.Name == x.Key).SkillLevel))
-            {
-                var i = ResourceTaskProcessor.DefaultDroppableResources.FirstOrDefault(y => y.Name == item.Key);
-                var dropChance = i.GetDropChance(miningLevel);
-                Console.ForegroundColor = ConsoleColor.Gray;
-                Console.Write(" * " + item.Key.PadRight(20, ' '));
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.Write("x" + (item.Value).ToString().PadRight(3, ' '));
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.Write((Math.Round((dropChance * 100), 2) + "%").PadLeft(7, ' '));
-                Console.WriteLine();
-            }
+            //foreach (var item in result.Inventory.OrderByDescending(x => ResourceTaskProcessor.DefaultDroppableResources.FirstOrDefault(y => y.Name == x.Key).SkillLevel))
+            //{
+            //    var i = ResourceTaskProcessor.DefaultDroppableResources.FirstOrDefault(y => y.Name == item.Key);
+            //    var dropChance = i.GetDropChance(miningLevel);
+            //    Console.ForegroundColor = ConsoleColor.Gray;
+            //    Console.Write(" * " + item.Key.PadRight(20, ' '));
+            //    Console.ForegroundColor = ConsoleColor.White;
+            //    Console.Write("x" + (item.Value).ToString().PadRight(3, ' '));
+            //    Console.ForegroundColor = ConsoleColor.Cyan;
+            //    Console.Write((Math.Round((dropChance * 100), 2) + "%").PadLeft(7, ' '));
+            //    Console.WriteLine();
+            //}
 
             return simResult;
         }
@@ -132,22 +132,22 @@ namespace GameDataSimulation
             var chance = Random.NextDouble();
             if (chance <= ItemDropRateSettings.InitDropChance)
             {
-                foreach (var res in ResourceTaskProcessor.DefaultDroppableResources.OrderByDescending(x => x.SkillLevel))
-                {
-                    chance = Random.NextDouble();
-                    if (skillLevel >= res.SkillLevel && (chance <= res.GetDropChance(skillLevel)))
-                    {
-                        onDrop(res);
+                //foreach (var res in ResourceTaskProcessor.DefaultDroppableResources.OrderByDescending(x => x.SkillLevel))
+                //{
+                //    chance = Random.NextDouble();
+                //    if (skillLevel >= res.SkillLevel && (chance <= res.GetDropChance(skillLevel)))
+                //    {
+                //        onDrop(res);
 
-                        //IncrementItemStack(gameData, inventoryProvider, session, character, res.Id);
-                        if (isMultiDrop)
-                        {
-                            isMultiDrop = false;
-                            continue;
-                        }
-                        break;
-                    }
-                }
+                //        //IncrementItemStack(gameData, inventoryProvider, session, character, res.Id);
+                //        if (isMultiDrop)
+                //        {
+                //            isMultiDrop = false;
+                //            continue;
+                //        }
+                //        break;
+                //    }
+                //}
             }
         }
         public class MiningSimulationResult : SimulationResult

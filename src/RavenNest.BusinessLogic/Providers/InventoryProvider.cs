@@ -1430,6 +1430,7 @@ namespace RavenNest.BusinessLogic.Providers
         public double DoubleValue { get; set; }
     }
 
+
     public static class InventoryItemExtensions
     {
         public static ReadOnlyInventoryItem AsReadOnly(this InventoryItem item, GameData gameData)

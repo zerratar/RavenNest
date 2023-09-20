@@ -131,7 +131,7 @@
                 @foreach (var item in resourceItemDrops)
                 {
                     <tr id="@item.Id" class="item-row">
-                        <td><img src="/imgs/items/@(item.ItemId).png" style="width: 40px" /></td>
+                        <td><img src="@(ItemService.GetItemImage(item.ItemId))" style="width: 40px" /></td>
                         <td class='item'>@item.ItemName</td>
                         <td class='item'>@(item.Skill != null ? RavenNest.DataModels.Skills.SkillNames[item.Skill.Value] : "")</td>
                         <td class='item'>@item.LevelRequirement</td>

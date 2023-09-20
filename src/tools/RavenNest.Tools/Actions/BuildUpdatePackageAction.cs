@@ -181,6 +181,11 @@ namespace RavenNest.Tools.Actions
         private System.Version IncrementVersion(System.Version version, int major, int minor, int build, int revision)
         {
             revision = version.Revision < 0 ? revision : version.Revision + revision;
+            
+            build = version.Build;
+            minor = version.Minor;
+            major = version.Major;
+
             if (revision >= MAX_REVISION)
             {
                 revision = 0;
@@ -199,9 +204,6 @@ namespace RavenNest.Tools.Actions
                 major++;
             }
 
-            build = version.Build + build;
-            minor = version.Minor + minor;
-            major = version.Major + major;
             return new System.Version(major, minor, build, revision);
         }
 

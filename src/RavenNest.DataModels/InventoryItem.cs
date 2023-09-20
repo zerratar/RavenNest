@@ -19,5 +19,10 @@ namespace RavenNest.DataModels
 
         // private Guid? creatorId; public Guid? CreatorId { get => creatorId; set => Set(ref creatorId, value); }
 
+        public override string ToString()
+        {
+            return $"{Name} (x{Amount}) ID: {Id}";
+        }
+
     }
 }

@@ -9,16 +9,12 @@ using Microsoft.Extensions.Options;
 using System.Diagnostics;
 using RavenNest.Models.TcpApi;
 using MessagePack;
-using Telepathy;
-using static RavenNest.BusinessLogic.Models.Patreon.API.PatreonIdentity;
-using RavenNest.BusinessLogic.Twitch.Extension;
-using RavenNest.Sessions;
 
 namespace RavenNest.BusinessLogic.Net
 {
     public class TcpSocketApi : ITcpSocketApi
     {
-        public const int MaxMessageSize = 1_048_576; // 1024 * 1024
+        public const int MaxMessageSize = 1_048_576 * 2; // 1024 * 1024
 
         public const int MaxMessageSize_v0820 = 16 * 1024;
 

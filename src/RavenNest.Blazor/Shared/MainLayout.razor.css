@@ -48,12 +48,21 @@ h1 {
 img.logo {
     width: 160px;
 }
-
+/*
 .top-social {
     display: flex;
     justify-items: right;
     justify-content: right;
     position: absolute;
+}*/
+
+.top-social {
+    display: flex;
+    justify-items: start;
+    justify-content: center;
+    position: absolute;
+    top: -45px;
+    left: 0;
 }
 
 .top-social a.nav-link {

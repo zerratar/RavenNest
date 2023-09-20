@@ -43,6 +43,48 @@ namespace RavenNest.BusinessLogic
             this.kernel = kernel;
         }
 
+        public async Task UpdateUserSettingsAsync(Guid userId)
+        {
+            // lets just overwrite the actual json file.
+            // the bot will realize it has changed and will reload the file.
+            try
+            {
+                var targetFile = System.IO.Path.Combine(SettingsDirectory, userId + ".json");
+                var dir = System.IO.Path.GetDirectoryName(targetFile);
+
+                var settings = gameData.GetUserSettings(userId);
+                if (settings == null)
+                {
+                    return; // we don't have anything to save.
+                }
+
+                if (!System.IO.Directory.Exists(dir))
+                    System.IO.Directory.CreateDirectory(dir);
+
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(settings);
+
+                const int maxRetries = 5;
+                for (int i = 0; i < maxRetries; i++)
+                {
+                    try
+                    {
+                        System.IO.File.WriteAllText(targetFile, json);
+                        break; // success, break out of the loop
+                    }
+                    catch (System.IO.IOException)
+                    {
+                        if (i == maxRetries - 1)
+                            throw; // last attempt, rethrow exception
+                        await Task.Delay(100); // wait for 100 ms before retrying
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+            }
+        }
+
         public void UpdateUserSettings(Guid userId)
         {
             // lets just overwrite the actual json file.
@@ -60,8 +102,8 @@ namespace RavenNest.BusinessLogic
 
                 if (System.IO.Directory.Exists(dir))
                     System.IO.Directory.CreateDirectory(dir);
-
-                System.IO.File.WriteAllText(targetFile, Newtonsoft.Json.JsonConvert.SerializeObject(settings));
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(settings);
+                System.IO.File.WriteAllText(targetFile, json);
             }
             catch (Exception exc)
             {

@@ -145,6 +145,8 @@ namespace RavenNest.BusinessLogic.Extensions
                     state.X = data.X;
                     state.Y = data.Y;
                     state.Z = data.Z;
+                    state.AutoJoinDungeonCounter = data.AutoJoinDungeonCounter;
+                    state.AutoJoinRaidCounter = data.AutoJoinRaidCounter;
                 }
             }
 
@@ -446,8 +448,21 @@ namespace RavenNest.BusinessLogic.Extensions
                 StartUtc = x.StartUtc,
                 ExpiresUtc = x.ExpiresUtc,
                 Type = Map(x.Type),
-                Amount = x.Amount,
+                Amount = (float)x.Amount,
             });
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RavenNest.Models.ResourceItemDrop Map(DataModels.ResourceItemDrop x)
+        {
+            return new RavenNest.Models.ResourceItemDrop
+            {
+                Cooldown = x.Cooldown.GetValueOrDefault(),
+                DropChance = x.DropChance,
+                ItemId = x.ItemId,
+                LevelRequirement = x.LevelRequirement,
+                RequiredSkill = x.Skill == null ? RavenNest.Models.Skill.None : (RavenNest.Models.Skill)x.Skill.Value
+            };
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

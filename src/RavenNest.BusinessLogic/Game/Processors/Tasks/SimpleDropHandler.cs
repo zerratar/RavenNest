@@ -70,6 +70,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             GameSession session,
             Character character,
             int skillLevel,
+            string taskArgument,
             Func<ResourceDrop, bool> canDrop = null)
         {
             var chance = resProcessor.Random.NextDouble();
@@ -86,27 +87,63 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             }
 
             var now = DateTime.UtcNow;
+
+            var targetDrop = drops.FirstOrDefault(x => x.Name.ToLower() == taskArgument.ToLower());
+            if (targetDrop != null)
+            {
+                if (TryDrop(gameData, inventoryProvider, session, resProcessor, character, skillLevel, targetDrop, canDrop))
+                {
+                    return true;
+                }
+            }
+
             foreach (var res in drops.OrderByRandomWeighted(x => x.SkillLevel, dropRandom))//drops.OrderByDescending(x => x.SkillLevel))
             {
-                var cooldownKey = character.Id + "_" + res.Id;
-                if (res.Cooldown > 0 && dropTimes.TryGetValue(cooldownKey, out var lastDrop))
+                // we have already tested this one? if so skip it.
+                if (targetDrop != null && res.Id == targetDrop.Id)
                 {
-                    var timeSinceLastDrop = now - lastDrop;
-                    if (timeSinceLastDrop < TimeSpan.FromSeconds(res.Cooldown))
-                    {
-                        continue;
-                    }
+                    continue;
                 }
 
-                chance = resProcessor.Random.NextDouble();
-                if (skillLevel >= res.SkillLevel && (chance <= res.GetDropChance(skillLevel)))
+                if (TryDrop(gameData, inventoryProvider, session, resProcessor, character, skillLevel, res, canDrop))
                 {
-                    if (canDrop == null || canDrop(res))
-                    {
-                        dropTimes[cooldownKey] = now;
-                        resProcessor.IncrementItemStack(gameData, inventoryProvider, session, character, res.Id);
-                        return true;
-                    }
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool TryDrop(
+            GameData gameData,
+            PlayerInventoryProvider inventoryProvider,
+            GameSession session,
+            ResourceTaskProcessor resProcessor,
+            Character character,
+            int skillLevel, ResourceDrop targetDrop,
+            Func<ResourceDrop, bool> canDrop = null)
+        {
+            var now = DateTime.UtcNow;
+
+            var cooldownKey = character.Id + "_" + targetDrop.Id;
+            if (targetDrop.Cooldown > 0 && dropTimes.TryGetValue(cooldownKey, out var lastDrop))
+            {
+                var timeSinceLastDrop = now - lastDrop;
+                if (timeSinceLastDrop < TimeSpan.FromSeconds(targetDrop.Cooldown))
+                {
+                    return false;
+                }
+            }
+
+            var chance = resProcessor.Random.NextDouble();
+            var dropChance = targetDrop.GetDropChance(skillLevel);
+            if (skillLevel >= targetDrop.SkillLevel && (chance <= dropChance))
+            {
+                if (canDrop == null || canDrop(targetDrop))
+                {
+                    dropTimes[cooldownKey] = now;
+                    resProcessor.IncrementItemStack(gameData, inventoryProvider, session, character, targetDrop.Id);
+                    return true;
                 }
             }
 

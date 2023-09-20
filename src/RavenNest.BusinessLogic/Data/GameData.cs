@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.BusinessLogic.Net;
+using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
 
 namespace RavenNest.BusinessLogic.Data
@@ -240,6 +241,8 @@ namespace RavenNest.BusinessLogic.Data
                     characterStatusEffects.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
                     itemDrops = new EntitySet<ItemDrop>(restorePoint?.Get<ItemDrop>() ?? ctx.ItemDrop.ToList());
+                    itemDrops.RegisterLookupGroup(nameof(Item), x => x.ItemId);
+
                     resourceItemDrops = new EntitySet<ResourceItemDrop>(restorePoint?.Get<ResourceItemDrop>() ?? ctx.ResourceItemDrop.ToList());
                     resourceItemDrops.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
@@ -470,8 +473,6 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureCraftingRequirements(items);
                 //MergeLoyaltyData(loyalty);
 
-                EnsureDropLists();
-
                 MergeClans();
 
                 RemoveDuplicatedClanMembers();
@@ -482,6 +483,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 MergeInventoryItems();
                 ApplyVendorPrices();
+                ConvertUserResources();
 
                 #endregion
 
@@ -497,6 +499,315 @@ namespace RavenNest.BusinessLogic.Data
             {
                 InitializedSuccessful = false;
                 System.IO.File.WriteAllText("ravenfall-error.log", "[" + DateTime.UtcNow + "] " + exc.ToString());
+            }
+        }
+
+        public void ReturnMarketplaceItem(MarketItem i)
+        {
+            var c = GetCharacter(i.SellerCharacterId);
+            if (c == null)
+            {
+                // character does no longer exist. we cant return to sender..
+                Remove(i);
+                return;
+            }
+
+            var existingStacks = GetInventoryItems(i.SellerCharacterId, i.ItemId).FirstOrDefault(x => string.IsNullOrEmpty(x.Enchantment));
+            if (existingStacks != null)
+            {
+                existingStacks.Amount += i.Amount;
+                Remove(i);
+                return;
+            }
+
+            Add(new InventoryItem
+            {
+                Id = Guid.NewGuid(),
+                CharacterId = i.SellerCharacterId,
+                Enchantment = i.Enchantment,
+                Flags = i.Flags,
+                ItemId = i.ItemId,
+                Name = i.Name,
+                Tag = i.Tag,
+                TransmogrificationId = i.TransmogrificationId,
+                Amount = i.Amount
+            });
+        }
+
+        public static DataModels.UserBankItem CreateBankItem(Guid userId, DataModels.InventoryItem item, long amount)
+        {
+            return new DataModels.UserBankItem
+            {
+                Id = Guid.NewGuid(),
+                Amount = amount,
+                Enchantment = item.Enchantment,
+                Flags = item.Flags ?? 0,
+                ItemId = item.ItemId,
+                Name = item.Name,
+                Soulbound = item.Soulbound,
+                Tag = item.Tag,
+                TransmogrificationId = item.TransmogrificationId,
+                UserId = userId
+            };
+        }
+
+
+        public void SendToStash(InventoryItem stack)
+        {
+            var character = GetCharacter(stack.CharacterId);
+            if (character == null)
+            {
+                return;
+            }
+
+            var canBeStacked = PlayerInventory.CanBeStacked(stack);
+            if (canBeStacked)
+            {
+                var bankItems = GetUserBankItems(character.UserId);
+                var existing = bankItems.FirstOrDefault(x => PlayerInventory.CanBeStacked(x, stack));
+                if (existing != null)
+                {
+                    existing.Amount += stack.Amount.GetValueOrDefault();
+                    Remove(stack);
+                    return;
+                }
+            }
+
+            Add(CreateBankItem(character.UserId, stack, stack.Amount.GetValueOrDefault()));
+        }
+
+        private void ConvertUserResources()
+        {
+            var resDrops = GetResourceItemDrops();
+            var miningDrops = resDrops.Where(x => x.Skill == (int)RavenNest.Models.Skill.Mining).ToList();
+            var farmingDrops = resDrops.Where(x => x.Skill == (int)RavenNest.Models.Skill.Farming).ToList();
+            var fishingDrops = resDrops.Where(x => x.Skill == (int)RavenNest.Models.Skill.Fishing).ToList();
+            var woodcuttingDrops = resDrops.Where(x => x.Skill == (int)RavenNest.Models.Skill.Woodcutting).ToList();
+            var count = 0;
+
+            foreach (var i in GetMarketItems(obsoleteItems.OreIngot.Id))
+            {
+                ReturnMarketplaceItem(i);
+            }
+
+            foreach (var i in GetMarketItems(obsoleteItems.WoodPlank.Id))
+            {
+                ReturnMarketplaceItem(i);
+            }
+
+            foreach (var user in this.users.Entities)
+            {
+                count++;
+                if (user.Resources == null)
+                    continue;
+
+                var chars = GetCharactersByUserId(user.Id);
+
+                var miningLevel = 1;
+                var fishingLevel = 1;
+                var farmingLevel = 1;
+                var woodcuttingLevel = 1;
+
+                // move items from marketplace into inventory
+
+                foreach (var c in chars)
+                {
+                    ConvertItemResource(c, miningLevel, obsoleteItems.OreIngot.Id, miningDrops);
+                    ConvertItemResource(c, woodcuttingLevel, obsoleteItems.WoodPlank.Id, woodcuttingDrops);
+
+                    var skills = GetCharacterSkills(c.SkillsId);
+                    miningLevel = Math.Max(skills.MiningLevel, miningLevel);
+                    fishingLevel = Math.Max(skills.FishingLevel, fishingLevel);
+                    farmingLevel = Math.Max(skills.FarmingLevel, farmingLevel);
+                    woodcuttingLevel = Math.Max(skills.WoodcuttingLevel, woodcuttingLevel);
+                }
+
+
+                var resources = GetResources(user.Resources.Value);
+                if (resources == null || (resources.Ore == 0 && resources.Wood == 0 && resources.Wheat == 0 && resources.Fish == 0))
+                    continue;
+
+                // Based on the drop levels and time for them to be dropped
+                // calculate how much items to add to player's stash.
+
+                ConvertResource(user, miningLevel, () => resources.Ore, value => resources.Ore = value, miningDrops);
+                ConvertResource(user, farmingLevel, () => resources.Wheat, value => resources.Wheat = value, farmingDrops);
+                ConvertResource(user, woodcuttingLevel, () => resources.Wood, value => resources.Wood = value, woodcuttingDrops);
+                ConvertResource(user, fishingLevel, () => resources.Fish, value => resources.Fish = value, fishingDrops);
+            }
+        }
+
+        private void ConvertItemResource(
+            Character c,
+            int level,
+            Guid itemId,
+            List<ResourceItemDrop> drops)
+        {
+
+            var ofType = GetInventoryItems(c.Id, itemId);
+            if (ofType == null || ofType.Count == 0)
+            {
+                return;
+            }
+
+            // 1. move to stash.
+            foreach (var v in ofType)
+            {
+                SendToStash(v);
+            }
+
+            // 2. load from stash
+            var items = GetUserBankItems(c.UserId);
+            var bankItemsOfType = items.AsList(x => x.ItemId == itemId);
+            if (bankItemsOfType.Count == 0) return;
+            var totalCount = bankItemsOfType.Sum(x => x.Amount);
+            if (totalCount == 0) return;
+
+            var seconds = totalCount * 50d; // these are worth 10x of ores/wood, so instead of * 5, we do * 50
+            if (seconds > 0 && seconds < 10) seconds = 10;
+
+            var validDrops = drops
+                .Where(x => x.LevelRequirement <= level && x.Cooldown.HasValue && x.Cooldown.Value > 0)
+                .OrderBy(x => x.Cooldown)
+                .ToList();
+
+            // Create a dictionary for easy lookup and modification
+            var stashItems = new Dictionary<Guid, int>();
+
+            // Calculate total cooldown for one complete cycle
+            var totalCycleCooldown = validDrops.Sum(x => x.Cooldown.Value);
+
+            // Calculate number of complete cycles
+            var completeCycles = (int)(seconds / totalCycleCooldown);
+
+            if (completeCycles > 0)
+            {
+                // Assign items for complete cycles
+                foreach (var drop in validDrops)
+                {
+                    if (stashItems.ContainsKey(drop.ItemId))
+                        stashItems[drop.ItemId] += completeCycles;
+                    else
+                        stashItems[drop.ItemId] = completeCycles;
+                }
+
+                seconds -= completeCycles * totalCycleCooldown;
+            }
+
+            // For remaining seconds, add items in sequence until the seconds run out.
+            while (seconds > 0)
+            {
+                bool itemAdded = false;
+                foreach (var drop in validDrops)
+                {
+                    if (seconds < drop.Cooldown.Value) continue;
+
+                    if (stashItems.ContainsKey(drop.ItemId))
+                        stashItems[drop.ItemId]++;
+                    else
+                        stashItems[drop.ItemId] = 1;
+
+                    seconds -= drop.Cooldown.Value;
+                    itemAdded = true;
+                }
+
+                // If we're unable to add any item in a full loop, then break out of the while loop
+                if (!itemAdded) break;
+            }
+
+            // Now apply changes in one batch
+            BatchUpdateStashItems(c.UserId, stashItems);
+
+            // and delete the stash items
+            foreach (var b in bankItemsOfType)
+            {
+                Remove(b);
+            }
+        }
+
+        private void ConvertResource(
+            User user,
+            int level,
+            Func<double> getValue,
+            Action<double> setValue,
+            List<ResourceItemDrop> drops)
+        {
+            var count = getValue();
+            if (count == 0) return;
+
+            var seconds = count * 5;
+            if (seconds > 0 && seconds < 10) seconds = 10;
+
+            var validDrops = drops
+                .Where(x => x.LevelRequirement <= level && x.Cooldown.HasValue && x.Cooldown.Value > 0)
+                .OrderBy(x => x.Cooldown)
+                .ToList();
+
+            // Create a dictionary for easy lookup and modification
+            var stashItems = new Dictionary<Guid, int>();
+
+            // Calculate total cooldown for one complete cycle
+            var totalCycleCooldown = validDrops.Sum(x => x.Cooldown.Value);
+
+            // Calculate number of complete cycles
+            var completeCycles = (int)(seconds / totalCycleCooldown);
+
+            if (completeCycles > 0)
+            {
+                // Assign items for complete cycles
+                foreach (var drop in validDrops)
+                {
+                    if (stashItems.ContainsKey(drop.ItemId))
+                        stashItems[drop.ItemId] += completeCycles;
+                    else
+                        stashItems[drop.ItemId] = completeCycles;
+                }
+
+                seconds -= completeCycles * totalCycleCooldown;
+            }
+
+            // For remaining seconds, add items in sequence until the seconds run out.
+            while (seconds > 0)
+            {
+                bool itemAdded = false;
+                foreach (var drop in validDrops)
+                {
+                    if (seconds < drop.Cooldown.Value) continue;
+
+                    if (stashItems.ContainsKey(drop.ItemId))
+                        stashItems[drop.ItemId]++;
+                    else
+                        stashItems[drop.ItemId] = 1;
+
+                    seconds -= drop.Cooldown.Value;
+                    itemAdded = true;
+                }
+
+                // If we're unable to add any item in a full loop, then break out of the while loop
+                if (!itemAdded) break;
+            }
+
+            // Now apply changes in one batch
+            BatchUpdateStashItems(user.Id, stashItems);
+
+            setValue(0);
+        }
+
+        private void BatchUpdateStashItems(Guid userId, Dictionary<Guid, int> items)
+        {
+            foreach (var item in items)
+            {
+                var stashItem = GetStashItem(userId, item.Key);
+                if (stashItem != null)
+                    stashItem.Amount += item.Value;
+                else
+                    Add(new UserBankItem
+                    {
+                        Id = Guid.NewGuid(),
+                        UserId = userId,
+                        ItemId = item.Key,
+                        Amount = item.Value
+                    });
             }
         }
 
@@ -544,60 +855,44 @@ namespace RavenNest.BusinessLogic.Data
         //    }
         //}
 
-        private void EnsureDropLists()
+        protected ItemDrop EnsureDrop(Item item, double dropRate, int tier = 0, int slayerLevelRequirement = 0)
         {
-            if (itemDrops.Entities.Count > 0)
-            {
-                return;
-            }
-
-            /*  DungeonTier
-                Common = 0,
-                Uncommon = 1,
-                Rare = 2,
-                Epic = 3,
-                Legendary = 4,
-                Dynamic = 5
-             */
-
-            /* Clear Out existing ones (if needed) */
-            // create normal tier drops (this is for raids and normal dungeons)
-
-            foreach (var drop in NormalTierDropList.itemDrops)
-            {
-                Add(drop);
-            }
-
-            Add(CreateDrop(12, 1, "cfb510cb-7916-4b2c-a17f-6048f5c6b282", 0.05f, 0.0175f)); // Santa hat 
-            Add(CreateDrop(12, 1, "061edf28-ca3f-4a00-992e-ba8b8a949631", 0.05f, 0.0175f)); // Christmas Token
-            Add(CreateDrop(10, 1, "91fc824a-0ede-4104-96d1-531cdf8d56a6", 0.05f, 0.0175f)); // Halloween Token
-
-            foreach (var drop in HeroicTierDropList.itemDrops)
-            {
-                Add(drop);
-            }
-
-            Add(CreateDrop(12, 1, "cfb510cb-7916-4b2c-a17f-6048f5c6b282", 0.05f, 0.0175f, 4)); // Santa hat 
-            Add(CreateDrop(12, 1, "061edf28-ca3f-4a00-992e-ba8b8a949631", 0.05f, 0.0175f, 4)); // Christmas Token
-            Add(CreateDrop(10, 1, "91fc824a-0ede-4104-96d1-531cdf8d56a6", 0.05f, 0.0175f, 4)); // Halloween Token
-            //HeroicTierDropList.itemDrops
+            return EnsureDrop(null, null, item, dropRate, dropRate, tier, slayerLevelRequirement);
         }
 
-        private ItemDrop CreateDrop(int monthStart, int monthsLength, string id, double maxDrop, double minDrop, int tier = 0)
+        protected ItemDrop EnsureDrop(Item item, double maxDrop, double minDrop, int tier = 0, int slayerLevelRequirement = 0)
         {
-            var now = DateTime.UtcNow;
-            return new ItemDrop
+            return EnsureDrop(null, null, item, maxDrop, minDrop, tier, slayerLevelRequirement);
+        }
+
+        protected ItemDrop EnsureDrop(int? monthStart, int? monthsLength, Item item, double maxDrop, double minDrop, int tier = 0, int slayerLevelRequirement = 0)
+        {
+            var existing = itemDrops[nameof(Item), item.Id].FirstOrDefault();
+            if (existing != null)
+            {
+                if (existing.SlayerLevelRequirement != slayerLevelRequirement) existing.SlayerLevelRequirement = slayerLevelRequirement;
+                if (existing.MaxDropRate != maxDrop) existing.MaxDropRate = maxDrop;
+                if (existing.MinDropRate != minDrop) existing.MinDropRate = minDrop;
+                if (existing.DropStartMonth != monthStart) existing.DropStartMonth = monthStart;
+                if (existing.DropDurationMonths != monthsLength) existing.DropDurationMonths = monthsLength;
+                if (existing.Tier != tier) existing.Tier = tier;
+                return existing;
+            }
+
+            var drop = new ItemDrop
             {
                 Id = Guid.NewGuid(),
-                ItemId = new Guid(id),
+                ItemId = item.Id,
                 DropStartMonth = monthStart,
                 DropDurationMonths = monthsLength,
                 MinDropRate = minDrop,
                 MaxDropRate = maxDrop,
-                SlayerLevelRequirement = 0,
+                SlayerLevelRequirement = slayerLevelRequirement,
                 Tier = tier,
                 UniqueDrop = false
             };
+            Add(drop);
+            return drop;
         }
 
         private void MergeInventoryItems()
@@ -1032,22 +1327,6 @@ namespace RavenNest.BusinessLogic.Data
                 }
             }
 
-            if (resourceItemDrops.Entities.Count == 0)
-            {
-                foreach (var drop in ResourceTaskProcessor.DefaultDroppableResources)
-                {
-                    Add(new ResourceItemDrop
-                    {
-                        Id = Guid.NewGuid(),
-                        DropChance = drop.DropChance,
-                        ItemId = drop.Id,
-                        ItemName = drop.Name,
-                        LevelRequirement = drop.SkillLevel,
-
-                    });
-                }
-            }
-
             HashSet<Guid> userIdMissing = new HashSet<Guid>();
             HashSet<Guid> charProcessed = new HashSet<Guid>();
 
@@ -1139,7 +1418,6 @@ namespace RavenNest.BusinessLogic.Data
 
                 user.Resources = res.Id;
             }
-
         }
         #endregion
 
@@ -1350,7 +1628,21 @@ namespace RavenNest.BusinessLogic.Data
 
             if (item != null)
             {
-                if (item.Name != name) item.Name = name;
+                if (item.Name != name)
+                {
+                    var path = GetImageFilePath(item.Name);
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        var newPath = GetImageFilePath(name, false);
+                        if (!File.Exists(newPath))
+                        {
+                            File.Move(path, newPath);
+                        }
+                    }
+
+                    item.Name = name;
+                }
+
                 if (!string.IsNullOrEmpty(description) && item.Description != description) item.Description = description;
                 if (item.Category != (int)category) item.Category = (int)category;
                 if (item.Type != (int)type) item.Type = (int)type;
@@ -1370,6 +1662,25 @@ namespace RavenNest.BusinessLogic.Data
             Add(item);
             return item;
         }
+
+        private string GetImageFilePath(string itemName, bool mustExist = true)
+        {
+            var path = "/imgs/items/";
+            if (!System.IO.Directory.Exists("/imgs/items/"))
+                path = "wwwroot" + path;
+
+            if (!string.IsNullOrEmpty(itemName))
+            {
+                var fileNamePath = Path.Combine(path, itemName.ToLower().Replace("'", "").Replace(' ', '-') + ".png");
+                if (!mustExist || File.Exists(fileNamePath))
+                {
+                    return fileNamePath;
+                }
+            }
+
+            return null;
+        }
+
         public ItemStatusEffect GetOrCreateItemStatusEffect(IReadOnlyList<ItemStatusEffect> effects, Item item, StatusEffectType type, Island island, bool allowMultipleEffects = false)
         {
             return GetOrCreateItemStatusEffect(effects, item.Id, type, island, -1, 0, 0, allowMultipleEffects);
@@ -1492,7 +1803,7 @@ namespace RavenNest.BusinessLogic.Data
             var lookup = new Dictionary<Guid, Item>();
             lookup[obsoleteItems.Lionite.Id] = typedItems.LioniteBar;
             lookup[obsoleteItems.Ethereum.Id] = typedItems.EthereumBar;
-            lookup[obsoleteItems.OreIngot.Id] = typedItems.IronBar;
+            //lookup[obsoleteItems.OreIngot.Id] = typedItems.IronBar;
             lookup[obsoleteItems.DragonScale.Id] = typedItems.DragonBar;
             lookup[obsoleteItems.IronNugget.Id] = typedItems.IronBar;
             lookup[obsoleteItems.SteelNugget.Id] = typedItems.SteelBar;
@@ -1533,6 +1844,15 @@ namespace RavenNest.BusinessLogic.Data
                 }
             }
 
+            foreach(var ubi in marketItems.Entities)
+            {
+                if (lookup.TryGetValue(ubi.ItemId, out var conv))
+                {
+                    ubi.ItemId = conv.Id;
+                    ubi.Name = conv.Name;
+                }
+            }
+
             foreach (var ubi in inventoryItems.Entities)
             {
                 if (lookup.TryGetValue(ubi.ItemId, out var conv))
@@ -1551,6 +1871,7 @@ namespace RavenNest.BusinessLogic.Data
                 if (existingDrop.Cooldown != cooldown) existingDrop.Cooldown = cooldown;
                 if (existingDrop.DropChance != dropChance) existingDrop.DropChance = dropChance;
                 if (existingDrop.LevelRequirement != level) existingDrop.LevelRequirement = level;
+                if (existingDrop.Skill != (int)skill) existingDrop.Skill = (int)skill;
                 return;
             }
 
@@ -1624,7 +1945,7 @@ namespace RavenNest.BusinessLogic.Data
                 recipe.FixedSuccessRate = fixedSuccessRate;
 
                 var existingIngredients = GetRecipeIngredients(recipe.Id);
-                if (existingIngredients.Count != ingredients.Length || existingIngredients.Sum(x => x.Amount) != ingredients.Sum(x => x.Amount))
+                if (existingIngredients.Count != ingredients.Length || existingIngredients.Sum(x => x.Amount) != ingredients.Sum(x => x.Amount) || existingIngredients.Any(x => GetItem(x.ItemId) == null))
                 {
                     // update requirements, easiest is to clear em out and add them again.
                     foreach (var i in existingIngredients) Remove(i);
@@ -1683,34 +2004,21 @@ namespace RavenNest.BusinessLogic.Data
             // ensure we have all base items
             var knownItems = GetKnownItems();
 
-            return;
-            /*
-                Convert existing crafting requirements to new item recipes.
-             */
+            // rename known 2h staff to Staff
 
-            /*
-                We do not want to remove existing crafting requirements yet as it will still be used in previous version
-                Make sure we copy everything over. don't modify anything.
-             */
-
-            foreach (var item in GetItems())
+            foreach (var item in inventoryItems.Entities)
             {
-                item.RequiredCraftingLevel = 1000;
-                item.RequiredCookingLevel = 1000;
-                item.Craftable = false;
-                item.OreCost = 0;
-                item.WoodCost = 0;
-
-                continue;
-
-                // Do not delete the requirements just yet. There are some we want to transfer.
-                var craftingRequirement = GetCraftingRequirements(item.Id);
-                if (craftingRequirement.Count > 0)
+                if (item.Name != null && item.Name.Contains("2H Staff"))
                 {
-                    foreach (var req in craftingRequirement)
-                    {
-                        Remove(req);
-                    }
+                    item.Name = item.Name.Replace("2H Staff", "Staff");
+                }
+            }
+
+            foreach (var item in userBankItems.Entities)
+            {
+                if (item.Name != null && item.Name.Contains("2H Staff"))
+                {
+                    item.Name = item.Name.Replace("2H Staff", "Staff");
                 }
             }
         }
@@ -2342,7 +2650,12 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(Item entity) => Update(() => items.Add(entity));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public AddEntityResult Add(ItemDrop entity) => Update(() => itemDrops.Add(entity));
+        public AddEntityResult Add(ItemDrop entity)
+        {
+            if (entity == null) return AddEntityResult.Error;
+            return Update(() => itemDrops.Add(entity));
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(CharacterState entity) => Update(() => characterStates.Add(entity));
 
@@ -2708,8 +3021,8 @@ namespace RavenNest.BusinessLogic.Data
             inventoryItems[nameof(Character), characterId];
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<UserBankItem> GetUserBankItems(Guid id)
-            => userBankItems[nameof(User), id].ToList();
+        public IReadOnlyList<UserBankItem> GetUserBankItems(Guid userId)
+            => userBankItems[nameof(User), userId].ToList();
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<UserBankItem> GetUserBankItemsByItemId(Guid itemId)
             => userBankItems.Entities.AsList(x => x.ItemId == itemId);
@@ -3195,6 +3508,11 @@ namespace RavenNest.BusinessLogic.Data
         public ItemRecipe GetItemRecipeByItem(Guid itemId)
         {
             return itemRecipes[nameof(Item), itemId].FirstOrDefault();
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ResourceItemDrop GetResourceItemDrop(Guid itemId)
+        {
+            return resourceItemDrops[nameof(Item), itemId].FirstOrDefault();
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -4031,6 +4349,8 @@ namespace RavenNest.BusinessLogic.Data
         [Obsolete("Use Ancient Bar instead")] internal Item AncientHeart;
         [Obsolete("Use Atlarus Bar instead")] internal Item AtlarusLight;
 
+        [Obsolete] internal Item WoodPlank;
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsObsoleteItem(Item item)
@@ -4058,6 +4378,9 @@ namespace RavenNest.BusinessLogic.Data
     }
     public class TypedItems
     {
+        // Special Items
+        public Item SantaHat;
+
         // Woodcutting
         public Item Logs;
         public Item BristleLogs;
@@ -4071,7 +4394,6 @@ namespace RavenNest.BusinessLogic.Data
         public Item DragonwoodLogs;
         public Item GoldwillowLogs;
         public Item ShadowoakLogs;
-
 
         // New drops for alchemy
         public Item Hearthstone;
@@ -4136,26 +4458,25 @@ namespace RavenNest.BusinessLogic.Data
         public Item Carrots;
         public Item Garlic;
         public Item Grapes;
-        public Item CacaoBeans;
         public Item Truffle;
 
         // Fishing
-        public Item Sprat;
-        public Item Shrimp;
-        public Item RedSeaBass;
-        public Item Bass;
-        public Item Perch;
-        public Item Salmon;
-        public Item Crab;
-        public Item Lobster;
-        public Item BlueLobster;
-        public Item Swordfish;
-        public Item PufferFish;
-        public Item Octopus;
-        public Item MantaRay;
-        public Item Kraken;
-        public Item Leviathian;
-        public Item PoseidonsGuardian;
+        public Item RawSprat;
+        public Item RawShrimp;
+        public Item RawRedSeaBass;
+        public Item RawBass;
+        public Item RawPerch;
+        public Item RawSalmon;
+        public Item RawCrab;
+        public Item RawLobster;
+        public Item RawBlueLobster;
+        public Item RawSwordfish;
+        public Item RawPufferFish;
+        public Item RawOctopus;
+        public Item RawMantaRay;
+        public Item RawKraken;
+        public Item RawLeviathan;
+        public Item RawPoseidonsGuardian;
 
         // Cooking
         public Item Flour;
@@ -4172,9 +4493,9 @@ namespace RavenNest.BusinessLogic.Data
         // Cooking Recipes
         public Item RedWine;
         public Item HamSandwich;
-        public Item CookedChicken;
-        public Item CookedBeef;
-        public Item CookedPork;
+        public Item RoastedChicken;
+        public Item RoastBeef;
+        public Item RoastedPork;
         public Item CookedChickenLeg;
         public Item Steak;
         public Item GrilledCheese;
@@ -4185,20 +4506,20 @@ namespace RavenNest.BusinessLogic.Data
         public Item BurnedGrilledCheese;
 
         // Fish
-        public Item CookedSprat;
-        public Item CookedShrimp;
-        public Item CookedRedSeaBass;
-        public Item CookedBass;
-        public Item CookedPerch;
-        public Item CookedSalmon;
-        public Item CookedCrab;
-        public Item CookedLobster;
-        public Item CookedBlueLobster;
-        public Item CookedSwordfish;
-        public Item CookedPufferFish;
-        public Item CookedOctopus;
-        public Item CookedMantaRay;
-        public Item CookedKraken;
+        public Item Sprat;
+        public Item Shrimp;
+        public Item RedSeaBass;
+        public Item Bass;
+        public Item Perch;
+        public Item Salmon;
+        public Item Crab;
+        public Item Lobster;
+        public Item BlueLobster;
+        public Item Swordfish;
+        public Item PufferFish;
+        public Item Octopus;
+        public Item MantaRay;
+        public Item Kraken;
         public Item LeviathansRoyalStew;
         public Item PoseidonsGuardianFeast;
 
@@ -4334,11 +4655,63 @@ namespace RavenNest.BusinessLogic.Data
         public Item DragonAmulet;
         public Item PhantomAmulet;
 
+        public Item ArchersRing;
+        public Item ArchersRingII;
+        public Item ArchersRingIII;
+        public Item ArchersRingIV;
+        public Item MagesRing;
+        public Item MagesRingII;
+        public Item MagesRingIII;
+        public Item MagesRingIV;
+        public Item ArchmagesPendant;
+        public Item KnightsEmblem;
+        public Item OwlsEyeRing;
+        public Item RingOfTheCelestial;
+        public Item WarriorsMightRing;
+        public Item WindcallersAmulet;
+        public ItemPets Pets;
         public ItemSet
             Bronze, Iron, Steel, Black, Mithril, Adamantite, Rune, Dragon, Abraxas, Phantom, Ether, Lionsbane, Ethereum, Ancient, Atlarus;
         //,ElderBronze, ElderIron, ElderSteel, ElderMithril, ElderAdamantite, ElderRune, ElderDragon,
         //ElderAbraxas, ElderPhantom, ElderEther, ElderLionite, ElderAncient, ElderAtlarus;
 
+    }
+    public class ItemPets
+    {
+        // base pets
+        public Item FoxPet;
+        public Item DeerPet;
+        public Item BearPet;
+        public Item BlueOrbPet;
+        public Item WolfPet;
+        public Item GreenOrbPet;
+        public Item PolarBearPet;
+        public Item RedOrbPet;
+        public Item RedPandaPet;
+
+        // redeemable (Loyalty points)
+        public Item DiscoRavenPet;
+        public Item BaconRavenPet;
+        public Item DiamondRavenPet;
+        public Item TurdRavenPet;
+        public Item RavenPet;
+        public Item Rajah;
+
+        // redeemable (halloween)
+        public Item GhostPet;
+        public Item BatPet;
+        public Item PumpkinPet;
+        public Item SpiderPet;
+        public Item WerewolfPet;
+        public Item YetiPet;
+
+        // redeemable (christmas)
+        public Item GreenSantaMetalon;
+        public Item BlackSantaRaven;
+        public Item MagicSantaRaven;
+        public Item PurpleSantaMetalon;
+        public Item RedSantaMetalon;
+        public Item SantaRaven;
     }
 
     public class ItemSet

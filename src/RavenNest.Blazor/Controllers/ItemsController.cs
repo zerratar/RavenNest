@@ -59,6 +59,23 @@ namespace RavenNest.Controllers
         }
 
         /// <summary>
+        /// Get all resource drops
+        /// </summary>
+        /// <returns>This will return the list of all redeemable items in Ravenfall.</returns>
+        [HttpGet("drops")]
+        public async Task<ActionResult<ResourceItemDropCollection>> GetResourceDrops()
+        {
+            if (itemManager == null)
+            {
+                return new ResourceItemDropCollection();
+            }
+
+            var itemCollection = itemManager.GetResourceItemDrops();
+            return itemCollection;
+        }
+
+
+        /// <summary>
         /// Get all redeemable items
         /// </summary>
         /// <returns>This will return the list of all redeemable items in Ravenfall.</returns>

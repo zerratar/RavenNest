@@ -7,6 +7,7 @@ using RavenNest.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 
 namespace RavenNest.Blazor.Services
@@ -28,6 +29,33 @@ namespace RavenNest.Blazor.Services
             this.gameData = gameData;
             this.playerManager = playerManager;
             this.adminManager = adminManager;
+        }
+
+        public TrainingSkill GetTrainingSkill(RavenNest.Models.CharacterState state)
+        {
+            if (string.IsNullOrEmpty(state.Task))
+            {
+                return null;
+            }
+
+            if (!state.InDungeon && string.IsNullOrEmpty(state.Island))
+            {
+                return null; // we are sailing
+            }
+
+            if (state.Task.ToLower() == "fighting" || state.Task == "healing")
+            {
+                return new TrainingSkill { Name = state.TaskArgument };
+            }
+
+            var lower = state.Task.ToLower();
+            var arg = state.TaskArgument?.ToLower();
+            if (string.IsNullOrEmpty(arg) || arg == lower)
+            {
+                return new TrainingSkill { Name = state.Task };
+            }
+
+            return new TrainingSkill { Name = state.Task, ItemName = arg, IsCollectingItem = true };
         }
 
         public void MakeNameMatchUsername(WebsitePlayer player)
@@ -299,5 +327,12 @@ namespace RavenNest.Blazor.Services
                 return list;
             });
         }
+    }
+
+    public class TrainingSkill
+    {
+        public string Name { get; set; }
+        public bool IsCollectingItem { get; set; }
+        public string ItemName { get; set; }
     }
 }

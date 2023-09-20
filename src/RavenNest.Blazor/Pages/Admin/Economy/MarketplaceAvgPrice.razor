@@ -5,6 +5,7 @@
 @inject RavenNest.BusinessLogic.Data.GameData GameData;
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.EconomyService EconomyService
+@inject RavenNest.Blazor.Services.ItemService ItemService;
 
 @if (isAdmin)
 {
@@ -28,7 +29,7 @@
         {
             <div class="item-sales-row">
                 <div class="details-wrapper">
-                    <img class="item-image" src="/imgs/items/@(lcd.ItemId).png" />
+                    <img class="item-image" src="@(ItemService.GetItemImage(lcd.ItemId))" />
                     <div class="details">
                         <h4>@lcd.ItemName</h4>
                         <p>Sold a total of <b>@lcd.TotalSoldCount</b>, for <b>@Utility.FormatAmount(lcd.TotalAvgAmount)</b></p>

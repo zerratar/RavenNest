@@ -511,34 +511,7 @@
         if (itemFilter == ItemFilter.All)
             return true;
 
-        return GetItemFilter(item) == itemFilter;
-    }
-
-    private ItemFilter GetItemFilter(Models.InventoryItem invItem)
-    {
-        var item = ItemService.GetItem(invItem.ItemId);
-        if (item.Type == ItemType.Coins ||
-            item.Type == ItemType.Mining ||
-            item.Type == ItemType.Woodcutting ||
-            item.Type == ItemType.Fishing ||
-            item.Type == ItemType.Farming ||
-            item.Type == ItemType.Gathering || 
-            item.Category == ItemCategory.Resource)
-            return ItemFilter.Resources;
-
-        if (item.Type == ItemType.OneHandedSword || item.Type == ItemType.TwoHandedSword)
-            return ItemFilter.Swords;
-        if (item.Type == ItemType.TwoHandedBow) return ItemFilter.Bows;
-        if (item.Type == ItemType.TwoHandedStaff) return ItemFilter.Staves;
-        if (item.Type == ItemType.Ring || item.Type == ItemType.Amulet) return ItemFilter.Accessories;
-        if (item.Type == ItemType.Shield) return ItemFilter.Shields;
-        if (item.Type == ItemType.Pet) return ItemFilter.Pets;
-        if (item.Type == ItemType.Scroll) return ItemFilter.Scrolls;
-
-        if (item.Category == ItemCategory.Armor)
-            return ItemFilter.Armors;
-
-        return ItemFilter.All;
+        return ItemService.GetItemFilter(item.ItemId) == itemFilter;
     }
 
     public string GetItemImage(Guid itemId, string tag)
@@ -547,7 +520,8 @@
         {
             return $"/api/twitch/logo/{tag}";
         }
-        return $"/imgs/items/{itemId}.png";
+
+        return ItemService.GetItemImage(itemId);
     }
 
     public string GetItemAmount(InventoryItem item)

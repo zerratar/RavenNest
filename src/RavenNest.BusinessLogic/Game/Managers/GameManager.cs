@@ -292,7 +292,7 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool CanBeDropped(ItemDrop itemDrop, int tier = 0)
         {
-            if (itemDrop.Tier != tier) return false;
+            if (itemDrop.Tier > tier) return false;
             if (itemDrop.DropStartMonth == null || itemDrop.DropStartMonth == 0 || itemDrop.DropDurationMonths == null || itemDrop.DropDurationMonths == 0)
                 return true; // no date restriction
 
@@ -328,7 +328,8 @@ namespace RavenNest.BusinessLogic.Game
                 //dropList.OrderByRandomWeighted(x => GetDropRate(x, skills))
 
                 // pick an item at random based on highest drop rate
-                var item = dl.Weighted((x, index) => GetDropRate(x, index, dropList.Count, tier, skills));
+                var dropRates = dl.Select((x, index) => new { Name = gameData.GetItem(x.ItemId).Name, DropRate = GetDropRate(x, index, dropList.Count, 0, skills), ItemId = x.ItemId }).ToArray();
+                var item = dropRates.Weighted(x => x.DropRate, rng);
 
                 if (rng.NextDouble() <= dropChance)
                 {
@@ -353,7 +354,7 @@ namespace RavenNest.BusinessLogic.Game
             var rng = Random.Shared;
 
             var dropList = GetRaidDropList();
-            var dropChance = 0.25;
+            var dropChance = 0.4;
             foreach (var c in characters)
             {
                 var character = sessionCharacters.FirstOrDefault(x => x.Id == c);
@@ -364,9 +365,12 @@ namespace RavenNest.BusinessLogic.Game
                 var dl = dropList.Where(x => x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
                 if (dl.Count == 0) continue;
                 // pick an item at random based on highest drop rate
-                var item = dl.Weighted((x, index) => GetDropRate(x, index, dropList.Count, 0, skills));
 
-                if (rng.NextDouble() <= dropChance)
+                var dropRates = dl.Select((x, index) => new { Name = gameData.GetItem(x.ItemId).Name, DropRate = GetDropRate(x, index, dropList.Count, 0, skills), ItemId = x.ItemId }).ToArray();
+                var item = dropRates.Weighted(x => x.DropRate, rng);
+
+                var rngVal = rng.NextDouble();
+                if (rngVal <= dropChance)
                 {
                     rewards.Add(new EventItemReward
                     {
@@ -673,112 +677,5 @@ namespace RavenNest.BusinessLogic.Game
         //    return true;
         //}
         #endregion
-    }
-
-    public class HeroicTierDropList
-    {
-        public readonly static List<ItemDrop> itemDrops = new List<ItemDrop>
-        {
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("17c3f9b1-57d6-4219-bbc7-9e929757babf"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("d3966d4a-ef1b-4fcc-8695-aa2a823e8b7b"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("67dbf467-07df-4731-9694-1389d07e886f"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("061baa06-5b73-4bbb-a9e1-aea4907cd309"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("c95ac1d6-108e-4b2f-9db2-2ef00c092bfe"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("da0179be-2ef0-412d-8e18-d0ee5a9510c7"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("f6ff9315-c473-4365-a19f-4df697049475"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("0c499637-7316-4c93-a847-216d6750bf34"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("365054c5-cef7-4ac7-a0bf-9711a8610709"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("a8fe9b55-d2be-4219-b9b6-aaaa5150681c"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("99454c89-d3fd-4e33-95eb-08ede2f532d7"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("9a12d35a-0743-47a4-a6f7-10f9a84492ea"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("c512f4e9-d14f-4b50-9205-732c25bb2ee1"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("443ee95a-9c28-49c8-af5b-255c19d656ac"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("94f5568c-bc04-400f-9b56-9bf0a007c66f"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("328b248c-35ac-409e-83e4-ab801a3b9cb1"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("3d641d63-dadf-40dc-ad31-3e741a705532"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("ed01a446-1f9d-4eca-981e-cfd6e7415a4e"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("31dd76be-0fb1-4891-8cf7-045e86c60fd3"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("c3fae08a-a72a-4d86-b213-bb3ca4786f8c"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("21a9e2c3-49e4-4c07-aa38-6def771f51cc"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("311a24ae-3b8d-497e-9823-da3eba2359fb"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("49d53a1e-55f7-4537-9a5b-0560b1c0f465"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("3f53fecf-b913-4dda-8c63-08b724d4914c"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("6b9cc4d1-0e9c-4e90-b474-abac5548e5fd"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("aeaf6b0f-6ebf-4728-8f0e-900f9fb81d6e"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("e317461e-d8e7-495c-a1b6-df0a967ddb71"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("c9f2ee83-9a60-428c-bf3b-997e916965cb"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("44297b32-ac17-4912-9bb2-dc5fa3a3f84e"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("c8ce4210-4980-432c-82eb-9f959386fc31"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("58660f5a-e307-49ff-9bd7-7f3e00c9d9e6"), MinDropRate = 0.01, MaxDropRate = 0.01, Tier = 4 },
-        };
-    }
-
-    public class NormalTierDropList
-    {
-        public readonly static List<ItemDrop> itemDrops = new List<ItemDrop>
-        {
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("e7aded94-3a28-4bd5-ae37-5b5e63884b53"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("c4479a57-7603-4a7d-bd45-649bc2332509"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("1a2fb90a-2a53-42ed-bf81-92b1cb4fc219"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("27aed634-092c-4e66-a469-953d15b3457e"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("8ca53da1-33e3-4d4f-80f0-38c3bf155b63"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("e147e236-3417-4e28-a639-995b1f45bebc"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("83e9370d-5436-4c44-aa85-7aab4f12912f"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("f9b7e6a3-4e4a-4e4a-b79d-42a3cf2a16c8"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("17c3f9b1-57d6-4219-bbc7-9e929757babf"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("d0b7149e-5362-49f1-b709-190618695e46"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("c3108188-330c-407b-a1dd-3ac628124d74"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("5bb9cf64-81a0-4c10-ab6d-5d4e76eb1de2"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("0dc620c2-b726-4928-9f1c-fcf61aaa2542"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("d3966d4a-ef1b-4fcc-8695-aa2a823e8b7b"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("8975dc29-f9b4-4610-83c0-f00dd1a98c34"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("67dbf467-07df-4731-9694-1389d07e886f"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("061baa06-5b73-4bbb-a9e1-aea4907cd309"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("c95ac1d6-108e-4b2f-9db2-2ef00c092bfe"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("da0179be-2ef0-412d-8e18-d0ee5a9510c7"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("f6ff9315-c473-4365-a19f-4df697049475"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("0c499637-7316-4c93-a847-216d6750bf34"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("365054c5-cef7-4ac7-a0bf-9711a8610709"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("a8fe9b55-d2be-4219-b9b6-aaaa5150681c"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("99454c89-d3fd-4e33-95eb-08ede2f532d7"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("9a12d35a-0743-47a4-a6f7-10f9a84492ea"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("c512f4e9-d14f-4b50-9205-732c25bb2ee1"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("443ee95a-9c28-49c8-af5b-255c19d656ac"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("94f5568c-bc04-400f-9b56-9bf0a007c66f"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("328b248c-35ac-409e-83e4-ab801a3b9cb1"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("3d641d63-dadf-40dc-ad31-3e741a705532"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("ed01a446-1f9d-4eca-981e-cfd6e7415a4e"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("3ab15974-93dd-4864-9e88-94795c7740c9"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("e32a6f17-653c-4af3-a3a1-d0c6674fe4d5"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("3336dee3-222f-4ae5-951f-573b2cacabb6"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("1df7d697-9abd-433d-9db0-786456f9c40c"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("f531d897-5bc3-4ee9-ba47-0160e653a295"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("28653827-3edd-498a-8bb6-1d02583015c2"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("31dd76be-0fb1-4891-8cf7-045e86c60fd3"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("736e2478-bbee-4d58-b60f-904cb57c6067"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("533cf2e8-2815-4601-9f47-f22d6d572366"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("b812a722-1817-48c8-a290-16dc92f14d64"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("aefd1abd-6843-42ec-93e1-0b718be068ce"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("61978101-3dc9-4a4f-a9e8-42465ff2be47"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("9b20661a-e0dc-4a70-868b-5d6f34492c34"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("00aefbe9-9f2d-42c0-9a7c-ca76d55e9cc2"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("fc61bf6c-7b5e-40b4-a06a-693ef9504bc9"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("09c60c0c-94fa-4efe-953e-d98ddae79f11"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("c3fae08a-a72a-4d86-b213-bb3ca4786f8c"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("21a9e2c3-49e4-4c07-aa38-6def771f51cc"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("311a24ae-3b8d-497e-9823-da3eba2359fb"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("49d53a1e-55f7-4537-9a5b-0560b1c0f465"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("3f53fecf-b913-4dda-8c63-08b724d4914c"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("6b9cc4d1-0e9c-4e90-b474-abac5548e5fd"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("311234f8-b836-4d59-8d8a-48696e83b6a8"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("aeaf6b0f-6ebf-4728-8f0e-900f9fb81d6e"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("e317461e-d8e7-495c-a1b6-df0a967ddb71"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("c9f2ee83-9a60-428c-bf3b-997e916965cb"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("ea885b65-3ce2-4adb-a4c6-59135113edfc"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("5cdc8ce0-d1ef-4e20-9bec-51aa90ce51bd"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("44297b32-ac17-4912-9bb2-dc5fa3a3f84e"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("c8ce4210-4980-432c-82eb-9f959386fc31"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-             new ItemDrop { Id = Guid.NewGuid(), ItemId = new Guid("073d078b-13e2-4b9a-8fb4-6401971614e4"), MinDropRate = 0.01, MaxDropRate = 0.01 },
-        };
     }
 }

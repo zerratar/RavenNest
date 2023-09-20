@@ -363,10 +363,7 @@ namespace RavenNest.BusinessLogic.Game
             }
             finally
             {
-                if (result.Success && ravenbotApi != null)
-                {
-                    ravenbotApi.UpdateUserSettings(result.Player.UserId);
-                }
+
 #if DEBUG
                 if (!result.Success && session != null)
                 {
@@ -374,7 +371,11 @@ namespace RavenNest.BusinessLogic.Game
                     logger.LogError(("Unable to add player " + playerData.UserName + " to " + sessionOwner.UserName + "'s stream. " + (result.ErrorMessage + " " + internalErrorMessage).Trim()).Trim());
                 }
 
-#endif
+#endif 
+                if (result.Success && ravenbotApi != null)
+                {
+                    await ravenbotApi.UpdateUserSettingsAsync(result.Player.UserId);
+                }
             }
         }
 
@@ -385,7 +386,7 @@ namespace RavenNest.BusinessLogic.Game
                 return;
             }
 
-            ravenbotApi.UpdateUserSettings(user.Id);
+            await ravenbotApi.UpdateUserSettingsAsync(user.Id);
         }
 
         public async Task<PlayerJoinResult> AddPlayerByCharacterId(DataModels.GameSession session, Guid characterId, bool isGameRestore = false)
@@ -839,10 +840,7 @@ namespace RavenNest.BusinessLogic.Game
             var skills = gameData.GetCharacterSkills(character.SkillsId);
             if (inventory.RemoveItem(item, 1))
             {
-                item = inventory.Get(inventoryItemId); // if it does not exist amount will be 0
-
                 var shouldTeleport = false;
-
                 var itemEffects = gameData.GetItemStatusEffects(item.ItemId);
                 var island = RavenNest.Models.Island.None;
                 var effects = new List<RavenNest.Models.CharacterStatusEffect>();
@@ -859,6 +857,7 @@ namespace RavenNest.BusinessLogic.Game
                     effects.Add(CreateCharacterEffect(character.Id, skills, fx));
                 }
 
+                item = inventory.Get(inventoryItemId); // if it does not exist amount will be 0
                 var result = new ItemUseResult
                 {
                     InventoryItemId = inventoryItemId,
@@ -893,7 +892,7 @@ namespace RavenNest.BusinessLogic.Game
                     return new RavenNest.Models.CharacterStatusEffect
                     {
                         Type = (RavenNest.Models.StatusEffectType)fx.Type,
-                        Amount = ae.Amount,
+                        Amount = (float)ae.Amount,
                         ExpiresUtc = ae.ExpiresUtc,
                         StartUtc = ae.StartUtc,
                     };
@@ -916,16 +915,16 @@ namespace RavenNest.BusinessLogic.Game
             return new RavenNest.Models.CharacterStatusEffect
             {
                 Type = (RavenNest.Models.StatusEffectType)fx.Type,
-                Amount = effect.Amount,
+                Amount = (float)effect.Amount,
                 ExpiresUtc = effect.ExpiresUtc,
                 StartUtc = effect.StartUtc,
             };
         }
 
-        private float DetermineEffectAmount(Skills skills, DataModels.StatusEffectType type, float amount, float minAmount)
+        private double DetermineEffectAmount(Skills skills, DataModels.StatusEffectType type, double amount, double minAmount)
         {
-            float scaledValue = 0f;
-            float value = 0f;
+            double scaledValue = 0;
+            double value = 0;
             switch (type)
             {
 #warning Implement the rest of the status effect amount, damages need to be adjusted too.
@@ -2063,6 +2062,7 @@ namespace RavenNest.BusinessLogic.Game
             //var targetItem = gameData.GetInventoryItem(item);
             var inventory = inventoryProvider.Get(player.Id);
             var itemToVendor = inventory.Get(inventoryItemId);
+            if (itemToVendor.Item == null) return 0;
             if (itemToVendor.Item.Category == (int)DataModels.ItemCategory.StreamerToken)
             {
                 return 0;
@@ -2393,7 +2393,7 @@ namespace RavenNest.BusinessLogic.Game
                         }
                     }
 
-                    gameData.Add(CreateBankItem(character, stack, amount));
+                    gameData.Add(GameData.CreateBankItem(character.UserId, stack, amount));
                     return true;
                 }
                 finally
@@ -2403,23 +2403,6 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             return false;
-        }
-
-        private static DataModels.UserBankItem CreateBankItem(Character character, DataModels.InventoryItem item, long amount)
-        {
-            return new DataModels.UserBankItem
-            {
-                Id = Guid.NewGuid(),
-                Amount = amount,
-                Enchantment = item.Enchantment,
-                Flags = item.Flags ?? 0,
-                ItemId = item.ItemId,
-                Name = item.Name,
-                Soulbound = item.Soulbound,
-                Tag = item.Tag,
-                TransmogrificationId = item.TransmogrificationId,
-                UserId = character.UserId
-            };
         }
 
         public ClearEnchantmentCooldownResult ClearEnchantmentCooldown(SessionToken sessionToken, Guid characterId)
@@ -2449,6 +2432,26 @@ namespace RavenNest.BusinessLogic.Game
                 Cooldown = cd.CooldownEnd,
                 CoinsPerSeconds = Enchanting_CooldownCoinsPerSecond
             };
+        }
+
+        public bool[] AutoJoinRaid(SessionToken sessionToken, IReadOnlyList<Guid> characters)
+        {
+            var arr = new bool[characters.Count];
+            for (var i = 0; i < arr.Length; ++i)
+            {
+                arr[i] = AutoJoinRaid(sessionToken, characters[i]);
+            }
+            return arr;
+        }
+
+        public bool[] AutoJoinDungeon(SessionToken sessionToken, IReadOnlyList<Guid> characters)
+        {
+            var arr = new bool[characters.Count];
+            for (var i = 0; i < arr.Length; ++i)
+            {
+                arr[i] = AutoJoinDungeon(sessionToken, characters[i]);
+            }
+            return arr;
         }
 
         public bool AutoJoinDungeon(SessionToken sessionToken, Guid characterId)
@@ -3550,6 +3553,8 @@ namespace RavenNest.BusinessLogic.Game
                     toState.Y = fromState.Y;
                     toState.Z = fromState.Z;
                     toState.Health = fromState.Health;
+                    toState.AutoJoinDungeonCounter = fromState.AutoJoinDungeonCounter;
+                    toState.AutoJoinRaidCounter = fromState.AutoJoinRaidCounter;
                 }
 
                 foreach (var s0 in skillsFrom.GetSkills())
@@ -4201,8 +4206,8 @@ namespace RavenNest.BusinessLogic.Game
         private static void SetCharacterState(DataModels.CharacterState state, CharacterStateUpdate update)
         {
             var task = GetTaskBySkillIndex(update.TrainingSkillIndex);
-            var taskArgument = GetTaskArgumentBySkillIndex(update.TrainingSkillIndex);
-            if (string.IsNullOrEmpty(taskArgument)) taskArgument = task;
+            var taskArgument = update.TaskArgument;
+            if (string.IsNullOrEmpty(taskArgument)) taskArgument = GetTaskArgumentBySkillIndex(update.TrainingSkillIndex);
 
             state.Health = update.Health;
             state.InArena = HasFlag(update, CharacterFlags.InArena);
@@ -4216,7 +4221,9 @@ namespace RavenNest.BusinessLogic.Game
             state.ExpPerHour = update.ExpPerHour;
             state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
             state.Task = task;
-            state.TaskArgument = taskArgument ?? task;
+            state.TaskArgument = taskArgument;
+            state.AutoJoinRaidCounter = update.AutoJoinRaidCounter;
+            state.AutoJoinDungeonCounter = update.AutoJoinDungeonCounter;
             state.X = update.X;
             state.Y = update.Y;
             state.Z = update.Z;
@@ -4241,6 +4248,8 @@ namespace RavenNest.BusinessLogic.Game
             state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString();
             state.Task = task;
             state.TaskArgument = taskArgument;
+            state.AutoJoinRaidCounter = update.AutoJoinRaidCounter;
+            state.AutoJoinDungeonCounter = update.AutoJoinDungeonCounter;
             //state.IsCaptain = update.IsCaptain;
             state.X = update.X;
             state.Y = update.Y;
@@ -4268,6 +4277,8 @@ namespace RavenNest.BusinessLogic.Game
                 Destination = update.Destination != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null,
                 ExpPerHour = update.ExpPerHour,
                 EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString("yyyy-MM-ddTHH:mm:ss.fffffff"),
+                AutoJoinRaidCounter = update.AutoJoinRaidCounter,
+                AutoJoinDungeonCounter = update.AutoJoinDungeonCounter,
                 Task = task,
                 TaskArgument = taskArgument ?? task,
                 X = update.X,
@@ -4297,6 +4308,8 @@ namespace RavenNest.BusinessLogic.Game
                 Destination = update.Destination != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null,
                 ExpPerHour = update.ExpPerHour,
                 EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString(),
+                AutoJoinRaidCounter = update.AutoJoinRaidCounter,
+                AutoJoinDungeonCounter = update.AutoJoinDungeonCounter,
                 Task = task,
                 TaskArgument = taskArgument,
                 X = update.X,
@@ -4312,7 +4325,6 @@ namespace RavenNest.BusinessLogic.Game
             var gameEvent = gameData.CreateSessionEvent(GameEventType.ResourceUpdate, session,
                 new ResourceUpdate
                 {
-                    UserId = user.UserId,
                     CharacterId = character.Id,
                     FishAmount = resources.Fish,
                     OreAmount = resources.Ore,

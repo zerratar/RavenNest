@@ -85,7 +85,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
                 sessionManager.SendPermissionData(session);
                 sessionManager.SendVillageInfo(session);
                 sessionManager.SendExpMultiplier(session);
-                ravenbotApi.UpdateUserSettings(session.UserId);
+                ravenbotApi.UpdateUserSettingsAsync(session.UserId);
             }
         }
 
@@ -155,7 +155,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
                     var accessToken = gameData.GetUserProperty(session.UserId, UserProperties.Twitch_PubSub);
                     if (!string.IsNullOrEmpty(accessToken))
                     {
-                        ravenbotApi.UpdateUserSettings(user.Id);
+                        await ravenbotApi.UpdateUserSettingsAsync(user.Id);
                         sessionManager.SendPubSubToken(session, accessToken);
                     }
                     lastPubsubPush = utcNow;

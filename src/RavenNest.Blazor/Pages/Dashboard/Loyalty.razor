@@ -155,7 +155,7 @@ else
                                 {
                                     var item = GetRewardItem(reward);
                                     <div class="reward-item @(reward.Points > totalAvailablePoints ? "locked" : "")">
-                                        <div class="reward-item-icon"><img src="/imgs/items/@(item.Id).png" /></div>
+                                        <div class="reward-item-icon"><img src="@ItemService.GetItemImage(item.Id, item.Name)" /></div>
                                         <div class="reward-item-details">
                                             <div class="reward-item-name">@item.Name</div>
                                             <div class="reward-item-type">@item.Type</div>

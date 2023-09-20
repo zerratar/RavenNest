@@ -600,7 +600,17 @@ namespace RavenNest.Controllers
             Dictionary<string, string> parameters = null;
             if (HttpContext != null && HttpContext.Request != null)
             {
-                if (HttpContext.Request.Host.Value.ToLower().Contains("localhost"))
+                if (HttpContext.Request.Host.Value.ToLower().Contains("92.35.43.91"))
+                {
+                    parameters = new Dictionary<string, string> {
+                        { "client_id", settings.TwitchClientId },
+                        { "client_secret", settings.TwitchClientSecret },
+                        { "code", code },
+                        { "grant_type","authorization_code" },
+                        { "redirect_uri", "https://92.35.43.91:5001/api/twitch/authorize"}
+                    };
+                }
+                else if (HttpContext.Request.Host.Value.ToLower().Contains("localhost"))
                 {
                     parameters = new Dictionary<string, string> {
                         { "client_id", settings.TwitchClientId },
