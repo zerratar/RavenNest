@@ -11,15 +11,18 @@ namespace RavenNest.BusinessLogic.Game
     {
         private const double ItemCacheDurationSeconds = 10 * 60;
         private readonly IMemoryCache memoryCache;
+        private readonly PlayerInventoryProvider inventoryProvider;
         private readonly GameData gameData;
 
         private DateTime lastCacheInvalidation;
 
         public ItemManager(
             IMemoryCache memoryCache,
+            PlayerInventoryProvider inventoryProvider,
             GameData gameData)
         {
             this.memoryCache = memoryCache;
+            this.inventoryProvider = inventoryProvider;
             this.gameData = gameData;
         }
 
@@ -210,6 +213,22 @@ namespace RavenNest.BusinessLogic.Game
             if (dataItem == null)
             {
                 return false;
+            }
+
+            //var woodPlankId = gameData.ObsoleteItems.WoodPlank.Id;
+            //var oreIngotId = gameData.ObsoleteItems.OreIngot.Id;
+
+
+            foreach (var stack in gameData.GetInventoryItemsByItemId(itemId))
+            {
+                var inventory = inventoryProvider.Get(stack.CharacterId);
+                if (inventory != null)
+                    inventory.RemoveStack(stack);
+            }
+
+            foreach (var stack in gameData.GetUserBankItemsByItemId(itemId))
+            {
+                gameData.Remove(stack);
             }
 
             // remove all inventory items using this item

@@ -118,6 +118,8 @@ namespace RavenNest.BusinessLogic.Data
         private TypedItems typedItems;
         private ObsoleteItems obsoleteItems;
 
+        public ObsoleteItems ObsoleteItems => obsoleteItems;
+
         #endregion
 
         #region Public members
@@ -574,6 +576,8 @@ namespace RavenNest.BusinessLogic.Data
             }
 
             Add(CreateBankItem(character.UserId, stack, stack.Amount.GetValueOrDefault()));
+
+            Remove(stack);
         }
 
         private void ConvertUserResources()
