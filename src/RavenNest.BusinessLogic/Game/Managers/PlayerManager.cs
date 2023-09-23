@@ -19,6 +19,7 @@ using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Models.TcpApi;
+using static RavenNest.BusinessLogic.GameMath;
 using Gender = RavenNest.DataModels.Gender;
 using Item = RavenNest.DataModels.Item;
 using Resources = RavenNest.DataModels.Resources;
@@ -3714,6 +3715,9 @@ namespace RavenNest.BusinessLogic.Game
 
         private void UpdateCharacterSkillRecord(Guid characterId, int skillIndex, int skillLevel, double skillExp)
         {
+            if (skillLevel < 1 || skillLevel > GameMath.MaxLevel + 10)
+                skillLevel = 1;
+
             CharacterSkillRecord skillRecord = gameData.GetCharacterSkillRecord(characterId, skillIndex);
             if (skillRecord == null)
             {

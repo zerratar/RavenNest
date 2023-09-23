@@ -3606,6 +3606,10 @@ namespace RavenNest.BusinessLogic.Data
                     var skills = GetCharacterSkills(character.SkillsId);
                     var skill = skills.GetSkill(skillIndex);
                     // slow. But add it.
+
+                    if (skill.Level < 1 || skill.Level > GameMath.MaxLevel + 10)
+                        skill.Level = 1;
+
                     sr = new CharacterSkillRecord
                     {
                         CharacterId = characterId,
