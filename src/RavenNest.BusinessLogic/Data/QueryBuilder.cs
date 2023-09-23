@@ -113,6 +113,17 @@ namespace RavenNest.BusinessLogic.Data
 
         private string GetSqlReadyPropertyValue(Type type, object value)
         {
+            var val = GetSqlReadyPropertyValueRaw(type, value);
+            if (val == "NaN")
+            {
+                return "0";
+            }
+            return val;
+        }
+
+        private string GetSqlReadyPropertyValueRaw(Type type, object value)
+        {
+
             if (value == null) return "NULL";
             if (type == typeof(string) || type == typeof(char)
                 || type == typeof(DateTime) || type == typeof(TimeSpan)
