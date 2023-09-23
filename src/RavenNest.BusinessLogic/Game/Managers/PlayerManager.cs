@@ -3760,7 +3760,7 @@ namespace RavenNest.BusinessLogic.Game
 
         private void UpdateCharacterSkillRecord(Guid characterId, int skillIndex, int skillLevel, double skillExp)
         {
-            if (skillLevel < 1 || skillLevel > GameMath.MaxLevel + 10)
+            if (skillLevel < 1 || skillLevel > GameMath.MaxLevel + 10 || double.IsNaN(skillLevel))
                 skillLevel = 1;
 
             CharacterSkillRecord skillRecord = gameData.GetCharacterSkillRecord(characterId, skillIndex);

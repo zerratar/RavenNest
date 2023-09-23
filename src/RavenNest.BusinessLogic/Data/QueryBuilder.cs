@@ -119,7 +119,6 @@ namespace RavenNest.BusinessLogic.Data
                 || type == typeof(DateTime?) || type == typeof(TimeSpan?)
                 || type == typeof(Guid?) || type == typeof(Guid))
             {
-
                 return $"'{Sanitize(value?.ToString())}'";
             }
 
@@ -142,6 +141,20 @@ namespace RavenNest.BusinessLogic.Data
             {
                 var b = (value as bool?);
                 return b.GetValueOrDefault() ? "1" : "0";
+            }
+
+            if (typeof(int) == type ||
+                typeof(long) == type ||
+                typeof(short) == type ||
+                typeof(byte) == type ||
+                typeof(uint) == type ||
+                typeof(ulong) == type ||
+                typeof(ushort) == type ||
+                typeof(sbyte) == type)
+            {
+                var val = value.ToString();
+                if (val == "NaN") val = "0";
+                return val;
             }
 
             return "NULL";

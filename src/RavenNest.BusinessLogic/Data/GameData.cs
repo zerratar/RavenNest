@@ -510,14 +510,18 @@ namespace RavenNest.BusinessLogic.Data
         {
             foreach (var r in characterSkillRecords.Entities)
             {
-                if (r.SkillLevel <= 0 || r.SkillLevel >= GameMath.MaxLevel + 10)
-                    r.SkillLevel = 1;
+                var skillLevel = r.SkillLevel;
+                if (skillLevel <= 0 || skillLevel >= GameMath.MaxLevel + 10 || double.IsNaN(skillLevel))
+                    skillLevel = 1;
+                r.SkillLevel = skillLevel;
             }
 
             foreach (var s in characterSkills.Entities)
             {
-                if (s.AlchemyLevel <= 0) s.AlchemyLevel = 1;
-                if (s.GatheringLevel <= 0) s.GatheringLevel = 1;
+                var a = s.AlchemyLevel;
+                var g = s.GatheringLevel;
+                if (a <= 0 || a >= GameMath.MaxLevel + 10 || double.IsNaN(a)) s.AlchemyLevel = 1;
+                if (g <= 0 || g >= GameMath.MaxLevel + 10 || double.IsNaN(g)) s.GatheringLevel = 1;
             }
         }
 
@@ -3609,9 +3613,9 @@ namespace RavenNest.BusinessLogic.Data
                     var skills = GetCharacterSkills(character.SkillsId);
                     var skill = skills.GetSkill(skillIndex);
                     // slow. But add it.
-
-                    if (skill.Level < 1 || skill.Level > GameMath.MaxLevel + 10)
-                        skill.Level = 1;
+                    var lv = skill.Level;
+                    if (lv < 1 || lv > GameMath.MaxLevel + 10 || double.IsNaN(lv))
+                        lv = 1;
 
                     sr = new CharacterSkillRecord
                     {
@@ -3619,7 +3623,7 @@ namespace RavenNest.BusinessLogic.Data
                         DateReached = DateTime.UtcNow,
                         Id = Guid.NewGuid(),
                         SkillExperience = skill.Experience,
-                        SkillLevel = skill.Level,
+                        SkillLevel = lv,
                         SkillIndex = skillIndex,
                         SkillName = skill.Name
                     };
