@@ -459,7 +459,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 EnsureCharacterSkillRecords();
                 EnsureMagicAttributes();
-                EnsureResources();
+                //EnsureResources();
 
                 //FixVillageLevels();
                 //TransformExperience();
@@ -483,7 +483,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 MergeInventoryItems();
                 ApplyVendorPrices();
-                ConvertUserResources();
+                //ConvertUserResources();
 
                 #endregion
 
@@ -1833,34 +1833,34 @@ namespace RavenNest.BusinessLogic.Data
                 }
             }
 
-            // we will just replace the item Ids directly.
-            // we have a post processing step later that merges all items.
-            foreach (var ubi in userBankItems.Entities)
-            {
-                if (lookup.TryGetValue(ubi.ItemId, out var conv))
-                {
-                    ubi.ItemId = conv.Id;
-                    ubi.Name = conv.Name;
-                }
-            }
+            //// we will just replace the item Ids directly.
+            //// we have a post processing step later that merges all items.
+            //foreach (var ubi in userBankItems.Entities)
+            //{
+            //    if (lookup.TryGetValue(ubi.ItemId, out var conv))
+            //    {
+            //        ubi.ItemId = conv.Id;
+            //        ubi.Name = conv.Name;
+            //    }
+            //}
 
-            foreach(var ubi in marketItems.Entities)
-            {
-                if (lookup.TryGetValue(ubi.ItemId, out var conv))
-                {
-                    ubi.ItemId = conv.Id;
-                    ubi.Name = conv.Name;
-                }
-            }
+            //foreach(var ubi in marketItems.Entities)
+            //{
+            //    if (lookup.TryGetValue(ubi.ItemId, out var conv))
+            //    {
+            //        ubi.ItemId = conv.Id;
+            //        ubi.Name = conv.Name;
+            //    }
+            //}
 
-            foreach (var ubi in inventoryItems.Entities)
-            {
-                if (lookup.TryGetValue(ubi.ItemId, out var conv))
-                {
-                    ubi.ItemId = conv.Id;
-                    ubi.Name = conv.Name;
-                }
-            }
+            //foreach (var ubi in inventoryItems.Entities)
+            //{
+            //    if (lookup.TryGetValue(ubi.ItemId, out var conv))
+            //    {
+            //        ubi.ItemId = conv.Id;
+            //        ubi.Name = conv.Name;
+            //    }
+            //}
         }
 
         private void EnsureDropRate(int level, Item item, double cooldown, double dropChance, RavenNest.Models.Skill skill)

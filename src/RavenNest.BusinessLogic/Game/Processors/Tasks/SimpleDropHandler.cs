@@ -4,13 +4,15 @@ using RavenNest.DataModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using static RavenNest.BusinessLogic.GameMath;
 
 namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
     public class SimpleDropHandler
     {
-        private static readonly Dictionary<string, DateTime> dropTimes;
         private static readonly Random dropRandom;
+        private static Dictionary<string, DateTime> dropTimes;
 
         static SimpleDropHandler()
         {
@@ -25,6 +27,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 }
             }
             catch { }
+
+            if (dropTimes == null)
+                dropTimes = new Dictionary<string, DateTime>();
         }
 
         public static void SaveDropTimes()
@@ -97,7 +102,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 if (target != null)
                 {
                     drop = target;
-                    if (TryDrop(gameData, inventoryProvider, session, resProcessor, character, skillLevel, target, canDrop))
+                    if (TryDrop(logger, gameData, inventoryProvider, session, resProcessor, character, skillLevel, target, canDrop))
                     {
                         return true;
                     }
@@ -111,7 +116,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                         continue;
                     }
                     drop = res;
-                    if (TryDrop(gameData, inventoryProvider, session, resProcessor, character, skillLevel, res, canDrop))
+                    if (TryDrop(logger, gameData, inventoryProvider, session, resProcessor, character, skillLevel, res, canDrop))
                     {
                         return true;
                     }
@@ -134,6 +139,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         }
 
         private bool TryDrop(
+            ILogger logger,
             GameData gameData,
             PlayerInventoryProvider inventoryProvider,
             GameSession session,
@@ -144,29 +150,75 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         {
             var now = DateTime.UtcNow;
 
-            var cooldownKey = character.Id + "_" + targetDrop.Id;
-            if (targetDrop.Cooldown > 0 && dropTimes.TryGetValue(cooldownKey, out var lastDrop))
+            var cooldownKey = GetCooldownKey(character, targetDrop);
+
+            if (dropTimes == null)
             {
-                var timeSinceLastDrop = now - lastDrop;
-                if (timeSinceLastDrop < TimeSpan.FromSeconds(targetDrop.Cooldown))
-                {
-                    return false;
-                }
+                dropTimes = new Dictionary<string, DateTime>();
             }
 
-            var chance = resProcessor.Random.NextDouble();
-            var dropChance = targetDrop.GetDropChance(skillLevel);
-            if (skillLevel >= targetDrop.SkillLevel && (chance <= dropChance))
+            if (targetDrop == null)
             {
-                if (canDrop == null || canDrop(targetDrop))
-                {
-                    dropTimes[cooldownKey] = now;
-                    resProcessor.IncrementItemStack(gameData, inventoryProvider, session, character, targetDrop.Id);
-                    return true;
-                }
+                logger.LogError("Unable to drop items, target drop is null!");
+                return false;
             }
 
-            return false;
+            try
+            {
+                if (targetDrop.Cooldown > 0 && dropTimes.TryGetValue(cooldownKey, out var lastDrop))
+                {
+                    var timeSinceLastDrop = now - lastDrop;
+                    if (timeSinceLastDrop < TimeSpan.FromSeconds(targetDrop.Cooldown))
+                    {
+                        return false;
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Unable to drop items, unable to process drop cooldown! " + exc);
+                return false;
+            }
+
+            if (resProcessor == null)
+            {
+                logger.LogError("Unable to drop items, res processor is null!");
+                return false;
+            }
+
+            if (resProcessor.Random == null)
+            {
+                logger.LogError("Unable to drop items, res processor random is null!");
+                return false;
+            }
+
+            try
+            {
+                var chance = resProcessor.Random.NextDouble();
+                var dropChance = targetDrop.GetDropChance(skillLevel);
+                if (skillLevel >= targetDrop.SkillLevel && (chance <= dropChance))
+                {
+                    if (canDrop == null || canDrop(targetDrop))
+                    {
+                        dropTimes[cooldownKey] = now;
+                        resProcessor.IncrementItemStack(gameData, inventoryProvider, session, character, targetDrop.Id);
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Unable to drop items, exception: " + exc);
+                return false;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static string GetCooldownKey(Character c, ResourceDrop drop)
+        {
+            return c.Id + "_" + drop.Id;
         }
 
         private void LoadDropsIfRequired(GameData gameData)
