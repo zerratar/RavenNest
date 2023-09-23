@@ -459,6 +459,8 @@ namespace RavenNest.BusinessLogic.Data
 
                 //RemoveDanglingEntities();
 
+                EnsureGatheringAndAlchemy();
+
                 EnsureCharacterSkillRecords();
                 EnsureMagicAttributes();
                 //EnsureResources();
@@ -501,6 +503,15 @@ namespace RavenNest.BusinessLogic.Data
             {
                 InitializedSuccessful = false;
                 System.IO.File.WriteAllText("ravenfall-error.log", "[" + DateTime.UtcNow + "] " + exc.ToString());
+            }
+        }
+
+        private void EnsureGatheringAndAlchemy()
+        {
+            foreach (var s in characterSkills.Entities)
+            {
+                if (s.AlchemyLevel <= 0) s.AlchemyLevel = 1;
+                if (s.GatheringLevel <= 0) s.GatheringLevel = 1;
             }
         }
 
