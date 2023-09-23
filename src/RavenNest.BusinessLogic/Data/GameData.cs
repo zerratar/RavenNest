@@ -1304,13 +1304,15 @@ namespace RavenNest.BusinessLogic.Data
 
                     if (existingRecord == null)
                     {
+                        var skillLevel = skill.Level;
+                        if (skillLevel > GameMath.MaxLevel + 10 || skillLevel < 1) skillLevel = 1;
                         Add(new CharacterSkillRecord
                         {
                             CharacterId = c.Id,
                             Id = Guid.NewGuid(),
                             SkillExperience = skill.Experience,
                             SkillIndex = skill.Index,
-                            SkillLevel = skill.Level,
+                            SkillLevel = skillLevel,
                             SkillName = skill.Name,
                             DateReached = DateTime.UtcNow // since they didnt have one before, at least we can pretend it was added now.
                         });

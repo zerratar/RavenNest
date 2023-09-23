@@ -3024,6 +3024,11 @@ namespace RavenNest.BusinessLogic.Game
                         continue;
                     }
 
+                    if (update.Level < 0)
+                    {
+                        update.Level = 1;
+                    }
+
                     var skill = skills.GetSkill(update.Index);
                     if (skill == null) continue;
 
