@@ -1,4 +1,5 @@
-﻿using RavenNest.BusinessLogic.Data;
+﻿using Microsoft.Extensions.Logging;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using System;
 using System.Collections.Concurrent;
@@ -29,6 +30,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         private const double CombatStatsBoost = 0.15;
 
         public override void Process(
+            ILogger logger,
             GameData gameData,
             PlayerInventoryProvider inventoryProvider,
             GameSession session,

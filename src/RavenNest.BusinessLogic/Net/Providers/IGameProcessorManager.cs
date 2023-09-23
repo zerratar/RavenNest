@@ -178,6 +178,7 @@ namespace RavenNest.BusinessLogic.Net
             this.SessionToken = sessionToken;
 
             this.gameProcessor = new GameProcessor(
+                logger,
                 ravenbotApi, extWsProvider, tcpConnectionProvider, sessionManager,
                 inventoryProvider, gameData, sessionToken);
 

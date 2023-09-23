@@ -9,6 +9,7 @@ using GuidTimeDictionary = System.Collections.Concurrent.ConcurrentDictionary<Sy
 using StateDictionary = System.Collections.Concurrent.ConcurrentDictionary<System.Guid, RavenNest.BusinessLogic.Game.Processors.Tasks.ClanSkillState>;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
+using Microsoft.Extensions.Logging;
 
 namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
@@ -32,6 +33,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         private readonly TimeSpan SkillExpUpdateInterval = TimeSpan.FromSeconds(10);
         //private static readonly Version ClientVersion_ClanLevel = new Version(0, 7, 1);
         public override void Process(
+            ILogger logger,
              GameData gameData,
              PlayerInventoryProvider inventoryProvider,
              GameSession session,

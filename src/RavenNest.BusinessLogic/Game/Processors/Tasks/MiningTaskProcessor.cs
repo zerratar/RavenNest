@@ -1,4 +1,5 @@
-﻿using RavenNest.BusinessLogic.Data;
+﻿using Microsoft.Extensions.Logging;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using System;
 
@@ -9,6 +10,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public static readonly SimpleDropHandler Drops = new SimpleDropHandler(nameof(Skills.Mining));
 
         public override void Process(
+            ILogger logger,
             GameData gameData,
             PlayerInventoryProvider inventoryProvider,
             DataModels.GameSession session,
@@ -36,7 +38,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 }
 
 
-                Drops.TryDropItem(this, gameData, inventoryProvider, session, character, skills.MiningLevel, state.TaskArgument);
+                Drops.TryDropItem(this, logger, gameData, inventoryProvider, session, character, skills.MiningLevel, state.TaskArgument);
             });
         }
     }

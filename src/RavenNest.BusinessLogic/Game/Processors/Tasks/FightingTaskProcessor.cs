@@ -1,4 +1,5 @@
-﻿using RavenNest.BusinessLogic.Data;
+﻿using Microsoft.Extensions.Logging;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
@@ -12,6 +13,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
         public ITcpSocketApiConnectionProvider TcpConnectionProvider { get; private set; }
         public void Process(
+            ILogger logger,
             GameData gameData,
             PlayerInventoryProvider inventoryProvider,
             GameSession session,

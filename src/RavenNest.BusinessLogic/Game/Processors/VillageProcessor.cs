@@ -1,4 +1,5 @@
-﻿using RavenNest.BusinessLogic.Data;
+﻿using Microsoft.Extensions.Logging;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.DataModels;
 using System;
@@ -12,6 +13,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         private DateTime lastExpSend = DateTime.MinValue;
 
         public override void Process(
+            ILogger logger,
             GameData gameData,
             PlayerInventoryProvider inventoryProvider,
             GameSession session,

@@ -1,4 +1,5 @@
-﻿using RavenNest.BusinessLogic.Data;
+﻿using Microsoft.Extensions.Logging;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using System;
 using System.Collections.Generic;
@@ -65,6 +66,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
         public bool TryDropItem(
             ResourceTaskProcessor resProcessor,
+            ILogger logger,
             GameData gameData,
             PlayerInventoryProvider inventoryProvider,
             GameSession session,
@@ -73,45 +75,62 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             string taskArgument,
             Func<ResourceDrop, bool> canDrop = null)
         {
-            var chance = resProcessor.Random.NextDouble();
-            if (chance > ItemDropRateSettings.InitDropChance)
+            ResourceDrop drop = null;
+            try
             {
+                var chance = resProcessor.Random.NextDouble();
+                if (chance > ItemDropRateSettings.InitDropChance)
+                {
+                    return false;
+                }
+
+                LoadDropsIfRequired(gameData);
+
+                if (drops.Count == 0)
+                {
+                    return false;
+                }
+
+                var now = DateTime.UtcNow;
+
+                var target = drops.FirstOrDefault(x => x.Name.ToLower() == taskArgument.ToLower());
+                if (target != null)
+                {
+                    drop = target;
+                    if (TryDrop(gameData, inventoryProvider, session, resProcessor, character, skillLevel, target, canDrop))
+                    {
+                        return true;
+                    }
+                }
+
+                foreach (var res in drops.OrderByRandomWeighted(x => x.SkillLevel, dropRandom))//drops.OrderByDescending(x => x.SkillLevel))
+                {
+                    // we have already tested this one? if so skip it.
+                    if (target != null && res.Id == target.Id)
+                    {
+                        continue;
+                    }
+                    drop = res;
+                    if (TryDrop(gameData, inventoryProvider, session, resProcessor, character, skillLevel, res, canDrop))
+                    {
+                        return true;
+                    }
+                }
+
                 return false;
             }
-
-            LoadDropsIfRequired(gameData);
-
-            if (drops.Count == 0)
+            catch (Exception exc)
             {
+                var gameDataIsOK = gameData != null;
+                var inventoryProviderIsOK = inventoryProvider != null;
+                var sessionIsOK = session != null;
+                var resProcessorIsOK = resProcessor != null;
+                var characterIsOK = character != null;
+                var dropIsOK = drop != null;
+                var canDropIsOK = canDrop != null;
+                logger.LogError($"Unable to drop item for player, GameData: {gameDataIsOK}, Inventory: {inventoryProviderIsOK}, Session: {sessionIsOK}, ResProcessor: {resProcessorIsOK}, Character: {characterIsOK}, Drop: {dropIsOK}, DropFunc: {canDropIsOK}, Exception: " + exc);
                 return false;
             }
-
-            var now = DateTime.UtcNow;
-
-            var targetDrop = drops.FirstOrDefault(x => x.Name.ToLower() == taskArgument.ToLower());
-            if (targetDrop != null)
-            {
-                if (TryDrop(gameData, inventoryProvider, session, resProcessor, character, skillLevel, targetDrop, canDrop))
-                {
-                    return true;
-                }
-            }
-
-            foreach (var res in drops.OrderByRandomWeighted(x => x.SkillLevel, dropRandom))//drops.OrderByDescending(x => x.SkillLevel))
-            {
-                // we have already tested this one? if so skip it.
-                if (targetDrop != null && res.Id == targetDrop.Id)
-                {
-                    continue;
-                }
-
-                if (TryDrop(gameData, inventoryProvider, session, resProcessor, character, skillLevel, res, canDrop))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private bool TryDrop(

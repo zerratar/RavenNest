@@ -1,4 +1,5 @@
-﻿using RavenNest.BusinessLogic.Data;
+﻿using Microsoft.Extensions.Logging;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
@@ -24,6 +25,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             = new ConcurrentDictionary<string, ITaskProcessor>();
 
         private readonly GameData gameData;
+        private readonly ILogger logger;
         private readonly IRavenBotApiClient ravenbotApi;
         private readonly ITwitchExtensionConnectionProvider extensionConnectionProvider;
         private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
@@ -43,6 +45,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private DateTime lastVersionUpdateSent;
 
         public GameProcessor(
+            ILogger logger,
             IRavenBotApiClient ravenbotApi,
             ITwitchExtensionConnectionProvider extWsProvider,
             ITcpSocketApiConnectionProvider tcpConnectionProvider,
@@ -52,6 +55,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             SessionToken sessionToken)
         {
             this.gameData = gameData;
+            this.logger = logger;
             this.ravenbotApi = ravenbotApi;
             this.extensionConnectionProvider = extWsProvider;
             this.tcpConnectionProvider = tcpConnectionProvider;
@@ -226,7 +230,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
             var village = GetTaskProcessor(VillageProcessorName);
             if (village != null)
-                village.Process(gameData, inventoryProvider, session, null, null);
+                village.Process(logger, gameData, inventoryProvider, session, null, null);
 
             var characters = gameData.GetActiveSessionCharacters(session);
             if (characters.Count > 0)
@@ -256,9 +260,9 @@ namespace RavenNest.BusinessLogic.Game.Processors
                         character.StateId = state.Id;
                     }
 
-                    rested.Process(gameData, inventoryProvider, session, character, state);
-                    clan.Process(gameData, inventoryProvider, session, character, state);
-                    loyalty.Process(gameData, inventoryProvider, session, character, state);
+                    rested.Process(logger, gameData, inventoryProvider, session, character, state);
+                    clan.Process(logger, gameData, inventoryProvider, session, character, state);
+                    loyalty.Process(logger, gameData, inventoryProvider, session, character, state);
 
                     if (string.IsNullOrEmpty(state.Task)
                         || (state.InOnsen ?? false)
@@ -278,7 +282,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
                     var task = GetTaskProcessor(taskName);
                     if (task != null)
-                        task.Process(gameData, inventoryProvider, session, character, state);
+                        task.Process(logger, gameData, inventoryProvider, session, character, state);
                 }
             }
         }

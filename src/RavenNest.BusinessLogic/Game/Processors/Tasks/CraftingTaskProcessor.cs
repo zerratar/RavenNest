@@ -1,4 +1,5 @@
-﻿using RavenNest.BusinessLogic.Data;
+﻿using Microsoft.Extensions.Logging;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using System;
 
@@ -7,6 +8,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     public class CraftingTaskProcessor : ResourceTaskProcessor
     {
         public override void Process(
+            ILogger logger,
             GameData gameData,
             PlayerInventoryProvider inventoryProvider,
             GameSession session,
