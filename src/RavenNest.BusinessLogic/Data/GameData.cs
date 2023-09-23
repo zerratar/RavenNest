@@ -508,6 +508,12 @@ namespace RavenNest.BusinessLogic.Data
 
         private void EnsureGatheringAndAlchemy()
         {
+            foreach (var r in characterSkillRecords.Entities)
+            {
+                if (r.SkillLevel <= 0 || r.SkillLevel >= GameMath.MaxLevel + 10)
+                    r.SkillLevel = 1;
+            }
+
             foreach (var s in characterSkills.Entities)
             {
                 if (s.AlchemyLevel <= 0) s.AlchemyLevel = 1;
@@ -1278,9 +1284,6 @@ namespace RavenNest.BusinessLogic.Data
                 if (skills == null)
                 {
                     logger.LogError(c.Id + " - " + c.Name + " - " + c.Identifier + " does not have any skills! SkillsId: " + c.SkillsId);
-
-
-
                     continue;
                 }
 
