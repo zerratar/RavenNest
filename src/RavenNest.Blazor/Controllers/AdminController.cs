@@ -9,6 +9,7 @@ using RavenNest.Sessions;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -64,6 +65,21 @@ namespace RavenNest.Controllers
             return adminManager.FixCharacterIndices();
         }
 
+
+        //[HttpGet("unstuck-many/{ids}")]
+        //public async Task UnstuckMany(string ids)
+        //{
+        //    //if (string.IsNullOrEmpty(ids)) return;
+        //    //if (string.isnullor)
+        //    //ids.Split(',')
+        //    //playerManager.UnstuckPlayerAsync()
+        //}
+
+        [HttpGet("unstuck-broken")]
+        public async Task UnstuckBroken()
+        {
+            await playerManager.UnstuckBrokenPlayersAsync();
+        }
 
         [HttpGet("remove-dangling-entities")]
         public async Task<bool> RemoveDanglingEntities()

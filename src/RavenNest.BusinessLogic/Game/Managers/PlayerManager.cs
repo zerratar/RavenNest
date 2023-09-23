@@ -14,12 +14,10 @@ using RavenNest.BusinessLogic.Game.Enchantment;
 using RavenNest.BusinessLogic.Models;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
-using RavenNest.BusinessLogic.ScriptParser;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Models.TcpApi;
-using static RavenNest.BusinessLogic.GameMath;
 using Gender = RavenNest.DataModels.Gender;
 using Item = RavenNest.DataModels.Item;
 using Resources = RavenNest.DataModels.Resources;
@@ -3461,6 +3459,35 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        public async Task UnstuckBrokenPlayersAsync()
+        {
+            foreach (var c in gameData.GetCharacters())
+            {
+                var state = gameData.GetCharacterState(c.StateId);
+                if (state == null) continue;
+
+                if (!string.IsNullOrEmpty(state.Task))
+                    continue;
+
+                // stuck on heim
+                if (state.X == -146)
+                {
+                    state.Island = "Heim";
+                    state.X = -285.8875f;
+                    state.Y = -2.125;
+                    state.Z = -400.75;
+                    await UnstuckPlayerAsync(c.Id);
+                    await Task.Delay(10);
+                }
+                else if (!string.IsNullOrEmpty(state.Island)) // stuck not training.
+                {
+                    state.Task = "Fighting";
+                    state.TaskArgument = "all";
+                    await SendRejoinAsync(c, "Unstuck used by admin.");
+                    await Task.Delay(10);
+                }
+            }
+        }
 
         public async Task<bool> UnstuckPlayerAsync(Guid characterId)
         {
@@ -3476,44 +3503,62 @@ namespace RavenNest.BusinessLogic.Game
                 if (state == null)
                     return;
 
-                if (state.Island == null)
-                    return;
-
-                switch (state.Island)
+                if (string.IsNullOrEmpty(state.Task))
                 {
-                    case "Home":
-                        state.X = 119.6936f;
-                        state.Y = -2.073665f;
-                        state.Z = 62.14654f;
-                        break;
+                    state.Task = "Fighting";
+                    state.TaskArgument = "all";
+                }
 
-                    case "Away":
-                        state.X = 223.13f;
-                        state.Y = -2.324998f;
-                        state.Z = -263.5f;
-                        break;
+                if (state.Island != null)
+                {
+                    switch (state.Island)
+                    {
+                        case "Home":
+                            state.X = 119.6936f;
+                            state.Y = -2.073665f;
+                            state.Z = 62.14654f;
+                            break;
 
-                    case "Kyo":
-                        state.X = -364.4747f;
-                        state.Y = -1.838f;
-                        state.Z = 75.62f;
-                        break;
+                        case "Away":
+                            state.X = 223.13f;
+                            state.Y = -2.324998f;
+                            state.Z = -263.5f;
+                            break;
 
-                    case "Ironhill":
-                        state.X = 29.53798f;
-                        state.Y = -1.868665f;
-                        state.Z = 294.4587f;
-                        break;
+                        case "Kyo":
+                            state.X = -364.4747f;
+                            state.Y = -1.838f;
+                            state.Z = 75.62f;
+                            break;
 
-                    case "Heim":
-                        state.X = -285.842f;
-                        state.Y = -1.918666f;
-                        state.Z = -398.4614f;
-                        break;
+                        case "Ironhill":
+                            state.X = 29.53798f;
+                            state.Y = -1.868665f;
+                            state.Z = 294.4587f;
+                            break;
 
-                    default:
-                        state.Y = state.Y + 5f;
-                        break;
+                        case "Heim":
+                            state.X = -285.8875f;
+                            state.Y = -2.125;
+                            state.Z = -400.75;
+                            break;
+
+                        case "Atria":
+                            state.X = -285.842f;
+                            state.Y = -1.918666f;
+                            state.Z = -398.4614f;
+                            break;
+
+                        case "Eldara":
+                            state.X = -285.842f;
+                            state.Y = -1.918666f;
+                            state.Z = -398.4614f;
+                            break;
+
+                        default:
+                            state.Y = state.Y + 5f;
+                            break;
+                    }
                 }
             });
 
