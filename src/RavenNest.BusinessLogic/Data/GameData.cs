@@ -3634,11 +3634,14 @@ namespace RavenNest.BusinessLogic.Data
             var cd = characterClanSkillCooldown[nameof(Character), characterId].FirstOrDefault(x => x.SkillId == skillId);
             if (cd == null)
             {
+                var now = DateTime.UtcNow;
                 cd = new CharacterClanSkillCooldown
                 {
                     Id = Guid.NewGuid(),
                     SkillId = skillId,
-                    CharacterId = characterId
+                    CharacterId = characterId,
+                    CooldownStart = now,
+                    CooldownEnd = now,
                 };
 
                 Add(cd);
