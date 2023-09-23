@@ -1245,8 +1245,8 @@ pre {
 }
 
 @media (max-width: 641px) {
-    h1 .page-title {
-        margin-top: 10px;
+    .page-title {
+        margin-top: 20px;
     }
 
     .section {
@@ -1254,7 +1254,7 @@ pre {
     }
 
     .dd-content {
-        margin-left: -103px;
+        margin-left: -30px;
     }
 
     .main-nav {
@@ -1426,7 +1426,7 @@ label.recipe-list-label {
     flex-direction: row-reverse;
 }
 
-td.item.recipe {
+td.item .recipe {
     display: flex;
     flex-direction: row-reverse;
     justify-content: flex-start;
@@ -1453,4 +1453,18 @@ td .recipe-list {
     padding-right: 5px;
     margin-left: 5px;
     margin-right: 5px;
+}
+
+
+.wds-icon{
+    height:32px;
+    width:32px;
+}
+
+.main-nav .nav-link
+.main-nav .nav-link.active,
+.main-nav .nav-link,
+.main-nav .nav-link.dd {
+    position: relative;
+    top: 12px;
 }

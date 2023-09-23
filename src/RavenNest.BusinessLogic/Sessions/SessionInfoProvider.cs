@@ -78,13 +78,6 @@ namespace RavenNest
             SetString(session.SessionId, AuthState, sessionState);
         }
 
-        public void SetCookieDisclaimer(SessionInfo session, bool accepted)
-        {
-            session.AcceptedCookiesDisclaimer = accepted;
-            var sessionState = JSON.Stringify(session);
-            SetString(session.SessionId, AuthState, sessionState);
-        }
-
         /// <summary>
         /// Only used with the twitch extension
         /// </summary>

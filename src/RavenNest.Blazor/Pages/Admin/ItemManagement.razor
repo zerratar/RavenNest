@@ -130,7 +130,7 @@
                                                 <InputNumber id="reqDefenseLevel" @bind-Value="editedItem.RequiredDefenseLevel" />
                                             </div>
                                             <div class="input-row">
-                                                <label class="input-label">Required Magic Level</label>
+                                                <label class="input-label">Required Magic or Healing Level</label>
                                                 <InputNumber id="reqMagicLevel" @bind-Value="editedItem.RequiredMagicLevel" />
                                             </div>
                                             <div class="input-row">
@@ -495,7 +495,7 @@
                             }
                             @if (item.RequiredMagicLevel > 0)
                             {
-                                <span class="item-stat" title="Required Magic Level">
+                                <span class="item-stat" title="Required Magic or Healing Level">
                                     <i class="fas fa-hand-holding-magic"></i>
                                     @item.RequiredMagicLevel
                                 </span>
@@ -512,7 +512,8 @@
                         <td class='item type'>@item.Type</td>
                         <td class='item material'>@item.Material</td>
                         <td class='item shop-sell-price'>@item.ShopSellPrice&nbsp;<img class="ravenCoins" src="/favicon.png" /></td>
-                        <td class='item recipe'>
+                        <td class='item'>
+                            <div class="recipe">
                             @{
                                 var drop = ItemService.GetResourceItemDrop(item.Id);
                                 if (drop != null)
@@ -563,6 +564,7 @@
                                     }
                                 </div>
                             }
+                            </div>
                         </td>
                         <td class='item actions'>
                             <button class="btn" title="remove all possessions" @onclick="(() => RemovePossessions(item))">

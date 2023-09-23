@@ -415,7 +415,7 @@ namespace RavenNest.Blazor.Services
             if (i.RequiredAttackLevel > 0) return "Requires Attack Level";
             if (i.RequiredDefenseLevel > 0) return "Requires Defense Level";
             if (i.RequiredRangedLevel > 0) return "Requires Ranged Level";
-            if (i.RequiredMagicLevel > 0) return "Requires Magic Level";
+            if (i.RequiredMagicLevel > 0) return "Requires Magic or Healing Level";
             return "";
         }
 

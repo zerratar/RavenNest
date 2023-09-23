@@ -20,7 +20,6 @@ namespace RavenNest.Models
         public List<CharacterGameSession> PlaySessions { get; set; }
         public List<AuthServiceConnection> Connections { get; set; }
         public Guid? ActiveCharacterId { get; set; }
-        public bool AcceptedCookiesDisclaimer { get; set; }
         public bool UserNameChanged { get; set; }
         public AuthToken AuthToken { get; set; }
         public bool Extension { get; set; }

@@ -1,10 +1,8 @@
-.dark-mode .inventory-item.enchanted .item-image img,
+/*.dark-mode .inventory-item.enchanted .item-image img,
 .dark-mode .inventory-item .item-image img {
     background-color: black;
 }
-/*.dark-mode .item-image {
-    background-color: white;*/ /*this will be inverted*/
-/*}*/
+
 .dark-mode .link-button,
 .dark-mode .inline-button,
 .dark-mode .page .main,
@@ -85,3 +83,4 @@
 .dark-mode .front-page .content {
     background-color: #0c0b07;
 }
+*/

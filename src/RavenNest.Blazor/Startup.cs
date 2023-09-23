@@ -399,7 +399,6 @@ namespace RavenNest.Blazor
             services.AddSingleton<ServerService>();
             services.AddSingleton<AIAssistanceService>();
             services.AddSingleton<LoyaltyService>();
-            services.AddSingleton<CookieService>();
             services.AddSingleton<TownService>();
 
             services.AddSingleton<IOpenAIFunctionCallService, AIAssistanceFunctionCallbacks>();
