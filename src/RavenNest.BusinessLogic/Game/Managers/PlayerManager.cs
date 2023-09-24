@@ -843,11 +843,16 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
+            var itemEffects = gameData.GetItemStatusEffects(item.ItemId);
+            if (itemEffects.Count == 0)
+            {
+                return null;
+            }
+
             var skills = gameData.GetCharacterSkills(character.SkillsId);
             if (inventory.RemoveItem(item, 1))
             {
                 var shouldTeleport = false;
-                var itemEffects = gameData.GetItemStatusEffects(item.ItemId);
                 var island = RavenNest.Models.Island.None;
                 var effects = new List<RavenNest.Models.CharacterStatusEffect>();
 
