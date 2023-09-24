@@ -333,11 +333,15 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (rng.NextDouble() <= dropChance)
                 {
+                    var inv = inventoryProvider.Get(character.Id);
+                    var stack = inv.AddItem(item.ItemId, 1).FirstOrDefault();
+
                     rewards.Add(new EventItemReward
                     {
                         Amount = 1,
                         CharacterId = character.Id,
-                        ItemId = item.ItemId
+                        ItemId = item.ItemId,
+                        InventoryItemId = stack.Id
                     });
                 }
             }
@@ -372,11 +376,16 @@ namespace RavenNest.BusinessLogic.Game
                 var rngVal = rng.NextDouble();
                 if (rngVal <= dropChance)
                 {
+
+                    var inv = inventoryProvider.Get(character.Id);
+                    var stack = inv.AddItem(item.ItemId, 1).FirstOrDefault();
+
                     rewards.Add(new EventItemReward
                     {
                         Amount = 1,
                         CharacterId = character.Id,
-                        ItemId = item.ItemId
+                        ItemId = item.ItemId,
+                        InventoryItemId = stack.Id
                     });
                 }
             }

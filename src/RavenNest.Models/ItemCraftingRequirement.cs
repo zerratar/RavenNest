@@ -7,6 +7,7 @@ namespace RavenNest.Models
     {
         public Guid CharacterId { get; set; }
         public Guid ItemId { get; set; }
+        public Guid InventoryItemId { get; set; }
         public int Amount { get; set; }
     }
 
@@ -52,7 +53,7 @@ namespace RavenNest.Models
         /// </summary>
         public long Amount { get; set; }
     }
-    
+
     public partial class ResourceItemDrop
     {
         public Guid ItemId { get; set; }
