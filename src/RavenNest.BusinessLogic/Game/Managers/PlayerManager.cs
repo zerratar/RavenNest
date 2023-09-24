@@ -28,7 +28,7 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class PlayerManager
     {
-        public const int Enchanting_CooldownCoinsPerSecond = 1000;
+        public const int Enchanting_CooldownCoinsPerSecond = 100;
         public const int AutoJoinDungeonCost = 5000;
         public const int AutoJoinRaidCost = 3000;
 
