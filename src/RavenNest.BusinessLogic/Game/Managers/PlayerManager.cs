@@ -2412,7 +2412,7 @@ namespace RavenNest.BusinessLogic.Game
             var cd = gameData.GetEnchantmentCooldown(character.Id);
             if (cd.CooldownEnd <= DateTime.UtcNow) return new ClearEnchantmentCooldownResult { Success = true };
 
-            var secondsLeft = (DateTime.UtcNow - cd.CooldownEnd).TotalSeconds;
+            var secondsLeft = (cd.CooldownEnd - DateTime.UtcNow).TotalSeconds;
             var cost = (long)(Enchanting_CooldownCoinsPerSecond * secondsLeft);
             if (cost > res.Coins) return new ClearEnchantmentCooldownResult();
             res.Coins -= cost;
