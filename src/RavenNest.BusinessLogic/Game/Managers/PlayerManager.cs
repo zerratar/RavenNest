@@ -836,6 +836,13 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
 
+            if (item.Item.Type != (int)DataModels.ItemType.Food &&
+                item.Item.Type != (int)DataModels.ItemType.Scroll &&
+                item.Item.Type != (int)DataModels.ItemType.Potion)
+            {
+                return null;
+            }
+
             var skills = gameData.GetCharacterSkills(character.SkillsId);
             if (inventory.RemoveItem(item, 1))
             {
