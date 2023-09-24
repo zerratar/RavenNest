@@ -50,5 +50,7 @@
         PlayerStartDungeon = 39,
 
         GameUpdated = 40,
+        Unstuck = 41,
+        Teleport = 42,
     }
 }

@@ -3688,8 +3688,10 @@ namespace RavenNest.BusinessLogic.Data
                 return null;
 
             var enchantingSkill = GetSkills().FirstOrDefault(x => x.Name == "Enchanting");
+            var clanSkill = skills.FirstOrDefault(x => x.SkillId == enchantingSkill.Id);
+
             //var clanSkill = skills.FirstOrDefault(x => x.SkillId == enchantingSkill.Id);
-            return GetClanSkillCooldown(characterId, enchantingSkill.Id);
+            return GetClanSkillCooldown(characterId, clanSkill.Id);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

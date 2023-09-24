@@ -66,6 +66,7 @@ namespace RavenNest.Models
         public bool IsModerator { get; set; }
         public int SubscriberTier { get; set; }
         public int ExpMultiplierLimit { get; set; }
+        public int PlayerExpMultiplierLimit { get; set; }
         public bool StrictLevelRequirements { get; set; }
     }
     public class ExpMultiplier

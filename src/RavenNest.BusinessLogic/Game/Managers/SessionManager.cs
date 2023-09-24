@@ -25,7 +25,9 @@ namespace RavenNest.BusinessLogic.Game
         private readonly ITwitchExtensionConnectionProvider extWsConnectionProvider;
         private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
 
-        private readonly int[] MaxMultiplier = new int[]
+        private const int MaxPlayerExpMultiplier = 100;
+
+        private readonly int[] MaxSystemExpMultiplier = new int[]
         {
             //0, 10, 15, 20
             //0, 15, 30, 50
@@ -278,7 +280,7 @@ namespace RavenNest.BusinessLogic.Game
             var userId = session.UserId;
             var user = gameData.GetUser(userId);
             var patreonTier = user.PatreonTier.GetValueOrDefault();
-            var multiplier = MaxMultiplier[patreonTier];
+            var multiplier = MaxSystemExpMultiplier[patreonTier];
             var expMulti = Math.Min(multiplier, activeEvent.Multiplier);
             var expEvent = gameData.CreateSessionEvent(GameEventType.ExpMultiplier,
                   session,
@@ -345,12 +347,12 @@ namespace RavenNest.BusinessLogic.Game
             var patreonTier = user.PatreonTier ?? 0;
 
             var subscriptionTier = patreonTier;
-            var expMultiplierLimit = MaxMultiplier[patreonTier];
+            var expMultiplierLimit = MaxSystemExpMultiplier[patreonTier];
 
             if (isModerator)
             {
                 subscriptionTier = 3;
-                expMultiplierLimit = MaxMultiplier[subscriptionTier];
+                expMultiplierLimit = MaxSystemExpMultiplier[subscriptionTier];
             }
 
             if (isAdmin)
@@ -364,6 +366,7 @@ namespace RavenNest.BusinessLogic.Game
                 IsModerator = user.IsModerator ?? false,
                 SubscriberTier = subscriptionTier,
                 ExpMultiplierLimit = expMultiplierLimit,
+                PlayerExpMultiplierLimit = MaxPlayerExpMultiplier,
                 StrictLevelRequirements = true,
             };
             return data;
