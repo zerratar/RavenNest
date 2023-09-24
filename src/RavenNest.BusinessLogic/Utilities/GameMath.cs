@@ -182,6 +182,14 @@ namespace RavenNest.BusinessLogic
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetItemLevel(RavenNest.Models.Item i)
+        {
+            var lv = (i.RequiredAttackLevel + i.RequiredDefenseLevel + i.RequiredMagicLevel + i.RequiredRangedLevel + i.RequiredSlayerLevel);
+            if (lv > i.Level) return lv;
+            return i.Level;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetMaxEnchantingAttributeCount(DataModels.Item i)
         {
             var itemLvReq = GetItemLevel(i);

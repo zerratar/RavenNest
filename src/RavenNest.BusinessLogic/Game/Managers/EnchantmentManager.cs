@@ -65,6 +65,22 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        public static bool CanBeEnchanted(RavenNest.Models.Item i)
+        {
+            return i.Category == RavenNest.Models.ItemCategory.Weapon ||
+                    i.Category == RavenNest.Models.ItemCategory.Armor ||
+                    i.Category == RavenNest.Models.ItemCategory.Ring ||
+                    i.Category == RavenNest.Models.ItemCategory.Amulet;
+        }
+
+        public static bool CanBeEnchanted(RavenNest.DataModels.Item i)
+        {
+            return i.Category == (int)DataModels.ItemCategory.Weapon ||
+                    i.Category == (int)DataModels.ItemCategory.Armor ||
+                    i.Category == (int)DataModels.ItemCategory.Ring ||
+                    i.Category == (int)DataModels.ItemCategory.Amulet;
+        }
+
         public ItemEnchantmentResult EnchantItem(
             System.Guid sessionId,
             DataModels.ClanSkill clanSkill,
@@ -108,8 +124,9 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 var itemLvReq = GameMath.GetItemLevel(i);
-                var isStack = item.Amount > 1;
                 var itemMaxAttrCount = GameMath.GetMaxEnchantingAttributeCount(itemLvReq);
+
+                var isStack = item.Amount > 1;
                 var success = clanSkill.Level / (float)itemLvReq;
                 var targetAttributeCount = 0;
                 var rng = random.NextDouble();

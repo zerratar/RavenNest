@@ -137,6 +137,7 @@
                         <th @onclick="SortByType">Item Type <span>@GetIndicator("type")</span></th>
                         <th @onclick="SortByMaterial">Material Type <span>@GetIndicator("material")</span></th>
                         <th @onclick="SortByVendorPrice">Vendor Price <span>@GetIndicator("vendor")</span></th>
+                        <th @onclick="SortByEnchantmentSlots">Max Enchantments <span>@GetIndicator("enchantment")</span></th>
                         <th>Use &amp; Source</th>
                     </tr>
                 </thead>
@@ -231,6 +232,22 @@
                             <td class='item'>@ItemService.GetTypeName(item)</td>
                             <td class='item'>@ItemService.GetMaterialName(item)</td>
                             <td class='item'>@item.ShopSellPrice&nbsp;<img class="ravenCoins" src="/favicon.png" /></td>
+                            <td class='item'>
+                                @{
+                                    if (EnchantmentManager.CanBeEnchanted(item))
+                                    {
+                                        var itemLvReq = GameMath.GetItemLevel(item);
+                                        var itemMaxAttrCount = GameMath.GetMaxEnchantingAttributeCount(itemLvReq);
+                                        <div class="enchantment">
+                                            <span class="max-enchantment-slots">@itemMaxAttrCount</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span>N/A</span>
+                                    }
+                                }
+                            </td>
                             <td class='item recipe'>
                                 @{
                                     var drop = ItemService.GetResourceItemDrop(item.Id);
@@ -248,22 +265,22 @@
                                     var itemRecipe = ItemService.GetItemRecipe(item.Id);
                                     if (itemRecipe != null)
                                     {
-                                      <div class="recipe-details">
-                                        <div class="crafting-level">
-                                            <label>@itemRecipe.RequiredSkill.ToString() Level </label>
-                                            <span class='crafting-level-requirement'>@itemRecipe.RequiredLevel</span>
-                                        </div>
-                                        <div class="crafting-ingredients">
-                                            @{
-                                                var ingredients = itemRecipe.Ingredients;
-                                                foreach (var req in ingredients)
-                                                {
-                                                    var reqItem = availableItems.First(x => x.Id == req.ItemId);
-                                                    <span><a href="/items/@reqItem.Id">@(reqItem.Name)</a> x@(req.Amount)&nbsp;</span>
+                                        <div class="recipe-details">
+                                            <div class="crafting-level">
+                                                <label>@itemRecipe.RequiredSkill.ToString() Level </label>
+                                                <span class='crafting-level-requirement'>@itemRecipe.RequiredLevel</span>
+                                            </div>
+                                            <div class="crafting-ingredients">
+                                                @{
+                                                    var ingredients = itemRecipe.Ingredients;
+                                                    foreach (var req in ingredients)
+                                                    {
+                                                        var reqItem = availableItems.First(x => x.Id == req.ItemId);
+                                                        <span><a href="/items/@reqItem.Id">@(reqItem.Name)</a> x@(req.Amount)&nbsp;</span>
+                                                    }
                                                 }
-                                            }
+                                            </div>
                                         </div>
-                                      </div>
                                     }
 
                                     // check if part of recipes.
@@ -374,6 +391,20 @@
     {
         SetSorting("vendor");
         await SortBy(x => x.ShopSellPrice);
+    }
+
+    private async void SortByEnchantmentSlots()
+    {
+        SetSorting("enchantment");
+        await SortBy(x =>
+        {
+            if (!EnchantmentManager.CanBeEnchanted(x))
+                return 0;
+
+            var itemLvReq = GameMath.GetItemLevel(x);
+            var itemMaxAttrCount = GameMath.GetMaxEnchantingAttributeCount(itemLvReq);
+            return itemMaxAttrCount;
+        });
     }
 
     private async void SortByStats()
