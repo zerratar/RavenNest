@@ -30,7 +30,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             var inventory = inventoryProvider.Get(character.Id);
 
-            if (s.SailingRewardAttempted == DateTime.MinValue)
+            if (s.SailingRewardAttempted == DateTime.UnixEpoch)
             {
                 s.SailingRewardAttempted = now;
             }

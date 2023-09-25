@@ -104,7 +104,7 @@ namespace RavenNest.BusinessLogic.Data
                     AbraxasSpirit = GetOrCreateItem(i, "Abraxas Spirit", ItemCategory.Resource, ItemType.Mining),
                     AncientHeart = GetOrCreateItem(i, "Ancient Heart", ItemCategory.Resource, ItemType.Mining),
                     AtlarusLight = GetOrCreateItem(i, "Atlarus Light", ItemCategory.Resource, ItemType.Mining),
-                    
+
                     OreIngot = GetOrCreateItem(i, "Ore ingot", ItemCategory.Resource, ItemType.Mining),
                     WoodPlank = GetOrCreateItem(i, "Wood Plank", ItemCategory.Resource, ItemType.Woodcutting),
                 };
@@ -216,7 +216,7 @@ namespace RavenNest.BusinessLogic.Data
                     Water = GetOrCreateItem(i, "Water", "Essential for life and a key ingredient in many recipes.", ItemCategory.Resource, ItemType.Gathering),
                     Mushroom = GetOrCreateItem(i, "Mushroom", "A versatile fungus that adds flavor to dishes.", ItemCategory.Resource, ItemType.Gathering),
                     Salt = GetOrCreateItem(i, "Salt", "A mineral that enhances the taste of food.", ItemCategory.Resource, ItemType.Gathering),
-                    Yeast = GetOrCreateItem(i, "Yeast", "A key ingredient for bread-making. It feeds on sugars and causes dough to rise, providing bread's fluffy texture.", ItemCategory.Resource, ItemType.Gathering),
+                    Yeast = GetOrCreateItem(i, "Yeast", "A key ingredient for bread-making. It feeds on sugars and causes dough to rise, providing bread's fluffy texture.", ItemCategory.Resource, ItemType.Farming),
                     BlackPepper = GetOrCreateItem(i, "Black Pepper", "A spicy seasoning that adds kick to dishes.", ItemCategory.Resource, ItemType.Gathering),
 
                     // Gathering - Alchemy
@@ -956,19 +956,24 @@ namespace RavenNest.BusinessLogic.Data
             // cooking various meats and stuff
             EnsureCookingRecipeGuaranteed(10, items.Flour, Ingredient(items.Wheat));
             EnsureCookingRecipe(30, items.Bread, items.BurnedBread, 0.2, 1, items.Flour, items.Water, items.Salt, items.Yeast);
-            EnsureCookingRecipeGuaranteed(60, items.HamSandwich, Ingredients(items.Bread, items.Butter));
+            EnsureCookingRecipeGuaranteed(60, items.HamSandwich, Ingredients(items.Bread, items.Butter, items.Ham));
+            EnsureCookingRecipeGuaranteed(70, items.Butter, Ingredients(items.Milk));
             EnsureCookingRecipe(80, items.RoastedPork, items.BurnedPork, 0.2, 1, items.RawPork);
             EnsureCookingRecipeGuaranteed(90, items.Ham, Ingredients(items.Salt, items.BlackPepper, items.RawPork));
 
             EnsureCookingRecipe(100, items.RoastedChicken, items.BurnedChicken, 0.2, 1, items.RawChicken);
 
             EnsureCookingRecipeGuaranteed(110, items.Cheese, Ingredients(items.Milk, items.Yeast, items.Salt));
+            EnsureCookingRecipeGuaranteed(140, items.RawChickenLeg, 2, Ingredients(items.RawChicken));
+            EnsureCookingRecipe(140, items.CookedChickenLeg, items.BurnedChickenLeg, 0.2, 1, items.RawChickenLeg);
 
             EnsureCookingRecipe(150, items.GrilledCheese, items.BurnedGrilledCheese, 0.2, 1, items.Bread, items.Butter, items.Cheese, items.Ham);
             EnsureCookingRecipe(180, items.RoastBeef, items.BurnedBeef, 0.2, 1, items.RawBeef);
             EnsureCookingRecipe(200, items.ApplePie, items.BurnedApplePie, 0.2, 1, items.Apple, items.Sugar, items.Butter, items.Flour, items.Cinnamon);
-
+            EnsureCookingRecipe(250, items.Steak, items.BurnedSteak, 0.2, 1, items.RawBeef, items.Salt, items.BlackPepper);
             EnsureCookingRecipeGuaranteed(400, items.Chocolate, Ingredients(items.Cacao, items.Milk, items.Sugar));
+
+            EnsureCookingRecipe(300, items.Skewers, items.BurnedSkewers, 0.2, 1, items.RawBeef, items.SpiceMix);
 
             EnsureCookingRecipe(450, items.ChocolateChipCookies, items.BurnedChocolateChipCookies, 0.2, 1, items.Chocolate, items.Sugar, items.Butter, items.Flour);
 

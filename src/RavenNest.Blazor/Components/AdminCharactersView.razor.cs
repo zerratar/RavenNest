@@ -72,7 +72,7 @@ namespace RavenNest.Blazor.Components
         public string GetLastUpdateString(DateTime update)
         {
             var elapsed = DateTime.UtcNow - update;
-            if (update == DateTime.MinValue)
+            if (update <= DateTime.UnixEpoch)
             {
                 return "";
             }

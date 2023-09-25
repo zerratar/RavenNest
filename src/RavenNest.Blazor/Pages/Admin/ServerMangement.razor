@@ -218,7 +218,7 @@
 
     private string FormatDateTime(DateTime dt)
     {
-        if (dt == DateTime.MinValue)
+        if (dt <= DateTime.UnixEpoch)
         {
             return "-";
         }

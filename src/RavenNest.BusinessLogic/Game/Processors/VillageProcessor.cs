@@ -9,8 +9,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     public class VillageProcessor : PlayerTaskProcessor
     {
         private readonly TimeSpan updateExpInterval = TimeSpan.FromSeconds(15);
-        private DateTime lastUpdate = DateTime.MinValue;
-        private DateTime lastExpSend = DateTime.MinValue;
+        private DateTime lastUpdate = DateTime.UnixEpoch;
+        private DateTime lastExpSend = DateTime.UnixEpoch;
 
         public override void Process(
             ILogger logger,
@@ -22,7 +22,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         {
             var players = gameData.GetActiveSessionCharacters(session);
 
-            if (lastUpdate == DateTime.MinValue)
+            if (lastUpdate <= DateTime.UnixEpoch)
             {
                 lastUpdate = DateTime.UtcNow;
             }

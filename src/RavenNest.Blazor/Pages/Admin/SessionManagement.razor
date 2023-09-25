@@ -165,7 +165,7 @@
     public string GetLastUpdateStringShort(DateTime update)
     {
         var elapsed = UtcNow - update;
-        if (update == DateTime.MinValue)
+        if (update <= DateTime.UnixEpoch)
         {
             return "";
         }
@@ -191,7 +191,7 @@
     public string GetLastUpdateString(DateTime update)
     {
         var elapsed = UtcNow - update;
-        if (update == DateTime.MinValue)
+        if (update <= DateTime.UnixEpoch)
         {
             return "";
         }

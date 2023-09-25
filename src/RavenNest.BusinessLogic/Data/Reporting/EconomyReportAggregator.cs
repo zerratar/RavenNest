@@ -143,7 +143,7 @@ namespace RavenNest.BusinessLogic.Data.Aggregators
         {
             var currentDate = DateTime.UtcNow.Date;
             var retentionDate = currentDate - retentionTime;
-            var oldReports = gameData.GetEconomyReports(DateTime.MinValue, retentionDate);
+            var oldReports = gameData.GetEconomyReports(DateTime.UnixEpoch, retentionDate);
             foreach (var oldReport in oldReports)
             {
                 gameData.Remove(oldReport);
@@ -153,13 +153,13 @@ namespace RavenNest.BusinessLogic.Data.Aggregators
             var transactionEndDate = currentDate.Subtract(transactionRetentionDays);
 
             // We should also clear out old vendor and marketplace transactions older than 90 days.
-            var vendorTransactions = gameData.GetVendorTransactions(DateTime.MinValue, transactionEndDate);
+            var vendorTransactions = gameData.GetVendorTransactions(DateTime.UnixEpoch, transactionEndDate);
             foreach (var transaction in vendorTransactions)
             {
                 gameData.Remove(transaction);
             }
 
-            var marketTransactions = gameData.GetMarketItemTransactions(DateTime.MinValue, transactionEndDate);
+            var marketTransactions = gameData.GetMarketItemTransactions(DateTime.UnixEpoch, transactionEndDate);
             foreach (var transaction in marketTransactions)
             {
                 gameData.Remove(transaction);

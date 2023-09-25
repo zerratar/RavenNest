@@ -125,7 +125,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             var state = gameData.GetSessionState(session.Id);
             if (gameData.IsExpectedVersion(state.ClientVersion))
             {
-                lastVersionUpdateSent = DateTime.MinValue;
+                lastVersionUpdateSent = DateTime.UnixEpoch;
                 state[updateRequiredKey] = false;
                 return;
             }

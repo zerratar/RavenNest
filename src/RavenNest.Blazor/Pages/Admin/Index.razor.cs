@@ -260,7 +260,7 @@ namespace RavenNest.Blazor.Pages.Admin
             var now = DateTime.UtcNow;
             if (avgUserPerHour)
             {
-                return DateTime.MinValue;
+                return DateTime.UnixEpoch;
             }
             switch (tf)
             {

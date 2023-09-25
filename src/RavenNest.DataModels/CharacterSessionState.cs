@@ -103,7 +103,7 @@ namespace RavenNest.DataModels
 
         public void AddExperience(double amount)
         {
-            if (StartTime == DateTime.MinValue)
+            if (StartTime <= DateTime.UnixEpoch)
                 StartTime = DateTime.UtcNow;
             if (amount > 0)
                 Amount += amount;

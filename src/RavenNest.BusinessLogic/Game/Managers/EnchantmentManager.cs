@@ -118,7 +118,7 @@ namespace RavenNest.BusinessLogic.Game
                 var cd = gameData.GetClanSkillCooldown(character.Id, clanSkill.Id);
 
                 //var characterSessionState = gameData.GetCharacterSessionState(sessionId, character.Id);
-                if (cd.CooldownEnd > DateTime.MinValue && cd.CooldownEnd > DateTime.UtcNow)
+                if (cd.CooldownEnd > DateTime.UnixEpoch && cd.CooldownEnd > DateTime.UtcNow)
                 {
                     return ItemEnchantmentResult.NotReady(cd.CooldownEnd);
                 }

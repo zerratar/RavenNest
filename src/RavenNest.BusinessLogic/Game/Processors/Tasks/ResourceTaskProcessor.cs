@@ -116,7 +116,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 var oldCoins = resources.Coins;
 
                 state.LastTaskUpdate = DateTime.UtcNow;
-                state.SailingRewardAttempted = DateTime.MinValue;
+                state.SailingRewardAttempted = DateTime.UnixEpoch;
 
                 onUpdate?.Invoke(resources);
 

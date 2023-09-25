@@ -116,7 +116,7 @@ namespace GameDataSimulation
             var now = Time.UtcNow;
             var elapsed = now - ctx.LastTaskUpdate;
             var interval = TimeSpan.FromSeconds(ItemDropRateSettings.ResourceGatherInterval);
-            var firstTime = ctx.LastTaskUpdate == DateTime.MinValue;
+            var firstTime = ctx.LastTaskUpdate <= DateTime.UnixEpoch;
             while (firstTime || (elapsed = elapsed.Add(-interval)) >= TimeSpan.Zero)
             {
                 ctx.LastTaskUpdate = Time.UtcNow;

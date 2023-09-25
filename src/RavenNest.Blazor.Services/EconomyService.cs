@@ -27,7 +27,7 @@ namespace RavenNest.Blazor.Services
 
         public IReadOnlyList<DailyAggregatedMarketplaceData> GetMarketplaceReports()
         {
-            return gameData.GetMarketplaceReports(DateTime.MinValue, DateTime.UtcNow);
+            return gameData.GetMarketplaceReports(DateTime.UnixEpoch, DateTime.UtcNow);
         }
 
         public IReadOnlyList<MarketItemTransaction> GetMarketItemTransactions(DateTime startDate, DateTime endDate)

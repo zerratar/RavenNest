@@ -93,10 +93,10 @@ namespace RavenNest.BusinessLogic.Extensions
             var user = gameData.GetUser(character.UserId);
             if (user == null) return null;
 
-            var lastSkillUpdate = DateTime.MinValue;
-            var lastExpUpdateRequest = DateTime.MinValue;
-            var lastStateUpdate = DateTime.MinValue;
-            var lastStateSaveRequest = DateTime.MinValue;
+            var lastSkillUpdate = DateTime.UnixEpoch;
+            var lastExpUpdateRequest = DateTime.UnixEpoch;
+            var lastStateUpdate = DateTime.UnixEpoch;
+            var lastStateSaveRequest = DateTime.UnixEpoch;
             var css = gameData.GetCharacterSessionState(session.Id, character.Id);
             if (css != null)
             {

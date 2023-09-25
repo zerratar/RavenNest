@@ -1921,7 +1921,10 @@ namespace RavenNest.BusinessLogic.Data
         {
             return EnsureRecipe(RavenNest.Models.Skill.Cooking, levelRequirement, 1, success.Name, success.Description, success, null, 1, 1, ingredients);
         }
-
+        public ItemRecipe EnsureCookingRecipeGuaranteed(int levelRequirement, Item success, int amount, params Ingredient[] ingredients)
+        {
+            return EnsureRecipe(RavenNest.Models.Skill.Cooking, levelRequirement, amount, success.Name, success.Description, success, null, 1, 1, ingredients);
+        }
         public ItemRecipe EnsureCookingRecipeGuaranteed(int levelRequirement, int amount, string name, string description, Item success, params Item[] ingredients)
         {
             return EnsureRecipe(RavenNest.Models.Skill.Cooking, levelRequirement, amount, name, description, success, null, 1, 1, Ingredient.FromArray(ingredients));
@@ -2881,7 +2884,7 @@ namespace RavenNest.BusinessLogic.Data
                 state.LastTaskUpdate = DateTime.UtcNow;
                 state.LastExpUpdate = DateTime.UtcNow;
                 state.LastStateUpdate = DateTime.UtcNow;
-                state.SailingRewardAttempted = DateTime.MinValue;
+                state.SailingRewardAttempted = DateTime.UnixEpoch;
                 states[characterId] = state;
                 characterSessionStates[sessionId] = states;
             }

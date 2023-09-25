@@ -49,7 +49,7 @@ namespace RavenNest.BusinessLogic.Data.Aggregators
         {
             var currentDate = DateTime.UtcNow.Date;
             var retentionDate = currentDate - retentionTime;
-            var oldReports = gameData.GetMarketplaceReports(DateTime.MinValue, retentionDate);
+            var oldReports = gameData.GetMarketplaceReports(DateTime.UnixEpoch, retentionDate);
             foreach (var oldReport in oldReports)
             {
                 gameData.Remove(oldReport);

@@ -9,6 +9,6 @@ namespace RavenNest.BusinessLogic.OpenAI.Conversations
         public Message Message { get; set; }
         public DateTime Created { get; set; }
         public DateTime DateSent { get; set; }
-        public bool IsSent => DateSent > DateTime.MinValue;
+        public bool IsSent => DateSent > DateTime.UnixEpoch;
     }
 }
