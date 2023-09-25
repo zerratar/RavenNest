@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <UserSecretsId>6cb7cef3-a971-415f-9577-97280f9779c2</UserSecretsId>
     <Nullable>disable</Nullable>
     <AssemblyName>RavenNest</AssemblyName>
