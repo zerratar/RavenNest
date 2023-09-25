@@ -4274,23 +4274,32 @@ namespace RavenNest.BusinessLogic.Data
         private ItemFilter GetItemFilter(Guid itemId)
         {
             var item = GetItem(itemId);
+            return GetItemFilter(item);
+        }
+        public static ItemFilter GetItemFilter(Item item)
+        {
             var itemType = (ItemType)item.Type;
             var itemCategory = (ItemCategory)item.Category;
 
-            if (itemCategory == ItemCategory.Resource ||
-                itemType == ItemType.Coins ||
-                itemType == ItemType.Mining ||
-                itemType == ItemType.Woodcutting ||
-                itemType == ItemType.Fishing ||
-                itemType == ItemType.Crafting ||
-                itemType == ItemType.Cooking ||
-                itemType == ItemType.Alchemy)
-                return ItemFilter.Resources;
+            if (itemType == ItemType.Coins) return ItemFilter.Resources;
+            if (itemType == ItemType.Mining) return ItemFilter.Mining;
+            if (itemType == ItemType.Woodcutting) return ItemFilter.Woodcutting;
+            if (itemType == ItemType.Gathering) return ItemFilter.Gathering;
+            if (itemType == ItemType.Fishing) return ItemFilter.Fishing;
+            if (itemType == ItemType.Farming) return ItemFilter.Farming;
+            if (itemType == ItemType.Crafting) return ItemFilter.Crafting;
+            if (itemType == ItemType.Cooking || itemType == ItemType.Food)
+                return ItemFilter.Cooking;
+
+            if (itemType == ItemType.Alchemy || itemType == ItemType.Potion)
+                return ItemFilter.Alchemy;
 
             if (itemType == ItemType.OneHandedSword || itemType == ItemType.TwoHandedSword)
                 return ItemFilter.Swords;
             if (itemType == ItemType.TwoHandedBow) return ItemFilter.Bows;
             if (itemType == ItemType.TwoHandedStaff) return ItemFilter.Staves;
+            if (itemType == ItemType.TwoHandedSpear) return ItemFilter.Spears;
+            if (itemType == ItemType.OneHandedAxe || itemType == ItemType.TwoHandedAxe) return ItemFilter.Axes;
             if (itemType == ItemType.Ring || itemType == ItemType.Amulet) return ItemFilter.Accessories;
             if (itemType == ItemType.Shield) return ItemFilter.Shields;
             if (itemType == ItemType.Pet) return ItemFilter.Pets;

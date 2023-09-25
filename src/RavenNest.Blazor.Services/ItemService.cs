@@ -265,6 +265,7 @@ namespace RavenNest.Blazor.Services
         public ItemFilter GetItemFilter(RavenNest.Models.Item item)
         {
             //var item = ItemService.GetItem(itemId);
+#warning TODO: Use GameData.GetItemFilter instead or atleast move the logic so its not repeated.
             var itemType = (ItemType)item.Type;
             if (itemType == ItemType.Coins) return ItemFilter.Resources;
             if (itemType == ItemType.Mining) return ItemFilter.Mining;
