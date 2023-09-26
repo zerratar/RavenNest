@@ -1261,6 +1261,8 @@ namespace RavenNest.BusinessLogic.Providers
             return item.Category != RavenNest.Models.ItemCategory.Resource &&
                    item.Category != RavenNest.Models.ItemCategory.StreamerToken &&
                    item.Category != RavenNest.Models.ItemCategory.Scroll &&
+                   item.Category != RavenNest.Models.ItemCategory.Potion &&
+                   item.Category != RavenNest.Models.ItemCategory.Food &&
                    item.RequiredSlayerLevel <= skills.Skills.SlayerLevel &&
                    (item.RequiredMagicLevel <= skills.Skills.MagicLevel || item.RequiredMagicLevel <= skills.Skills.HealingLevel) &&
                    item.RequiredRangedLevel <= skills.Skills.RangedLevel &&
@@ -1278,6 +1280,8 @@ namespace RavenNest.BusinessLogic.Providers
             return item.Category != (int)ItemCategory.Resource &&
                    item.Category != (int)ItemCategory.StreamerToken &&
                    item.Category != (int)ItemCategory.Scroll &&
+                   item.Category != (int)ItemCategory.Food &&
+                   item.Category != (int)ItemCategory.Potion &&
                    item.RequiredSlayerLevel <= skills.SlayerLevel &&
                    (item.RequiredMagicLevel <= skills.MagicLevel || item.RequiredMagicLevel <= skills.HealingLevel) &&
                    item.RequiredRangedLevel <= skills.RangedLevel &&

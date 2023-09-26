@@ -142,17 +142,15 @@ namespace RavenNest.BusinessLogic
 
         public static double GetVillageExperience(int level, int playerCount, TimeSpan elapsedTime)
         {
-            if (playerCount <= 0)
-            {
-                return 0;
-            }
-
             // there is a 1% increase of exp per player up to 300 players. (3x max)
             // Base Speed is 1/10th of a skill like cooking,crafting,mining,fishing,farming that has a constant exp gain.
             // every level above 75 (EasyLevel) will add 140 minutes per level, every level below 75 will add a lerped amount from 17,5 minutes to 140 with the amount of (current Level-2) / 75.
             // multiplier effects time, not the actual exp amount. so 3x is 3 times less time to level up compared to the base time.
             // this means, 17min, 30s / 4 (max gain where 1+3) = 4 min, 22s, more players are not linear in exp gain but they most certainly help still.
-            var playerFactor = (Math.Min(0.3, playerCount / 1000d));//0.1d + 
+
+            playerCount++;
+
+            var playerFactor = 1 + (playerCount / 2000d);
             var factor = playerFactor * elapsedTime.TotalSeconds;
 
             var nextlevel = level + 1;
