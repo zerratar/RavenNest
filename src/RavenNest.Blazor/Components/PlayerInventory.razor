@@ -85,7 +85,7 @@
                 <span class="item-filter-text">Scrolls</span>
                 <i class="fa-sharp fa-solid fa-scroll"></i>
             </button>
-            
+
             <button class="item-filter @(itemFilter == ItemFilter.Woodcutting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Woodcutting)">
                 <span class="item-filter-text">Woodcutting</span>
                 <i class="fa-solid fa-tree"></i>
@@ -95,7 +95,7 @@
                 <span class="item-filter-text">Mining</span>
                 <i class="fa-solid fa-pickaxe"></i>
             </button>
-            
+
             <button class="item-filter @(itemFilter == ItemFilter.Fishing ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Fishing)">
                 <span class="item-filter-text">Fishing</span>
                 <i class="fa-sharp fa-solid fa-fishing-rod"></i>
@@ -169,6 +169,7 @@
 
         @if (itemDetailDialogVisible)
         {
+            var item = ItemService.GetItem(itemDetailsDialogItem.ItemId);
             <div class="item-details-dialog-container item-view">
                 <div class="item-details-dialog-background" @onclick="CloseItemDetails"></div>
                 <div class="item-details-dialog">
@@ -213,7 +214,16 @@
                             <div class="item-stat-name">@GetItemRequirementSkill()</div>
                             <div class="item-stat-value">@GetItemRequirementLevel()</div>
                         </div>
+
+                        @if (item.RequiredSlayerLevel > 0)
+                        {
+                            <div class="item-requirement">
+                                <div class="item-stat-name">Requires Slayer Level</div>
+                                <div class="item-stat-value">@item.RequiredSlayerLevel</div>
+                            </div>
+                        }
                     </div>
+
 
                     @if (CanManage)
                     {

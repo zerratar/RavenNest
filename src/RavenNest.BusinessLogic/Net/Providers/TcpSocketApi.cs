@@ -109,7 +109,7 @@ namespace RavenNest.BusinessLogic.Net
                         break;
                     }
 
-                    server.Tick(100000);
+                    server.Tick(100_000);
 
                     // sleep
                     Thread.Sleep(1000 / ServerRefreshRate);
@@ -215,25 +215,6 @@ namespace RavenNest.BusinessLogic.Net
 
                         playerManager.SaveState(connection.SessionToken, stateUpdate);
                     }
-                    else if (TryDeserializePacket<CharacterUpdate>(packetData, out var updatePacket))
-                    {
-                        // we don't provide a session token in this request. This should be obsolete as its insecure.
-                        if (connection.SessionToken == null)
-                        {
-                            connection.SessionToken = sessionManager.GetSessionTokenByCharacterId(updatePacket.CharacterId, true);
-                        }
-
-                        if (!CheckSessionTokenValidity(connection.SessionToken))
-                        {
-                            logger.LogWarning("Invalid session token for tcp api connection (" + (connection.SessionToken?.SessionId.ToString() ?? "Token Unavailble") + ")");
-                            server.Disconnect(connection.ConnectionId);
-                            return;
-                        }
-
-                        gameProcessorManager.Start(connection.SessionToken);
-
-                        playerManager.UpdateCharacter(connection.SessionToken, updatePacket);
-                    }
                     else if (TryDeserializePacket<GameStateRequest>(packetData, out var gameState))
                     {
                         if (!HandleSessionToken(gameState.SessionToken, connection))
@@ -249,14 +230,8 @@ namespace RavenNest.BusinessLogic.Net
                         {
                             return;
                         }
-
-                        // Now that we have a token
-                        //// start the game Game Processor
-                        //gameProcessorManager.Start(connection.SessionToken);
                     }
                 }
-
-                //logger.LogDebug(connectionId + " Data: " + BitConverter.ToString(packetData., packetData.Offset, packetData.Count));
             }
             catch (Exception exc)
             {

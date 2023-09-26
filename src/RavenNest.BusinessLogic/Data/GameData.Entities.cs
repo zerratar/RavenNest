@@ -343,7 +343,7 @@ namespace RavenNest.BusinessLogic.Data
                     GoldenLeaf = GetOrCreateItem(i, "Golden Leaf", "An exquisite ingredient for elite dishes.", ItemCategory.Resource, ItemType.Cooking),
 
                     // Cooking - Edibles and not so edible..
-                    RedWine = GetOrCreateItem(i, "Red Wine", "Aged gracefully, pairs well with hearty dishes.", ItemCategory.Food, ItemType.Food),
+                    RedWine = GetOrCreateItem(i, "Red Wine", "Aged gracefully, pairs well with hearty dishes.", ItemCategory.Food, ItemType.Potion),
                     RoastedChicken = GetOrCreateItem(i, "Roasted Chicken", "Roasted to a golden brown. Juicy and flavorful.", ItemCategory.Food, ItemType.Food),
                     RoastedPork = GetOrCreateItem(i, "Roasted Pork", "Tender and savory, perfect with applesauce.", ItemCategory.Food, ItemType.Food),
                     RoastBeef = GetOrCreateItem(i, "Roast Beef", "Grilled with care, boasting a robust flavor.", ItemCategory.Food, ItemType.Food),

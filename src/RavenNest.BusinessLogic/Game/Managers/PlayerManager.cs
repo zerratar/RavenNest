@@ -3142,7 +3142,7 @@ namespace RavenNest.BusinessLogic.Game
                     var characterSessionOwner = character.UserIdLock != null ? gameData.GetUser(character.UserIdLock.GetValueOrDefault()) : null;
                     var partOfSession = characterSessionOwner != null ? characterSessionOwner.UserName : "";
 
-                    logger.LogError("Trying to update a character that does not belong to the session owner. Current Session: " + sessionOwner.UserName + " Character: " + character.Name + ", UserIdLock: " + partOfSession);
+                    //logger.LogError("Trying to update a character that does not belong to the session owner. Current Session: " + sessionOwner.UserName + " Character: " + character.Name + ", UserIdLock: " + partOfSession);
                     // send remove from this session.
                     SendRemovePlayerFromSession(character, gameSession, "Character is part of another session.");
                     continue;
