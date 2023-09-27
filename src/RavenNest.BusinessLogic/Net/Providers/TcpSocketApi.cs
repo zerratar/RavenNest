@@ -19,7 +19,7 @@ namespace RavenNest.BusinessLogic.Net
         public const int MaxMessageSize_v0820 = 16 * 1024;
 
         public const int DefaultServerPort = 3920;
-        public const int ServerRefreshRate = 120;
+        //public const int ServerRefreshRate = 120;
 
         private readonly IOptions<AppSettings> settings;
         private readonly ILogger<TcpSocketApi> logger;
@@ -97,51 +97,6 @@ namespace RavenNest.BusinessLogic.Net
                 started = true;
                 logger.LogDebug("TCP API Server started on port " + serverPort);
 
-                Stopwatch stopwatch = Stopwatch.StartNew();
-
-                while (running)
-                {
-                    // tick and process as many as we can. will auto reply.
-                    // (100k limit to avoid deadlocks)
-                    if (server == null)
-                    {
-                        // we have disposed this server.
-                        break;
-                    }
-
-                    server.Tick(100_000);
-
-                    // sleep
-                    Thread.Sleep(1000 / ServerRefreshRate);
-
-                    // report every 10 seconds
-                    if (stopwatch.ElapsedMilliseconds > 10000 && (messagesReceived > 0 || messagesSent > 0))
-                    {
-                        var threadId = Thread.CurrentThread.ManagedThreadId;
-
-                        var inMessageCount = messagesReceived;
-                        var inRateKBps = dataReceived > 0 ? (dataReceived * 1000 / (stopwatch.ElapsedMilliseconds * 1024)) : 0;
-
-                        var outMessageCount = messagesSent;
-                        var outRateKBps = dataSent > 0 ? (dataSent * 1000 / (stopwatch.ElapsedMilliseconds * 1024)) : 0;
-
-                        if (gameData != null)
-                        {
-                            gameData.SetNetworkStats(threadId, inMessageCount, inRateKBps, outMessageCount, outRateKBps);
-                        }
-
-                        //logger.LogDebug(string.Format("Thread[" + threadId + "]: Server in={0} ({1} KB/s)  out={0} ({1} KB/s) ReceiveQueue={2}", messageCount, serverTransferRateKBps, activePipes));
-
-                        stopwatch.Stop();
-                        stopwatch = Stopwatch.StartNew();
-
-                        messagesReceived = 0;
-                        dataReceived = 0;
-
-                        messagesSent = 0;
-                        dataSent = 0;
-                    }
-                }
             }
             catch (Exception exc)
             {
@@ -149,11 +104,90 @@ namespace RavenNest.BusinessLogic.Net
                 running = false;
             }
 
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            if (!running)
+            {
+                return;
+            }
+
+            int errorCount = 0;
+
+            while (running)
+            {
+                // tick and process as many as we can. will auto reply.
+                // (100k limit to avoid deadlocks)
+                if (server == null)
+                {
+                    // we have disposed this server.
+                    break;
+                }
+
+                try
+                {
+                    if (server.Tick(100_000) <= 0)
+                    {
+                        Thread.Sleep(5);
+                    }
+
+                    ReportNetworkStats(stopwatch);
+
+                    errorCount = 0;
+                }
+                catch (Exception exc)
+                {
+                    errorCount++;
+                    logger.LogError("Exception handling data: " + exc.ToString());
+                    if (errorCount > 10)
+                    {
+                        logger.LogError("TCP API received more than 10 errors in a row, to prevent spamming, service will be terminated.");
+                        running = false;
+                        break;
+                    }
+                }
+            }
+
             // if the server did properly start
             // then we want to say that the server stopped.
             if (started)
             {
                 logger.LogDebug("TCP API Server stopped.");
+            }
+        }
+
+        private void ReportNetworkStats(Stopwatch stopwatch)
+        {
+            try
+            {
+                if (stopwatch.ElapsedMilliseconds > 10000 && (messagesReceived > 0 || messagesSent > 0))
+                {
+                    var threadId = Thread.CurrentThread.ManagedThreadId;
+
+                    var inMessageCount = messagesReceived;
+                    var inRateKBps = dataReceived > 0 ? (dataReceived * 1000 / (stopwatch.ElapsedMilliseconds * 1024)) : 0;
+
+                    var outMessageCount = messagesSent;
+                    var outRateKBps = dataSent > 0 ? (dataSent * 1000 / (stopwatch.ElapsedMilliseconds * 1024)) : 0;
+
+                    if (gameData != null)
+                    {
+                        gameData.SetNetworkStats(threadId, inMessageCount, inRateKBps, outMessageCount, outRateKBps);
+                    }
+
+                    //logger.LogDebug(string.Format("Thread[" + threadId + "]: Server in={0} ({1} KB/s)  out={0} ({1} KB/s) ReceiveQueue={2}", messageCount, serverTransferRateKBps, activePipes));
+
+                    stopwatch.Stop();
+                    stopwatch = Stopwatch.StartNew();
+
+                    messagesReceived = 0;
+                    dataReceived = 0;
+
+                    messagesSent = 0;
+                    dataSent = 0;
+                }
+            }
+            catch
+            {
+                // ignored, this is okay if it fails. as long as it does not affect the process loop
             }
         }
 
@@ -305,7 +339,7 @@ namespace RavenNest.BusinessLogic.Net
 
             if (value is GameStateRequest stateReq)
             {
-                return !string.IsNullOrEmpty(stateReq.SessionToken) ;
+                return !string.IsNullOrEmpty(stateReq.SessionToken);
             }
 
             if (value is SaveExperienceRequest saveRequest)
