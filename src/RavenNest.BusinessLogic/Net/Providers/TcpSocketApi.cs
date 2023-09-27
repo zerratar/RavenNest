@@ -126,7 +126,7 @@ namespace RavenNest.BusinessLogic.Net
                 {
                     server.Process();
 
-                    ReportNetworkStats(stopwatch);
+                    ReportNetworkStats(ref stopwatch);
 
                     Thread.Sleep(1);
 
@@ -153,7 +153,7 @@ namespace RavenNest.BusinessLogic.Net
             }
         }
 
-        private void ReportNetworkStats(Stopwatch stopwatch)
+        private void ReportNetworkStats(ref Stopwatch stopwatch)
         {
             try
             {
