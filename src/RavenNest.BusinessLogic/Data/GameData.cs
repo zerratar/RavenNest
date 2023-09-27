@@ -4425,6 +4425,9 @@ namespace RavenNest.BusinessLogic.Data
     {
         // Special Items
         public Item SantaHat;
+        public Item ExpMultiplierScroll;
+        public Item RaidScroll;
+        public Item DungeonScroll;
 
         // Woodcutting
         public Item Logs;

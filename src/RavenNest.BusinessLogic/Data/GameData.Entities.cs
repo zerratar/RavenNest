@@ -190,6 +190,10 @@ namespace RavenNest.BusinessLogic.Data
 
                     SantaHat = GetOrCreateItem(i, "Santa Hat", "A festive hat worn by Santa.", ItemCategory.Armor, ItemType.Helmet),
 
+                    ExpMultiplierScroll = GetOrCreateItem(i, "Exp Multiplier Scroll", "A scroll that increases the global experience multiplier by 1 and extends the timer with 15 minutes.", ItemCategory.Scroll, ItemType.Scroll),
+                    DungeonScroll = GetOrCreateItem(i, "Dungeon Scroll", "A scroll that allows you to instantanously start and enter a dungeon.", ItemCategory.Scroll, ItemType.Scroll),
+                    RaidScroll = GetOrCreateItem(i, "Raid Scroll", "A scroll that allows you to instantanously start and enter a raid.", ItemCategory.Scroll, ItemType.Scroll),
+
                     // accessories
                     ArchersRing = GetOrCreateItem(i, "Archers Ring", ItemCategory.Ring, ItemType.Ring),
                     ArchersRingII = GetOrCreateItem(i, "Archers Ring II", ItemCategory.Ring, ItemType.Ring),
@@ -629,6 +633,11 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDrop(typedItems.HeimRune, 0.03);
             EnsureDrop(typedItems.AtriasFeather, 0.03);
             EnsureDrop(typedItems.EldarasMark, 0.03);
+
+            // scrolls
+            EnsureDrop(typedItems.ExpMultiplierScroll, 0.02);
+            EnsureDrop(typedItems.RaidScroll, 0.02);
+            EnsureDrop(typedItems.DungeonScroll, 0.01);
 
             // Exclusive to Heroic
             EnsureDrop(typedItems.MagesRingIV, 0.05, 4, slayerLevelRequirement: 60);
