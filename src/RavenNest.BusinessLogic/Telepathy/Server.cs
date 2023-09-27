@@ -71,7 +71,7 @@ namespace Telepathy
         public bool Active => listenerThread != null && listenerThread.IsAlive;
 
         // constructor
-        public Server(int MaxMessageSize) : base(MaxMessageSize) {}
+        public Server(int MaxMessageSize) : base(MaxMessageSize) { }
 
         // the listener thread's listen function
         // note: no maxConnections parameter. high level API should handle that.
@@ -248,7 +248,7 @@ namespace Telepathy
                 TcpClient client = kvp.Value.client;
                 // close the stream if not closed yet. it may have been closed
                 // by a disconnect already, so use try/catch
-                try { client.GetStream().Close(); } catch {}
+                try { client.GetStream().Close(); } catch { }
                 client.Close();
             }
 
@@ -353,46 +353,67 @@ namespace Telepathy
         // can't process any other messages during a scene change.
         // (could be useful for others too)
         // => make sure to allocate the lambda only once in transports
-        public int Tick(int processLimit, Func<bool> checkEnabled = null)
+        public int Process()
         {
             // only if pipe was created yet (after start())
             if (receivePipe == null)
                 return 0;
 
-            // process up to 'processLimit' messages for this connection
-            for (int i = 0; i < processLimit; ++i)
+            //// process up to 'processLimit' messages for this connection
+            //for (int i = 0; i < processLimit; ++i)
+            //{
+            //    // check enabled in case a Mirror scene message arrived
+            //    if (checkEnabled != null && !checkEnabled())
+            //        break;
+
+            // peek first. allows us to process the first queued entry while
+            // still keeping the pooled byte[] alive by not removing anything.
+            while (receivePipe.TryPeek(out int connectionId, out EventType eventType, out ArraySegment<byte> message))
             {
-                // check enabled in case a Mirror scene message arrived
-                if (checkEnabled != null && !checkEnabled())
-                    break;
-
-                // peek first. allows us to process the first queued entry while
-                // still keeping the pooled byte[] alive by not removing anything.
-                if (receivePipe.TryPeek(out int connectionId, out EventType eventType, out ArraySegment<byte> message))
+                switch (eventType)
                 {
-                    switch (eventType)
-                    {
-                        case EventType.Connected:
+                    case EventType.Connected:
+                        try
+                        {
                             OnConnected?.Invoke(connectionId);
-                            break;
-                        case EventType.Data:
+                        }
+                        catch
+                        {
+                            // ignored
+                        }
+                        break;
+                    case EventType.Data:
+                        try
+                        {
                             OnData?.Invoke(connectionId, message);
-                            break;
-                        case EventType.Disconnected:
+                        }
+                        catch
+                        {
+                            // ignored, we must dequeue the packet later regardless of failed or not.
+                        }
+                        break;
+                    case EventType.Disconnected:
+                        try
+                        {
                             OnDisconnected?.Invoke(connectionId);
-                            // remove disconnected connection now that the final
-                            // disconnected message was processed.
-                            clients.TryRemove(connectionId, out ConnectionState _);
-                            break;
-                    }
-
-                    // IMPORTANT: now dequeue and return it to pool AFTER we are
-                    //            done processing the event.
-                    receivePipe.TryDequeue();
+                        }
+                        catch
+                        {
+                            // ignored
+                        }
+                        // remove disconnected connection now that the final
+                        // disconnected message was processed.
+                        clients.TryRemove(connectionId, out ConnectionState _);
+                        break;
                 }
-                // no more messages. stop the loop.
-                else break;
+
+                // IMPORTANT: now dequeue and return it to pool AFTER we are
+                //            done processing the event.
+                receivePipe.TryDequeue();
             }
+            //    // no more messages. stop the loop.
+            //    else break;
+            //}
 
             // return what's left to process for next time
             return receivePipe.TotalCount;

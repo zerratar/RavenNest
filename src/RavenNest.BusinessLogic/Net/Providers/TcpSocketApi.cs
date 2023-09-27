@@ -124,12 +124,11 @@ namespace RavenNest.BusinessLogic.Net
 
                 try
                 {
-                    if (server.Tick(100_000) <= 0)
-                    {
-                        Thread.Sleep(5);
-                    }
+                    server.Process();
 
                     ReportNetworkStats(stopwatch);
+
+                    Thread.Sleep(1);
 
                     errorCount = 0;
                 }
