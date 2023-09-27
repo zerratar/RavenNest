@@ -114,6 +114,9 @@ namespace RavenNest.BusinessLogic.Data
                 entity.Property(e => e.Type).HasConversion(v => (int)v, v => (StatusEffectType)v);
                 entity.Property(e => e.StartUtc).HasColumnType("datetime");
                 entity.Property(e => e.ExpiresUtc).HasColumnType("datetime");
+                entity.Property(e => e.LastUpdateUtc).HasColumnType("datetime");
+                entity.Property(e => e.Duration).HasDefaultValue(0);
+                entity.Property(e => e.TimeLeft).HasDefaultValue(0);
                 entity.Property(e => e.Id).ValueGeneratedNever();
             });
 

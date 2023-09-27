@@ -889,7 +889,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             // if this is an effect we should store, then also create a datamodel version and add to the gameData.
             // but we will always replace existing effects with these ones.
-
+            var now = DateTime.UtcNow;
             var activeEffects = gameData.GetCharacterStatusEffects(characterId);
             foreach (var ae in activeEffects)
             {
@@ -899,23 +899,31 @@ namespace RavenNest.BusinessLogic.Game
                     ae.StartUtc = DateTime.UtcNow;
                     ae.ExpiresUtc = ae.StartUtc.AddSeconds(fx.Duration);
                     ae.Amount = DetermineEffectAmount(skills, fx.Type, fx.Amount, fx.MinAmount);
-
+                    ae.LastUpdateUtc = now;
+                    ae.Duration = fx.Duration;
+                    ae.TimeLeft = fx.Duration;
                     return new RavenNest.Models.CharacterStatusEffect
                     {
                         Type = (RavenNest.Models.StatusEffectType)fx.Type,
                         Amount = (float)ae.Amount,
                         ExpiresUtc = ae.ExpiresUtc,
                         StartUtc = ae.StartUtc,
+                        TimeLeft = fx.Duration,
+                        Duration = fx.Duration,
+                        LastUpdateUtc = now,
                     };
                 }
             }
 
-            var now = DateTime.UtcNow;
+            
             var effect = new RavenNest.DataModels.CharacterStatusEffect
             {
                 StartUtc = now,
                 ExpiresUtc = now.AddSeconds(fx.Duration),
                 Amount = DetermineEffectAmount(skills, fx.Type, fx.Amount, fx.MinAmount),
+                LastUpdateUtc = now,
+                TimeLeft = fx.Duration,
+                Duration = fx.Duration,
                 CharacterId = characterId,
                 Id = Guid.NewGuid(),
                 Type = fx.Type
@@ -927,6 +935,9 @@ namespace RavenNest.BusinessLogic.Game
             {
                 Type = (RavenNest.Models.StatusEffectType)fx.Type,
                 Amount = (float)effect.Amount,
+                TimeLeft = fx.Duration,
+                Duration = fx.Duration,
+                LastUpdateUtc = now,
                 ExpiresUtc = effect.ExpiresUtc,
                 StartUtc = effect.StartUtc,
             };

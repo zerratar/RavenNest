@@ -447,6 +447,9 @@ namespace RavenNest.BusinessLogic.Extensions
             {
                 StartUtc = x.StartUtc,
                 ExpiresUtc = x.ExpiresUtc,
+                TimeLeft = x.TimeLeft,
+                Duration = x.Duration,
+                LastUpdateUtc = x.LastUpdateUtc,
                 Type = Map(x.Type),
                 Amount = (float)x.Amount,
             });

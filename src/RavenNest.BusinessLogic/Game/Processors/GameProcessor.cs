@@ -33,6 +33,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private readonly PlayerInventoryProvider inventoryProvider;
         private readonly SessionToken sessionToken;
 
+        private readonly DateTime activatedUtc;
         private readonly TimeSpan ExpMultiplierPushInterval = TimeSpan.FromSeconds(15);
         private readonly TimeSpan villageInfoPushInterval = TimeSpan.FromSeconds(30);
         private readonly TimeSpan pubsubPushInterval = TimeSpan.FromSeconds(30);
@@ -62,6 +63,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             this.sessionManager = sessionManager;
             this.inventoryProvider = inventoryProvider;
             this.sessionToken = sessionToken;
+            this.activatedUtc = DateTime.UtcNow;
 
             RegisterPlayerTask<ClanProcessor>(ClanProcessorName);
             RegisterPlayerTask<VillageProcessor>(VillageProcessorName);
@@ -79,6 +81,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             RegisterPlayerTask<CookingTaskProcessor>("Cooking");
 
             SendSessionData();
+
         }
 
         private void SendSessionData()
@@ -294,7 +297,26 @@ namespace RavenNest.BusinessLogic.Game.Processors
             {
                 foreach (var effect in effects)
                 {
-                    if (utcNow >= effect.ExpiresUtc)
+                    if (effect.LastUpdateUtc < activatedUtc)
+                    {
+                        effect.LastUpdateUtc = DateTime.UtcNow;
+                    }
+
+                    var elapsed = utcNow - effect.LastUpdateUtc;
+
+                    if (effect.ExpiresUtc > utcNow && (effect.Duration == 0 || effect.TimeLeft == 0))
+                    {
+                        effect.TimeLeft = (utcNow - effect.ExpiresUtc).TotalSeconds;
+                        effect.Duration = (effect.ExpiresUtc - effect.StartUtc).TotalSeconds;
+                    }
+                    else
+                    {
+                        effect.TimeLeft -= elapsed.TotalSeconds;
+                    }
+
+                    effect.LastUpdateUtc = utcNow;
+
+                    if (effect.TimeLeft <= 0)//if (utcNow >= effect.ExpiresUtc)
                     {
                         gameData.Remove(effect);
                     }
