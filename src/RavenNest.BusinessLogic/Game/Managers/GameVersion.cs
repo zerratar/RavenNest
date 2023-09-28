@@ -14,6 +14,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             GameVersion.Parse("0.8.8.5a"),
             GameVersion.Parse("0.9.0.0a"),
+            GameVersion.Parse("0.9.0.4a"),
         };
 
         public static bool IsRequiredUpdate(string update)

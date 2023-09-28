@@ -1015,13 +1015,6 @@ namespace RavenNest.BusinessLogic.Data
         private void EnsureItemEffects(TypedItems typedItems)
         {
             var effects = itemStatusEffects.Entities.ToList();
-
-            // Eating cooked fish
-            GetOrCreateItemStatusEffect(effects, typedItems.Shrimp, StatusEffectType.Heal, 0.02f, 2);
-
-            // Consuming Potions
-
-            // Potions
             int regularPotionDuration = 120;  // seconds
             int greatPotionDuration = 600;   // seconds
 
@@ -1038,7 +1031,6 @@ namespace RavenNest.BusinessLogic.Data
             GetOrCreateItemStatusEffect(effects, typedItems.GreatMagicPotion, StatusEffectType.IncreasedMagicPower, greatPotionDuration, 0.40f, 10);
             GetOrCreateItemStatusEffect(effects, typedItems.GreatRangedPotion, StatusEffectType.IncreasedRangedPower, greatPotionDuration, 0.40f, 10);
             GetOrCreateItemStatusEffect(effects, typedItems.GreatHealingPotion, StatusEffectType.IncreasedHealingPower, greatPotionDuration, 0.40f, 10);
-
             GetOrCreateItemStatusEffect(effects, typedItems.HealthPotion, StatusEffectType.Heal, 0.15f, 10); // will heal 15% of max health or 10 hp minimum.
             GetOrCreateItemStatusEffect(effects, typedItems.GreatHealthPotion, StatusEffectType.Heal, 0.40f, 50); // will heal 40% of max health or 50 hp minimum.
             GetOrCreateItemStatusEffect(effects, typedItems.RegenPotion, StatusEffectType.HealOverTime, 15, 0.25f, 50); // will heal total of 25% of max health or minimum 25 hp over the duration of 15 seconds.
