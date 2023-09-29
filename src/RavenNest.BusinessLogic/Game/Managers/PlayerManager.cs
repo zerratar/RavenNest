@@ -915,7 +915,7 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
 
-            
+
             var effect = new RavenNest.DataModels.CharacterStatusEffect
             {
                 StartUtc = now,
@@ -3189,299 +3189,6 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        /// <summary>
-        /// New character update api using tcp api.
-        /// </summary>
-        /// <param name=""></param>
-        /// <returns></returns>
-        [Obsolete]
-        public bool UpdateCharacter(SessionToken token, CharacterUpdate data)
-        {
-            // seem to happen on server restarts.
-            if (token == null || data == null || data.CharacterId == Guid.Empty)
-            {
-                return false;
-            }
-
-            var gameSession = gameData.GetSession(token.SessionId);
-            var character = gameData.GetCharacter(data.CharacterId);
-
-            if (character == null)
-            {
-                throw new Exception("Unable to update character with ID " + data.CharacterId + ". No such character could be found.");
-            }
-
-            if (gameSession == null)
-            {
-                logger.LogError("Unable to update character with ID " + data.CharacterId + " (" + character.Name + "). Character is not part of a game session.");
-                return false;
-            }
-
-            if (character.UserIdLock == null || !AcquiredUserLock(token, character))
-            {
-                SendRemovePlayerFromSession(character, gameSession, "[TCP API->UpdateCharacter]");
-                return true;
-            }
-
-            //var sessionState = gameData.GetSessionState(gameSession.Id);
-            var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
-            if (characterSessionState.Compromised)
-            {
-                logger.LogError("Trying to update an out of sync player: " + character.Name + " (" + character.Id + ")");
-                return true;
-            }
-
-            var sessionOwner = gameData.GetUser(gameSession.UserId);
-            if (sessionOwner.Status >= 1)
-            {
-                logger.LogError("The user session from " + sessionOwner.UserName + " trying to save players, but the owner has been banned.");
-                return true;
-            }
-
-            var sessionState = gameData.GetSessionState(gameSession.Id);
-            if (sessionState != null)
-            {
-                sessionState.LastExpRequest = DateTime.UtcNow;
-            }
-
-
-            if (GameVersion.IsLessThanOrEquals(sessionState.ClientVersion, GameUpdates.DisableExpSave_LessThanOrEquals))
-            {
-                var hasBeenReported = sessionState.GetOrDefault<bool>(GameUpdates.DisableExpSave_LessThanOrEquals);
-                // to avoid spamming, lets only log this once per session.
-                if (!hasBeenReported)
-                {
-                    sessionState[GameUpdates.DisableExpSave_LessThanOrEquals] = true;
-                    logger.LogError("Save Exp Request received an old game client. Session=" + token.UserName + ", Version=" + sessionState.ClientVersion);
-                }
-                return false;
-            }
-
-            /*
-                Update Character State
-             */
-            DataModels.CharacterState characterState = null;
-            if (character.StateId != null)
-            {
-                characterState = gameData.GetCharacterState(character.StateId);
-            }
-
-            if (characterState == null)
-            {
-                var state = CreateCharacterState(data);
-                gameData.Add(state);
-                character.StateId = state.Id;
-            }
-            else
-            {
-                var state = gameData.GetCharacterState(character.StateId);
-                SetCharacterState(state, data);
-            }
-
-            /*
-                Update Character Experience
-             */
-
-            var skills = gameData.GetCharacterSkills(character.SkillsId);
-
-            if (skills == null)
-            {
-                skills = gameData.GenerateSkills();
-                character.SkillsId = skills.Id;
-                gameData.Add(skills);
-            }
-
-
-            var user = gameData.GetUser(character.UserId);
-
-
-            if (data.Skills != null && data.Skills.Length > 0)
-            {
-                characterSessionState.LastExpSaveRequest = DateTime.UtcNow;
-            }
-
-            foreach (var update in data.Skills)
-            {
-                if (update.Level > GameMath.MaxLevel)
-                {
-                    continue;
-                }
-
-                var skill = skills.GetSkill(update.Index);
-                if (skill == null) continue;
-
-                var level = update.Level;
-                var experience = update.Experience;
-                var timeSinceLastSkillUpdate = DateTime.UtcNow - characterSessionState.LastExpUpdate;
-                var existingLevel = skill.Level;
-
-
-                if (!user.IsAdmin.GetValueOrDefault() && user.IsModerator.GetValueOrDefault())
-                {
-                    if (level > 100 && existingLevel < level * 0.5)
-                    {
-                        if (timeSinceLastSkillUpdate <= TimeSpan.FromSeconds(10))
-                        {
-                            logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Level changed from " + existingLevel + " to " + level);
-                            BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
-                            return true;
-                        }
-                    }
-                }
-
-                skills.Set(skill.Index, level, experience);
-
-                if (existingLevel != level)
-                {
-                    UpdateCharacterSkillRecord(character.Id, skill.Index, level, experience);
-                }
-
-                characterSessionState.LastExpUpdate = DateTime.UtcNow;
-
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                TrySendToExtensionAsync(character, new CharacterExpUpdate
-                {
-                    CharacterId = character.Id,
-                    Experience = experience,
-                    Level = level,
-                    SkillIndex = skill.Index,
-                    Percent = SkillsExtended.GetPercentForNextLevel(skill.Level, skill.Experience),
-                });
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-            }
-
-            return true;
-        }
-
-
-        public bool UpdateExperience(SessionToken token, int skillIndex, int level, double experience, Guid characterId)
-        {
-            try
-            {
-                var gameSession = gameData.GetSession(token.SessionId);
-                var character = gameData.GetCharacter(characterId);
-                if (character == null)
-                    throw new Exception("Unable to save exp. Character with ID " + characterId + " could not be found.");
-
-                var sessionState = gameData.GetSessionState(gameSession.Id);
-                var characterSessionState = gameData.GetCharacterSessionState(token.SessionId, character.Id);
-                if (characterSessionState.Compromised)
-                {
-                    logger.LogError("Trying to update an out of sync player: " + character.Name + " (" + character.Id + ")");
-                    return true;
-                }
-
-                var sessionOwner = gameData.GetUser(gameSession.UserId);
-                if (sessionOwner.Status >= 1)
-                {
-                    logger.LogError("The user session from " + sessionOwner.UserName + " trying to save players, but the owner has been banned.");
-                    return true;
-                }
-
-                // Temporary solution to skill rollback, block saving skills from clients other than the one definied.
-                if (!sessionOwner.IsAdmin.GetValueOrDefault() && !gameData.IsExpectedVersion(gameSession))
-                {
-                    return true;
-                }
-
-                if (GameVersion.IsLessThanOrEquals(sessionState.ClientVersion, GameUpdates.DisableExpSave_LessThanOrEquals))
-                {
-                    var hasBeenReported = sessionState.GetOrDefault<bool>(GameUpdates.DisableExpSave_LessThanOrEquals);
-                    if (!hasBeenReported)
-                    {
-                        // to avoid spamming, lets only log this once per session.
-                        sessionState[GameUpdates.DisableExpSave_LessThanOrEquals] = true;
-                        logger.LogError("Save Exp Request received an old game client. Session=" + token.UserName + ", Version=" + sessionState.ClientVersion);
-                    }
-                    return true;
-                }
-
-                var removeFromSession = !AcquiredUserLock(token, character) && character.UserIdLock != null;
-                var skills = gameData.GetCharacterSkills(character.SkillsId);
-
-                if (skills == null)
-                {
-                    skills = gameData.GenerateSkills();
-                    character.SkillsId = skills.Id;
-                    gameData.Add(skills);
-                }
-
-                /*
-                    Temporary Debugging
-                 */
-                if (removeFromSession)
-                {
-                    SendRemovePlayerFromSession(character, gameSession, "[Update Training Skill]");
-                    //if (character.UserIdLock != null)
-                    //{
-                    //    var activeSessionOwner = gameData.GetUser(character.UserIdLock.GetValueOrDefault());
-                    //    if (activeSessionOwner != null)
-                    //    {
-                    //        logger.LogError($"{character.Name} tried to save from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is part of {activeSessionOwner.UserName}.");
-                    //    }
-                    //}
-                    //else
-                    //{
-                    //    logger.LogError($"{character.Name} tried to save from a session it was not apart of. Session owner: {sessionOwner.UserName}, but character is not in any session.");
-                    //}
-                    return true;
-                }
-
-                var gains = characterSessionState.ExpGain;
-                characterSessionState.LastExpSaveRequest = DateTime.UtcNow;
-                var user = gameData.GetUser(character.UserId);
-                var updated = false;
-                var timeSinceLastSkillUpdate = DateTime.UtcNow - characterSessionState.LastExpUpdate;
-                var existingLevel = skills.GetLevel(skillIndex);
-
-                if (level > GameMath.MaxLevel)
-                {
-                    return true;
-                }
-
-                if (!user.IsAdmin.GetValueOrDefault() && user.IsModerator.GetValueOrDefault())
-                {
-                    if (level > 100 && existingLevel < level * 0.5)
-                    {
-                        if (timeSinceLastSkillUpdate <= TimeSpan.FromSeconds(10))
-                        {
-                            logger.LogError("The user " + sessionOwner.UserName + " has been banned for cheating. Character: " + character.Name + " (" + character.Id + "). Reason: Level changed from " + existingLevel + " to " + level);
-                            BanUserAndCloseSession(gameSession, characterSessionState, sessionOwner);
-                            return true;
-                        }
-                    }
-                }
-
-                if (existingLevel != level)
-                {
-                    UpdateCharacterSkillRecord(character.Id, skillIndex, level, experience);
-                }
-
-                skills.Set(skillIndex, level, experience);
-                updated = true;
-
-                if (updated)
-                {
-                    characterSessionState.LastExpUpdate = DateTime.UtcNow;
-                    TrySendToExtensionAsync(character, new CharacterExpUpdate
-                    {
-                        CharacterId = character.Id,
-                        Experience = experience,
-                        Level = level,
-                        SkillIndex = skillIndex,
-                        Percent = SkillsExtended.GetPercentForNextLevel(level, experience),
-                    });
-                }
-
-                return true;
-            }
-            catch (Exception exc)
-            {
-                logger.LogError(exc.ToString());
-                return false;
-            }
-        }
-
         public async Task UnstuckBrokenPlayersAsync()
         {
             foreach (var c in gameData.GetCharacters())
@@ -4262,19 +3969,6 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool HasFlag(DataModels.CharacterState a, CharacterFlags b)
-        {
-            if (a.InRaid && b == CharacterFlags.InRaid) return true;
-            if (a.InDungeon.GetValueOrDefault() && b == CharacterFlags.InDungeon) return true;
-            if (a.InOnsen.GetValueOrDefault() && b == CharacterFlags.InOnsen) return true;
-            if (a.IsCaptain.GetValueOrDefault() && b == CharacterFlags.IsCaptain) return true;
-            if (a.InArena && b == CharacterFlags.InArena) return true;
-            return false;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool HasFlag(CharacterUpdate a, CharacterFlags b) => HasFlag(a.State, b);
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool HasFlag(CharacterStateUpdate a, CharacterFlags b) => HasFlag(a.State, b);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool HasFlag(CharacterFlags a, CharacterFlags b) => (a & b) == b;
@@ -4284,7 +3978,8 @@ namespace RavenNest.BusinessLogic.Game
         {
             var task = GetTaskBySkillIndex(update.TrainingSkillIndex);
             var taskArgument = update.TaskArgument;
-            if (string.IsNullOrEmpty(taskArgument)) taskArgument = GetTaskArgumentBySkillIndex(update.TrainingSkillIndex);
+            if (string.IsNullOrEmpty(taskArgument) || task != "Fighting")
+                taskArgument = GetTaskArgumentBySkillIndex(update.TrainingSkillIndex);
 
             state.Health = update.Health;
             state.InArena = HasFlag(update, CharacterFlags.InArena);
@@ -4307,38 +4002,12 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void SetCharacterState(DataModels.CharacterState state, CharacterUpdate update)
-        {
-            var task = update.Task;
-            var taskArgument = update.TaskArgument;
-            if (string.IsNullOrEmpty(taskArgument)) taskArgument = task;
-            state.Health = update.Health;
-            state.InArena = HasFlag(update, CharacterFlags.InArena);
-            state.InRaid = HasFlag(update, CharacterFlags.InRaid);
-            state.InDungeon = HasFlag(update, CharacterFlags.InDungeon);
-            state.JoinedDungeon = HasFlag(update, CharacterFlags.InDungeonQueue);
-            state.InOnsen = HasFlag(update, CharacterFlags.InOnsen);
-            state.IsCaptain = HasFlag(update, CharacterFlags.IsCaptain);
-            state.Island = update.Island != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null;
-            state.Destination = update.Destination != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null;
-            state.ExpPerHour = update.ExpPerHour;
-            state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString();
-            state.Task = task;
-            state.TaskArgument = taskArgument;
-            state.AutoJoinRaidCounter = update.AutoJoinRaidCounter;
-            state.AutoJoinDungeonCounter = update.AutoJoinDungeonCounter;
-            //state.IsCaptain = update.IsCaptain;
-            state.X = update.X;
-            state.Y = update.Y;
-            state.Z = update.Z;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static DataModels.CharacterState CreateCharacterState(CharacterStateUpdate update)
         {
             var task = GetTaskBySkillIndex(update.TrainingSkillIndex);
-            var taskArgument = GetTaskArgumentBySkillIndex(update.TrainingSkillIndex);
-            if (string.IsNullOrEmpty(taskArgument)) taskArgument = task;
+            var taskArgument = update.TaskArgument;
+            if (string.IsNullOrEmpty(taskArgument) || task != "Fighting")
+                taskArgument = GetTaskArgumentBySkillIndex(update.TrainingSkillIndex);
 
             var state = new DataModels.CharacterState
             {
@@ -4358,37 +4027,6 @@ namespace RavenNest.BusinessLogic.Game
                 AutoJoinDungeonCounter = update.AutoJoinDungeonCounter,
                 Task = task,
                 TaskArgument = taskArgument ?? task,
-                X = update.X,
-                Y = update.Y,
-                Z = update.Z,
-            };
-            return state;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static DataModels.CharacterState CreateCharacterState(CharacterUpdate update)
-        {
-            var task = update.Task;
-            var taskArgument = update.TaskArgument;
-            if (string.IsNullOrEmpty(taskArgument)) taskArgument = task;
-            var state = new DataModels.CharacterState
-            {
-                Id = Guid.NewGuid(),
-                Health = update.Health,
-                InArena = HasFlag(update, CharacterFlags.InArena),
-                InRaid = HasFlag(update, CharacterFlags.InRaid),
-                InDungeon = HasFlag(update, CharacterFlags.InDungeon),
-                InOnsen = HasFlag(update, CharacterFlags.InOnsen),
-                JoinedDungeon = HasFlag(update, CharacterFlags.InDungeonQueue),
-                IsCaptain = HasFlag(update, CharacterFlags.IsCaptain),
-                Island = update.Island != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null,
-                Destination = update.Destination != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null,
-                ExpPerHour = update.ExpPerHour,
-                EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString(),
-                AutoJoinRaidCounter = update.AutoJoinRaidCounter,
-                AutoJoinDungeonCounter = update.AutoJoinDungeonCounter,
-                Task = task,
-                TaskArgument = taskArgument,
                 X = update.X,
                 Y = update.Y,
                 Z = update.Z,
