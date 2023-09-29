@@ -60,7 +60,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public void LoadDrops(GameData gameData)
         {
             var skillIndex = Skills.SkillNames.IndexOf(skill);
-            foreach (var drop in gameData.GetResourceItemDrops().Where(x => x.Skill == null || x.Skill == skillIndex))
+            foreach (var drop in gameData.GetResourceItemDrops().Where(x => x != null && (x.Skill == null || x.Skill == skillIndex)))
             {
                 if (drop != null)
                 {
@@ -98,7 +98,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
                 var now = DateTime.UtcNow;
 
-                var target = drops.FirstOrDefault(x => x.Name.ToLower() == taskArgument.ToLower());
+                var target = drops.FirstOrDefault(x => x?.Name?.ToLower() == taskArgument?.ToLower());
                 if (target != null)
                 {
                     drop = target;
