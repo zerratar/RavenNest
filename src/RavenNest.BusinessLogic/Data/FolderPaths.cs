@@ -15,6 +15,8 @@
         public const string Restorepoints = "restorepoints";
         public const string Backups = "backups";
 
+        public const string SessionPlayers = "session-players";
+
         public const string BadInventory = "bad-inventory";
     }
 }

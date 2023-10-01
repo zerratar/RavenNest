@@ -140,7 +140,30 @@ namespace RavenNest.BusinessLogic.Game
         public GameSessionPlayerCache GetStreamerStateCache(User streamerUser)
         {
             var players = new List<GameSessionPlayerCache.GameCachePlayerItem>();
-            var characters = gameData.GetCharactersByUserLock(streamerUser.Id);
+            var characters = gameData.GetCharactersByUserLock(streamerUser.Id).AsList();
+
+            try
+            {
+                var folder = System.IO.Path.Combine(FolderPaths.GeneratedData, FolderPaths.SessionPlayers);
+                var playerlistFile = System.IO.Path.Combine(folder, streamerUser.Id.ToString() + ".json");
+                if (System.IO.File.Exists(playerlistFile))
+                {
+                    var existing = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Guid>>(System.IO.File.ReadAllText(playerlistFile));
+                    foreach (var e in existing)
+                    {
+                        var c = gameData.GetCharacter(e);
+                        if (c == null || (c.UserIdLock != null && c.UserIdLock != streamerUser.Id))
+                            continue;
+
+                        if (!characters.Any(x => x.Id == c.Id))
+                        {
+                            characters.Add(c);
+                        }
+                    }
+                }
+            }
+            catch { }
+
             foreach (var character in characters)
             {
                 var user = gameData.GetUser(character.UserId);

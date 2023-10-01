@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -8,6 +9,7 @@ using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.ScriptParser;
 using RavenNest.BusinessLogic.Twitch.Extension;
+using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Sessions;
 using static RavenNest.Twitch.TwitchRequests;
@@ -460,11 +462,11 @@ namespace RavenNest.BusinessLogic.Game
         public void EndSession(DataModels.GameSession session)
         {
             var characters = gameData.GetSessionCharacters(session);
-            var owner = gameData.GetUser(session.UserId);
+            var sessionOwner = gameData.GetUser(session.UserId);
 
             var data = new StreamerInfo();
-            data.StreamerUserId = owner.UserId;
-            data.StreamerUserName = owner.UserName;
+            data.StreamerUserId = sessionOwner.UserId;
+            data.StreamerUserName = sessionOwner.UserName;
             data.IsRavenfallRunning = false;
             data.StreamerSessionId = null;
             data.Started = null;
@@ -483,6 +485,8 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
 
+            UpdateSessionPlayerList(sessionOwner.Id, characters);
+
             foreach (var character in characters)
             {
                 character.UserIdLock = null;
@@ -495,8 +499,60 @@ namespace RavenNest.BusinessLogic.Game
             //gameData.ClearCharacterSessionStates(session.Id);
 
 #if DEBUG
-            logger.LogDebug(owner.UserName + " game session ended. " + characters.Count + " characters cleared.");
+            logger.LogDebug(sessionOwner.UserName + " game session ended. " + characters.Count + " characters cleared.");
 #endif
+        }
+
+        public void UpdateSessionPlayerList(Guid userId)
+        {
+            var session = gameData.GetSessionByUserId(userId, false, false);
+            var characters = gameData.GetSessionCharacters(session);
+            UpdateSessionPlayerList(userId, characters);
+        }
+
+        public void UpdateSessionPlayerList(DataModels.GameSession session)
+        {
+            var characters = gameData.GetSessionCharacters(session);
+            UpdateSessionPlayerList(session.UserId, characters);
+        }
+
+        public void UpdateSessionPlayerList(Guid ownerId, IReadOnlyList<Character> sessionCharacters)
+        {
+            try
+            {
+                var sessionCharacterIds = sessionCharacters.Select(x => x.Id).ToList();
+                var folder = System.IO.Path.Combine(FolderPaths.GeneratedData, FolderPaths.SessionPlayers);
+                if (!System.IO.Directory.Exists(folder))
+                {
+                    System.IO.Directory.CreateDirectory(folder);
+                }
+
+                var playerlistFile = System.IO.Path.Combine(folder, ownerId.ToString() + ".json");
+                if (System.IO.File.Exists(playerlistFile))
+                {
+                    // if this file exists, try loading it so we can append the sessionCharacterIds
+                    // but check if any of the existing has a userIdLock other than this user, null is fine since we should not have any characters with "null" in sessionCharacterIds. Therefor a player should never have been saved in the first place that was not part of this stream.
+                    // If they have joined another stream their lock will be theirs.
+                    // There is a slight chance of course that you may still take a player from the other stream if streamer A closes down game, player joins streamer B, streamer B closes down game and streamer A joins game
+                    // Should we add a "previous user id lock" ? then we can compare that.
+                    var existing = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Guid>>(System.IO.File.ReadAllText(playerlistFile));
+                    foreach (var e in existing)
+                    {
+                        var c = gameData.GetCharacter(e);
+                        if (c == null || (c.UserIdLock != null && c.UserIdLock != ownerId))
+                            continue;
+
+                        if (!sessionCharacterIds.Contains(c.Id))
+                        {
+                            sessionCharacterIds.Add(c.Id);
+                        }
+                    }
+                }
+
+                // now save it!, this will be our character list that we know should be valid to generate a state file of.
+                System.IO.File.WriteAllText(playerlistFile, Newtonsoft.Json.JsonConvert.SerializeObject(sessionCharacterIds));
+            }
+            catch { }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
