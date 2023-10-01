@@ -191,6 +191,16 @@ namespace RavenNest.BusinessLogic.Data
 
                     SantaHat = GetOrCreateItem(i, "Santa Hat", "A festive hat worn by Santa.", ItemCategory.Armor, ItemType.Helmet),
 
+                    // Halloween 2023 tiki masks
+                    RedTikiMask = GetOrCreateItem(i, "Red Tiki Mask", "A red tiki mask.", ItemCategory.Armor, ItemType.Helmet).GenericPrefab("Character/Appearance/Head/Red Tiki Mask"),
+                    BlueTikiMask = GetOrCreateItem(i, "Blue Tiki Mask", "A blue tiki mask.", ItemCategory.Armor, ItemType.Helmet).GenericPrefab("Character/Appearance/Head/Blue Tiki Mask"),
+                    GreenTikiMask = GetOrCreateItem(i, "Green Tiki Mask", "A green tiki mask.", ItemCategory.Armor, ItemType.Helmet).GenericPrefab("Character/Appearance/Head/Green Tiki Mask"),
+                    //BanditMask = GetOrCreateItem(i, "Bandit Mask", "A bandit mask.", ItemCategory.Armor, ItemType.Helmet).GenericPrefab("Character/Appearance/Head/Bandit Mask"),
+
+                    // neckwrap/scarf, uses Amulet as item type and category as it uses the same equipment slot
+                    BrownScarf = GetOrCreateItem(i, "Brown Scarf", "A brown scarf.", ItemCategory.Amulet, ItemType.Amulet).GenericPrefab("Character/Appearance/Neck/Brown Neckwrap"),
+                    GreenScarf = GetOrCreateItem(i, "Green Scarf", "A green scarf.", ItemCategory.Amulet, ItemType.Amulet).GenericPrefab("Character/Appearance/Neck/Green Neckwrap"),
+
                     ExpMultiplierScroll = GetOrCreateItem(i, "Exp Multiplier Scroll", "A scroll that increases the global experience multiplier by 1 and extends the timer with 15 minutes.", ItemCategory.Scroll, ItemType.Scroll),
                     DungeonScroll = GetOrCreateItem(i, "Dungeon Scroll", "A scroll that allows you to instantanously start and enter a dungeon.", ItemCategory.Scroll, ItemType.Scroll),
                     RaidScroll = GetOrCreateItem(i, "Raid Scroll", "A scroll that allows you to instantanously start and enter a raid.", ItemCategory.Scroll, ItemType.Scroll),
@@ -541,6 +551,10 @@ namespace RavenNest.BusinessLogic.Data
             EnsureRedeemable(p.DarkWitch, typedItems.HalloweenToken, 30);
             EnsureRedeemable(p.PurpleWitch, typedItems.HalloweenToken, 30);
             EnsureRedeemable(p.RedWitch, typedItems.HalloweenToken, 30);
+
+            EnsureRedeemable(typedItems.RedTikiMask, typedItems.HalloweenToken, 30);
+            EnsureRedeemable(typedItems.GreenTikiMask, typedItems.HalloweenToken, 30);
+            EnsureRedeemable(typedItems.BlueTikiMask, typedItems.HalloweenToken, 30);
         }
 
         private void EnsureRedeemable(Item item, Item token, int tokenCost)

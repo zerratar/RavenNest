@@ -4723,7 +4723,16 @@ namespace RavenNest.BusinessLogic.Data
         //,ElderBronze, ElderIron, ElderSteel, ElderMithril, ElderAdamantite, ElderRune, ElderDragon,
         //ElderAbraxas, ElderPhantom, ElderEther, ElderLionite, ElderAncient, ElderAtlarus;
 
+
+        // halloween 2023 + new generic
+        public Item RedTikiMask;
+        public Item BlueTikiMask;
+        public Item GreenTikiMask;
+        public Item BanditMask;
+        public Item BrownScarf;
+        public Item GreenScarf;
     }
+
     public class ItemPets
     {
         // base pets
