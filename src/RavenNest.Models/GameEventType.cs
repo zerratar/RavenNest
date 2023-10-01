@@ -31,7 +31,7 @@
 
         ResourceUpdate = 11,
         ServerMessage = 12,
-        PermissionChange = 13,
+        SessionSettingsChanged = 13,
         VillageLevelUp = 14,
         VillageInfo = 15,
         ExpMultiplier = 28,

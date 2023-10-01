@@ -47,6 +47,7 @@ namespace RavenNest.DataModels
         public long ShopSellPrice { get => shopSellPrice; set => Set(ref shopSellPrice, value); }
         public bool Soulbound { get => soulbound; set => Set(ref soulbound, value); }
         public bool Hidden { get => hidden; set => Set(ref hidden, value); }
+        public int HeadMask { get => headMask; set => Set(ref headMask, value); }
         public DateTime? Modified { get => modified; set => Set(ref modified, value); }
 
         private string name;
@@ -82,6 +83,7 @@ namespace RavenNest.DataModels
         private long shopSellPrice;
         private bool soulbound;
         private bool hidden;
+        private int headMask;
         private DateTime? modified;
     }
 }

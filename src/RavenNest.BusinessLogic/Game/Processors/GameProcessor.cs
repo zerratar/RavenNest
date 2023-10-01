@@ -89,7 +89,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
             var session = gameData.GetSession(sessionToken.SessionId);
             if (session != null)
             {
-                sessionManager.SendPermissionData(session);
+                sessionManager.SendSessionSettings(session);
                 sessionManager.SendVillageInfo(session);
                 sessionManager.SendExpMultiplier(session);
                 ravenbotApi.UpdateUserSettingsAsync(session.UserId);
@@ -193,7 +193,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
                 if (elapsed >= permissionInfoPushInterval)
                 {
                     lastPermissionInfoPush = utcNow;
-                    sessionManager.SendPermissionData(session);
+                    sessionManager.SendSessionSettings(session);
                 }
             }
         }

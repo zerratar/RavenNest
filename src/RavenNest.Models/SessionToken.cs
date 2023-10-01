@@ -29,7 +29,7 @@ namespace RavenNest.Models
         public SessionToken SessionToken { get; set; }
         public ExpMultiplier ExpMultiplier { get; set; }
         public VillageInfo Village { get; set; }
-        public Permissions Permissions { get; set; }
+        public SessionSettings Permissions { get; set; }
         public string ExpectedClientVersion { get; set; }
         public BeginSessionResultState State { get; set; }
         public Dictionary<string, object> UserSettings { get; set; }
@@ -60,7 +60,7 @@ namespace RavenNest.Models
         public int Type { get; set; }
         public int Slot { get; set; }
     }
-    public class Permissions
+    public class SessionSettings
     {
         public bool IsAdministrator { get; set; }
         public bool IsModerator { get; set; }
@@ -68,6 +68,8 @@ namespace RavenNest.Models
         public int ExpMultiplierLimit { get; set; }
         public int PlayerExpMultiplierLimit { get; set; }
         public bool StrictLevelRequirements { get; set; }
+        public double DungeonExpFactor { get; set; }
+        public double RaidExpFactor { get; set; }
     }
     public class ExpMultiplier
     {

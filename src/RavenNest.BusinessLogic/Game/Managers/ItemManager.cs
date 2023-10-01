@@ -132,17 +132,6 @@ namespace RavenNest.BusinessLogic.Game
             InvalidateCache();
         }
 
-        private static DataModels.ItemCraftingRequirement Map(ItemCraftingRequirement req)
-        {
-            return new DataModels.ItemCraftingRequirement
-            {
-                Id = req.Id == Guid.Empty ? Guid.NewGuid() : req.Id,
-                Amount = req.Amount,
-                ItemId = req.ItemId,
-                ResourceItemId = req.ResourceItemId,
-            };
-        }
-
         public bool TryUpdateItem(Item item)
         {
             DataModels.Item dataItem = GetItem(item);
@@ -173,11 +162,10 @@ namespace RavenNest.BusinessLogic.Game
             dataItem.FemalePrefab = item.FemalePrefab;
             dataItem.GenericPrefab = item.GenericPrefab;
             dataItem.MaleModelId = item.MaleModelId;
+            dataItem.HeadMask = (int)item.HeadMask;
             dataItem.MalePrefab = item.MalePrefab;
             dataItem.Material = (int)item.Material;
             dataItem.Name = item.Name;
-            dataItem.RangedAim = item.RangedAim;
-            dataItem.RangedPower = item.RangedPower;
             dataItem.RequiredAttackLevel = item.RequiredAttackLevel;
             dataItem.RequiredDefenseLevel = item.RequiredDefenseLevel;
             dataItem.RequiredMagicLevel = item.RequiredMagicLevel;

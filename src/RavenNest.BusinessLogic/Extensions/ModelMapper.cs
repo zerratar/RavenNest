@@ -266,7 +266,9 @@ namespace RavenNest.BusinessLogic.Extensions
         public static RavenNest.Models.Item Map(GameData gameData, Item item)
         {
             if (item == null) return null;
-            return DataMapper.Map<RavenNest.Models.Item>(item);
+            var i = DataMapper.Map<RavenNest.Models.Item>(item);
+            i.HeadMask = (HeadMask)item.HeadMask;
+            return i;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

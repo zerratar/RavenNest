@@ -4752,6 +4752,15 @@ namespace RavenNest.BusinessLogic.Data
         public Item SpiderPet;
         public Item WerewolfPet;
         public Item YetiPet;
+        public Item Ghoul;
+        public Item Mummy;
+        public Item DarkMummy;
+        public Item Skeleton;
+        public Item Goatman;
+        public Item Reaper;
+        public Item DarkWitch;
+        public Item PurpleWitch;
+        public Item RedWitch;
 
         // redeemable (christmas)
         public Item GreenSantaMetalon;

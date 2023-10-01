@@ -26,6 +26,8 @@ namespace RavenNest.BusinessLogic.Game
         private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
 
         private const int MaxPlayerExpMultiplier = 100;
+        private const double RaidExpFactor = 1.0;
+        private const double DungeonExpFactor = 1.0;
 
         private readonly int[] MaxSystemExpMultiplier = new int[]
         {
@@ -137,7 +139,7 @@ namespace RavenNest.BusinessLogic.Game
                 SessionToken = sessionToken,
                 State = BeginSessionResultState.Success,
                 ExpMultiplier = GetExpMultiplier(),
-                Permissions = GetUserPermissions(user),
+                Permissions = GetSessionSettings(user),
                 Village = villageManager.GetVillageInfo(newGameSession),
                 UserSettings = gameData.GetUserSettings(userId),
             });
@@ -232,7 +234,7 @@ namespace RavenNest.BusinessLogic.Game
             sessionState.SyncTime = syncTime;
             sessionState.ClientVersion = clientVersion;
 
-            SendPermissionData(newGameSession, user);
+            SendSessionSettings(newGameSession, user);
             SendVillageInfo(newGameSession);
 
             return GenerateSessionToken(token, user, newGameSession, clientVersion);
@@ -301,7 +303,7 @@ namespace RavenNest.BusinessLogic.Game
             gameData.EnqueueGameEvent(villageInfoEvent);
         }
 
-        public void SendPermissionData(DataModels.GameSession gameSession, DataModels.User user = null)
+        public void SendSessionSettings(DataModels.GameSession gameSession, DataModels.User user = null)
         {
             if (gameData == null)
             {
@@ -317,7 +319,7 @@ namespace RavenNest.BusinessLogic.Game
 
             user = user ?? gameData.GetUser(gameSession.UserId);
 
-            DataModels.GameEvent permissionEvent = CreatePermissionChangeEvent(gameSession, user);
+            DataModels.GameEvent permissionEvent = CreateSessionSettingsChangeEvent(gameSession, user);
 
             gameData.EnqueueGameEvent(permissionEvent);
         }
@@ -332,14 +334,14 @@ namespace RavenNest.BusinessLogic.Game
             return villageInfoEvent;
         }
 
-        private DataModels.GameEvent CreatePermissionChangeEvent(DataModels.GameSession gameSession, DataModels.User user)
+        private DataModels.GameEvent CreateSessionSettingsChangeEvent(DataModels.GameSession gameSession, DataModels.User user)
         {
-            var data = GetUserPermissions(user);
-            var permissionEvent = gameData.CreateSessionEvent(GameEventType.PermissionChange, gameSession, data);
+            var data = GetSessionSettings(user);
+            var permissionEvent = gameData.CreateSessionEvent(GameEventType.SessionSettingsChanged, gameSession, data);
             return permissionEvent;
         }
 
-        private Permissions GetUserPermissions(DataModels.User user)
+        private SessionSettings GetSessionSettings(DataModels.User user)
         {
             var isAdmin = user.IsAdmin.GetValueOrDefault();
             var isModerator = user.IsModerator.GetValueOrDefault();
@@ -360,7 +362,8 @@ namespace RavenNest.BusinessLogic.Game
                 subscriptionTier = 3;
                 expMultiplierLimit = 50000000;
             }
-            var data = new Permissions
+
+            var data = new SessionSettings
             {
                 IsAdministrator = user.IsAdmin ?? false,
                 IsModerator = user.IsModerator ?? false,
@@ -368,6 +371,8 @@ namespace RavenNest.BusinessLogic.Game
                 ExpMultiplierLimit = expMultiplierLimit,
                 PlayerExpMultiplierLimit = MaxPlayerExpMultiplier,
                 StrictLevelRequirements = true,
+                RaidExpFactor = RaidExpFactor,
+                DungeonExpFactor = DungeonExpFactor
             };
             return data;
         }

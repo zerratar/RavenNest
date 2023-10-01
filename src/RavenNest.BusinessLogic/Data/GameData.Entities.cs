@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Telepathy;
 
 namespace RavenNest.BusinessLogic.Data
@@ -469,6 +470,8 @@ namespace RavenNest.BusinessLogic.Data
                     GoldBar = GetOrCreateItem(i, "Gold Bar", "This opulent bar of pure gold exudes wealth and prestige. Prized by royalty and artisans alike, it has been a symbol of power and luxury for eons.", ItemCategory.Resource, ItemType.Crafting),
                 };
 
+                EnsureSeasonalRedeems(typedItems);
+
                 // Make sure new equipments have stats.
                 EnsureEquipmentStatsOnSets(typedItems);
                 EnsureItemRecipes(typedItems);
@@ -511,7 +514,53 @@ namespace RavenNest.BusinessLogic.Data
                 WerewolfPet = GetOrCreateItem(i, "Werewolf Pet", ItemCategory.Pet, ItemType.Pet),
                 WolfPet = GetOrCreateItem(i, "Wolf Pet", ItemCategory.Pet, ItemType.Pet),
                 YetiPet = GetOrCreateItem(i, "Yeti Pet", ItemCategory.Pet, ItemType.Pet),
+
+                // new halloween pets for 2023-10 event
+                Ghoul = GetOrCreateItem(i, "Ghoul", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Halloween/Ghoul"),
+                Mummy = GetOrCreateItem(i, "Mummy", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Halloween/Mummy"),
+                DarkMummy = GetOrCreateItem(i, "Dark Mummy", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Halloween/Dark Mummy"),
+                Skeleton = GetOrCreateItem(i, "Skeleton", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Halloween/Skeleton"),
+                Goatman = GetOrCreateItem(i, "Goatman", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Halloween/Goatman"),
+                Reaper = GetOrCreateItem(i, "Reaper", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Halloween/Reaper"),
+                DarkWitch = GetOrCreateItem(i, "Dark Witch", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Halloween/Dark Witch"),
+                PurpleWitch = GetOrCreateItem(i, "Purple Witch", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Halloween/Purple Witch"),
+                RedWitch = GetOrCreateItem(i, "Red Witch", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Halloween/Red Witch"),
             };
+        }
+
+        private void EnsureSeasonalRedeems(TypedItems typedItems)
+        {
+            var p = typedItems.Pets;
+
+            EnsureRedeemable(p.Ghoul, typedItems.HalloweenToken, 15);
+            EnsureRedeemable(p.Mummy, typedItems.HalloweenToken, 20);
+            EnsureRedeemable(p.DarkMummy, typedItems.HalloweenToken, 20);
+            EnsureRedeemable(p.Skeleton, typedItems.HalloweenToken, 25);
+            EnsureRedeemable(p.Goatman, typedItems.HalloweenToken, 25);
+            EnsureRedeemable(p.Reaper, typedItems.HalloweenToken, 30);
+            EnsureRedeemable(p.DarkWitch, typedItems.HalloweenToken, 30);
+            EnsureRedeemable(p.PurpleWitch, typedItems.HalloweenToken, 30);
+            EnsureRedeemable(p.RedWitch, typedItems.HalloweenToken, 30);
+        }
+
+        private void EnsureRedeemable(Item item, Item token, int tokenCost)
+        {
+            var existing = GetRedeemableItemByItemId(item.Id);
+            if (existing != null)
+            {
+                existing.CurrencyItemId = token.Id;
+                existing.Cost = tokenCost;
+                return;
+            }
+
+            Add(new RedeemableItem
+            {
+                Id = Guid.NewGuid(),
+                ItemId = item.Id,
+                CurrencyItemId = token.Id,
+                Amount = 1,
+                Cost = tokenCost
+            });
         }
 
         private void EnsureEquipmentStatsOnSets(TypedItems typedItems)
@@ -1149,7 +1198,7 @@ namespace RavenNest.BusinessLogic.Data
             if (overwrite || string.IsNullOrEmpty(item.GenericPrefab))
             {
                 item.GenericPrefab = path;
-                item.IsGenericModel = string.IsNullOrEmpty(item.GenericPrefab);
+                item.IsGenericModel = !string.IsNullOrEmpty(item.GenericPrefab);
             }
             return item;
         }

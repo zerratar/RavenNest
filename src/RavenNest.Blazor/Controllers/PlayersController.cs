@@ -474,7 +474,7 @@ namespace RavenNest.Controllers
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpGet("{userId}/equip-instance/{item}")]
+        [HttpGet("{userId}/equip-instance/{inventoryItemId}")]
         [Obsolete]
         public bool EquipItemInstance(string userId, Guid inventoryItemId)
         {
@@ -482,7 +482,7 @@ namespace RavenNest.Controllers
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpGet("v2/{characterId}/equip-instance/{item}")]
+        [HttpGet("v2/{characterId}/equip-instance/{inventoryItemId}")]
         public bool EquipItemInstance(Guid characterId, Guid inventoryItemId)
         {
             return playerManager.EquipItemInstance(AssertGetSessionToken(), characterId, inventoryItemId);

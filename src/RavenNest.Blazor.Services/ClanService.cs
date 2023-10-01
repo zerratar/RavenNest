@@ -16,6 +16,7 @@ namespace RavenNest.Blazor.Services
     {
         private readonly GameData gameData;
         private readonly ClanManager clanManager;
+        public const int MaxClanNameLength = 40;
 
         public ClanService(
             GameData gameData,
@@ -216,6 +217,8 @@ namespace RavenNest.Blazor.Services
             return this.clanManager.CanChangeClanName(clanId);
         }
 
+        public int GetMaxClanNameLength() => MaxClanNameLength;
+
         public bool UpdateClanName(Guid clanId, string newName)
         {
             var session = GetSession();
@@ -227,6 +230,9 @@ namespace RavenNest.Blazor.Services
                 return false;
 
             if (clan.OwnerUserId != session.UserId)
+                return false;
+
+            if (newName.Length > MaxClanNameLength)
                 return false;
 
             return this.clanManager.UpdateClanName(clanId, newName);

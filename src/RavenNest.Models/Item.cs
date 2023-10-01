@@ -24,6 +24,7 @@ namespace RavenNest.Models
         public ItemCategory Category { get; set; }
         public ItemType Type { get; set; }
         public ItemMaterial Material { get; set; }
+        public HeadMask HeadMask { get; set; }
         public string MaleModelId { get; set; }
         public string FemaleModelId { get; set; }
         public string GenericPrefab { get; set; }
@@ -38,5 +39,17 @@ namespace RavenNest.Models
         public bool Soulbound { get; set; }
 
         public DateTime? Modified { get; set; }
+    }
+
+    [Flags]
+    public enum HeadMask : uint
+    {
+        None = 0,
+        Hair = 1,
+        Brows = 2,
+        Beard = 4,
+        Ears = 8,
+        Head = 16,
+        All = Hair | Brows | Beard | Ears | Head
     }
 }

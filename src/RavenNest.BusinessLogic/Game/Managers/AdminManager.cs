@@ -693,7 +693,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 if (session != null)
                 {
-                    sessionManager.SendPermissionData(session);
+                    sessionManager.SendSessionSettings(session);
                 }
             }
             return true;
