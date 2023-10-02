@@ -185,8 +185,8 @@ namespace RavenNest.BusinessLogic.Data
                     IronEmblem = GetOrCreateItem(i, "Iron Emblem", "A signet representing Ironhill", ItemCategory.Resource, ItemType.Alchemy),
                     KyoCrystal = GetOrCreateItem(i, "Kyo Crystal", "A radiant crystal resonating with Kyo's energy", ItemCategory.Resource, ItemType.Alchemy),
                     HeimRune = GetOrCreateItem(i, "Heim Rune", "A rune infused with Heim's magic", ItemCategory.Resource, ItemType.Alchemy),
-                    AtriasFeather = GetOrCreateItem(i, "Atria's Feather", "A magical feather tied to Atria", ItemCategory.Resource, ItemType.Alchemy),
-                    EldarasMark = GetOrCreateItem(i, "Eldara's Mark", "A seal bearing Eldara's mark", ItemCategory.Resource, ItemType.Alchemy),
+                    AtriasFeather = GetOrCreateItem(i, "Atrias Feather", "A magical feather tied to Atria", ItemCategory.Resource, ItemType.Alchemy),
+                    EldarasMark = GetOrCreateItem(i, "Eldaras Mark", "A seal bearing Eldara's mark", ItemCategory.Resource, ItemType.Alchemy),
                     Realmstone = GetOrCreateItem(i, "Realmstone", "A precious stone allowing teleportation across islands.", ItemCategory.Resource, ItemType.Alchemy),
 
                     SantaHat = GetOrCreateItem(i, "Santa Hat", "A festive hat worn by Santa.", ItemCategory.Armor, ItemType.Helmet),
@@ -343,7 +343,7 @@ namespace RavenNest.BusinessLogic.Data
                     RawMantaRay = GetOrCreateItem(i, "Raw Manta Ray", "Graceful glider of the ocean. Beware its tail.", ItemCategory.Resource, ItemType.Fishing),
                     RawKraken = GetOrCreateItem(i, "Raw Kraken", "Mythical sea monster known to pull ships under.", ItemCategory.Resource, ItemType.Fishing),
                     RawLeviathan = GetOrCreateItem(i, "Raw Leviathan", "A gargantuan sea creature spoken of in legends.", ItemCategory.Resource, ItemType.Fishing),
-                    RawPoseidonsGuardian = GetOrCreateItem(i, "Raw Poseidon's Guardian", "Said to be the protector of Poseidon's realm. A rare and majestic catch.", ItemCategory.Resource, ItemType.Fishing),
+                    RawPoseidonsGuardian = GetOrCreateItem(i, "Raw Poseidons Guardian", "Said to be the protector of Poseidon's realm. A rare and majestic catch.", ItemCategory.Resource, ItemType.Fishing),
 
                     // Cooking - Resource Creation
                     Flour = GetOrCreateItem(i, "Flour", "Ground wheat, essential for baking and cooking.", ItemCategory.Resource, ItemType.Cooking),
@@ -388,8 +388,8 @@ namespace RavenNest.BusinessLogic.Data
                     MantaRay = GetOrCreateItem(i, "Manta Ray", "Unique and flavorful, a treat from the deep.", ItemCategory.Food, ItemType.Food),
                     Kraken = GetOrCreateItem(i, "Kraken", "Legends speak of its taste, as vast as its tales.", ItemCategory.Food, ItemType.Food),
 
-                    LeviathansRoyalStew = GetOrCreateItem(i, "Leviathan's Royal Stew", "This is a hearty stew that combines the tender meat of the Leviathan with a variety of other ingredients to create a flavorful dish worthy of its namesake.", ItemCategory.Food, ItemType.Food),
-                    PoseidonsGuardianFeast = GetOrCreateItem(i, "Poseidon's Guardian Feast", "A luxurious dish that showcases the divine nature of Poseidon's Guardian. It involves a series of preparations that results in a meal fit for a deity.", ItemCategory.Food, ItemType.Food),
+                    LeviathansRoyalStew = GetOrCreateItem(i, "Leviathans Royal Stew", "This is a hearty stew that combines the tender meat of the Leviathan with a variety of other ingredients to create a flavorful dish worthy of its namesake.", ItemCategory.Food, ItemType.Food),
+                    PoseidonsGuardianFeast = GetOrCreateItem(i, "Poseidons Guardian Feast", "A luxurious dish that showcases the divine nature of Poseidon's Guardian. It involves a series of preparations that results in a meal fit for a deity.", ItemCategory.Food, ItemType.Food),
 
                     // Failed attempts. The disgusting versions, should not be consumed
 
@@ -427,7 +427,7 @@ namespace RavenNest.BusinessLogic.Data
                     Ruby = GetOrCreateItem(i, "Ruby", "A deep red gem that glows passionately under light, often seen as a symbol of love.", ItemCategory.Resource, ItemType.Mining),
                     Sapphire = GetOrCreateItem(i, "Sapphire", "A mesmerizing blue gem, emblematic of the vastness and depth of the oceans.", ItemCategory.Resource, ItemType.Mining),
                     Topaz = GetOrCreateItem(i, "Topaz", "A translucent gem varying from yellow to blue, representing both the warmth of the sun and the coolness of the sky.", ItemCategory.Resource, ItemType.Mining),
-                    PhilosophersStone = GetOrCreateItem(i, "Philosopher's Stone", "An elusive stone surrounded by myths, said to have the power to turn any metal into gold.", ItemCategory.Resource, ItemType.Mining),
+                    PhilosophersStone = GetOrCreateItem(i, "Philosophers Stone", "An elusive stone surrounded by myths, said to have the power to turn any metal into gold.", ItemCategory.Resource, ItemType.Mining),
 
                     CopperOre = GetOrCreateItem(i, "Copper Ore", "A reddish-brown mineral used for creating bronze.", ItemCategory.Resource, ItemType.Mining),
                     TinOre = GetOrCreateItem(i, "Tin Ore", "Soft and malleable, this metal is combined with copper ore to produce bronze.", ItemCategory.Resource, ItemType.Mining),
@@ -1062,13 +1062,13 @@ namespace RavenNest.BusinessLogic.Data
                 items.Gold);
 
             EnsureCookingRecipe(900,
-                "Leviathan's Royal Stew", "This is a hearty stew that combines the tender meat of the Leviathan with a variety of other ingredients to create a flavorful dish worthy of its namesake.",
+                "Leviathans Royal Stew", "This is a hearty stew that combines the tender meat of the Leviathan with a variety of other ingredients to create a flavorful dish worthy of its namesake.",
                 items.LeviathansRoyalStew,
                 items.MuddledLeviathanBroth, 0.5, 1,
                 items.RawLeviathan, items.Water, items.SpiceMix, items.Onion, items.Tomato, items.Flour, items.Mushroom, items.RoastBeef, items.Butter, items.RedWine);
 
             EnsureCookingRecipe(999,
-                "Poseidon's Guardian Feast", "A luxurious dish that showcases the divine nature of Poseidon's Guardian. It involves a series of preparations that results in a meal fit for a deity.",
+                "Poseidons Guardian Feast", "A luxurious dish that showcases the divine nature of Poseidon's Guardian. It involves a series of preparations that results in a meal fit for a deity.",
                 items.PoseidonsGuardianFeast,
                 items.RuinedGuardianDelight, 0.5, 1,
                 items.RawPoseidonsGuardian, items.SpiceMix, items.Milk, items.Eggs, items.RoastedChicken, items.Cheese, items.Tomato, items.Onion, items.Flour, items.GoldenLeaf);

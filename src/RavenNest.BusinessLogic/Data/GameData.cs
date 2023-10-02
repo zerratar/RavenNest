@@ -454,6 +454,8 @@ namespace RavenNest.BusinessLogic.Data
 
                 logger.LogInformation($"Post processing dataset.");
 
+                EnsureItemNamesWithoutApostrophes();
+
                 MigrateTwitchUserAccess();
                 RemoveCharactersWithoutSkills();
 
@@ -515,6 +517,14 @@ namespace RavenNest.BusinessLogic.Data
                 if (item.Name.Contains("'"))
                 {
                     item.Name = item.Name.Replace("'", "");
+                }
+            }
+
+            foreach(var recipe in itemRecipes.Entities)
+            {
+                if (recipe.Name.Contains("'"))
+                {
+                    recipe.Name = recipe.Name.Replace("'", "");
                 }
             }
 
