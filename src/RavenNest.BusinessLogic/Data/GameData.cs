@@ -489,6 +489,8 @@ namespace RavenNest.BusinessLogic.Data
                 ApplyVendorPrices();
                 //ConvertUserResources();
 
+                EnsureItemNamesWithoutApostrophes();
+
                 #endregion
 
                 stopWatch.Stop();
@@ -503,6 +505,41 @@ namespace RavenNest.BusinessLogic.Data
             {
                 InitializedSuccessful = false;
                 System.IO.File.WriteAllText("ravenfall-error.log", "[" + DateTime.UtcNow + "] " + exc.ToString());
+            }
+        }
+
+        private void EnsureItemNamesWithoutApostrophes()
+        {
+            foreach (var item in items.Entities)
+            {
+                if (item.Name.Contains("'"))
+                {
+                    item.Name = item.Name.Replace("'", "");
+                }
+            }
+
+            //foreach (var item in vendorItems.Entities)
+            //{
+            //    if (item.Name.Contains("'"))
+            //    {
+            //        item.Name = item.Name.Replace("'", "");
+            //    }
+            //}
+
+            foreach (var item in inventoryItems.Entities)
+            {
+                if (item.Name.Contains("'"))
+                {
+                    item.Name = item.Name.Replace("'", "");
+                }
+            }
+
+            foreach (var item in marketItems.Entities)
+            {
+                if (item.Name.Contains("'"))
+                {
+                    item.Name = item.Name.Replace("'", "");
+                }
             }
         }
 
