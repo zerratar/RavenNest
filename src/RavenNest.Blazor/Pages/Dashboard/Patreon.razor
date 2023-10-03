@@ -232,6 +232,7 @@ else
     {
         await PatreonService.UnlinkAsync();
         session.Patreon = null;
+        linkedToPatreon = false;
         await InvokeAsync(StateHasChanged);
     }
 

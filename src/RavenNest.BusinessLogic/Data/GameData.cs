@@ -566,8 +566,6 @@ namespace RavenNest.BusinessLogic.Data
         private void MergeItemDuplicates(Item toKeep)
         {
             var vendor = GetVendorItemByItemId(toKeep.Id);
-            var market = GetMarketItems(toKeep.Id);
-
             var toRemove = items.Entities.Where(x => x.Name == toKeep.Name && x.Id != toKeep.Id).ToList();
 
             foreach (var r in toRemove)
@@ -579,8 +577,16 @@ namespace RavenNest.BusinessLogic.Data
                 var badVendorItem = GetVendorItemByItemId(r.Id);
                 if (badVendorItem != null)
                 {
-                    vendor.Stock += badVendorItem.Stock;
-                    Remove(badVendorItem);
+                    if (vendor == null)
+                    {
+                        badVendorItem.ItemId = toKeep.Id;
+                        vendor = badVendorItem;
+                    }
+                    else
+                    {
+                        vendor.Stock += badVendorItem.Stock;
+                        Remove(badVendorItem);
+                    }
                 }
 
                 // remove transaction logs for every item

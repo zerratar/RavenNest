@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
@@ -21,6 +22,7 @@ namespace RavenNest.BusinessLogic.Game
     public class PatreonManager : IPatreonManager
     {
         private readonly GameData gameData;
+        private readonly ILogger<PatreonManager> logger;
         private readonly IHttpContextAccessor accessor;
         private readonly SessionInfoProvider sessionInfoProvider;
         private readonly PatreonSettings patreon;
@@ -32,10 +34,12 @@ namespace RavenNest.BusinessLogic.Game
 
         public PatreonManager(
             GameData gameData,
+            ILogger<PatreonManager> logger,
             IHttpContextAccessor accessor,
             SessionInfoProvider sessionInfoProvider)
         {
             this.gameData = gameData;
+            this.logger = logger;
             this.accessor = accessor;
             this.sessionInfoProvider = sessionInfoProvider;
 
@@ -106,8 +110,6 @@ namespace RavenNest.BusinessLogic.Game
             patreonUser.TokenType = token.TokenType;
             patreonUser.Updated = DateTime.UtcNow;
 
-            session.Patreon = ModelMapper.Map(patreonUser);
-
             // get patreon data
 
             /*
@@ -120,69 +122,75 @@ namespace RavenNest.BusinessLogic.Game
             {
                 return null;
             }
-
-            var patreonData = await GetIdentityAsync(patreonUser);
-            if (patreonData != null)
+            try
             {
-                // make sure we have campaign loaded.
-                //if (!campaignDetailsTask.IsCompleted)
-                //    await campaignDetailsTask;
-
-                await EnsureCampaignDetailsAsync();
-
-                if (long.TryParse(patreonData.Data.Id, out var patreonId))
+                var patreonData = await GetIdentityAsync(patreonUser);
+                if (patreonData != null)
                 {
-                    if (isNewUserPatreon)
+                    // make sure we have campaign loaded.
+                    //if (!campaignDetailsTask.IsCompleted)
+                    //    await campaignDetailsTask;
+
+                    await EnsureCampaignDetailsAsync();
+
+                    if (long.TryParse(patreonData.Data.Id, out var patreonId))
                     {
-                        var existing = gameData.GetPatreonUser(patreonId);
-                        if (existing != null)
+                        if (isNewUserPatreon)
                         {
-                            Replace(ref patreonUser, existing);
-                            isNewUserPatreon = false;
+                            var existing = gameData.GetPatreonUser(patreonId);
+                            if (existing != null)
+                            {
+                                Replace(ref patreonUser, existing);
+                                isNewUserPatreon = false;
+                            }
+                        }
+                        patreonUser.PatreonId = patreonId;
+                    }
+
+                    var firstName = patreonData.Data?.Attributes?.FirstName;
+                    var lastName = patreonData.Data?.Attributes?.LastName;
+                    var email = patreonData.Data?.Attributes?.Email;
+                    var image = patreonData.Data?.Attributes?.ImageUrl?.ToString();
+
+                    if (!string.IsNullOrEmpty(firstName))
+                    {
+                        patreonUser.FirstName = firstName;
+                        patreonUser.FullName = firstName;
+                    }
+
+                    if (!string.IsNullOrEmpty(lastName))
+                        patreonUser.FullName = firstName + " " + lastName;
+
+                    if (!string.IsNullOrEmpty(email))
+                        patreonUser.Email = email;
+
+                    if (!string.IsNullOrEmpty(image))
+                        patreonUser.ProfilePicture = image;
+
+                    if (patreonData.Included != null)
+                    {
+                        var highestEntitledTier = GetHighestEntitledTier(patreonData);
+                        if (highestEntitledTier != null)
+                        {
+                            var t = highestEntitledTier.Tier;
+                            patreonUser.PledgeAmount = t.AmountCents;
+                            patreonUser.PledgeTitle = t.Title;
+                            patreonUser.Tier = t.Level;
+                            user.PatreonTier = t.Level;
+                        }
+                        else if (!isCreator)
+                        {
+                            patreonUser.PledgeAmount = null;
+                            patreonUser.PledgeTitle = null;
+                            patreonUser.Tier = null;
+                            user.PatreonTier = null;
                         }
                     }
-                    patreonUser.PatreonId = patreonId;
                 }
-
-                var firstName = patreonData.Data?.Attributes?.FirstName;
-                var lastName = patreonData.Data?.Attributes?.LastName;
-                var email = patreonData.Data?.Attributes?.Email;
-                var image = patreonData.Data?.Attributes?.ImageUrl?.ToString();
-
-                if (!string.IsNullOrEmpty(firstName))
-                {
-                    patreonUser.FirstName = firstName;
-                    patreonUser.FullName = firstName;
-                }
-
-                if (!string.IsNullOrEmpty(lastName))
-                    patreonUser.FullName = firstName + " " + lastName;
-
-                if (!string.IsNullOrEmpty(email))
-                    patreonUser.Email = email;
-
-                if (!string.IsNullOrEmpty(image))
-                    patreonUser.ProfilePicture = image;
-
-                if (patreonData.Included != null)
-                {
-                    var highestEntitledTier = GetHighestEntitledTier(patreonData);
-                    if (highestEntitledTier != null)
-                    {
-                        var t = highestEntitledTier.Tier;
-                        patreonUser.PledgeAmount = t.AmountCents;
-                        patreonUser.PledgeTitle = t.Title;
-                        patreonUser.Tier = t.Level;
-                        user.PatreonTier = t.Level;
-                    }
-                    else if (!isCreator)
-                    {
-                        patreonUser.PledgeAmount = null;
-                        patreonUser.PledgeTitle = null;
-                        patreonUser.Tier = null;
-                        user.PatreonTier = null;
-                    }
-                }
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Unable to process patreon data! " + exc);
             }
 
             // add this last, in case we found the user using patreon id
@@ -191,6 +199,8 @@ namespace RavenNest.BusinessLogic.Game
             {
                 gameData.Add(patreonUser);
             }
+
+            session.Patreon = ModelMapper.Map(patreonUser);
 
             await this.sessionInfoProvider.StoreAsync(session.SessionId);
             return patreonUser;
@@ -212,18 +222,37 @@ namespace RavenNest.BusinessLogic.Game
 
         private PatreonMembership GetHighestEntitledTier(PatreonIdentity.Root patreonData)
         {
-            var highestEntitledTier = patreonData.Included
-                // sort by highest tier first
-                .OrderByDescending(x => x.Attributes?.CurrentlyEntitledAmountCents ?? 0)
-                .Select(x =>
+            var memberships = new List<PatreonMembership>();
+            foreach (var i in patreonData.Included)
+            {
+                var attr = i.Attributes;
+                if (attr == null)
                 {
-                    var tier = activeCampaign.Tiers.FirstOrDefault(y => y.Id == x.Id);
-                    if (tier == null) return null;
-                    return new PatreonMembership(tier, x.Attributes?.PatronStatus);
-                })
-                // take the first one that is active_patron and is one of our tiers.
-                .FirstOrDefault(x => x != null && x.PatronStatus == "active_patron");
-            return highestEntitledTier;
+                    continue;
+                }
+
+                var status = attr.PatronStatus;
+                if (status == "active_patron")
+                {
+                    var targetTier = activeCampaign.Tiers.FirstOrDefault(x => x.AmountCents == attr.CurrentlyEntitledAmountCents);
+                    memberships.Add(new PatreonMembership(targetTier, status, attr.CurrentlyEntitledAmountCents));
+                }
+            }
+
+            return memberships.OrderByDescending(x => x.Cents ?? 0).FirstOrDefault();
+
+            //var highestEntitledTier = patreonData.Included
+            //    // sort by highest tier first
+            //    .OrderByDescending(x => x.Attributes?.CurrentlyEntitledAmountCents ?? 0)
+            //    .Select(x =>
+            //    {
+            //        var tier = activeCampaign.Tiers.FirstOrDefault(y => y.Id == x.Id);
+            //        if (tier == null) return null;
+            //        return new PatreonMembership(tier, x.Attributes?.PatronStatus);
+            //    })
+            //    // take the first one that is active_patron and is one of our tiers.
+            //    .FirstOrDefault(x => x != null && x.PatronStatus == "active_patron");
+            //return highestEntitledTier;
         }
 
         public async Task EnsureCampaignDetailsAsync()
@@ -410,6 +439,10 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     using var streamReader = new StreamReader(r.GetResponseStream());
                     var responseString = await streamReader.ReadToEndAsync();
+                    var now = DateTime.UtcNow;
+                    File.WriteAllText(Path.Combine(FolderPaths.GeneratedData, "patreon-identity-request-error_" + now.ToString("yyyy-MM-dd_HHmmss") + ".log"),
+                        "Exception: " + exc.ToString() + "\r\n\r\n" + responseString);
+
                 }
                 return null;
             }
@@ -562,11 +595,13 @@ namespace RavenNest.BusinessLogic.Game
     {
         public PatreonTier Tier;
         public string PatronStatus;
+        public readonly long? Cents;
 
-        public PatreonMembership(PatreonTier tier, string patronStatus)
+        public PatreonMembership(PatreonTier tier, string patronStatus, long? cents)
         {
             this.Tier = tier;
             this.PatronStatus = patronStatus;
+            this.Cents = cents;
         }
     }
 }
