@@ -633,8 +633,8 @@ namespace RavenNest.BusinessLogic.Data
         private void EnsureDungeonAndRaidDrops(TypedItems typedItems)
         {
             EnsureDrop(12, 1, typedItems.SantaHat, 0.05f, 0.02f); // Santa hat 
-            EnsureDrop(12, 1, typedItems.ChristmasToken, 0.07f, 0.03f); // Christmas Token
-            EnsureDrop(10, 1, typedItems.HalloweenToken, 0.07f, 0.03f); // Halloween Token
+            EnsureDrop(12, 1, typedItems.ChristmasToken, 0.05f, 0.025f); // Christmas Token
+            EnsureDrop(10, 1, typedItems.HalloweenToken, 0.05f, 0.025f); // Halloween Token
 
             // Pet drops, available in all types of dungeon or raids
             EnsureDrop(typedItems.Pets.FoxPet, 0.05);

@@ -299,7 +299,7 @@ namespace RavenNest.BusinessLogic.Game
             var now = DateTime.UtcNow;
             var startMonth = itemDrop.DropStartMonth.Value;
             var start = new DateTime(now.Year, startMonth, 1);
-            var end = start.AddDays(itemDrop.DropDurationMonths.Value);
+            var end = start.AddMonths(itemDrop.DropDurationMonths.Value);
             return now >= start && now <= end;
         }
 
