@@ -557,10 +557,10 @@ namespace RavenNest.BusinessLogic.Data
 
             var typed = GetKnownItems();
 
-            // fix for Wanderers Gem that has multiple versions now...
-            var toKeep = typed.WanderersGem;
+            //// fix for Wanderers Gem that has multiple versions now...
+            //var toKeep = typed.WanderersGem;
 
-            MergeItemDuplicates(toKeep);
+            //MergeItemDuplicates(toKeep);
         }
 
         private void MergeItemDuplicates(Item toKeep)
@@ -1023,6 +1023,11 @@ namespace RavenNest.BusinessLogic.Data
 
         protected ItemDrop EnsureDrop(int? monthStart, int? monthsLength, Item item, double maxDrop, double minDrop, int tier = 0, int slayerLevelRequirement = 0)
         {
+            if (item == null)
+            {
+                return null;
+            }
+
             var existing = itemDrops[nameof(Item), item.Id].FirstOrDefault();
             if (existing != null)
             {

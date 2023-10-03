@@ -292,6 +292,10 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool CanBeDropped(ItemDrop itemDrop, int tier = 0)
         {
+            if (itemDrop == null) return false;
+            if (gameData.GetItem(itemDrop.ItemId) == null)
+                return false;
+
             if (itemDrop.Tier > tier) return false;
             if (itemDrop.DropStartMonth == null || itemDrop.DropStartMonth == 0 || itemDrop.DropDurationMonths == null || itemDrop.DropDurationMonths == 0)
                 return true; // no date restriction
@@ -322,7 +326,7 @@ namespace RavenNest.BusinessLogic.Game
                 var dropChance = value >= 0.75 ? 1f : 0.80f;
                 var skills = gameData.GetCharacterSkills(character.SkillsId);
 
-                var dl = dropList.Where(x => x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
+                var dl = dropList.Where(x => x != null && x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
                 if (dl.Count == 0) continue;
 
                 //dropList.OrderByRandomWeighted(x => GetDropRate(x, skills))
@@ -366,7 +370,7 @@ namespace RavenNest.BusinessLogic.Game
 
                 var skills = gameData.GetCharacterSkills(character.SkillsId);
 
-                var dl = dropList.Where(x => x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
+                var dl = dropList.Where(x => x != null && x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
                 if (dl.Count == 0) continue;
                 // pick an item at random based on highest drop rate
 

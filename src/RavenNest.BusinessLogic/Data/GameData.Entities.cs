@@ -632,6 +632,16 @@ namespace RavenNest.BusinessLogic.Data
 
         private void EnsureDungeonAndRaidDrops(TypedItems typedItems)
         {
+            // remove all bad drops
+            var drops = itemDrops.Entities.AsList();
+            foreach (var d in drops)
+            {
+                if (GetItem(d.ItemId) == null)
+                {
+                    Remove(d);
+                }
+            }
+
             EnsureDrop(12, 1, typedItems.SantaHat, 0.05f, 0.02f); // Santa hat 
             EnsureDrop(12, 1, typedItems.ChristmasToken, 0.05f, 0.025f); // Christmas Token
             EnsureDrop(10, 1, typedItems.HalloweenToken, 0.05f, 0.025f); // Halloween Token
