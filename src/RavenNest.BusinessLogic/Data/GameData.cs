@@ -520,7 +520,7 @@ namespace RavenNest.BusinessLogic.Data
                 }
             }
 
-            foreach(var recipe in itemRecipes.Entities)
+            foreach (var recipe in itemRecipes.Entities)
             {
                 if (recipe.Name.Contains("'"))
                 {
@@ -1018,6 +1018,9 @@ namespace RavenNest.BusinessLogic.Data
             {
                 var items = GetInventoryItems(c.Id);
                 var mergable = new Dictionary<Guid, DataModels.InventoryItem>();
+
+                // merge by name, this is when we renamed some items and they got a new ID
+
                 foreach (var item in items)
                 {
                     if (!item.Soulbound)
@@ -1590,6 +1593,7 @@ namespace RavenNest.BusinessLogic.Data
 
             if (item != null)
             {
+                var lastModified = DateTime.UtcNow;
                 if (item.Name != name)
                 {
                     var path = GetImageFilePath(item.Name);
@@ -1603,11 +1607,24 @@ namespace RavenNest.BusinessLogic.Data
                     }
 
                     item.Name = name;
+                    item.Modified = lastModified;
+                }
+                if (!string.IsNullOrEmpty(description) && item.Description != description)
+                {
+                    item.Description = description;
+                    item.Modified = lastModified;
+                }
+                if (item.Category != (int)category)
+                {
+                    item.Category = (int)category;
+                    item.Modified = lastModified;
+                }
+                if (item.Type != (int)type)
+                {
+                    item.Type = (int)type;
+                    item.Modified = lastModified;
                 }
 
-                if (!string.IsNullOrEmpty(description) && item.Description != description) item.Description = description;
-                if (item.Category != (int)category) item.Category = (int)category;
-                if (item.Type != (int)type) item.Type = (int)type;
                 return item;
             }
             item = new Item

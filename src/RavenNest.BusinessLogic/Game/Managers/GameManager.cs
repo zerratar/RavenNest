@@ -282,12 +282,12 @@ namespace RavenNest.BusinessLogic.Game
                 Dynamic = 5
              */
 
-            return gameData.GetItemDrops().Where(x => CanBeDropped(x, tier)).ToList();
+            return gameData.GetItemDrops().Where(x => CanBeDropped(x, tier)).OrderBy(x => System.Random.Shared.Next()).ToList();
         }
 
         public IReadOnlyList<ItemDrop> GetRaidDropList()
         {
-            return gameData.GetItemDrops().Where(x => CanBeDropped(x)).ToList();
+            return gameData.GetItemDrops().Where(x => CanBeDropped(x)).OrderBy(x => System.Random.Shared.Next()).ToList();
         }
 
         public bool CanBeDropped(ItemDrop itemDrop, int tier = 0)
@@ -319,7 +319,7 @@ namespace RavenNest.BusinessLogic.Game
                 if (character == null) continue;
 
                 var value = rng.NextDouble();
-                var dropChance = value >= 0.75 ? 1f : 0.75f;
+                var dropChance = value >= 0.75 ? 1f : 0.80f;
                 var skills = gameData.GetCharacterSkills(character.SkillsId);
 
                 var dl = dropList.Where(x => x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
@@ -358,7 +358,7 @@ namespace RavenNest.BusinessLogic.Game
             var rng = Random.Shared;
 
             var dropList = GetRaidDropList();
-            var dropChance = 0.4;
+            var dropChance = 0.5;
             foreach (var c in characters)
             {
                 var character = sessionCharacters.FirstOrDefault(x => x.Id == c);
