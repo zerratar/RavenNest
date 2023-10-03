@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -61,6 +62,8 @@ namespace RavenNest.Controllers
             var signature = HttpContext.Request.Headers["x-patreon-signature"];
 
             //AssertValidateSignature(signature);
+
+
 
             var data = ParseRequest(content);
 
@@ -222,6 +225,11 @@ namespace RavenNest.Controllers
             info.Status = (string)json["data"]["attributes"]["patron_status"];
             info.PledgeAmountCents = (decimal)json["data"]["attributes"]["pledge_amount_cents"];
             info.PledgeAmountDollars = info.PledgeAmountCents / 100; // Convert cents to dollars
+
+            var ticks = DateTime.UtcNow.Ticks;
+
+            System.IO.File.WriteAllText(Path.Combine(FolderPaths.GeneratedData, "patreon-data", ticks + ".json"), Newtonsoft.Json.JsonConvert.SerializeObject(info));
+            System.IO.File.WriteAllText(Path.Combine(FolderPaths.GeneratedData, "patreon-data", ticks + "-request.txt"), content);
 
             return info;
         }

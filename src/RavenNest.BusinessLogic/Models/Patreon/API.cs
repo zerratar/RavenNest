@@ -1,6 +1,9 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using TwitchLib.Api.Helix.Models.Bits;
 
 namespace RavenNest.BusinessLogic.Models.Patreon.API
 {
@@ -9,6 +12,10 @@ namespace RavenNest.BusinessLogic.Models.Patreon.API
         public string Id { get; set; }
         public List<PatreonTier> Tiers { get; set; }
         public long PatreonCount { get; set; }
+        public override string ToString()
+        {
+            return "Id: " + Id + ", Tiers: " + Tiers.Count + ", PatreonCount: " + PatreonCount;
+        }
     }
 
     public class PatreonTier
@@ -17,6 +24,12 @@ namespace RavenNest.BusinessLogic.Models.Patreon.API
         public string Title { get; set; }
         public long AmountCents { get; set; }
         public int Level { get; set; }
+
+
+        public override string ToString()
+        {
+            return "Id: " + Id + ", Title: " + Title + ", AmountCents: " + AmountCents + ", Level: " + Level;
+        }
     }
 
     public class PatreonMemberCollection
@@ -43,6 +56,11 @@ namespace RavenNest.BusinessLogic.Models.Patreon.API
 
             [JsonProperty("type")]
             public string Type { get; set; }
+
+            public override string ToString()
+            {
+                return "Id: " + Id + ", Type: " + Type + ", Attributes: " + Attributes;
+            }
         }
 
         public partial class Attributes
@@ -52,6 +70,11 @@ namespace RavenNest.BusinessLogic.Models.Patreon.API
 
             [JsonProperty("patron_status")]
             public string PatronStatus { get; set; }
+
+            public override string ToString()
+            {
+                return "CurrentlyEntitledAmountCents: " + CurrentlyEntitledAmountCents + ", PatronStatus: " + PatronStatus;
+            }
         }
 
         public partial class Links
@@ -103,6 +126,11 @@ namespace RavenNest.BusinessLogic.Models.Patreon.API
 
             [JsonProperty("type")]
             public string Type { get; set; }
+
+            public override string ToString()
+            {
+                return "Id: " + Id + ", Type: " + Type + ", Attributes: " + Attributes + ", Relationships: " + Relationships;
+            }
         }
 
         public partial class DatumAttributes
@@ -211,6 +239,11 @@ namespace RavenNest.BusinessLogic.Models.Patreon.API
 
             [JsonProperty("type")]
             public string Type { get; set; }
+
+            public override string ToString()
+            {
+                return "Id: " + Id + ", Type: " + Type + ", Attributes: " + Attributes;
+            }
         }
 
         public partial class IncludedAttributes
@@ -220,6 +253,11 @@ namespace RavenNest.BusinessLogic.Models.Patreon.API
 
             [JsonProperty("title")]
             public string Title { get; set; }
+
+            public override string ToString()
+            {
+                return "AmountCents: " + AmountCents + ", Title: " + Title;
+            }
         }
 
         public partial class Meta
@@ -360,12 +398,21 @@ namespace RavenNest.BusinessLogic.Models.Patreon.API
         {
             [JsonProperty("memberships")]
             public Memberships Memberships { get; set; }
+            public override string ToString()
+            {
+                return "Memberships: " + Memberships;
+            }
         }
 
         public partial class Memberships
         {
             [JsonProperty("data")]
             public Datum[] Data { get; set; }
+
+            public override string ToString()
+            {
+                return "[" + string.Join(", ", Data.Select(x => "{" + x + "}")) + "]";
+            }
         }
 
         public partial class Datum
@@ -375,6 +422,11 @@ namespace RavenNest.BusinessLogic.Models.Patreon.API
 
             [JsonProperty("type")]
             public string Type { get; set; }
+
+            public override string ToString()
+            {
+                return "Id: " + Id + ", Type: " + Type;
+            }
         }
 
         public partial class Included

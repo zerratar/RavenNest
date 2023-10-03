@@ -222,7 +222,11 @@ namespace RavenNest.BusinessLogic.Game
 
         private PatreonMembership GetHighestEntitledTier(PatreonIdentity.Root patreonData)
         {
+            PatreonTier tier = null;
+
+            var tiers = new HashSet<string>();
             var memberships = new List<PatreonMembership>();
+
             foreach (var i in patreonData.Included)
             {
                 var attr = i.Attributes;
@@ -232,27 +236,41 @@ namespace RavenNest.BusinessLogic.Game
                 }
 
                 var status = attr.PatronStatus;
-                if (status == "active_patron")
+
+                if (i.Type == "member")
                 {
-                    var targetTier = activeCampaign.Tiers.FirstOrDefault(x => x.AmountCents == attr.CurrentlyEntitledAmountCents);
-                    memberships.Add(new PatreonMembership(targetTier, status, attr.CurrentlyEntitledAmountCents));
+                    // if member, we gotta check if this is a good member
+                    // we are member of..
+
+                    var entitledTiers = i.Relationships.CurrentlyEntitledTiers;
+                    if (entitledTiers != null && entitledTiers.Data != null)
+                    {
+                        memberships.AddRange(entitledTiers.Data
+                            .Where(x => x.Type == "tier" && activeCampaign.Tiers.Any(y => y.Id == x.Id))
+                            .Select(x => new PatreonMembership() { Tier = activeCampaign.Tiers.FirstOrDefault(y => y.Id == x.Id) }));
+
+                        foreach (var m in memberships)
+                            tiers.Add(m.Tier.Id);
+                    }
                 }
+
+                if (i.Type == "tier")
+                {
+                    var t = activeCampaign.Tiers.FirstOrDefault(x => x.Id == i.Id);
+                    if (t != null && tiers.Add(t.Id))
+                    {
+                        memberships.Add(new PatreonMembership { Tier = t });
+                    }
+                }
+
+                //if (status == "active_patron")
+                //{
+                //    var targetTier = activeCampaign.Tiers.FirstOrDefault(x => x.AmountCents == attr.CurrentlyEntitledAmountCents);
+                //    memberships.Add(new PatreonMembership(targetTier, status, attr.CurrentlyEntitledAmountCents));
+                //}
             }
 
-            return memberships.OrderByDescending(x => x.Cents ?? 0).FirstOrDefault();
-
-            //var highestEntitledTier = patreonData.Included
-            //    // sort by highest tier first
-            //    .OrderByDescending(x => x.Attributes?.CurrentlyEntitledAmountCents ?? 0)
-            //    .Select(x =>
-            //    {
-            //        var tier = activeCampaign.Tiers.FirstOrDefault(y => y.Id == x.Id);
-            //        if (tier == null) return null;
-            //        return new PatreonMembership(tier, x.Attributes?.PatronStatus);
-            //    })
-            //    // take the first one that is active_patron and is one of our tiers.
-            //    .FirstOrDefault(x => x != null && x.PatronStatus == "active_patron");
-            //return highestEntitledTier;
+            return memberships.OrderByDescending(x => x.Tier.AmountCents).FirstOrDefault();
         }
 
         public async Task EnsureCampaignDetailsAsync()
@@ -577,11 +595,11 @@ namespace RavenNest.BusinessLogic.Game
                     {
                         new PatreonTier { AmountCents = 20, Level = 0, Title = "Steel" },
                         new PatreonTier { AmountCents = 50, Level = 1, Title = "Mithril" },
-                        new PatreonTier { AmountCents = 100, Level = 2, Title = "Adamantite" },
-                        new PatreonTier { AmountCents = 150, Level = 3, Title = "Rune" },
-                        new PatreonTier { AmountCents = 300, Level = 4, Title = "Dragon" },
-                        new PatreonTier { AmountCents = 500, Level = 5, Title = "Abraxas" },
-                        new PatreonTier { AmountCents = 1000, Level = 6, Title = "Phantom" }
+                        // new PatreonTier { AmountCents = 100, Level = 2, Title = "Adamantite" }, // adamantite is not used anymore, hence ID is skipped.
+                        new PatreonTier { AmountCents = 150, Level = 2, Title = "Rune" },
+                        new PatreonTier { AmountCents = 300, Level = 3, Title = "Dragon" },
+                        new PatreonTier { AmountCents = 500, Level = 4, Title = "Abraxas" },
+                        new PatreonTier { AmountCents = 1000, Level = 5, Title = "Phantom" }
                     };
 
                 tiers = fallbackTiers;
@@ -595,13 +613,19 @@ namespace RavenNest.BusinessLogic.Game
     {
         public PatreonTier Tier;
         public string PatronStatus;
-        public readonly long? Cents;
+        public long? Cents;
 
+        public PatreonMembership() { }
         public PatreonMembership(PatreonTier tier, string patronStatus, long? cents)
         {
             this.Tier = tier;
             this.PatronStatus = patronStatus;
             this.Cents = cents;
+        }
+
+        public override string ToString()
+        {
+            return "Status: " + PatronStatus + ", Tier: " + Tier?.Title + ", Cents: " + Cents;
         }
     }
 }
