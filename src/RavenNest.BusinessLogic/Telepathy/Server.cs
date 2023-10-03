@@ -136,6 +136,10 @@ namespace Telepathy
                             //  through to here when aborting. don't show an
                             //  error.)
                         }
+                        catch (System.Threading.ThreadInterruptedException)
+                        {
+                            // do not log.
+                        }
                         catch (Exception exception)
                         {
                             Log.Error("Server send thread exception: " + exception);

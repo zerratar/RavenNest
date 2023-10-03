@@ -31,6 +31,11 @@ namespace Telepathy
                 stream.Write(payload, 0, packetSize);
                 return true;
             }
+            catch (System.Net.Sockets.SocketException)
+            {
+                // ignore, this will most likely to be a connection timed out.
+                return false;
+            }
             catch (Exception exception)
             {
                 // log as regular message because servers do shut down sometimes
