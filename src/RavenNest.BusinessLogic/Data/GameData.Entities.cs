@@ -88,9 +88,9 @@ namespace RavenNest.BusinessLogic.Data
 
         public TypedItems GetKnownItems()
         {
-            var i = this.items.Entities;
             if (typedItems == null)
             {
+                var i = this.items.Entities;
                 obsoleteItems = new ObsoleteItems
                 {
                     IronNugget = GetOrCreateItem(i, "Iron Nugget", ItemCategory.Resource, ItemType.Mining),
@@ -181,7 +181,7 @@ namespace RavenNest.BusinessLogic.Data
 
                     // Item Drops
                     Hearthstone = GetOrCreateItem(i, "Hearthstone", "A magically infused stone.", ItemCategory.Resource, ItemType.Alchemy),
-                    WanderersGem = GetOrCreateItem(i, "Wanderer's Gem", "A gem that has the essence of distant lands.", ItemCategory.Resource, ItemType.Alchemy),
+                    WanderersGem = GetOrCreateItem(i, "Wanderers Gem", "A gem that has the essence of distant lands.", ItemCategory.Resource, ItemType.Alchemy),
                     IronEmblem = GetOrCreateItem(i, "Iron Emblem", "A signet representing Ironhill", ItemCategory.Resource, ItemType.Alchemy),
                     KyoCrystal = GetOrCreateItem(i, "Kyo Crystal", "A radiant crystal resonating with Kyo's energy", ItemCategory.Resource, ItemType.Alchemy),
                     HeimRune = GetOrCreateItem(i, "Heim Rune", "A rune infused with Heim's magic", ItemCategory.Resource, ItemType.Alchemy),

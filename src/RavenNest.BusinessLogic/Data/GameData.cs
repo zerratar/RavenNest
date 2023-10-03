@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using MessagePack;
 using Microsoft.Extensions.Logging;
@@ -454,8 +455,6 @@ namespace RavenNest.BusinessLogic.Data
 
                 logger.LogInformation($"Post processing dataset.");
 
-                EnsureItemNamesWithoutApostrophes();
-
                 MigrateTwitchUserAccess();
                 RemoveCharactersWithoutSkills();
 
@@ -550,6 +549,81 @@ namespace RavenNest.BusinessLogic.Data
                 {
                     item.Name = item.Name.Replace("'", "");
                 }
+            }
+
+            var typed = GetKnownItems();
+
+            // fix for Wanderers Gem that has multiple versions now...
+            var toKeep = typed.WanderersGem;
+
+            MergeItemDuplicates(toKeep);
+        }
+
+        private void MergeItemDuplicates(Item toKeep)
+        {
+            var vendor = GetVendorItemByItemId(toKeep.Id);
+            var market = GetMarketItems(toKeep.Id);
+
+            var toRemove = items.Entities.Where(x => x.Name == toKeep.Name && x.Id != toKeep.Id).ToList();
+
+            foreach (var r in toRemove)
+            {
+                foreach (var m in GetMarketItems(r.Id))
+                    ReturnMarketplaceItem(m);
+
+                // merge all vendor items
+                var badVendorItem = GetVendorItemByItemId(r.Id);
+                if (badVendorItem != null)
+                {
+                    vendor.Stock += badVendorItem.Stock;
+                    Remove(badVendorItem);
+                }
+
+                // remove transaction logs for every item
+                var mt = marketTransactions[nameof(Item), r.Id];
+                foreach (var m in mt) Remove(m);
+
+                var vt = vendorTransaction[nameof(Item), r.Id];
+                foreach (var m in vt) Remove(m);
+
+                var invItems = GetInventoryItemsByItemId(r.Id);
+                foreach (var i in invItems)
+                {
+                    var goodII = GetInventoryItems(i.CharacterId, toKeep.Id);
+                    // check if we have a stack and add to amount, if not, change itemId on this one.
+                    if (goodII == null || goodII.Count == 0)
+                    {
+                        i.ItemId = toKeep.Id;
+                    }
+                    else
+                    {
+                        var gi = goodII.FirstOrDefault();
+                        if (gi != null)
+                        {
+                            gi.Amount += i.Amount;
+                        }
+                        Remove(i);
+                    }
+                }
+
+                // merge all stash items
+                var stashItems = GetUserBankItemsByItemId(r.Id);
+                foreach (var i in stashItems)
+                {
+                    var existing = GetStashItem(i.UserId, toKeep.Id);
+                    if (existing == null)
+                    {
+                        i.ItemId = toKeep.Id;
+                    }
+                    else
+                    {
+                        existing.Amount += i.Amount;
+                        Remove(i);
+                    }
+                }
+
+                // remove item
+                Remove(r);
             }
         }
 
@@ -3756,6 +3830,10 @@ namespace RavenNest.BusinessLogic.Data
         #region Remove Entities
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(Item item) => items.Remove(item);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(VendorTransaction item) => vendorTransaction.Remove(item);
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(ItemStatusEffect statusEffect) => itemStatusEffects.Remove(statusEffect);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3779,8 +3857,6 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(DailyAggregatedEconomyReport item) => dailyAggregatedEconomyReport.Remove(item);
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public RemoveEntityResult Remove(VendorTransaction item) => vendorTransaction.Remove(item);
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(MarketItemTransaction item) => marketTransactions.Remove(item);
 
