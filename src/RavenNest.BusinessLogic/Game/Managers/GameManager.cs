@@ -1,4 +1,5 @@
-﻿using RavenNest.BusinessLogic.Data;
+﻿using Microsoft.Extensions.Logging;
+using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
@@ -14,6 +15,7 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class GameManager
     {
+        private readonly ILogger<GameManager> logger;
         private readonly IServerManager serverManager;
         private readonly SessionManager sessionManager;
         private readonly PlayerInventoryProvider inventoryProvider;
@@ -24,21 +26,23 @@ namespace RavenNest.BusinessLogic.Game
         private readonly Guid raidScrollId;
 
         public GameManager(
+            ILogger<GameManager> logger,
             IServerManager serverManager,
             SessionManager sessionManager,
             PlayerInventoryProvider inventoryProvider,
             GameData gameData)
         {
+            this.logger = logger;
             this.serverManager = serverManager;
             this.sessionManager = sessionManager;
             this.inventoryProvider = inventoryProvider;
             this.gameData = gameData;
 
-            var items = gameData.GetItems();
+            var items = gameData.GetKnownItems();
 
-            this.raidScrollId = items.FirstOrDefault(x => x.Name.ToLower() == "raid scroll").Id;
-            this.dungeonScrollId = items.FirstOrDefault(x => x.Name.ToLower() == "dungeon scroll").Id;
-            this.expScrollId = items.FirstOrDefault(x => x.Name.ToLower().Contains("exp ") && x.Name.ToLower().Contains(" scroll")).Id;
+            this.raidScrollId = items.RaidScroll.Id;
+            this.dungeonScrollId = items.DungeonScroll.Id;
+            this.expScrollId = items.ExpMultiplierScroll.Id;
         }
 
         public GameInfo GetGameInfo(SessionToken session)
@@ -323,7 +327,7 @@ namespace RavenNest.BusinessLogic.Game
                 if (character == null) continue;
 
                 var value = rng.NextDouble();
-                var dropChance = value >= 0.75 ? 1f : 0.80f;
+                var dropChance = value >= 0.5 ? 1f : 0.80f;
                 var skills = gameData.GetCharacterSkills(character.SkillsId);
 
                 var dl = dropList.Where(x => x != null && x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
@@ -340,9 +344,16 @@ namespace RavenNest.BusinessLogic.Game
                     var inv = inventoryProvider.Get(character.Id);
                     var stack = inv.AddItem(item.ItemId, 1).FirstOrDefault();
 
+                    var amount = 1;
+                    if (item.Name.Contains("token", StringComparison.OrdinalIgnoreCase))
+                    {
+                        amount = tier > 0 && rng.NextDouble() >= 0.5 ? 2 : 1;
+                        logger.LogError("Token Drop from Dungeon: " + item.Name + ", Player: " + character.Name + ", Amount: " + amount);
+                    }
+
                     rewards.Add(new EventItemReward
                     {
-                        Amount = 1,
+                        Amount = amount,
                         CharacterId = character.Id,
                         ItemId = item.ItemId,
                         InventoryItemId = stack.Id
@@ -383,6 +394,13 @@ namespace RavenNest.BusinessLogic.Game
 
                     var inv = inventoryProvider.Get(character.Id);
                     var stack = inv.AddItem(item.ItemId, 1).FirstOrDefault();
+
+                    // log when a seasonal token is dropped so I can keep track on this.
+
+                    if (item.Name.Contains("token", StringComparison.OrdinalIgnoreCase))
+                    {
+                        logger.LogError("Token Drop from Raid: " + item.Name + ", Player: " + character.Name);
+                    }
 
                     rewards.Add(new EventItemReward
                     {
