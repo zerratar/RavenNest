@@ -513,6 +513,7 @@ namespace RavenNest.BusinessLogic.Data
         {
             foreach (var item in items.Entities)
             {
+                if (string.IsNullOrEmpty(item.Name)) continue;
                 if (item.Name.Contains("'"))
                 {
                     item.Name = item.Name.Replace("'", "");
@@ -521,6 +522,7 @@ namespace RavenNest.BusinessLogic.Data
 
             foreach (var recipe in itemRecipes.Entities)
             {
+                if (string.IsNullOrEmpty(recipe.Name)) continue;
                 if (recipe.Name.Contains("'"))
                 {
                     recipe.Name = recipe.Name.Replace("'", "");
@@ -537,6 +539,7 @@ namespace RavenNest.BusinessLogic.Data
 
             foreach (var item in inventoryItems.Entities)
             {
+                if (string.IsNullOrEmpty(item.Name)) continue;
                 if (item.Name.Contains("'"))
                 {
                     item.Name = item.Name.Replace("'", "");
@@ -545,6 +548,7 @@ namespace RavenNest.BusinessLogic.Data
 
             foreach (var item in marketItems.Entities)
             {
+                if (string.IsNullOrEmpty(item.Name)) continue;
                 if (item.Name.Contains("'"))
                 {
                     item.Name = item.Name.Replace("'", "");
