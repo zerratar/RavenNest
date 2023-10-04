@@ -326,7 +326,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var knownItems = gameData.GetKnownItems();
 
-            const double seasonalTokenDropRate = 0.15;
+            const double seasonalTokenDropRate = 0.85;
 
             foreach (var c in characters)
             {
@@ -407,7 +407,7 @@ namespace RavenNest.BusinessLogic.Game
             var dropList = GetRaidDropList();
             var dropChance = 0.5;
 
-            const double seasonalTokenDropRate = 0.1;
+            const double seasonalTokenDropRate = 0.9;
 
             foreach (var c in characters)
             {
