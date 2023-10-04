@@ -284,6 +284,9 @@ namespace RavenNest.BusinessLogic.Game
 
             var characterUser = gameData.GetUser(character.UserId);
 
+            if (character.UserIdLock != null)
+                character.PrevUserIdLock = character.UserIdLock;
+
             character.UserIdLock = null;
 
             var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRemove,

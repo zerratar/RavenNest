@@ -12,6 +12,7 @@ using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Sessions;
+using static RavenNest.Models.Tv.Episode;
 using static RavenNest.Twitch.TwitchRequests;
 
 namespace RavenNest.BusinessLogic.Game
@@ -273,6 +274,8 @@ namespace RavenNest.BusinessLogic.Game
             var characters = gameData.GetSessionCharacters(s);
             foreach (var c in characters)
             {
+                if (c.UserIdLock != null)
+                    c.PrevUserIdLock = c.UserIdLock;
                 c.UserIdLock = null;
             }
         }
@@ -490,6 +493,8 @@ namespace RavenNest.BusinessLogic.Game
 
             foreach (var character in characters)
             {
+                if (character.UserIdLock != null)
+                    character.PrevUserIdLock = character.UserIdLock;
                 character.UserIdLock = null;
             }
 
@@ -517,7 +522,7 @@ namespace RavenNest.BusinessLogic.Game
             UpdateSessionPlayerList(session.UserId, characters);
         }
 
-        public void UpdateSessionPlayerList(Guid ownerId, IReadOnlyList<Character> sessionCharacters)
+        public void UpdateSessionPlayerList(Guid ownerId, IReadOnlyList<DataModels.Character> sessionCharacters)
         {
             try
             {

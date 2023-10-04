@@ -569,6 +569,10 @@ namespace RavenNest.BusinessLogic.Game
                     var charactersInSession = sessionChars.Where(x => x.UserId == user.Id && x.Id != character.Id).ToList();
                     foreach (var cs in charactersInSession)
                     {
+
+                        if (cs.UserIdLock != null)
+                            cs.PrevUserIdLock = cs.UserIdLock;
+
                         cs.UserIdLock = null;
                     }
                 }
@@ -583,6 +587,9 @@ namespace RavenNest.BusinessLogic.Game
                     logger.LogDebug(character.Name + " left " + prevUser.UserName + " to join " + newUser.UserName);
                 }
 #endif
+                if (character.UserIdLock != null)
+                    character.PrevUserIdLock = character.UserIdLock;
+
                 character.UserIdLock = session.UserId;
 
                 if (character.UserIdLock != null)
@@ -675,6 +682,9 @@ namespace RavenNest.BusinessLogic.Game
                 Reason = "Left Game",
             });
 
+            if (character.UserIdLock != null)
+                character.PrevUserIdLock = character.UserIdLock;
+
             character.UserIdLock = null;
 
 #if DEBUG
@@ -711,6 +721,8 @@ namespace RavenNest.BusinessLogic.Game
 #if DEBUG
                 logger.LogDebug(character.Name + " removed from " + sessionOwner.UserName + "'s session.");
 #endif
+                if (character.UserIdLock != null)
+                    character.PrevUserIdLock = character.UserIdLock;
 
                 character.UserIdLock = null;
                 var gameEvent = gameData.CreateSessionEvent(GameEventType.PlayerRemove,

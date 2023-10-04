@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using TwitchLib.Api.Helix.Models.Bits;
+using static RavenNest.Models.Tv.Episode;
 
 namespace RavenNest.BusinessLogic.Game
 {
@@ -269,6 +270,8 @@ namespace RavenNest.BusinessLogic.Game
             var characters = gameData.GetCharactersByUserLock(gameSession.UserId);
             foreach (var c in characters)
             {
+                if (c.UserIdLock != null)
+                    c.PrevUserIdLock = c.UserIdLock;
                 c.UserIdLock = null;
             }
 
