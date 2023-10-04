@@ -188,6 +188,7 @@ namespace RavenNest.BusinessLogic.Data
             {
                 entity.Property(e => e.Id).ValueGeneratedNever();
                 entity.Property(e => e.Started).HasColumnType("datetime");
+                entity.Property(e => e.Refreshed).HasColumnType("datetime").IsRequired(false);
                 entity.Property(e => e.Stopped).HasColumnType("datetime").IsRequired(false);
             });
 

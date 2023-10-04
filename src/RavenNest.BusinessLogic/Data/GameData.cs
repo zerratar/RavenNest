@@ -474,7 +474,8 @@ namespace RavenNest.BusinessLogic.Data
                 //RemoveEmptyPlayers();
 
                 EnsureClanLevels(clans);
-                EnsureExpMultipliersWithinBounds(expMultiplierEvents);
+#warning TODO: Enable the EnsureExpMultipliersWithinBounds later, for now we need to allow players to remain their 100x
+                //EnsureExpMultipliersWithinBounds(expMultiplierEvents);
                 EnsureCraftingRequirements(items);
                 //MergeLoyaltyData(loyalty);
 
@@ -2114,13 +2115,13 @@ namespace RavenNest.BusinessLogic.Data
             {
                 if (multi.StartedByPlayer)
                 {
-                    if (multi.Multiplier > ServerManager.MaxExpMultiplier)
+                    if (multi.Multiplier > SessionManager.MaxPlayerExpMultiplier)
                     {
-                        multi.Multiplier = ServerManager.MaxExpMultiplier;
+                        multi.Multiplier = SessionManager.MaxPlayerExpMultiplier;
                     }
 
                     var runTime = multi.EndTime - multi.StartTime;
-                    var maxRunTime = TimeSpan.FromMinutes(ServerManager.ExpMultiplierStartTimeMinutes + (ServerManager.MaxExpMultiplier * ServerManager.ExpMultiplierMinutesPerScroll));
+                    var maxRunTime = TimeSpan.FromMinutes(SessionManager.ExpMultiplierStartTimeMinutes + (SessionManager.MaxPlayerExpMultiplier * SessionManager.ExpMultiplierMinutesPerScroll));
                     if (runTime > maxRunTime)
                     {
                         multi.EndTime = multi.StartTime.Add(runTime);

@@ -27,9 +27,13 @@ namespace RavenNest.BusinessLogic.Game
         private readonly ITwitchExtensionConnectionProvider extWsConnectionProvider;
         private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
 
-        private const int MaxPlayerExpMultiplier = 100;
-        private const double RaidExpFactor = 1.0;
-        private const double DungeonExpFactor = 1.0;
+        public const int MaxPlayerExpMultiplier = 5;
+        public const double RaidExpFactor = 1.0;
+        public const double DungeonExpFactor = 1.0;
+        
+        public const int ExpMultiplierStartTimeMinutes = 15;
+        public const int ExpMultiplierLastTimeMinutes = 50;
+        public const int ExpMultiplierMinutesPerScroll = 5;
 
         private readonly int[] MaxSystemExpMultiplier = new int[]
         {
@@ -96,16 +100,16 @@ namespace RavenNest.BusinessLogic.Game
             gameData.ClearAllCharacterSessionStates(userId);
 
             var activeSession = gameData.GetSessionByUserId(userId);
-
+            var now = DateTime.UtcNow;
             var oldSessionExpired = false;
             var oldSession = activeSession;
             if (activeSession != null)
             {
-                oldSessionExpired = DateTime.UtcNow - activeSession.Updated.GetValueOrDefault() >= TimeSpan.FromMinutes(30);
+                oldSessionExpired = now - activeSession.Updated.GetValueOrDefault() >= TimeSpan.FromMinutes(30);
                 if (oldSessionExpired)
                 {
                     activeSession.Status = (int)SessionStatus.Inactive;
-                    activeSession.Stopped = DateTime.UtcNow;
+                    activeSession.Stopped = now;
                     activeSession = null;
                 }
             }
@@ -113,19 +117,22 @@ namespace RavenNest.BusinessLogic.Game
             var newGameSession = activeSession ?? GameData.CreateSession(userId);
             if (activeSession == null)
             {
+                newGameSession.Revision = 0;
                 gameData.Add(newGameSession);
+                activeSession = newGameSession;
             }
 
-            if (oldSession != null && !oldSessionExpired)
-            {
-                logger.LogError("BeginSessionAsync was called while an existing session is active. User: " + user.UserName + ". Previous players will not be cleared.");
-            }
-            else
-            {
-                ClearUserLocks(newGameSession);
-            }
 
-            newGameSession.Revision = 0;
+            activeSession.Refreshed = now;
+
+            //if (oldSession != null && !oldSessionExpired)
+            //{
+            //    logger.LogError("BeginSessionAsync was called while an existing session is active. User: " + user.UserName + ". Previous players will not be cleared.");
+            //}
+            //else
+            //{
+            //    ClearUserLocks(newGameSession);
+            //}
 
             var sessionState = gameData.GetSessionState(newGameSession.Id);
             sessionState.SyncTime = gameTime;
@@ -197,6 +204,7 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var userId = token.UserId;
+            var now = DateTime.UtcNow;
 
             gameData.ClearAllCharacterSessionStates(userId);
 
@@ -206,11 +214,11 @@ namespace RavenNest.BusinessLogic.Game
             var oldSession = activeSession;
             if (activeSession != null)
             {
-                oldSessionExpired = DateTime.UtcNow - activeSession.Updated.GetValueOrDefault() >= TimeSpan.FromMinutes(30);
+                oldSessionExpired = now - activeSession.Updated.GetValueOrDefault() >= TimeSpan.FromMinutes(30);
                 if (oldSessionExpired)
                 {
                     activeSession.Status = (int)SessionStatus.Inactive;
-                    activeSession.Stopped = DateTime.UtcNow;
+                    activeSession.Stopped = now;
                     activeSession = null;
                 }
             }
@@ -218,19 +226,12 @@ namespace RavenNest.BusinessLogic.Game
             var newGameSession = activeSession ?? GameData.CreateSession(userId);
             if (activeSession == null)
             {
+                newGameSession.Revision = 0;
                 gameData.Add(newGameSession);
+                activeSession = newGameSession;
             }
 
-            if (oldSession != null && !oldSessionExpired)
-            {
-                logger.LogError("BeginSessionAsync was called while an existing session is active. User: " + user.UserName + ". Previous players will not be cleared.");
-            }
-            else
-            {
-                ClearUserLocks(newGameSession);
-            }
-
-            newGameSession.Revision = 0;
+            activeSession.Refreshed = now;
 
             var sessionState = gameData.GetSessionState(newGameSession.Id);
             sessionState.SyncTime = syncTime;
