@@ -151,7 +151,7 @@ namespace RavenNest.BusinessLogic
             playerCount++;
 
             var playerFactor = 1 + (playerCount / 2000d);
-            var factor = playerFactor * elapsedTime.TotalSeconds;
+            var factor = playerFactor * elapsedTime.TotalSeconds * 0.75;
 
             var nextlevel = level + 1;
             var bTicksForLevel = Exp.GetMaxMinutesForLevel(nextlevel) * 60; // multiply by 60 to get seconds, since we have 1 tick per second
@@ -325,9 +325,10 @@ namespace RavenNest.BusinessLogic
             /// <summary>
             /// The level where time between level has peaked at <see cref="IncrementMins"/>.
             /// </summary>
-            public const double EasyLevel = 70.0;
+            public const double EasyLevel = 700;
 
-            public const double IncrementMins = 14.0;
+            public const double IncrementMins = 5;
+            public const double EasyLevelIncrementDivider = 12.5;
             public const double IncrementHours = IncrementMins / 60.0;
             public const double IncrementDays = IncrementHours / 24.0;
             public const double MaxLevelDays = IncrementDays * MaxLevel;
@@ -445,7 +446,7 @@ namespace RavenNest.BusinessLogic
                 if (level <= EasyLevel)
                 {
                     var a = Math.Max(0, (level - 2) / EasyLevel);
-                    var increment = Lerp(IncrementMins / 8.0d, IncrementMins, a);
+                    var increment = Lerp(IncrementMins / EasyLevelIncrementDivider, IncrementMins, a);
                     return (level - 1) * increment;
                 }
 

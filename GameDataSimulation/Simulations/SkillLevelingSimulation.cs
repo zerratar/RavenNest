@@ -1,4 +1,7 @@
-﻿namespace GameDataSimulation
+﻿using RavenNest.BusinessLogic;
+using RavenNest.Models;
+
+namespace GameDataSimulation
 {
     public class SkillLevelingSimulationSettings : SimulationSettings
     {
@@ -24,7 +27,7 @@
         /// Active exp multiplier, this is including rested, global boost and local boosts.
         /// </summary>
         public double ExpBoost = 1.0;
-        public Skill Skill;
+        public GameMath.Skill Skill;
         public double? Exp;
         public ExpGainType ExpGainType = ExpGainType.Fixed;
     }

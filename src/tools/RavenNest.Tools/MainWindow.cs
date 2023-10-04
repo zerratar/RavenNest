@@ -9,7 +9,7 @@ namespace RavenNest.Tools
     {
         private readonly AdjustPlayerExperienceAction expAdjuster;
         private readonly BuildUpdatePackageAction buildUpdatePackage;
-        private readonly PlayerSkillRollback skillRollbackv0788;
+        //private readonly PlayerSkillRollback skillRollbackv0788;
         private readonly RestoreInventoryItems restoreInventoryItems;
 
         public MainWindow()
@@ -17,7 +17,6 @@ namespace RavenNest.Tools
             InitializeComponents();
             expAdjuster = new AdjustPlayerExperienceAction(ToolProgress, ToolStatus);
             buildUpdatePackage = new BuildUpdatePackageAction(ToolProgress, ToolStatus);
-            skillRollbackv0788 = new PlayerSkillRollback(ToolProgress, ToolStatus, @"C:\Ravenfall\pre0.7.8.9-restorepoint\", @"C:\Ravenfall\pre0.7.8.9\");
             restoreInventoryItems = new RestoreInventoryItems(ToolProgress, ToolStatus,
                 @"C:\git\RavenNest\src\generated-data\backups\active", @"C:\git\RavenNest\src\generated-data\backups\newest");
             var nextVersion = buildUpdatePackage.GetNextVersion().ToString();
@@ -37,7 +36,7 @@ namespace RavenNest.Tools
 
         private void SkillRollbackv0788_Invoke(object sender, EventArgs e)
         {
-            skillRollbackv0788.Apply();
+            //skillRollbackv0788.Apply();
         }
 
         private void RestoreInventoryItems_Invoke(object sender, EventArgs e)
@@ -70,10 +69,6 @@ namespace RavenNest.Tools
             if (key.Key == ConsoleKey.F2)
             {
                 buildUpdatePackage.Apply();
-            }
-            if (key.Key == ConsoleKey.F4)
-            {
-                skillRollbackv0788.Apply();
             }
             if (key.Key == ConsoleKey.F5)
             {
