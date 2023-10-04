@@ -100,6 +100,11 @@ namespace RavenNest.BusinessLogic.Game
             }
             else
             {
+                if (activeEvent.Multiplier >= SessionManager.MaxPlayerExpMultiplier)
+                {
+                    return false;
+                }
+
                 var endTime = activeEvent.EndTime;
                 activeEvent.Multiplier += usageCount;
 
