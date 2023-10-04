@@ -324,6 +324,10 @@ namespace RavenNest.BusinessLogic.Game
             var rng = Random.Shared;
             var dropList = GetDungeonDropList(tier);
 
+            var knownItems = gameData.GetKnownItems();
+
+            const double seasonalTokenDropRate = 0.3;
+
             foreach (var c in characters)
             {
                 var character = sessionCharacters.FirstOrDefault(x => x.Id == c);
@@ -337,6 +341,29 @@ namespace RavenNest.BusinessLogic.Game
                 if (dl.Count == 0) continue;
 
                 //dropList.OrderByRandomWeighted(x => GetDropRate(x, skills))
+
+                var tokenDrop = dl.FirstOrDefault(x => x.ItemId == knownItems.HalloweenToken.Id || x.ItemId == knownItems.ChristmasToken.Id);
+                if (tokenDrop != null)
+                {
+                    if (rng.NextDouble() >= seasonalTokenDropRate)
+                    {
+                        var inv = inventoryProvider.Get(character.Id);
+                        var stack = inv.AddItem(tokenDrop.ItemId, 1).FirstOrDefault();
+
+                        // log when a seasonal token is dropped so I can keep track on this.
+
+                        logger.LogError("Token Drop from Dungeon from 30%, Player: " + character.Name);
+
+                        rewards.Add(new EventItemReward
+                        {
+                            Amount = 1,
+                            CharacterId = character.Id,
+                            ItemId = tokenDrop.ItemId,
+                            InventoryItemId = stack.Id
+                        });
+                        continue;
+                    }
+                }
 
                 // pick an item at random based on highest drop rate
                 var dropRates = dl.Select((x, index) => new { Name = gameData.GetItem(x.ItemId).Name, DropRate = GetDropRate(x, index, dropList.Count, 0, skills), ItemId = x.ItemId }).ToArray();
@@ -375,8 +402,13 @@ namespace RavenNest.BusinessLogic.Game
             var sessionCharacters = gameData.GetActiveSessionCharacters(gameSession);
             var rng = Random.Shared;
 
+            var knownItems = gameData.GetKnownItems();
+
             var dropList = GetRaidDropList();
             var dropChance = 0.5;
+
+            const double seasonalTokenDropRate = 0.3;
+
             foreach (var c in characters)
             {
                 var character = sessionCharacters.FirstOrDefault(x => x.Id == c);
@@ -386,6 +418,33 @@ namespace RavenNest.BusinessLogic.Game
 
                 var dl = dropList.Where(x => x != null && x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
                 if (dl.Count == 0) continue;
+
+                // check if we have a token drop
+                // then flip a coin to see if we should get a token or just select a random item
+
+                var tokenDrop = dl.FirstOrDefault(x => x.ItemId == knownItems.HalloweenToken.Id || x.ItemId == knownItems.ChristmasToken.Id);
+                if (tokenDrop != null)
+                {
+                    if (rng.NextDouble() >= seasonalTokenDropRate)
+                    {
+                        var inv = inventoryProvider.Get(character.Id);
+                        var stack = inv.AddItem(tokenDrop.ItemId, 1).FirstOrDefault();
+
+                        // log when a seasonal token is dropped so I can keep track on this.
+
+                        logger.LogError("Token Drop from Raid from 30%, Player: " + character.Name);
+
+                        rewards.Add(new EventItemReward
+                        {
+                            Amount = 1,
+                            CharacterId = character.Id,
+                            ItemId = tokenDrop.ItemId,
+                            InventoryItemId = stack.Id
+                        });
+                        continue;
+                    }
+                }
+
                 // pick an item at random based on highest drop rate
 
                 var dropRates = dl.Select((x, index) => new { Name = gameData.GetItem(x.ItemId).Name, DropRate = GetDropRate(x, index, dropList.Count, 0, skills), ItemId = x.ItemId }).ToArray();
