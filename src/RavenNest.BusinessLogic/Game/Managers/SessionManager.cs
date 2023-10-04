@@ -28,7 +28,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly ITwitchExtensionConnectionProvider extWsConnectionProvider;
         private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
 
-        public const int MaxPlayerExpMultiplier = 50;
+        public const int MaxPlayerExpMultiplier = 100;
         public const double RaidExpFactor = 1.0;
         public const double DungeonExpFactor = 1.0;
 
