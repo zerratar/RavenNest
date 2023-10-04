@@ -32,7 +32,8 @@ namespace RavenNest.BusinessLogic
                 var isKestrelError = categoryName.Contains("Microsoft.AspNetCore.Server.Kestrel", StringComparison.OrdinalIgnoreCase);
                 // fugly hack, ignore circuit host errors
                 // and exceptionahandlemiddlerware. these are just spamming the db with no interesting information.
-                if ((msg.Contains("Unhandled exception while processing ") && isKestrelError) ||
+                if (msg.Contains("CookiePreferencesChanged") ||
+                    (msg.Contains("Unhandled exception while processing ") && isKestrelError) ||
                     (msg.Contains("Unexpected exception in TimingPipeFlusher.FlushAsync.") && isKestrelError) ||
                     categoryName.Contains("Microsoft.AspNetCore.Components.Server.Circuits.CircuitHost", StringComparison.OrdinalIgnoreCase) ||
                     categoryName.Contains("Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddleware", StringComparison.OrdinalIgnoreCase))
