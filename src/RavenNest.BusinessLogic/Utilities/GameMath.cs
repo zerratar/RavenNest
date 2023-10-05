@@ -151,7 +151,7 @@ namespace RavenNest.BusinessLogic
             playerCount++;
 
             var playerFactor = 1 + (playerCount / 2000d);
-            var factor = playerFactor * elapsedTime.TotalSeconds * 0.75;
+            var factor = playerFactor * elapsedTime.TotalSeconds * 0.075;
 
             var nextlevel = level + 1;
             var bTicksForLevel = Exp.GetMaxMinutesForLevel(nextlevel) * 60; // multiply by 60 to get seconds, since we have 1 tick per second

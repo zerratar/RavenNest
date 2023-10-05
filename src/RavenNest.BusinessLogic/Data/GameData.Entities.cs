@@ -213,7 +213,7 @@ namespace RavenNest.BusinessLogic.Data
                     MagesRing = GetOrCreateItem(i, "Mages Ring", ItemCategory.Ring, ItemType.Ring),
                     MagesRingII = GetOrCreateItem(i, "Mages Ring II", ItemCategory.Ring, ItemType.Ring),
                     MagesRingIII = GetOrCreateItem(i, "Mages Ring III", ItemCategory.Ring, ItemType.Ring),
-                    MagesRingIV = GetOrCreateItem(i, "Mages Ring IV", ItemCategory.Ring, ItemType.Ring),
+                    MagesRingIV = GetOrCreateItem(i, "Mages Ring IV", ItemCategory.Ring, ItemType.Ring).SetStats(armor: 19, magicAim: 25, magicPower: 30),
                     ArchmagesPendant = GetOrCreateItem(i, "Archmages Pendant", ItemCategory.Amulet, ItemType.Amulet),
                     KnightsEmblem = GetOrCreateItem(i, "Knights Emblem", ItemCategory.Amulet, ItemType.Amulet),
                     OwlsEyeRing = GetOrCreateItem(i, "Owls Eye Ring", ItemCategory.Ring, ItemType.Ring),
@@ -1198,6 +1198,54 @@ namespace RavenNest.BusinessLogic.Data
 
     public static class ItemExtensions
     {
+
+        public static Item SetStats(this Item item, int armor = 0, int weaponAim = 0, int weaponPower = 0, int rangedAim = 0, int rangedPower = 0, int magicAim = 0, int magicPower = 0)
+        {
+            var now = DateTime.UtcNow;
+            if (item.ArmorPower != armor)
+            {
+                item.ArmorPower = armor;
+                item.Modified = now;
+            }
+
+            if (item.MagicAim != magicAim)
+            {
+                item.MagicAim = magicAim;
+                item.Modified = now;
+            }
+
+            if (item.MagicPower != magicPower)
+            {
+                item.MagicPower = magicPower;
+                item.Modified = now;
+            }
+
+            if (item.RangedAim != rangedAim)
+            {
+                item.RangedAim = rangedAim;
+                item.Modified = now;
+            }
+
+            if (item.RangedPower != rangedPower)
+            {
+                item.RangedPower = rangedPower;
+                item.Modified = now;
+            }
+
+            if (item.WeaponAim != weaponAim)
+            {
+                item.WeaponAim = weaponAim;
+                item.Modified = now;
+            }
+
+            if (item.WeaponPower != weaponPower)
+            {
+                item.WeaponPower = weaponPower;
+                item.Modified = now;
+            }
+
+            return item;
+        }
 
         public static Item LevelRequirement(this Item item, int levelRequirement)
         {
