@@ -1010,6 +1010,7 @@ namespace RavenNest.BusinessLogic.Game
                 var stashCurrencyItem = gameData.GetStashItem(character.UserId, redeemable.CurrencyItemId);
                 var stashCurrencyAmount = stashCurrencyItem != null ? stashCurrencyItem.Amount : 0;
                 var currencyItem = inventory.GetByItemId(redeemable.CurrencyItemId);
+                //if ((currencyItem.Amount + stashCurrencyAmount) < redeemable.Cost)
                 if ((currencyItem.Amount + stashCurrencyAmount) < redeemable.Cost)
                 {
                     var insufficient = RedeemItemResult.InsufficientCurrency(currencyItem.Amount, redeemable.Cost, currencyItem.Item.Name);
@@ -1047,7 +1048,10 @@ namespace RavenNest.BusinessLogic.Game
                 }
                 else
                 {
-                    gameData.RemoveFromStash(stashCurrencyItem, redeemable.Cost);
+                    if (gameData.RemoveFromStash(stashCurrencyItem, redeemable.Cost))
+                    {
+                        inventory.AddItem(redeemable.ItemId, Math.Max(1, redeemable.Amount));
+                    }
                 }
 
                 SendItemAddEvent(new DataModels.InventoryItem { ItemId = redeemable.ItemId, Soulbound = false }, redeemable.Amount, character);
