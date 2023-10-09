@@ -109,23 +109,11 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 session.Updated = DateTime.UtcNow;
 
                 var resources = gameData.GetResources(character);
-                var oldWood = resources.Wood;
-                var oldWheat = resources.Wheat;
-                var oldFish = resources.Fish;
-                var oldOre = resources.Ore;
-                var oldCoins = resources.Coins;
 
                 state.LastTaskUpdate = DateTime.UtcNow;
                 state.SailingRewardAttempted = DateTime.UnixEpoch;
 
                 onUpdate?.Invoke(resources);
-
-                if (oldCoins != resources.Coins ||
-                    oldWood != resources.Wood ||
-                    oldWheat != resources.Wheat ||
-                    oldFish != resources.Fish ||
-                    oldOre != resources.Ore)
-                    UpdateResources(gameData, session, character, resources);
             }
         }
 
@@ -138,26 +126,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 resx = gameData.GetResources(village.ResourcesId);
             }
             return resx;
-        }
-
-        protected void UpdateResources(
-            GameData gameData,
-            DataModels.GameSession session,
-            DataModels.Character character,
-            DataModels.Resources resources)
-        {
-            var gameEvent = gameData.CreateSessionEvent(GameEventType.ResourceUpdate, session,
-                new ResourceUpdate
-                {
-                    CharacterId = character.Id,
-                    FishAmount = resources.Fish,
-                    OreAmount = resources.Ore,
-                    WheatAmount = resources.Wheat,
-                    WoodAmount = resources.Wood,
-                    CoinsAmount = resources.Coins
-                });
-
-            gameData.EnqueueGameEvent(gameEvent);
         }
     }
 

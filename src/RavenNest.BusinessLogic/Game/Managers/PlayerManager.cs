@@ -1021,6 +1021,7 @@ namespace RavenNest.BusinessLogic.Game
                     return insufficient;
                 }
 
+                DataModels.InventoryItem added = null;
                 // if we don't have any in inventory, we should only remove from the stash
                 if (currencyItem.Amount > 0)
                 {
@@ -1038,7 +1039,7 @@ namespace RavenNest.BusinessLogic.Game
                             }
                         }
 
-                        inventory.AddItem(redeemable.ItemId, Math.Max(1, redeemable.Amount));
+                        added = inventory.AddItem(redeemable.ItemId, Math.Max(1, redeemable.Amount)).FirstOrDefault();
                     }
 
                     SendItemRemoveEvent(new DataModels.InventoryItem
@@ -1050,15 +1051,23 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     if (gameData.RemoveFromStash(stashCurrencyItem, redeemable.Cost))
                     {
-                        inventory.AddItem(redeemable.ItemId, Math.Max(1, redeemable.Amount));
+                        added = inventory.AddItem(redeemable.ItemId, Math.Max(1, redeemable.Amount)).FirstOrDefault();
                     }
                 }
 
-                SendItemAddEvent(new DataModels.InventoryItem { ItemId = redeemable.ItemId, Soulbound = false }, redeemable.Amount, character);
+                SendItemAddEvent(new DataModels.InventoryItem
+                {
+                    ItemId = redeemable.ItemId,
+                    Id = added?.Id ?? Guid.Empty,
+                    CharacterId = character.Id,
+                    Amount = added?.Amount ?? 0,
+                    Soulbound = false
+                }, redeemable.Amount, character);
 
                 return new RedeemItemResult
                 {
                     Code = RedeemItemResultCode.Success,
+                    InventoryItemId = added?.Id ?? Guid.Empty,
                     RedeemedItemAmount = redeemable.Amount,
                     RedeemedItemId = redeemable.ItemId,
                     CurrencyItemId = redeemable.CurrencyItemId,

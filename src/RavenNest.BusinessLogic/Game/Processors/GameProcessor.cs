@@ -8,6 +8,7 @@ using RavenNest.DataModels;
 using RavenNest.Models;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,6 +24,9 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
         private readonly ConcurrentDictionary<string, ITaskProcessor> taskProcessors
             = new ConcurrentDictionary<string, ITaskProcessor>();
+
+        private readonly ConcurrentDictionary<Guid, double> reportedCoinsAmount
+            = new ConcurrentDictionary<Guid, double>();
 
         private readonly GameData gameData;
         private readonly ILogger logger;
@@ -220,6 +224,43 @@ namespace RavenNest.BusinessLogic.Game.Processors
             }
         }
 
+        protected void UpdateResources(
+            GameData gameData,
+            DataModels.GameSession session,
+            DataModels.Character character,
+            DataModels.Resources resources)
+        {
+            var gameEvent = gameData.CreateSessionEvent(GameEventType.ResourceUpdate, session,
+                new ResourceUpdate
+                {
+                    CharacterId = character.Id,
+                    //FishAmount = resources.Fish,
+                    //OreAmount = resources.Ore,
+                    //WheatAmount = resources.Wheat,
+                    //WoodAmount = resources.Wood,
+                    CoinsAmount = resources.Coins
+                });
+
+            gameData.EnqueueGameEvent(gameEvent);
+        }
+
+        private void SyncCharacterResources(DataModels.GameSession session, Character character)
+        {
+            var resources = gameData.GetResources(character);
+            var exists = reportedCoinsAmount.TryGetValue(character.Id, out var val);
+            if (val != resources.Coins)
+            {
+                reportedCoinsAmount[character.Id] = resources.Coins;
+
+                // only send the update if it already exists, this makes sure that players that join in late dont get spammed these messages.
+                if (exists)
+                {
+                    UpdateResources(gameData, session, character, resources);
+                }
+            }
+        }
+
+
         private void UpdateSessionTasks(DateTime utcNow)
         {
             var session = gameData.GetSession(sessionToken.SessionId);
@@ -249,6 +290,8 @@ namespace RavenNest.BusinessLogic.Game.Processors
                     //    var inventory = inventoryProvider.Get(character.Id);
                     //    inventory.AddPatreonTierRewards();
                     //}
+
+                    SyncCharacterResources(session, character);
 
                     UpdateActiveStatusEffects(utcNow, character);
 

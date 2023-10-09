@@ -135,6 +135,7 @@ namespace RavenNest.Models
     {
         public RedeemItemResultCode Code { get; set; }
         public Guid RedeemedItemId { get; set; }
+        public Guid InventoryItemId { get; set; }
         public int RedeemedItemAmount { get; set; }
         public Guid CurrencyItemId { get; set; }
         public long CurrencyLeft { get; set; }
