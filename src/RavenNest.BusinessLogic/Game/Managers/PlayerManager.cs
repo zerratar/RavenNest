@@ -1618,7 +1618,7 @@ namespace RavenNest.BusinessLogic.Game
                     {
                         foreach (var item in removedItems)
                         {
-                            inventory.AddItem(item, item.Amount);
+                            inventory.TryAddItem(item, item.Amount);
                         }
                     }
                     return null;
@@ -2310,98 +2310,30 @@ namespace RavenNest.BusinessLogic.Game
             return false;
         }
 
-        public long GiftItemInstance(SessionToken sessionToken, string gifterUserId, string receiverUserId, Guid itemId, long amount)
+        public GiftItemResult GiftInventoryItem(SessionToken sessionToken, Guid gifterUserId, Guid receiverUserId, Guid inventoryItemId, long amount)
         {
             var gifter = GetCharacter(sessionToken, gifterUserId);
-            if (gifter == null) return 0;
-            if (!integrityChecker.VerifyPlayer(sessionToken.SessionId, gifter.Id, 0))
-                return 0;
+            if (gifter == null || !integrityChecker.VerifyPlayer(sessionToken.SessionId, gifter.Id, 0)) return GiftItemResult.Error;
             var receiver = GetCharacter(sessionToken, receiverUserId);
-            if (receiver == null) return 0;
-            return GiftItem(itemId, amount, gifter, receiver);
+            if (receiver == null) return GiftItemResult.Error;
+            return GiftInventoryItem(inventoryItemId, amount, gifter, receiver);
         }
 
-        public long GiftItemInstance(SessionToken sessionToken, Guid gifterUserId, Guid receiverUserId, Guid itemId, long amount)
-        {
-            var gifter = GetCharacter(sessionToken, gifterUserId);
-            if (gifter == null || !integrityChecker.VerifyPlayer(sessionToken.SessionId, gifter.Id, 0)) return 0;
-            var receiver = GetCharacter(sessionToken, receiverUserId);
-            if (receiver == null) return 0;
-            return GiftItem(itemId, amount, gifter, receiver);
-        }
-
-        private long GiftItem(Guid itemId, long amount, Character gifter, Character receiver)
+        private GiftItemResult GiftInventoryItem(Guid inventoryItemId, long amount, Character gifter, Character receiver)
         {
             var inventory = inventoryProvider.Get(gifter.Id);
-            var item = inventory.Get(itemId);
-            if (item.IsNull() || item.Soulbound) return 0;
+            var item = inventory.Get(inventoryItemId);
+            if (item.IsNull() || item.Soulbound) return GiftItemResult.SoulboundItem;
             var gift = item;
-            if (inventory.IsLocked(gift.Id)) return 0;
+            if (inventory.IsLocked(gift.Id)) return GiftItemResult.InventoryError;
             var recvInventory = inventoryProvider.Get(receiver.Id);
             var amountToGift = gift.Amount >= amount ? amount : (int)gift.Amount;
-            if (recvInventory.AddItem(gift, amountToGift) && inventory.RemoveItem(gift, amountToGift))
+            if (recvInventory.TryAddItem(gift, amountToGift, out var result) && inventory.TryRemoveItem(gift, amountToGift, out var old))
             {
-                return amountToGift;
+                return GiftItemResult.OK(amountToGift, ModelMapper.Map(result), ModelMapper.Map(old));
             }
-            return 0;
+            return GiftItemResult.NoItem;
         }
-
-        public long GiftItem(
-            SessionToken token,
-            string gifterUserId,
-            string receiverUserId,
-            Guid itemId,
-            long amount)
-        {
-            try
-            {
-                var gifter = GetCharacter(token, gifterUserId);
-                if (gifter == null) return 0;
-
-                if (!integrityChecker.VerifyPlayer(token.SessionId, gifter.Id, 0))
-                    return 0;
-
-                var receiver = GetCharacter(token, receiverUserId);
-                if (receiver == null) return 0;
-
-                var item = gameData.GetItem(itemId);
-                if (item == null || item.Soulbound)
-                    return 0;
-
-                var session = gameData.GetSession(token.SessionId);
-                var sessionOwner = gameData.GetUser(session.UserId);
-
-                string itemTag = null;
-                if (item.Category == (int)DataModels.ItemCategory.StreamerToken)
-                    itemTag = sessionOwner.UserId;
-
-                var inventory = inventoryProvider.Get(gifter.Id);
-                var gift = inventory.GetUnequippedItem(itemId, tag: itemTag);
-
-                if (inventory.IsLocked(gift.Id)) return 0;
-
-                if (gift.IsNull() || gift.Amount == 0)
-                    return 0;
-
-                if (gift.Soulbound)
-                    return 0;
-
-                var recvInventory = inventoryProvider.Get(receiver.Id);
-                var amountToGift = gift.Amount >= amount ? amount : (int)gift.Amount;
-                if (recvInventory.AddItem(gift, amountToGift) && inventory.RemoveItem(gift, amountToGift))
-                {
-                    return amountToGift;
-                }
-
-                return 0;
-            }
-            catch (Exception exc)
-            {
-                logger.LogError($"Unable to gift item (g {gifterUserId}, r {receiverUserId}, i {itemId}, a x{amount}): " + exc);
-                return 0;
-            }
-        }
-
 
         public bool SendToStash(Guid characterId, RavenNest.Models.InventoryItem invItemInput, long amount)
         {

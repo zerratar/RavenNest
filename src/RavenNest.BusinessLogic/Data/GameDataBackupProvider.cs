@@ -80,9 +80,73 @@ namespace RavenNest.BusinessLogic.Data
 
         public void CreateBackup(IEntitySet[] entitySets)
         {
-            RemoveOldBackups();
-            var backupFolder = GetBackupFolder();
-            StoreData(entitySets, backupFolder);
+            RemoveOldBackupFolders();
+            RemoveOldBackupZipArchives();
+            try
+            {
+                // s FullBackupsPath
+                var path = GetBackupZipPath();
+                using (var fs = new FileStream(path, FileMode.CreateNew, FileAccess.Write))
+                {
+                    WriteCompressedEntitiesToStream(fs, entitySets);
+                    return;
+                }
+            }
+            catch
+            {
+                var backupFolder = GetBackupFolder();
+                StoreData(entitySets, backupFolder);
+            }
+        }
+
+        private void RemoveOldBackupZipArchives()
+        {
+            try
+            {
+                var backupFiles = Directory.GetFiles(FullBackupsPath, "*.zip")
+                    .Select(x => new FileInfo(x))
+                    .OrderByDescending(x => x.CreationTime)
+                    .ToList();
+
+                var dateNow = DateTime.Now.Date;
+                var keepToday = 5;
+
+                var toDelete = new List<FileInfo>();
+
+                // Group by the date of creation
+                var groupedByDate = backupFiles.GroupBy(x => x.CreationTime.Date);
+
+                foreach (var group in groupedByDate)
+                {
+                    if (group.Key == dateNow)
+                    {
+                        // For today's files, keep the first, last, and three in between.
+                        var toKeep = group.Take(1)
+                            .Concat(group.Skip(1).Take(group.Count() - 2).OrderBy(y => Guid.NewGuid()).Take(keepToday - 2))
+                            .Concat(group.Skip(group.Count() - 1).Take(1))
+                            .ToList();
+
+                        toDelete.AddRange(group.Except(toKeep));
+                    }
+                    else
+                    {
+                        // For other days, keep the oldest and newest files, and delete the rest.
+                        var toKeepForOtherDays = group.OrderByDescending(x => x.CreationTime).Take(1).Concat(group.OrderBy(x => x.CreationTime).Take(1)).ToList();
+
+                        toDelete.AddRange(group.Except(toKeepForOtherDays));
+                    }
+                }
+
+                // Delete the files marked for deletion
+                foreach (var fileInfo in toDelete)
+                {
+                    fileInfo.Delete();
+                }
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Error removing old archive backups: " + exc);
+            }
         }
 
         private void CreateBackup(EntityRestorePoint restorePoint)
@@ -94,15 +158,17 @@ namespace RavenNest.BusinessLogic.Data
                 var entities = restorePoint.Get(type);
                 StoreEntities(type, entities, backupFolder);
             }
-            RemoveOldBackups();
+
+            RemoveOldBackupFolders();
         }
 
-        private void RemoveOldBackups()
+        private void RemoveOldBackupFolders()
         {
             try
             {
-                var backupFolders = System.IO.Directory.GetDirectories(FullBackupsPath);
-                var backupsDay = backupFolders.Select(x => new System.IO.DirectoryInfo(x)).GroupBy(x => x.CreationTime.Date).ToList();
+                var backupFolders = Directory.GetDirectories(FullBackupsPath);
+
+                var backupsDay = backupFolders.Select(x => new DirectoryInfo(x)).GroupBy(x => x.CreationTime.Date).ToList();
                 foreach (var b in backupsDay)
                 {
                     // if its today, keep backupsToKeep
@@ -124,9 +190,9 @@ namespace RavenNest.BusinessLogic.Data
                     }
                 }
             }
-            catch
+            catch (Exception exc)
             {
-                // ignored for now
+                logger.LogError("Error removing old backups: " + exc);
             }
         }
 
@@ -143,9 +209,8 @@ namespace RavenNest.BusinessLogic.Data
             StoreData(entitySets, FullRestorePointPath);
         }
 
-        public byte[] GetCompressedEntityStream(IEntitySet[] entitySets)
+        public void WriteCompressedEntitiesToStream(Stream stream, IEntitySet[] entitySets)
         {
-            using (var memoryStream = new MemoryStream())
             using (ZipFile zip = new ZipFile())
             {
                 foreach (var entitySet in entitySets)
@@ -157,8 +222,7 @@ namespace RavenNest.BusinessLogic.Data
                     zip.AddEntry(key, data);
                 }
 
-                zip.Save(memoryStream);
-                return memoryStream.ToArray();
+                zip.Save(stream);
             }
         }
 
@@ -243,6 +307,12 @@ namespace RavenNest.BusinessLogic.Data
             {
                 CreateBackup(restorePoint);
             }
+        }
+
+        private string GetBackupZipPath()
+        {
+            var timeNow = DateTime.UtcNow;
+            return Path.Combine(FullBackupsPath, timeNow.Ticks.ToString() + ".zip");
         }
 
         private string GetBackupFolder()

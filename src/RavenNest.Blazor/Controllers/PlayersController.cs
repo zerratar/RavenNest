@@ -518,25 +518,18 @@ namespace RavenNest.Controllers
             return playerManager.EquipBestItems(AssertGetSessionToken(), characterId);
         }
 
-
-        [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpGet("{userId}/gift/{receiverUserId}/{itemId}/{amount}")]
-        public long GiftItem(string userId, string receiverUserId, Guid itemId, long amount)
-        {
-            return playerManager.GiftItem(AssertGetSessionToken(), userId, receiverUserId, itemId, amount);
-        }
-        [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpGet("{userId}/gift-instance/{receiverUserId}/{itemId}/{amount}")]
-        public long GiftItemInstance(string userId, string receiverUserId, Guid itemId, long amount)
-        {
-            return playerManager.GiftItemInstance(AssertGetSessionToken(), userId, receiverUserId, itemId, amount);
-        }
-
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("v2/{characterId}/gift/{receiverId}/{itemId}/{amount}")]
         public long GiftItemInstance(Guid characterId, Guid receiverId, Guid itemId, long amount)
         {
-            return playerManager.GiftItemInstance(AssertGetSessionToken(), characterId, receiverId, itemId, amount);
+            return playerManager.GiftInventoryItem(AssertGetSessionToken(), characterId, receiverId, itemId, amount).Amount;
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("v3/{characterId}/gift/{receiverId}/{inventoryItemId}/{amount}")]
+        public GiftItemResult GiftItem(Guid characterId, Guid receiverId, Guid inventoryItemId, long amount)
+        {
+            return playerManager.GiftInventoryItem(AssertGetSessionToken(), characterId, receiverId, inventoryItemId, amount);
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]

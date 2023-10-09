@@ -4022,7 +4022,11 @@ namespace RavenNest.BusinessLogic.Data
         {
             try
             {
-                return backupProvider.GetCompressedEntityStream(entitySets);
+                using (var memoryStream = new MemoryStream())
+                {
+                    backupProvider.WriteCompressedEntitiesToStream(memoryStream, entitySets);
+                    return memoryStream.ToArray();
+                }
             }
             catch (Exception exc)
             {

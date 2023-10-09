@@ -661,8 +661,12 @@ namespace RavenNest.BusinessLogic.Providers
                 return resultStack;
             }
         }
+        public bool TryAddItem(ReadOnlyInventoryItem itemToCopy, long amount)
+        {
+            return TryAddItem(itemToCopy, amount, out _);
+        }
 
-        public bool AddItem(ReadOnlyInventoryItem itemToCopy, long amount)
+        public bool TryAddItem(ReadOnlyInventoryItem itemToCopy, long amount, out InventoryItem result)
         {
             lock (mutex)
             {
@@ -672,10 +676,12 @@ namespace RavenNest.BusinessLogic.Providers
                     if (existing != null)
                     {
                         existing.Amount += amount;
+                        result = existing;
                         return true;
                     }
                 }
-                return AddItemStack(itemToCopy, amount) != null;
+                result = AddItemStack(itemToCopy, amount);
+                return result != null;
             }
         }
 
@@ -988,13 +994,45 @@ namespace RavenNest.BusinessLogic.Providers
 
         public bool RemoveItem(ReadOnlyInventoryItem item, long amount)
         {
-            return RemoveItem(Get(item), amount, out _);
+            return RemoveItem(Get(item), amount, out long _);
+        }
+
+        public bool TryRemoveItem(ReadOnlyInventoryItem item, long amount, out InventoryItem removedOrUpdatedStack)
+        {
+            return RemoveItem(Get(item), amount, out removedOrUpdatedStack);
         }
 
         public bool RemoveItem(InventoryItem stack, long amount)
         {
-            return RemoveItem(stack, amount, out _);
+            return RemoveItem(stack, amount, out long _);
         }
+
+        public bool RemoveItem(InventoryItem stack, long amount, out InventoryItem remainder)
+        {
+            lock (mutex)
+            {
+                remainder = stack;
+                if (stack == null || stack.Amount < amount)
+                {
+                    if (stack.Amount <= 0)
+                    {
+                        stack.Amount = 0;
+                        RemoveStack(stack);
+                    }
+
+                    return false;
+                }
+
+                stack.Amount -= amount;
+                if (stack.Amount <= 0)
+                {
+                    RemoveStack(stack);
+                }
+
+                return true;
+            }
+        }
+
         public bool RemoveItem(InventoryItem stack, long amount, out long remainder)
         {
             lock (mutex)
@@ -1004,7 +1042,6 @@ namespace RavenNest.BusinessLogic.Providers
                 {
                     if (stack.Amount <= 0)
                     {
-                        //logger.LogError("Removing empty inventory stack. Character: " + this.characterId + ", ItemId: " + stack.ItemId);
                         RemoveStack(stack);
                     }
 
