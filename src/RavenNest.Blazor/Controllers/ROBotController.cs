@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using RavenNest.Blazor.Discord.Models;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.DataModels;
 using System;
@@ -68,6 +69,81 @@ namespace RavenNest.Controllers
 
 
 
+        [HttpGet("discord/account/{username}")]
+        public async Task<AcccountInfo> GetAccountInfoAsync(string username)
+        {
+            try
+            {
+                var user = gameData.GetUserByUsername(username);
+                if (user == null)
+                {
+                    return new AcccountInfo(0, 0, 0, "No such user account exists.");
+                }
+
+                var res = gameData.GetResources(user.Resources.Value);
+                var coins = (long)res.Coins;
+
+                var halloweenTokens = 0L;
+                var christmasTokens = 0L;
+                var knownItems = gameData.GetKnownItems();
+                foreach (var i in gameData.GetUserBankItems(user.Id))
+                {
+                    if (i.ItemId == knownItems.HalloweenToken.Id)
+                    {
+                        halloweenTokens += i.Amount;
+                    }
+
+                    if (i.ItemId == knownItems.ChristmasToken.Id)
+                    {
+                        christmasTokens += i.Amount;
+                    }
+                }
+
+                return new AcccountInfo(coins, halloweenTokens, christmasTokens, null);
+            }
+            catch (Exception exc)
+            {
+                return new AcccountInfo(0, 0, 0, exc.ToString());
+            }
+        }
+
+        [HttpGet("discord/account-worth/{username}")]
+        public async Task<long> GetTotalAccountWorthAsync(string username)
+        {
+            try
+            {
+                var user = gameData.GetUserByUsername(username);
+                if (user == null)
+                {
+                    return -1;
+                }
+
+                long totalValue = 0;
+                var chars = gameData.GetCharactersByUserId(user.Id);
+                foreach (var c in chars)
+                {
+                    foreach (var inv in gameData.GetInventoryItems(c.Id))
+                    {
+                        var item = gameData.GetItem(inv.ItemId);
+                        totalValue += item.ShopSellPrice * inv.Amount ?? 0;
+                    }
+                }
+
+                foreach (var i in gameData.GetUserBankItems(user.Id))
+                {
+                    var item = gameData.GetItem(i.ItemId);
+                    totalValue += item.ShopSellPrice * i.Amount;
+                }
+
+                return totalValue;
+            }
+            catch (Exception exc)
+            {
+                return -1;
+            }
+        }
+
+
         [HttpGet("discord/character-list/{username}")]
         public async Task<CharacterList> GetCharacterListByUserNameAsync(string username)
         {
@@ -103,8 +179,12 @@ namespace RavenNest.Controllers
                     training = state.TaskArgument;
                 }
 
+                var cs = ModelMapper.Map(state);
                 var stats = GetStats(character);
-                result[i] = new CharacterInfo(character.Id, character.CharacterIndex, character.Name, character.Identifier, stream, training, stats);
+                result[i] = new CharacterInfo(
+                    character.Id, character.CharacterIndex, character.Name, character.Identifier,
+                    stream, training, cs.Island, cs.RestedTime, cs.InDungeon, cs.InRaid,
+                    cs.InOnsen, cs.Destination, cs.EstimatedTimeForLevelUp, cs.ExpPerHour, stats);
             }
             return result;
         }
