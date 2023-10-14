@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 
 namespace RavenNest.Blazor.Discord.Models
 {
@@ -6,8 +7,11 @@ namespace RavenNest.Blazor.Discord.Models
 
     public record CharacterList(CharacterInfo[] Characters, string ErrorMessage);
 
-    public record CharacterInfo(Guid Id, int Index, string Name, string Alias, string ParticipatingTwitchStream, string Training, string Island, double RestedTime,
-        bool InDungeon, bool InRaid, bool InOnsen, string Destination, DateTime? EstimatedTimeForLevelUp, long? ExpPerHour, Stats[] Stats);
+    public record CharacterInfo(
+        Guid Id, int Index, string Name, string Alias, int combatLevel, string ParticipatingTwitchStream,
+        string Training, string Island, double RestedTimeSeconds,
+        bool InDungeon, bool InRaid, bool InOnsen, string Destination,
+        DateTime? EstimatedTimeForLevelUp, long? ExpPerHour, Stats[] Stats);
 
     public record Stats(string Name, int Level);
 }
