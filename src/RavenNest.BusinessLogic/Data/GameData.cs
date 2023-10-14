@@ -1012,6 +1012,13 @@ namespace RavenNest.BusinessLogic.Data
         //    }
         //}
 
+
+        public static int GetCombatLevel(DataModels.Skills skills)
+        {
+            return (int)(((skills.AttackLevel + skills.DefenseLevel + skills.HealthLevel + skills.StrengthLevel) / 4f) +
+                   ((skills.RangedLevel + skills.MagicLevel + skills.HealingLevel) / 8f));
+        }
+
         protected ItemDrop EnsureDrop(Item item, double dropRate, int tier = 0, int slayerLevelRequirement = 0)
         {
             return EnsureDrop(null, null, item, dropRate, dropRate, tier, slayerLevelRequirement);

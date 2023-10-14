@@ -180,18 +180,19 @@ namespace RavenNest.Controllers
                 }
 
                 var cs = ModelMapper.Map(state);
-                var stats = GetStats(character);
+                var skills = gameData.GetCharacterSkills(character.SkillsId);
+                var combatLevel = GameData.GetCombatLevel(skills);
+                var stats = GetStats(skills.GetSkills());
                 result[i] = new CharacterInfo(
-                    character.Id, character.CharacterIndex, character.Name, character.Identifier,
+                    character.Id, character.CharacterIndex, character.Name, character.Identifier, combatLevel,
                     stream, training, cs.Island, cs.RestedTime, cs.InDungeon, cs.InRaid,
                     cs.InOnsen, cs.Destination, cs.EstimatedTimeForLevelUp, cs.ExpPerHour, stats);
             }
             return result;
         }
 
-        private Stats[] GetStats(Character character)
+        private Stats[] GetStats(IReadOnlyList<StatsUpdater> skills)
         {
-            var skills = gameData.GetCharacterSkills(character.SkillsId).GetSkills();
             Stats[] result = new Stats[skills.Count];
             for (var i = 0; i < skills.Count; ++i)
             {
