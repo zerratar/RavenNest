@@ -1,13 +1,17 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using RavenNest.Blazor.Discord.Models;
+using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.BusinessLogic.Game.Enchantment;
 using RavenNest.DataModels;
+using RavenNest.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using TwitchLib.Api.Helix.Models.Users.GetUsers;
 
@@ -179,16 +183,68 @@ namespace RavenNest.Controllers
                     training = state.TaskArgument;
                 }
 
-                var cs = ModelMapper.Map(state);
+                var c = ModelMapper.Map(character, gameData);
+                var cs = c.State;
                 var skills = gameData.GetCharacterSkills(character.SkillsId);
                 var combatLevel = GameData.GetCombatLevel(skills);
                 var stats = GetStats(skills.GetSkills());
                 result[i] = new CharacterInfo(
                     character.Id, character.CharacterIndex, character.Name, character.Identifier, combatLevel,
                     stream, training, cs.Island, cs.RestedTime, cs.InDungeon, cs.InRaid,
-                    cs.InOnsen, cs.Destination, cs.EstimatedTimeForLevelUp, cs.ExpPerHour, stats);
+                    cs.InOnsen, cs.Destination, cs.EstimatedTimeForLevelUp, cs.ExpPerHour, stats, GetEquipment(c));
             }
             return result;
+        }
+
+        private CharacterEquipment GetEquipment(Player c)
+        {
+            double totalArmorPower = 0;
+            double totalWeaponAim = 0;
+            double totalWeaponPower = 0;
+            double totalRangedAim = 0;
+            double totalRangedPower = 0;
+            double totalMagicAim = 0;
+            double totalMagicPower = 0;
+
+            var eqNames = new List<string>();
+            foreach (var eq in c.InventoryItems.Where(x => x.Equipped))
+            {
+                eqNames.Add(eq.Name);
+                var i = gameData.GetItem(eq.ItemId);
+                totalArmorPower += i.ArmorPower;
+                totalWeaponAim += i.WeaponAim;
+                totalWeaponPower += i.WeaponPower;
+                totalRangedAim += i.RangedAim;
+                totalRangedPower += i.RangedPower;
+                totalMagicAim += i.MagicAim;
+                totalMagicPower += i.MagicPower;
+
+                var enchantments = eq.GetItemEnchantments(gameData);
+                foreach (var e in enchantments)
+                {
+                    if (e.Name.ToLower().Contains("power"))
+                    {
+                        totalWeaponPower += (i.WeaponPower * e.Value);
+                        totalRangedPower += (i.RangedPower * e.Value);
+                        totalMagicPower += (i.MagicPower + e.Value);
+                    }
+
+                    if (e.Name.ToLower().Contains("aim"))
+                    {
+                        totalWeaponAim += (i.WeaponAim * e.Value);
+                        totalRangedAim += (i.RangedAim * e.Value);
+                        totalMagicAim += (i.MagicAim + e.Value);
+                    }
+
+
+                    if (e.Name.ToLower().Contains("armor") || e.Name.ToLower().Contains("armour"))
+                    {
+                        totalArmorPower += (i.ArmorPower * e.Value);
+                    }
+                }
+            }
+
+            return new CharacterEquipment(totalArmorPower, totalWeaponAim, totalWeaponPower, totalRangedAim, totalRangedPower, totalMagicAim, totalMagicPower, eqNames.ToArray());
         }
 
         private Stats[] GetStats(IReadOnlyList<StatsUpdater> skills)
@@ -197,7 +253,10 @@ namespace RavenNest.Controllers
             for (var i = 0; i < skills.Count; ++i)
             {
                 var skill = skills[i];
-                result[i] = new Stats(skill.Name, skill.Level);
+                var exp = skill.Experience;
+                var nextLevel = GameMath.ExperienceForLevel(skill.Level + 1);
+                var progress = exp / nextLevel;
+                result[i] = new Stats(skill.Name, skill.Level, (long)exp, (long)nextLevel, (float)progress);
             }
             return result;
         }

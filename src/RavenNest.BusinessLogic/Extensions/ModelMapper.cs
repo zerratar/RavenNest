@@ -315,6 +315,14 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Player Map(this Character character, GameData gameData, bool rejoin = false, bool isSessionPlayer = false)
+        {
+            var user = gameData.GetUser(character.UserId);
+            return user.Map(gameData, character, rejoin, isSessionPlayer);
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static WebsitePlayer MapForWebsite(this Character character, GameData gameData, User user)
         {
             return user.MapForWebsite(gameData, character);
