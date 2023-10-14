@@ -46,15 +46,37 @@ namespace RavenNest.Controllers
 
         #region Discord Bot Apis
 
-        [HttpGet("discord/character-list/{discordUserId}")]
-        public async Task<CharacterList> GetCharacterListAsync(long discordUserId)
+        //[HttpGet("discord/resources/{username}")]
+        //public async Task<CharacterList> GetCharacterListByUserNameAsync(string username)
+        //{
+        //    try
+        //    {
+        //        var user = gameData.GetUserByUsername(username);
+        //        if (user == null)
+        //        {
+        //            return new CharacterList(null, "No account with the username '" + username + "' exists.");
+        //        }
+
+        //        var chars = GetCharacterInfos(gameData.GetCharactersByUserId(user.Id));
+        //        return new CharacterList(chars, null);
+        //    }
+        //    catch (Exception exc)
+        //    {
+        //        return new CharacterList(null, exc.ToString());
+        //    }
+        //}
+
+
+
+        [HttpGet("discord/character-list/{username}")]
+        public async Task<CharacterList> GetCharacterListByUserNameAsync(string username)
         {
             try
             {
-                var user = gameData.GetUserByDiscordId(discordUserId);
+                var user = gameData.GetUserByUsername(username);
                 if (user == null)
                 {
-                    return new CharacterList(null, "You don't seem to have an account linked to your Discord account. Visit https://www.ravenfall.stream/discord to link your account.");
+                    return new CharacterList(null, "No account with the username '" + username + "' exists.");
                 }
 
                 var chars = GetCharacterInfos(gameData.GetCharactersByUserId(user.Id));
