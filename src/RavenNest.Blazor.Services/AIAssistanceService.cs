@@ -293,7 +293,10 @@ namespace RavenNest.Blazor.Services
     public class AIAssistanceService : RavenNestService
     {
         private static string KnowledgeBase =>
-            "You are an AI Assistant for Administrators of the Twitch Idle RPG game Ravenfall. You will take upon any request and try to help out any way you can. You are able to do administrative actions that directly interacts with the backend, gameserver, APIs and website. Use provided functions when necessary.\n" +
+            "You are an AI Assistant for Administrators of the Twitch Idle RPG game Ravenfall. " +
+            "You will take upon any request and try to help out any way you can. " +
+            "You are able to do administrative actions that directly interacts with the backend, gameserver, APIs and website. " +
+            "Use provided functions when necessary.\n" +
             "Whenever asked for doing an action or calling a function that may have a side effect such as writes to a database, changes to a character, items, stats, game session, exp multipliers, etc. These actions must always be confirmed by the user before calling those functions, when confirming display what the expected changes is or what cvalues are expected to be used in the function call.\n" +
             $"Current Server Time (Utc): {DateTime.UtcNow:F}\n";
 
@@ -323,6 +326,7 @@ namespace RavenNest.Blazor.Services
             functions.AddRange(functionCallbacks.GetFunctions());
             this.functions = functions.ToArray();
         }
+
         public bool ShowFunctionCallResults { get; set; } = false;
 
         public MarkupString FormatMessage(AIConversationMessage message)
@@ -385,25 +389,22 @@ namespace RavenNest.Blazor.Services
             return conversation;
         }
 
-        public Task<AIConversation> SendMessageAsync(string input, bool useGPT4)
-        {
-            var session = GetSession();
-            if (!IsValidSession(session)) return null;
+        //public Task<AIConversation> SendMessageAsync(string input, bool useGPT4)
+        //{
+        //    var session = GetSession();
+        //    if (!IsValidSession(session)) return null;
+        //    var uid = session.UserId;
+        //    var conversation = conversations.GetLatestOrCreate(uid);
+        //    var prompt = conversation.GetMessageByContent(input);
 
-            var uid = session.UserId;
-
-            var conversation = conversations.GetLatestOrCreate(uid);
-            var prompt = conversation.GetMessageByContent(input);
-
-            // if we don't have a prompt message, generate one here. this will be better as we will then have a reference
-            // to the same prompt later.
-            if (prompt == null)
-            {
-                prompt = conversation.Add(input, MessageRole.User);
-            }
-
-            return SendConversationAsync(conversation, prompt, useGPT4);
-        }
+        //    // if we don't have a prompt message, generate one here. this will be better as we will then have a reference
+        //    // to the same prompt later.
+        //    if (prompt == null)
+        //    {
+        //        prompt = conversation.Add(input, MessageRole.User);
+        //    }
+        //    return SendConversationAsync(conversation, prompt, useGPT4);
+        //}
 
         public Task<AIConversation> SendConversationAsync(AIConversation conversation, bool useGPT4)
         {
@@ -574,7 +575,6 @@ namespace RavenNest.Blazor.Services
 
         private async Task<AIConversation> HandleMessageResponseAsync(SessionInfo session, AIConversation conversation, AIConversationMessage prompt, AIConversationMessage response, bool useGPT4)
         {
-            // not implemented yet.
             return conversation;
         }
 

@@ -1,11 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using RavenNest.Blazor.Discord.Models;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.DataModels;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using TwitchLib.Api.Helix.Models.Users.GetUsers;
 
 namespace RavenNest.Controllers
 {
@@ -15,13 +18,16 @@ namespace RavenNest.Controllers
     public class ROBotController : ControllerBase
     {
         private readonly ILogger<ROBotController> logger;
+        private readonly GameData gameData;
         private readonly IServerManager serverManager;
 
         public ROBotController(
             ILogger<ROBotController> logger,
+            GameData gameData,
             IServerManager serverManager)
         {
             this.logger = logger;
+            this.gameData = gameData;
             this.serverManager = serverManager;
         }
 
@@ -36,5 +42,63 @@ namespace RavenNest.Controllers
                 serverManager.UpdateBotStats(data);
             }
         }
+
+
+        #region Discord Bot Apis
+
+        [HttpGet("discord/character-list/{discordUserId}")]
+        public async Task<CharacterList> GetCharacterListAsync(long discordUserId)
+        {
+            try
+            {
+                var user = gameData.GetUserByDiscordId(discordUserId);
+                if (user == null)
+                {
+                    return new CharacterList(null, "You don't seem to have an account linked to your Discord account. Visit https://www.ravenfall.stream/discord to link your account.");
+                }
+
+                var chars = GetCharacterInfos(gameData.GetCharactersByUserId(user.Id));
+                return new CharacterList(chars, null);
+            }
+            catch (Exception exc)
+            {
+                return new CharacterList(null, exc.ToString());
+            }
+        }
+
+        private CharacterInfo[] GetCharacterInfos(IReadOnlyList<Character> characters)
+        {
+            CharacterInfo[] result = new CharacterInfo[characters.Count];
+            for (var i = 0; i < characters.Count; ++i)
+            {
+                var character = characters[i];
+                var stream = character.UserIdLock != null ? gameData.GetUser(character.UserIdLock.Value).UserName : null;
+                var state = gameData.GetCharacterState(character.StateId);
+
+                var training = state.Task;
+                if (state.Task == "Fighting")
+                {
+                    training = state.TaskArgument;
+                }
+
+                var stats = GetStats(character);
+                result[i] = new CharacterInfo(character.Id, character.CharacterIndex, character.Name, character.Identifier, stream, training, stats);
+            }
+            return result;
+        }
+
+        private Stats[] GetStats(Character character)
+        {
+            var skills = gameData.GetCharacterSkills(character.SkillsId).GetSkills();
+            Stats[] result = new Stats[skills.Count];
+            for (var i = 0; i < skills.Count; ++i)
+            {
+                var skill = skills[i];
+                result[i] = new Stats(skill.Name, skill.Level);
+            }
+            return result;
+        }
+
+        #endregion
     }
 }

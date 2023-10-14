@@ -3488,6 +3488,13 @@ namespace RavenNest.BusinessLogic.Data
         {
             return GetUser(userId, "twitch");
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public User GetUserByDiscordId(long discordUserId)
+        {
+            return GetUser(discordUserId.ToString(), "discord");
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public User GetUser(string platformId, string platform)
         {
