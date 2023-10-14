@@ -209,8 +209,9 @@ namespace RavenNest.Controllers
             var eqNames = new List<string>();
             foreach (var eq in c.InventoryItems.Where(x => x.Equipped))
             {
-                eqNames.Add(eq.Name);
                 var i = gameData.GetItem(eq.ItemId);
+
+                eqNames.Add(eq.Name ?? i.Name);
                 totalArmorPower += i.ArmorPower;
                 totalWeaponAim += i.WeaponAim;
                 totalWeaponPower += i.WeaponPower;
