@@ -42,6 +42,13 @@ namespace RavenNest.BusinessLogic
             }
         }
 
+        public static double CalculateSuccessRate(int level, int requiredLevel, double minSuccessRate, double maxSuccessRate, double alpha = 0.01)
+        {
+            if (level < requiredLevel) return 0;
+            var calculatedSuccessRate = minSuccessRate + (0.95 * (1 - Math.Exp(-alpha * (level - requiredLevel))));
+            return Math.Min(maxSuccessRate, calculatedSuccessRate);
+        }
+
         public static int MaxHit(
             int strength, int weaponPower,
             bool burst, bool superhuman, bool ultimate, int bonus)

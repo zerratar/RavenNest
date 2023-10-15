@@ -1662,10 +1662,7 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (!recipe.FixedSuccessRate)
                 {
-                    var max = GameMath.MaxLevel - recipe.RequiredLevel;
-                    var current = skillLevel - recipe.RequiredLevel;
-                    var factor = current / (double)max;
-                    isSuccess = rng <= GameMath.Lerp(recipe.MinSuccessRate, recipe.MaxSuccessRate, factor);
+                    isSuccess = rng <= GameMath.CalculateSuccessRate(skillLevel, recipe.RequiredLevel, recipe.MinSuccessRate, recipe.MaxSuccessRate);
                 }
 
                 AddItem(isSuccess ? recipe.ItemId : recipe.FailedItemId.Value, isSuccess);
