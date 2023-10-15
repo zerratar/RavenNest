@@ -98,7 +98,30 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
                 var now = DateTime.UtcNow;
 
-                var target = drops.FirstOrDefault(x => x?.Name?.ToLower() == taskArgument?.ToLower());
+                // filter out bad drops
+                var droppable = new List<ResourceDrop>();
+                foreach (var d in drops)
+                {
+                    if (d == null || d.ItemId == Guid.Empty)
+                    {
+                        continue;
+                    }
+
+                    if (string.IsNullOrEmpty(d.Name))
+                    {
+                        var item = gameData.GetItem(d.ItemId);
+                        if (item == null)
+                        {
+                            continue;
+                        }
+
+                        d.Name = item.Name;
+                    }
+
+                    droppable.Add(d);
+                }
+
+                var target = droppable.FirstOrDefault(x => x != null && x?.Name?.ToLower() == taskArgument?.ToLower());
                 if (target != null)
                 {
                     drop = target;
@@ -108,13 +131,16 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     }
                 }
 
-                foreach (var res in drops.OrderByRandomWeighted(x => x.SkillLevel, dropRandom))//drops.OrderByDescending(x => x.SkillLevel))
+
+                foreach (var res in droppable.OrderByRandomWeighted(x => x.SkillLevel, dropRandom))//drops.OrderByDescending(x => x.SkillLevel))
                 {
                     // we have already tested this one? if so skip it.
-                    if (target != null && res.Id == target.Id)
+                    if (target != null && res.ItemId == target.ItemId)
                     {
                         continue;
                     }
+
+
                     drop = res;
                     if (TryDrop(logger, gameData, inventoryProvider, session, resProcessor, character, skillLevel, res, canDrop))
                     {
@@ -201,7 +227,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     if (canDrop == null || canDrop(targetDrop))
                     {
                         dropTimes[cooldownKey] = now;
-                        resProcessor.IncrementItemStack(gameData, inventoryProvider, session, character, targetDrop.Id);
+                        resProcessor.IncrementItemStack(gameData, inventoryProvider, session, character, targetDrop.ItemId);
                         return true;
                     }
                 }
@@ -218,7 +244,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static string GetCooldownKey(Character c, ResourceDrop drop)
         {
-            return c.Id + "_" + drop.Id;
+            return c.Id + "_" + drop.ItemId;
         }
 
         private void LoadDropsIfRequired(GameData gameData)

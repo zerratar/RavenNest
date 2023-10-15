@@ -47,7 +47,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 return;
 
             session.Updated = DateTime.UtcNow;
-            Drops.TryDropItem(this, logger, gameData, inventoryProvider, session, character, skills.SailingLevel, state.TaskArgument, drop => !inventory.ContainsItem(drop.Id));
+            Drops.TryDropItem(this, logger, gameData, inventoryProvider, session, character, skills.SailingLevel, state.TaskArgument, drop => !inventory.ContainsItem(drop.ItemId));
         }
     }
 }

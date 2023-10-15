@@ -131,16 +131,16 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
     public class ResourceDrop
     {
-        public Guid Id { get; }
-        public string Name { get; }
-        public double DropChance { get; }
-        public double Cooldown { get; }
+        public Guid ItemId { get; }
+        public string Name { get; set; }
+        public double DropChance { get; set; }
+        public double Cooldown { get; set; }
         public int SkillLevel { get; set; }
         public int? SkillIndex { get; set; }
 
-        public ResourceDrop(Guid id, string name, double dropChance, double cooldown, int skillLevel, int? skillIndex)
+        public ResourceDrop(Guid itemId, string name, double dropChance, double cooldown, int skillLevel, int? skillIndex)
         {
-            Id = id;
+            ItemId = itemId;
             Name = name;
             DropChance = dropChance;
             Cooldown = cooldown;
