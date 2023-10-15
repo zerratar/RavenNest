@@ -1006,26 +1006,26 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     return RedeemItemResult.NoSuchItem(item.Name);
                 }
-
+                var currencyItem = gameData.GetItem(redeemable.CurrencyItemId);
                 var stashCurrencyItem = gameData.GetStashItem(character.UserId, redeemable.CurrencyItemId);
                 var stashCurrencyAmount = stashCurrencyItem != null ? stashCurrencyItem.Amount : 0;
-                var currencyItem = inventory.GetByItemId(redeemable.CurrencyItemId);
+                var currencyInvItem = inventory.GetByItemId(redeemable.CurrencyItemId);
                 //if ((currencyItem.Amount + stashCurrencyAmount) < redeemable.Cost)
-                if ((currencyItem.Amount + stashCurrencyAmount) < redeemable.Cost)
+                if ((currencyInvItem.Amount + stashCurrencyAmount) < redeemable.Cost)
                 {
-                    var insufficient = RedeemItemResult.InsufficientCurrency(currencyItem.Amount, redeemable.Cost, currencyItem.Item.Name);
+                    var insufficient = RedeemItemResult.InsufficientCurrency(currencyInvItem.Amount, redeemable.Cost, currencyItem.Name);
                     insufficient.CurrencyItemId = redeemable.CurrencyItemId;
                     insufficient.RedeemedItemId = redeemable.ItemId;
-                    insufficient.CurrencyLeft = currencyItem.Amount;
+                    insufficient.CurrencyLeft = currencyInvItem.Amount + stashCurrencyAmount;
                     insufficient.CurrencyCost = redeemable.Cost;
                     return insufficient;
                 }
 
                 DataModels.InventoryItem added = null;
                 // if we don't have any in inventory, we should only remove from the stash
-                if (currencyItem.Amount > 0)
+                if (currencyInvItem.Amount > 0)
                 {
-                    if (inventory.RemoveItem(currencyItem, redeemable.Cost, out var toRemove))
+                    if (inventory.RemoveItem(currencyInvItem, redeemable.Cost, out var toRemove))
                     {
                         if (toRemove > 0)
                         {
@@ -1045,7 +1045,7 @@ namespace RavenNest.BusinessLogic.Game
                     SendItemRemoveEvent(new DataModels.InventoryItem
                     {
                         ItemId = redeemable.CurrencyItemId,
-                    }, redeemable.Cost > currencyItem.Amount ? currencyItem.Amount : redeemable.Cost, character);
+                    }, redeemable.Cost > currencyInvItem.Amount ? currencyInvItem.Amount : redeemable.Cost, character);
                 }
                 else
                 {
