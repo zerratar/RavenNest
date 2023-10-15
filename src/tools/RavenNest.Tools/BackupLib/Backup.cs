@@ -1,10 +1,12 @@
-﻿using System;
+﻿using RavenNest.DataModels;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace RavenNest.Tools.BackupLib
 {
@@ -37,6 +39,86 @@ namespace RavenNest.Tools.BackupLib
 
     public static class Backups
     {
+        public static void RepairSkillRecords(string backupFolderA, string backupFolderB)
+        {
+            var dataA = List<CharacterSkillRecord>(backupFolderA);
+
+            // from both lists, we have to ensure we dont have duplicate records, so we will have to group by character id and skill index
+            // then we need to ensure that the record with the highest level is the one we keep. but keep in mind the date reached so we don't keep a corrupted record.
+
+            var dataADict = new Dictionary<string, CharacterSkillRecord>();
+            foreach (var record in dataA)
+            {
+                var key = record.CharacterId + "_" + record.SkillIndex;
+                if (dataADict.TryGetValue(key, out var existing))
+                {
+                    if (existing.SkillLevel > record.SkillLevel)
+                    {
+                        dataADict[key] = record;
+                    }
+                }
+                else
+                {
+                    dataADict[key] = record;
+                }
+            }
+
+
+            var dataB = List<CharacterSkillRecord>(backupFolderB);
+            var dataBDict = new Dictionary<string, CharacterSkillRecord>();
+            foreach (var record in dataB)
+            {
+                var key = record.CharacterId + "_" + record.SkillIndex;
+                if (dataBDict.TryGetValue(key, out var existing))
+                {
+                    if (existing.SkillLevel > record.SkillLevel)
+                    {
+                        dataBDict[key] = record;
+                    }
+                }
+                else
+                {
+                    dataBDict[key] = record;
+                }
+            }
+
+            // dataA has all records that we want to make sure is in dataB
+            // when these recors has been updated we will save a new dataB
+            // that we then use for restoring the data to.
+
+            int updateCount = 0;
+            int addCount = 0;
+            int index = 0;
+            foreach (var a in dataA)
+            {
+                var key = a.CharacterId + "_" + a.SkillIndex;
+                if (dataBDict.TryGetValue(key, out var b))
+                {
+                    if (b.DateReached > a.DateReached && a.SkillLevel == 999)
+                    {
+                        updateCount++;
+                        b.DateReached = a.DateReached;
+                    }
+                }
+                else
+                {
+                    // we need to add this record if skill level is above 1
+                    if (a.SkillLevel > 1)
+                    {
+                        dataBDict[key] = a;
+                        addCount++;
+                    }
+                }
+                index++;
+            }
+
+            var parentDir = System.IO.Path.GetDirectoryName(System.IO.Path.Combine(backupFolderA, "..\\"));
+            var newPath = System.IO.Path.Combine(parentDir, "RavenNest.DataModels.CharacterSkillRecord.json");
+            System.IO.File.WriteAllText(newPath, Newtonsoft.Json.JsonConvert.SerializeObject(dataBDict.Values));
+
+        }
+
+
         public static List<CharacterSkillBackup> GetSkillBackups(string inputFolder, Action<int, int> onLoadProgressed)
         {
             var backup = new List<CharacterSkillBackup>();

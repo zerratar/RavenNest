@@ -2415,20 +2415,40 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool[] AutoJoinRaid(SessionToken sessionToken, IReadOnlyList<Guid> characters)
         {
+            var successCount = 0;
             var arr = new bool[characters.Count];
             for (var i = 0; i < arr.Length; ++i)
             {
                 arr[i] = AutoJoinRaid(sessionToken, characters[i]);
+                if (arr[i]) successCount++;
+            }
+            if (characters.Count > successCount)
+            {
+                logger.LogWarning("Auto Join Raid failed for {0} characters, out of a total {1}, session {2}", characters.Count - successCount, characters.Count, sessionToken.UserName);
+            }
+            else
+            {
+                logger.LogWarning("[{0}] {1} characters auto joined raid.", sessionToken.UserName, characters.Count);
             }
             return arr;
         }
 
         public bool[] AutoJoinDungeon(SessionToken sessionToken, IReadOnlyList<Guid> characters)
         {
+            var successCount = 0;
             var arr = new bool[characters.Count];
             for (var i = 0; i < arr.Length; ++i)
             {
                 arr[i] = AutoJoinDungeon(sessionToken, characters[i]);
+                if (arr[i]) successCount++;
+            }
+            if (characters.Count > successCount)
+            {
+                logger.LogWarning("Auto Join Dungeon failed for {0} characters, out of a total {1}, session {2}", characters.Count - successCount, characters.Count, sessionToken.UserName);
+            }
+            else
+            {
+                logger.LogWarning("[{0}] {1} characters auto joined dungeon.", sessionToken.UserName, characters.Count);
             }
             return arr;
         }

@@ -18,7 +18,7 @@ namespace RavenNest.Controllers
         private readonly SessionInfoProvider sessionInfoProvider;
         private readonly SessionManager sessionManager;
         private readonly ISecureHasher secureHasher;
-        private readonly ILogger logger;
+        protected readonly ILogger logger;
 
         public GameApiController(
             ILogger logger,

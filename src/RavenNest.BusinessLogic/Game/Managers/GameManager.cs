@@ -326,7 +326,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var knownItems = gameData.GetKnownItems();
 
-            const double seasonalTokenDropRate = 0.85;
+            const double seasonalTokenDropRate = 0.05;
 
             foreach (var c in characters)
             {
@@ -345,14 +345,14 @@ namespace RavenNest.BusinessLogic.Game
                 var tokenDrop = dl.FirstOrDefault(x => x.ItemId == knownItems.HalloweenToken.Id || x.ItemId == knownItems.ChristmasToken.Id);
                 if (tokenDrop != null)
                 {
-                    if (rng.NextDouble() >= seasonalTokenDropRate)
+                    if (rng.NextDouble() <= seasonalTokenDropRate)
                     {
                         var inv = inventoryProvider.Get(character.Id);
                         var stack = inv.AddItem(tokenDrop.ItemId, 1).FirstOrDefault();
 
                         // log when a seasonal token is dropped so I can keep track on this.
 
-                        logger.LogError("Token Drop from Dungeon from 30%, Player: " + character.Name);
+                        logger.LogError("Token Drop from Dungeon from " + (Math.Round(seasonalTokenDropRate * 100)) + "%, Player: " + character.Name);
 
                         rewards.Add(new EventItemReward
                         {
@@ -407,7 +407,7 @@ namespace RavenNest.BusinessLogic.Game
             var dropList = GetRaidDropList();
             var dropChance = 0.5;
 
-            const double seasonalTokenDropRate = 0.9;
+            const double seasonalTokenDropRate = 0.025;
 
             foreach (var c in characters)
             {
@@ -425,14 +425,14 @@ namespace RavenNest.BusinessLogic.Game
                 var tokenDrop = dl.FirstOrDefault(x => x.ItemId == knownItems.HalloweenToken.Id || x.ItemId == knownItems.ChristmasToken.Id);
                 if (tokenDrop != null)
                 {
-                    if (rng.NextDouble() >= seasonalTokenDropRate)
+                    if (rng.NextDouble() <= seasonalTokenDropRate)
                     {
                         var inv = inventoryProvider.Get(character.Id);
                         var stack = inv.AddItem(tokenDrop.ItemId, 1).FirstOrDefault();
 
                         // log when a seasonal token is dropped so I can keep track on this.
 
-                        logger.LogError("Token Drop from Raid from 30%, Player: " + character.Name);
+                        logger.LogError("Token Drop from Raid from " + (Math.Round(seasonalTokenDropRate * 100)) + "%, Player: " + character.Name);
 
                         rewards.Add(new EventItemReward
                         {

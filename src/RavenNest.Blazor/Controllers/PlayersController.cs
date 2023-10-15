@@ -400,6 +400,7 @@ namespace RavenNest.Controllers
             }
             catch (Exception exc)
             {
+                logger.LogError("Error when auto-joining raid: " + exc);
                 return new bool[characterIds.Values.Length];
             }
         }
@@ -438,6 +439,7 @@ namespace RavenNest.Controllers
             }
             catch (Exception exc)
             {
+                logger.LogError("Error when auto-joining dungeon: " + exc);
                 return new bool[characterIds.Values.Length];
             }
         }

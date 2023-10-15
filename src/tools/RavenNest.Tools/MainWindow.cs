@@ -1,4 +1,5 @@
 ﻿using RavenNest.Tools.Actions;
+using RavenNest.Tools.BackupLib;
 using Shinobytes.Console.Forms;
 using Shinobytes.Console.Forms.Graphics;
 using System;
@@ -74,6 +75,11 @@ namespace RavenNest.Tools
             {
                 restoreInventoryItems.Apply();
             }
+            if (key.Key == ConsoleKey.F6)
+            {
+                Backups.RepairSkillRecords("C:\\Ravenfall\\backups\\2023-09-15_172453", "C:\\Ravenfall\\backups\\2023-10-15_074440");
+            }
+
             return base.OnKeyDown(key);
         }
 
