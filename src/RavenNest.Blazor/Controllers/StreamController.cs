@@ -31,7 +31,7 @@ namespace RavenNest.Controllers
             acceptContext.KeepAliveInterval = TimeSpan.FromSeconds(30);
         }
 
-        [HttpGet("extension/{broadcasterId}/{sessionId}")]
+        [Route("extension/{broadcasterId}/{sessionId}")]
         public async Task GetExtensionWebsocketConnection(string broadcasterId, string sessionId)
         {
             try
@@ -48,7 +48,7 @@ namespace RavenNest.Controllers
                         { SessionCookie.SessionCookieName, sessionId }
                     };
 
-                    var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync(acceptContext);
+                    using var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync(acceptContext);
                     var socketSession = extensionWsConnectionProvider.Get(webSocket, headers);
                     if (socketSession == null)
                     {
