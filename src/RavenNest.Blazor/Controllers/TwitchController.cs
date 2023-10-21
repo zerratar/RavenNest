@@ -205,7 +205,6 @@ namespace RavenNest.Controllers
             return result.SessionInfo;
         }
 
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/join-raid/{broadcasterId}/{characterId}")]
         public bool JoinRaidAsync(string broadcasterId, Guid characterId)
         {
@@ -218,7 +217,6 @@ namespace RavenNest.Controllers
             return true;
         }
 
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/join-dungeon/{broadcasterId}/{characterId}")]
         public bool JoinDungeonAsync(string broadcasterId, Guid characterId)
         {
@@ -231,7 +229,6 @@ namespace RavenNest.Controllers
             return true;
         }
 
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/start-raid/{broadcasterId}/{characterId}")]
         public bool StartRaidnAsync(string broadcasterId, Guid characterId)
         {
@@ -244,7 +241,6 @@ namespace RavenNest.Controllers
             return true;
         }
 
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/start-dungeon/{broadcasterId}/{characterId}")]
         public bool StartDungeonAsync(string broadcasterId, Guid characterId)
         {
@@ -257,7 +253,6 @@ namespace RavenNest.Controllers
             return true;
         }
 
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/enter-onsen/{broadcasterId}/{characterId}")]
         public bool EnterOnsenAsync(string broadcasterId, Guid characterId)
         {
@@ -270,7 +265,6 @@ namespace RavenNest.Controllers
             return true;
         }
 
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/exit-onsen/{broadcasterId}/{characterId}")]
         public bool ExitOnsenAsync(string broadcasterId, Guid characterId)
         {
@@ -283,14 +277,12 @@ namespace RavenNest.Controllers
             return true;
         }
 
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/set-task/{broadcasterId}/{characterId}/{task}")]
         public bool SetTask(string broadcasterId, Guid characterId, string task)
         {
             return SetTask(broadcasterId, characterId, task, null);
         }
 
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/set-task/{broadcasterId}/{characterId}/{task}/{taskArgument}")]
         public bool SetTask(string broadcasterId, Guid characterId, string task, string taskArgument)
         {
@@ -303,7 +295,6 @@ namespace RavenNest.Controllers
             return true;
         }
 
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/travel/{broadcasterId}/{characterId}/{target}")]
         public bool Travel(string broadcasterId, Guid characterId, string target)
         {
@@ -316,7 +307,6 @@ namespace RavenNest.Controllers
             return true;
         }
 
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/player/{broadcasterId}")]
         public WebsitePlayer GetActivePlayer(string broadcasterId)
         {
@@ -336,7 +326,6 @@ namespace RavenNest.Controllers
             return null;
         }
 
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/leave/{broadcasterId}/{characterId}")]
         public bool PlayerLeave(string broadcasterId, Guid characterId)
         {
@@ -358,7 +347,6 @@ namespace RavenNest.Controllers
             // playerManager.RemovePlayerFromActiveSession(activeSession, characterId)
             return false;
         }
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/create-join/{broadcasterId}")]
         public async Task<ExtensionPlayerJoinResult> PlayerJoin(string broadcasterId)
         {
@@ -440,7 +428,6 @@ namespace RavenNest.Controllers
             return result;
         }
 
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/join/{broadcasterId}/{characterId}")]
         public ExtensionPlayerJoinResult PlayerJoin(string broadcasterId, Guid characterId)
         {
@@ -512,7 +499,6 @@ namespace RavenNest.Controllers
             return result;
         }
 
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/new/{broadcasterId}/{userId}/{username}/{displayName}")]
         public async Task<SessionInfo> CreateUserAsync(string broadcasterId, string userId, string username, string displayName)
         {
@@ -525,7 +511,6 @@ namespace RavenNest.Controllers
             return await SetExtensionViewer(broadcasterId, userId);
         }
 
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/{broadcasterId}")]
         public StreamerInfo GetStreamerInfo(string broadcasterId)
         {
@@ -534,7 +519,6 @@ namespace RavenNest.Controllers
             return sessionManager.GetStreamerInfo(broadcasterId, sessionInfo?.UserId ?? Guid.Empty);
         }
 
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("extension/{broadcasterId}/{viewerId}")]
         public async Task<SessionInfo> SetExtensionViewer(string broadcasterId, string viewerId)
         {
@@ -569,7 +553,6 @@ namespace RavenNest.Controllers
             //}
         }
 
-        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("user")]
         public async Task<string> GetTwitchUser()
         {
