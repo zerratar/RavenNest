@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using RavenNest.Sessions;
 using System;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
@@ -11,7 +10,7 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
     public class ExtensionWebSocketConnection : IExtensionConnection
     {
         private readonly ILogger logger;
-        private readonly System.Net.WebSockets.WebSocket socket;
+        private readonly WebSocket socket;
         private readonly RavenNest.Models.SessionInfo session;
         private readonly IExtensionPacketDataSerializer packetDataSerializer;
         private readonly byte[] buffer;
@@ -98,6 +97,21 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
             return SendAsync(packetDataSerializer.Deserialize<T>(data));
         }
 
+        private bool TryBuildPacket(Packet packet, out ArraySegment<byte> data)
+        {
+            try
+            {
+                data = packet.Build();
+                return true;
+            }
+            catch (Exception exc)
+            {
+                data = ArraySegment<byte>.Empty;
+                logger.LogError(exc.ToString());
+                return false;
+            }
+        }
+
         public async Task SendAsync(Packet packet)
         {
             if (Closed)
@@ -105,9 +119,17 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
                 return;
             }
 
+            if (packet == null)
+            {
+                return;
+            }
+
             try
             {
-                await socket.SendAsync(packet.Build(), packet.MessageType, packet.EndOfMessage, CancellationToken.None);
+                if (TryBuildPacket(packet, out var data))
+                {
+                    await socket.SendAsync(data, packet.MessageType, packet.EndOfMessage, CancellationToken.None);
+                }
             }
             catch (Exception exc)
             {

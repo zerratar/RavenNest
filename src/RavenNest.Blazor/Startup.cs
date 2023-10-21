@@ -221,7 +221,7 @@ namespace RavenNest.Blazor
 
             app.UseWebSockets(new WebSocketOptions()
             {
-                KeepAliveInterval = TimeSpan.FromSeconds(120)
+                KeepAliveInterval = TimeSpan.FromSeconds(30)
             });
 
             app.UseHttpsRedirection();

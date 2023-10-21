@@ -18,6 +18,7 @@ namespace RavenNest.Controllers
     {
         private readonly ILogger<StreamController> logger;
         private readonly ITwitchExtensionConnectionProvider extensionWsConnectionProvider;
+        private readonly WebSocketAcceptContext acceptContext;
 
         public StreamController(
             ILogger<StreamController> logger,
@@ -25,6 +26,9 @@ namespace RavenNest.Controllers
         {
             this.logger = logger;
             this.extensionWsConnectionProvider = ewsConnectionProvider;
+            this.acceptContext = new WebSocketAcceptContext();
+
+            acceptContext.KeepAliveInterval = TimeSpan.FromSeconds(30);
         }
 
         [HttpGet("extension/{broadcasterId}/{sessionId}")]
@@ -44,7 +48,7 @@ namespace RavenNest.Controllers
                         { SessionCookie.SessionCookieName, sessionId }
                     };
 
-                    var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync();
+                    var webSocket = await HttpContext.WebSockets.AcceptWebSocketAsync(acceptContext);
                     var socketSession = extensionWsConnectionProvider.Get(webSocket, headers);
                     if (socketSession == null)
                     {
