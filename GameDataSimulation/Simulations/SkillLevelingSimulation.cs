@@ -49,7 +49,6 @@ namespace GameDataSimulation
             var nextLevel = simSettings.NextLevel;
             var skill = simSettings.Skill;
             var playersInArea = simSettings.PlayersInArea;
-            var targetLevel = simSettings.MultiplierFactor;
             var boost = simSettings.ExpBoost;
 
             var value = GameMath.Exp.GetMinExpGainPercent(nextLevel, skill, playersInArea);

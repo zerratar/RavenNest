@@ -378,7 +378,12 @@ namespace RavenNest.BusinessLogic.Game
                 PlayerExpMultiplierLimit = MaxPlayerExpMultiplier,
                 StrictLevelRequirements = true,
                 RaidExpFactor = RaidExpFactor,
-                DungeonExpFactor = DungeonExpFactor
+                DungeonExpFactor = DungeonExpFactor,
+
+                XP_EasyLevel = GameMath.Exp.EasyLevel,
+                XP_EasyLevelIncrementDivider = GameMath.Exp.EasyLevelIncrementDivider,
+                XP_GlobalMultiplierFactor = GameMath.Exp.GlobalMultiplierFactor,
+                XP_IncrementMins = GameMath.Exp.IncrementMins,
             };
             return data;
         }

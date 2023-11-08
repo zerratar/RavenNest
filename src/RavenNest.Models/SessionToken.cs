@@ -103,7 +103,13 @@ namespace RavenNest.Models
         public bool StrictLevelRequirements { get; set; }
         public double DungeonExpFactor { get; set; }
         public double RaidExpFactor { get; set; }
+
+        public double XP_EasyLevel { get; set; }
+        public double XP_IncrementMins { get; set; }
+        public double XP_EasyLevelIncrementDivider { get; set; }
+        public double XP_GlobalMultiplierFactor { get; set; }
     }
+
     public class ExpMultiplier
     {
         public string EventName { get; set; }

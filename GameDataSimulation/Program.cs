@@ -3,9 +3,19 @@
 
 using GameDataSimulation;
 using RavenNest.BusinessLogic;
-using RavenNest.BusinessLogic.Game;
-using RavenNest.Models;
-using System.Drawing.Text;
+
+
+//var alpha = 0.01;
+//Console.WriteLine("  5: " + GameMath.CalculateSuccessRate(5,  75, 0.2, 1.0, alpha));
+//Console.WriteLine(" 20: " + GameMath.CalculateSuccessRate(20, 75, 0.2, 1.0, alpha));
+//Console.WriteLine(" 40: " + GameMath.CalculateSuccessRate(40, 75, 0.2, 1.0, alpha));
+//Console.WriteLine(" 80: " + GameMath.CalculateSuccessRate(80, 75, 0.2, 1.0, alpha));
+//Console.WriteLine("100: " + GameMath.CalculateSuccessRate(100, 75, 0.2, 1.0, alpha));
+//Console.WriteLine("150: " + GameMath.CalculateSuccessRate(150, 75, 0.2, 1.0, alpha));
+//Console.WriteLine("200: " + GameMath.CalculateSuccessRate(200, 75, 0.2, 1.0, alpha));
+
+//Console.ReadKey();
+
 //using GMath = RavenNest.BusinessLogic.GameMath;
 
 //var villages = new List<UserVillage>();
@@ -153,9 +163,38 @@ using System.Drawing.Text;
 //EndTable(tablePadding, columns.Length);
 //Console.ReadKey();
 
-double expBoost = 1;
-int nextLevel = 2;
+// set up potential boosts
+double villageBoost = 31d;// 3139.74%
+double patronBoost = 5d; // 5x
+double globalExpMulti = 100d; // 100x
+double rested = 2d; // 2x
+
+
+// old settings
+//GameMath.Exp.EasyLevel = 70;
+//GameMath.Exp.IncrementMins = 14;
+//GameMath.Exp.EasyLevelIncrementDivider = 8;
+//GameMath.Exp.GlobalMultiplierFactor = 1;
+
+// adjust to test
+GameMath.Exp.GlobalMultiplierFactor = 0.05; // 1.0
+
+// with boost
+double expBoost = rested * (villageBoost + patronBoost + globalExpMulti);
+
+//// without rested
+//expBoost = (villageBoost + patronBoost + globalExpMulti);
+
+//// without boost
+//expBoost = 1;
+
+int nextLevel = 100;
 var levelIncrement = 1;
+
+
+
+
+
 while (true)
 {
     new SkillLevelingSimulation().Run(new SkillLevelingSimulationSettings
