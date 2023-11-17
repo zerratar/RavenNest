@@ -8,8 +8,8 @@ namespace RavenNest.Sessions
         public System.Collections.Concurrent.ConcurrentDictionary<string, byte[]> Data { get; }
             = new System.Collections.Concurrent.ConcurrentDictionary<string, byte[]>();
         public DateTime Created { get; } = DateTime.UtcNow;
-        public DateTime LastModified { get; private set; }
-        public DateTime LastAccessed { get; private set; }
+        public DateTime LastModified { get; set; }
+        public DateTime LastAccessed { get; set; }
 
         public SessionInfo SessionInfo { get; set; }
         public string Id { get; set; }

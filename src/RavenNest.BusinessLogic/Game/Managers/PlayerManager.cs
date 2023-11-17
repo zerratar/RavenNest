@@ -2334,7 +2334,8 @@ namespace RavenNest.BusinessLogic.Game
             if (inventory.IsLocked(gift.Id)) return GiftItemResult.InventoryError;
             var recvInventory = inventoryProvider.Get(receiver.Id);
             var amountToGift = gift.Amount >= amount ? amount : (int)gift.Amount;
-            if (recvInventory.TryAddItem(gift, amountToGift, out var result) && inventory.TryRemoveItem(gift, amountToGift, out var old))
+            if (recvInventory.TryAddItem(gift, amountToGift, out var result) && 
+                inventory.TryRemoveItem(gift, amountToGift, out var old))
             {
                 return GiftItemResult.OK(amountToGift, ModelMapper.Map(result), ModelMapper.Map(old));
             }

@@ -10,8 +10,8 @@ namespace RavenNest.BusinessLogic.Providers
     {
         private readonly GameData gameData;
         private readonly List<InventoryItem> items;
-        public AddEntityResult LastAddResult { get; private set; }
-        public RemoveEntityResult LastRemoveResult { get; private set; }
+        public AddEntityResult LastAddResult { get; set; }
+        public RemoveEntityResult LastRemoveResult { get; set; }
         public InventoryItemCollection(GameData gameData, List<InventoryItem> items)
         {
             this.gameData = gameData;

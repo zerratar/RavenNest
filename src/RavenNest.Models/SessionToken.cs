@@ -45,8 +45,8 @@ namespace RavenNest.Models
         public static GiftItemResult InventoryError { get; } = new GiftItemResult { Status = GiftItemStatus.ErrInventoryLock };
         public static GiftItemResult SoulboundItem { get; } = new GiftItemResult { Status = GiftItemStatus.ErrSoulboundItem };
         public static GiftItemResult NoItem { get; } = new GiftItemResult { Status = GiftItemStatus.ErrNoItem };
-        public InventoryItem StackToIncrement { get; private set; }
-        public InventoryItem StackToDecrement { get; private set; }
+        public InventoryItem StackToIncrement { get; set; }
+        public InventoryItem StackToDecrement { get; set; }
         public long Amount { get; set; }
         public GiftItemStatus Status { get; set; }
 
