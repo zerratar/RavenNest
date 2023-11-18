@@ -330,10 +330,17 @@ namespace RavenNest.BusinessLogic
         public static class Exp
         {
             // Old Values
-            public static double EasyLevel = 70;
-            public static double IncrementMins = 14;
-            public static double EasyLevelIncrementDivider = 8;
-            public static double GlobalMultiplierFactor = 1.0;
+            //public static double EasyLevel = 70;
+            //public static double IncrementMins = 14;
+            //public static double EasyLevelIncrementDivider = 8;
+            //public static double GlobalMultiplierFactor = 1.0;
+
+
+            public static double EasyLevel = 999;
+            public static double IncrementMins = 8;
+            public static double EasyLevelIncrementDivider = 4;
+            public static double GlobalMultiplierFactor = 0.45;
+
 
             //New Values, change to these after everyone updated to latest version.
             //public static double EasyLevel = 700;
