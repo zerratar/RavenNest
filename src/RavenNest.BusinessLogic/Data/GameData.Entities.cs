@@ -538,7 +538,7 @@ namespace RavenNest.BusinessLogic.Data
                 RedWitch = GetOrCreateItem(i, "Red Witch", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Halloween/Red Witch"),
 
                 // new pets and christmas pets for 2023-12 event
-                Octopus = GetOrCreateItem(i, "Octopus", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Octopus"),
+                OctopusPet = GetOrCreateItem(i, "Octopus Pet", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Octopus"),
                 SantaOctopus = GetOrCreateItem(i, "Santa Octopus", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Christmas/Santa Octopus"),
 
                 // All pspsps cats
@@ -677,7 +677,7 @@ namespace RavenNest.BusinessLogic.Data
 
             if (DateTime.UtcNow.Year >= 2024)
             {
-                EnsureDrop(typedItems.Pets.Octopus, 0.01);
+                EnsureDrop(typedItems.Pets.OctopusPet, 0.01);
             }
 
             EnsureDrop(typedItems.BronzeBar, 0.05);

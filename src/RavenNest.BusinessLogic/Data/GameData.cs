@@ -4851,7 +4851,7 @@ namespace RavenNest.BusinessLogic.Data
         public Item SantaRaven;
 
         // new december 2023
-        public Item Octopus;
+        public Item OctopusPet;
         public Item SantaOctopus;
         public Item PspspsCat;
         public Item PspspsCatBeige;
