@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Telepathy;
+using TwitchLib.Api.Helix;
 
 namespace RavenNest.BusinessLogic.Data
 {
@@ -540,6 +541,16 @@ namespace RavenNest.BusinessLogic.Data
                 Octopus = GetOrCreateItem(i, "Octopus", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Octopus"),
                 SantaOctopus = GetOrCreateItem(i, "Santa Octopus", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Christmas/Santa Octopus"),
 
+                // All pspsps cats
+                PspspsCat = GetOrCreateItem(i, "Cat", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Pspsps Cat"),
+                PspspsCatBeige = GetOrCreateItem(i, "Beige Cat", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Pspsps Cat Beige"),
+                PspspsCatBlack = GetOrCreateItem(i, "Black Cat", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Pspsps Cat Black"),
+                PspspsCatCream = GetOrCreateItem(i, "Cream Cat", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Pspsps Cat Cream"),
+                PspspsCatMiKe = GetOrCreateItem(i, "Mix Cat", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Pspsps Cat Mi Ke"),
+                PspspsCatOrange = GetOrCreateItem(i, "Orange Cat", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Pspsps Cat Orange"),
+                PspspsCatRaccoon = GetOrCreateItem(i, "Raccoon Cat", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Pspsps Cat Raccoon"),
+                PspspsCatSiamese = GetOrCreateItem(i, "Siamese Cat", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Pspsps Cat Siamese"),
+                PspspsCatWhite = GetOrCreateItem(i, "White Cat", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Pspsps Cat White"),
             };
         }
 

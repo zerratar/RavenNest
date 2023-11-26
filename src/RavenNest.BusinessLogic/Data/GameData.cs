@@ -4853,6 +4853,15 @@ namespace RavenNest.BusinessLogic.Data
         // new december 2023
         public Item Octopus;
         public Item SantaOctopus;
+        public Item PspspsCat;
+        public Item PspspsCatBeige;
+        public Item PspspsCatBlack;
+        public Item PspspsCatCream;
+        public Item PspspsCatMiKe;
+        public Item PspspsCatOrange;
+        public Item PspspsCatRaccoon;
+        public Item PspspsCatSiamese;
+        public Item PspspsCatWhite;
     }
 
     public class ItemSet
