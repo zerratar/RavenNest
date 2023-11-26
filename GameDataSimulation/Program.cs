@@ -170,15 +170,6 @@ double globalExpMulti = 100d; // 100x
 double rested = 2d; // 2x
 
 
-// old settings
-//GameMath.Exp.EasyLevel = 70;
-//GameMath.Exp.IncrementMins = 14;
-//GameMath.Exp.EasyLevelIncrementDivider = 8;
-//GameMath.Exp.GlobalMultiplierFactor = 1;
-
-// adjust to test
-GameMath.Exp.GlobalMultiplierFactor = 0.05; // 1.0
-
 // with boost
 double expBoost = rested * (villageBoost + patronBoost + globalExpMulti);
 
@@ -188,13 +179,68 @@ double expBoost = rested * (villageBoost + patronBoost + globalExpMulti);
 //// without boost
 //expBoost = 1;
 
-int nextLevel = 100;
-var levelIncrement = 1;
+
+int startLevel = 1;
+int nextLevel = 1001;
+var levelIncrement = 20;
+
+void UseOldSettings()
+{
+    GameMath.Exp.EasyLevel = 70;
+    GameMath.Exp.IncrementMins = 14;
+    GameMath.Exp.EasyLevelIncrementDivider = 8;
+    GameMath.Exp.GlobalMultiplierFactor = 1;
+}
+
+void UseNewSettings()
+{
+    GameMath.Exp.EasyLevel = 999;
+    GameMath.Exp.IncrementMins = 8;
+    GameMath.Exp.EasyLevelIncrementDivider = 4;
+    GameMath.Exp.GlobalMultiplierFactor = 0.45;
+}
+
+var padding = 20;
+
+Console.Write("Level".PadRight(12));
+
+Console.Write("Old (-b)".PadRight(padding));
+Console.Write("Old (+b)".PadRight(padding));
+
+Console.Write("New (-b)".PadRight(padding));
+Console.Write("New (+b)".PadRight(padding));
+Console.WriteLine();
+var skill = GameMath.Skill.Woodcutting;
+var playersInArea = 50;
+var boost = expBoost;
+
+for (var i = startLevel; i <= nextLevel; i += levelIncrement)
+{
+    var level = i;
+    Console.Write(level.ToString().PadRight(12));
+    UseOldSettings();
+    WriteTimeForLevel(level);
+    UseNewSettings();
+    WriteTimeForLevel(level);
+    Console.WriteLine();
+}
 
 
+void WriteTimeForLevel(int level)
+{
+    // without boost
+    var ticksForLevel = GameMath.Exp.GetTotalTicksForLevel(level, skill, playersInArea);
+    var ticksPerSeconds = GameMath.Exp.GetTicksPerSeconds(skill, playersInArea);
+    var timeLeftToLevel = TimeSpan.FromSeconds(ticksForLevel / ticksPerSeconds);
+    Console.Write(timeLeftToLevel.ToString().PadRight(padding));
 
-
-
+    // with boost
+    var effectiveBoost = GameMath.Exp.GetEffectiveExpMultiplier(level, boost);
+    var bTicksForLevel = GameMath.Exp.GetTotalTicksForLevel(level, skill, boost, playersInArea);
+    var bTimeLeftToLevel = TimeSpan.FromSeconds(bTicksForLevel / ticksPerSeconds);
+    Console.Write(bTimeLeftToLevel.ToString().PadRight(padding));
+}
+Console.ReadKey();
 while (true)
 {
     new SkillLevelingSimulation().Run(new SkillLevelingSimulationSettings

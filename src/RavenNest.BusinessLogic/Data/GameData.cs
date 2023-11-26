@@ -1691,6 +1691,11 @@ namespace RavenNest.BusinessLogic.Data
             if (item != null)
             {
                 var lastModified = DateTime.UtcNow;
+                if (item.Level == 0)
+                {
+                    item.Level = 1;
+                    item.Modified = lastModified;
+                }
                 if (item.Name != name)
                 {
                     var path = GetImageFilePath(item.Name);
@@ -1734,6 +1739,7 @@ namespace RavenNest.BusinessLogic.Data
                 RequiredCraftingLevel = 1000,
                 RequiredCookingLevel = 1000,
                 Craftable = false,
+                Level = 1
             };
             Add(item);
             return item;
@@ -4843,6 +4849,10 @@ namespace RavenNest.BusinessLogic.Data
         public Item PurpleSantaMetalon;
         public Item RedSantaMetalon;
         public Item SantaRaven;
+
+        // new december 2023
+        public Item Octopus;
+        public Item SantaOctopus;
     }
 
     public class ItemSet

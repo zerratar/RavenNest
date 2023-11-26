@@ -21,6 +21,7 @@ namespace RavenNest.Models
         public float Happiness { get; set; }
         public float Hunger { get; set; }
         public string Prefab { get; set; }
+        //public string Customization { get; set; }
         public TimeSpan PlayTime { get; set; }
     }
 }

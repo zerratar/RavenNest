@@ -19,6 +19,7 @@ namespace RavenNest.DataModels
         private float happiness; public float Happiness { get => happiness; set => Set(ref happiness, value); }
         private float hunger; public float Hunger { get => hunger; set => Set(ref hunger, value); }
         private string prefab; public string Prefab { get => prefab; set => Set(ref prefab, value); }
+        //private string customization; public string Customization { get => customization; set => Set(ref customization, value); }
         private TimeSpan playTime; public TimeSpan PlayTime { get => playTime; set => Set(ref playTime, value); }
         private bool active; public bool Active { get => active; set => Set(ref active, value); }
     }

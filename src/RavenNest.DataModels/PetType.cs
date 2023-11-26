@@ -9,6 +9,7 @@
         Fox,
         Boar,
         Hare,
-        Moose
+        Moose,
+        PspspsCat
     }
 }

@@ -535,6 +535,11 @@ namespace RavenNest.BusinessLogic.Data
                 DarkWitch = GetOrCreateItem(i, "Dark Witch", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Halloween/Dark Witch"),
                 PurpleWitch = GetOrCreateItem(i, "Purple Witch", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Halloween/Purple Witch"),
                 RedWitch = GetOrCreateItem(i, "Red Witch", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Halloween/Red Witch"),
+
+                // new pets and christmas pets for 2023-12 event
+                Octopus = GetOrCreateItem(i, "Octopus", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Octopus"),
+                SantaOctopus = GetOrCreateItem(i, "Santa Octopus", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Christmas/Santa Octopus"),
+
             };
         }
 
@@ -555,6 +560,8 @@ namespace RavenNest.BusinessLogic.Data
             EnsureRedeemable(typedItems.RedTikiMask, typedItems.HalloweenToken, 30);
             EnsureRedeemable(typedItems.GreenTikiMask, typedItems.HalloweenToken, 30);
             EnsureRedeemable(typedItems.BlueTikiMask, typedItems.HalloweenToken, 30);
+
+            //EnsureRedeemable(p.SantaOctopus, typedItems.ChristmasToken, 20);
         }
 
         private void EnsureRedeemable(Item item, Item token, int tokenCost)
@@ -656,6 +663,12 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDrop(typedItems.Pets.PolarBearPet, 0.05);
             EnsureDrop(typedItems.Pets.RedOrbPet, 0.05);
             EnsureDrop(typedItems.Pets.RedPandaPet, 0.05);
+
+            if (DateTime.UtcNow.Year >= 2024)
+            {
+                EnsureDrop(typedItems.Pets.Octopus, 0.01);
+            }
+
             EnsureDrop(typedItems.BronzeBar, 0.05);
             EnsureDrop(typedItems.IronBar, 0.05);
             EnsureDrop(typedItems.SteelBar, 0.05);
