@@ -4862,6 +4862,12 @@ namespace RavenNest.BusinessLogic.Data
         public Item PspspsCatRaccoon;
         public Item PspspsCatSiamese;
         public Item PspspsCatWhite;
+        
+        public Item SantaRaccoon;
+        public Item Raccoon;
+        public Item BabyRaccoon;
+        public Item BrownRaccoon;
+        public Item MagicRaccoon;
     }
 
     public class ItemSet

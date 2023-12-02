@@ -385,7 +385,7 @@ namespace RavenNest.BusinessLogic.Data
                     BlueLobster = GetOrCreateItem(i, "Blue Lobster", "A delicacy that combines visual appeal with taste.", ItemCategory.Food, ItemType.Food),
                     Swordfish = GetOrCreateItem(i, "Swordfish", "Thick steaks grilled to seal in the moisture.", ItemCategory.Food, ItemType.Food),
                     PufferFish = GetOrCreateItem(i, "Puffer Fish", "Skillfully prepared to ensure every bite is safe and delectable.", ItemCategory.Food, ItemType.Food),
-                    Octopus = GetOrCreateItem(i, "Octopus", "Tenderized to perfection, a dish of exquisite taste.", ItemCategory.Food, ItemType.Food),
+                    Octopus = GetOrCreateItem(i, "Octopus", "Tenderized to perfection, a dish of exquisite taste.", ItemCategory.Food, ItemType.Food).GenericPrefab(null),
                     MantaRay = GetOrCreateItem(i, "Manta Ray", "Unique and flavorful, a treat from the deep.", ItemCategory.Food, ItemType.Food),
                     Kraken = GetOrCreateItem(i, "Kraken", "Legends speak of its taste, as vast as its tales.", ItemCategory.Food, ItemType.Food),
 
@@ -540,6 +540,13 @@ namespace RavenNest.BusinessLogic.Data
                 // new pets and christmas pets for 2023-12 event
                 OctopusPet = GetOrCreateItem(i, "Octopus Pet", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Octopus"),
                 SantaOctopus = GetOrCreateItem(i, "Santa Octopus", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Christmas/Santa Octopus"),
+                SantaRaccoon = GetOrCreateItem(i, "Santa Raccoon", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Christmas/Santa Raccoon"),
+
+                // Raccoons
+                Raccoon = GetOrCreateItem(i, "Raccoon", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Raccoon"),
+                BabyRaccoon = GetOrCreateItem(i, "Baby Raccoon", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Raccoon Baby"),
+                BrownRaccoon = GetOrCreateItem(i, "Brown Raccoon", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Raccoon Brown"),
+                MagicRaccoon = GetOrCreateItem(i, "Magic Raccoon", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Raccoon Magic"),
 
                 // All pspsps cats
                 PspspsCat = GetOrCreateItem(i, "Cat", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/Pspsps Cat"),
@@ -572,7 +579,10 @@ namespace RavenNest.BusinessLogic.Data
             EnsureRedeemable(typedItems.GreenTikiMask, typedItems.HalloweenToken, 30);
             EnsureRedeemable(typedItems.BlueTikiMask, typedItems.HalloweenToken, 30);
 
-            //EnsureRedeemable(p.SantaOctopus, typedItems.ChristmasToken, 20);
+            EnsureRedeemable(p.PspspsCatWhite, typedItems.ChristmasToken, 20);
+            EnsureRedeemable(p.SantaOctopus, typedItems.ChristmasToken, 20);
+            EnsureRedeemable(p.SantaRaccoon, typedItems.ChristmasToken, 20);
+            EnsureRedeemable(p.MagicRaccoon, typedItems.ChristmasToken, 30);
         }
 
         private void EnsureRedeemable(Item item, Item token, int tokenCost)
@@ -675,10 +685,18 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDrop(typedItems.Pets.RedOrbPet, 0.05);
             EnsureDrop(typedItems.Pets.RedPandaPet, 0.05);
 
-            if (DateTime.UtcNow.Year >= 2024)
-            {
-                EnsureDrop(typedItems.Pets.OctopusPet, 0.01);
-            }
+            EnsureDrop(typedItems.Pets.Raccoon, 0.05);
+            EnsureDrop(typedItems.Pets.BrownRaccoon, 0.05);
+            EnsureDrop(typedItems.Pets.OctopusPet, 0.04);
+            EnsureDrop(typedItems.Pets.BabyRaccoon, 0.02);
+
+            EnsureDrop(typedItems.Pets.PspspsCat, 0.04);
+            EnsureDrop(typedItems.Pets.PspspsCatBeige, 0.04);
+            EnsureDrop(typedItems.Pets.PspspsCatCream, 0.04);
+            EnsureDrop(typedItems.Pets.PspspsCatMiKe, 0.04);
+            EnsureDrop(typedItems.Pets.PspspsCatOrange, 0.04);
+            EnsureDrop(typedItems.Pets.PspspsCatRaccoon, 0.04);
+            EnsureDrop(typedItems.Pets.PspspsCatSiamese, 0.04);
 
             EnsureDrop(typedItems.BronzeBar, 0.05);
             EnsureDrop(typedItems.IronBar, 0.05);
@@ -764,6 +782,8 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDrop(typedItems.Skullcap, 0.05, 4);
             EnsureDrop(typedItems.LemonBalm, 0.05, 4);
             EnsureDrop(typedItems.Realmstone, 0.05, 4);
+
+            EnsureDrop(typedItems.Pets.MagicRaccoon, 0.03, 4);
         }
 
         private void EnsureResourceDropRates(TypedItems items)
