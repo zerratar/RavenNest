@@ -191,6 +191,8 @@ namespace RavenNest.BusinessLogic.Data
                     Realmstone = GetOrCreateItem(i, "Realmstone", "A precious stone allowing teleportation across islands.", ItemCategory.Resource, ItemType.Alchemy),
 
                     SantaHat = GetOrCreateItem(i, "Santa Hat", "A festive hat worn by Santa.", ItemCategory.Armor, ItemType.Helmet),
+                    BlackSantaHat = GetOrCreateItem(i, "Black Santa Hat", "A festive hat that may or may not have been worn by Santa..", ItemCategory.Armor, ItemType.Helmet).GenericPrefab("Character/Appearance/Head/Black Santa Hat"),
+
 
                     // Halloween 2023 tiki masks
                     RedTikiMask = GetOrCreateItem(i, "Red Tiki Mask", "A red tiki mask.", ItemCategory.Armor, ItemType.Helmet).GenericPrefab("Character/Appearance/Head/Red Tiki Mask"),
@@ -583,6 +585,8 @@ namespace RavenNest.BusinessLogic.Data
             EnsureRedeemable(p.SantaOctopus, typedItems.ChristmasToken, 20);
             EnsureRedeemable(p.SantaRaccoon, typedItems.ChristmasToken, 20);
             EnsureRedeemable(p.MagicRaccoon, typedItems.ChristmasToken, 30);
+
+            EnsureRedeemable(typedItems.BlackSantaHat, typedItems.ChristmasToken, 50);
         }
 
         private void EnsureRedeemable(Item item, Item token, int tokenCost)
@@ -1316,6 +1320,26 @@ namespace RavenNest.BusinessLogic.Data
             {
                 item.GenericPrefab = path;
                 item.IsGenericModel = !string.IsNullOrEmpty(item.GenericPrefab);
+            }
+            return item;
+        }
+
+        public static Item Hidden(this Item item)
+        {
+            if (item == null) return null;
+            if (!item.Hidden)
+            {
+                item.Hidden = true;
+            }
+            return item;
+        }
+
+        public static Item Visible(this Item item)
+        {
+            if (item == null) return null;
+            if (item.Hidden)
+            {
+                item.Hidden = false;
             }
             return item;
         }

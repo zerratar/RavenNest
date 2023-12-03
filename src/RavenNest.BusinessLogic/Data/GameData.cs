@@ -4496,6 +4496,8 @@ namespace RavenNest.BusinessLogic.Data
     {
         // Special Items
         public Item SantaHat;
+        public Item BlackSantaHat;
+
         public Item ExpMultiplierScroll;
         public Item RaidScroll;
         public Item DungeonScroll;
@@ -4862,7 +4864,7 @@ namespace RavenNest.BusinessLogic.Data
         public Item PspspsCatRaccoon;
         public Item PspspsCatSiamese;
         public Item PspspsCatWhite;
-        
+
         public Item SantaRaccoon;
         public Item Raccoon;
         public Item BabyRaccoon;
