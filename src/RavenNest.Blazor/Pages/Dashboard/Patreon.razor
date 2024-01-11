@@ -50,19 +50,28 @@ else
                             <li class="patreon-reward clans">You can create clans</li>
                             @if (patreonTierIndex == 1)
                             {
-                                <li class="patreon-reward xp-x2">2x Exp Multiplier</li>
+                                <li class="patreon-reward xp-x2">2x Exp Multiplier (Players)</li>
+                            }
+                            @if (patreonTierIndex == 2)
+                            {
+                                <li class="patreon-reward village">10 Village Houses Unlocked</li>
                             }
                             @if (patreonTierIndex == 3)
                             {
-                                <li class="patreon-reward xp-x3">3x Exp Multiplier</li>
+                                <li class="patreon-reward village">20 Village Houses Unlocked</li>
+                                <li class="patreon-reward xp-x3">3x Exp Multiplier (Players)</li>
                             }
                             @if (patreonTierIndex > 3)
                             {
-                                <li class="patreon-reward xp-x5">5x Exp Multiplier</li>
+                                <li class="patreon-reward village">All Village Houses Unlocked</li>
+                                <li class="patreon-reward xp-x5">5x Exp Multiplier (Players)</li>
+                            }
+                            @if (patreonTierIndex >= 1)
+                            {
+                                <li class="patreon-reward xp-x2">2x Exp Multiplier (Village)</li>
                             }
                             @if (patreonTierIndex >= 3)
                             {
-                                <li class="patreon-reward village">All village houses unlocked</li>
                                 <li class="patreon-reward bot">AI Powered Chatbot</li>
                             }
                         </ul>
