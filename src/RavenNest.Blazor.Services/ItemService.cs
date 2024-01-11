@@ -291,7 +291,7 @@ namespace RavenNest.Blazor.Services
             if (itemType == ItemType.Pet) return ItemFilter.Pets;
             if (itemType == ItemType.Scroll) return ItemFilter.Scrolls;
 
-            if ((ItemCategory)item.Category == ItemCategory.Armor)
+            if (item.Category == ItemCategory.Armor || item.Category == ItemCategory.Cosmetic)
                 return ItemFilter.Armors;
 
             return ItemFilter.All;

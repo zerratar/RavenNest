@@ -115,6 +115,14 @@ li.patreon-reward.xp-x5 {
     margin-right: 10px;
 }
 
+
+li.patreon-reward.village {
+    background: linear-gradient(45deg, #0b00ff, #a200d2);
+    color: white;
+    margin-right: 10px;
+}
+
+
 .patreon-actions p {
     color: #606060;
     font-style: italic;

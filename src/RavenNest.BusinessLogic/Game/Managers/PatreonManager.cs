@@ -593,9 +593,7 @@ namespace RavenNest.BusinessLogic.Game
                 if (fallbackTiers == null)
                     fallbackTiers = new List<PatreonTier>
                     {
-                        new PatreonTier { AmountCents = 20, Level = 0, Title = "Steel" },
                         new PatreonTier { AmountCents = 50, Level = 1, Title = "Mithril" },
-                        // new PatreonTier { AmountCents = 100, Level = 2, Title = "Adamantite" }, // adamantite is not used anymore, hence ID is skipped.
                         new PatreonTier { AmountCents = 150, Level = 2, Title = "Rune" },
                         new PatreonTier { AmountCents = 300, Level = 3, Title = "Dragon" },
                         new PatreonTier { AmountCents = 500, Level = 4, Title = "Abraxas" },

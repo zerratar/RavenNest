@@ -13,4 +13,14 @@ namespace RavenNest.DataModels
         private int revision; public int Revision { get => revision; set => Set(ref revision, value); }
         private bool visibleInClient; public bool VisibleInClient { get => visibleInClient; set => Set(ref visibleInClient, value); }
     }
+
+    public enum Patreon : int
+    {
+        None = 0,
+        Mithril = 1,
+        Rune = 2,
+        Dragon = 3,
+        Abraxas = 4,
+        Phantom = 5
+    }
 }

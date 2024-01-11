@@ -12,6 +12,7 @@
         Resource,
         StreamerToken,
         Scroll,
-        Skin
+        Skin,
+        Cosmetic
     }
 }

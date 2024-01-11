@@ -69,6 +69,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             return i.Category == RavenNest.Models.ItemCategory.Weapon ||
                     i.Category == RavenNest.Models.ItemCategory.Armor ||
+                    i.Category == RavenNest.Models.ItemCategory.Cosmetic ||
                     i.Category == RavenNest.Models.ItemCategory.Ring ||
                     i.Category == RavenNest.Models.ItemCategory.Amulet;
         }
@@ -77,6 +78,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             return i.Category == (int)DataModels.ItemCategory.Weapon ||
                     i.Category == (int)DataModels.ItemCategory.Armor ||
+                    i.Category == (int)DataModels.ItemCategory.Cosmetic ||
                     i.Category == (int)DataModels.ItemCategory.Ring ||
                     i.Category == (int)DataModels.ItemCategory.Amulet;
         }
@@ -108,6 +110,7 @@ namespace RavenNest.BusinessLogic.Game
                     i.Category == (int)DataModels.ItemCategory.Weapon ||
                     i.Category == (int)DataModels.ItemCategory.Armor ||
                     i.Category == (int)DataModels.ItemCategory.Ring ||
+                    i.Category == (int)DataModels.ItemCategory.Cosmetic ||
                     i.Category == (int)DataModels.ItemCategory.Amulet;
 
                 if (!enchantable)

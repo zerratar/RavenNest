@@ -30,7 +30,7 @@ namespace RavenNest.Blazor.Services
                     var village = gameData.GetVillageByUserId(sess.UserId);
                     if (village == null) continue;
 
-                    var houses = this.gameData.GetVillageHouses(village);
+                    var houses = this.gameData.GetOrCreateVillageHouses(village);//this.gameData.GetVillageHouses(village);
                     if (houses == null || houses.Count == 0)
                     {
                         continue;

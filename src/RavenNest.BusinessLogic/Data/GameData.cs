@@ -2845,11 +2845,11 @@ namespace RavenNest.BusinessLogic.Data
             return village;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<VillageHouse> GetVillageHouses(Village village)
-        {
-            return villageHouses[nameof(Village), village.Id];
-        }
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //public IReadOnlyList<VillageHouse> GetVillageHouses(Village village)
+        //{
+        //    return villageHouses[nameof(Village), village.Id];
+        //}
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<VillageHouse> GetOrCreateVillageHouses(Village village)
@@ -2862,6 +2862,18 @@ namespace RavenNest.BusinessLogic.Data
             }
 
             var houseCount = System.Math.Min(village.Level / 10, GameMath.MaxVillageLevel / 10);
+
+            var user = GetUser(village.UserId);
+
+            if (user.PatreonTier >= (int)DataModels.Patreon.Dragon)
+            {
+                houseCount = GameMath.MaxVillageLevel / 10;
+            }
+
+            if (houseCount == houses.Count)
+            {
+                return houses;
+            }
 
             if ((houses == null || houses.Count == 0) && houseCount > 0)
             {
@@ -2898,6 +2910,19 @@ namespace RavenNest.BusinessLogic.Data
                     Add(house);
 
                     housesTemp.Add(house);
+                }
+
+                houses = housesTemp;
+            }
+
+            if (houses.Count > houseCount)
+            {
+                var housesTemp = houses.ToList();
+                var toRemove = houses.Skip(houseCount).ToArray();
+                foreach (var r in toRemove)
+                {
+                    Remove(r);
+                    housesTemp.Remove(r);
                 }
 
                 houses = housesTemp;
@@ -4379,7 +4404,7 @@ namespace RavenNest.BusinessLogic.Data
             if (itemType == ItemType.Pet) return ItemFilter.Pets;
             if (itemType == ItemType.Scroll) return ItemFilter.Scrolls;
 
-            if (itemCategory == ItemCategory.Armor)
+            if (itemCategory == ItemCategory.Armor || itemCategory == ItemCategory.Cosmetic)
                 return ItemFilter.Armors;
 
             return ItemFilter.All;
