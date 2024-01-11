@@ -2867,7 +2867,12 @@ namespace RavenNest.BusinessLogic.Data
 
             if (user.PatreonTier >= (int)DataModels.Patreon.Dragon)
             {
-                houseCount = GameMath.MaxVillageLevel / 10;
+                houseCount = Math.Min(houseCount, 20);
+            }
+
+            if (user.PatreonTier >= (int)DataModels.Patreon.Abraxas)
+            {
+                houseCount = Math.Min(houseCount, 30);
             }
 
             if (houseCount == houses.Count)

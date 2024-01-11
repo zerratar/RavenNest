@@ -14,16 +14,21 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         private static readonly Random dropRandom;
         private static Dictionary<string, DateTime> dropTimes;
 
+        private static readonly object mutex = new object();
+
         static SimpleDropHandler()
         {
             dropRandom = new Random();
             dropTimes = new Dictionary<string, DateTime>();
             try
             {
-                var droptimesJson = System.IO.Path.Combine(FolderPaths.GeneratedData, "resource-droptimes.json");
-                if (System.IO.File.Exists(droptimesJson))
+                lock (mutex)
                 {
-                    dropTimes = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, DateTime>>(System.IO.File.ReadAllText(droptimesJson));
+                    var droptimesJson = System.IO.Path.Combine(FolderPaths.GeneratedData, "resource-droptimes.json");
+                    if (System.IO.File.Exists(droptimesJson))
+                    {
+                        dropTimes = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, DateTime>>(System.IO.File.ReadAllText(droptimesJson));
+                    }
                 }
             }
             catch { }
@@ -36,10 +41,15 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         {
             try
             {
-                var droptimesJson = System.IO.Path.Combine(FolderPaths.GeneratedData, "resource-droptimes.json");
-                System.IO.File.WriteAllText(droptimesJson, Newtonsoft.Json.JsonConvert.SerializeObject(dropTimes));
+                lock (mutex)
+                {
+                    var droptimesJson = System.IO.Path.Combine(FolderPaths.GeneratedData, "resource-droptimes.json");
+                    System.IO.File.WriteAllText(droptimesJson, Newtonsoft.Json.JsonConvert.SerializeObject(dropTimes));
+                }
             }
-            catch { }
+            catch (Exception exc)
+            {
+            }
         }
 
         private readonly string skill;

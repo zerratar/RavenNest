@@ -60,7 +60,7 @@ namespace RavenNest.BusinessLogic.Tv
             episodeRequests = new JsonRepository<GenerateUserEpisodeRequest>("../ravenfall-tv/episode-requests/");
 
             requestQueue = new ConcurrentQueue<GenerateUserEpisodeRequest>(episodeRequests.OrderedBy(x => x.Created));
-            
+
             this.openAI = openAI;
             this.throttlePeriod = TimeSpan.FromMinutes(1) / MaxRequestsPerMinute;
             this.throttler = new TransformBlock<GenerateUserEpisodeRequest, Episode>(
@@ -78,37 +78,41 @@ namespace RavenNest.BusinessLogic.Tv
 
         private async void ProcessRequests()
         {
-            while (!disposed)
+            try
             {
-                if (requestQueue.TryDequeue(out var req))
+                while (!disposed)
                 {
-                    await throttler.SendAsync(req, cancellationToken);
-                }
-                else
-                {
-                    // every minute we should generate a new episode that has no real players in it, to ensure we have episodes at all.
-                    // but only if we have less than 20 episodes.
-                    var now = DateTime.UtcNow;
-                    if (episodes.Count() < episodeLimit
-                        && requestQueue.Count == 0
-                        && (now - lastGenerateRequestTime) >= generateInterval)
+                    if (requestQueue.TryDequeue(out var req))
                     {
-                        lastGenerateRequestTime = now;
-
-                        // make sure this has been generated before we request to generate more.
-                        if (lastGenerateRequest != null && !episodes.Contains(lastGenerateRequest.Id))
+                        await throttler.SendAsync(req, cancellationToken);
+                    }
+                    else
+                    {
+                        // every minute we should generate a new episode that has no real players in it, to ensure we have episodes at all.
+                        // but only if we have less than 20 episodes.
+                        var now = DateTime.UtcNow;
+                        if (episodes.Count() < episodeLimit
+                            && requestQueue.Count == 0
+                            && (now - lastGenerateRequestTime) >= generateInterval)
                         {
-                            await Task.Delay(throttlePeriod, cancellationToken);
-                            continue;
+                            lastGenerateRequestTime = now;
+
+                            // make sure this has been generated before we request to generate more.
+                            if (lastGenerateRequest != null && !episodes.Contains(lastGenerateRequest.Id))
+                            {
+                                await Task.Delay(throttlePeriod, cancellationToken);
+                                continue;
+                            }
+
+                            lastGenerateRequest = new GenerateEpisodeRequest { Id = Guid.NewGuid() };
+                            await GenerateEpisodeAsync(lastGenerateRequest);
                         }
 
-                        lastGenerateRequest = new GenerateEpisodeRequest { Id = Guid.NewGuid() };
-                        await GenerateEpisodeAsync(lastGenerateRequest);
+                        await Task.Delay(throttlePeriod, cancellationToken);
                     }
-
-                    await Task.Delay(throttlePeriod, cancellationToken);
                 }
             }
+            catch { }
         }
 
         private async Task<Episode> ProcessRequestAsync(GenerateUserEpisodeRequest request, CancellationToken cancellationToken)
