@@ -2865,6 +2865,11 @@ namespace RavenNest.BusinessLogic.Data
 
             var user = GetUser(village.UserId);
 
+            if (user.PatreonTier >= (int)DataModels.Patreon.Rune)
+            {
+                houseCount = Math.Max(houseCount, 10);
+            }
+
             if (user.PatreonTier >= (int)DataModels.Patreon.Dragon)
             {
                 houseCount = Math.Max(houseCount, 20);

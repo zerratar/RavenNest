@@ -44,6 +44,12 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             if (players.Count > 0)
             {
+                var owner = gameData.GetUser(village.UserId);
+                if (owner.PatreonTier >= (int)DataModels.Patreon.Mithril)
+                {
+                    elapsed *= 2;
+                }
+
                 village.Experience += GameMath.GetVillageExperience(village.Level, players.Count, elapsed);
 
                 // check if this village gone mad.
