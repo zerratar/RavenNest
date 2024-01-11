@@ -2867,7 +2867,7 @@ namespace RavenNest.BusinessLogic.Data
 
             if (user.PatreonTier >= (int)DataModels.Patreon.Dragon)
             {
-                houseCount = Math.Min(houseCount, 20);
+                houseCount = Math.Max(houseCount, 20);
             }
 
             if (user.PatreonTier >= (int)DataModels.Patreon.Abraxas)
