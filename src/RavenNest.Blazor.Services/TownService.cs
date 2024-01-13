@@ -62,31 +62,52 @@ namespace RavenNest.Blazor.Services
                         h.Type = (TownHouseSlotType)house.Type;
 
                         var bestHouseSkill = new SkillStat();
-                        var chars = gameData.GetCharactersByUserId(house.UserId.GetValueOrDefault());
                         var isActive = false;
-                        if (chars != null && chars.Count > 0)
+                        if (house.CharacterId != null)
                         {
-                            foreach (var c in chars)
+                            var targetCharacter = gameData.GetCharacter(house.CharacterId.Value);
+                            if (targetCharacter != null)
                             {
-                                var cs = gameData.GetCharacterSkills(c.SkillsId);
+                                var cs = gameData.GetCharacterSkills(targetCharacter.SkillsId);
                                 var houseSkill = GetSkillByHouseType(cs, h.Type);
-
-                                if (c.UserIdLock == town.Owner.Id)
+                                if (targetCharacter.UserIdLock == town.Owner.Id)
                                 {
                                     isActive = true;
                                     bestHouseSkill = houseSkill;
-                                    h.AssignedCharacterId = c.Id;
-                                    break;
-                                }
-
-                                if (houseSkill.Level > bestHouseSkill.Level)
-                                {
-                                    bestHouseSkill = houseSkill;
-                                    h.AssignedCharacterId = c.Id;
+                                    h.AssignedCharacterId = targetCharacter.Id;
+                                    h.Bonus = CalculateHouseExpBonus(bestHouseSkill);
                                 }
                             }
+                        }
+                        
+                        if (!isActive)
+                        {
+                            var chars = gameData.GetCharactersByUserId(house.UserId.GetValueOrDefault());
 
-                            h.Bonus = CalculateHouseExpBonus(bestHouseSkill);
+                            if (chars != null && chars.Count > 0)
+                            {
+                                foreach (var c in chars)
+                                {
+                                    var cs = gameData.GetCharacterSkills(c.SkillsId);
+                                    var houseSkill = GetSkillByHouseType(cs, h.Type);
+
+                                    if (c.UserIdLock == town.Owner.Id)
+                                    {
+                                        isActive = true;
+                                        bestHouseSkill = houseSkill;
+                                        h.AssignedCharacterId = c.Id;
+                                        break;
+                                    }
+
+                                    if (houseSkill.Level > bestHouseSkill.Level)
+                                    {
+                                        bestHouseSkill = houseSkill;
+                                        h.AssignedCharacterId = c.Id;
+                                    }
+                                }
+
+                                h.Bonus = CalculateHouseExpBonus(bestHouseSkill);
+                            }
                         }
 
                         h.IsActive = isActive;
