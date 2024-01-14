@@ -493,6 +493,8 @@ namespace RavenNest.BusinessLogic.Data
 
                 EnsureItemNamesWithoutApostrophes();
 
+                FixVillageHouses();
+
                 #endregion
 
                 stopWatch.Stop();
@@ -966,6 +968,28 @@ namespace RavenNest.BusinessLogic.Data
                         Amount = item.Value
                     });
             }
+        }
+
+        public void FixVillageHouses()
+        {
+            int villagesFixed = 0;
+
+            foreach (var entity in villages.Entities)
+            {
+                var houses = GetOrCreateVillageHouses(entity);
+                if (houses.Count > 0 && houses.Count < 30 && houses.Any(x => x.Slot >= houses.Count))
+                {
+                    // adjust slot
+                    for (var i = 0; i < houses.Count; ++i)
+                    {
+                        houses[i].Slot = i;
+                    }
+
+                    villagesFixed++;
+                }
+            }
+            if (villagesFixed > 0)
+                logger.LogError("[NOT ERROR] " + villagesFixed + " villages had bad house slot index. This has been fixed");
         }
 
         //public static volatile bool VillageExpMigrationCompleted = false;
