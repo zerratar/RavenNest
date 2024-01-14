@@ -190,19 +190,18 @@ namespace RavenNest.BusinessLogic.Data
                     EldarasMark = GetOrCreateItem(i, "Eldaras Mark", "A seal bearing Eldara's mark", ItemCategory.Resource, ItemType.Alchemy),
                     Realmstone = GetOrCreateItem(i, "Realmstone", "A precious stone allowing teleportation across islands.", ItemCategory.Resource, ItemType.Alchemy),
 
-                    SantaHat = GetOrCreateItem(i, "Santa Hat", "A festive hat worn by Santa.", ItemCategory.Armor, ItemType.Helmet),
-                    BlackSantaHat = GetOrCreateItem(i, "Black Santa Hat", "A festive hat that may or may not have been worn by Santa..", ItemCategory.Armor, ItemType.Helmet).GenericPrefab("Character/Appearance/Head/Black Santa Hat"),
-
+                    SantaHat = GetOrCreateItem(i, "Santa Hat", "A festive hat worn by Santa.", ItemCategory.Cosmetic, ItemType.Hat),
+                    BlackSantaHat = GetOrCreateItem(i, "Black Santa Hat", "A festive hat that may or may not have been worn by Santa..", ItemCategory.Cosmetic, ItemType.Hat).GenericPrefab("Character/Appearance/Head/Black Santa Hat"),
 
                     // Halloween 2023 tiki masks
-                    RedTikiMask = GetOrCreateItem(i, "Red Tiki Mask", "A red tiki mask.", ItemCategory.Armor, ItemType.Helmet).GenericPrefab("Character/Appearance/Head/Red Tiki Mask"),
-                    BlueTikiMask = GetOrCreateItem(i, "Blue Tiki Mask", "A blue tiki mask.", ItemCategory.Armor, ItemType.Helmet).GenericPrefab("Character/Appearance/Head/Blue Tiki Mask"),
-                    GreenTikiMask = GetOrCreateItem(i, "Green Tiki Mask", "A green tiki mask.", ItemCategory.Armor, ItemType.Helmet).GenericPrefab("Character/Appearance/Head/Green Tiki Mask"),
-                    //BanditMask = GetOrCreateItem(i, "Bandit Mask", "A bandit mask.", ItemCategory.Armor, ItemType.Helmet).GenericPrefab("Character/Appearance/Head/Bandit Mask"),
+                    RedTikiMask = GetOrCreateItem(i, "Red Tiki Mask", "A red tiki mask.", ItemCategory.Cosmetic, ItemType.Mask).GenericPrefab("Character/Appearance/Head/Red Tiki Mask"),
+                    BlueTikiMask = GetOrCreateItem(i, "Blue Tiki Mask", "A blue tiki mask.", ItemCategory.Cosmetic, ItemType.Mask).GenericPrefab("Character/Appearance/Head/Blue Tiki Mask"),
+                    GreenTikiMask = GetOrCreateItem(i, "Green Tiki Mask", "A green tiki mask.", ItemCategory.Cosmetic, ItemType.Mask).GenericPrefab("Character/Appearance/Head/Green Tiki Mask"),
+                    //BanditMask = GetOrCreateItem(i, "Bandit Mask", "A bandit mask.", ItemCategory.Cosmetic, ItemType.Helmet).GenericPrefab("Character/Appearance/Head/Bandit Mask"),
 
                     // neckwrap/scarf, uses Amulet as item type and category as it uses the same equipment slot
-                    BrownScarf = GetOrCreateItem(i, "Brown Scarf", "A brown scarf.", ItemCategory.Amulet, ItemType.Amulet).GenericPrefab("Character/Appearance/Neck/Brown Neckwrap"),
-                    GreenScarf = GetOrCreateItem(i, "Green Scarf", "A green scarf.", ItemCategory.Amulet, ItemType.Amulet).GenericPrefab("Character/Appearance/Neck/Green Neckwrap"),
+                    BrownScarf = GetOrCreateItem(i, "Brown Scarf", "A brown scarf.", ItemCategory.Cosmetic, ItemType.Amulet).GenericPrefab("Character/Appearance/Neck/Brown Neckwrap"),
+                    GreenScarf = GetOrCreateItem(i, "Green Scarf", "A green scarf.", ItemCategory.Cosmetic, ItemType.Amulet).GenericPrefab("Character/Appearance/Neck/Green Neckwrap"),
 
                     ExpMultiplierScroll = GetOrCreateItem(i, "Exp Multiplier Scroll", "A scroll that increases the global experience multiplier by 1 and extends the timer with 15 minutes.", ItemCategory.Scroll, ItemType.Scroll),
                     DungeonScroll = GetOrCreateItem(i, "Dungeon Scroll", "A scroll that allows you to instantanously start and enter a dungeon.", ItemCategory.Scroll, ItemType.Scroll),
@@ -687,6 +686,10 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDrop(typedItems.Pets.GreenOrbPet, 0.05);
             EnsureDrop(typedItems.Pets.PolarBearPet, 0.05);
             EnsureDrop(typedItems.Pets.RedOrbPet, 0.05);
+
+            EnsureDrop(typedItems.Pets.Rajah, 0.05);
+            EnsureDrop(typedItems.Pets.RavenPet, 0.05);
+
             EnsureDrop(typedItems.Pets.RedPandaPet, 0.05);
 
             EnsureDrop(typedItems.Pets.Raccoon, 0.05);
@@ -787,7 +790,7 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDrop(typedItems.LemonBalm, 0.05, 4);
             EnsureDrop(typedItems.Realmstone, 0.05, 4);
 
-            EnsureDrop(typedItems.Pets.MagicRaccoon, 0.03, 4);
+            //EnsureDrop(typedItems.Pets.MagicRaccoon, 0.03, 4);
         }
 
         private void EnsureResourceDropRates(TypedItems items)

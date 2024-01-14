@@ -9,7 +9,9 @@ namespace RavenNest.Blazor
     {
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            var create = CreateHostBuilder(args);
+            var build = create.Build();
+            build.Run();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>

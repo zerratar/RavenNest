@@ -28,6 +28,7 @@ namespace RavenNest.Models
         public bool IsRejoin { get; set; }
         public Guid OriginUserId { get; set; }
         public string Identifier { get; set; }
+        public string FullBodySkin { get; set; }
         public int CharacterIndex { get; set; }
         public int PatreonTier { get; set; }
         public bool IsHiddenInHighscore { get; set; }
