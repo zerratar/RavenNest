@@ -976,6 +976,7 @@ namespace RavenNest.BusinessLogic.Data
 
             foreach (var entity in villages.Entities)
             {
+                if (entity == null) continue;
                 var houses = GetOrCreateVillageHouses(entity);
                 if (houses.Count > 0 && houses.Count < 30 && houses.Any(x => x.Slot >= houses.Count))
                 {
@@ -2880,14 +2881,14 @@ namespace RavenNest.BusinessLogic.Data
         {
             var houses = villageHouses[nameof(Village), village.Id];
 
-            if (village.Level <= 1)
+            var user = GetUser(village.UserId);
+
+            if (user == null || village.Level <= 1)
             {
                 return Array.Empty<VillageHouse>();
             }
 
             var houseCount = System.Math.Min(village.Level / 10, GameMath.MaxVillageLevel / 10);
-
-            var user = GetUser(village.UserId);
 
             if (user.PatreonTier >= (int)DataModels.Patreon.Rune)
             {
