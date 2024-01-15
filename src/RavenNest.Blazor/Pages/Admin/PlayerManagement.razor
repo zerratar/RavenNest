@@ -47,7 +47,7 @@
             {
                 <tr class="player-row">
                     @*<td>@player.Id</td>*@
-                    <td @onclick="(() => DisplayPlayer(player))">@player.UserName<span class='player-character-index' alt='Character Number'>#@player.CharacterIndex</span></td>
+                    <td><a href="/inspect/@player.Id" target="_blank">@player.UserName<span class='player-character-index' alt='Character Number'>#@player.CharacterIndex</span></a></td>
                     <td>
 
                         @*<span v-if="editingName(player.userId)">
@@ -63,7 +63,7 @@
                         </span>
 
                     </td>
-                    <td>@player.SessionName</td>
+                    <td><a href="https://www.twitch.tv/@player.SessionName" target="_blank">@player.SessionName</a></td>
                     <td>@(player.IsAdmin ? "Yes" : "No")</td>
                     <td>@(player.IsModerator ? "Yes" : "No")</td>
                     <td>
@@ -127,10 +127,10 @@
         await InvokeAsync(StateHasChanged);
     }
 
-    private void DisplayPlayer(WebsiteAdminPlayer player)
-    {
-        NavigationManager.NavigateTo("/inspect/" + player.Id);
-    }
+    // private void DisplayPlayer(WebsiteAdminPlayer player)
+    // {
+    //     NavigationManager.NavigateTo("/inspect/" + player.Id);
+    // }
 
     private void Filter()
     {
