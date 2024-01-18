@@ -1173,8 +1173,8 @@ namespace RavenNest.BusinessLogic.Data
             EnsureItemStatusEffects(typedItems.PufferFish, Effect(StatusEffectType.Heal, 0.30f, 35), Effect(StatusEffectType.IncreasedDodge, 150, 0.10f, 0));
             EnsureItemStatusEffects(typedItems.Octopus, Effect(StatusEffectType.Heal, 0.35f, 40), Effect(StatusEffectType.IncreasedMagicPower, 240, 0.12f, 4));
             EnsureItemStatusEffects(typedItems.MantaRay, Effect(StatusEffectType.Heal, 0.40f, 50), Effect(StatusEffectType.IncreasedMovementSpeed, 240, 0.10f, 0));
-            //EnsureItemStatusEffects(typedItems.Kraken, Effect(StatusEffectType.Heal, 0.45f, 60), Effect(StatusEffectType.IncreasedExperienceGain, 300, 0.12f, 0));
-            EnsureItemStatusEffects(typedItems.Kraken, Effect(StatusEffectType.Heal, 0.45f, 60), Effect(StatusEffectType.IncreasedAttackPower, 150, 0.12f, 0), Effect(StatusEffectType.IncreasedMovementSpeed, 150, 0.12f, 0));
+            EnsureItemStatusEffects(typedItems.Kraken, Effect(StatusEffectType.Heal, 0.45f, 60), Effect(StatusEffectType.IncreasedExperienceGain, 300, 0.12f, 0));
+            //EnsureItemStatusEffects(typedItems.Kraken, Effect(StatusEffectType.Heal, 0.45f, 60), Effect(StatusEffectType.IncreasedAttackPower, 150, 0.12f, 0), Effect(StatusEffectType.IncreasedMovementSpeed, 150, 0.12f, 0));
 
             // other dishes
             EnsureItemStatusEffects(typedItems.RedWine, Effect(StatusEffectType.Heal, 0.05f, 5), Effect(StatusEffectType.ReducedHitChance, 180, 0.05f, 0), Effect(StatusEffectType.IncreasedStrength, 180, 0.05f, 2));

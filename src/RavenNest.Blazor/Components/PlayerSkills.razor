@@ -65,21 +65,21 @@
                 {
                     if (Player.State.InDungeon)
                     {
-                        <span>in the dungeon </span>
+                        <span>in the dungeon</span>
                     }
                     else if (Player.State.InArena)
                     {
-                        <span>in the Arena </span>
+                        <span>in the Arena</span>
                     }
                     else if (Player.State.InRaid)
                     {
-                        <span>in a Raid </span>
+                        <span>in a Raid</span>
                     }
                     else if (!string.IsNullOrEmpty(Player.State?.Island))
                     {
                         <span>at&nbsp;</span>
 
-                        <b>@Player.State.Island </b>
+                        <b>@Player.State.Island</b>
                     }
                     else
                     {
