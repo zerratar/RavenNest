@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using RavenNest.BusinessLogic.Game;
-using RavenNest.Models;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +11,8 @@ using RavenNest.BusinessLogic.Game.Enchantment;
 using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.BusinessLogic.Extensions;
 using System.IO;
+
+using ItemFilter = RavenNest.Models.ItemFilter;
 
 namespace RavenNest.Blazor.Services
 {
@@ -138,17 +140,17 @@ namespace RavenNest.Blazor.Services
             });
         }
 
-        public Item GetItem(Guid itemId)
+        public RavenNest.Models.Item GetItem(Guid itemId)
         {
             return itemManager.GetItem(itemId);
         }
 
-        public ItemCollection GetItems()
+        public RavenNest.Models.ItemCollection GetItems()
         {
             return itemManager.GetAllItems();
         }
 
-        public Task<IEnumerable<Item>> SearchAsync(string search)
+        public Task<IEnumerable<RavenNest.Models.Item>> SearchAsync(string search)
         {
             return Task.Run(() =>
             {
@@ -157,7 +159,7 @@ namespace RavenNest.Blazor.Services
             });
         }
 
-        public IReadOnlyList<ItemEnchantment> GetItemEnchantments(InventoryItem item)
+        public IReadOnlyList<RavenNest.Models.ItemEnchantment> GetItemEnchantments(RavenNest.Models.InventoryItem item)
         {
             return item.GetItemEnchantments(availableAttributes);
         }
@@ -183,7 +185,7 @@ namespace RavenNest.Blazor.Services
             });
         }
 
-        public async Task<ItemCollection> GetItemsAsync()
+        public async Task<RavenNest.Models.ItemCollection> GetItemsAsync()
         {
             return await Task.Run(() => itemManager.GetAllItems());
         }
@@ -236,7 +238,7 @@ namespace RavenNest.Blazor.Services
             }).ConfigureAwait(false);
         }
 
-        public async Task<bool> AddOrUpdateItemAsync(Item item)
+        public async Task<bool> AddOrUpdateItemAsync(RavenNest.Models.Item item)
         {
             return await Task.Run(() =>
             {
@@ -264,37 +266,7 @@ namespace RavenNest.Blazor.Services
 
         public ItemFilter GetItemFilter(RavenNest.Models.Item item)
         {
-            //var item = ItemService.GetItem(itemId);
-#warning TODO: Use GameData.GetItemFilter instead or atleast move the logic so its not repeated.
-            var itemType = (ItemType)item.Type;
-            if (itemType == ItemType.Coins) return ItemFilter.Resources;
-            if (itemType == ItemType.Mining) return ItemFilter.Mining;
-            if (itemType == ItemType.Woodcutting) return ItemFilter.Woodcutting;
-            if (itemType == ItemType.Gathering) return ItemFilter.Gathering;
-            if (itemType == ItemType.Fishing) return ItemFilter.Fishing;
-            if (itemType == ItemType.Farming) return ItemFilter.Farming;
-            if (itemType == ItemType.Crafting) return ItemFilter.Crafting;
-            if (itemType == ItemType.Cooking || itemType == ItemType.Food)
-                return ItemFilter.Cooking;
-
-            if (itemType == ItemType.Alchemy || itemType == ItemType.Potion)
-                return ItemFilter.Alchemy;
-
-            if (itemType == ItemType.OneHandedSword || itemType == ItemType.TwoHandedSword)
-                return ItemFilter.Swords;
-            if (itemType == ItemType.TwoHandedBow) return ItemFilter.Bows;
-            if (itemType == ItemType.TwoHandedStaff) return ItemFilter.Staves;
-            if (itemType == ItemType.TwoHandedSpear) return ItemFilter.Spears;
-            if (itemType == ItemType.OneHandedAxe || itemType == ItemType.TwoHandedAxe) return ItemFilter.Axes;
-            if (itemType == ItemType.Ring || itemType == ItemType.Amulet) return ItemFilter.Accessories;
-            if (itemType == ItemType.Shield) return ItemFilter.Shields;
-            if (itemType == ItemType.Pet) return ItemFilter.Pets;
-            if (itemType == ItemType.Scroll) return ItemFilter.Scrolls;
-
-            if (item.Category == ItemCategory.Armor || item.Category == ItemCategory.Cosmetic)
-                return ItemFilter.Armors;
-
-            return ItemFilter.All;
+            return (ItemFilter)RavenNest.Models.ItemFilterExtensions.GetItemFilter(item);
         }
 
         public string GetTypeName(RavenNest.Models.Item item)
@@ -398,7 +370,7 @@ namespace RavenNest.Blazor.Services
             return (int)item.Material;
         }
 
-        public string GetItemTier(InventoryItem item)
+        public string GetItemTier(RavenNest.Models.InventoryItem item)
         {
             var i = GetItem(item.ItemId);
             if (i == null)
@@ -409,7 +381,7 @@ namespace RavenNest.Blazor.Services
             return i.Material.ToString();
         }
 
-        public string GetItemRequirementSkill(InventoryItem item)
+        public string GetItemRequirementSkill(RavenNest.Models.InventoryItem item)
         {
             var i = GetItem(item.ItemId);
             if (i == null) return "";
@@ -420,7 +392,7 @@ namespace RavenNest.Blazor.Services
             return "";
         }
 
-        public string GetItemRequirementLevel(InventoryItem item)
+        public string GetItemRequirementLevel(RavenNest.Models.InventoryItem item)
         {
             var i = GetItem(item.ItemId);
             if (i == null) return "";
@@ -432,7 +404,7 @@ namespace RavenNest.Blazor.Services
         }
 
 
-        public IReadOnlyList<ItemStat> GetItemStats(InventoryItem item)
+        public IReadOnlyList<RavenNest.Models.ItemStat> GetItemStats(RavenNest.Models.InventoryItem item)
         {
             return item.GetItemStats(gameData);
         }

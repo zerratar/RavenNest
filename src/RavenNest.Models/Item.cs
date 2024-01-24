@@ -42,7 +42,7 @@ namespace RavenNest.Models
     }
 
     [Flags]
-    public enum HeadMask : uint
+    public enum HeadMask : int
     {
         None = 0,
         Hair = 1,

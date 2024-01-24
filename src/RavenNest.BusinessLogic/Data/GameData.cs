@@ -15,7 +15,7 @@ using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
-
+using ItemFilter = RavenNest.Models.ItemFilter;
 namespace RavenNest.BusinessLogic.Data
 {
     public partial class GameData : IDisposable
@@ -2902,7 +2902,7 @@ namespace RavenNest.BusinessLogic.Data
 
             if (user.PatreonTier >= (int)DataModels.Patreon.Abraxas)
             {
-                houseCount = Math.Min(houseCount, 30);
+                houseCount = Math.Max(houseCount, 30);
             }
 
             if (houseCount == houses.Count)
@@ -3374,7 +3374,7 @@ namespace RavenNest.BusinessLogic.Data
         public int GetMarketItemCount() => marketItems.Entities.Count;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public int GetMarketItemCount(ItemFilter filter) =>
+        public int GetMarketItemCount(RavenNest.Models.ItemFilter filter) =>
             marketItems.Entities.Where(x => Filter(filter, x)).Count();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3413,7 +3413,7 @@ namespace RavenNest.BusinessLogic.Data
         public IReadOnlyList<MarketItem> GetMarketItems() => marketItems.Entities;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public IReadOnlyList<MarketItem> GetMarketItems(ItemFilter filter, int skip, int take)
+        public IReadOnlyList<MarketItem> GetMarketItems(RavenNest.Models.ItemFilter filter, int skip, int take)
             => marketItems.Entities.Where(x => Filter(filter, x)).Slice(skip, take);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -4397,7 +4397,7 @@ namespace RavenNest.BusinessLogic.Data
         }
 
 
-        private bool Filter(ItemFilter itemFilter, MarketItem item)
+        private bool Filter(RavenNest.Models.ItemFilter itemFilter, MarketItem item)
         {
             if (itemFilter == ItemFilter.All)
                 return true;
@@ -4410,39 +4410,12 @@ namespace RavenNest.BusinessLogic.Data
             var item = GetItem(itemId);
             return GetItemFilter(item);
         }
+
         public static ItemFilter GetItemFilter(Item item)
         {
-            var itemType = (ItemType)item.Type;
-            var itemCategory = (ItemCategory)item.Category;
-
-            if (itemType == ItemType.Coins) return ItemFilter.Resources;
-            if (itemType == ItemType.Mining) return ItemFilter.Mining;
-            if (itemType == ItemType.Woodcutting) return ItemFilter.Woodcutting;
-            if (itemType == ItemType.Gathering) return ItemFilter.Gathering;
-            if (itemType == ItemType.Fishing) return ItemFilter.Fishing;
-            if (itemType == ItemType.Farming) return ItemFilter.Farming;
-            if (itemType == ItemType.Crafting) return ItemFilter.Crafting;
-            if (itemType == ItemType.Cooking || itemType == ItemType.Food)
-                return ItemFilter.Cooking;
-
-            if (itemType == ItemType.Alchemy || itemType == ItemType.Potion)
-                return ItemFilter.Alchemy;
-
-            if (itemType == ItemType.OneHandedSword || itemType == ItemType.TwoHandedSword)
-                return ItemFilter.Swords;
-            if (itemType == ItemType.TwoHandedBow) return ItemFilter.Bows;
-            if (itemType == ItemType.TwoHandedStaff) return ItemFilter.Staves;
-            if (itemType == ItemType.TwoHandedSpear) return ItemFilter.Spears;
-            if (itemType == ItemType.OneHandedAxe || itemType == ItemType.TwoHandedAxe) return ItemFilter.Axes;
-            if (itemType == ItemType.Ring || itemType == ItemType.Amulet) return ItemFilter.Accessories;
-            if (itemType == ItemType.Shield) return ItemFilter.Shields;
-            if (itemType == ItemType.Pet) return ItemFilter.Pets;
-            if (itemType == ItemType.Scroll) return ItemFilter.Scrolls;
-
-            if (itemCategory == ItemCategory.Armor || itemCategory == ItemCategory.Cosmetic)
-                return ItemFilter.Armors;
-
-            return ItemFilter.All;
+            return (ItemFilter)RavenNest.Models.ItemFilterExtensions.GetItemFilter(
+                (RavenNest.Models.ItemCategory)item.Category,
+                (RavenNest.Models.ItemType)item.Type);
         }
 
         public void Dispose()

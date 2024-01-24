@@ -11,9 +11,9 @@ namespace RavenNest.Tools.Actions
 {
     public class BuildUpdatePackageAction
     {
-        private const string RavenBotFolder = @"C:\git\RavenBot";
-        private const string UnityBuildFolderWin = @"C:\git\Ravenfall Legacy\Build";
-        private const string UnityBuildFolderLinux = @"C:\git\Ravenfall Legacy\Build Linux";
+        private const string RavenBotFolder = @"G:\Ravenfall\Projects\RavenBot";
+        private const string UnityBuildFolderWin = @"G:\Ravenfall\Projects\Ravenfall Legacy\Build";
+        private const string UnityBuildFolderLinux = @"G:\Ravenfall\Projects\Ravenfall Legacy\Build Linux";
 
         private const int MAX_REVISION = 10;
         private const int MAX_BUILD = 10;
@@ -85,7 +85,7 @@ namespace RavenNest.Tools.Actions
         {
             await Task.Run(() =>
             {
-                // dotnet publish -r win10-x64 -c release -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true -o "C:\git\Ravenfall-Legacy\Build\"
+                // dotnet publish -r win10-x64 -c release -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true -o "G:\Ravenfall\Projects\Ravenfall-Legacy\Build\"
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = "dotnet.exe",

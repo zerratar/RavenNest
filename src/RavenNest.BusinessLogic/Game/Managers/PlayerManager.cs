@@ -18,6 +18,7 @@ using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Models.TcpApi;
+using TwitchLib.Api.Helix.Models.Charity;
 using Gender = RavenNest.DataModels.Gender;
 using Item = RavenNest.DataModels.Item;
 using Resources = RavenNest.DataModels.Resources;
@@ -1931,6 +1932,28 @@ namespace RavenNest.BusinessLogic.Game
             await TrySendToExtensionAsync(character, data);
         }
 
+        private async Task SendRemoveItemsByCategoryEventAsync(Character character, ItemFilter filter, List<Guid> exclude)
+        {
+            var data = new ItemRemoveByCategory
+            {
+                PlayerId = character.Id,
+                Filter = (RavenNest.Models.ItemFilter)filter,
+                Exclude = exclude,
+            };
+
+            var sessionUserId = character.UserIdLock;
+            if (sessionUserId != null)
+            {
+                var session = gameData.GetSessionByUserId(sessionUserId.Value);
+                if (session != null)
+                {
+                    gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.ItemRemoveByCategory, session, data));
+                }
+            }
+
+            await TrySendToExtensionAsync(character, data);
+        }
+
         private async void SendItemRemoveEvent(DataModels.InventoryItem item, long amount, Character character, bool sendToGame = false)
         {
             var data = new ItemRemove
@@ -2334,7 +2357,7 @@ namespace RavenNest.BusinessLogic.Game
             if (inventory.IsLocked(gift.Id)) return GiftItemResult.InventoryError;
             var recvInventory = inventoryProvider.Get(receiver.Id);
             var amountToGift = gift.Amount >= amount ? amount : (int)gift.Amount;
-            if (recvInventory.TryAddItem(gift, amountToGift, out var result) && 
+            if (recvInventory.TryAddItem(gift, amountToGift, out var result) &&
                 inventory.TryRemoveItem(gift, amountToGift, out var old))
             {
                 return GiftItemResult.OK(amountToGift, ModelMapper.Map(result), ModelMapper.Map(old));
@@ -2380,6 +2403,47 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             return false;
+        }
+
+
+        public void SendToStash(Guid characterId, ItemFilter filter)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return;
+            var inventory = inventoryProvider.Get(character.Id);
+
+            var unequipped = inventory.GetUnequippedItems();
+            var exclude = new List<Guid>();
+            foreach (var u in unequipped)
+            {
+                var a = GameData.GetItemFilter(u.Item);
+                if (a != filter)
+                {
+                    exclude.Add(u.Id);
+                    continue;
+                }
+
+                if (inventory.IsLocked(u.Id)) continue;
+                var stack = gameData.GetInventoryItem(u.Id);
+                var amount = stack.Amount.GetValueOrDefault();
+                if (inventory.RemoveItem(stack, amount))
+                {
+                    var canBeStacked = PlayerInventory.CanBeStacked(stack);
+                    if (canBeStacked)
+                    {
+                        var bankItems = gameData.GetUserBankItems(character.UserId);
+                        var existing = bankItems.FirstOrDefault(x => PlayerInventory.CanBeStacked(x, stack));
+                        if (existing != null)
+                        {
+                            existing.Amount += amount;
+                            continue;
+                        }
+                    }
+                    gameData.Add(GameData.CreateBankItem(character.UserId, stack, amount));
+                }
+            }
+
+            SendRemoveItemsByCategoryEventAsync(character, filter, exclude);
         }
 
         public ClearEnchantmentCooldownResult ClearEnchantmentCooldown(SessionToken sessionToken, Guid characterId)

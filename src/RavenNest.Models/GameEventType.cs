@@ -52,5 +52,7 @@
         GameUpdated = 40,
         Unstuck = 41,
         Teleport = 42,
+
+        ItemRemoveByCategory = 43,
     }
 }

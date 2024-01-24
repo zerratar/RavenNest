@@ -128,6 +128,11 @@
         </div>
 
         <div class="inventory-items inventory">
+            @if (CanManage)
+            {
+                <button @onclick="SendAllToStash" class="btn btn-action">@("Send all to stash")</button>
+            }
+
             @foreach (var item in GetInventoryItems())
             {
                 <div class="inventory-item @GetEnchantedItemClass(item.Enchantment)" @onclick="(()=>ShowItemDetails(item))">
@@ -357,6 +362,11 @@
         Player = PlayerService.SellToVendor(Player.Id, itemDetailsDialogItem, itemDetailsDialogItem.Amount);
         CloseVendorDialog();
         CloseItemDetails();
+    }
+
+    public void SendAllToStash()
+    {
+        Player = PlayerService.SendToStash(Player.Id, itemFilter);
     }
 
     public void SendToStash()

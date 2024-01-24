@@ -19,7 +19,7 @@ namespace RavenNest.Tools
             expAdjuster = new AdjustPlayerExperienceAction(ToolProgress, ToolStatus);
             buildUpdatePackage = new BuildUpdatePackageAction(ToolProgress, ToolStatus);
             restoreInventoryItems = new RestoreInventoryItems(ToolProgress, ToolStatus,
-                @"C:\git\RavenNest\src\generated-data\backups\active", @"C:\git\RavenNest\src\generated-data\backups\newest");
+                @"G:\Ravenfall\Projects\RavenNest\src\generated-data\backups\active", @"G:\Ravenfall\Projects\RavenNest\src\generated-data\backups\newest");
             var nextVersion = buildUpdatePackage.GetNextVersion().ToString();
             if (!string.IsNullOrEmpty(nextVersion))
                 BuildUpdatePackage.Text = "Build Update Package (" + nextVersion + ")";
@@ -77,7 +77,7 @@ namespace RavenNest.Tools
             }
             if (key.Key == ConsoleKey.F6)
             {
-                Backups.RepairSkillRecords("C:\\Ravenfall\\backups\\2023-09-15_172453", "C:\\Ravenfall\\backups\\2023-10-15_074440");
+                Backups.RepairSkillRecords("G:\\Ravenfall\\Data\\backups\\2023-09-15_172453", "G:\\Ravenfall\\Data\\backups\\2023-10-15_074440");
             }
 
             return base.OnKeyDown(key);

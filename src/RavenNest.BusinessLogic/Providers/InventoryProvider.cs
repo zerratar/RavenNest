@@ -542,6 +542,17 @@ namespace RavenNest.BusinessLogic.Providers
             }
         }
 
+        //public IReadOnlyList<ReadOnlyInventoryItem> GetUnequippedItems()
+        //{
+        //    lock (mutex)
+        //    {
+        //        return items.SelectWhere(
+        //            x => !x.Equipped,
+        //            x => x.AsReadOnly(gameData));
+        //    }
+        //}
+
+
         public ReadOnlyInventoryItem GetEquippedItem(int itemCategory, int itemType)
         {
             lock (mutex)

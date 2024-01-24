@@ -28,9 +28,13 @@
             <div class="inventory-management">
                 <button @onclick="ShowAddItem" class="btn btn-primary">Add item</button>
             </div>
+
+            @* <button @onclick="SendAllToStash" class="btn btn-action">@("Send all to stash")</button> *@
+
         }
 
         <div class="inventory-items inventory">
+
             @foreach (var item in GetInventoryItems())
             {
                 <div class="inventory-item" @onclick="(()=>ShowItemDetails(item))">
@@ -178,6 +182,10 @@
         characters = await PlayerService.GetMyPlayersAsync();
     }
 
+    // public void SendAllToStash()
+    // {
+    //     Player = PlayerService.SendToStash(Player.Id, itemFilter);
+    // }
 
     public void SendToCharacter(WebsitePlayer targetCharacter)
     {

@@ -12,7 +12,7 @@ namespace RavenNest.BusinessLogic
     public class RavenBotApiClient : IRavenBotApiClient
     {
 #if DEBUG
-        const string SettingsDirectory = @"C:\Ravenfall\user-settings";
+        const string SettingsDirectory = @"G:\Ravenfall\Data\user-settings";
 #else
         const string SettingsDirectory = "../user-settings/";
 #endif
