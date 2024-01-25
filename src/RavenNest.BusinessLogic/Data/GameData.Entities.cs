@@ -729,11 +729,14 @@ namespace RavenNest.BusinessLogic.Data
 
             // make sure we drop black stuff
             EnsureDrop(typedItems.Black.Helmet, 0.05);
-            EnsureDrop(typedItems.Black.Boots, 0.05);
-            EnsureDrop(typedItems.Black.Staff, 0.05);
-            EnsureDrop(typedItems.Black.Katana, 0.05);
-            EnsureDrop(typedItems.Black.Boots, 0.05);
+            EnsureDrop(typedItems.Black.Chest, 0.05);
             EnsureDrop(typedItems.Black.Gloves, 0.05);
+            EnsureDrop(typedItems.Black.Leggings, 0.05);
+            EnsureDrop(typedItems.Black.Boots, 0.05);
+            EnsureDrop(typedItems.Black.Shield, 0.05);
+            EnsureDrop(typedItems.Black.Staff, 0.05);
+            EnsureDrop(typedItems.Black.Bow, 0.05);
+            EnsureDrop(typedItems.Black.Katana, 0.05);
             EnsureDrop(typedItems.Black.Axe, 0.05);
             EnsureDrop(typedItems.Black.TwoHandedAxe, 0.05);
             EnsureDrop(typedItems.Black.TwoHandedSword, 0.05);

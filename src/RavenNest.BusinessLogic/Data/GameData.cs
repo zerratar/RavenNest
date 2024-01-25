@@ -2960,6 +2960,12 @@ namespace RavenNest.BusinessLogic.Data
                     housesTemp.Remove(r);
                 }
 
+                // re-assign slot index
+                for(var i = 0; i < housesTemp.Count; ++i)
+                {
+                    housesTemp[i].Slot = i;
+                }
+
                 houses = housesTemp;
             }
             return houses;
