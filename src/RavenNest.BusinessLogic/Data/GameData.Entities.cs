@@ -738,6 +738,7 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDrop(typedItems.Black.Bow, 0.05);
             EnsureDrop(typedItems.Black.Katana, 0.05);
             EnsureDrop(typedItems.Black.Axe, 0.05);
+            EnsureDrop(typedItems.Black.Sword, 0.05);
             EnsureDrop(typedItems.Black.TwoHandedAxe, 0.05);
             EnsureDrop(typedItems.Black.TwoHandedSword, 0.05);
             EnsureDrop(typedItems.Black.Spear, 0.05);
