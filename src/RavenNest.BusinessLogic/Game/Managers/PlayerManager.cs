@@ -2416,11 +2416,16 @@ namespace RavenNest.BusinessLogic.Game
             var exclude = new List<Guid>();
             foreach (var u in unequipped)
             {
-                var a = GameData.GetItemFilter(u.Item);
-                if (a != filter)
+                if (filter != ItemFilter.All)
                 {
-                    exclude.Add(u.Id);
-                    continue;
+                    var a = GameData.GetItemFilter(u.Item);
+                    if (a != filter)
+                    {
+                        // why is excluding items of "wrong" filter? this will automatically not be removed on the client.
+                        // we should only exclude items if they have a reason they can't be "moved" when in same filter.
+                        //exclude.Add(u.Id);
+                        continue;
+                    }
                 }
 
                 if (inventory.IsLocked(u.Id)) continue;
