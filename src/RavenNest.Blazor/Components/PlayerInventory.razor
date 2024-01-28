@@ -9,6 +9,23 @@
 @inject RavenNest.Blazor.Services.ItemService ItemService
 
 <div class="player-inventory">
+
+    @if (CanModify)
+    {
+        <div class="inventory-management">
+            <button @onclick="ShowAddItem" class="btn btn-primary">Add item</button>
+        </div>
+    }
+
+    @if (CanManage)
+    {
+        <div class="account-coins">
+            <i class="fa-solid fa-coins"></i>
+            <span>
+                @Utility.FormatAmount(coins)
+            </span>
+        </div>
+    }
     <div class="equipped-items">
         <h2>Equipped</h2>
         <div class="inventory-items">
@@ -23,12 +40,6 @@
 
     <div class="unequipped-items">
 
-        @if (CanModify)
-        {
-            <div class="inventory-management">
-                <button @onclick="ShowAddItem" class="btn btn-primary">Add item</button>
-            </div>
-        }
 
         <h2>Inventory</h2>
 
@@ -80,7 +91,6 @@
             </button>
 
 
-
             <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
                 <span class="item-filter-text">Scrolls</span>
                 <i class="fa-sharp fa-solid fa-scroll"></i>
@@ -127,11 +137,15 @@
             </button>
         </div>
 
+        @if (CanManage)
+        {
+            <div class="item-actions inventory-actions">
+                <button @onclick="SendAllToStash" class="btn btn-action stash">@("Send all to stash")</button>
+                <button @onclick="ShowVendorAllDialog" class="btn btn-action vendor">@("Vendor All (" + GetVendorPrice() + ")")</button>
+            </div>
+        }
+
         <div class="inventory-items inventory">
-            @if (CanManage)
-            {
-                <button @onclick="SendAllToStash" class="btn btn-action">@("Send all to stash")</button>
-            }
 
             @foreach (var item in GetInventoryItems())
             {
@@ -144,6 +158,32 @@
                 </div>
             }
         </div>
+
+        @if (vendorAllConfirmationDialogVisible)
+        {
+            <div class="item-details-dialog-container vendor">
+                <div class="item-details-dialog-background" @onclick="CloseVendorAllDialog"></div>
+                <div class="item-details-dialog vendor">
+                    <div class="dialog-header">
+                        <button class="close" @onclick="CloseVendorAllDialog">x</button>
+                    </div>
+
+                    <div class="item-details-content vendor">
+                        <div class="warning-row">
+                            <span>You are about to vendor</span>
+                            <span>@GetItemCountForVendor()</span>
+                            <span> items in this category for</span>
+                            <span class="vendor-price">@(GetVendorPrice())</span>
+                        </div>
+                        <div class="warning-row">Are you sure you want to continue?</div>
+                    </div>
+                    <div class="item-actions">
+                        <button @onclick="CloseVendorAllDialog" class="btn btn-action">Cancel</button>
+                        <button @onclick="VendorAll" class="btn btn-action vendor">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        }
 
         @if (vendorConfirmationDialogVisible)
         {
@@ -311,11 +351,15 @@
 
     private bool itemDetailDialogVisible;
     private bool vendorConfirmationDialogVisible;
+    private bool vendorAllConfirmationDialogVisible;
 
+    private IReadOnlyList<Models.InventoryItem> itemsToVendor;
     private Models.InventoryItem itemDetailsDialogItem;
     private Models.InventoryItem vendorItem;
 
+    private long vendorAllSum;
     private long giftOrSendAmount;
+    private long coins;
 
     private Item selectedItem;
     private bool addItemDialogVisible;
@@ -325,13 +369,23 @@
     protected override async Task OnInitializedAsync()
     {
         session = AuthService.GetSession();
+        coins = PlayerService.GetMyCoins();
         characters = await PlayerService.GetMyPlayersAsync();
+        UpdateItemsToVendor();
     }
 
     private void SelectItemFilter(ItemFilter newItemFilter)
     {
         itemFilter = newItemFilter;
+        UpdateItemsToVendor();
         InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateItemsToVendor()
+    {
+        this.itemsToVendor = GetInventoryItems(false);
+        this.vendorAllSum = itemsToVendor.Sum(x => x.Amount * ItemService.GetItem(x.ItemId).ShopSellPrice);
+        this.coins = PlayerService.GetMyCoins();
     }
 
 
@@ -360,8 +414,49 @@
     public void Vendor()
     {
         Player = PlayerService.SellToVendor(Player.Id, itemDetailsDialogItem, itemDetailsDialogItem.Amount);
+        coins = PlayerService.GetMyCoins();
         CloseVendorDialog();
         CloseItemDetails();
+    }
+
+    public void ShowVendorAllDialog()
+    {
+        // this.itemsToVendor = await ItemService.GetItemsAsync(itemFilter);
+        vendorAllConfirmationDialogVisible = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void VendorAll()
+    {
+        var resultPlayer = PlayerService.SellToVendor(Player.Id, itemFilter, itemsToVendor);
+        try
+        {
+            if (resultPlayer == null)
+            {
+                // TODO: show error....
+                return;
+            }
+
+            this.Player = resultPlayer;
+        }
+        finally
+        {
+            UpdateItemsToVendor();
+            CloseVendorAllDialog();
+        }
+    }
+
+    public long GetItemCountForVendor()
+    {
+        if (itemsToVendor == null || itemsToVendor.Count == 0)
+            return 0;
+
+        return itemsToVendor.Sum(x => x.Amount);
+    }
+
+    public string GetVendorPrice()
+    {
+        return Utility.FormatAmount(vendorAllSum);
     }
 
     public void SendAllToStash()
@@ -489,6 +584,12 @@
         InvokeAsync(StateHasChanged);
     }
 
+    public void CloseVendorAllDialog()
+    {
+        vendorAllConfirmationDialogVisible = false;
+        InvokeAsync(StateHasChanged);
+    }
+
     public void CloseItemDetails()
     {
         itemDetailDialogVisible = false;
@@ -516,9 +617,9 @@
         addItemDialogVisible = true;
     }
 
-    public IReadOnlyList<Models.InventoryItem> GetInventoryItems()
+    public IReadOnlyList<Models.InventoryItem> GetInventoryItems(bool includeStreamerTokens = true)
     {
-        return Player.InventoryItems.Where(x => !x.Equipped && Filter(x)).ToList();
+        return Player.InventoryItems.Where(x => !x.Equipped && Filter(x, includeStreamerTokens)).ToList();
     }
 
     public IReadOnlyList<Models.InventoryItem> GetEquippedItems()
@@ -526,8 +627,11 @@
         return Player.InventoryItems.Where(x => x.Equipped).ToList();
     }
 
-    private bool Filter(Models.InventoryItem item)
+    private bool Filter(Models.InventoryItem item, bool includeStreamerTokens = true)
     {
+        if (!includeStreamerTokens && !string.IsNullOrEmpty(item.Tag))
+            return false;
+
         if (itemFilter == ItemFilter.All)
             return true;
 

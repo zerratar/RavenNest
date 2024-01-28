@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Numerics;
+using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using RavenNest.BusinessLogic.Data;
@@ -2155,7 +2157,61 @@ namespace RavenNest.BusinessLogic.Game
             UpdateStockAndLogTransaction(player.Id, itemToVendor.ItemId, itemToVendor.Amount, totalPrice, false);
             return (int)itemToVendor.Amount;
         }
+        public bool SellItemToVendor(Guid characterId, ItemFilter filter, IReadOnlyList<RavenNest.Models.InventoryItem> items)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return false;
+            var inventory = inventoryProvider.Get(character.Id);
 
+            DataModels.Resources resources = null;
+            DataModels.GameSession session = null;
+
+            resources = gameData.GetResources(character);
+            if (resources == null) return false;
+
+            var exclude = new List<Guid>();
+            var isSuccess = false;
+            foreach (var invItem in items)
+            {
+                if (inventory.IsLocked(invItem.Id))
+                {
+                    exclude.Add(invItem.Id);
+                    continue;
+                }
+
+                var stack = gameData.GetInventoryItem(invItem.Id);
+                if (stack == null)
+                {
+                    exclude.Add(invItem.Id);
+                    continue;
+                }
+
+                var amountToVendor = stack.Amount.GetValueOrDefault();
+                var i = gameData.GetItem(stack.ItemId);
+                if (amountToVendor == 0 || i == null || i.Category == (int)DataModels.ItemCategory.StreamerToken)
+                {
+                    exclude.Add(invItem.Id);
+                    continue;
+                }
+
+                if (inventory.RemoveItem(stack, amountToVendor))
+                {
+                    isSuccess = true;
+                    var price = i.ShopSellPrice * amountToVendor;
+                    resources.Coins += price;
+                    UpdateStockAndLogTransaction(characterId, stack.ItemId, amountToVendor, price, false);
+                }
+            }
+
+            var sessionUserId = character.UserIdLock;
+            if (sessionUserId == null) return isSuccess;
+            session = gameData.GetSessionByUserId(sessionUserId.Value);
+            if (session == null) return isSuccess;
+
+            UpdateResources(session, character, resources);
+            SendRemoveItemsByCategoryEventAsync(character, filter, exclude);
+            return isSuccess;
+        }
         public bool SellItemToVendor(Guid characterId, RavenNest.Models.InventoryItem item, long amount)
         {
             var character = gameData.GetCharacter(characterId);
@@ -2180,7 +2236,7 @@ namespace RavenNest.BusinessLogic.Game
                 var price = i.ShopSellPrice * amountToVendor;
                 resources.Coins += price;
 
-                UpdateStockAndLogTransaction(characterId, item.ItemId, amount, price, false);
+                UpdateStockAndLogTransaction(characterId, item.ItemId, amountToVendor, price, false);
 
                 var sessionUserId = character.UserIdLock;
                 if (sessionUserId != null)
@@ -4080,7 +4136,7 @@ namespace RavenNest.BusinessLogic.Game
 
         private void UpdateResources(DataModels.GameSession session, Character character, DataModels.Resources resources)
         {
-            var user = gameData.GetUser(character.UserId);
+            //var user = gameData.GetUser(character.UserId);
             var gameEvent = gameData.CreateSessionEvent(GameEventType.ResourceUpdate, session,
                 new ResourceUpdate
                 {

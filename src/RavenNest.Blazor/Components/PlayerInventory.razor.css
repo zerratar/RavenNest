@@ -62,3 +62,19 @@ input.blazored-typeahead__input {
     border-radius: 0;
     margin-top: 15px;
 }
+
+.inventory-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: white;
+    margin-left: 25px;
+    margin-right: 25px;
+    padding: 10px 5px;
+}
+
+.account-coins {
+    position: absolute;
+    right: 40px;
+    margin-top: -70px;
+}

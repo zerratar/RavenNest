@@ -146,6 +146,15 @@ namespace RavenNest.Blazor.Services
             return playerManager.GetWebsitePlayer(characterId);
         }
 
+        public WebsitePlayer SellToVendor(Guid characterId, ItemFilter filter, IReadOnlyList<RavenNest.Models.InventoryItem> items)
+        {
+            if (playerManager.SellItemToVendor(characterId, filter, items))
+            {
+                return playerManager.GetWebsitePlayer(characterId);
+            }
+            return null;
+        }
+
         public WebsitePlayer SendToStash(Guid characterId, ItemFilter filter)
         {
             playerManager.SendToStash(characterId, filter);
@@ -212,6 +221,15 @@ namespace RavenNest.Blazor.Services
                 var userId = session.UserId;
                 return playerManager.GetWebsitePlayer(userId, index.ToString());
             });
+        }
+
+        public long GetMyCoins()
+        {
+            var session = GetSession();
+            var userId = session.UserId;
+            var user = gameData.GetUser(userId);
+            var resx = gameData.GetResources(user.Resources.GetValueOrDefault());
+            return (long)(resx?.Coins ?? 0);
         }
 
         public async Task<IReadOnlyList<WebsitePlayer>> GetMyPlayersAsync()
