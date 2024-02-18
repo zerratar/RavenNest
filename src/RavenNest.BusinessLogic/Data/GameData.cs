@@ -2961,7 +2961,7 @@ namespace RavenNest.BusinessLogic.Data
                 }
 
                 // re-assign slot index
-                for(var i = 0; i < housesTemp.Count; ++i)
+                for (var i = 0; i < housesTemp.Count; ++i)
                 {
                     housesTemp[i].Slot = i;
                 }
@@ -4649,6 +4649,7 @@ namespace RavenNest.BusinessLogic.Data
         public Item Cacao;
         public Item GoldenLeaf;
         public Item Chocolate;
+        public Item HotChocolate;
 
         // Cooking Recipes
         public Item RedWine;

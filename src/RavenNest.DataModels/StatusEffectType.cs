@@ -112,6 +112,10 @@
         /// </summary>
         ReducedCastSpeed,
         /// <summary>
+        /// Increases the damage dealt or health healed on critical hits.
+        /// </summary>
+        IncreasedCriticalHitDamage,
+        /// <summary>
         /// Removes an item from the player's inventory
         /// </summary>
         RemoveItem = 800,

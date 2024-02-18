@@ -353,6 +353,9 @@ namespace RavenNest.BusinessLogic.Data
                     Chocolate = GetOrCreateItem(i, "Chocolate", "Melted and molded bliss.", ItemCategory.Resource, ItemType.Cooking),
                     GoldenLeaf = GetOrCreateItem(i, "Golden Leaf", "An exquisite ingredient for elite dishes.", ItemCategory.Resource, ItemType.Cooking),
 
+                    HotChocolate = GetOrCreateItem(i, "Hot Chocolate", "A warm and comforting drink.", ItemCategory.Food, ItemType.Potion),
+
+
                     // Cooking - Edibles and not so edible..
                     RedWine = GetOrCreateItem(i, "Red Wine", "Aged gracefully, pairs well with hearty dishes.", ItemCategory.Food, ItemType.Potion),
                     RoastedChicken = GetOrCreateItem(i, "Roasted Chicken", "Roasted to a golden brown. Juicy and flavorful.", ItemCategory.Food, ItemType.Food),
@@ -1102,7 +1105,9 @@ namespace RavenNest.BusinessLogic.Data
             EnsureCookingRecipe(180, items.RoastBeef, items.BurnedBeef, 0.2, 1, items.RawBeef);
             EnsureCookingRecipe(200, items.ApplePie, items.BurnedApplePie, 0.2, 1, items.Apple, items.Sugar, items.Butter, items.Flour, items.Cinnamon);
             EnsureCookingRecipe(250, items.Steak, items.BurnedSteak, 0.2, 1, items.RawBeef, items.Salt, items.BlackPepper);
+
             EnsureCookingRecipeGuaranteed(400, items.Chocolate, Ingredients(items.Cacao, items.Milk, items.Sugar));
+            EnsureCookingRecipeGuaranteed(420, items.HotChocolate, Ingredients(items.Chocolate, items.Milk));
 
             EnsureCookingRecipe(300, items.Skewers, items.BurnedSkewers, 0.2, 1, items.RawBeef, items.SpiceMix);
 
@@ -1186,7 +1191,9 @@ namespace RavenNest.BusinessLogic.Data
             EnsureItemStatusEffects(typedItems.ApplePie, Effect(StatusEffectType.Heal, 0.14f, 22), Effect(StatusEffectType.IncreasedMagicPower, 150, 0.05f, 3));
             EnsureItemStatusEffects(typedItems.Bread, Effect(StatusEffectType.Heal, 0.06f, 8));
             EnsureItemStatusEffects(typedItems.Skewers, Effect(StatusEffectType.Heal, 0.11f, 18), Effect(StatusEffectType.IncreasedAttackSpeed, 140, 0.06f, 2));
-            EnsureItemStatusEffects(typedItems.ChocolateChipCookies, Effect(StatusEffectType.Heal, 0.07f, 10));
+            EnsureItemStatusEffects(typedItems.HotChocolate, Effect(StatusEffectType.Heal, 0.05f, 8), Effect(StatusEffectType.IncreasedHitChance, 0.05f, 0));
+
+            EnsureItemStatusEffects(typedItems.ChocolateChipCookies, Effect(StatusEffectType.Heal, 0.07f, 10), Effect(StatusEffectType.IncreaseCriticalHit, 120, 0.10f, 0));
 
             // Burnt :o
             EnsureItemStatusEffects(typedItems.BurnedGrilledCheese, Effect(StatusEffectType.Heal, 0.02f, 2));

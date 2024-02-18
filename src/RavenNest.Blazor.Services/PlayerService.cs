@@ -226,10 +226,15 @@ namespace RavenNest.Blazor.Services
         public long GetMyCoins()
         {
             var session = GetSession();
-            var userId = session.UserId;
-            var user = gameData.GetUser(userId);
+            if (session == null) return 0;
+
+            var user = gameData.GetUser(session.UserId);
+            if (user == null) return 0;
+
             var resx = gameData.GetResources(user.Resources.GetValueOrDefault());
-            return (long)(resx?.Coins ?? 0);
+            if (resx == null) return 0;
+
+            return (long)resx.Coins;
         }
 
         public async Task<IReadOnlyList<WebsitePlayer>> GetMyPlayersAsync()
