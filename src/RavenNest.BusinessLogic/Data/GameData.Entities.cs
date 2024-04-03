@@ -697,6 +697,7 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDrop(typedItems.Pets.PspspsCat, 0.04);
             EnsureDrop(typedItems.Pets.PspspsCatBeige, 0.04);
             EnsureDrop(typedItems.Pets.PspspsCatCream, 0.04);
+            EnsureDrop(typedItems.Pets.PspspsCatBlack, 0.04);
             EnsureDrop(typedItems.Pets.PspspsCatMiKe, 0.04);
             EnsureDrop(typedItems.Pets.PspspsCatOrange, 0.04);
             EnsureDrop(typedItems.Pets.PspspsCatRaccoon, 0.04);
