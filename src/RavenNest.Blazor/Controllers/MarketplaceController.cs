@@ -94,5 +94,18 @@ namespace RavenNest.Controllers
             return this.marketplace.SellItem(session, characterId, itemId, amount, pricePerItem);
         }
 
+        [HttpGet("v2/value/{itemId}")]
+        public ItemValueResult GetItemValue(Guid itemId)
+        {
+            return this.marketplace.GetItemValue(itemId, 0);
+        }
+
+        [HttpGet("v2/value/{itemId}/{amount}")]
+        public ItemValueResult GetItemValue(Guid itemId, long amount)
+        {
+            return this.marketplace.GetItemValue(itemId, amount);
+        }
+
+
     }
 }

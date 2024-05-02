@@ -2,6 +2,7 @@
 {
     public class ItemBuyResult
     {
+        public ItemBuyResult() { }
         public ItemBuyResult(
             ItemTradeState state,
             long[] amountBought,
@@ -16,12 +17,11 @@
             TotalCost = totalCost;
         }
 
-        public ItemTradeState State { get; }
-        public long[] AmountBought { get; }
-        public double[] CostPerItem { get; }
-        public long TotalAmount { get; }
-        public double TotalCost { get; }
+        public ItemTradeState State { get; set; }
+        public long[] AmountBought { get; set; }
+        public double[] CostPerItem { get; set; }
+        public long TotalAmount { get; set; }
+        public double TotalCost { get; set; }
 
     }
-
 }

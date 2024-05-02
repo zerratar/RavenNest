@@ -181,6 +181,44 @@ namespace RavenNest.BusinessLogic.Game
             return new ItemSellResult(ItemTradeState.Success);
         }
 
+        public ItemValueResult GetItemValue(Guid itemId, long amount)
+        {
+            var item = gameData.GetItem(itemId);
+            if (item == null) return new ItemValueResult();
+
+            var marketItems = gameData.GetMarketItems(itemId);
+            if (marketItems == null || marketItems.Count <= 0)
+            {
+                return new ItemValueResult();
+            }
+
+            var cheapest = marketItems.Min(x => x.PricePerItem);
+            var mostExpensive = marketItems.Max(x => x.PricePerItem);
+            var average = marketItems.Average(x => x.PricePerItem);
+            return new ItemValueResult(cheapest, mostExpensive, average, marketItems.Sum(x => x.Amount),
+                amount <= 1 ? cheapest : GetCheapestPrice(marketItems, amount));
+        }
+
+        private double GetCheapestPrice(IReadOnlyList<DataModels.MarketItem> marketItems, long amount)
+        {
+            var amountLeft = amount;
+            var price = 0d;
+            foreach (var stack in marketItems.OrderBy(x => x.PricePerItem))
+            {
+                if (amountLeft <= stack.Amount)
+                {
+                    price += (stack.PricePerItem * amountLeft);
+                    break;
+                }
+                else
+                {
+                    price += (stack.PricePerItem * stack.Amount);
+                    amountLeft -= stack.Amount;
+                }
+            }
+            return price;
+        }
+
         public ItemBuyResult BuyItem(SessionToken token, string userId, string platform, Guid itemId, long amount, double maxPricePerItem)
         {
             var character = GetCharacter(token, userId, platform);
@@ -421,5 +459,6 @@ namespace RavenNest.BusinessLogic.Game
             var gameEvent = gameData.CreateSessionEvent(type, session, model);
             gameData.EnqueueGameEvent(gameEvent);
         }
+
     }
 }
