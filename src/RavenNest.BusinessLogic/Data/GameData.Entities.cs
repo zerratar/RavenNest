@@ -369,6 +369,8 @@ namespace RavenNest.BusinessLogic.Data
                     Skewers = GetOrCreateItem(i, "Skewers", "Grilled delights on a stick.", ItemCategory.Food, ItemType.Food),
                     Steak = GetOrCreateItem(i, "Steak", "Succulent and perfectly seared.", ItemCategory.Food, ItemType.Food),
 
+                    Prings = GetOrCreateItem(i, "Prings", "A crunchy snack, perfect for munching.", ItemCategory.Food, ItemType.Food),
+
                     GrilledCheese = GetOrCreateItem(i, "Grilled Cheese", "A classic comfort dish, this grilled cheese sandwich oozes with melted cheese and is complemented by slices of savory ham. The bread, crisped to perfection with a buttery exterior, offers a delightful crunch with every bite.", ItemCategory.Food, ItemType.Food, "Grilled Ham and Cheese Sandwich"),
 
                     // Cooking - Fish
@@ -1107,10 +1109,14 @@ namespace RavenNest.BusinessLogic.Data
             EnsureCookingRecipe(200, items.ApplePie, items.BurnedApplePie, 0.2, 1, items.Apple, items.Sugar, items.Butter, items.Flour, items.Cinnamon);
             EnsureCookingRecipe(250, items.Steak, items.BurnedSteak, 0.2, 1, items.RawBeef, items.Salt, items.BlackPepper);
 
+
+
             EnsureCookingRecipeGuaranteed(400, items.Chocolate, Ingredients(items.Cacao, items.Milk, items.Sugar));
             EnsureCookingRecipeGuaranteed(420, items.HotChocolate, Ingredients(items.Chocolate, items.Milk));
 
             EnsureCookingRecipe(300, items.Skewers, items.BurnedSkewers, 0.2, 1, items.RawBeef, items.SpiceMix);
+
+            EnsureCookingRecipeGuaranteed(350, items.Prings, Ingredients(items.Potato, items.Salt, items.BlackPepper, items.Flour));
 
             EnsureCookingRecipe(450, items.ChocolateChipCookies, items.BurnedChocolateChipCookies, 0.2, 1, items.Chocolate, items.Sugar, items.Butter, items.Flour);
 
@@ -1188,12 +1194,14 @@ namespace RavenNest.BusinessLogic.Data
             EnsureItemStatusEffects(typedItems.RoastedPork, Effect(StatusEffectType.Heal, 0.12f, 20), Effect(StatusEffectType.IncreasedDefense, 150, 0.06f, 3));
             EnsureItemStatusEffects(typedItems.CookedChickenLeg, Effect(StatusEffectType.Heal, 0.10f, 15));
             EnsureItemStatusEffects(typedItems.Steak, Effect(StatusEffectType.Heal, 0.18f, 28), Effect(StatusEffectType.IncreasedStrength, 200, 0.08f, 3));
+
+            EnsureItemStatusEffects(typedItems.Prings, Effect(StatusEffectType.Heal, 0.2f, 30), Effect(StatusEffectType.IncreaseCriticalHit, 60f, .1f, 5));
+
             EnsureItemStatusEffects(typedItems.GrilledCheese, Effect(StatusEffectType.Heal, 0.09f, 12), Effect(StatusEffectType.IncreasedDefense, 100, 0.05f, 2));
             EnsureItemStatusEffects(typedItems.ApplePie, Effect(StatusEffectType.Heal, 0.14f, 22), Effect(StatusEffectType.IncreasedMagicPower, 150, 0.05f, 3));
             EnsureItemStatusEffects(typedItems.Bread, Effect(StatusEffectType.Heal, 0.06f, 8));
             EnsureItemStatusEffects(typedItems.Skewers, Effect(StatusEffectType.Heal, 0.11f, 18), Effect(StatusEffectType.IncreasedAttackSpeed, 140, 0.06f, 2));
             EnsureItemStatusEffects(typedItems.HotChocolate, Effect(StatusEffectType.Heal, 0.05f, 8), Effect(StatusEffectType.IncreasedHitChance, 0.05f, 0));
-
             EnsureItemStatusEffects(typedItems.ChocolateChipCookies, Effect(StatusEffectType.Heal, 0.07f, 10), Effect(StatusEffectType.IncreaseCriticalHit, 120, 0.10f, 0));
 
             // Burnt :o

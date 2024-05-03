@@ -4665,6 +4665,7 @@ namespace RavenNest.BusinessLogic.Data
         public Item Skewers;
         public Item ChocolateChipCookies;
         public Item BurnedGrilledCheese;
+        public Item Prings;
 
         // Fish
         public Item Sprat;
