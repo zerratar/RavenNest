@@ -920,6 +920,7 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDropRate(500, items.RawMantaRay, 7200, 0.09, fishing);
             EnsureDropRate(700, items.RawKraken, 7200, 0.09, fishing);
             EnsureDropRate(900, items.RawLeviathan, 14400, 0.07, fishing);
+            EnsureDropRate(999, items.RawPoseidonsGuardian, 21600, 0.02, fishing);
             #endregion
 
             RemoveMissingItemDrops();
