@@ -141,7 +141,11 @@ namespace RavenNest.BusinessLogic.Game
 
             var sessionToken = GenerateSessionToken(token, user, newGameSession, clientVersion);
 
-
+            var userSettings = gameData.GetUserSettings(userId);
+            if (userSettings != null)
+            {
+                userSettings["client_version"] = clientVersion;
+            }
 
             return Task.FromResult(new BeginSessionResult
             {
@@ -151,7 +155,7 @@ namespace RavenNest.BusinessLogic.Game
                 ExpMultiplier = GetExpMultiplier(),
                 Permissions = GetSessionSettings(user),
                 Village = villageManager.GetVillageInfo(newGameSession),
-                UserSettings = gameData.GetUserSettings(userId),
+                UserSettings = userSettings,
             });
         }
 
