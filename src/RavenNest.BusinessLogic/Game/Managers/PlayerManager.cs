@@ -3436,6 +3436,11 @@ namespace RavenNest.BusinessLogic.Game
                     toState.Health = fromState.Health;
                     toState.AutoJoinDungeonCounter = fromState.AutoJoinDungeonCounter;
                     toState.AutoJoinRaidCounter = fromState.AutoJoinRaidCounter;
+                    toState.AutoTrainTargetLevel = fromState.AutoTrainTargetLevel;
+                    toState.AutoRestTarget = fromState.AutoRestTarget;
+                    toState.AutoRestStart = fromState.AutoRestStart;
+                    toState.DungeonCombatStyle = fromState.DungeonCombatStyle;
+                    toState.RaidCombatStyle = fromState.RaidCombatStyle;
                 }
 
                 foreach (var s0 in skillsFrom.GetSkills())
@@ -4099,6 +4104,12 @@ namespace RavenNest.BusinessLogic.Game
             state.X = update.X;
             state.Y = update.Y;
             state.Z = update.Z;
+
+            state.AutoTrainTargetLevel = update.AutoTrainTargetLevel;
+            state.AutoRestTarget = update.AutoRestTarget;
+            state.AutoRestStart = update.AutoRestStart;
+            state.DungeonCombatStyle = update.DungeonCombatStyle;
+            state.RaidCombatStyle = update.RaidCombatStyle;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -4125,6 +4136,12 @@ namespace RavenNest.BusinessLogic.Game
                 EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString("yyyy-MM-ddTHH:mm:ss.fffffff"),
                 AutoJoinRaidCounter = update.AutoJoinRaidCounter,
                 AutoJoinDungeonCounter = update.AutoJoinDungeonCounter,
+                AutoRestStart = update.AutoRestStart,
+                AutoRestTarget = update.AutoRestTarget,
+                AutoTrainTargetLevel = update.AutoTrainTargetLevel,
+                RaidCombatStyle = update.RaidCombatStyle,
+                DungeonCombatStyle = update.DungeonCombatStyle,
+                RestedTime = 0,
                 Task = task,
                 TaskArgument = taskArgument ?? task,
                 X = update.X,

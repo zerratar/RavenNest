@@ -15,12 +15,12 @@ namespace RavenNest.Blazor.Services
     public class ClanService : RavenNestService
     {
         private readonly GameData gameData;
-        private readonly ClanManager clanManager;
+        private readonly IClanManager clanManager;
         public const int MaxClanNameLength = 40;
 
         public ClanService(
             GameData gameData,
-            ClanManager clanManager,
+            IClanManager clanManager,
             IHttpContextAccessor accessor,
             SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)

@@ -378,7 +378,7 @@ namespace RavenNest.Blazor
         {
             services.AddSingleton<MarketplaceReportAggregator>();
             services.AddSingleton<EconomyReportAggregator>();
-
+            
             services.AddSingleton<EconomyService>();
             services.AddSingleton<PatreonService>();
             services.AddSingleton<AuthService>();
@@ -428,7 +428,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<IServerManager, ServerManager>();
             services.AddSingleton<VillageManager>();
             services.AddSingleton<IPatreonManager, PatreonManager>();
-            services.AddSingleton<ClanManager>();
+            services.AddSingleton<IClanManager, ClanManager>();
             services.AddSingleton<INotificationManager, NotificationManager>();
 
             services.AddSingleton<IQueryBuilder, QueryBuilder>();

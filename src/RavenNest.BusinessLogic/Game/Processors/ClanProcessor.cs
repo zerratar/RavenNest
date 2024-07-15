@@ -6,9 +6,7 @@ using System.Linq;
 
 using StringTimeDictionary = System.Collections.Concurrent.ConcurrentDictionary<string, System.DateTime>;
 using GuidTimeDictionary = System.Collections.Concurrent.ConcurrentDictionary<System.Guid, System.DateTime>;
-using StateDictionary = System.Collections.Concurrent.ConcurrentDictionary<System.Guid, RavenNest.BusinessLogic.Game.Processors.Tasks.ClanSkillState>;
 using RavenNest.BusinessLogic.Net;
-using RavenNest.BusinessLogic.Providers;
 using Microsoft.Extensions.Logging;
 
 namespace RavenNest.BusinessLogic.Game.Processors.Tasks

@@ -24,5 +24,11 @@ namespace RavenNest.DataModels
         private bool? isCaptain; public bool? IsCaptain { get => isCaptain; set => Set(ref isCaptain, value); }
         private int autoJoinDungeonCounter; public int AutoJoinDungeonCounter { get => autoJoinDungeonCounter; set => Set(ref autoJoinDungeonCounter, value); }
         private int autoJoinRaidCounter; public int AutoJoinRaidCounter { get => autoJoinRaidCounter; set => Set(ref autoJoinRaidCounter, value); }
+
+        private int autoTrainTargetLevel; public int AutoTrainTargetLevel { get => autoTrainTargetLevel; set => Set(ref autoTrainTargetLevel, value); }
+        private double? autoRestTarget; public double? AutoRestTarget { get => autoRestTarget; set => Set(ref autoRestTarget, value); }
+        private double? autoRestStart; public double? AutoRestStart { get => autoRestStart; set => Set(ref autoRestStart, value); }
+        private int? dungeonCombatStyle; public int? DungeonCombatStyle { get => dungeonCombatStyle; set => Set(ref dungeonCombatStyle, value); }
+        private int? raidCombatStyle; public int? RaidCombatStyle { get => raidCombatStyle; set => Set(ref raidCombatStyle, value); }
     }
 }

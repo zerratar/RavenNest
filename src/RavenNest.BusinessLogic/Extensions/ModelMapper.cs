@@ -147,6 +147,11 @@ namespace RavenNest.BusinessLogic.Extensions
                     state.Z = data.Z;
                     state.AutoJoinDungeonCounter = data.AutoJoinDungeonCounter;
                     state.AutoJoinRaidCounter = data.AutoJoinRaidCounter;
+                    state.AutoTrainTargetLevel = data.AutoTrainTargetLevel;
+                    state.AutoRestTarget = data.AutoRestTarget;
+                    state.AutoRestStart = data.AutoRestStart;
+                    state.DungeonCombatStyle = data.DungeonCombatStyle;
+                    state.RaidCombatStyle = data.RaidCombatStyle;
                 }
             }
 

@@ -8,7 +8,7 @@ namespace RavenNest.BusinessLogic
     public static class GameMath
     {
         public const int MaxLevel = 999;
-        public const int MaxVillageLevel = 300;
+        public const int MaxVillageLevel = 400;
         public const int MaximumEnchantmentCount = 10;
 
         public const double MaxExpGainPercentageForEnchanting = 1.5;

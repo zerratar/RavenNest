@@ -2,13 +2,11 @@
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.BusinessLogic.Net;
-using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,6 +19,8 @@ namespace RavenNest.BusinessLogic.Game.Processors
         private const string LoyaltyProcessorName = "loyalty";
         private const string ClanProcessorName = "Clan";
         private const string RestedProcessorName = "Rested";
+        private const string QuestProcessorName = "Quest";
+        private const string AchievementProcessorName = "Achievement";
 
         private readonly ConcurrentDictionary<string, ITaskProcessor> taskProcessors
             = new ConcurrentDictionary<string, ITaskProcessor>();
@@ -69,20 +69,25 @@ namespace RavenNest.BusinessLogic.Game.Processors
             this.sessionToken = sessionToken;
             this.activatedUtc = DateTime.UtcNow;
 
-            RegisterPlayerTask<ClanProcessor>(ClanProcessorName);
-            RegisterPlayerTask<VillageProcessor>(VillageProcessorName);
-            RegisterPlayerTask<LoyaltyProcessor>(LoyaltyProcessorName);
-            RegisterPlayerTask<RestedProcessor>(RestedProcessorName);
-            RegisterPlayerTask<FightingTaskProcessor>("Fighting");
-            RegisterPlayerTask<MiningTaskProcessor>("Mining");
-            RegisterPlayerTask<FishingTaskProcessor>("Fishing");
-            RegisterPlayerTask<GatheringTaskProcessor>("Gathering");
-            RegisterPlayerTask<AlchemyTaskProcessor>("Alchemy");
-            RegisterPlayerTask<FarmingTaskProcessor>("Farming");
-            RegisterPlayerTask<SailingTaskProcessor>("Sailing");
-            RegisterPlayerTask<WoodcuttingTaskProcessor>("Woodcutting");
-            RegisterPlayerTask<CraftingTaskProcessor>("Crafting");
-            RegisterPlayerTask<CookingTaskProcessor>("Cooking");
+            //this.questManager = new QuestManager();
+
+            RegisterProcessor<ClanProcessor>(ClanProcessorName);
+            RegisterProcessor<VillageProcessor>(VillageProcessorName);
+            RegisterProcessor<LoyaltyProcessor>(LoyaltyProcessorName);
+            RegisterProcessor<RestedProcessor>(RestedProcessorName);
+            RegisterProcessor<QuestProcessor>(QuestProcessorName);
+            RegisterProcessor<AchievementProcessor>(AchievementProcessorName);
+
+            RegisterProcessor<FightingTaskProcessor>("Fighting");
+            RegisterProcessor<MiningTaskProcessor>("Mining");
+            RegisterProcessor<FishingTaskProcessor>("Fishing");
+            RegisterProcessor<GatheringTaskProcessor>("Gathering");
+            RegisterProcessor<AlchemyTaskProcessor>("Alchemy");
+            RegisterProcessor<FarmingTaskProcessor>("Farming");
+            RegisterProcessor<SailingTaskProcessor>("Sailing");
+            RegisterProcessor<WoodcuttingTaskProcessor>("Woodcutting");
+            RegisterProcessor<CraftingTaskProcessor>("Crafting");
+            RegisterProcessor<CookingTaskProcessor>("Cooking");
 
             SendSessionData();
 
@@ -276,6 +281,14 @@ namespace RavenNest.BusinessLogic.Game.Processors
             if (village != null)
                 village.Process(logger, gameData, inventoryProvider, session, null, null);
 
+
+            // process streamer and quests and achievements
+            var quest = GetTaskProcessor(QuestProcessorName);
+            quest.Process(logger, gameData, inventoryProvider, session, null, null);
+
+            var achievement = GetTaskProcessor(AchievementProcessorName);
+            achievement.Process(logger, gameData, inventoryProvider, session, null, null);
+
             var characters = gameData.GetActiveSessionCharacters(session);
             if (characters.Count > 0)
             {
@@ -309,6 +322,9 @@ namespace RavenNest.BusinessLogic.Game.Processors
                     rested.Process(logger, gameData, inventoryProvider, session, character, state);
                     clan.Process(logger, gameData, inventoryProvider, session, character, state);
                     loyalty.Process(logger, gameData, inventoryProvider, session, character, state);
+
+                    achievement.Process(logger, gameData, inventoryProvider, session, character, state);
+                    quest.Process(logger, gameData, inventoryProvider, session, character, state);
 
                     if (string.IsNullOrEmpty(state.Task)
                         || (state.InOnsen ?? false)
@@ -376,9 +392,10 @@ namespace RavenNest.BusinessLogic.Game.Processors
             return null;
         }
 
-        private void RegisterPlayerTask<T>(string taskName) where T : ITaskProcessor, new()
+        private void RegisterProcessor<T>(string taskName) where T : ITaskProcessor, new()
         {
             taskProcessors[taskName] = new T();
+
             taskProcessors[taskName].SetExtensionConnectionProvider(extensionConnectionProvider);
             taskProcessors[taskName].SetTcpSocketApiConnectionProvider(tcpConnectionProvider);
         }

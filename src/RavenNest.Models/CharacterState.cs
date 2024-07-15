@@ -25,5 +25,10 @@ namespace RavenNest.Models
         public bool? IsCaptain { get; set; }
         public int AutoJoinDungeonCounter { get; set; }
         public int AutoJoinRaidCounter { get; set; }
+        public int AutoTrainTargetLevel { get; set; }
+        public double? AutoRestTarget { get; set; }
+        public double? AutoRestStart { get; set; }
+        public int? DungeonCombatStyle { get; set; }
+        public int? RaidCombatStyle { get; set; }
     }
 }

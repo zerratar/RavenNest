@@ -20,7 +20,7 @@ namespace RavenNest.Controllers
         private readonly SessionInfoProvider sessionInfoProvider;
         private readonly SessionManager sessionManager;
         private readonly GameManager gameManager;
-        private readonly ClanManager clanManager;
+        private readonly IClanManager clanManager;
         private readonly ISecureHasher secureHasher;
         private readonly ILogger<GameController> logger;
 
@@ -32,7 +32,7 @@ namespace RavenNest.Controllers
             SessionInfoProvider sessionInfoProvider,
             SessionManager sessionManager,
             GameManager gameManager,
-            ClanManager clanManager,
+            IClanManager clanManager,
             ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {

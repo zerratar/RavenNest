@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace RavenNest.BusinessLogic.Game
 {
-    public class ClanManager
+    public class ClanManager : IClanManager
     {
         private readonly ILogger<ClanManager> logger;
         private readonly GameData gameData;

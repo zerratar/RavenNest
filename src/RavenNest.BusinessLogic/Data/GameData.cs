@@ -2887,7 +2887,7 @@ namespace RavenNest.BusinessLogic.Data
                 return Array.Empty<VillageHouse>();
             }
 
-            var houseCount = System.Math.Min(village.Level / 10, GameMath.MaxVillageLevel / 10);
+            var houseCount = Math.Min(village.Level / 10, GameMath.MaxVillageLevel / 10);
 
             if (user.PatreonTier >= (int)DataModels.Patreon.Rune)
             {

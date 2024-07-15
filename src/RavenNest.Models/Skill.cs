@@ -22,6 +22,7 @@
 
         
         Melee = 900, // Referring to Attack, Defense and Strength
+
         None = 999,
     }
 }
