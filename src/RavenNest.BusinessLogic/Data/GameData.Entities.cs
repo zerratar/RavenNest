@@ -522,6 +522,7 @@ namespace RavenNest.BusinessLogic.Data
                 SantaRaven = GetOrCreateItem(i, "Santa Raven", ItemCategory.Pet, ItemType.Pet),
                 SpiderPet = GetOrCreateItem(i, "Spider Pet", ItemCategory.Pet, ItemType.Pet),
                 TurdRavenPet = GetOrCreateItem(i, "Turd Raven Pet", ItemCategory.Pet, ItemType.Pet),
+                BlackRavenPet = GetOrCreateItem(i, "Black Raven Pet", ItemCategory.Pet, ItemType.Pet).GenericPrefab("Pets/BlackRaven"),
                 WerewolfPet = GetOrCreateItem(i, "Werewolf Pet", ItemCategory.Pet, ItemType.Pet),
                 WolfPet = GetOrCreateItem(i, "Wolf Pet", ItemCategory.Pet, ItemType.Pet),
                 YetiPet = GetOrCreateItem(i, "Yeti Pet", ItemCategory.Pet, ItemType.Pet),

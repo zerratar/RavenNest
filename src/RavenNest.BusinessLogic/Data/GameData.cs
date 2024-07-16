@@ -4867,6 +4867,8 @@ namespace RavenNest.BusinessLogic.Data
         public Item RavenPet;
         public Item Rajah;
 
+        public Item BlackRavenPet;
+
         // redeemable (halloween)
         public Item GhostPet;
         public Item BatPet;
