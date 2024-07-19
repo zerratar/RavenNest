@@ -8,7 +8,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     public static class ItemDropRateSettings
     {
         public static int ResourceGatherInterval = 10;
-        public static double DropChanceIncrement = 0.00025;
+        public static double DropChanceIncrement = 0.005;
         public static double InitDropChance = 0.5;
     }
 

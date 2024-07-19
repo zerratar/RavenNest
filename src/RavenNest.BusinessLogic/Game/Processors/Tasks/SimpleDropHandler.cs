@@ -131,7 +131,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     droppable.Add(d);
                 }
 
-                var target = droppable.FirstOrDefault(x => x != null && x?.Name?.ToLower() == taskArgument?.ToLower());
+                var target = droppable.FirstOrDefault(x => x != null && x?.Name?.ToLower().Trim() == taskArgument?.ToLower().Trim());
                 if (target != null)
                 {
                     drop = target;
