@@ -165,7 +165,7 @@
                 <div class="item-details-dialog-background" @onclick="CloseVendorAllDialog"></div>
                 <div class="item-details-dialog vendor">
                     <div class="dialog-header">
-                        <button class="close" @onclick="CloseVendorAllDialog">x</button>
+                        @* <button class="close" @onclick="CloseVendorAllDialog">x</button> *@
                     </div>
 
                     <div class="item-details-content vendor">
@@ -191,16 +191,29 @@
                 <div class="item-details-dialog-background" @onclick="CloseVendorDialog"></div>
                 <div class="item-details-dialog vendor">
                     <div class="dialog-header">
-                        <button class="close" @onclick="CloseVendorDialog">x</button>
+                        <h3>Vendor @GetItemName(vendorItem)</h3>
                     </div>
-
                     <div class="item-details-content vendor">
-                        <div class="warning-row">
-                            <span>You are about to vendor</span>
-                            <span class="vendor-amount">@(vendorItem.Amount + "x ")</span>
-                            <span class="vendor-name">@(GetItemName(vendorItem))</span>
-                            <span>for</span>
-                            <span class="vendor-price">@((ItemService.GetItem(vendorItem.ItemId).ShopSellPrice * vendorItem.Amount) + " coins.")</span>
+
+                        @if (canVendorMany)
+                        {
+                            <div class="amount-inputs">
+                                <label>Amount:</label>
+                                <input @bind="vendorAmount" type="number" min="1" max="@vendorItem.Amount" />
+
+                                <div class="quick-buttons">
+                                    @foreach (var amount in quickButtons)
+                                    {
+                                        <button @onclick="() => SetVendorAmount(amount)" class="btn btn-action btn-quick">
+                                            @(amount == vendorItem.Amount ? $"{amount} (All)" : $"{amount}")
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <div class="summary-block">
+                            <p>You are about to vendor <strong>@vendorAmount</strong> @GetItemName(vendorItem) for <strong>@((ItemService.GetItem(vendorItem.ItemId).ShopSellPrice * vendorAmount) + " coins")</strong>.</p>
                         </div>
                         <div class="warning-row">Are you sure you want to continue?</div>
                     </div>
@@ -300,7 +313,7 @@
 
                             @if (!itemDetailsDialogItem.Equipped)
                             {
-                                <button @onclick="() => ShowVendorDialog(itemDetailsDialogItem)" class="btn btn-action vendor">@("Vendor " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : ""))</button>
+                                <button @onclick="() => ShowVendorDialog(itemDetailsDialogItem)" class="btn btn-action vendor">Vendor</button>
                             }
                         </div>
                     }
@@ -352,19 +365,54 @@
     private bool itemDetailDialogVisible;
     private bool vendorConfirmationDialogVisible;
     private bool vendorAllConfirmationDialogVisible;
+    private bool canVendorMany;
 
     private IReadOnlyList<Models.InventoryItem> itemsToVendor;
     private Models.InventoryItem itemDetailsDialogItem;
     private Models.InventoryItem vendorItem;
+    private long vendorAmount;
 
     private long vendorAllSum;
     private long giftOrSendAmount;
     private long coins;
+    List<long> quickButtons = new List<long>();
 
     private Item selectedItem;
     private bool addItemDialogVisible;
     private bool CanModify => session != null && session.Administrator;
     private ItemFilter itemFilter = ItemFilter.All;
+
+    void UpdateQuickButtons()
+    {
+        long maxAmount = vendorItem.Amount;
+
+        quickButtons.Clear();
+
+        if (maxAmount == 1)
+        {
+            return;
+        }
+
+        if (maxAmount > 1000)
+        {
+            quickButtons.Add(1000);
+            if (maxAmount > 10000) quickButtons.Add(10000);
+            if (maxAmount > 50000) quickButtons.Add(50000);
+            if (maxAmount > 100000) quickButtons.Add(100000);
+        }
+        else
+        {
+            if (maxAmount > 1) quickButtons.Add(1);
+            if (maxAmount > 2) quickButtons.Add(2);
+            if (maxAmount > 5) quickButtons.Add(5);
+            if (maxAmount > 10) quickButtons.Add(10);
+        }
+
+        if (maxAmount > 0)
+        {
+            quickButtons.Add(maxAmount); // Add the "All" button
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -413,7 +461,7 @@
 
     public void Vendor()
     {
-        Player = PlayerService.SellToVendor(Player.Id, itemDetailsDialogItem, itemDetailsDialogItem.Amount);
+        Player = PlayerService.SellToVendor(Player.Id, itemDetailsDialogItem, vendorAmount);
         coins = PlayerService.GetMyCoins();
         CloseVendorDialog();
         CloseItemDetails();
@@ -456,6 +504,8 @@
 
     public string GetVendorPrice()
     {
+        UpdateItemsToVendor();
+
         return Utility.FormatAmount(vendorAllSum);
     }
 
@@ -570,11 +620,19 @@
         InvokeAsync(StateHasChanged);
     }
 
+    void SetVendorAmount(long amount)
+    {
+        vendorAmount = amount;
+    }
+
     public void ShowVendorDialog(Models.InventoryItem item)
     {
         vendorConfirmationDialogVisible = true;
+        canVendorMany = item.Amount > 1;
         itemDetailDialogVisible = false;
         vendorItem = item;
+        vendorAmount = item.Amount;
+        UpdateQuickButtons();
         InvokeAsync(StateHasChanged);
     }
 
