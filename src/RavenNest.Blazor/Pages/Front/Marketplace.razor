@@ -32,6 +32,8 @@
                 <button class="btn btn-action" @onclick="CancelExpiredListings">Cancel all Expired listings</button>
             }
 
+            <p>Note: Listings expires <b>14</b> days after being posted. These items are returned to their sellers.</p>
+
             <div class="stash item-filters">
                 <button class="item-filter @(itemFilter == ItemFilter.All ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.All)">
                     <span class="item-filter-text">All</span>
@@ -145,10 +147,7 @@
                         <th @onclick="SortByMaterial">Material Type <span>@GetIndicator("material")</span></th>
                         <th @onclick="SortByAvailableAmount">Available Amount <span>@GetIndicator("amount")</span></th>
                         <th @onclick="SortByAskingPrice">Asking Price <span>@GetIndicator("ask-price")</span></th>
-                        @if (isAdmin)
-                        {
-                            <th @onclick="SortByExpiryDate">Expires <span>@GetIndicator("expires")</span></th>
-                        }
+                        <th @onclick="SortByExpiryDate">Expires <span>@GetIndicator("expires")</span></th>
 
                         @if (canCancelItems)
                         {
@@ -251,16 +250,14 @@
                             <td class='marketplace'>@entry.Amount</td>
                             <td class='marketplace'><img class="ravenCoins" src="/favicon.ico" />@entry.PricePerItem</td>
 
-                            @if (isAdmin)
-                            {
-                                <td class='marketplace'>
-                                    <span>@entry.Expires</span>
-                                    @if (entry.Expires < DateTime.UtcNow)
-                                    {
-                                        <span class="expired">&nbsp;Expired</span>
-                                    }
-                                </td>
-                            }
+                            <td class='marketplace'>
+                                <span>@entry.Expires</span>
+                                @if (isAdmin && entry.Expires < DateTime.UtcNow)
+                                {
+                                    <span class="expired">&nbsp;Expired</span>
+                                }
+                            </td>
+
                             @if (canCancelItems)
                             {
                                 <td class='marketplace'>
