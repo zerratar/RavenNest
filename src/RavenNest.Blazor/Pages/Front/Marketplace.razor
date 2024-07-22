@@ -251,8 +251,20 @@
                             <td class='marketplace'><img class="ravenCoins" src="/favicon.ico" />@entry.PricePerItem</td>
 
                             <td class='marketplace'>
-                                <span>@entry.Expires.Value.ToShortDateString()</span>
-                                @if (isAdmin && entry.Expires < DateTime.UtcNow)
+                                @{
+                                    var expires = entry.Expires.Value;
+                                }
+                                @if (expires.Date == DateTime.UtcNow.Date)
+                                {
+                                    <span>
+                                        @Utility.FormatTime(expires - DateTime.UtcNow)
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span>@expires.ToShortDateString()</span>
+                                }
+                                @if (isAdmin && expires < DateTime.UtcNow)
                                 {
                                     <span class="expired">&nbsp;Expired</span>
                                 }
