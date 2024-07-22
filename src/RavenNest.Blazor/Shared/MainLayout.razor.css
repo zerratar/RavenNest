@@ -162,7 +162,7 @@ img.logo {
 
 
 
-@media screen and (max-width: 360px) {
+@media screen and (max-width: 450px) {
 
     .top-social {
         display: none;

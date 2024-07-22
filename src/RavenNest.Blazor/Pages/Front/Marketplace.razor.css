@@ -6,6 +6,7 @@
 .top-section {
     height: 335px;
 }
+
 .item-stat {
     margin-right: 5px;
     white-space: nowrap;
@@ -58,8 +59,91 @@ table.marketplace-list tr.isMe {
     margin-right: 1px;
 }
 
+@media screen and (max-width: 1100px) {
+    .m-item-expires {
+        display:none;
+    }
+    .m-item-category {
+        display: none;
+    }
+    .m-item-material {
+        display: none;
+    }
+}
+
 @media screen and (max-width: 800px) {
     .section {
         padding: 20px 30px 50px 20px;
+    }
+}
+
+@media screen and (max-width: 730px) {
+   .m-item-type {
+       display: none;
+   }
+}
+
+@media screen and (max-width: 600px) {
+    .m-item-level {
+        display: none;
+    }
+}
+
+@media screen and (max-width: 520px) {
+    .m-item-stats {
+        display: none;
+    }
+}
+
+
+@media screen and (max-width: 450px) {
+    .m-item-image img {
+        width: 24px !important;
+    }
+
+    .section > p {
+        text-align: center;
+    }
+
+    th {
+        font-size: 10pt;
+    }
+
+    .ravenCoins {
+        display: none;
+    }
+
+    .marketplace {
+        font-size: 12px;
+    }
+
+    .m-item-stats {
+        display: none;
+    }
+
+    .m-item-level {
+        display: none;
+    }
+
+    .m-item-category {
+        display: none;
+    }
+
+    .m-item-type {
+        display: none;
+    }
+
+    .m-item-material {
+        display: none;
+    }
+
+    .m-item-amount {
+    }
+
+    .m-item-price {
+    }
+
+    .m-item-expires {
+        display: none;
     }
 }

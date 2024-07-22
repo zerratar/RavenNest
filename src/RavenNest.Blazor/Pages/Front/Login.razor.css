@@ -185,3 +185,10 @@ button.login-button:active {
 .input-icon.user {
     margin-top: 36px;
 }
+
+
+@media screen and (max-width: 450px){
+    .login-header {
+        text-align:center;
+    }
+}

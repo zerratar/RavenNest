@@ -88,9 +88,14 @@ ul.download-list li {
 }
 
 
-@media screen and (max-width: 360px){
+@media screen and (max-width: 450px){
     .download-options {
         display: flex;
         flex-direction: column;
+    }
+
+    .hero-text p {
+        color: white;
+        text-align: center;
     }
 }

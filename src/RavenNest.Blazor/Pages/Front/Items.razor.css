@@ -57,8 +57,148 @@ table.items-list tr.isMe {
     margin-right: 1px;
 }
 
-@media screen and (max-width: 800px) {
+@media screen and (max-width: 1600px) {
+
+    .items-list th {
+        font-size: 10pt;
+    }
+
+
     .section {
         padding: 20px 30px 50px 20px;
+    }
+}
+
+@media screen and (max-width: 1470px) {
+
+    .m-item-material {
+        display: none;
+    }
+    .m-item-category {
+        display: none;
+    }
+}    
+
+@media screen and (max-width: 1250px) {
+    .m-item-type {
+        display:none;
+    }
+}
+
+@media screen and (max-width: 1080px) {
+    .m-item-expires {
+        display: none;
+    }
+
+    .m-item-uses {
+        display: none;
+    }
+}
+
+
+@media screen and (max-width: 800px) {
+    .m-item-enchantments {
+        display: none;
+    }
+}
+
+@media screen and (max-width: 730px) {
+
+    .items-list th {
+        font-size: 10pt;
+    }
+
+    .items-list td {
+        font-size: 10pt;
+    }
+
+
+    .m-item-description {
+        display: none;
+    }
+
+    .m-item-uses {
+        display: none;
+    }
+}
+
+@media screen and (max-width: 600px) {
+    .m-item-level {
+        display: none;
+    }
+
+    .m-item-enchantments {
+        display: none;
+    }
+
+}
+
+@media screen and (max-width: 520px) {
+    .m-item-stats {
+        display: none;
+    }
+
+}
+
+
+@media screen and (max-width: 450px) {
+    .m-item-image img {
+        width: 24px !important;
+    }
+
+    .section > p {
+        text-align: center;
+    }
+
+    th {
+        font-size: 10pt;
+    }
+
+    .ravenCoins {
+        display: none;
+    }
+
+    .td {
+        font-size: 12px;
+    }
+
+    .m-item-stats {
+        display: none;
+    }
+
+    .m-item-level {
+        display: none;
+    }
+
+    .m-item-category {
+        display: none;
+    }
+
+    .m-item-type {
+        display: none;
+    }
+
+    .m-item-material {
+        display: none;
+    }
+
+    m-item-stats{
+        display: none;
+    }
+
+    .m-item-enchantments {
+        display: none;
+    }
+
+    .m-item-uses {
+        display: none;
+    }
+
+    .m-item-price {
+        display: none;
+    }
+
+    .m-item-expires {
+        display: none;
     }
 }

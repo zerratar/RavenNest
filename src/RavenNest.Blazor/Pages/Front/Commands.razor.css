@@ -11,7 +11,7 @@
 }
 
 .hero-text p {
-    color: white;
+    color: white;    
 }
 
 
@@ -135,8 +135,13 @@ details[open] summary .format {
     }
 }
 
-@media screen and (max-width: 360px){
+@media screen and (max-width: 450px){
     .top-section {
         height: 385px;
+    }
+
+    .hero-text p {
+        color: white;
+        text-align:center;
     }
 }

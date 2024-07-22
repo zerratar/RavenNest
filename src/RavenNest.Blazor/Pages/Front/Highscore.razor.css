@@ -210,3 +210,9 @@ table.highscore-list tr.isMe {
         padding: 20px 30px 50px 20px;
     }
 }
+
+@media screen and (max-width: 450px) {
+    .player-experience {
+        display:none;
+    }
+}

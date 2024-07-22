@@ -140,14 +140,14 @@
                         {
                             <th @onclick="SortBySeller">Seller <span>@GetIndicator("seller")</span></th>
                         }
-                        <th @onclick="SortByStats">Stats <span>@GetIndicator("stats")</span></th>
-                        <th @onclick="SortByLevelReq">Level Req <span>@GetIndicator("lev-req")</span></th>
-                        <th @onclick="SortByCategory">Category <span>@GetIndicator("category")</span></th>
-                        <th @onclick="SortByType">Item Type <span>@GetIndicator("type")</span></th>
-                        <th @onclick="SortByMaterial">Material Type <span>@GetIndicator("material")</span></th>
-                        <th @onclick="SortByAvailableAmount">Available Amount <span>@GetIndicator("amount")</span></th>
-                        <th @onclick="SortByAskingPrice">Asking Price <span>@GetIndicator("ask-price")</span></th>
-                        <th @onclick="SortByExpiryDate">Expires <span>@GetIndicator("expires")</span></th>
+                        <th class="m-item-stats" @onclick="SortByStats">Stats <span>@GetIndicator("stats")</span></th>
+                        <th class="m-item-level" @onclick="SortByLevelReq">Level Req <span>@GetIndicator("lev-req")</span></th>
+                        <th class="m-item-category" @onclick="SortByCategory">Category <span>@GetIndicator("category")</span></th>
+                        <th class="m-item-type" @onclick="SortByType">Item Type <span>@GetIndicator("type")</span></th>
+                        <th class="m-item-material" @onclick="SortByMaterial">Material Type <span>@GetIndicator("material")</span></th>
+                        <th class="m-item-amount" @onclick="SortByAvailableAmount">Available Amount <span>@GetIndicator("amount")</span></th>
+                        <th class="m-item-price" @onclick="SortByAskingPrice">Asking Price <span>@GetIndicator("ask-price")</span></th>
+                        <th class="m-item-expires" @onclick="SortByExpiryDate">Expires <span>@GetIndicator("expires")</span></th>
 
                         @if (canCancelItems)
                         {
@@ -165,14 +165,14 @@
                         }
 
                         <tr>
-                            <td><img src="@(ItemService.GetItemImage(entry.ItemId))" style="width: 40px" /></td>
+                            <td class="m-item-image"><img src="@(ItemService.GetItemImage(entry.ItemId))" style="width: 40px" /></td>
                             <td class='marketplace'>@item.Name</td>
                             @if (isAdmin)
                             {
                                 <td>@GetUserName(entry.SellerUserId)</td>
                             }
                             <!-- <td class='marketplace'></td> -->
-                            <td class='item'>
+                            <td class='item m-item-stats'>
                                 @if (item.WeaponAim > 0)
                                 {
                                     <span class="item-stat" title="Weapon Aim - Increases your hit rate in melee"><i class="fas fa-crosshairs"></i>@item.WeaponAim</span>
@@ -207,7 +207,7 @@
                                     <span class="item-stat" title="Armor Power - Decreases the hit rate of your attacker"><i class="fas fa-shield"></i>@item.ArmorPower</span>
                                 }
                             </td>
-                            <td class='item'>
+                            <td class='item m-item-level'>
                                 @if (item.RequiredSlayerLevel > 0)
                                 {
                                     <span class="item-stat" title="Required Slayer Level">
@@ -244,13 +244,13 @@
                                     </span>
                                 }
                             </td>
-                            <td class='marketplace'>@item.Category</td>
-                            <td class='marketplace'>@ItemService.GetTypeName(item)</td>
-                            <td class='marketplace'>@ItemService.GetMaterialName(item)</td>
-                            <td class='marketplace'>@entry.Amount</td>
-                            <td class='marketplace'><img class="ravenCoins" src="/favicon.ico" />@entry.PricePerItem</td>
+                            <td class='marketplace m-item-category'>@item.Category</td>
+                            <td class='marketplace m-item-type'>@ItemService.GetTypeName(item)</td>
+                            <td class='marketplace m-item-material'>@ItemService.GetMaterialName(item)</td>
+                            <td class='marketplace m-item-amount'>@entry.Amount</td>
+                            <td class='marketplace m-item-price'><img class="ravenCoins" src="/favicon.ico" />@entry.PricePerItem</td>
 
-                            <td class='marketplace'>
+                            <td class='marketplace m-item-expires'>
                                 @{
                                     var expires = entry.Expires.Value;
                                 }
@@ -272,7 +272,7 @@
 
                             @if (canCancelItems)
                             {
-                                <td class='marketplace'>
+                                <td class='marketplace m-item-actions'>
                                     @if (isAdmin || CanCancelItem(entry))
                                     {
                                         <button class="link-button" @onclick="(()=> CancelListing(entry.Id))">Cancel</button>

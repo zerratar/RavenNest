@@ -288,7 +288,7 @@ button.tab-link.active, .tab-link.active {
 
 .top-row ::deep a, .top-row .btn-link {
     white-space: nowrap;
-    margin-left: 1.5rem;
+    /*margin-left: 1.5rem;*/
 }
 
 .top-row a:first-child {
@@ -1397,7 +1397,7 @@ pre {
 }
 
 
-@media screen and (max-width: 360px) {
+@media screen and (max-width: 450px) {
     .top-row.corner {
         margin-top: 50px;
         display: flex;
@@ -1463,7 +1463,7 @@ pre {
         position: absolute;
         z-index: 1;
         left: 0;
-        margin-top: -520px;
+        margin-top: -470px;
     }
 
     footer > div > img, .footer-logo {

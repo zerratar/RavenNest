@@ -130,26 +130,26 @@
                 <thead>
                     <tr>
                         <th></th>
-                        <th @onclick="SortByName">Name <span>@GetIndicator("name")</span></th>
-                        <th>Description</th>
-                        <th @onclick="SortByStats">Stats <span>@GetIndicator("stats")</span></th>
-                        <th @onclick="SortByLevelReq">Level Req <span>@GetIndicator("lev-req")</span></th>
-                        <th @onclick="SortByCategory">Category <span>@GetIndicator("category")</span></th>
-                        <th @onclick="SortByType">Item Type <span>@GetIndicator("type")</span></th>
-                        <th @onclick="SortByMaterial">Material Type <span>@GetIndicator("material")</span></th>
-                        <th @onclick="SortByVendorPrice">Vendor Price <span>@GetIndicator("vendor")</span></th>
-                        <th @onclick="SortByEnchantmentSlots">Max Enchantments <span>@GetIndicator("enchantment")</span></th>
-                        <th>Use &amp; Source</th>
+                        <th class="m-item-name" @onclick="SortByName">Name <span>@GetIndicator("name")</span></th>
+                        <th class="m-item-description">Description</th>
+                        <th class="m-item-stats" @onclick="SortByStats">Stats <span>@GetIndicator("stats")</span></th>
+                        <th class="m-item-level" @onclick="SortByLevelReq">Level Req <span>@GetIndicator("lev-req")</span></th>
+                        <th class="m-item-category" @onclick="SortByCategory">Category <span>@GetIndicator("category")</span></th>
+                        <th class="m-item-type" @onclick="SortByType">Item Type <span>@GetIndicator("type")</span></th>
+                        <th class="m-item-material" @onclick="SortByMaterial">Material Type <span>@GetIndicator("material")</span></th>
+                        <th class="m-item-price" @onclick="SortByVendorPrice">Vendor Price <span>@GetIndicator("vendor")</span></th>
+                        <th class="m-item-enchantments" @onclick="SortByEnchantmentSlots">Max Enchantments <span>@GetIndicator("enchantment")</span></th>
+                        <th class="m-item-uses">Use &amp; Source</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var item in items)
                     {
                         <tr id="@item.Id" class="@(Id == item.Id.ToString() ? "item-row selected" : "item-row")">
-                            <td><img src="@(ItemService.GetItemImage(item.Id.ToString(), item.Name))" style="width: 40px" /></td>
-                            <td class='item name'>@item.Name</td>
-                            <td class='item description'>@item.Description</td>
-                            <td class='item'>
+                            <td class="m-item-image"><img src="@(ItemService.GetItemImage(item.Id.ToString(), item.Name))" style="width: 40px" /></td>
+                            <td class='item name m-item-name'>@item.Name</td>
+                            <td class='item description m-item-description'>@item.Description</td>
+                            <td class='item m-item-stats'>
                                 @if (item.WeaponAim > 0)
                                 {
                                     <span class="item-stat" title="Weapon Aim - Increases your hit rate in melee"><i class="fas fa-crosshairs"></i>@item.WeaponAim</span>
@@ -188,7 +188,7 @@
                                     <span>-</span>
                                 }
                             </td>
-                            <td class='item'>
+                            <td class='item m-item-level'>
                                 @if (item.RequiredSlayerLevel > 0)
                                 {
                                     <span class="item-stat" title="Required Slayer Level">
@@ -229,11 +229,11 @@
                                     <span>-</span>
                                 }
                             </td>
-                            <td class='item'>@item.Category</td>
-                            <td class='item'>@ItemService.GetTypeName(item)</td>
-                            <td class='item'>@ItemService.GetMaterialName(item)</td>
-                            <td class='item'>@item.ShopSellPrice&nbsp;<img class="ravenCoins" src="/favicon.png" /></td>
-                            <td class='item'>
+                            <td class='item m-item-category'>@item.Category</td>
+                            <td class='item m-item-type'>@ItemService.GetTypeName(item)</td>
+                            <td class='item m-item-material'>@ItemService.GetMaterialName(item)</td>
+                            <td class='item m-item-price'>@item.ShopSellPrice&nbsp;<img class="ravenCoins" src="/favicon.png" /></td>
+                            <td class='item m-item-enchantments'>
                                 @{
                                     if (EnchantmentManager.CanBeEnchanted(item))
                                     {
@@ -249,7 +249,7 @@
                                     }
                                 }
                             </td>
-                            <td class='item recipe'>
+                            <td class='item recipe m-item-uses'>
                                 @{
                                     var drop = ItemService.GetResourceItemDrop(item.Id);
                                     if (drop != null)
