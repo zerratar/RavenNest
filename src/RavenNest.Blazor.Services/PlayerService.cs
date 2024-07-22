@@ -133,6 +133,11 @@ namespace RavenNest.Blazor.Services
         {
             return playerManager.SendToCharacter(characterId, item, item.Amount);
         }
+        public bool SendToCharacter(Guid characterId, RavenNest.Models.UserBankItem item, long amount)
+        {
+            amount = Math.Clamp(amount, 1, item.Amount);
+            return playerManager.SendToCharacter(characterId, item, amount);
+        }
 
         public WebsitePlayer SendToCharacter(Guid characterId, Guid otherCharacterId, RavenNest.Models.InventoryItem item, long amount)
         {
