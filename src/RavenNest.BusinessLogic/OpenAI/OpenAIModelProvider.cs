@@ -36,47 +36,41 @@ namespace Shinobytes.OpenAI
         private readonly Random random;
         private readonly List<OpenAIModel> models;
 
-        public OpenAIModel GPT35_4K { get; }
-        public OpenAIModel GPT35_16K { get; }
-        public OpenAIModel GPT4_8K { get; }
-        public OpenAIModel GPT4_32K { get; }
+        public OpenAIModel GPT4oMini { get; }
+        public OpenAIModel GPT4o { get; }
 
         public OpenAIModelProvider()
         {
             random = new Random();
 
-            GPT35_4K = new OpenAIModel { Name = "gpt-3.5-turbo", MaxTokens = 4096, MaxPromptTokens = 2048, PriceInput = 0.0015, PriceOutput = 0.002 };
-            GPT35_16K = new OpenAIModel { Name = "gpt-3.5-turbo-16k", MaxTokens = 16384, MaxPromptTokens = 10240, PriceInput = 0.003, PriceOutput = 0.0004 };
-            // super expensive, but I love to use.
-            GPT4_8K = new OpenAIModel { Name = "gpt-4", MaxTokens = 8192, MaxPromptTokens = 2048 /*4096: its reasonable but too pricy*/, PriceInput = 0.03, PriceOutput = 0.06 };
-            GPT4_32K = new OpenAIModel { Name = "gpt-4-32k", MaxTokens = 32768, MaxPromptTokens = 5120/*16384*/, PriceInput = 0.06, PriceOutput = 0.12 };
+            GPT4oMini = new OpenAIModel { Name = "gpt-4o-mini", MaxTokens = 128000, MaxPromptTokens = 64000, PriceInput = 0.003, PriceOutput = 0.0004 };
+            GPT4o = new OpenAIModel { Name = "gpt-4o", MaxTokens = 128000, MaxPromptTokens = 64000, PriceInput = 0.03, PriceOutput = 0.06 };
 
             models = new List<OpenAIModel> {
-                GPT35_4K,
-                GPT35_16K,
-                GPT4_8K
+                GPT4oMini,
+                GPT4o
             };
         }
 
-        public OpenAIModel Get(int tokenUsage, OpenAIModelSelection selection = OpenAIModelSelection.GPT3_5)
+        public OpenAIModel Get(int tokenUsage, OpenAIModelSelection selection = OpenAIModelSelection.GPT4oMini)
         {
-            var useGPT4 = selection == OpenAIModelSelection.GPT4;
+            var useGPT4 = selection == OpenAIModelSelection.GPT4o;
             var canUseGPT4 = selection == OpenAIModelSelection.Any || useGPT4;
             // we need to leave space for response
             // so if we use more than 60% of the max token count, we need to use a bigger model.
 
             if (useGPT4)
             {
-                return GPT4_8K;
+                return GPT4o;
             }
 
             // we already know which models exists, so we will go by index. since we shouldnt accidently use gpt-4 randomly, or should we?
             if (canUseGPT4)
             {
                 // its darn expensive with GPT4.
-                if (tokenUsage < GPT4_8K.MaxPromptTokens && random.NextDouble() <= GPT4Chance)
+                if (tokenUsage < GPT4o.MaxPromptTokens && random.NextDouble() <= GPT4Chance)
                 {
-                    return GPT4_8K;
+                    return GPT4o;
                 }
 
                 // if we are allowed to use GPT4, use it if we expect to use more than 4917 tokens
@@ -87,12 +81,7 @@ namespace Shinobytes.OpenAI
                 }
             }
 
-            if (tokenUsage < GPT35_4K.MaxPromptTokens)
-            {
-                return GPT35_4K;
-            }
-
-            return GPT35_16K;
+            return GPT4oMini;
         }
     }
 }

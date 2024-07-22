@@ -4,7 +4,7 @@ using RavenNest.DataModels;
 
 namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
-    public class QuestProcessor : PlayerTaskProcessor
+    public class AchievementProcessor : PlayerTaskProcessor
     {
         public override void Process(ILogger logger, GameData gameData, PlayerInventory inventory, GameSession session, Character character, CharacterState state)
         {
@@ -13,7 +13,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 StreamerProcess(logger, gameData, session, inventory);
                 return;
             }
-
         }
 
         private void StreamerProcess(ILogger logger, GameData gameData, GameSession session, PlayerInventory inventory)

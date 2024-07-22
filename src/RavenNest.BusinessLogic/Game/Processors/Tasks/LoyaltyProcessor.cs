@@ -24,7 +24,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public override void Process(
             ILogger logger,
             GameData gameData,
-            PlayerInventoryProvider inventoryProvider,
+            PlayerInventory inventory,
             GameSession session,
             Character character,
             CharacterState state)

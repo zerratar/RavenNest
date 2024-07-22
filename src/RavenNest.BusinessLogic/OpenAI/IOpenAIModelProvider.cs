@@ -27,10 +27,8 @@ namespace Shinobytes.OpenAI
 {
     public interface IOpenAIModelProvider
     {
-        OpenAIModel GPT35_4K { get; }
-        OpenAIModel GPT35_16K { get; }
-        OpenAIModel GPT4_8K { get; }
-        OpenAIModel GPT4_32K { get; }
-        OpenAIModel Get(int tokenUsage, OpenAIModelSelection selection = OpenAIModelSelection.GPT3_5);
+        OpenAIModel GPT4oMini { get; }
+        OpenAIModel GPT4o { get; }
+        OpenAIModel Get(int tokenUsage, OpenAIModelSelection selection = OpenAIModelSelection.GPT4oMini);
     }
 }

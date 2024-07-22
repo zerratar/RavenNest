@@ -19,9 +19,9 @@ namespace RavenNest.BusinessLogic.Game.Enchantment
 
     public static class EnchantmentExtensions
     {
-        public static IReadOnlyList<SkillBonus> GetSkillBonuses(this ReadOnlyInventoryItem i, IReadOnlyList<PlayerSkill> playerSkills, GameData gameData)
+        public static IReadOnlyList<SkillBonus> GetSkillBonuses(this ReadOnlyInventoryItem item, IReadOnlyList<PlayerSkill> playerSkills, GameData gameData)
         {
-            var enchantments = GetItemEnchantments(i, gameData.GetItemAttributes());
+            var enchantments = GetItemEnchantments(item, gameData.GetItemAttributes());
             var result = new List<SkillBonus>();
 
             if (enchantments != null)

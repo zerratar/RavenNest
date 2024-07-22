@@ -502,7 +502,7 @@
         if (item == null)
             return false;
 
-        return RavenNest.BusinessLogic.Providers.PlayerInventory.CanEquipItem(item, Player);
+        return RavenNest.BusinessLogic.Game.PlayerInventory.CanEquipItem(item, Player);
     }
 
     public string GetEnchantmentValue(ItemEnchantment enchantment)

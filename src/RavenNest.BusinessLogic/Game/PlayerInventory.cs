@@ -1,6 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extended;
+using RavenNest.BusinessLogic.Extensions;
+using RavenNest.BusinessLogic.Game;
+using RavenNest.BusinessLogic.Game.Enchantment;
 using RavenNest.DataModels;
 using System;
 using System.Collections.Generic;
@@ -8,7 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-namespace RavenNest.BusinessLogic.Providers
+namespace RavenNest.BusinessLogic.Game
 {
     public class PlayerInventory
     {
@@ -178,6 +181,7 @@ namespace RavenNest.BusinessLogic.Providers
             // log a short message to db, but save full list to disk.
         }
 
+
         private List<InventoryItem> GetInventoryItems(Guid characterId)
         {
             var output = new List<InventoryItem>();
@@ -203,6 +207,84 @@ namespace RavenNest.BusinessLogic.Providers
                 output.Add(i);
             }
             return output;
+        }
+
+        public int GetCraftingBonus()
+        {
+            var dict = GetSkillBonuses();
+            return (int)dict[RavenNest.Models.Skill.Crafting];
+        }
+
+        public int GetMiningBonus()
+        {
+            var dict = GetSkillBonuses();
+            return (int)dict[RavenNest.Models.Skill.Mining];
+        }
+        public int GetFishingBonus()
+        {
+            var dict = GetSkillBonuses();
+            return (int)dict[RavenNest.Models.Skill.Fishing];
+        }
+
+        public int GetAlchemyBonus()
+        {
+            var dict = GetSkillBonuses();
+            return (int)dict[RavenNest.Models.Skill.Alchemy];
+        }
+        public int GetFarmingBonus()
+        {
+            var dict = GetSkillBonuses();
+            return (int)dict[RavenNest.Models.Skill.Farming];
+        }
+        public int GetGatheringBonus()
+        {
+            var dict = GetSkillBonuses();
+            return (int)dict[RavenNest.Models.Skill.Gathering];
+        }
+        public int GetWoodcuttingBonus()
+        {
+            var dict = GetSkillBonuses();
+            return (int)dict[RavenNest.Models.Skill.Woodcutting];
+        }
+        public int GetCookingBonus()
+        {
+            var dict = GetSkillBonuses();
+            return (int)dict[RavenNest.Models.Skill.Cooking];
+        }
+        public int GetSlayerBonus()
+        {
+            var dict = GetSkillBonuses();
+            return (int)dict[RavenNest.Models.Skill.Slayer];
+        }
+        public int GetSailingBonus()
+        {
+            var dict = GetSkillBonuses();
+            return (int)dict[RavenNest.Models.Skill.Sailing];
+        }
+        public Dictionary<RavenNest.Models.Skill, double> GetSkillBonuses()
+        {
+            var character = gameData.GetCharacter(characterId);
+            var dict = new Dictionary<RavenNest.Models.Skill, double>();
+            foreach (var value in Enum.GetValues<RavenNest.Models.Skill>())
+            {
+                dict[value] = 0;
+            }
+
+            var equipped = GetEquippedItems();
+            var skills = ModelMapper.MapForWebsite(gameData.GetCharacterSkills(character.SkillsId));
+            var playerSkills = skills.AsList();
+            foreach (var item in equipped)
+            {
+                var bonuses = item.GetSkillBonuses(playerSkills, gameData);
+                foreach (var bonus in bonuses)
+                {
+                    if (Enum.TryParse<RavenNest.Models.Skill>(bonus.Skill.Name, true, out var result))
+                    {
+                        dict[result] += bonus.Bonus;
+                    }
+                }
+            }
+            return dict;
         }
 
         public void EquipBestItems()
@@ -1473,123 +1555,5 @@ namespace RavenNest.BusinessLogic.Providers
         }
 
         #endregion
-    }
-
-    public class MagicItemAttribute
-    {
-        public DataModels.ItemAttribute Attribute { get; set; }
-        public string Value { get; set; }
-        public double DoubleValue { get; set; }
-    }
-
-
-    public static class InventoryItemExtensions
-    {
-        public static ReadOnlyInventoryItem AsReadOnly(this InventoryItem item, GameData gameData)
-        {
-            if (item == null) return default;
-            return ReadOnlyInventoryItem.Create(gameData, item);
-        }
-
-        public static bool IsNull(this ReadOnlyInventoryItem item)
-        {
-            return item.Id == Guid.Empty;
-        }
-
-        public static bool IsNotNull(this ReadOnlyInventoryItem item)
-        {
-            return item.Id != Guid.Empty;
-        }
-    }
-
-    public struct ReadOnlyInventoryItem
-    {
-        public Guid Id { get; }
-        public Guid ItemId { get; }
-        public Guid? TransmogrificationId { get; }
-        public string Name { get; }
-        public string Enchantment { get; }
-        public int Flags { get; }
-        public long Amount { get; }
-        public bool Equipped { get; }
-        public string Tag { get; }
-        public bool Soulbound { get; }
-        public EquipmentSlot EquipmentSlot { get; }
-        public Item Item { get; }
-        private ReadOnlyInventoryItem(
-            Guid id,
-            Guid itemId,
-            Guid? transmogrificationId,
-            string name,
-            string enchantment,
-            long amount,
-            bool equipped,
-            string tag,
-            int flags,
-            bool soulbound,
-            Item item,
-            EquipmentSlot equipmentSlot)
-        {
-            Id = id;
-            ItemId = itemId;
-            TransmogrificationId = transmogrificationId;
-            Name = name;
-            Flags = flags;
-            Enchantment = enchantment;
-            Amount = amount;
-            Equipped = equipped;
-            Item = item;
-            Tag = tag;
-            EquipmentSlot = equipmentSlot;
-            Soulbound = soulbound;
-        }
-
-        public static ReadOnlyInventoryItem Create(GameData gameData, InventoryItem item)
-        {
-            var i = gameData.GetItem(item.ItemId);
-            if (i == null)
-                return new ReadOnlyInventoryItem();
-            return new ReadOnlyInventoryItem(
-                item.Id,
-                item.ItemId,
-                item.TransmogrificationId,
-                item.Name,
-                item.Enchantment,
-                item.Amount ?? 1,
-                item.Equipped,
-                item.Tag,
-                item.Flags.GetValueOrDefault(),
-                item.Soulbound,
-                i,
-                GetEquipmentSlot((ItemType)i.Type));
-        }
-
-        public static EquipmentSlot GetEquipmentSlot(ItemType type)
-        {
-            switch (type)
-            {
-                case ItemType.Amulet: return EquipmentSlot.Amulet;
-                case ItemType.Ring: return EquipmentSlot.Ring;
-                case ItemType.Shield: return EquipmentSlot.Shield;
-                case ItemType.Hat: return EquipmentSlot.Head;
-                case ItemType.Mask: return EquipmentSlot.Head;
-                case ItemType.Helmet: return EquipmentSlot.Head;
-                case ItemType.HeadCovering: return EquipmentSlot.Head;
-                case ItemType.Chest: return EquipmentSlot.Chest;
-                case ItemType.Gloves: return EquipmentSlot.Gloves;
-                case ItemType.Leggings: return EquipmentSlot.Leggings;
-                case ItemType.Boots: return EquipmentSlot.Boots;
-                case ItemType.Pet: return EquipmentSlot.Pet;
-                case ItemType.OneHandedAxe: return EquipmentSlot.MeleeWeapon;
-                case ItemType.TwoHandedAxe: return EquipmentSlot.MeleeWeapon;
-                case ItemType.TwoHandedSpear: return EquipmentSlot.MeleeWeapon;
-                case ItemType.OneHandedSword: return EquipmentSlot.MeleeWeapon;
-                case ItemType.TwoHandedSword: return EquipmentSlot.MeleeWeapon;
-                case ItemType.TwoHandedStaff: return EquipmentSlot.MagicWeapon;
-                case ItemType.TwoHandedBow: return EquipmentSlot.RangedWeapon;
-            }
-
-            return EquipmentSlot.None;
-        }
     }
 }

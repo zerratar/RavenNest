@@ -1,4 +1,4 @@
-﻿namespace RavenNest.BusinessLogic.Providers
+﻿namespace RavenNest.BusinessLogic.Game
 {
     public enum EquipmentSlot
     {

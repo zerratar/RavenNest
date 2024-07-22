@@ -279,15 +279,15 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
             var village = GetTaskProcessor(VillageProcessorName);
             if (village != null)
-                village.Process(logger, gameData, inventoryProvider, session, null, null);
+                village.Process(logger, gameData, null, session, null, null);
 
 
             // process streamer and quests and achievements
             var quest = GetTaskProcessor(QuestProcessorName);
-            quest.Process(logger, gameData, inventoryProvider, session, null, null);
+            quest.Process(logger, gameData, null, session, null, null);
 
             var achievement = GetTaskProcessor(AchievementProcessorName);
-            achievement.Process(logger, gameData, inventoryProvider, session, null, null);
+            achievement.Process(logger, gameData, null, session, null, null);
 
             var characters = gameData.GetActiveSessionCharacters(session);
             if (characters.Count > 0)
@@ -303,7 +303,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
                     //    var inventory = inventoryProvider.Get(character.Id);
                     //    inventory.AddPatreonTierRewards();
                     //}
-
+                    var inventory = inventoryProvider.Get(character.Id);
                     SyncCharacterResources(session, character);
 
                     UpdateActiveStatusEffects(utcNow, character);
@@ -319,12 +319,12 @@ namespace RavenNest.BusinessLogic.Game.Processors
                         character.StateId = state.Id;
                     }
 
-                    rested.Process(logger, gameData, inventoryProvider, session, character, state);
-                    clan.Process(logger, gameData, inventoryProvider, session, character, state);
-                    loyalty.Process(logger, gameData, inventoryProvider, session, character, state);
+                    rested.Process(logger, gameData, inventory, session, character, state);
+                    clan.Process(logger, gameData, inventory, session, character, state);
+                    loyalty.Process(logger, gameData, inventory, session, character, state);
 
-                    achievement.Process(logger, gameData, inventoryProvider, session, character, state);
-                    quest.Process(logger, gameData, inventoryProvider, session, character, state);
+                    achievement.Process(logger, gameData, inventory, session, character, state);
+                    quest.Process(logger, gameData, inventory, session, character, state);
 
                     if (string.IsNullOrEmpty(state.Task)
                         || (state.InOnsen ?? false)
@@ -344,7 +344,7 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
                     var task = GetTaskProcessor(taskName);
                     if (task != null)
-                        task.Process(logger, gameData, inventoryProvider, session, character, state);
+                        task.Process(logger, gameData, inventory, session, character, state);
                 }
             }
         }

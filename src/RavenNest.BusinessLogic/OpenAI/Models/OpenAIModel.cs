@@ -25,8 +25,8 @@ namespace Shinobytes.OpenAI.Models
 {
     public enum OpenAIModelSelection
     {
-        GPT3_5,
-        GPT4,
+        GPT4oMini,
+        GPT4o,
         Any
     }
 

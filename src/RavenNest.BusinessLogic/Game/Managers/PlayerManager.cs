@@ -1687,7 +1687,8 @@ namespace RavenNest.BusinessLogic.Game
             if (skills == null || resources == null)
                 return CraftItemResult.Error;
 
-            var craftingBonus = GetCraftingBonus(character);
+            var inventory = inventoryProvider.Get(character.Id);
+            var craftingBonus = inventory.GetCraftingBonus();
             var craftingLevel = skills.CraftingLevel + craftingBonus;
 
             if (craftingLevel < item.RequiredCraftingLevel)
@@ -1698,7 +1699,6 @@ namespace RavenNest.BusinessLogic.Game
 
             var result = new CraftItemResult();
             var craftingRequirements = gameData.GetCraftingRequirements(itemId);
-            var inventory = inventoryProvider.Get(character.Id);
 
             foreach (var requirement in craftingRequirements)
             {
@@ -1785,35 +1785,8 @@ namespace RavenNest.BusinessLogic.Game
         }
         private Dictionary<RavenNest.Models.Skill, double> GetSkillBonuses(Character character)
         {
-            var dict = new Dictionary<RavenNest.Models.Skill, double>();
-            foreach (var value in Enum.GetValues<RavenNest.Models.Skill>())
-            {
-                dict[value] = 0;
-            }
-
             var inventory = inventoryProvider.Get(character.Id);
-            var equipped = inventory.GetEquippedItems();
-
-            var skills = ModelMapper.MapForWebsite(gameData.GetCharacterSkills(character.SkillsId));
-            var playerSkills = skills.AsList();
-            foreach (var item in equipped)
-            {
-                var bonuses = item.GetSkillBonuses(playerSkills, gameData);
-                foreach (var bonus in bonuses)
-                {
-                    if (Enum.TryParse<RavenNest.Models.Skill>(bonus.Skill.Name, true, out var result))
-                    {
-                        dict[result] += bonus.Bonus;
-                    }
-                }
-            }
-            return dict;
-        }
-
-        private int GetCraftingBonus(Character character)
-        {
-            var dict = GetSkillBonuses(character);
-            return (int)dict[RavenNest.Models.Skill.Crafting];
+            return inventory.GetSkillBonuses();
         }
 
         private static bool CanCraftItems(Item item, Resources resources, int craftingLevel, int amount, out int maxAmount)

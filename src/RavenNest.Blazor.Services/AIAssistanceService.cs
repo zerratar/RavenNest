@@ -422,7 +422,7 @@ namespace RavenNest.Blazor.Services
                 .SetKnowledgeBase(GetKnowledgeBase())
                 .AddFunctions(functions)
                 .AddMessages(Transform(conversation.GetMessages()))
-                .Build(useGPT4 ? OpenAIModelSelection.GPT4 : OpenAIModelSelection.GPT3_5);
+                .Build(useGPT4 ? OpenAIModelSelection.GPT4o : OpenAIModelSelection.GPT4oMini);
 
             var result = await openAI.GetCompletionAsync(request, System.Threading.CancellationToken.None);
             var choice = result.Choices.FirstOrDefault();

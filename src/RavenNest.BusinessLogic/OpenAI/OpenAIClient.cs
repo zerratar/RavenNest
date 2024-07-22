@@ -67,7 +67,7 @@ namespace Shinobytes.OpenAI
         {
             //BuildPrompt(prompt, previousMessages)
             var builder = GetRequestBuilder();
-            var request = builder.AddMessages(previousMessages).SetPrompt(prompt).Build(OpenAIModelSelection.GPT3_5);
+            var request = builder.AddMessages(previousMessages).SetPrompt(prompt).Build(OpenAIModelSelection.GPT4oMini);
             return GetCompletionAsync(request, cancellationToken);
         }
 

@@ -95,7 +95,7 @@ namespace Shinobytes.OpenAI
                 var requestMessages = new List<Message>();
                 var tokenCount = 0;
 
-                var useGPT4 = modelSelection == OpenAIModelSelection.GPT4;
+                var useGPT4 = modelSelection == OpenAIModelSelection.GPT4o;
                 var canUseGPT4 = modelSelection == OpenAIModelSelection.Any || useGPT4;
 
                 // get the minimum required token count
@@ -106,7 +106,7 @@ namespace Shinobytes.OpenAI
                 // based on the token usage
 
                 // 1. get the max token count for the possible models we can use
-                var maxTokenCount = useGPT4 ? modelProvider.GPT4_8K.MaxPromptTokens : modelProvider.GPT35_16K.MaxPromptTokens;
+                var maxTokenCount = useGPT4 ? modelProvider.GPT4o.MaxPromptTokens : modelProvider.GPT4oMini.MaxPromptTokens;
 
                 // 2. go backwards, and add messages until we reach the max token count
                 for (var i = messages.Count - 1; i >= 0; --i)
@@ -131,7 +131,7 @@ namespace Shinobytes.OpenAI
                 // 4. select an appropriate model
                 var model = canUseGPT4
                         ? modelProvider.Get(tokenCount, modelSelection) // if "any" selected then theres a 10% chance for GPT4 if tokens allows for it.
-                        : tokenCount > modelProvider.GPT35_4K.MaxPromptTokens ? modelProvider.GPT35_16K : modelProvider.GPT35_4K;
+                        : modelProvider.GPT4oMini;
 
                 // 5. yay
                 return new ChatCompletionRequest

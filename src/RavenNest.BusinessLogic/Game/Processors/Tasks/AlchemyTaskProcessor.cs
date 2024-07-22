@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
 
 namespace RavenNest.BusinessLogic.Game.Processors.Tasks
@@ -9,7 +10,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public override void Process(
             ILogger logger,
             GameData gameData,
-            PlayerInventoryProvider inventoryProvider,
+            PlayerInventory inventory,
             GameSession session,
             Character character,
             CharacterState state)

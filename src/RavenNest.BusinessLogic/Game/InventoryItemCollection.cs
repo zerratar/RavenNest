@@ -4,7 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace RavenNest.BusinessLogic.Providers
+namespace RavenNest.BusinessLogic.Game
 {
     public class InventoryItemCollection : IList<InventoryItem>
     {
@@ -79,7 +79,7 @@ namespace RavenNest.BusinessLogic.Providers
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return this.GetEnumerator();
+            return GetEnumerator();
         }
     }
 }

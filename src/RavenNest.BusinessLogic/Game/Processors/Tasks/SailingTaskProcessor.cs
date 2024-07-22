@@ -13,7 +13,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public override void Process(
             ILogger logger,
             GameData gameData,
-            PlayerInventoryProvider inventoryProvider,
+            PlayerInventory inventory,
             GameSession session,
             Character character,
             CharacterState state)
@@ -28,7 +28,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             // note: we could make it so that it will only drop if you have been sailing for some time. Not an accumulated sailing
             //       that way its only rewarded to players that are actively training sailing.
 
-            var inventory = inventoryProvider.Get(character.Id);
+            //var inventory = inventory.Get(character.Id);
 
             if (s.SailingRewardAttempted == DateTime.UnixEpoch)
             {
@@ -47,7 +47,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 return;
 
             session.Updated = DateTime.UtcNow;
-            Drops.TryDropItem(this, logger, gameData, inventoryProvider, session, character, skills.SailingLevel, state.TaskArgument, drop => !inventory.ContainsItem(drop.ItemId));
+            Drops.TryDropItem(this, logger, gameData, inventory, session, character, skills.SailingLevel, state.TaskArgument, drop => !inventory.ContainsItem(drop.ItemId));
         }
     }
 }

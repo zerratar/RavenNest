@@ -83,7 +83,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             ResourceTaskProcessor resProcessor,
             ILogger logger,
             GameData gameData,
-            PlayerInventoryProvider inventoryProvider,
+            PlayerInventory inventory,
             GameSession session,
             Character character,
             int skillLevel,
@@ -135,7 +135,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 if (target != null)
                 {
                     drop = target;
-                    if (TryDrop(logger, gameData, inventoryProvider, session, resProcessor, character, skillLevel, target, canDrop))
+                    if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, target, canDrop))
                     {
                         return true;
                     }
@@ -152,7 +152,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
 
                     drop = res;
-                    if (TryDrop(logger, gameData, inventoryProvider, session, resProcessor, character, skillLevel, res, canDrop))
+                    if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, res, canDrop))
                     {
                         return true;
                     }
@@ -163,13 +163,13 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             catch (Exception exc)
             {
                 var gameDataIsOK = gameData != null;
-                var inventoryProviderIsOK = inventoryProvider != null;
+                var inventoryIsOk = inventory != null;
                 var sessionIsOK = session != null;
                 var resProcessorIsOK = resProcessor != null;
                 var characterIsOK = character != null;
                 var dropIsOK = drop != null;
                 var canDropIsOK = canDrop != null;
-                logger.LogError($"Unable to drop item for player, GameData: {gameDataIsOK}, Inventory: {inventoryProviderIsOK}, Session: {sessionIsOK}, ResProcessor: {resProcessorIsOK}, Character: {characterIsOK}, Drop: {dropIsOK}, DropFunc: {canDropIsOK}, Exception: " + exc);
+                logger.LogError($"Unable to drop item for player, GameData: {gameDataIsOK}, Inventory: {inventoryIsOk}, Session: {sessionIsOK}, ResProcessor: {resProcessorIsOK}, Character: {characterIsOK}, Drop: {dropIsOK}, DropFunc: {canDropIsOK}, Exception: " + exc);
                 return false;
             }
         }
@@ -177,7 +177,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         private bool TryDrop(
             ILogger logger,
             GameData gameData,
-            PlayerInventoryProvider inventoryProvider,
+            PlayerInventory inventory,
             GameSession session,
             ResourceTaskProcessor resProcessor,
             Character character,
@@ -237,7 +237,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     if (canDrop == null || canDrop(targetDrop))
                     {
                         dropTimes[cooldownKey] = now;
-                        resProcessor.IncrementItemStack(gameData, inventoryProvider, session, character, targetDrop.ItemId);
+                        resProcessor.IncrementItemStack(gameData, inventory, session, character, targetDrop.ItemId);
                         return true;
                     }
                 }

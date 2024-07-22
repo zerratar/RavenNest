@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Providers;
 
 namespace RavenNest.UnitTests

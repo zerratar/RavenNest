@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Net;
+using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 
@@ -11,7 +12,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         void Process(
             ILogger logger,
             GameData gameData,
-            PlayerInventoryProvider inventoryProvider,
+            PlayerInventory inventoryProvider,
             GameSession session,
             Character character,
             CharacterState state);

@@ -18,11 +18,11 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
         public void IncrementItemStack(
             GameData gameData,
-            PlayerInventoryProvider inventoryProvider,
+            PlayerInventory inventory,
             DataModels.GameSession session,
             Character character, Guid itemId)
         {
-            var inventory = inventoryProvider.Get(character.Id);
+            //var inventory = inventoryProvider.Get(character.Id);
             var items = inventory.AddItem(itemId);
 
             gameData.EnqueueGameEvent(gameData.CreateSessionEvent(GameEventType.ItemAdd, session, new ItemAdd
@@ -37,7 +37,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public abstract void Process(
             ILogger logger,
             GameData gameData,
-            PlayerInventoryProvider inventoryProvider,
+            PlayerInventory inventoryProvider,
             DataModels.GameSession session,
             Character character,
             DataModels.CharacterState state);

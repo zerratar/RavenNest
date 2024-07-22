@@ -12,7 +12,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public override void Process(
             ILogger logger,
             GameData gameData,
-            PlayerInventoryProvider inventoryProvider,
+            PlayerInventory inventory,
             GameSession session,
             Character character,
             CharacterState state)
@@ -26,8 +26,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 if (skills == null)
                     return;
 
-#warning TODO: Allow for getting resources if you have bonus increased your level?
-                if (!TryGetIsland(state.Island, out var island) || islandLevelRequirements[island][RavenNest.Models.Skill.Fishing] > skills.FishingLevel)
+                var level = skills.FishingLevel + inventory.GetFishingBonus();
+                if (!TryGetIsland(state.Island, out var island) || islandLevelRequirements[island][RavenNest.Models.Skill.Fishing] > level)
                     return;
 
                 var villageResources = GetVillageResources(gameData, session);
@@ -39,7 +39,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 session.Updated = DateTime.UtcNow;
 
 
-                Drops.TryDropItem(this, logger, gameData, inventoryProvider, session, character, skills.FishingLevel, state.TaskArgument);
+                Drops.TryDropItem(this, logger, gameData, inventory, session, character, level, state.TaskArgument);
             });
         }
     }
