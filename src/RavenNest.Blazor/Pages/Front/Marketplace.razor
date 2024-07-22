@@ -26,6 +26,12 @@
         }
         else
         {
+
+            @if (isAdmin)
+            {
+                <button class="btn btn-action" @onclick="CancelExpiredListings">Cancel all Expired listings</button>
+            }
+
             <div class="stash item-filters">
                 <button class="item-filter @(itemFilter == ItemFilter.All ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.All)">
                     <span class="item-filter-text">All</span>
@@ -143,7 +149,7 @@
                         {
                             <th @onclick="SortByExpiryDate">Expires <span>@GetIndicator("expires")</span></th>
                         }
-                        
+
                         @if (canCancelItems)
                         {
                             <th>Actions</th>
@@ -247,7 +253,13 @@
 
                             @if (isAdmin)
                             {
-                                <td class='marketplace'>@entry.Expires</td>
+                                <td class='marketplace'>
+                                    <span>@entry.Expires</span>
+                                    @if (entry.Expires < DateTime.UtcNow)
+                                    {
+                                        <span class="expired">&nbsp;Expired</span>
+                                    }
+                                </td>
                             }
                             @if (canCancelItems)
                             {

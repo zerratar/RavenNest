@@ -1,5 +1,9 @@
-﻿
-.top-section{
+﻿.expired {
+    color: red;
+    font-size: 9pt;
+}
+
+.top-section {
     height: 335px;
 }
 .item-stat {

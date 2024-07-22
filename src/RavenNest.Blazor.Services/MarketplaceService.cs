@@ -1,6 +1,8 @@
 ﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
+using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace RavenNest.Blazor.Services
@@ -36,6 +38,21 @@ namespace RavenNest.Blazor.Services
             });
         }
 
+        public async Task<bool> CancelListingsAsync(List<Guid> itemsToCancel)
+        {
+            return await Task.Run(() =>
+            {
+                var result = true;
+                foreach (var id in itemsToCancel)
+                {
+                    if (!marketplaceManager.Cancel(id))
+                        result = false;
+                }
+
+                return result;
+            });
+        }
+
         public async Task<bool> CancelListingAsync(System.Guid id)
         {
             return await Task.Run(() =>
@@ -43,5 +60,6 @@ namespace RavenNest.Blazor.Services
                 return marketplaceManager.Cancel(id);
             });
         }
+
     }
 }

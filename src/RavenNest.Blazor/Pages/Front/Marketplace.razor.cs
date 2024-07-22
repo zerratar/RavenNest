@@ -3,6 +3,7 @@ using RavenNest.Blazor.Services;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -65,6 +66,34 @@ namespace RavenNest.Blazor.Pages.Front
         {
             if (!CanCancelItem(id)) return;
             if (await MarketplaceService.CancelListingAsync(id))
+            {
+                var itemToRemove = items.FirstOrDefault(x => x.Id == id);
+                if (itemToRemove != null)
+                {
+                    items.Remove(itemToRemove);
+                }
+                else
+                {
+                    items = await MarketplaceService.GetMarketItemsAsync();
+                }
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+
+        private async void CancelExpiredListings()
+        {
+            if (!isAdmin) return;
+
+            var itemsToCancel = new List<Guid>();
+            foreach (var item in items)
+            {
+                if (item.Expires < DateTime.UtcNow)
+                {
+                    itemsToCancel.Add(item.Id);
+                }
+            }
+
+            if (await MarketplaceService.CancelListingsAsync(itemsToCancel))
             {
                 items = await MarketplaceService.GetMarketItemsAsync();
                 await InvokeAsync(StateHasChanged);
