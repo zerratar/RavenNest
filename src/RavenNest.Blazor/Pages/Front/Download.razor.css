@@ -86,3 +86,11 @@ ul.download-list li {
         padding: 20px 30px 50px 20px;
     }
 }
+
+
+@media screen and (max-width: 360px){
+    .download-options {
+        display: flex;
+        flex-direction: column;
+    }
+}

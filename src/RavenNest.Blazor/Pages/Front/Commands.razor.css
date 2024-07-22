@@ -134,3 +134,9 @@ details[open] summary .format {
         padding: 20px 30px 50px 20px;
     }
 }
+
+@media screen and (max-width: 360px){
+    .top-section {
+        height: 385px;
+    }
+}
