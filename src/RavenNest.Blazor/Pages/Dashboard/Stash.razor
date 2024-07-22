@@ -17,276 +17,270 @@
 
 @if (!session.Authenticated)
 {
-            <p>You don't seem to be logged in.</p>
+                <p>You don't seem to be logged in.</p>
 }
 else
 {
-            <h3>The items in here are accessible between all your characters.</h3>
+                <h3>The items in here are accessible between all your characters.</h3>
 
     @if (stash == null)
     {
-                        <LoadIndicator></LoadIndicator>
+        <LoadIndicator></LoadIndicator>
     }
     else
     {
-                        <div class="stash item-filters">
-                            <button class="item-filter @(itemFilter == ItemFilter.All ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.All)">
-                                <span class="item-filter-text">All</span>
-                                <i class="fa-sharp fa-solid fa-rectangles-mixed"></i>
-                            </button>
-                            <button class="item-filter @(itemFilter == ItemFilter.Swords ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Swords)">
-                                <span class="item-filter-text">Swords</span>
-                                <i class="fa-sharp fa-solid fa-sword"></i>
-                            </button>
-                            <button class="item-filter @(itemFilter == ItemFilter.Axes ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Axes)">
-                                <span class="item-filter-text">Axes</span>
-                                <i class="fa-sharp fa-solid fa-axe"></i>
-                            </button>
-                            <button class="item-filter @(itemFilter == ItemFilter.Spears ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Spears)">
-                                <span class="item-filter-text">Spears</span>
-                                <i class="fa-solid fa-scythe"></i>
-                            </button>
-                            <button class="item-filter @(itemFilter == ItemFilter.Bows ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Bows)">
-                                <span class="item-filter-text">Bows</span>
-                                <i class="fa-sharp fa-solid fa-bow-arrow"></i>
-                            </button>
-
-                            <button class="item-filter @(itemFilter == ItemFilter.Staves ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Staves)">
-                                <span class="item-filter-text">Staves</span>
-                                <i class="fa-sharp fa-solid fa-staff"></i>
-                            </button>
-
-                            <button class="item-filter @(itemFilter == ItemFilter.Shields ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Shields)">
-                                <span class="item-filter-text">Shields</span>
-                                <i class="fa-sharp fa-solid fa-shield"></i>
-                            </button>
-
-                            <button class="item-filter @(itemFilter == ItemFilter.Armors ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Armors)">
-                                <span class="item-filter-text">Armors</span>
-                                <i class="fa-sharp fa-solid fa-helmet-battle"></i>
-                            </button>
-
-                            <button class="item-filter @(itemFilter == ItemFilter.Accessories ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Accessories)">
-                                <span class="item-filter-text">Accessories</span>
-                                <i class="fa-sharp fa-solid fa-gem"></i>
-                            </button>
-
-                            <button class="item-filter @(itemFilter == ItemFilter.Pets ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Pets)">
-                                <span class="item-filter-text">Pets</span>
-                                <i class="fa-sharp fa-solid fa-dog"></i>
-                            </button>
-
-
-                            <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
-                                <span class="item-filter-text">Scrolls</span>
-                                <i class="fa-sharp fa-solid fa-scroll"></i>
-                            </button>
-
-                            <button class="item-filter @(itemFilter == ItemFilter.Woodcutting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Woodcutting)">
-                                <span class="item-filter-text">Woodcutting</span>
-                                <i class="fa-solid fa-tree"></i>
-                            </button>
-
-                            <button class="item-filter @(itemFilter == ItemFilter.Mining ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Mining)">
-                                <span class="item-filter-text">Mining</span>
-                                <i class="fa-solid fa-pickaxe"></i>
-                            </button>
-
-                            <button class="item-filter @(itemFilter == ItemFilter.Fishing ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Fishing)">
-                                <span class="item-filter-text">Fishing</span>
-                                <i class="fa-sharp fa-solid fa-fishing-rod"></i>
-                            </button>
-
-                            <button class="item-filter @(itemFilter == ItemFilter.Farming ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Farming)">
-                                <span class="item-filter-text">Farming</span>
-                                <i class="fa-solid fa-wheat"></i>
-                            </button>
-
-                            <button class="item-filter @(itemFilter == ItemFilter.Gathering ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Gathering)">
-                                <span class="item-filter-text">Gathering</span>
-                                <i class="fa-solid fa-mushroom"></i>
-                            </button>
-                            <button class="item-filter @(itemFilter == ItemFilter.Crafting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Crafting)">
-                                <span class="item-filter-text">Crafting</span>
-                                <i class="fa-sharp fa-solid fa-hammer"></i>
-                            </button>
-
-                            <button class="item-filter @(itemFilter == ItemFilter.Cooking ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Cooking)">
-                                <span class="item-filter-text">Cooking</span>
-                                <i class="fa-sharp fa-solid fa-user-chef"></i>
-                            </button>
-
-                            <button class="item-filter @(itemFilter == ItemFilter.Alchemy ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Alchemy)">
-                                <span class="item-filter-text">Alchemy</span>
-                                <i class="fa-sharp fa-solid fa-flask-round-potion"></i>
-                            </button>
-                        </div>
+        <div class="stash item-filters">
+            <button class="item-filter @(itemFilter == ItemFilter.All ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.All)">
+                <span class="item-filter-text">All</span>
+                <i class="fa-sharp fa-solid fa-rectangles-mixed"></i>
+            </button>
+            <button class="item-filter @(itemFilter == ItemFilter.Swords ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Swords)">
+                <span class="item-filter-text">Swords</span>
+                <i class="fa-sharp fa-solid fa-sword"></i>
+            </button>
+            <button class="item-filter @(itemFilter == ItemFilter.Axes ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Axes)">
+                <span class="item-filter-text">Axes</span>
+                <i class="fa-sharp fa-solid fa-axe"></i>
+            </button>
+            <button class="item-filter @(itemFilter == ItemFilter.Spears ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Spears)">
+                <span class="item-filter-text">Spears</span>
+                <i class="fa-solid fa-scythe"></i>
+            </button>
+            <button class="item-filter @(itemFilter == ItemFilter.Bows ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Bows)">
+                <span class="item-filter-text">Bows</span>
+                <i class="fa-sharp fa-solid fa-bow-arrow"></i>
+            </button>
+        
+            <button class="item-filter @(itemFilter == ItemFilter.Staves ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Staves)">
+                <span class="item-filter-text">Staves</span>
+                <i class="fa-sharp fa-solid fa-staff"></i>
+            </button>
+        
+            <button class="item-filter @(itemFilter == ItemFilter.Shields ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Shields)">
+                <span class="item-filter-text">Shields</span>
+                <i class="fa-sharp fa-solid fa-shield"></i>
+            </button>
+        
+            <button class="item-filter @(itemFilter == ItemFilter.Armors ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Armors)">
+                <span class="item-filter-text">Armors</span>
+                <i class="fa-sharp fa-solid fa-helmet-battle"></i>
+            </button>
+        
+            <button class="item-filter @(itemFilter == ItemFilter.Accessories ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Accessories)">
+                <span class="item-filter-text">Accessories</span>
+                <i class="fa-sharp fa-solid fa-gem"></i>
+            </button>
+        
+            <button class="item-filter @(itemFilter == ItemFilter.Pets ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Pets)">
+                <span class="item-filter-text">Pets</span>
+                <i class="fa-sharp fa-solid fa-dog"></i>
+            </button>
+        
+        
+            <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
+                <span class="item-filter-text">Scrolls</span>
+                <i class="fa-sharp fa-solid fa-scroll"></i>
+            </button>
+        
+            <button class="item-filter @(itemFilter == ItemFilter.Woodcutting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Woodcutting)">
+                <span class="item-filter-text">Woodcutting</span>
+                <i class="fa-solid fa-tree"></i>
+            </button>
+        
+            <button class="item-filter @(itemFilter == ItemFilter.Mining ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Mining)">
+                <span class="item-filter-text">Mining</span>
+                <i class="fa-solid fa-pickaxe"></i>
+            </button>
+        
+            <button class="item-filter @(itemFilter == ItemFilter.Fishing ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Fishing)">
+                <span class="item-filter-text">Fishing</span>
+                <i class="fa-sharp fa-solid fa-fishing-rod"></i>
+            </button>
+        
+            <button class="item-filter @(itemFilter == ItemFilter.Farming ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Farming)">
+                <span class="item-filter-text">Farming</span>
+                <i class="fa-solid fa-wheat"></i>
+            </button>
+        
+            <button class="item-filter @(itemFilter == ItemFilter.Gathering ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Gathering)">
+                <span class="item-filter-text">Gathering</span>
+                <i class="fa-solid fa-mushroom"></i>
+            </button>
+            <button class="item-filter @(itemFilter == ItemFilter.Crafting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Crafting)">
+                <span class="item-filter-text">Crafting</span>
+                <i class="fa-sharp fa-solid fa-hammer"></i>
+            </button>
+        
+            <button class="item-filter @(itemFilter == ItemFilter.Cooking ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Cooking)">
+                <span class="item-filter-text">Cooking</span>
+                <i class="fa-sharp fa-solid fa-user-chef"></i>
+            </button>
+        
+            <button class="item-filter @(itemFilter == ItemFilter.Alchemy ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Alchemy)">
+                <span class="item-filter-text">Alchemy</span>
+                <i class="fa-sharp fa-solid fa-flask-round-potion"></i>
+            </button>
+        </div>
 
         if (stashFiltered.Count == 0)
         {
-                                    <p>Looks quite empty in here.</p>
+                                                <p>Looks quite empty in here.</p>
         }
         else
         {
-                                    <table class="items-list stash">
-                                        <thead>
-                                            <tr>
-                                                <th></th>
+                                                <table class="items-list stash">
+                                                    <thead>
+                                                        <tr>
+                                                            <th></th>
 
-                                                <th @onclick="SortByName">Name <span>@GetIndicator("name")</span></th>
-                                                <th @onclick="SortByStats">Stats <span>@GetIndicator("stats")</span></th>
-                                                <th @onclick="SortByLevelReq">Level Req <span>@GetIndicator("lev-req")</span></th>
-                                                <th class="stash-item-category" @onclick="SortByCategory">Category <span>@GetIndicator("category")</span></th>
-                                                <th class="stash-item-type" @onclick="SortByType">Item Type <span>@GetIndicator("type")</span></th>
-                                                <th class="stash-item-material" @onclick="SortByMaterial">Material Type <span>@GetIndicator("material")</span></th>
+                                                            <th @onclick="SortByName">Name <span>@GetIndicator("name")</span></th>
+                                                            <th @onclick="SortByStats">Stats <span>@GetIndicator("stats")</span></th>
+                                                            <th @onclick="SortByLevelReq">Level Req <span>@GetIndicator("lev-req")</span></th>
+                                                            <th class="stash-item-category" @onclick="SortByCategory">Category <span>@GetIndicator("category")</span></th>
+                                                            <th class="stash-item-type" @onclick="SortByType">Item Type <span>@GetIndicator("type")</span></th>
+                                                            <th class="stash-item-material" @onclick="SortByMaterial">Material Type <span>@GetIndicator("material")</span></th>
 
-                                                <th>Transfer to</th>
-                        @*<th>Vendor</th>*@
-                                            </tr>
-                                        </thead>
-                                        <tbody>
+                                                            <th>Transfer to</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
                     @foreach (var entry in stashFiltered)
                     {
                         var item = itemLookup[entry.ItemId];
 
-                                                        <tr id="@item.Id" class="item-row">
-                                                            <td class='item image'>
-                                                                <img src="@(ItemService.GetItemImage(item.Id.ToString(), item.Name))" style="width: 40px" />
-                                                                <div class="stash-item-amount">@entry.Amount</div>
-                                                            </td>
-                                                            <td class='item name'>@((entry.Name ?? item.Name))</td>
-                                                            <td class='item stats'>
+                                                                        <tr id="@item.Id" class="item-row">
+                                                                            <td class='item image'>
+                                                                                <img src="@(ItemService.GetItemImage(item.Id.ToString(), item.Name))" style="width: 40px" />
+                                                                                <div class="stash-item-amount">@entry.Amount</div>
+                                                                            </td>
+                                                                            <td class='item name'>@((entry.Name ?? item.Name))</td>
+                                                                            <td class='item stats'>
                                 @if (item.WeaponAim > 0)
                                 {
-                                                                            <span class="item-stat" title="Weapon Aim - Increases your hit rate in melee"><i class="fas fa-crosshairs"></i>@item.WeaponAim</span>
+                                                                                                <span class="item-stat" title="Weapon Aim - Increases your hit rate in melee"><i class="fas fa-crosshairs"></i>@item.WeaponAim</span>
                                 }
                                 @if (item.WeaponPower > 0)
                                 {
-                                                                            <span class="item-stat" title="Weapon Power - Increases your maximum damage in melee"><i class="fas fa-swords"></i>@item.WeaponPower</span>
+                                                                                                <span class="item-stat" title="Weapon Power - Increases your maximum damage in melee"><i class="fas fa-swords"></i>@item.WeaponPower</span>
                                 }
                                 @if (item.RangedAim > 0)
                                 {
-                                                                            <span class="item-stat" title="Ranged Aim - Increases your ranged hit rate"><i class="fas fa-crosshairs"></i>@item.RangedAim</span>
+                                                                                                <span class="item-stat" title="Ranged Aim - Increases your ranged hit rate"><i class="fas fa-crosshairs"></i>@item.RangedAim</span>
                                 }
                                 @if (item.RangedPower > 0)
                                 {
-                                                                            <span class="item-stat" title="Ranged Power - Increases your ranged maximum damage"><i class="fas fa-bow-arrow"></i>@item.RangedPower</span>
+                                                                                                <span class="item-stat" title="Ranged Power - Increases your ranged maximum damage"><i class="fas fa-bow-arrow"></i>@item.RangedPower</span>
                                 }
                                 @if (item.MagicAim > 0)
                                 {
-                                                                            <span class="item-stat" title="Magic Aim - Increases your magic hit rate">
-                                                                                <i class="fas fa-wand"></i>@item.MagicAim
-                                                                            </span>
+                                                                                                <span class="item-stat" title="Magic Aim - Increases your magic hit rate">
+                                                                                                    <i class="fas fa-wand"></i>@item.MagicAim
+                                                                                                </span>
                                 }
                                 @if (item.MagicPower > 0)
                                 {
-                                                                            <span class="item-stat" title="Magic Power - Increases your magic maximum damage">
-                                                                                <i class="fas fa-hand-holding-magic"></i>
+                                                                                                <span class="item-stat" title="Magic Power - Increases your magic maximum damage">
+                                                                                                    <i class="fas fa-hand-holding-magic"></i>
                                         @item.MagicPower
-                                                                            </span>
+                                                                                                </span>
                                 }
                                 @if (item.ArmorPower > 0)
                                 {
-                                                                            <span class="item-stat" title="Armor Power - Decreases the hit rate of your attacker"><i class="fas fa-shield"></i>@item.ArmorPower</span>
+                                                                                                <span class="item-stat" title="Armor Power - Decreases the hit rate of your attacker"><i class="fas fa-shield"></i>@item.ArmorPower</span>
                                 }
-                                                            </td>
-                                                            <td class='item requirement'>
+                                                                            </td>
+                                                                            <td class='item requirement'>
                                 @if (item.RequiredSlayerLevel > 0)
                                 {
-                                                                            <span class="item-stat" title="Required Slayer Level">
-                                                                                <i class="fas fa-skull"></i>
+                                                                                                <span class="item-stat" title="Required Slayer Level">
+                                                                                                    <i class="fas fa-skull"></i>
                                         @item.RequiredSlayerLevel
-                                                                            </span>
+                                                                                                </span>
                                 }
                                 @if (item.RequiredAttackLevel > 0)
                                 {
-                                                                            <span class="item-stat" title="Required Attack Level">
-                                                                                <i class="fas fa-swords"></i>
+                                                                                                <span class="item-stat" title="Required Attack Level">
+                                                                                                    <i class="fas fa-swords"></i>
                                         @item.RequiredAttackLevel
-                                                                            </span>
+                                                                                                </span>
                                 }
                                 @if (item.RequiredDefenseLevel > 0)
                                 {
-                                                                            <span class="item-stat" title="Required Defense Level">
-                                                                                <i class="fas fa-shield"></i>
+                                                                                                <span class="item-stat" title="Required Defense Level">
+                                                                                                    <i class="fas fa-shield"></i>
                                         @item.RequiredDefenseLevel
-                                                                            </span>
+                                                                                                </span>
                                 }
                                 @if (item.RequiredMagicLevel > 0)
                                 {
-                                                                            <span class="item-stat" title="Required Magic or Healing Level">
-                                                                                <i class="fas fa-hand-holding-magic"></i>
+                                                                                                <span class="item-stat" title="Required Magic or Healing Level">
+                                                                                                    <i class="fas fa-hand-holding-magic"></i>
                                         @item.RequiredMagicLevel
-                                                                            </span>
+                                                                                                </span>
                                 }
                                 @if (item.RequiredRangedLevel > 0)
                                 {
-                                                                            <span class="item-stat" title="Required Ranged Level">
-                                                                                <i class="fas fa-bow-arrow"></i>
+                                                                                                <span class="item-stat" title="Required Ranged Level">
+                                                                                                    <i class="fas fa-bow-arrow"></i>
                                         @item.RequiredRangedLevel
-                                                                            </span>
+                                                                                                </span>
                                 }
-                                                            </td>
-                                                            <td class='item stash-item-category'>@item.Category</td>
-                                                            <td class='item stash-item-type'>@ItemService.GetTypeName(item)</td>
-                                                            <td class='item stash-item-material'>@ItemService.GetMaterialName(item)</td>
-                            @*<td class='item amount'>@entry.Amount</td>*@
-                                                            <td class='item item-actions'>
+                                                                            </td>
+                                                                            <td class='item stash-item-category'>@item.Category</td>
+                                                                            <td class='item stash-item-type'>@ItemService.GetTypeName(item)</td>
+                                                                            <td class='item stash-item-material'>@ItemService.GetMaterialName(item)</td>
+                                                                            <td class='item item-actions'>
                                 @if (characters != null)
                                 {
                                     foreach (var plr in characters)
                                     {
-                                      <button @onclick="()=>ShowSendToCharacter(entry, plr)" class="btn btn-action">@plr.Alias</button>
+                                                              <button @onclick="()=>ShowSendToCharacter(entry, plr)" class="btn btn-action">@plr.Alias</button>
                                     }
                                 }
-                                                            </td>
-                            @*
-                              <td class='item item-actions'>
-                                <button @onclick="()=> Vendor(entry)" class="btn btn-action vendor">@("Vendor " + (entry.Amount > 1 ? entry.Amount + " " : ""))</button>
-                              </td>
-                            *@
-                                                        </tr>
+                                                                            </td>
+      
+                                                                        </tr>
                     }
-                                        </tbody>
-                                    </table>
+                                                    </tbody>
+                                                </table>
         }
 
 
         @if (sendToCharacterDialogVisible)
         {
-                                <div class="item-details-dialog-container send-to-character">
-                              <div class="item-details-dialog-background" @onclick="HideSendToCharacter"></div>
-                              <div class="item-details-dialog vendor">
-                                  <div class="dialog-header">
-                                      <h3>Transfer @GetItemName(itemToSend)</h3>
-                                  </div>
-                                  <div class="item-details-content vendor">
-                                  @if (canSendMany)
-                                  {
-                                    <div class="amount-inputs">
-                                        <label>Amount:</label>
-                                        <input @bind="amountToSend" type="number" min="1" max="@itemToSend.Amount" />
-                                        <div class="quick-buttons">
-                                              @foreach (var amount in quickButtons)
-                                              {
-                                                  <button @onclick="() => SetSendAmount(amount)" class="btn btn-action btn-quick">
-                                                      @(amount == itemToSend.Amount ? $"{amount} (All)" : $"{amount}")
-                                                   </button>
-                                              }
+                                            <div class="item-details-dialog-container send-to-character">
+                                          <div class="item-details-dialog-background" @onclick="HideSendToCharacter"></div>
+                                          <div class="item-details-dialog vendor">
+                                              <div class="dialog-header">
+                                                  <h3>Transfer @GetItemName(itemToSend)</h3>
+                                              </div>
+                                              <div class="item-details-content vendor">
+                        @if (canSendMany)
+                        {
+                                                    <div class="amount-inputs">
+                                                        <label>Amount:</label>
+                                                        <input @bind="amountToSend" type="number" min="1" max="@itemToSend.Amount" />
+                                                        <div class="quick-buttons">
+                                    @foreach (var amount in quickButtons)
+                                    {
+                                                                      <button @onclick="() => SetSendAmount(amount)" class="btn btn-action btn-quick">
+                                            @(amount == itemToSend.Amount ? $"{amount} (All)" : $"{amount}")
+                                                                       </button>
+                                    }
+                                                          </div>
+                                                      </div>
+                        }
+                                                  <div class="summary-block">
+                                                      <p>You are about to send <strong>@amountToSend</strong> @GetItemName(itemToSend) to <strong>@targetCharacter.Alias</strong>.</p>
+                                                  </div>
+                                                  <div class="warning-row">Are you sure you want to continue?</div>
+                                              </div>
+                                              <div class="item-actions">
+                                                  <button @onclick="HideSendToCharacter" class="btn btn-action">Cancel</button>
+                                                  <button @onclick="SendItems" class="btn btn-action vendor">Confirm</button>
+                                              </div>
                                           </div>
                                       </div>
-                                  }
-                                      <div class="summary-block">
-                                          <p>You are about to send <strong>@amountToSend</strong> @GetItemName(itemToSend) to <strong>@targetCharacter.Alias</strong>.</p>
-                                      </div>
-                                      <div class="warning-row">Are you sure you want to continue?</div>
-                                  </div>
-                                  <div class="item-actions">
-                                      <button @onclick="HideSendToCharacter" class="btn btn-action">Cancel</button>
-                                      <button @onclick="SendItems" class="btn btn-action vendor">Confirm</button>
-                                  </div>
-                              </div>
-                          </div>
         }
 
     }

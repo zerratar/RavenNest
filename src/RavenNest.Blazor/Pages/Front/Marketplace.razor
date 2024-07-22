@@ -125,12 +125,12 @@
                     <tr>
                         <th></th>
 
-@*                        <th @onclick="SortByCraftingLevel">Crafting Level <span>@GetIndicator("crafting")</span></th>
-                        <th @onclick="SortByVendorPrice">Vendor Price <span>@GetIndicator("vendor")</span></th>*@
+                        @*                        <th @onclick="SortByCraftingLevel">Crafting Level <span>@GetIndicator("crafting")</span></th>
+                    <th @onclick="SortByVendorPrice">Vendor Price <span>@GetIndicator("vendor")</span></th>*@
                         <th @onclick="SortByName">Name <span>@GetIndicator("name")</span></th>
                         @if (isAdmin)
                         {
-                          <th @onclick="SortBySeller">Seller <span>@GetIndicator("seller")</span></th>
+                            <th @onclick="SortBySeller">Seller <span>@GetIndicator("seller")</span></th>
                         }
                         <th @onclick="SortByStats">Stats <span>@GetIndicator("stats")</span></th>
                         <th @onclick="SortByLevelReq">Level Req <span>@GetIndicator("lev-req")</span></th>
@@ -139,6 +139,11 @@
                         <th @onclick="SortByMaterial">Material Type <span>@GetIndicator("material")</span></th>
                         <th @onclick="SortByAvailableAmount">Available Amount <span>@GetIndicator("amount")</span></th>
                         <th @onclick="SortByAskingPrice">Asking Price <span>@GetIndicator("ask-price")</span></th>
+                        @if (isAdmin)
+                        {
+                            <th @onclick="SortByExpiryDate">Expires <span>@GetIndicator("expires")</span></th>
+                        }
+                        
                         @if (canCancelItems)
                         {
                             <th>Actions</th>
@@ -162,7 +167,7 @@
                                 <td>@GetUserName(entry.SellerUserId)</td>
                             }
                             <!-- <td class='marketplace'></td> -->
-                          <td class='item'>
+                            <td class='item'>
                                 @if (item.WeaponAim > 0)
                                 {
                                     <span class="item-stat" title="Weapon Aim - Increases your hit rate in melee"><i class="fas fa-crosshairs"></i>@item.WeaponAim</span>
@@ -240,6 +245,10 @@
                             <td class='marketplace'>@entry.Amount</td>
                             <td class='marketplace'><img class="ravenCoins" src="/favicon.ico" />@entry.PricePerItem</td>
 
+                            @if (isAdmin)
+                            {
+                                <td class='marketplace'>@entry.Expires</td>
+                            }
                             @if (canCancelItems)
                             {
                                 <td class='marketplace'>

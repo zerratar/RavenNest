@@ -124,6 +124,12 @@ namespace RavenNest.Blazor.Pages.Front
             await SortBy((m, x) => m.PricePerItem);
         }
 
+        private async void SortByExpiryDate()
+        {
+            SetSorting("expires");
+            await SortBy((m, x) => m.Expires);
+        }
+
         private async void SortBySeller()
         {
             SetSorting("seller");
@@ -173,6 +179,7 @@ namespace RavenNest.Blazor.Pages.Front
                 StateHasChanged();
             }
         }
+
 
         private void SetSorting(string value)
         {

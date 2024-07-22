@@ -1821,6 +1821,7 @@ namespace RavenNest.BusinessLogic.Game
             var items = inventory.AddItem(itemId, amount);
             SendItemAddEvent(items[0], amount, character);
         }
+
         public bool ReturnMarketplaceItem(DataModels.MarketItem item)
         {
             if (item == null) return false;
