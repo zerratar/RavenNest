@@ -535,6 +535,13 @@ namespace RavenNest.Controllers
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("{characterId}/send/{alias}/{inventoryItemId}/{amount}")]
+        public GiftItemResult GiftItem(Guid characterId, string alias, Guid inventoryItemId, long amount)
+        {
+            return playerManager.SendInventoryItem(AssertGetSessionToken(), characterId, alias, inventoryItemId, amount);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("v2/{characterId}/vendor-instance/{item}/{amount}")]
         public long VendorItemInstance(Guid characterId, Guid item, long amount)
         {

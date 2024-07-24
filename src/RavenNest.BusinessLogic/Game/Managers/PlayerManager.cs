@@ -2369,6 +2369,17 @@ namespace RavenNest.BusinessLogic.Game
             return false;
         }
 
+        public GiftItemResult SendInventoryItem(SessionToken sessionToken, Guid gifterCharacterId, string alias, Guid inventoryItemId, long amount)
+        {
+            var gifter = GetCharacter(sessionToken, gifterCharacterId);
+            if (gifter == null || !integrityChecker.VerifyPlayer(sessionToken.SessionId, gifter.Id, 0)) return GiftItemResult.Error;
+            
+            var receiver = gameData.GetCharacterByUserId(gifter.UserId, alias);
+            if (receiver == null) return GiftItemResult.Error;
+            return GiftInventoryItem(inventoryItemId, amount, gifter, receiver);
+        }
+
+
         public GiftItemResult GiftInventoryItem(SessionToken sessionToken, Guid gifterUserId, Guid receiverUserId, Guid inventoryItemId, long amount)
         {
             var gifter = GetCharacter(sessionToken, gifterUserId);
