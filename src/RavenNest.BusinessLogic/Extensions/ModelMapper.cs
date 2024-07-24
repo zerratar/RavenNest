@@ -16,12 +16,6 @@ namespace RavenNest.BusinessLogic.Extensions
 {
     public static class ModelMapper
     {
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RavenNest.Models.Appearance Map(Appearance data)
-        {
-            return DataMapper.Map<RavenNest.Models.Appearance>(data);
-        }
-
         public static RavenNest.Models.ItemRecipe Map(GameData gameData, RavenNest.DataModels.ItemRecipe recipe)
         {
             var ingredients = gameData.GetRecipeIngredients(recipe.Id);

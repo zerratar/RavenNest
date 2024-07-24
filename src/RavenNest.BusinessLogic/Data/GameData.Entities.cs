@@ -166,13 +166,13 @@ namespace RavenNest.BusinessLogic.Data
                     GoldRing = GetOrCreateItem(i, "Gold Ring", ItemCategory.Ring, ItemType.Ring),
                     EmeraldRing = GetOrCreateItem(i, "Emerald Ring", ItemCategory.Ring, ItemType.Ring),
                     RubyRing = GetOrCreateItem(i, "Ruby Ring", ItemCategory.Ring, ItemType.Ring),
-                    DragonRing = GetOrCreateItem(i, "Dragon Ring", ItemCategory.Ring, ItemType.Ring),
+                    DragonRing = GetOrCreateItem(i, "Dragon Ring", ItemCategory.Ring, ItemType.Ring).SetStats(15, 15, 17),
                     PhantomRing = GetOrCreateItem(i, "Phantom Ring", ItemCategory.Ring, ItemType.Ring),
                     GoldAmulet = GetOrCreateItem(i, "Gold Amulet", ItemCategory.Amulet, ItemType.Amulet),
-                    EmeraldAmulet = GetOrCreateItem(i, "Emerald Amulet", ItemCategory.Amulet, ItemType.Amulet),
+                    EmeraldAmulet = GetOrCreateItem(i, "Emerald Amulet", ItemCategory.Amulet, ItemType.Amulet).SetStats(5, 5, 7),
                     RubyAmulet = GetOrCreateItem(i, "Ruby Amulet", ItemCategory.Amulet, ItemType.Amulet),
                     DragonAmulet = GetOrCreateItem(i, "Dragon Amulet", ItemCategory.Amulet, ItemType.Amulet),
-                    PhantomAmulet = GetOrCreateItem(i, "Phantom Amulet", ItemCategory.Amulet, ItemType.Amulet),
+                    PhantomAmulet = GetOrCreateItem(i, "Phantom Amulet", ItemCategory.Amulet, ItemType.Amulet).SetStats(17, 22, 28),
 
                     // Item Drops
                     Hearthstone = GetOrCreateItem(i, "Hearthstone", "A magically infused stone.", ItemCategory.Resource, ItemType.Alchemy),
@@ -185,7 +185,19 @@ namespace RavenNest.BusinessLogic.Data
                     Realmstone = GetOrCreateItem(i, "Realmstone", "A precious stone allowing teleportation across islands.", ItemCategory.Resource, ItemType.Alchemy),
 
                     SantaHat = GetOrCreateItem(i, "Santa Hat", "A festive hat worn by Santa.", ItemCategory.Cosmetic, ItemType.Hat),
+                    SharkHat = GetOrCreateItem(i, "Shark Hat", "A hat that looks like a shark.", ItemCategory.Cosmetic, ItemType.Hat),
+                    SamuraiHelmet = GetOrCreateItem(i, "Samurai Helmet", "A helmet worn by samurais.", ItemCategory.Cosmetic, ItemType.Hat),
+                    LeprechaunHat = GetOrCreateItem(i, "Leprechaun Hat", "Leprechaun, these little creatures know where the gold is.", ItemCategory.Cosmetic, ItemType.Hat),
+                    FBIHat = GetOrCreateItem(i, "FBI Hat", "Now you can pretend to be part of the FBI!", ItemCategory.Cosmetic, ItemType.Hat),
                     BlackSantaHat = GetOrCreateItem(i, "Black Santa Hat", "A festive hat that may or may not have been worn by Santa..", ItemCategory.Cosmetic, ItemType.Hat).GenericPrefab("Character/Appearance/Head/Black Santa Hat"),
+                    Crown = GetOrCreateItem(i, "Crown", "A crown fit for a king.", ItemCategory.Cosmetic, ItemType.Hat),
+                    DinosaurHat = GetOrCreateItem(i, "Dinosaur Hat", "A hat that looks like a dinosaur.", ItemCategory.Cosmetic, ItemType.Hat),
+                    ChefHat = GetOrCreateItem(i, "Chef Hat", "A hat worn by chefs.", ItemCategory.Cosmetic, ItemType.Hat),
+                    CactusHat = GetOrCreateItem(i, "Cactus Hat", "A very pointy hat, you better keep your fingers away.", ItemCategory.Cosmetic, ItemType.Hat),
+                    BunnyEars = GetOrCreateItem(i, "Bunny Ears", "A pair of bunny ears.", ItemCategory.Cosmetic, ItemType.Hat),
+                    BeachHat = GetOrCreateItem(i, "Beach Hat", "A hat for the beach, to keep the sun away from your eyes.", ItemCategory.Cosmetic, ItemType.Hat),
+                    BachelorHat = GetOrCreateItem(i, "Bachelor Hat", "School is over, lets celebrate!", ItemCategory.Cosmetic, ItemType.Hat),
+                    Antlers = GetOrCreateItem(i, "Antlers", "A pair of antlers.", ItemCategory.Cosmetic, ItemType.Hat),
 
                     // Halloween 2023 tiki masks
                     RedTikiMask = GetOrCreateItem(i, "Red Tiki Mask", "A red tiki mask.", ItemCategory.Cosmetic, ItemType.Mask).GenericPrefab("Character/Appearance/Head/Red Tiki Mask"),
@@ -218,10 +230,10 @@ namespace RavenNest.BusinessLogic.Data
                     WindcallersAmulet = GetOrCreateItem(i, "Windcallers Amulet", ItemCategory.Amulet, ItemType.Amulet),
 
                     // Tokens
-                    ChristmasToken = GetOrCreateItem(i, "Christmas Token", ItemCategory.Scroll, ItemType.Scroll),
-                    HalloweenToken = GetOrCreateItem(i, "Halloween Token", ItemCategory.Scroll, ItemType.Scroll),
-                    AbraxasToken = GetOrCreateItem(i, "Abraxas Token", ItemCategory.Scroll, ItemType.Scroll),
-                    RuneToken = GetOrCreateItem(i, "Rune Token", ItemCategory.Scroll, ItemType.Scroll),
+                    ChristmasToken = GetOrCreateItem(i, "Christmas Token", "Used for redeeming Christmas Themed items.", ItemCategory.Scroll, ItemType.Scroll),
+                    HalloweenToken = GetOrCreateItem(i, "Halloween Token", "Used for redeeming Halloween Themed items.", ItemCategory.Scroll, ItemType.Scroll),
+                    AbraxasToken = GetOrCreateItem(i, "Abraxas Token", "An old token that no longer bears any value.", ItemCategory.Scroll, ItemType.Scroll),
+                    RuneToken = GetOrCreateItem(i, "Rune Token", "An old token that no longer bears any value.", ItemCategory.Scroll, ItemType.Scroll),
 
                     // Gathering - Cooking
                     Water = GetOrCreateItem(i, "Water", "Essential for life and a key ingredient in many recipes.", ItemCategory.Resource, ItemType.Gathering),

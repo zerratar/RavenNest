@@ -4534,6 +4534,18 @@ namespace RavenNest.BusinessLogic.Data
     {
         // Special Items
         public Item SantaHat;
+        public Item SharkHat;
+        public Item SamuraiHelmet;
+        public Item LeprechaunHat;
+        public Item FBIHat;
+        public Item Crown;
+        public Item DinosaurHat;
+        public Item ChefHat;
+        public Item CactusHat;
+        public Item BunnyEars;
+        public Item BeachHat;
+        public Item BachelorHat;
+        public Item Antlers;
         public Item BlackSantaHat;
 
         public Item ExpMultiplierScroll;
