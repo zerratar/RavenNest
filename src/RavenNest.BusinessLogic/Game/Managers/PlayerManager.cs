@@ -2373,9 +2373,9 @@ namespace RavenNest.BusinessLogic.Game
         {
             var gifter = GetCharacter(sessionToken, gifterCharacterId);
             if (gifter == null || !integrityChecker.VerifyPlayer(sessionToken.SessionId, gifter.Id, 0)) return GiftItemResult.Error;
-            
+
             var receiver = gameData.GetCharacterByUserId(gifter.UserId, alias);
-            if (receiver == null) return GiftItemResult.Error;
+            if (receiver == null || gifter.Id == receiver.Id) return GiftItemResult.Error;
             return GiftInventoryItem(inventoryItemId, amount, gifter, receiver);
         }
 
@@ -3359,15 +3359,15 @@ namespace RavenNest.BusinessLogic.Game
                             break;
 
                         case "Atria":
-                            state.X = -285.842f;
-                            state.Y = -1.918666f;
-                            state.Z = -398.4614f;
+                            state.X = 480.678f;
+                            state.Y = -1.09f;
+                            state.Z = -251.281f;
                             break;
 
                         case "Eldara":
-                            state.X = -285.842f;
-                            state.Y = -1.918666f;
-                            state.Z = -398.4614f;
+                            state.X = 649.458f;
+                            state.Y = -1.45f;
+                            state.Z = 37.9f;
                             break;
 
                         default:

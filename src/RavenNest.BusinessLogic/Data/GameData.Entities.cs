@@ -1215,7 +1215,7 @@ namespace RavenNest.BusinessLogic.Data
             EnsureItemStatusEffects(typedItems.ApplePie, Effect(StatusEffectType.Heal, 0.14f, 22), Effect(StatusEffectType.IncreasedMagicPower, 150, 0.05f, 3));
             EnsureItemStatusEffects(typedItems.Bread, Effect(StatusEffectType.Heal, 0.06f, 8));
             EnsureItemStatusEffects(typedItems.Skewers, Effect(StatusEffectType.Heal, 0.11f, 18), Effect(StatusEffectType.IncreasedAttackSpeed, 140, 0.06f, 2));
-            EnsureItemStatusEffects(typedItems.HotChocolate, Effect(StatusEffectType.Heal, 0.05f, 8), Effect(StatusEffectType.IncreasedHitChance, 0.05f, 0));
+            EnsureItemStatusEffects(typedItems.HotChocolate, Effect(StatusEffectType.Heal, 0.05f, 8), Effect(StatusEffectType.IncreasedHitChance, 120,  0.05f, 0));
             EnsureItemStatusEffects(typedItems.ChocolateChipCookies, Effect(StatusEffectType.Heal, 0.07f, 10), Effect(StatusEffectType.IncreaseCriticalHit, 120, 0.10f, 0));
 
             // Burnt :o

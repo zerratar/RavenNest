@@ -23,7 +23,7 @@ namespace RavenNest.Blazor.Pages.Admin
         Services.PlayerService PlayerService { get; set; }
 
         [Parameter]
-        public string Id { get; set; }
+        public Guid? Id { get; set; }
         private CharacterViewState ViewState { get; set; }
 
         private WebsiteAdminUser SelectedUser { get; set; }
@@ -35,7 +35,7 @@ namespace RavenNest.Blazor.Pages.Admin
 
             if (Id != null)
             {
-                SelectedUser = UserService.GetUser(Id);
+                SelectedUser = UserService.GetUser(Id.Value);
             }
         }
 

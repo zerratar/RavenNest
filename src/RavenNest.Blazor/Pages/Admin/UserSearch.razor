@@ -40,8 +40,8 @@ else
             @foreach (var user in users)
             {
                 <tr class="player-row">
-                    <td><img src="/api/twitch/logo/@(user.UserId)" class="profile-picture" /></td>
-                    <td><a href="/admin/user/@user.UserId">@user.UserId</a></td>
+                    <td><img src="/api/twitch/logo/@(user.Id)" class="profile-picture" /></td>
+                    <td><a href="/admin/user/@user.Id">@user.Id</a></td>
                     <td>
                         <span>@user.UserName</span>
                         @if (user.Status >= 1)
