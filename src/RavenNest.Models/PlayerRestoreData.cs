@@ -10,5 +10,7 @@ namespace RavenNest.Models
         ///     all players that the server knows of to have been part of the game will be added.
         /// </summary>
         public Guid[] Characters { get; set; }
+
+        public bool ForceAdd { get; set; }
     }
 }

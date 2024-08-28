@@ -391,7 +391,7 @@ namespace RavenNest.BusinessLogic.Game
             await ravenbotApi.UpdateUserSettingsAsync(user.Id);
         }
 
-        public async Task<PlayerJoinResult> AddPlayerByCharacterId(DataModels.GameSession session, Guid characterId, bool isGameRestore = false)
+        public async Task<PlayerJoinResult> AddPlayerByCharacterId(DataModels.GameSession session, Guid characterId, bool isGameRestore = false, bool isForceAdd = false)
         {
             var result = new PlayerJoinResult();
             var c = gameData.GetCharacter(characterId);
@@ -436,17 +436,20 @@ namespace RavenNest.BusinessLogic.Game
             if (isGameRestore && (c.UserIdLock != null && c.UserIdLock != session.UserId))
 #endif
             {
-                var targetUser = gameData.GetUser(c.UserIdLock.GetValueOrDefault());
-                result.Success = false;
-                if (targetUser != null)
+                if (!isForceAdd)
                 {
-                    result.ErrorMessage = "Player has left to join " + targetUser.UserName + "'s stream.";
+                    var targetUser = gameData.GetUser(c.UserIdLock.GetValueOrDefault());
+                    result.Success = false;
+                    if (targetUser != null)
+                    {
+                        result.ErrorMessage = "Player has left to join " + targetUser.UserName + "'s stream.";
+                    }
+                    else
+                    {
+                        result.ErrorMessage = "Player has left to join another stream.";
+                    }
+                    return result;
                 }
-                else
-                {
-                    result.ErrorMessage = "Player has left to join another stream.";
-                }
-                return result;
             }
 
             result.Player = await AddPlayerToSession(session, u, c);
@@ -488,7 +491,7 @@ namespace RavenNest.BusinessLogic.Game
                 result.Players = new PlayerJoinResult[players.Characters.Length];
                 for (int i = 0; i < players.Characters.Length; i++)
                 {
-                    result.Players[i] = await AddPlayerByCharacterId(session, players.Characters[i], true);
+                    result.Players[i] = await AddPlayerByCharacterId(session, players.Characters[i], true, players.ForceAdd);
                 }
             }
             catch (Exception exc)
