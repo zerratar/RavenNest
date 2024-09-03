@@ -323,7 +323,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 if (lastDungeonReward.TryGetValue(session.SessionId, out var dateTime))
                 {
-                    if (DateTime.UtcNow - dateTime <= TimeSpan.FromSeconds(30))
+                    if (DateTime.UtcNow - dateTime <= TimeSpan.FromSeconds(5))
                     {
                         return new EventItemReward[0];
                     }
@@ -416,7 +416,7 @@ namespace RavenNest.BusinessLogic.Game
             {
                 if (lastRaidReward.TryGetValue(session.SessionId, out var dateTime))
                 {
-                    if (DateTime.UtcNow - dateTime <= TimeSpan.FromSeconds(30))
+                    if (DateTime.UtcNow - dateTime <= TimeSpan.FromSeconds(5))
                     {
                         return new EventItemReward[0];
                     }
