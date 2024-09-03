@@ -6,6 +6,7 @@ using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Sessions;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -314,167 +315,197 @@ namespace RavenNest.BusinessLogic.Game
             return now >= start && now <= end;
         }
 
-
+        private ConcurrentDictionary<Guid, DateTime> lastDungeonReward = new ConcurrentDictionary<Guid, DateTime>();
+        private ConcurrentDictionary<Guid, DateTime> lastRaidReward = new ConcurrentDictionary<Guid, DateTime>();
         public EventItemReward[] GetDungeonRewardsAsync(SessionToken session, int tier, Guid[] characters)
         {
-            var gameSession = gameData.GetSession(session.SessionId);
-            if (gameSession == null) return null;
-            var rewards = new List<EventItemReward>();
-            var sessionCharacters = gameData.GetActiveSessionCharacters(gameSession);
-            var rng = Random.Shared;
-            var dropList = GetDungeonDropList(tier);
-
-            var knownItems = gameData.GetKnownItems();
-
-            const double seasonalTokenDropRate = 0.05;
-
-            foreach (var c in characters)
+            try
             {
-                var character = sessionCharacters.FirstOrDefault(x => x.Id == c);
-                if (character == null) continue;
-
-                var value = rng.NextDouble();
-                var dropChance = value >= 0.5 ? 1f : 0.80f;
-                var skills = gameData.GetCharacterSkills(character.SkillsId);
-
-                var dl = dropList.Where(x => x != null && x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
-                if (dl.Count == 0) continue;
-
-                //dropList.OrderByRandomWeighted(x => GetDropRate(x, skills))
-
-                var tokenDrop = dl.FirstOrDefault(x => x.ItemId == knownItems.HalloweenToken.Id || x.ItemId == knownItems.ChristmasToken.Id);
-                if (tokenDrop != null)
+                if (lastDungeonReward.TryGetValue(session.SessionId, out var dateTime))
                 {
-                    if (rng.NextDouble() <= seasonalTokenDropRate)
+                    if (DateTime.UtcNow - dateTime <= TimeSpan.FromSeconds(30))
+                    {
+                        return new EventItemReward[0];
+                    }
+                }
+                var gameSession = gameData.GetSession(session.SessionId);
+                if (gameSession == null) return null;
+                var rewards = new List<EventItemReward>();
+                var sessionCharacters = gameData.GetActiveSessionCharacters(gameSession);
+                var rng = Random.Shared;
+                var dropList = GetDungeonDropList(tier);
+
+                var knownItems = gameData.GetKnownItems();
+
+                const double seasonalTokenDropRate = 0.05;
+
+                foreach (var c in characters)
+                {
+                    var character = sessionCharacters.FirstOrDefault(x => x.Id == c);
+                    if (character == null) continue;
+
+                    var value = rng.NextDouble();
+                    var dropChance = value >= 0.5 ? 1f : 0.80f;
+                    var skills = gameData.GetCharacterSkills(character.SkillsId);
+
+                    var dl = dropList.Where(x => x != null && x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
+                    if (dl.Count == 0) continue;
+
+                    //dropList.OrderByRandomWeighted(x => GetDropRate(x, skills))
+
+                    var tokenDrop = dl.FirstOrDefault(x => x.ItemId == knownItems.HalloweenToken.Id || x.ItemId == knownItems.ChristmasToken.Id);
+                    if (tokenDrop != null)
+                    {
+                        if (rng.NextDouble() <= seasonalTokenDropRate)
+                        {
+                            var inv = inventoryProvider.Get(character.Id);
+                            var stack = inv.AddItem(tokenDrop.ItemId, 1).FirstOrDefault();
+
+                            // log when a seasonal token is dropped so I can keep track on this.
+
+                            logger.LogError("Token Drop from Dungeon from " + (Math.Round(seasonalTokenDropRate * 100)) + "%, Player: " + character.Name);
+
+                            rewards.Add(new EventItemReward
+                            {
+                                Amount = 1,
+                                CharacterId = character.Id,
+                                ItemId = tokenDrop.ItemId,
+                                InventoryItemId = stack.Id
+                            });
+                            continue;
+                        }
+                    }
+
+                    // pick an item at random based on highest drop rate
+                    var dropRates = dl.Select((x, index) => new { Name = gameData.GetItem(x.ItemId).Name, DropRate = GetDropRate(x, index, dropList.Count, 0, skills), ItemId = x.ItemId }).ToArray();
+                    var item = dropRates.Weighted(x => x.DropRate, rng);
+
+                    if (rng.NextDouble() <= dropChance)
                     {
                         var inv = inventoryProvider.Get(character.Id);
-                        var stack = inv.AddItem(tokenDrop.ItemId, 1).FirstOrDefault();
+                        var stack = inv.AddItem(item.ItemId, 1).FirstOrDefault();
 
-                        // log when a seasonal token is dropped so I can keep track on this.
-
-                        logger.LogError("Token Drop from Dungeon from " + (Math.Round(seasonalTokenDropRate * 100)) + "%, Player: " + character.Name);
+                        var amount = 1;
+                        if (item.Name.Contains("token", StringComparison.OrdinalIgnoreCase))
+                        {
+                            amount = tier > 0 && rng.NextDouble() >= 0.5 ? 2 : 1;
+                            logger.LogError("Token Drop from Dungeon: " + item.Name + ", Player: " + character.Name + ", Amount: " + amount);
+                        }
 
                         rewards.Add(new EventItemReward
                         {
-                            Amount = 1,
+                            Amount = amount,
                             CharacterId = character.Id,
-                            ItemId = tokenDrop.ItemId,
+                            ItemId = item.ItemId,
                             InventoryItemId = stack.Id
                         });
-                        continue;
                     }
                 }
 
-                // pick an item at random based on highest drop rate
-                var dropRates = dl.Select((x, index) => new { Name = gameData.GetItem(x.ItemId).Name, DropRate = GetDropRate(x, index, dropList.Count, 0, skills), ItemId = x.ItemId }).ToArray();
-                var item = dropRates.Weighted(x => x.DropRate, rng);
-
-                if (rng.NextDouble() <= dropChance)
-                {
-                    var inv = inventoryProvider.Get(character.Id);
-                    var stack = inv.AddItem(item.ItemId, 1).FirstOrDefault();
-
-                    var amount = 1;
-                    if (item.Name.Contains("token", StringComparison.OrdinalIgnoreCase))
-                    {
-                        amount = tier > 0 && rng.NextDouble() >= 0.5 ? 2 : 1;
-                        logger.LogError("Token Drop from Dungeon: " + item.Name + ", Player: " + character.Name + ", Amount: " + amount);
-                    }
-
-                    rewards.Add(new EventItemReward
-                    {
-                        Amount = amount,
-                        CharacterId = character.Id,
-                        ItemId = item.ItemId,
-                        InventoryItemId = stack.Id
-                    });
-                }
+                return rewards.ToArray();
             }
-
-            return rewards.ToArray();
+            finally
+            {
+                lastDungeonReward[session.SessionId] = DateTime.UtcNow;
+            }
         }
 
         public EventItemReward[] GetRaidRewardsAsync(SessionToken session, Guid[] characters)
         {
-            var gameSession = gameData.GetSession(session.SessionId);
-            if (gameSession == null) return null;
-            var rewards = new List<EventItemReward>();
-            var sessionCharacters = gameData.GetActiveSessionCharacters(gameSession);
-            var rng = Random.Shared;
-
-            var knownItems = gameData.GetKnownItems();
-
-            var dropList = GetRaidDropList();
-            var dropChance = 0.5;
-
-            const double seasonalTokenDropRate = 0.025;
-
-            foreach (var c in characters)
+            try
             {
-                var character = sessionCharacters.FirstOrDefault(x => x.Id == c);
-                if (character == null) continue;
-
-                var skills = gameData.GetCharacterSkills(character.SkillsId);
-
-                var dl = dropList.Where(x => x != null && x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
-                if (dl.Count == 0) continue;
-
-                // check if we have a token drop
-                // then flip a coin to see if we should get a token or just select a random item
-
-                var tokenDrop = dl.FirstOrDefault(x => x.ItemId == knownItems.HalloweenToken.Id || x.ItemId == knownItems.ChristmasToken.Id);
-                if (tokenDrop != null)
+                if (lastRaidReward.TryGetValue(session.SessionId, out var dateTime))
                 {
-                    if (rng.NextDouble() <= seasonalTokenDropRate)
+                    if (DateTime.UtcNow - dateTime <= TimeSpan.FromSeconds(30))
                     {
+                        return new EventItemReward[0];
+                    }
+                }
+
+                var gameSession = gameData.GetSession(session.SessionId);
+                if (gameSession == null) return null;
+                var rewards = new List<EventItemReward>();
+                var sessionCharacters = gameData.GetActiveSessionCharacters(gameSession);
+                var rng = Random.Shared;
+
+                var knownItems = gameData.GetKnownItems();
+
+                var dropList = GetRaidDropList();
+                var dropChance = 0.5;
+
+                const double seasonalTokenDropRate = 0.025;
+
+                foreach (var c in characters)
+                {
+                    var character = sessionCharacters.FirstOrDefault(x => x.Id == c);
+                    if (character == null) continue;
+
+                    var skills = gameData.GetCharacterSkills(character.SkillsId);
+
+                    var dl = dropList.Where(x => x != null && x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
+                    if (dl.Count == 0) continue;
+
+                    // check if we have a token drop
+                    // then flip a coin to see if we should get a token or just select a random item
+
+                    var tokenDrop = dl.FirstOrDefault(x => x.ItemId == knownItems.HalloweenToken.Id || x.ItemId == knownItems.ChristmasToken.Id);
+                    if (tokenDrop != null)
+                    {
+                        if (rng.NextDouble() <= seasonalTokenDropRate)
+                        {
+                            var inv = inventoryProvider.Get(character.Id);
+                            var stack = inv.AddItem(tokenDrop.ItemId, 1).FirstOrDefault();
+
+                            // log when a seasonal token is dropped so I can keep track on this.
+
+                            logger.LogError("Token Drop from Raid from " + (Math.Round(seasonalTokenDropRate * 100)) + "%, Player: " + character.Name);
+
+                            rewards.Add(new EventItemReward
+                            {
+                                Amount = 1,
+                                CharacterId = character.Id,
+                                ItemId = tokenDrop.ItemId,
+                                InventoryItemId = stack.Id
+                            });
+                            continue;
+                        }
+                    }
+
+                    // pick an item at random based on highest drop rate
+
+                    var dropRates = dl.Select((x, index) => new { Name = gameData.GetItem(x.ItemId).Name, DropRate = GetDropRate(x, index, dropList.Count, 0, skills), ItemId = x.ItemId }).ToArray();
+                    var item = dropRates.Weighted(x => x.DropRate, rng);
+
+                    var rngVal = rng.NextDouble();
+                    if (rngVal <= dropChance)
+                    {
+
                         var inv = inventoryProvider.Get(character.Id);
-                        var stack = inv.AddItem(tokenDrop.ItemId, 1).FirstOrDefault();
+                        var stack = inv.AddItem(item.ItemId, 1).FirstOrDefault();
 
                         // log when a seasonal token is dropped so I can keep track on this.
 
-                        logger.LogError("Token Drop from Raid from " + (Math.Round(seasonalTokenDropRate * 100)) + "%, Player: " + character.Name);
+                        if (item.Name.Contains("token", StringComparison.OrdinalIgnoreCase))
+                        {
+                            logger.LogError("Token Drop from Raid: " + item.Name + ", Player: " + character.Name);
+                        }
 
                         rewards.Add(new EventItemReward
                         {
                             Amount = 1,
                             CharacterId = character.Id,
-                            ItemId = tokenDrop.ItemId,
+                            ItemId = item.ItemId,
                             InventoryItemId = stack.Id
                         });
-                        continue;
                     }
                 }
 
-                // pick an item at random based on highest drop rate
-
-                var dropRates = dl.Select((x, index) => new { Name = gameData.GetItem(x.ItemId).Name, DropRate = GetDropRate(x, index, dropList.Count, 0, skills), ItemId = x.ItemId }).ToArray();
-                var item = dropRates.Weighted(x => x.DropRate, rng);
-
-                var rngVal = rng.NextDouble();
-                if (rngVal <= dropChance)
-                {
-
-                    var inv = inventoryProvider.Get(character.Id);
-                    var stack = inv.AddItem(item.ItemId, 1).FirstOrDefault();
-
-                    // log when a seasonal token is dropped so I can keep track on this.
-
-                    if (item.Name.Contains("token", StringComparison.OrdinalIgnoreCase))
-                    {
-                        logger.LogError("Token Drop from Raid: " + item.Name + ", Player: " + character.Name);
-                    }
-
-                    rewards.Add(new EventItemReward
-                    {
-                        Amount = 1,
-                        CharacterId = character.Id,
-                        ItemId = item.ItemId,
-                        InventoryItemId = stack.Id
-                    });
-                }
+                return rewards.ToArray();
             }
-
-            return rewards.ToArray();
+            finally
+            {
+                lastRaidReward[session.SessionId] = DateTime.UtcNow;
+            }
         }
 
         private double GetDropRate(ItemDrop drop, int index, int count, int tier, DataModels.Skills skills)

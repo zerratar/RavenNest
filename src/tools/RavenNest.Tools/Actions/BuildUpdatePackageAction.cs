@@ -3,9 +3,11 @@ using Shinobytes.Console.Forms;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using UnityVersionChanger;
 
 namespace RavenNest.Tools.Actions
 {
@@ -169,7 +171,22 @@ namespace RavenNest.Tools.Actions
         internal Version GetNextVersion()
         {
             var existingArchives = System.IO.Directory.GetFiles(UnityBuildFolderWin, "Ravenfall.v*a-alpha.7z");
-            if (existingArchives.Length == 0) return null;
+            if (existingArchives.Length == 0)
+            {
+                // no existing archives, try reading the globalgamemanagers file
+                var file = Directory.GetFiles(UnityBuildFolderWin, "globalgamemanagers", SearchOption.AllDirectories).FirstOrDefault();
+                using var gm = new BinaryFile(file);
+
+                var index = 1900;
+                var expectedVersion = "0.9.2.1a";
+
+                var strPosIndex = gm.IndexOf("0.9.", index);
+                //strPosIndex -= 4;
+
+                var version = GetVersion(gm.ReadString(strPosIndex));
+
+                return IncrementVersion(version, MajorIncrement, MinorIncrement, BuildIncrement, RevisionIncrement);
+            }
             var archives = existingArchives.Select(x => new { File = x, Version = GetVersion(x) }).OrderByDescending(x => x.Version).ToList();
             var a = archives.FirstOrDefault();
             if (a == null)
@@ -181,7 +198,7 @@ namespace RavenNest.Tools.Actions
         private System.Version IncrementVersion(System.Version version, int major, int minor, int build, int revision)
         {
             revision = version.Revision < 0 ? revision : version.Revision + revision;
-            
+
             build = version.Build;
             minor = version.Minor;
             major = version.Major;

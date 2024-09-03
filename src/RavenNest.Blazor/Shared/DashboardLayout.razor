@@ -8,6 +8,9 @@
 
     <div class="main">
         <div class="top-row px-4">
+
+            
+
             @if (IsAuthenticated)
             {
                 <NotificationIcon UserId="@session.UserId"></NotificationIcon>
@@ -32,10 +35,10 @@
         {
             <TwitchStreams Session="session"></TwitchStreams>
 
-            if (session.Administrator)
+@*             if (session.Administrator)
             {
                 <AIAssistance></AIAssistance>
-            }
+            } *@
         }
     </div>
 </div>
