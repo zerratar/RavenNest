@@ -5,18 +5,23 @@ using UnityVersionChanger;
 
 //var targetFile = @"C:\git\Ravenfall Legacy\Build\Ravenfall_Data\globalgamemanagers";
 
-var targetFile = @"G:\Ravenfall\Projects\Ravenfall Legacy\Debug Build\Ravenfall Legacy_Data\globalgamemanagers";
+var targetFile =
+     @"G:\Ravenfall\Test\Ravenfall.v0.9.1.7a-alpha-linux\Ravenfall_Data\globalgamemanagers";
+//@"C:\Users\kaaru\Downloads\globalgamemanagers";
 //var targetFile = @"C:\Users\kaaru\Downloads\Ravenfall.v0.7.8.10a-alpha\Ravenfall_Data\globalgamemanagers";
 
-var expectedVersion = "0.7.8.8a";
+var expectedVersion = "0.9.2.0a";
 //var expectedVersion = "0.1.0";
 //var expectedVersion = "0.7.8.10a";
-var replacementVersion = "0.7.8.11a";
+var replacementVersion = "0.9.2.1a";
 
 using var gm = new BinaryFile(targetFile);
 
-const int versionLengthPos = 4632;    // 4 bytes later, that means size is of an int, but not only that. Many different versions have shown the same position. Header fixed size? Unity Version Related?
-const int versionStringIndex = 4636;  // 
+// depending on unity version the position is different
+
+// const int versionLengthPos = 1924; // 
+const int versionLengthPos = 1900; // 2023.2.4f1
+const int versionStringIndex = versionLengthPos + 4;//4636;  // 
 
 //var firstIndexOfRavenfall = gm.IndexOf("RAVENFALL", StringComparison.OrdinalIgnoreCase);
 //var firstIndexOfShinobytes = gm.IndexOf("shinobytes", StringComparison.OrdinalIgnoreCase);
@@ -53,14 +58,14 @@ if (versionLength != expectedVersion.Length)
 //    index++;
 //}
 
-if (gm.IndexOf(replacementVersion, 4600) >= 0)
+if (gm.IndexOf(replacementVersion, versionLengthPos) >= 0)
 {
     Console.WriteLine("File has already been patched.");
     Console.ReadKey();
     return;
 }
 
-gm.Position = gm.IndexOf(expectedVersion, 4600); // we know its gonna be around 4600+, will be quicker to have that as starting point.
+gm.Position = gm.IndexOf(expectedVersion, versionLengthPos); // we know its gonna be around 4600+, will be quicker to have that as starting point.
 
 if (gm.Position == -1)
 {

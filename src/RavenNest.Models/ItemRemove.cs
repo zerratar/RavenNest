@@ -64,10 +64,10 @@ namespace RavenNest.Models
             if (itemType == ItemType.Fishing) return ItemFilter.Fishing;
             if (itemType == ItemType.Farming) return ItemFilter.Farming;
             if (itemType == ItemType.Crafting) return ItemFilter.Crafting;
-            if (itemType == ItemType.Cooking || itemType == ItemType.Food)
+            if (itemType == ItemType.Cooking || itemType == ItemType.Food || itemCategory == ItemCategory.Food)
                 return ItemFilter.Cooking;
 
-            if (itemType == ItemType.Alchemy || itemType == ItemType.Potion)
+            if (itemType == ItemType.Alchemy || itemType == ItemType.Potion || itemCategory == ItemCategory.Potion)
                 return ItemFilter.Alchemy;
 
             if (itemType == ItemType.OneHandedSword || itemType == ItemType.TwoHandedSword)

@@ -47,20 +47,6 @@ namespace RavenNest.BusinessLogic.Github
                         return result;
                     }
                 }
-
-                //var req = (HttpWebRequest)HttpWebRequest.Create($"https://api.github.com/repos/{owner}/{repo}/releases");
-                //req.Method = "GET";
-                //req.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9";
-                //req.UserAgent = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Mobile Safari/537.36";
-                //using (var res = (HttpWebResponse)(await req.GetResponseAsync()))
-                //using (var str = res.GetResponseStream())
-                //using (var read = new StreamReader(str))
-                //{
-                //    var data = await read.ReadToEndAsync();
-                //    var result = new GameRelease(Newtonsoft.Json.JsonConvert.DeserializeObject<Root[]>(data).FirstOrDefault());
-                //    cachedVersion.Set(owner + "_" + repo, result, TimeSpan.FromSeconds(5));
-                //    return result;
-                //}
             }
             catch (Exception exc)
             {
@@ -137,7 +123,6 @@ namespace RavenNest.BusinessLogic.Github
                 Version = gameVersion;
             }
             this.Description = ParseDescription(root.Body);
-                        
             this.UpdateDownloadUrl_Win = root.Assets.FirstOrDefault(x => x.Name.StartsWith("update."))?.BrowserDownloadUrl;
             this.UpdateDownloadUrl_Linux = root.Assets.FirstOrDefault(x => x.Name.StartsWith("update-linux"))?.BrowserDownloadUrl;
             this.FullDownloadUrl_Win = root.Assets.FirstOrDefault(x => x.Name.StartsWith("Ravenfall.v") && !x.Name.Contains("linux"))?.BrowserDownloadUrl; 

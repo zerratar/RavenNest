@@ -308,7 +308,7 @@ namespace RavenNest.Tools.Actions
             var lower = x.ToLower();
             var test = NotContains(lower, ".7z", "settings.json",
                 "pub-sub.json", "autologin.conf", "tmpautologin.conf", "pubsub-tokens.json",
-                "camera-positions.json", "game-settings.json", "state-data.json", "__DEBUG__",
+                "camera-positions.json", "island-camera-settings.json", "game-settings.json", "state-data.json", "__DEBUG__",
                 "\\update\\", "\\update\\",
                 "\\data\\", "data\\stats", "data\\sounds",
                 "_DoNotShip", "_ButDontShipItWithYourGame");

@@ -41,9 +41,9 @@
                         <b>@GetTrainingSkillName()</b>
 
                         <span>&nbsp;</span>
-                        
+
                         <b>@(trainingSkill.ItemName)</b>
-                        
+
                         <span>&nbsp;</span>
                     }
                     else
@@ -312,7 +312,8 @@
         if (trainingSkill == null)
             return null;
 
-        if (trainingSkill.Name.Equals("all", StringComparison.OrdinalIgnoreCase))
+        if (trainingSkill.Name.Equals("health", StringComparison.OrdinalIgnoreCase) ||
+            trainingSkill.Name.Equals("all", StringComparison.OrdinalIgnoreCase))
             return "All";
 
         if (trainingSkill.Name.Equals("heal", StringComparison.OrdinalIgnoreCase))
@@ -343,7 +344,7 @@
         if (t == "heal")
             return n.Equals("healing", StringComparison.OrdinalIgnoreCase);
 
-        if (t == "all")
+        if (t == "all" || t == "health")
             return n.Equals("attack", StringComparison.OrdinalIgnoreCase) || n.Equals("defense", StringComparison.OrdinalIgnoreCase) || n.Equals("strength", StringComparison.OrdinalIgnoreCase);
 
         if (n.ToLower() == "attack" && t == "atk") return true;
