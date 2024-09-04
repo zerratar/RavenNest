@@ -4073,6 +4073,8 @@ namespace RavenNest.BusinessLogic.Game
             var taskArgument = update.TaskArgument;
             if (string.IsNullOrEmpty(taskArgument) || task != "Fighting")
                 taskArgument = GetTaskArgumentBySkillIndex(update.TrainingSkillIndex);
+            if (string.IsNullOrEmpty(taskArgument))
+                taskArgument = update.TaskArgument;
 
             state.Health = update.Health;
             state.InArena = HasFlag(update, CharacterFlags.InArena);

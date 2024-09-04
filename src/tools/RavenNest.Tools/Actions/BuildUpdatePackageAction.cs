@@ -153,9 +153,9 @@ namespace RavenNest.Tools.Actions
 
             // var buildFolder = GetTargetBuildFolder();
             // while we could check both folders, its better to make sure both are up to date to the same version number. Therefor always use windows folder for this
-            var existingArchives = System.IO.Directory.GetFiles(UnityBuildFolderWin, "Ravenfall.v*a-alpha.7z");
-            if (existingArchives.Length == 0)
-                return "ravenfall" + platformExtension + ".7z";
+            //var existingArchives = System.IO.Directory.GetFiles(UnityBuildFolderWin, "Ravenfall.v*a-alpha.7z");
+            //if (existingArchives.Length == 0)
+            //    return "ravenfall" + platformExtension + ".7z";
 
             //System.Version v = IncrementVersion(a.Version, MajorIncrement, MinorIncrement, BuildIncrement, RevisionIncrement);
             return GetReleaseFileName(isWindowsBuild);
