@@ -225,132 +225,133 @@
             </div>
         }
 
-        @if (itemDetailDialogVisible)
-        {
-            var item = ItemService.GetItem(itemDetailsDialogItem.ItemId);
-            <div class="item-details-dialog-container item-view">
-                <div class="item-details-dialog-background" @onclick="CloseItemDetails"></div>
-                <div class="item-details-dialog">
-                    <div class="dialog-header">
-                        <div class="item-name" data-tier="@GetItemTier()">@GetItemName()</div>
-                        <button class="close" @onclick="CloseItemDetails">x</button>
-                    </div>
-
-                    <div class="item-details-content">
-                        <div class="item-type">@GetItemType()</div>
-                        @if (itemDetailsDialogItem.Soulbound)
-                        {
-                            <div class="item-soulbound">Soulbound - this item can't be gifted</div>
-                        }
-                        <div class="item-image" data-item="@itemDetailsDialogItem.Id"><img src="@GetItemImage(itemDetailsDialogItem.ItemId, itemDetailsDialogItem.Tag)" /></div>
-
-                        @foreach (var stat in GetItemStats())
-                        {
-                            <div class="item-stat">
-                                <div class="item-stat-name">@stat.Name</div>
-                                <div class="item-stat-value">
-                                    <span>@stat.Value</span>
-                                    @if (stat.Bonus > 0)
-                                    {
-                                        <span class="item-stat-enchantment" title="Enchantment Bonus">(+@stat.Bonus)</span>
-                                    }
-                                </div>
-                            </div>
-                        }
-                        @if (!string.IsNullOrEmpty(itemDetailsDialogItem.Enchantment))
-                        {
-                            <div class="item-enchantment-header">Enchantments</div>
-                            @foreach (var stat in GetItemEnchantments())
-                            {
-                                <div class="item-stat enchantment">
-                                    <div class="item-stat-name">@GetEnchantmentName(stat)</div>
-                                    <div class="item-stat-value">+@GetEnchantmentValue(stat)</div>
-                                </div>
-                            }
-                        }
-                        <div class="item-requirement">
-                            <div class="item-stat-name">@GetItemRequirementSkill()</div>
-                            <div class="item-stat-value">@GetItemRequirementLevel()</div>
-                        </div>
-
-                        @if (item.RequiredSlayerLevel > 0)
-                        {
-                            <div class="item-requirement">
-                                <div class="item-stat-name">Requires Slayer Level</div>
-                                <div class="item-stat-value">@item.RequiredSlayerLevel</div>
-                            </div>
-                        }
-                    </div>
-
-
-                    @if (CanManage)
-                    {
-                        <div class="item-actions">
-
-                            @if (itemDetailsDialogItem.Equipped)
-                            {
-                                <button @onclick="UnequipItem" class="btn btn-action">Unequip</button>
-                            }
-                            else if (CanBeEquipped())
-                            {
-                                <button @onclick="EquipItem" class="btn btn-action">Equip</button>
-                            }
-
-                            <button @onclick="SendToStash" class="btn btn-action">@("Send " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : "") + "to stash")</button>
-
-                            @if (characters != null)
-                            {
-                                foreach (var plr in characters)
-                                {
-                                    if (plr.Id == Player.Id)
-                                    {
-                                        continue;
-                                    }
-
-                                    <button @onclick="()=>SendToCharacter(plr)" class="btn btn-action">@("Send " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : "") + "to " + plr.Alias)</button>
-                                }
-                            }
-
-                            @if (!itemDetailsDialogItem.Equipped)
-                            {
-                                <button @onclick="() => ShowVendorDialog(itemDetailsDialogItem)" class="btn btn-action vendor">Vendor</button>
-                            }
-                        </div>
-                    }
-                </div>
-            </div>
-        }
-
-        @if (CanModify)
-        {
-            if (addItemDialogVisible)
-            {
-                <div class="clan-member-invite">
-                    <div class="clan-member-invite-header">
-                        <h2>Search for item to add</h2>
-                        <button class="close" @onclick="HideAddItem">x</button>
-                    </div>
-                    <BlazoredTypeahead SearchMethod="SearchItem" @bind-Value="selectedItem">
-                        <SelectedTemplate>
-                            @context.Name
-                        </SelectedTemplate>
-                        <ResultTemplate>
-                            @context.Name
-                        </ResultTemplate>
-                    </BlazoredTypeahead>
-
-                    <div class="clan-member-invite-controls">
-                        @if (selectedItem != null)
-                        {
-                            <button @onclick="AddItem" class="btn btn-primary">Add</button>
-                        }
-                        <button @onclick="HideAddItem" class="btn btn-secondary">Cancel</button>
-                    </div>
-                </div>
-            }
-        }
     </div>
 </div>
+
+@if (itemDetailDialogVisible)
+{
+    var item = ItemService.GetItem(itemDetailsDialogItem.ItemId);
+    <div class="item-details-dialog-container item-view">
+        <div class="item-details-dialog-background" @onclick="CloseItemDetails"></div>
+        <div class="item-details-dialog">
+            <div class="dialog-header">
+                <div class="item-name" data-tier="@GetItemTier()">@GetItemName()</div>
+                <button class="close" @onclick="CloseItemDetails">x</button>
+            </div>
+
+            <div class="item-details-content">
+                <div class="item-type">@GetItemType()</div>
+                @if (itemDetailsDialogItem.Soulbound)
+                {
+                    <div class="item-soulbound">Soulbound - this item can't be gifted</div>
+                }
+                <div class="item-image" data-item="@itemDetailsDialogItem.Id"><img src="@GetItemImage(itemDetailsDialogItem.ItemId, itemDetailsDialogItem.Tag)" /></div>
+
+                @foreach (var stat in GetItemStats())
+                {
+                    <div class="item-stat">
+                        <div class="item-stat-name">@stat.Name</div>
+                        <div class="item-stat-value">
+                            <span>@stat.Value</span>
+                            @if (stat.Bonus > 0)
+                            {
+                                <span class="item-stat-enchantment" title="Enchantment Bonus">(+@stat.Bonus)</span>
+                            }
+                        </div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(itemDetailsDialogItem.Enchantment))
+                {
+                    <div class="item-enchantment-header">Enchantments</div>
+                    @foreach (var stat in GetItemEnchantments())
+                    {
+                        <div class="item-stat enchantment">
+                            <div class="item-stat-name">@GetEnchantmentName(stat)</div>
+                            <div class="item-stat-value">+@GetEnchantmentValue(stat)</div>
+                        </div>
+                    }
+                }
+                <div class="item-requirement">
+                    <div class="item-stat-name">@GetItemRequirementSkill()</div>
+                    <div class="item-stat-value">@GetItemRequirementLevel()</div>
+                </div>
+
+                @if (item.RequiredSlayerLevel > 0)
+                {
+                    <div class="item-requirement">
+                        <div class="item-stat-name">Requires Slayer Level</div>
+                        <div class="item-stat-value">@item.RequiredSlayerLevel</div>
+                    </div>
+                }
+            </div>
+
+
+            @if (CanManage)
+            {
+                <div class="item-actions">
+
+                    @if (itemDetailsDialogItem.Equipped)
+                    {
+                        <button @onclick="UnequipItem" class="btn btn-action">Unequip</button>
+                    }
+                    else if (CanBeEquipped())
+                    {
+                        <button @onclick="EquipItem" class="btn btn-action">Equip</button>
+                    }
+
+                    <button @onclick="SendToStash" class="btn btn-action">@("Send " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : "") + "to stash")</button>
+
+                    @if (characters != null)
+                    {
+                        foreach (var plr in characters)
+                        {
+                            if (plr.Id == Player.Id)
+                            {
+                                continue;
+                            }
+
+                            <button @onclick="()=>SendToCharacter(plr)" class="btn btn-action">@("Send " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : "") + "to " + plr.Alias)</button>
+                        }
+                    }
+
+                    @if (!itemDetailsDialogItem.Equipped)
+                    {
+                        <button @onclick="() => ShowVendorDialog(itemDetailsDialogItem)" class="btn btn-action vendor">Vendor</button>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@if (CanModify)
+{
+    if (addItemDialogVisible)
+    {
+        <div class="clan-member-invite">
+            <div class="clan-member-invite-header">
+                <h2>Search for item to add</h2>
+                <button class="close" @onclick="HideAddItem">x</button>
+            </div>
+            <BlazoredTypeahead SearchMethod="SearchItem" @bind-Value="selectedItem">
+                <SelectedTemplate>
+                    @context.Name
+                </SelectedTemplate>
+                <ResultTemplate>
+                    @context.Name
+                </ResultTemplate>
+            </BlazoredTypeahead>
+
+            <div class="clan-member-invite-controls">
+                @if (selectedItem != null)
+                {
+                    <button @onclick="AddItem" class="btn btn-primary">Add</button>
+                }
+                <button @onclick="HideAddItem" class="btn btn-secondary">Cancel</button>
+            </div>
+        </div>
+    }
+}
 
 @code {
     [Parameter]

@@ -1,17 +1,12 @@
 ﻿using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
-using RavenNest.BusinessLogic.Providers;
 using RavenNest.DataModels;
 using RavenNest.Models;
-using RavenNest.Sessions;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Numerics;
-using TwitchLib.Api.Helix.Models.Bits;
-using static RavenNest.Models.Tv.Episode;
 
 namespace RavenNest.BusinessLogic.Game
 {
