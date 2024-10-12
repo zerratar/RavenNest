@@ -30,5 +30,20 @@ namespace RavenNest.Models
         public double? AutoRestStart { get; set; }
         public int? DungeonCombatStyle { get; set; }
         public int? RaidCombatStyle { get; set; }
+
+        /// <summary>
+        ///     How many times the player has auto joined the dungeon, not to be confused with the <see cref="AutoJoinDungeonCounter"/> which is maximum amount of times to join.
+        /// </summary>
+        public long AutoJoinDungeonCount { get; set; }
+
+        /// <summary>
+        ///     How many times the player has auto joined the raid, not to be confused with the <see cref="AutoJoinRaidCounter"/> which is maximum amount of times to join.
+        /// </summary>
+        public long AutoJoinRaidCount { get; set; }
+
+        /// <summary>
+        ///     How many times the player has auto rested.
+        /// </summary>
+        public long AutoRestCount { get; set; }
     }
 }

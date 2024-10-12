@@ -76,6 +76,11 @@ namespace RavenNest.Models.TcpApi
         public short Z { get; set; }
         public int AutoJoinRaidCounter { get; set; }
         public int AutoJoinDungeonCounter { get; set; }
+
+        public long AutoJoinRaidCount { get; set; }
+        public long AutoJoinDungeonCount { get; set; }
+        public long AutoRestCount { get; set; }
+
         public int AutoTrainTargetLevel { get; set; }
         public double? AutoRestTarget { get; set; }
         public double? AutoRestStart { get; set; }
@@ -99,6 +104,11 @@ namespace RavenNest.Models.TcpApi
         public float Z { get; set; }
         public int AutoJoinRaidCounter { get; set; }
         public int AutoJoinDungeonCounter { get; set; }
+
+        public long AutoJoinRaidCount { get; set; }
+        public long AutoJoinDungeonCount { get; set; }
+        public long AutoRestCount { get; set; }
+
         public long ExpPerHour { get; set; }
         public DateTime EstimatedTimeForLevelUp { get; set; }
         public SkillUpdate[] Skills { get; set; }

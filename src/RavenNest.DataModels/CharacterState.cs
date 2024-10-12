@@ -22,8 +22,27 @@ namespace RavenNest.DataModels
         private double? z; public double? Z { get => z; set => Set(ref z, value); }
         private double? restedTime; public double? RestedTime { get => restedTime; set => Set(ref restedTime, value); }
         private bool? isCaptain; public bool? IsCaptain { get => isCaptain; set => Set(ref isCaptain, value); }
+
         private int autoJoinDungeonCounter; public int AutoJoinDungeonCounter { get => autoJoinDungeonCounter; set => Set(ref autoJoinDungeonCounter, value); }
         private int autoJoinRaidCounter; public int AutoJoinRaidCounter { get => autoJoinRaidCounter; set => Set(ref autoJoinRaidCounter, value); }
+
+        private long autoJoinDungeonCount;
+
+        /// <summary>
+        ///     How many times the player has auto joined the dungeon, not to be confused with the <see cref="AutoJoinDungeonCounter"/> which is maximum amount of times to join.
+        /// </summary>
+        public long AutoJoinDungeonCount { get => autoJoinDungeonCount; set => Set(ref autoJoinDungeonCount, value); }
+        private long autoJoinRaidCount;
+        /// <summary>
+        ///     How many times the player has auto joined the raid, not to be confused with the <see cref="AutoJoinRaidCounter"/> which is maximum amount of times to join.
+        /// </summary>
+        public long AutoJoinRaidCount { get => autoJoinRaidCount; set => Set(ref autoJoinRaidCount, value); }
+
+        private long autoRestCount;
+        /// <summary>
+        ///     How many times the player has auto rested.
+        /// </summary>
+        public long AutoRestCount { get => autoRestCount; set => Set(ref autoRestCount, value); }
 
         private int autoTrainTargetLevel; public int AutoTrainTargetLevel { get => autoTrainTargetLevel; set => Set(ref autoTrainTargetLevel, value); }
         private double? autoRestTarget; public double? AutoRestTarget { get => autoRestTarget; set => Set(ref autoRestTarget, value); }

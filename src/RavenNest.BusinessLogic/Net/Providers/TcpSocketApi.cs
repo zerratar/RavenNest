@@ -348,7 +348,9 @@ namespace RavenNest.BusinessLogic.Net
 
             if (value is CharacterUpdate characterUpdate)
             {
-                return characterUpdate.CharacterId != Guid.Empty && ((characterUpdate.X != 0 || characterUpdate.Y != 0 || characterUpdate.Z != 0) || (characterUpdate.Skills != null && characterUpdate.Skills.Length > 0));
+                return characterUpdate.CharacterId != Guid.Empty && 
+                    ((characterUpdate.X != 0 || characterUpdate.Y != 0 || characterUpdate.Z != 0) 
+                    || (characterUpdate.Skills != null && characterUpdate.Skills.Length > 0));
             }
 
             if (value is AuthenticationRequest tokenRequest)

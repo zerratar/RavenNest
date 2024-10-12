@@ -34,6 +34,7 @@ namespace RavenNest.BusinessLogic.Game
         public const int Enchanting_CooldownCoinsPerSecond = 100;
         public const int AutoJoinDungeonCost = 5000;
         public const int AutoJoinRaidCost = 3000;
+        public const int AutoRestCost = 500;
 
         public const int MaxCharacterCount = 3;
         private readonly ILogger logger;
@@ -3266,7 +3267,7 @@ namespace RavenNest.BusinessLogic.Game
                 else
                 {
                     var state = gameData.GetCharacterState(character.StateId);
-                    SetCharacterState(state, data);
+                    SetCharacterState(character, state, data);
                 }
 
 
@@ -3424,6 +3425,9 @@ namespace RavenNest.BusinessLogic.Game
                     toState.Health = fromState.Health;
                     toState.AutoJoinDungeonCounter = fromState.AutoJoinDungeonCounter;
                     toState.AutoJoinRaidCounter = fromState.AutoJoinRaidCounter;
+                    toState.AutoRestCount = fromState.AutoRestCount;
+                    toState.AutoJoinDungeonCount = fromState.AutoJoinDungeonCount;
+                    toState.AutoJoinRaidCount = fromState.AutoJoinRaidCount;
                     toState.AutoTrainTargetLevel = fromState.AutoTrainTargetLevel;
                     toState.AutoRestTarget = fromState.AutoRestTarget;
                     toState.AutoRestStart = fromState.AutoRestStart;
@@ -4067,7 +4071,7 @@ namespace RavenNest.BusinessLogic.Game
         private static bool HasFlag(CharacterFlags a, CharacterFlags b) => (a & b) == b;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static void SetCharacterState(DataModels.CharacterState state, CharacterStateUpdate update)
+        private void SetCharacterState(DataModels.Character character, DataModels.CharacterState state, CharacterStateUpdate update)
         {
             var task = GetTaskBySkillIndex(update.TrainingSkillIndex);
             var taskArgument = update.TaskArgument;
@@ -4091,6 +4095,29 @@ namespace RavenNest.BusinessLogic.Game
             state.TaskArgument = taskArgument;
             state.AutoJoinRaidCounter = update.AutoJoinRaidCounter;
             state.AutoJoinDungeonCounter = update.AutoJoinDungeonCounter;
+
+            var coinCost = 0L;
+            if (update.AutoJoinRaidCount > state.AutoJoinRaidCount)
+            {
+                var delta = update.AutoJoinRaidCount - state.AutoJoinRaidCount;
+                coinCost += delta * AutoJoinRaidCost;
+            }
+
+            if (update.AutoJoinDungeonCount > state.AutoJoinDungeonCount)
+            {
+                var delta = update.AutoJoinDungeonCount - state.AutoJoinDungeonCount;
+                coinCost += delta * AutoJoinDungeonCost;
+            }
+
+            if (update.AutoRestCount > state.AutoRestCount)
+            {
+                var delta = update.AutoRestCount - state.AutoRestCount;
+                coinCost += delta * AutoRestCost;
+            }
+
+            state.AutoJoinDungeonCount = update.AutoJoinRaidCount;
+            state.AutoJoinRaidCount = update.AutoJoinRaidCount;
+            state.AutoRestCount = update.AutoRestCount;
             state.X = update.X;
             state.Y = update.Y;
             state.Z = update.Z;
@@ -4100,6 +4127,18 @@ namespace RavenNest.BusinessLogic.Game
             state.AutoRestStart = update.AutoRestStart;
             state.DungeonCombatStyle = update.DungeonCombatStyle;
             state.RaidCombatStyle = update.RaidCombatStyle;
+
+            if (coinCost > 0)
+            {
+                var res = gameData.GetResources(character);
+                var cost = AutoJoinDungeonCost;
+                if (cost > res.Coins)
+                {
+                    res.Coins = 0;
+                    return;
+                }
+                res.Coins -= cost;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -4126,6 +4165,9 @@ namespace RavenNest.BusinessLogic.Game
                 EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString("yyyy-MM-ddTHH:mm:ss.fffffff"),
                 AutoJoinRaidCounter = update.AutoJoinRaidCounter,
                 AutoJoinDungeonCounter = update.AutoJoinDungeonCounter,
+                AutoJoinDungeonCount = update.AutoJoinDungeonCount,
+                AutoRestCount = update.AutoRestCount,
+                AutoJoinRaidCount = update.AutoJoinRaidCount,
                 AutoRestStart = update.AutoRestStart,
                 AutoRestTarget = update.AutoRestTarget,
                 AutoTrainTargetLevel = update.AutoTrainTargetLevel,

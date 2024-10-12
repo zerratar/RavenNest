@@ -181,3 +181,23 @@
     filter: invert(100%);
     -webkit-filter: invert(100%);
 }
+
+
+.dark-mode .type-group-name {
+    background-color: #cacaca;
+    color: black;
+}
+
+.dark-mode table.type-group-town-list {
+    background-color: #d8d8d8;
+}
+.dark-mode .type-group-town-list thead tr {
+    background-color: #e1e1e1;
+}
+.dark-mode .type-group-name {
+    background-color: #e8e8e8;
+    color: black;
+    border: 1px solid #eeeeee;
+    border-bottom: 0;
+    border-top: 0;
+}
