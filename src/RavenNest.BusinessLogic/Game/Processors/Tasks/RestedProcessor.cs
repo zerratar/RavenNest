@@ -39,7 +39,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             Character character,
             CharacterState state)
         {
-            if (state == null)
+            if (state == null || character == null)
                 return;
 
             var isResting = state.InOnsen.GetValueOrDefault()
@@ -55,10 +55,14 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 lastUpdate[character.Id] = (lastUpdateTime = now);
             }
 
-            var res = gameData.GetResources(character);
-            if (isAutoResting && res.Coins < PlayerManager.AutoRestCostPerSecond)
+            var user = gameData.GetUser(character.UserId);
+            var res = gameData.GetResources(user);
+            if (res != null)
             {
-                isResting = false;
+                if (isAutoResting && res.Coins < PlayerManager.AutoRestCostPerSecond)
+                {
+                    isResting = false;
+                }
             }
 
             var restTimeBefore = (int)state.RestedTime;
