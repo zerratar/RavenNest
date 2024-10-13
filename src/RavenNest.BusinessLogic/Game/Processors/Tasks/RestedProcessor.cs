@@ -62,13 +62,13 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 isResting = false;
             }
 
-            var restTimeBefore = (int)state.RestedTime;
+            var restTimeBefore = (int)state.RestedTime.GetValueOrDefault();
             var elapsed = now - lastUpdateTime;
             var requireUpdate = isResting
                 ? AddRestTime(state, elapsed)
                 : RemoveRestTime(state, elapsed);
 
-            var restTimeAfter = (int)state.RestedTime;
+            var restTimeAfter = (int)state.RestedTime.GetValueOrDefault();
             var restTimeDelta = restTimeAfter - restTimeBefore;
             if (!lastEvent.TryGetValue(character.Id, out var lastEventUpdate))
             {
