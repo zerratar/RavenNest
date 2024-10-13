@@ -48,7 +48,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 && !state.InRaid
                 && !string.IsNullOrEmpty(state.Island);
 
-            var isAutoResting = state.IsAutoResting.GetValueOrDefault();
+            var isAutoResting = state.IsAutoResting;
             var now = DateTime.UtcNow;
             if (!lastUpdate.TryGetValue(character.Id, out var lastUpdateTime))
             {
@@ -57,12 +57,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             var user = gameData.GetUser(character.UserId);
             var res = gameData.GetResources(user);
-            if (res != null)
+            if (isAutoResting && (res?.Coins).GetValueOrDefault() < PlayerManager.AutoRestCostPerSecond)
             {
-                if (isAutoResting && res.Coins < PlayerManager.AutoRestCostPerSecond)
-                {
-                    isResting = false;
-                }
+                isResting = false;
             }
 
             var restTimeBefore = (int)state.RestedTime;
@@ -104,7 +101,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     lastEventUpdate.IsAutoResting = isAutoResting;
                     lastEventUpdate.Updated = now;
 
-                    if (restTimeDelta > 0 && isAutoResting && isResting)
+                    if (restTimeDelta > 0 && isAutoResting && isResting && res != null)
                     {
                         res.Coins -= restTimeDelta * PlayerManager.AutoRestCostPerSecond;
                     }

@@ -281,7 +281,6 @@ namespace RavenNest.BusinessLogic.Game.Processors
             if (village != null)
                 village.Process(logger, gameData, null, session, null, null);
 
-
             // process streamer and quests and achievements
             var quest = GetTaskProcessor(QuestProcessorName);
             quest.Process(logger, gameData, null, session, null, null);
@@ -305,7 +304,6 @@ namespace RavenNest.BusinessLogic.Game.Processors
                     //}
                     var inventory = inventoryProvider.Get(character.Id);
                     SyncCharacterResources(session, character);
-
                     UpdateActiveStatusEffects(utcNow, character);
 
                     var state = gameData.GetCharacterState(character.StateId);

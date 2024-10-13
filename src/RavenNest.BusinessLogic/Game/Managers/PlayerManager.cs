@@ -4108,13 +4108,13 @@ namespace RavenNest.BusinessLogic.Game
             var coinCost = 0L;
             if (update.AutoJoinRaidCount > state.AutoJoinRaidCount)
             {
-                var delta = (update.AutoJoinRaidCount - state.AutoJoinRaidCount).GetValueOrDefault();
+                var delta = (update.AutoJoinRaidCount - state.AutoJoinRaidCount);
                 coinCost += delta * AutoJoinRaidCost;
             }
 
             if (update.AutoJoinDungeonCount > state.AutoJoinDungeonCount)
             {
-                var delta = (update.AutoJoinDungeonCount - state.AutoJoinDungeonCount).GetValueOrDefault();
+                var delta = (update.AutoJoinDungeonCount - state.AutoJoinDungeonCount);
                 coinCost += delta * AutoJoinDungeonCost;
             }
 
