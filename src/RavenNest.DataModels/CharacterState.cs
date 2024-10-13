@@ -38,11 +38,11 @@ namespace RavenNest.DataModels
         /// </summary>
         public long AutoJoinRaidCount { get => autoJoinRaidCount; set => Set(ref autoJoinRaidCount, value); }
 
-        private long autoRestCount;
+        private bool isAutoResting;
         /// <summary>
         ///     How many times the player has auto rested.
         /// </summary>
-        public long AutoRestCount { get => autoRestCount; set => Set(ref autoRestCount, value); }
+        public bool IsAutoResting { get => isAutoResting; set => Set(ref isAutoResting, value); }
 
         private int autoTrainTargetLevel; public int AutoTrainTargetLevel { get => autoTrainTargetLevel; set => Set(ref autoTrainTargetLevel, value); }
         private double? autoRestTarget; public double? AutoRestTarget { get => autoRestTarget; set => Set(ref autoRestTarget, value); }

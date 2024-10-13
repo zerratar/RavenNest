@@ -10,6 +10,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     {
         public DateTime Updated;
         public bool Resting;
+        public bool IsAutoResting;
         public double RestedTime;
     }
 
@@ -46,17 +47,28 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 && !state.InRaid
                 && !string.IsNullOrEmpty(state.Island);
 
+            var isAutoResting = state.IsAutoResting;
+
             var now = DateTime.UtcNow;
             if (!lastUpdate.TryGetValue(character.Id, out var lastUpdateTime))
             {
                 lastUpdate[character.Id] = (lastUpdateTime = now);
             }
 
+            var res = gameData.GetResources(character);
+
+            if (isAutoResting && res.Coins < PlayerManager.AutoRestCostPerSecond)
+            {
+                isResting = false;
+            }
+
+            var restTimeBefore = (int)state.RestedTime;
             var elapsed = now - lastUpdateTime;
             var requireUpdate = isResting
                 ? AddRestTime(state, elapsed)
                 : RemoveRestTime(state, elapsed);
-
+            var restTimeAfter = (int)state.RestedTime;
+            var restTimeDelta = restTimeAfter - restTimeBefore;
             if (!lastEvent.TryGetValue(character.Id, out var lastEventUpdate))
             {
                 lastEvent[character.Id] = (lastEventUpdate = new PlayerRestedState());
@@ -69,7 +81,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 var restedTime = (double)(state.RestedTime ?? 0);
                 var isRested = restedTime > 0;
 
-                if (timeForUpdate && (lastEventUpdate.RestedTime != restedTime || lastEventUpdate.Resting != isResting))
+                if (timeForUpdate && (lastEventUpdate.RestedTime != restedTime || lastEventUpdate.Resting != isResting || lastEventUpdate.IsAutoResting != isAutoResting))
                 {
                     var restedPercent = restedTime / MaxRestTime.TotalSeconds;
 
@@ -90,7 +102,13 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
                     lastEventUpdate.RestedTime = restedTime;
                     lastEventUpdate.Resting = isResting;
+                    lastEventUpdate.IsAutoResting = isAutoResting;
                     lastEventUpdate.Updated = now;
+
+                    if (restTimeDelta > 0 && isAutoResting && isResting)
+                    {
+                        res.Coins -= restTimeDelta * PlayerManager.AutoRestCostPerSecond;
+                    }
 
                     if (restedTime > 0)
                     {
@@ -115,7 +133,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         {
             var restedTime = state.RestedTime ?? 0d;
             var before = state.RestedTime;
-            state.RestedTime = Math.Min((double)MaxRestTime.TotalSeconds, restedTime + (double)(elapsed.TotalSeconds * RestedGainFactor));
+            var newRestTime = restedTime + (double)(elapsed.TotalSeconds * RestedGainFactor);
+
+            state.RestedTime = Math.Min((double)MaxRestTime.TotalSeconds, newRestTime);
             return state.RestedTime > before;
         }
     }

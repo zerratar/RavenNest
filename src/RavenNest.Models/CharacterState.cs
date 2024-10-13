@@ -42,8 +42,8 @@ namespace RavenNest.Models
         public long AutoJoinRaidCount { get; set; }
 
         /// <summary>
-        ///     How many times the player has auto rested.
+        ///     Whether or not the player is currently auto-resting
         /// </summary>
-        public long AutoRestCount { get; set; }
+        public bool IsAutoResting { get; set; }
     }
 }

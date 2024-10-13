@@ -79,7 +79,7 @@ namespace RavenNest.Models.TcpApi
 
         public long AutoJoinRaidCount { get; set; }
         public long AutoJoinDungeonCount { get; set; }
-        public long AutoRestCount { get; set; }
+        public bool IsAutoResting { get; set; }
 
         public int AutoTrainTargetLevel { get; set; }
         public double? AutoRestTarget { get; set; }
@@ -107,7 +107,7 @@ namespace RavenNest.Models.TcpApi
 
         public long AutoJoinRaidCount { get; set; }
         public long AutoJoinDungeonCount { get; set; }
-        public long AutoRestCount { get; set; }
+        public bool IsAutoResting { get; set; }
 
         public long ExpPerHour { get; set; }
         public DateTime EstimatedTimeForLevelUp { get; set; }

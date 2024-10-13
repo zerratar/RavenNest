@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.Http.Headers;
-using System.Numerics;
-using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -29,7 +26,7 @@ namespace RavenNest.BusinessLogic.Game
         public const int Enchanting_CooldownCoinsPerSecond = 50;
         public const int AutoJoinDungeonCost = 5000;
         public const int AutoJoinRaidCost = 3000;
-        public const int AutoRestCost = 500;
+        public const int AutoRestCostPerSecond = 3;
 
         public const int MaxCharacterCount = 3;
         private readonly ILogger logger;
@@ -3419,7 +3416,7 @@ namespace RavenNest.BusinessLogic.Game
                     toState.Health = fromState.Health;
                     toState.AutoJoinDungeonCounter = fromState.AutoJoinDungeonCounter;
                     toState.AutoJoinRaidCounter = fromState.AutoJoinRaidCounter;
-                    toState.AutoRestCount = fromState.AutoRestCount;
+                    toState.IsAutoResting = fromState.IsAutoResting;
                     toState.AutoJoinDungeonCount = fromState.AutoJoinDungeonCount;
                     toState.AutoJoinRaidCount = fromState.AutoJoinRaidCount;
                     toState.AutoTrainTargetLevel = fromState.AutoTrainTargetLevel;
@@ -4103,15 +4100,15 @@ namespace RavenNest.BusinessLogic.Game
                 coinCost += delta * AutoJoinDungeonCost;
             }
 
-            if (update.AutoRestCount > state.AutoRestCount)
-            {
-                var delta = update.AutoRestCount - state.AutoRestCount;
-                coinCost += delta * AutoRestCost;
-            }
+            //if (update.AutoRestCount > state.IsAutoResting)
+            //{
+            //    var delta = update.AutoRestCount - state.IsAutoResting;
+            //    coinCost += delta * AutoRestCost;
+            //}
 
             state.AutoJoinDungeonCount = update.AutoJoinRaidCount;
             state.AutoJoinRaidCount = update.AutoJoinRaidCount;
-            state.AutoRestCount = update.AutoRestCount;
+            state.IsAutoResting = update.IsAutoResting;
             state.X = update.X;
             state.Y = update.Y;
             state.Z = update.Z;
@@ -4160,7 +4157,7 @@ namespace RavenNest.BusinessLogic.Game
                 AutoJoinRaidCounter = update.AutoJoinRaidCounter,
                 AutoJoinDungeonCounter = update.AutoJoinDungeonCounter,
                 AutoJoinDungeonCount = update.AutoJoinDungeonCount,
-                AutoRestCount = update.AutoRestCount,
+                IsAutoResting = update.IsAutoResting,
                 AutoJoinRaidCount = update.AutoJoinRaidCount,
                 AutoRestStart = update.AutoRestStart,
                 AutoRestTarget = update.AutoRestTarget,
