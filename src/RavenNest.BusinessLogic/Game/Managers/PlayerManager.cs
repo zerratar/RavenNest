@@ -2560,26 +2560,42 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool AutoJoinDungeon(SessionToken sessionToken, Guid characterId)
         {
-            var character = GetCharacter(sessionToken, characterId);
-            if (character == null) return false;
+            try
+            {
+                var character = GetCharacter(sessionToken, characterId);
+                if (character == null) return false;
 
-            var res = gameData.GetResources(character);
-            var cost = AutoJoinDungeonCost;
-            if (cost > res.Coins) return false;
-            res.Coins -= cost;
-            return true;
+                var res = gameData.GetResources(character);
+                var cost = AutoJoinDungeonCost;
+                if (cost > res.Coins) return false;
+                res.Coins -= cost;
+                return true;
+            }
+            catch (Exception exc)
+            {
+                logger.LogError($"Character with Id {characterId}, session: {sessionToken.UserName} failed to auto join dungeon: {exc}");
+            }
+            return false;
         }
 
         public bool AutoJoinRaid(SessionToken sessionToken, Guid characterId)
         {
-            var character = GetCharacter(sessionToken, characterId);
-            if (character == null) return false;
+            try
+            {
+                var character = GetCharacter(sessionToken, characterId);
+                if (character == null) return false;
 
-            var res = gameData.GetResources(character);
-            var cost = AutoJoinRaidCost;
-            if (cost > res.Coins) return false;
-            res.Coins -= cost;
-            return true;
+                var res = gameData.GetResources(character);
+                var cost = AutoJoinRaidCost;
+                if (cost > res.Coins) return false;
+                res.Coins -= cost;
+                return true;
+            }
+            catch (Exception exc)
+            {
+                logger.LogError($"Character with Id {characterId}, session: {sessionToken.UserName} failed to auto join raid: {exc}");
+            }
+            return false;
         }
 
         [Obsolete]
@@ -4023,6 +4039,7 @@ namespace RavenNest.BusinessLogic.Game
             var session = gameData.GetSession(token.SessionId);
             if (session == null) return null;
             var sessionCharacters = gameData.GetActiveSessionCharacters(session);
+            if (sessionCharacters == null) return null;
             return sessionCharacters.FirstOrDefault(x => x.Id == characterId);
         }
 

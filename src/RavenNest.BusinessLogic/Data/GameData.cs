@@ -3694,10 +3694,6 @@ namespace RavenNest.BusinessLogic.Data
         public Resources GetResources(Character character)
         {
             var user = GetUser(character.UserId);
-            if (user == null)
-            {
-                // what?
-            }
             return GetResources(user);
         }
 
