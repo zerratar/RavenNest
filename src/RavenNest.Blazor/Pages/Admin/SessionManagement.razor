@@ -23,7 +23,6 @@
         <table class="table">
             <thead>
                 <tr>
-                    @*<th>Id</th>*@
                     <th>Owner</th>
                     <th>Status</th>
                     <th>Started</th>
@@ -45,7 +44,6 @@
                         continue;
                     }
                     <tr class="table-row">
-                        @*<td>@session.Id</td>*@
                         <td><span>Twitch: @session.TwitchUserId</span> <span>@session.UserName</span></td>
                         <td>@GetSessionStatus(session.Status)</td>
                         <td>@session.Started</td>
@@ -57,12 +55,10 @@
                         <td>@session.ClientVersion</td>
                         <td @onclick="()=>ShowPlayerList(session)">@session.Players.Count</td>
                         <td>
-                          @{
-                            #if DEBUG
-                            <button title="(TEST) Make this user initiate a Raid against our game session" class="inline-button raid" @onclick="(()=> RaidOurSession(session))"><i class="fa-solid fa-people-group"></i> Raid</button>
-                            <button title="(TEST) Make this user initiate a Raid War against our game session" class="inline-button raidwar" @onclick="(()=> RaidWarOurSession(session))"><i class="fa-solid fa-swords"></i> War</button>
-                            #endif
-                          }
+@*                             @{
+                        <button title="(TEST) Make this user initiate a Raid against our game session" class="inline-button raid" @onclick="(()=> RaidOurSession(session))"><i class="fa-solid fa-people-group"></i> Raid</button>
+                        <button title="(TEST) Make this user initiate a Raid War against our game session" class="inline-button raidwar" @onclick="(()=> RaidWarOurSession(session))"><i class="fa-solid fa-swords"></i> War</button>
+                            } *@
                         </td>
                     </tr>
                 }
@@ -70,6 +66,7 @@
             </tbody>
         </table>
     }
+
     @if (playerListVisible)
     {
         <div class="player-list-modal">
@@ -91,7 +88,6 @@
                                 <th>Moderator</th>
                                 <th>Last Req</th>
                                 <th>Last Saved</th>
-                                @*(Avg @((inspectingSession.AvgSaveTime.HasValue ? System.Math.Round(inspectingSession.AvgSaveTime.Value.TotalSeconds) : 0))s)*@
                             </tr>
                         </thead>
                         <tbody>

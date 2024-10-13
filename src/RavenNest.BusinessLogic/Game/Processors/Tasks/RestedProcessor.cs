@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
+
 using System;
 using System.Collections.Concurrent;
 
@@ -48,7 +49,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 && !string.IsNullOrEmpty(state.Island);
 
             var isAutoResting = state.IsAutoResting;
-
             var now = DateTime.UtcNow;
             if (!lastUpdate.TryGetValue(character.Id, out var lastUpdateTime))
             {
@@ -56,7 +56,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             }
 
             var res = gameData.GetResources(character);
-
             if (isAutoResting && res.Coins < PlayerManager.AutoRestCostPerSecond)
             {
                 isResting = false;
@@ -67,6 +66,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             var requireUpdate = isResting
                 ? AddRestTime(state, elapsed)
                 : RemoveRestTime(state, elapsed);
+
             var restTimeAfter = (int)state.RestedTime;
             var restTimeDelta = restTimeAfter - restTimeBefore;
             if (!lastEvent.TryGetValue(character.Id, out var lastEventUpdate))
@@ -80,11 +80,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             {
                 var restedTime = (double)(state.RestedTime ?? 0);
                 var isRested = restedTime > 0;
-
                 if (timeForUpdate && (lastEventUpdate.RestedTime != restedTime || lastEventUpdate.Resting != isResting || lastEventUpdate.IsAutoResting != isAutoResting))
                 {
                     var restedPercent = restedTime / MaxRestTime.TotalSeconds;
-
                     var data = new RavenNest.Models.PlayerRestedUpdate
                     {
                         PlayerId = character.Id,
@@ -94,10 +92,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                         RestedPercent = restedPercent,
                     };
 
-                    //var sessionState = gameData.GetSessionState(session.Id);
-
                     var gameEvent = gameData.CreateSessionEvent(RavenNest.Models.GameEventType.PlayerRestedUpdate, session, data);
-
                     gameData.EnqueueGameEvent(gameEvent);
 
                     lastEventUpdate.RestedTime = restedTime;
