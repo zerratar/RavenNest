@@ -13,6 +13,7 @@ using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Models.TcpApi;
+
 using Gender = RavenNest.DataModels.Gender;
 using Item = RavenNest.DataModels.Item;
 using Resources = RavenNest.DataModels.Resources;
@@ -4090,13 +4091,13 @@ namespace RavenNest.BusinessLogic.Game
             var coinCost = 0L;
             if (update.AutoJoinRaidCount > state.AutoJoinRaidCount)
             {
-                var delta = update.AutoJoinRaidCount - state.AutoJoinRaidCount;
+                var delta = (update.AutoJoinRaidCount - state.AutoJoinRaidCount).GetValueOrDefault();
                 coinCost += delta * AutoJoinRaidCost;
             }
 
             if (update.AutoJoinDungeonCount > state.AutoJoinDungeonCount)
             {
-                var delta = update.AutoJoinDungeonCount - state.AutoJoinDungeonCount;
+                var delta = (update.AutoJoinDungeonCount - state.AutoJoinDungeonCount).GetValueOrDefault();
                 coinCost += delta * AutoJoinDungeonCost;
             }
 

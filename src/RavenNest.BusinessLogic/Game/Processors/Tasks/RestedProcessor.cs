@@ -48,7 +48,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 && !state.InRaid
                 && !string.IsNullOrEmpty(state.Island);
 
-            var isAutoResting = state.IsAutoResting;
+            var isAutoResting = state.IsAutoResting.GetValueOrDefault();
             var now = DateTime.UtcNow;
             if (!lastUpdate.TryGetValue(character.Id, out var lastUpdateTime))
             {

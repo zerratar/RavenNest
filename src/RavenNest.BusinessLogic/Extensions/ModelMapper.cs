@@ -142,9 +142,9 @@ namespace RavenNest.BusinessLogic.Extensions
                     state.AutoJoinDungeonCounter = data.AutoJoinDungeonCounter;
                     state.AutoJoinRaidCounter = data.AutoJoinRaidCounter;
                     state.AutoTrainTargetLevel = data.AutoTrainTargetLevel;
-                    state.AutoJoinDungeonCount = data.AutoJoinDungeonCount;
-                    state.AutoJoinRaidCount = data.AutoJoinRaidCount;
-                    state.IsAutoResting = data.IsAutoResting;
+                    state.AutoJoinDungeonCount = data.AutoJoinDungeonCount.GetValueOrDefault();
+                    state.AutoJoinRaidCount = data.AutoJoinRaidCount.GetValueOrDefault();
+                    state.IsAutoResting = data.IsAutoResting.GetValueOrDefault();
                     state.AutoRestTarget = data.AutoRestTarget;
                     state.AutoRestStart = data.AutoRestStart;
                     state.DungeonCombatStyle = data.DungeonCombatStyle;

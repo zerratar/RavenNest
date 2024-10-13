@@ -26,23 +26,23 @@ namespace RavenNest.DataModels
         private int autoJoinDungeonCounter; public int AutoJoinDungeonCounter { get => autoJoinDungeonCounter; set => Set(ref autoJoinDungeonCounter, value); }
         private int autoJoinRaidCounter; public int AutoJoinRaidCounter { get => autoJoinRaidCounter; set => Set(ref autoJoinRaidCounter, value); }
 
-        private long autoJoinDungeonCount;
+        private long? autoJoinDungeonCount;
 
         /// <summary>
         ///     How many times the player has auto joined the dungeon, not to be confused with the <see cref="AutoJoinDungeonCounter"/> which is maximum amount of times to join.
         /// </summary>
-        public long AutoJoinDungeonCount { get => autoJoinDungeonCount; set => Set(ref autoJoinDungeonCount, value); }
-        private long autoJoinRaidCount;
+        public long? AutoJoinDungeonCount { get => autoJoinDungeonCount; set => Set(ref autoJoinDungeonCount, value); }
+        private long? autoJoinRaidCount;
         /// <summary>
         ///     How many times the player has auto joined the raid, not to be confused with the <see cref="AutoJoinRaidCounter"/> which is maximum amount of times to join.
         /// </summary>
-        public long AutoJoinRaidCount { get => autoJoinRaidCount; set => Set(ref autoJoinRaidCount, value); }
+        public long? AutoJoinRaidCount { get => autoJoinRaidCount; set => Set(ref autoJoinRaidCount, value); }
 
-        private bool isAutoResting;
+        private bool? isAutoResting;
         /// <summary>
         ///     How many times the player has auto rested.
         /// </summary>
-        public bool IsAutoResting { get => isAutoResting; set => Set(ref isAutoResting, value); }
+        public bool? IsAutoResting { get => isAutoResting; set => Set(ref isAutoResting, value); }
 
         private int autoTrainTargetLevel; public int AutoTrainTargetLevel { get => autoTrainTargetLevel; set => Set(ref autoTrainTargetLevel, value); }
         private double? autoRestTarget; public double? AutoRestTarget { get => autoRestTarget; set => Set(ref autoRestTarget, value); }
