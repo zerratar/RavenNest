@@ -104,6 +104,10 @@ namespace RavenNest.Models
         public double DungeonExpFactor { get; set; }
         public double RaidExpFactor { get; set; }
 
+        public int AutoRestCost { get; set; }
+        public int AutoJoinDungeonCost { get; set; }
+        public int AutoJoinRaidCost { get; set; }
+
         public double XP_EasyLevel { get; set; }
         public double XP_IncrementMins { get; set; }
         public double XP_EasyLevelIncrementDivider { get; set; }

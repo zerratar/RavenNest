@@ -384,6 +384,10 @@ namespace RavenNest.BusinessLogic.Game
                 RaidExpFactor = RaidExpFactor,
                 DungeonExpFactor = DungeonExpFactor,
 
+                AutoRestCost = PlayerManager.AutoRestCost,
+                AutoJoinRaidCost = PlayerManager.AutoJoinRaidCost,
+                AutoJoinDungeonCost = PlayerManager.AutoJoinDungeonCost,
+
                 XP_EasyLevel = GameMath.Exp.EasyLevel,
                 XP_EasyLevelIncrementDivider = GameMath.Exp.EasyLevelIncrementDivider,
                 XP_GlobalMultiplierFactor = GameMath.Exp.GlobalMultiplierFactor,

@@ -6,21 +6,16 @@ using System.Numerics;
 using System.Resources;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json.Linq;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Extensions;
-using RavenNest.BusinessLogic.Game.Enchantment;
 using RavenNest.BusinessLogic.Models;
 using RavenNest.BusinessLogic.Net;
-using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
 using RavenNest.Models;
 using RavenNest.Models.TcpApi;
-using TwitchLib.Api.Helix.Models.Charity;
 using Gender = RavenNest.DataModels.Gender;
 using Item = RavenNest.DataModels.Item;
 using Resources = RavenNest.DataModels.Resources;
@@ -31,7 +26,7 @@ namespace RavenNest.BusinessLogic.Game
 {
     public class PlayerManager
     {
-        public const int Enchanting_CooldownCoinsPerSecond = 100;
+        public const int Enchanting_CooldownCoinsPerSecond = 50;
         public const int AutoJoinDungeonCost = 5000;
         public const int AutoJoinRaidCost = 3000;
         public const int AutoRestCost = 500;
@@ -3252,8 +3247,7 @@ namespace RavenNest.BusinessLogic.Game
                 characterSessionState.LastStateSaveRequest = DateTime.UtcNow;
                 characterSessionState.LastStateUpdate = DateTime.UtcNow;
 
-
-                if (character.StateId != null)
+                if (character.StateId != Guid.Empty)
                 {
                     characterState = gameData.GetCharacterState(character.StateId);
                 }
