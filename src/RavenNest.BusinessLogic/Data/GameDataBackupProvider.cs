@@ -19,6 +19,7 @@ namespace RavenNest.BusinessLogic.Data
         private const string FileTypeExt = ".json";
         private readonly string FullBackupsPath = Path.Combine(FolderPaths.GeneratedData, FolderPaths.Backups);
         private readonly string FullRestorePointPath = Path.Combine(FolderPaths.GeneratedData, FolderPaths.Restorepoints);
+        private readonly string FullMergePath = Path.Combine(FolderPaths.GeneratedData, FolderPaths.Merge);
         //#else
         //        private const string fullRestorePointPath = @"C:\git\RavenNest\src\RavenNest.Blazor\restorepoints";
         //#endif
@@ -32,6 +33,11 @@ namespace RavenNest.BusinessLogic.Data
             if (!System.IO.Directory.Exists(FullRestorePointPath))
             {
                 System.IO.Directory.CreateDirectory(FullRestorePointPath);
+            }
+
+            if (!System.IO.Directory.Exists(FullMergePath))
+            {
+                System.IO.Directory.CreateDirectory(FullMergePath);
             }
 
             if (!System.IO.Directory.Exists(FullBackupsPath))
@@ -55,6 +61,18 @@ namespace RavenNest.BusinessLogic.Data
             lock (ioMutex)
             {
                 var restorepointFile = GetEntityFilePath(type, FullRestorePointPath);
+                if (System.IO.File.Exists(restorepointFile))
+                {
+                    System.IO.File.Delete(restorepointFile);
+                }
+            }
+        }
+
+        public void ClearMerge(Type type)
+        {
+            lock (ioMutex)
+            {
+                var restorepointFile = GetEntityFilePath(type, FullMergePath);
                 if (System.IO.File.Exists(restorepointFile))
                 {
                     System.IO.File.Delete(restorepointFile);
@@ -267,7 +285,19 @@ namespace RavenNest.BusinessLogic.Data
             return restorePoint;
         }
 
+        public IEntityRestorePoint GetMergeData(params Type[] types)
+        {
+            var path = FullMergePath;
+            return GetRestorePoint(path, false, types);
+        }
+
         public IEntityRestorePoint GetRestorePoint(params Type[] types)
+        {
+            var path = FullRestorePointPath;
+            return GetRestorePoint(path, true, types);
+        }
+
+        public IEntityRestorePoint GetRestorePoint(string path, bool createBackup, params Type[] types)
         {
             lock (ioMutex)
             {
@@ -278,7 +308,7 @@ namespace RavenNest.BusinessLogic.Data
                 //    SharpCompress
                 //}
 
-                var restorePointFiles = Directory.GetFiles(FullRestorePointPath, "*" + FileTypeExt);
+                var restorePointFiles = Directory.GetFiles(path, "*" + FileTypeExt);
                 if (restorePointFiles.Length == 0)
                 {
                     logger?.LogInformation("No restore point available. Skipping");
@@ -292,7 +322,7 @@ namespace RavenNest.BusinessLogic.Data
                 var entitiesToRestore = new List<string>();
                 foreach (var type in types)
                 {
-                    var entities = LoadEntities(type, FullRestorePointPath);
+                    var entities = LoadEntities(type, path);
                     if (entities != null && entities.Count > 0)
                     {
                         restorePoint.AddEntities(type, entities);
@@ -305,9 +335,11 @@ namespace RavenNest.BusinessLogic.Data
             }
             finally
             {
-                CreateBackup(restorePoint);
+                if (createBackup)
+                    CreateBackup(restorePoint);
             }
         }
+
 
         private string GetBackupZipPath()
         {

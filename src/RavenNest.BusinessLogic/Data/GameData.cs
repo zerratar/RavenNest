@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Data.SqlClient;
 using System.Diagnostics;
 using System.IO;
@@ -133,6 +134,55 @@ namespace RavenNest.BusinessLogic.Data
 
         #region Game Data Construction
 
+        private readonly Type[] dataTypes = new[] {
+                typeof(UserLoyalty),
+                typeof(ClanRole),
+                typeof(Clan),
+                typeof(ClanRolePermissions),
+                typeof(CharacterClanSkillCooldown),
+                //typeof(CharacterClanInvite),
+                typeof(CharacterClanMembership),
+                typeof(CharacterSkillRecord),
+                typeof(ClanSkill),
+                typeof(UserClaimedLoyaltyReward),
+                typeof(UserPatreon),
+                typeof(UserProperty),
+                typeof(SyntyAppearance),
+                typeof(Character),
+                typeof(CharacterState),
+                typeof(InventoryItem),
+                typeof(Item),
+                typeof(User),
+                typeof(ItemAttribute),
+                typeof(RedeemableItem),
+                typeof(Pet),
+                typeof(ResourceItemDrop),
+                typeof(ItemDrop),
+                typeof(VendorItem),
+                //typeof(UserNotification),
+                typeof(MarketItemTransaction),
+                typeof(VendorTransaction),
+                typeof(UserAccess),
+                typeof(GameSession),
+                typeof(Village),
+                typeof(VillageHouse),
+                typeof(Resources),
+                typeof(Skills),
+                typeof(PatreonSettings),
+                typeof(Statistics),
+                typeof(MarketItem),
+                typeof(ItemCraftingRequirement),
+                typeof(CharacterSessionActivity),
+                typeof(Agreements),
+                typeof(ServerSettings),
+                typeof(UserBankItem),
+                typeof(ExpMultiplierEvent),
+                typeof(ItemRecipe),
+                typeof(ItemRecipeIngredient),
+                typeof(CharacterStatusEffect),
+                typeof(ItemStatusEffect)
+        };
+
         public GameData(
             GameDataBackupProvider backupProvider,
             GameDataMigration dataMigration,
@@ -155,55 +205,7 @@ namespace RavenNest.BusinessLogic.Data
                 stopWatch.Start();
 
                 #region Data Restoration
-                IEntityRestorePoint restorePoint = backupProvider.GetRestorePoint(new[] {
-                        typeof(UserLoyalty),
-                        typeof(ClanRole),
-                        typeof(Clan),
-                        typeof(ClanRolePermissions),
-                        typeof(CharacterClanSkillCooldown),
-                        //typeof(CharacterClanInvite),
-                        typeof(CharacterClanMembership),
-                        typeof(CharacterSkillRecord),
-                        typeof(ClanSkill),
-                        typeof(UserClaimedLoyaltyReward),
-                        typeof(UserPatreon),
-                        typeof(UserProperty),
-                        typeof(SyntyAppearance),
-                        typeof(Character),
-                        typeof(CharacterState),
-                        typeof(InventoryItem),
-                        typeof(Item),
-                        typeof(User),
-                        typeof(ItemAttribute),
-                        typeof(RedeemableItem),
-                        typeof(Pet),
-                        typeof(ResourceItemDrop),
-                        typeof(ItemDrop),
-                        typeof(VendorItem),
-                        //typeof(UserNotification),
-                        typeof(MarketItemTransaction),
-                        typeof(VendorTransaction),
-                        typeof(UserAccess),
-                        typeof(GameSession),
-                        typeof(Village),
-                        typeof(VillageHouse),
-                        typeof(Resources),
-                        typeof(Skills),
-                        typeof(PatreonSettings),
-                        typeof(Statistics),
-                        typeof(MarketItem),
-                        typeof(ItemCraftingRequirement),
-                        typeof(CharacterSessionActivity),
-                        typeof(Agreements),
-                        typeof(ServerSettings),
-                        typeof(UserBankItem),
-                        typeof(ExpMultiplierEvent),
-                        typeof(ItemRecipe),
-                        typeof(ItemRecipeIngredient),
-                        typeof(CharacterStatusEffect),
-                        typeof(ItemStatusEffect)
-                });
-
+                var restorePoint = backupProvider.GetRestorePoint(dataTypes);
 
                 logger.LogInformation($"Checking for restore points.");
                 if (restorePoint != null)
@@ -494,6 +496,9 @@ namespace RavenNest.BusinessLogic.Data
 
                 FixVillageHouses();
 
+                var mergeData = backupProvider.GetMergeData(dataTypes);
+                MergeData(mergeData);
+
                 #endregion
 
                 stopWatch.Stop();
@@ -508,6 +513,67 @@ namespace RavenNest.BusinessLogic.Data
             {
                 InitializedSuccessful = false;
                 System.IO.File.WriteAllText("ravenfall-error.log", "[" + DateTime.UtcNow + "] " + exc.ToString());
+            }
+        }
+
+        private void MergeData(IEntityRestorePoint mergeData)
+        {
+            foreach (var entityType in mergeData.GetEntityTypes())
+            {
+                if (entityType == typeof(CharacterState))
+                {
+                    var statesToMerge = mergeData.Get<CharacterState>();
+                    if (statesToMerge == null || statesToMerge.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    // merge states, if state exists
+                    foreach (var ms in statesToMerge)
+                    {
+                        var existing = GetCharacterState(ms.Id);
+                        if (existing == null)
+                        {
+                            continue;
+                        }
+
+                        // if our existing task is null but our merging one is not.
+                        // we want to take all data
+                        if (string.IsNullOrEmpty(existing.Task) && !string.IsNullOrEmpty(ms.Task))
+                        {
+                            existing.Task = ms.Task;
+                            existing.TaskArgument = ms.TaskArgument;
+
+                            existing.RaidCombatStyle = ms.RaidCombatStyle;
+                            existing.DungeonCombatStyle = ms.DungeonCombatStyle;
+                            existing.AutoTrainTargetLevel = ms.AutoTrainTargetLevel;
+                            existing.AutoRestStart = ms.AutoRestStart;
+                            existing.AutoRestTarget = ms.AutoRestTarget;
+
+                            existing.AutoJoinDungeonCount = ms.AutoJoinDungeonCount;
+                            existing.AutoJoinDungeonCounter = ms.AutoJoinDungeonCounter;
+                            existing.AutoJoinRaidCount = ms.AutoJoinRaidCount;
+                            existing.AutoJoinRaidCounter = ms.AutoJoinRaidCounter;
+
+                            existing.IsAutoResting = ms.IsAutoResting;
+
+                            existing.X = ms.X;
+                            existing.Y = ms.Y;
+                            existing.Z = ms.Z;
+
+                            existing.InOnsen = ms.InOnsen;
+                            existing.IsCaptain = ms.IsCaptain;
+                            existing.Island = ms.Island;
+                        }
+
+                        if (existing.RestedTime < ms.RestedTime)
+                        {
+                            existing.RestedTime = ms.RestedTime;
+                        }
+                    }
+
+                    backupProvider.ClearMerge(typeof(CharacterState));
+                }
             }
         }
 

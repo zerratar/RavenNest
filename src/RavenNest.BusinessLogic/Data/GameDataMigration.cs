@@ -29,7 +29,11 @@ namespace RavenNest.BusinessLogic.Data
             this.logger = logger;
         }
 
-        public bool TryMigrate(IRavenfallDbContextProvider db, IEntityRestorePoint restorePoint, out List<Type> migratedTypes, out List<Type> failedTypes)
+        public bool TryMigrate(
+            IRavenfallDbContextProvider db, 
+            IEntityRestorePoint restorePoint, 
+            out List<Type> migratedTypes, 
+            out List<Type> failedTypes)
         {
             migratedTypes = new List<Type>();
             failedTypes = new List<Type>();
