@@ -89,6 +89,16 @@ namespace RavenNest.Controllers
             return true;
         }
 
+        [HttpGet("merge-data")]
+        public async Task<string> MergeData()
+        {
+            await AssertAdminAccessAsync();
+            var now = DateTime.UtcNow;
+            gameData.MergeData();
+            var elapsed = DateTime.UtcNow - now;
+            return $"{elapsed.TotalSeconds} to merge data";
+        }
+
         [HttpGet("merge-accounts")]
         public async Task<string[]> PrepareMergePlayerAccounts()
         {

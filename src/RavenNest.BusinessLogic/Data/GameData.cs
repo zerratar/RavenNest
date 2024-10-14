@@ -496,8 +496,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 FixVillageHouses();
 
-                var mergeData = backupProvider.GetMergeData(dataTypes);
-                MergeData(mergeData);
+                MergeData();
 
                 #endregion
 
@@ -516,8 +515,9 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
-        private void MergeData(IEntityRestorePoint mergeData)
+        public void MergeData()
         {
+            var mergeData = backupProvider.GetMergeData(dataTypes);
             foreach (var entityType in mergeData.GetEntityTypes())
             {
                 if (entityType == typeof(CharacterState))
