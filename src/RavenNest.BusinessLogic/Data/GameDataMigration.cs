@@ -30,14 +30,15 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         public bool TryMigrate(
-            IRavenfallDbContextProvider db, 
-            IEntityRestorePoint restorePoint, 
-            out List<Type> migratedTypes, 
-            out List<Type> failedTypes)
+            IRavenfallDbContextProvider db,
+            IEntityRestorePoint restorePoint,
+            out List<Type> migratedTypes,
+            out List<Type> failedTypes,
+            out Exception failedException)
         {
             migratedTypes = new List<Type>();
             failedTypes = new List<Type>();
-
+            failedException = null;
             try
             {
                 logger.LogWarning("Restoring data from restorepoint..");
@@ -86,6 +87,7 @@ namespace RavenNest.BusinessLogic.Data
                             catch (Exception exc)
                             {
                                 failedTypes.Add(restoreType);
+                                failedException = exc;
                                 TryTruncateTable(con, table); // truncate it again to leave it empty for quicker restore next time.
                                 logger.LogError($"Failed to migrate data in {table}. Table skipped and restorepoint kept. Exception: " + exc);
                             }
@@ -100,6 +102,7 @@ namespace RavenNest.BusinessLogic.Data
             }
             catch (Exception exc)
             {
+                failedException = exc;
                 logger.LogError($"Data migration failed!! " + exc);
                 return false;
             }

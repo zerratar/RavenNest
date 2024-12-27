@@ -210,7 +210,7 @@ namespace RavenNest.BusinessLogic.Data
                 logger.LogInformation($"Checking for restore points.");
                 if (restorePoint != null)
                 {
-                    if (dataMigration.TryMigrate(this.db, restorePoint, out var migrated, out var failed))
+                    if (dataMigration.TryMigrate(this.db, restorePoint, out var migrated, out var failed, out var failedExc))
                     {
                         // if all was good, clear whole restore point
                         backupProvider.ClearRestorePoint();
@@ -223,7 +223,7 @@ namespace RavenNest.BusinessLogic.Data
                         }
 
                         var failedTypeNames = failed.Select(x => x.Name).ToArray();
-                        var errorMessage = failedTypeNames.Length + " table(s) failed to migrate: " + string.Join(", ", failedTypeNames) + ". Server start interrupted to prevent dataloss.";
+                        var errorMessage = failedTypeNames.Length + " table(s) failed to migrate: " + string.Join(", ", failedTypeNames) + $". Error Reported: \n'{failedExc}'\nServer start interrupted to prevent dataloss.";
                         logger.LogError(errorMessage);
                         throw new DataMigrationException(errorMessage);
                     }
