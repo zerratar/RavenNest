@@ -518,8 +518,10 @@ namespace RavenNest.BusinessLogic.Data
         public void MergeData()
         {
             var mergeData = backupProvider.GetMergeData(dataTypes);
+            if (mergeData == null) { return; }
             foreach (var entityType in mergeData.GetEntityTypes())
             {
+                if (entityType == null) continue;
                 if (entityType == typeof(CharacterState))
                 {
                     var statesToMerge = mergeData.Get<CharacterState>();

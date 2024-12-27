@@ -32,7 +32,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GameDataSimulation", "GameD
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnityVersionChanger", "src\tools\UnityVersionChanger\UnityVersionChanger.csproj", "{2230B21C-23E7-4575-B80A-F5357FC6BA6A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RavenfallPlayerLogCleaner", "src\tools\RavenfallPlayerLogCleaner\RavenfallPlayerLogCleaner.csproj", "{473FC467-FFEA-48AD-B7AB-A0BF9E0B12B0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RavenfallPlayerLogCleaner", "src\tools\RavenfallPlayerLogCleaner\RavenfallPlayerLogCleaner.csproj", "{473FC467-FFEA-48AD-B7AB-A0BF9E0B12B0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
