@@ -2407,7 +2407,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             var character = gameData.GetCharacter(senderCharacterId);
             var targetCharacter = gameData.GetCharacter(receiverCharacterId);
-            if (character == null || targetCharacter == null) return -1;
+            if (amount <= 0 || character == null || targetCharacter == null) return -1;
 
             var res = gameData.GetResources(character);
             var tarRes = gameData.GetResources(targetCharacter);
