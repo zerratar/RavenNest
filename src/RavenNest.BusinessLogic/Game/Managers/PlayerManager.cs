@@ -2403,6 +2403,22 @@ namespace RavenNest.BusinessLogic.Game
             return GiftItemResult.NoItem;
         }
 
+        public long SendCoins(SessionToken sessionToken, Guid senderCharacterId, Guid receiverCharacterId, long amount)
+        {
+            var character = gameData.GetCharacter(senderCharacterId);
+            var targetCharacter = gameData.GetCharacter(receiverCharacterId);
+            if (character == null || targetCharacter == null) return -1;
+
+            var res = gameData.GetResources(character);
+            var tarRes = gameData.GetResources(targetCharacter);
+
+            if (res.Coins <= 0) return -2;
+            var toGive = res.Coins < amount ? (long)res.Coins : amount;
+            res.Coins -= toGive;
+            tarRes.Coins += toGive;
+            return toGive;
+        }
+
         public bool SendToStash(Guid characterId, RavenNest.Models.InventoryItem invItemInput, long amount)
         {
             var character = gameData.GetCharacter(characterId);

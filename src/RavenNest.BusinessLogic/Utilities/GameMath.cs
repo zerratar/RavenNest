@@ -155,6 +155,9 @@ namespace RavenNest.BusinessLogic
             // multiplier effects time, not the actual exp amount. so 3x is 3 times less time to level up compared to the base time.
             // this means, 17min, 30s / 4 (max gain where 1+3) = 4 min, 22s, more players are not linear in exp gain but they most certainly help still.
 
+            // ignore text above, its no longer the deal.
+            // 
+
             playerCount++;
 
             var playerFactor = 1 + (playerCount / 2000d);

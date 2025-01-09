@@ -542,6 +542,13 @@ namespace RavenNest.Controllers
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("{senderCharacterId}/send-coins/{receiverCharacterId}/{amount}")]
+        public long SendCoins(Guid senderCharacterId, Guid receiverCharacterId, long amount)
+        {
+            return playerManager.SendCoins(AssertGetSessionToken(), senderCharacterId, receiverCharacterId, amount);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("v2/{characterId}/vendor-instance/{item}/{amount}")]
         public long VendorItemInstance(Guid characterId, Guid item, long amount)
         {

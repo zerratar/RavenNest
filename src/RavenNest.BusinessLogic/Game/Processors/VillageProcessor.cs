@@ -20,7 +20,8 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             Character character,
             CharacterState state)
         {
-            var players = gameData.GetActiveSessionCharacters(session);
+            //var players = gameData.GetActiveSessionCharacters(session);
+            var playerCount = 750; // Fixed Rate instead. //players.Count;
 
             if (lastUpdate <= DateTime.UnixEpoch)
             {
@@ -28,7 +29,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             }
 
             var elapsed = DateTime.UtcNow - lastUpdate;
-            if (players.Count == 0 && elapsed < updateExpInterval)
+            if (playerCount == 0 && elapsed < updateExpInterval)
             {
                 return;
             }
@@ -42,7 +43,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             var nextLevel = village.Level + 1;
             var expForNextLevel = GameMath.ExperienceForLevel(nextLevel);
 
-            if (players.Count > 0)
+            if (playerCount > 0)
             {
                 var owner = gameData.GetUser(village.UserId);
                 if (owner.PatreonTier >= (int)DataModels.Patreon.Mithril)
@@ -50,7 +51,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     elapsed *= 2;
                 }
 
-                village.Experience += GameMath.GetVillageExperience(village.Level, players.Count, elapsed);
+                village.Experience += GameMath.GetVillageExperience(village.Level, playerCount, elapsed);
 
                 // check if this village gone mad.
                 var percentage = village.Experience / (double)expForNextLevel;
