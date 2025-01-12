@@ -183,9 +183,7 @@ namespace RavenNest.Tools.Actions
                 var strPosIndex = gm.IndexOf("0.9.", index);
                 //strPosIndex -= 4;
 
-                var version = GetVersion(gm.ReadString(strPosIndex));
-
-                return IncrementVersion(version, MajorIncrement, MinorIncrement, BuildIncrement, RevisionIncrement);
+                return GetVersion(gm.ReadString(strPosIndex)); 
             }
             var archives = existingArchives.Select(x => new { File = x, Version = GetVersion(x) }).OrderByDescending(x => x.Version).ToList();
             var a = archives.FirstOrDefault();

@@ -4156,13 +4156,13 @@ namespace RavenNest.BusinessLogic.Game
             if (coinCost > 0)
             {
                 var res = gameData.GetResources(character);
-                var cost = AutoJoinDungeonCost;
-                if (cost > res.Coins)
+                //var cost = AutoJoinDungeonCost;
+                if (coinCost > res.Coins)
                 {
                     res.Coins = 0;
                     return;
                 }
-                res.Coins -= cost;
+                res.Coins -= coinCost;
             }
         }
 

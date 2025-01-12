@@ -55,10 +55,8 @@
                         <td>@session.ClientVersion</td>
                         <td @onclick="()=>ShowPlayerList(session)">@session.Players.Count</td>
                         <td>
-@*                             @{
-                        <button title="(TEST) Make this user initiate a Raid against our game session" class="inline-button raid" @onclick="(()=> RaidOurSession(session))"><i class="fa-solid fa-people-group"></i> Raid</button>
-                        <button title="(TEST) Make this user initiate a Raid War against our game session" class="inline-button raidwar" @onclick="(()=> RaidWarOurSession(session))"><i class="fa-solid fa-swords"></i> War</button>
-                            } *@
+                            <button title="(TEST) Make this user initiate a Raid against our game session" class="inline-button raid" @onclick="(()=> RaidOurSession(session))"><i class="fa-solid fa-people-group"></i> Raid</button>
+                            <button title="(TEST) Make this user initiate a Raid War against our game session" class="inline-button raidwar" @onclick="(()=> RaidWarOurSession(session))"><i class="fa-solid fa-swords"></i> War</button>
                         </td>
                     </tr>
                 }

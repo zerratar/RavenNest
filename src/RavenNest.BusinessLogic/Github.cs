@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace RavenNest.BusinessLogic.Github
@@ -15,14 +14,56 @@ namespace RavenNest.BusinessLogic.Github
         private readonly static GitHubReleaseProvider github = new GitHubReleaseProvider();
         public static async Task<GameRelease> GetGithubReleaseAsync()
         {
-            return await github.GetGithubReleaseAsync("zerratar", "ravenfall-legacy");
+            var release = await github.GetGithubReleaseAsync("zerratar", "ravenfall-legacy");
+            if (release.PreRelease)
+            {
+                var releases = await github.GetGithubReleasesAsync("zerratar", "ravenfall-legacy");
+                release = releases.OrderByDescending(x => x.Published).FirstOrDefault(x => !x.PreRelease);
+            }
+
+            return release;
         }
     }
 
     public class GitHubReleaseProvider
     {
         private static readonly MemoryCache<GameRelease> cachedVersion = new MemoryCache<GameRelease>();
+        private static readonly MemoryCache<IReadOnlyList<GameRelease>> cachedVersionList = new MemoryCache<IReadOnlyList<GameRelease>>();
         private readonly static TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+
+        public async Task<IReadOnlyList<GameRelease>> GetGithubReleasesAsync(string owner, string repo)
+        {
+            try
+            {
+                if (cachedVersionList.TryGet(owner + "_" + repo, out var updateRes))
+                {
+                    return updateRes;
+                }
+
+                using (var client = new HttpClient())
+                {
+                    var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{owner}/{repo}/releases");
+                    request.Headers.Add("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
+                    request.Headers.Add("user-agent", "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Mobile Safari/537.36");
+
+                    using (var response = await client.SendAsync(request))
+                    {
+                        var data = await response.Content.ReadAsStringAsync();
+                        var releases = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Release>>(data);
+                        var result = releases.Select(x => new GameRelease(x)).ToList();
+                        cachedVersionList.Set(owner + "_" + repo, result, CacheDuration);
+                        return result;
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(exc.ToString());
+                Console.ResetColor();
+                return null;
+            }
+        }
 
         public async Task<GameRelease> GetGithubReleaseAsync(string owner, string repo)
         {
@@ -42,7 +83,7 @@ namespace RavenNest.BusinessLogic.Github
                     using (var response = await client.SendAsync(request))
                     {
                         var data = await response.Content.ReadAsStringAsync();
-                        var result = new GameRelease(Newtonsoft.Json.JsonConvert.DeserializeObject<Root>(data));
+                        var result = new GameRelease(Newtonsoft.Json.JsonConvert.DeserializeObject<Release>(data));
                         cachedVersion.Set(owner + "_" + repo, result, CacheDuration);
                         return result;
                     }
@@ -114,7 +155,7 @@ namespace RavenNest.BusinessLogic.Github
 
     public class GameRelease
     {
-        public GameRelease(Root root)
+        public GameRelease(Release root)
         {
             this.VersionString = root.TagName.Replace("-alpha", "").Replace("v", "");
 
@@ -125,8 +166,9 @@ namespace RavenNest.BusinessLogic.Github
             this.Description = ParseDescription(root.Body);
             this.UpdateDownloadUrl_Win = root.Assets.FirstOrDefault(x => x.Name.StartsWith("update."))?.BrowserDownloadUrl;
             this.UpdateDownloadUrl_Linux = root.Assets.FirstOrDefault(x => x.Name.StartsWith("update-linux"))?.BrowserDownloadUrl;
-            this.FullDownloadUrl_Win = root.Assets.FirstOrDefault(x => x.Name.StartsWith("Ravenfall.v") && !x.Name.Contains("linux"))?.BrowserDownloadUrl; 
+            this.FullDownloadUrl_Win = root.Assets.FirstOrDefault(x => x.Name.StartsWith("Ravenfall.v") && !x.Name.Contains("linux"))?.BrowserDownloadUrl;
             this.FullDownloadUrl_Linux = root.Assets.FirstOrDefault(x => x.Name.StartsWith("Ravenfall.v") && x.Name.Contains("linux"))?.BrowserDownloadUrl;
+            this.PreRelease = root.PreRelease;
             this.Published = root.PublishedAt;
         }
 
@@ -140,6 +182,7 @@ namespace RavenNest.BusinessLogic.Github
         public Version Version { get; }
         public string VersionString { get; }
         public string Description { get; }
+        public bool PreRelease { get; }
 
         public string UpdateDownloadUrl_Win { get; }
         public string FullDownloadUrl_Win { get; }
@@ -151,21 +194,32 @@ namespace RavenNest.BusinessLogic.Github
 
     public class Asset
     {
+        [Newtonsoft.Json.JsonProperty("name")]
         public string Name { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("created_at")]
         public DateTime CreatedAt { get; set; }
+
+        [Newtonsoft.Json.JsonProperty("updated_at")]
         public DateTime UpdatedAt { get; set; }
 
         [Newtonsoft.Json.JsonProperty("browser_download_url")]
         public string BrowserDownloadUrl { get; set; }
     }
 
-    public class Root
+    public class Release
     {
         [Newtonsoft.Json.JsonProperty("tag_name")]
         public string TagName { get; set; }
+        [Newtonsoft.Json.JsonProperty("body")]
         public string Body { get; set; }
+        [Newtonsoft.Json.JsonProperty("prerelease")]
+        public bool PreRelease { get; set; }
+        [Newtonsoft.Json.JsonProperty("created_at")]
         public DateTime CreatedAt { get; set; }
+        [Newtonsoft.Json.JsonProperty("published_at")]
         public DateTime PublishedAt { get; set; }
+        [Newtonsoft.Json.JsonProperty("assets")]
         public List<Asset> Assets { get; set; }
     }
 }
