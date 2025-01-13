@@ -8,6 +8,7 @@ using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Game.Enchantment;
 using RavenNest.DataModels;
 using RavenNest.Models;
+using RavenNest.Twitch;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -48,6 +49,17 @@ namespace RavenNest.Controllers
             }
         }
 
+        [HttpPost("twitch-cheer")]
+        public async Task OnUserCheer([FromBody] CheerBitsEvent evt)
+        {
+            // TODO!
+        }
+
+        [HttpPost("twitch-sub")]
+        public async Task OnUserSub([FromBody] UserSubscriptionEvent evt)
+        {
+            // TODO!
+        }
 
         #region Discord Bot Apis
 

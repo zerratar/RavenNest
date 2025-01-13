@@ -164,7 +164,7 @@ namespace RavenNest.Tools.Actions
         private string GetReleaseFileName(bool windowsBuild)
         {
             var platformExtension = windowsBuild ? "" : "-linux";
-            return "Ravenfall.v" + BuildVersion.ToString() + "a-alpha" + platformExtension + ".7z";
+            return "Ravenfall.v" + BuildVersion.ToString(4) + "a-alpha" + platformExtension + ".7z";
         }
 
 
