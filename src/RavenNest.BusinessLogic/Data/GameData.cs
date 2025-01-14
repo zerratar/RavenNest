@@ -522,6 +522,28 @@ namespace RavenNest.BusinessLogic.Data
             foreach (var entityType in mergeData.GetEntityTypes())
             {
                 if (entityType == null) continue;
+                if (entityType == typeof(Resources))
+                {
+                    var statesToMerge = mergeData.Get<Resources>();
+                    if (statesToMerge == null || statesToMerge.Count == 0)
+                    {
+                        continue;
+                    }
+
+                    foreach (var ms in statesToMerge)
+                    {
+                        var existing = GetResources(ms.Id);
+                        if (existing == null)
+                        {
+                            continue;
+                        }
+
+                        if (existing.Coins < ms.Coins)
+                        {
+                            existing.Coins = ms.Coins;
+                        }
+                    }
+                }
                 if (entityType == typeof(CharacterState))
                 {
                     var statesToMerge = mergeData.Get<CharacterState>();
@@ -537,6 +559,21 @@ namespace RavenNest.BusinessLogic.Data
                         if (existing == null)
                         {
                             continue;
+                        }
+
+                        if (ms.AutoJoinRaidCounter > 0)
+                        {
+                            existing.AutoJoinRaidCounter = ms.AutoJoinRaidCounter;
+                        }
+
+                        if (ms.AutoJoinDungeonCounter > 0)
+                        {
+                            existing.AutoJoinDungeonCounter = ms.AutoJoinDungeonCounter;
+                        }
+
+                        if (ms.IsAutoResting)
+                        {
+                            existing.IsAutoResting = true;
                         }
 
                         // if our existing task is null but our merging one is not.

@@ -4153,6 +4153,9 @@ namespace RavenNest.BusinessLogic.Game
             state.DungeonCombatStyle = update.DungeonCombatStyle;
             state.RaidCombatStyle = update.RaidCombatStyle;
 
+
+            return;
+#warning auto join raids and dungeon costs are 0!!!
             if (coinCost > 0)
             {
                 var res = gameData.GetResources(character);
