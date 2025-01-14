@@ -612,6 +612,7 @@ namespace RavenNest.BusinessLogic.Data
                     }
 
                     backupProvider.ClearMerge(typeof(CharacterState));
+                    backupProvider.ClearMerge(typeof(Resources));
                 }
             }
         }
