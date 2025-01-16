@@ -328,6 +328,7 @@
 {
     if (addItemDialogVisible)
     {
+      <div class="item-modal-background">
         <div class="clan-member-invite">
             <div class="clan-member-invite-header">
                 <h2>Search for item to add</h2>
@@ -348,6 +349,7 @@
                     <button @onclick="AddItem" class="btn btn-primary">Add</button>
                 }
                 <button @onclick="HideAddItem" class="btn btn-secondary">Cancel</button>
+            </div>
             </div>
         </div>
     }

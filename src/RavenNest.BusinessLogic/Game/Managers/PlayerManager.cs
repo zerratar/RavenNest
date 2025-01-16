@@ -4287,6 +4287,15 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        public async Task DeletePlayer(Guid characterId)
+        {
+            var c = gameData.GetCharacter(characterId);
+            if (c != null)
+            {
+                gameData.RemoveCharacter(c);
+            }
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool AcquiredUserLock(SessionToken token, Character character)
         {
@@ -4299,5 +4308,6 @@ namespace RavenNest.BusinessLogic.Game
         {
             return character.UserIdLock == session.UserId;
         }
+
     }
 }

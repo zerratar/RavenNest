@@ -18,16 +18,31 @@ else
                 <h2>Search for character to invite</h2>
                 <button class="close" @onclick="HideInvitePlayer">x</button>
             </div>
-            <BlazoredTypeahead SearchMethod="SearchPlayer"
-                       @bind-Value="selectedPlayer"
-                       @onselectionchange="SelectedPlayerChanged">
+
+
+            <Autocomplete SearchMethod="@SearchPlayer"
+                          @bind-Value="@selectedPlayer">
                 <SelectedTemplate>
                     @context.UserName (Level @PlayerService.GetCombatLevel(context) #@context.CharacterIndex)
                 </SelectedTemplate>
                 <ResultTemplate>
                     @context.UserName (Level @PlayerService.GetCombatLevel(context) #@context.CharacterIndex)
                 </ResultTemplate>
-            </BlazoredTypeahead>
+                <NotFoundTemplate>
+                    No player found
+                </NotFoundTemplate>
+            </Autocomplete>
+@* 
+            <BlazoredTypeahead SearchMethod="SearchPlayer"
+                               @bind-Value="selectedPlayer"
+                               @onselectionchange="SelectedPlayerChanged">
+                <SelectedTemplate>
+                    @context.UserName (Level @PlayerService.GetCombatLevel(context) #@context.CharacterIndex)
+                </SelectedTemplate>
+                <ResultTemplate>
+                    @context.UserName (Level @PlayerService.GetCombatLevel(context) #@context.CharacterIndex)
+                </ResultTemplate>
+            </BlazoredTypeahead> *@
 
             <div class="clan-member-invite-controls">
                 @if (selectedPlayer != null)

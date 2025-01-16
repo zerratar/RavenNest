@@ -189,6 +189,10 @@ namespace RavenNest.Blazor.Services
             playerManager.AddItem(characterId, item.Id);
             return playerManager.GetWebsitePlayer(characterId);
         }
+        public Task DeletePlayerAsync(Guid characterId)
+        {
+            return playerManager.DeletePlayer(characterId);
+        }
 
         public Task<bool> ResetPlayerSkillsAsync(Guid characterId)
         {

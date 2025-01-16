@@ -16,7 +16,22 @@
         </NavLink>
     </li>
     <li>
-        <span>Generate New State_Data.Json</span> <BlazoredTypeahead SearchMethod="SearchUser"
+        <span>Generate New State_Data.Json</span> 
+
+        <Autocomplete SearchMethod="@SearchUser"
+                      @bind-Value="@selectedUser">
+            <SelectedTemplate>
+                @context.UserName
+            </SelectedTemplate>
+            <ResultTemplate>
+                @context.UserName
+            </ResultTemplate>
+            <NotFoundTemplate>
+                No users found.
+            </NotFoundTemplate>
+        </Autocomplete>
+
+@*         <BlazoredTypeahead SearchMethod="SearchUser"
                            @bind-Value="selectedUser"
                            @onselectionchange="SelectedUserChanged">
             <SelectedTemplate>
@@ -25,7 +40,7 @@
             <ResultTemplate>
                 @context.UserName
             </ResultTemplate>
-        </BlazoredTypeahead>
+        </BlazoredTypeahead> *@
 
         @if (selectedUser != null)
         {

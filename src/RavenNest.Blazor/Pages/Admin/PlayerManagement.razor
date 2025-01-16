@@ -67,6 +67,9 @@
                     <td>@(player.IsAdmin ? "Yes" : "No")</td>
                     <td>@(player.IsModerator ? "Yes" : "No")</td>
                     <td>
+
+                        <button title="Delete" class="inline-button error" @onclick="(()=>DeletePlayer(player))"><i class="fa-solid fa-trash"></i></button>
+
                         @if (!player.UserName.Equals(player.Name, StringComparison.OrdinalIgnoreCase))
                         {
                             <button title="Rename player to match Username" class="inline-button secondary" @onclick="(()=>MakeNameMatchUsername(player))"><i class="fa-sharp fa-regular fa-signature"></i></button>
@@ -89,6 +92,21 @@
     </tbody>
 </table>
 
+@if (confirmDeletePlayer)
+{
+    <div class="delete-player-modal-background">
+        <div class="delete-player-modal">
+            <div class="delete-player-content">
+                Are you sure you want to delete @playerToDelete.Name ?
+            </div>
+            <div class="delete-player-actions">
+                <button class="btn btn-secondary" @onclick="CancelDeletePlayer">Cancel</button>
+                <button class="btn btn-primary" @onclick="ConfirmDeletePlayer">Confirm</button>
+            </div>
+        </div>
+    </div>
+}
+
 
 
 @code {
@@ -101,10 +119,37 @@
     private int pageCount = 1;
     private long totalCount = 0;
 
-    protected override void OnInitialized()
+    private bool confirmDeletePlayer;
+    private WebsiteAdminPlayer playerToDelete;
+
+    private async void ConfirmDeletePlayer()
+    {
+        if (playerToDelete == null) return;
+        await PlayerService.DeletePlayerAsync(playerToDelete.Id);
+        await LoadPlayerPageAsync(pageIndex, pageSize);
+        confirmDeletePlayer = false;
+        playerToDelete = null;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void CancelDeletePlayer()
+    {
+        playerToDelete = null;
+        confirmDeletePlayer = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async void DeletePlayer(WebsiteAdminPlayer player)
+    {
+        playerToDelete = player;
+        confirmDeletePlayer = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnInitializedAsync()
     {
         session = AuthService.GetSession();
-        LoadPlayerPageAsync(pageIndex, pageSize);
+        await LoadPlayerPageAsync(pageIndex, pageSize);
     }
 
     private async void KickPlayer(WebsiteAdminPlayer player)

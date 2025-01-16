@@ -55,19 +55,25 @@ button.btn.btn-secondary {
     margin-left: 10px;
 }
 
-.clan-member-invite {
-    position: absolute;
-    background-color: #ffffff;
-    width: 100%;
-    left: 50%;
-    width: 620px;
-    max-width: 100%;
-    transform: translateX(-50%);
-    padding: 15px;
-    box-shadow: 5px 5px 20px rgba(0,0,0,0.25);
+.item-modal-background {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 100vh;
     display: flex;
-    flex-flow: column;
-    top: 50%;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+}
+
+.clan-member-invite {
+    background-color: white;
+    color: black;
+    height: fit-content;
+    width: fit-content;
+    min-width: 400px;
+    padding: 20px;
 }
 
 .clan-member-invite-controls {

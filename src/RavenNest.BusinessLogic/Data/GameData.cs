@@ -1520,33 +1520,53 @@ namespace RavenNest.BusinessLogic.Data
                     }
                 }
 
-                var appearance = GetAppearance(c.SyntyAppearanceId);
-                if (appearance != null)
-                {
-                    Remove(appearance);
-                }
-
-                var statistics = GetStatistics(c.StatisticsId);
-                if (statistics != null)
-                {
-                    Remove(statistics);
-                }
-
-                var state = GetCharacterState(c.StateId);
-                if (state != null)
-                {
-                    Remove(state);
-                }
-
-                var invites = GetClanInvitesByCharacter(c.Id);
-                foreach (var invite in invites)
-                {
-                    if (invite != null)
-                        Remove(invite);
-                }
-
-                Remove(c);
+                RemoveCharacter(c);
             }
+        }
+
+        public void RemoveCharacter(Character c)
+        {
+            var items = GetInventoryItems(c.Id);
+            if (items.Count > 0)
+            {
+                foreach (var item in items)
+                {
+                    SendToStash(item);
+                }
+            }
+
+            var skills = GetCharacterSkills(c.SkillsId);
+            if (skills != null)
+            {
+                Remove(skills);
+            }
+
+            var appearance = GetAppearance(c.SyntyAppearanceId);
+            if (appearance != null)
+            {
+                Remove(appearance);
+            }
+
+            var statistics = GetStatistics(c.StatisticsId);
+            if (statistics != null)
+            {
+                Remove(statistics);
+            }
+
+            var state = GetCharacterState(c.StateId);
+            if (state != null)
+            {
+                Remove(state);
+            }
+
+            var invites = GetClanInvitesByCharacter(c.Id);
+            foreach (var invite in invites)
+            {
+                if (invite != null)
+                    Remove(invite);
+            }
+
+            Remove(c);
         }
 
         private void EnsureCharacterSkillRecords()

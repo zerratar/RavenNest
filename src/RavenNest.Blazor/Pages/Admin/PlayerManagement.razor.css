@@ -1,4 +1,35 @@
-﻿.player-character-index {
+﻿.delete-player-modal-background {
+    position: sticky;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+}
+
+.delete-player-modal {
+    background-color: white;
+    color: black;
+    height: fit-content;
+    padding: 20px;
+}
+
+.delete-player-content {
+    padding: 20px;
+}
+
+.delete-player-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 7px;
+    padding-left: 20px;
+    padding-right: 20px;
+}
+
+.player-character-index {
     margin-left: 5px;
     display: inline-block;
     color: #a2a2a2;
@@ -121,7 +152,7 @@ table.player-table tr:nth-of-type(even) {
 .stats-progress {
     text-align: right;
     min-width: 120px;
-    height:23px;
+    height: 23px;
     text-align: center;
     background-color: #f4f4f4;
 }
