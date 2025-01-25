@@ -76,17 +76,23 @@ namespace RavenNest.BusinessLogic.Game
         //    }
         //}
 
-        public GameSessionPlayerCache GetRandomStateCache(int playerCount)
+        public GameSessionPlayerCache GetRandomStateCache(int playerCount, TimeSpan? inactiveForAtLeast = null)
         {
             var players = new List<GameSessionPlayerCache.GameCachePlayerItem>();
             var uid = new HashSet<Guid>();
-
+            var inactivityDate = inactiveForAtLeast != null ? DateTime.UtcNow.Subtract(inactiveForAtLeast.Value) : DateTime.MaxValue;
             foreach (var user in gameData.GetUsers().OrderBy(x => random.Next()))
             {
                 if (uid.Add(user.Id))
                 {
                     var character = gameData.GetCharacterByUserId(user.Id);
                     if (character == null)
+                    {
+                        uid.Remove(user.Id);
+                        continue;
+                    }
+
+                    if (inactiveForAtLeast != null && character.LastUsed > inactivityDate)
                     {
                         uid.Remove(user.Id);
                         continue;

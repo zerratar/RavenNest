@@ -259,6 +259,7 @@ namespace RavenNest.Controllers
             return playerManager.EnchantItem(AssertGetSessionToken(), userId, inventoryItemId);
         }
 
+        [Obsolete]
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{userId}/enchant-instance/{inventoryItemId}")]
         public ItemEnchantmentResult EnchantItemInstance(string userId, Guid inventoryItemId)

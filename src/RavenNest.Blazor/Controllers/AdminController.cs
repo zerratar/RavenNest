@@ -134,6 +134,20 @@ namespace RavenNest.Controllers
             return adminManager.SetCraftingRequirements(itemQuery, requirementQuery);
         }
 
+        [HttpGet("debug/state-data/{playerCount}/{inactivityDuration}")]
+        public async Task<GameSessionPlayerCache> DownloadRandomStateCacheInactivity(int playerCount, TimeSpan inactivityDuration)
+        {
+            try
+            {
+                await AssertAdminAccessAsync();
+                return adminManager.GetRandomStateCache(playerCount, inactivityDuration);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         [HttpGet("debug/state-data/{playerCount}")]
         public async Task<GameSessionPlayerCache> DownloadRandomStateCache(int playerCount)
         {
@@ -147,7 +161,6 @@ namespace RavenNest.Controllers
                 return null;
             }
         }
-
 
         [HttpGet("state-data/{streamer}")]
         public async Task<GameSessionPlayerCache> DownloadStreamerStateCache(string streamer)

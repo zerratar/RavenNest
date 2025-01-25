@@ -1403,6 +1403,7 @@ namespace RavenNest.BusinessLogic.Game
             return UpdateAppearance(userId, identifier, appearance);
         }
 
+        [Obsolete]
         public ItemEnchantmentResult EnchantItemInstance(SessionToken sessionToken, string userId, Guid inventoryItemId)
         {
             return EnchantItem(sessionToken, userId, inventoryItemId);
@@ -1415,6 +1416,7 @@ namespace RavenNest.BusinessLogic.Game
             return EnchantItem(sessionToken, inventoryItemId, character);
         }
 
+        [Obsolete]
         public ItemEnchantmentResult EnchantItem(SessionToken token, string userId, Guid inventoryItemId)
         {
             var character = GetCharacter(token, userId);

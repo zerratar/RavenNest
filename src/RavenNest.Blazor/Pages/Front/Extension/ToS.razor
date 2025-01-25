@@ -1,0 +1,56 @@
+﻿@layout MainLayout
+@page "/extension/terms-of-service"
+@using RavenNest.Blazor.Services
+@inject NavigationManager NavigationManager
+@inject AuthService AuthService
+
+<div class="top-section">
+    <div class="hero-text">
+        <h1>Terms of Service &amp; Privacy Policy</h1>
+    </div>
+</div>
+
+<div class="white-section-break"></div>
+<div class="page-content">
+    <div class="section">
+        <h1>Terms of Service for Ravenfall Twitch Extension</h1>
+
+        <p><strong>Introduction</strong></p>
+        <p>The Ravenfall Twitch Extension is designed to enhance viewer interaction and gameplay for the game Ravenfall. By using this extension, you agree to the terms outlined here. If you do not agree with these terms, you should not use the extension.</p>
+
+        <h2>Privacy Policy</h2>
+
+        <p><strong>What Information We Collect</strong></p>
+        <p>The Ravenfall Twitch Extension collects the following data from Twitch's Identity Linking feature:</p>
+        <ul>
+            <li>Your Twitch User ID</li>
+            <li>Your Twitch Username</li>
+            <li>Your Twitch Email (if available)</li>
+        </ul>
+        <p>This information is used exclusively to link your Twitch account with your Ravenfall account and to create a new Ravenfall account if one does not already exist. Additionally, the target streamer user ID is collected to identify the game instance you are interacting with.</p>
+
+        <p><strong>How We Use Your Information</strong></p>
+        <p>The data collected is used for the following purposes:</p>
+        <ul>
+            <li>To create or identify your Ravenfall account.</li>
+            <li>To link your account to a specific game instance.</li>
+            <li>To facilitate gameplay interactions with the Ravenfall Twitch Extension.</li>
+        </ul>
+        <p>No other personal information is collected or stored by the extension. All communication is directly with our server at https://www.ravenfall.stream and is not shared with third-party services.</p>
+
+        <h2>Data Retention</h2>
+        <p>We retain your Twitch identity data for the lifetime of your Ravenfall account. If you wish to delete your account, please contact us on either email or discord for further assistance.</p>
+
+        <h2>Third-Party Services</h2>
+        <p>The Ravenfall Twitch Extension does not use any third-party analytics or services such as Google Analytics. All data processing occurs on our servers.</p>
+
+        <h2>Cookies</h2>
+        <p>The Ravenfall Twitch Extension itself does not use cookies. However, if you visit https://www.ravenfall.stream, cookies may be used to enhance your website experience. Please review our <a href="/cookies-policy">Cookie Policy</a> for more details.</p>
+
+        <h2>Contact Us</h2>
+        <p>If you have any questions about the Terms of Service or Privacy Policy, you can contact us at:</p>
+        <ul>
+            <li>Email: hello@ravenfall.stream</li>
+        </ul>
+    </div>
+</div>
