@@ -9,7 +9,7 @@
     <div class="main">
         <div class="top-row px-4">
 
-            
+
 
             @if (IsAuthenticated)
             {
@@ -30,16 +30,16 @@
             @Body
         </div>
 
-
+        @*     
         @if (IsAuthenticated)
         {
             <TwitchStreams Session="session"></TwitchStreams>
 
-@*             if (session.Administrator)
+        if (session.Administrator)
             {
                 <AIAssistance></AIAssistance>
-            } *@
-        }
+            }
+        }*@
     </div>
 </div>
 
@@ -58,4 +58,4 @@
     }
 
     private bool IsAuthenticated => session != null && session.Authenticated;
-}
+    }
