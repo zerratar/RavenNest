@@ -8,113 +8,156 @@
 @inject RavenNest.Blazor.Services.LogoService LogoService
 @inject NavigationManager NavigationManager
 
-<h1 class="page-title">Clan</h1>
+<div class="clan-management-container">
+    <h1 class="page-title">Clan</h1>
 
-@if (!session.Authenticated)
-{
-    <p>You don't seem to be logged in.</p>
-}
-else
-{
-    if (clan == null)
+    @if (!session.Authenticated)
     {
-        if (session.Tier == 0 && !session.Administrator && !session.Moderator)
-        {
-            <p>You cannot create a clan. You need to have at least the <a href="https://www.patreon.com/ravenfall" target="_blank">Mithril Tier on patreon</a></p>
-        }
-        else
-        {
-            <div class="clan-create">
-                <p>You do not have a clan. You may create one if you like.</p>
-                <EditForm Model="@createClan" OnValidSubmit="@HandleCreateClan">
-                    <DataAnnotationsValidator />
-                    <ValidationSummary />
-                    <InputText id="name" @bind-Value="createClan.Name" />
-                    <button type="submit">Submit</button>
-                </EditForm>
-                <p class="clan-name-error">@clanError</p>
-            </div>
-        }
+        <div class="alert alert-warning text-center">
+            You don't seem to be logged in.
+        </div>
     }
     else
     {
-        <div class="clan-header">
-            @if (!string.IsNullOrEmpty(clan.Logo))
-            {
-                <img src="@clan.Logo" class="clan-logo" />
-            }
-            else
-            {
-                <img src="/api/twitch/logo/@session.TwitchUserId" class="clan-logo" />
-            }
-            @if (!reloadingClanLogo)
-            {
-                <a class="refresh-logo" @onclick="ReloadClanLogo"><i class="fas fa-sync"></i></a>
-            }
-            <h1>
-                @if (!editingClanName)
-                {
-                    @clan.Name
-                    if (canChangeClanName)
-                    {
-                        <a class="change-identifier" @onclick="EditClanName"><span class="fa fa-pen"></span></a>
-                        <p class="clan-name-success">@changeNameSuccess</p>
-                    }
-                    else
-                    {
-                        <a class="change-identifier" @onclick="EditClanName"><span class="fa fa-pen"></span></a>
-                    }
-                }
-                else
-                {
-                    <input type="text" placeholder="Enter a new clan name" class="input edit-identifier" @bind-value="clan.Name" />
-                    <a @onclick="UpdateAlias" class="margin-right-10"><i class="fas fa-check"></i></a>
-                    <a @onclick="CancelEditAlias"><i class="fas fa-times"></i></a>
-                    if (nameChangeCount < 2)
-                    {
-                        <p class="change-left">You have <b>@(2 - nameChangeCount)</b> free name changes left.</p>
-                    }
-                    <p class="clan-name-error">@clanError</p>
-                }
-            </h1>
-
-            <p class="clan-level">Level <span>@clan.Level</span></p>
-
-        </div>
-
-        <div class="clan-view-tabs">
-            <button class="tab-link @(!showRanks ? "active":"")" href="/clan" @onclick="ShowMembers">
-                Members
-            </button>
-            <button class="tab-link @(showRanks ? "active":"")" href="/clan/ranks" @onclick="ShowRanks">
-                Ranks
-            </button>
-        </div>
-        <div class="clan-view">
-            @if (showRanks)
-            {
-                <div class="clan-roles">
-                    <ClanRoleList ClanId="@clan.Id" CanManage="@canManageMembers"></ClanRoleList>
-                </div>
-            }
-            else
-            {
-                <div class="clan-members">
-                    <ClanMemberList ClanId="@clan.Id" CanManage="@canManageMembers"></ClanMemberList>
-                </div>
-            }
-        </div>
-
-        if (showGetMoreNameChanges)
+        if (clan == null)
         {
-            <div class="name-change-info">
-                <h2>Name change unavailable</h2>
-                <p>You have reached your clan name change limit. Please contact a Ravenfall Staff on Discord for further assistance.</p>
-                <RavenButton OnClick="CloseNameChangeInfo">Close</RavenButton>
+            if (session.Tier == 0 && !session.Administrator && !session.Moderator)
+            {
+                <div class="alert alert-info text-center">
+                    You cannot create a clan. You need to have at least the <a href="https://www.patreon.com/ravenfall" target="_blank">Mithril Tier on Patreon</a>.
+                </div>
+            }
+            else
+            {
+                <div class="card clan-create-card">
+                    <div class="card-header">
+                        <h2>Create a Clan</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>You do not have a clan. You may create one if you like.</p>
+                        <EditForm Model="@createClan" OnValidSubmit="@HandleCreateClan">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary />
+                            <div class="form-group">
+                                <InputText id="name" class="form-control" placeholder="Clan Name" @bind-Value="createClan.Name" />
+                            </div>
+                            <button type="submit" class="btn btn-primary mt-2">Submit</button>
+                        </EditForm>
+                        @if (!string.IsNullOrEmpty(clanError))
+                        {
+                            <div class="text-danger mt-2">@clanError</div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="card clan-card">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        @if (!string.IsNullOrEmpty(clan.Logo))
+                        {
+                            <img src="@clan.Logo" class="clan-logo rounded" alt="Clan Logo" />
+                        }
+                        else
+                        {
+                            <img src="/api/twitch/logo/@session.TwitchUserId" class="clan-logo rounded" alt="Default Clan Logo" />
+                        }
+                        <div class="clan-info ms-3">
+                            @if (!editingClanName)
+                            {
+                                <h2 class="mb-0 d-flex align-items-center">
+                                    @clan.Name
+                                    <a class="change-identifier ms-2" title="Edit Clan Name" @onclick="EditClanName">
+                                        <i class="fas fa-pen"></i>
+                                    </a>
+                                </h2>
+                                @if (!string.IsNullOrEmpty(changeNameSuccess))
+                                {
+                                    <small class="text-success d-block">@changeNameSuccess</small>
+                                }
+                            }
+                            else
+                            {
+                                <div class="input-group">
+                                    <input type="text" placeholder="Enter a new clan name" class="form-control" @bind-value="clan.Name" />
+                                    <button class="btn btn-success" @onclick="UpdateAlias" title="Confirm">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button class="btn btn-danger" @onclick="CancelEditAlias" title="Cancel">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                @if (nameChangeCount < 2)
+                                {
+                                    <small class="change-left d-block mt-1">You have <b>@(2 - nameChangeCount)</b> free name changes left.</small>
+                                }
+                                @if (!string.IsNullOrEmpty(clanError))
+                                {
+                                    <small class="text-danger d-block">@clanError</small>
+                                }
+                            }
+                            <p class="clan-level mb-0">Level <span>@clan.Level</span></p>
+                        </div>
+                    </div>
+                    @if (!reloadingClanLogo)
+                    {
+                        <a class="refresh-logo btn btn-light" title="Refresh Logo" @onclick="ReloadClanLogo">
+                            <i class="fas fa-sync"></i>
+                        </a>
+                    }
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs">
+                        <li class="nav-item">
+                            <a class="nav-link tab-link @( !showRanks ? "active" : "")" @onclick="ShowMembers">Members</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link tab-link @( showRanks ? "active" : "")" @onclick="ShowRanks">Ranks</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content mt-3">
+                        @if (showRanks)
+                        {
+                            <div class="tab-pane active">
+                                <ClanRoleList ClanId="@clan.Id" CanManage="@canManageMembers"></ClanRoleList>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="tab-pane active">
+                                <ClanMemberList ClanId="@clan.Id" CanManage="@canManageMembers"></ClanMemberList>
+                            </div>
+                        }
+                    </div>
+                </div>
             </div>
+
+            @if (showGetMoreNameChanges)
+            {
+                <!-- Modal for name change limit info -->
+                <div class="modal-backdrop fade show"></div>
+                <div class="modal d-block" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Name Change Unavailable</h5>
+                                <button type="button" class="btn-close" aria-label="Close" @onclick="CloseNameChangeInfo"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>You have reached your clan name change limit. Please contact a Ravenfall Staff on Discord for further assistance.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <RavenButton OnClick="CloseNameChangeInfo">Close</RavenButton>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
         }
     }
-}
+</div>
 
 @code {
     private const string ClanAlreadyExists = "A clan with the same name already exists.";
@@ -168,7 +211,6 @@ else
         if (this.clan != null)
         {
             await LogoService.UpdateClanLogoAsync(this.clan.OwnerUserId);
-
             reloadingClanLogo = false;
             await InvokeAsync(StateHasChanged);
         }
@@ -197,7 +239,7 @@ else
         if (ClanService.UpdateClanName(clan.Id, clan.Name))
         {
             editingClanName = false;
-            changeNameSuccess = "Name updated. you may need to !leave !join ingame for it to take effect.";
+            changeNameSuccess = "Name updated. You may need to !leave !join ingame for it to take effect.";
             canChangeClanName = ClanService.CanChangeClanName(clan.Id);
             nameChangeCount = ClanService.GetNameChangeCount(clan.Id);
         }

@@ -4,15 +4,10 @@
     background-color: black;
     color: white !important;
     padding: 0 5px 0 5px;
-    margin-left: 50px;
+    margin-left: -10px;
     cursor: pointer;
 }
 
-button.tab-link {
-    border: 0;
-    padding: 10px;
-    outline: 0;
-}
 .change-identifier {
     font-size: 15pt;
     margin-left: 10px;
@@ -61,7 +56,15 @@ button.tab-link {
 }
 
 
-button.tab-link.active {
+a.tab-link {
+    border: 0;
+    padding: 10px;
+    outline: 0;
+    color: white;
+    background-color: #777;
+}
+
+a.tab-link.active {
     color: white;
     background-color: black;
 }
