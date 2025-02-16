@@ -111,7 +111,7 @@ namespace Shinobytes.OpenAI
 
         private void LogErrorResponse(string responseString)
         {
-            var folder = Path.Combine(FolderPaths.GeneratedData, FolderPaths.OpenAILogs);
+            var folder = Path.Combine(FolderPaths.GeneratedDataPath, FolderPaths.OpenAILogs);
             if (!Directory.Exists(folder))
             {
                 Directory.CreateDirectory(folder);

@@ -2,8 +2,6 @@
 using RavenNest.BusinessLogic.Data;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -11,12 +9,6 @@ namespace RavenNest.BusinessLogic
 {
     public class RavenBotApiClient : IRavenBotApiClient
     {
-#if DEBUG
-        const string SettingsDirectory = @"G:\Ravenfall\Data\user-settings";
-#else
-        const string SettingsDirectory = "../user-settings/";
-#endif
-
         //#if DEBUG
         //        private const string host = "127.0.0.1";
         //#else
@@ -49,7 +41,7 @@ namespace RavenNest.BusinessLogic
             // the bot will realize it has changed and will reload the file.
             try
             {
-                var targetFile = System.IO.Path.Combine(SettingsDirectory, userId + ".json");
+                var targetFile = System.IO.Path.Combine(FolderPaths.UserSettingsPath, userId + ".json");
                 var dir = System.IO.Path.GetDirectoryName(targetFile);
 
                 var settings = gameData.GetUserSettings(userId);
@@ -91,7 +83,7 @@ namespace RavenNest.BusinessLogic
             // the bot will realize it has changed and will reload the file.
             try
             {
-                var targetFile = System.IO.Path.Combine(SettingsDirectory, userId + ".json");
+                var targetFile = System.IO.Path.Combine(FolderPaths.UserSettingsPath, userId + ".json");
                 var dir = System.IO.Path.GetDirectoryName(targetFile);
 
                 var settings = gameData.GetUserSettings(userId);

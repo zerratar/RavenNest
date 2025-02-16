@@ -17,9 +17,9 @@ namespace RavenNest.BusinessLogic.Data
         const int backupsToKeep = 10;
         //#if RELEASE || Linux
         private const string FileTypeExt = ".json";
-        private readonly string FullBackupsPath = Path.Combine(FolderPaths.GeneratedData, FolderPaths.Backups);
-        private readonly string FullRestorePointPath = Path.Combine(FolderPaths.GeneratedData, FolderPaths.Restorepoints);
-        private readonly string FullMergePath = Path.Combine(FolderPaths.GeneratedData, FolderPaths.Merge);
+        private readonly string FullBackupsPath = Path.Combine(FolderPaths.GeneratedDataPath, FolderPaths.Backups);
+        private readonly string FullRestorePointPath = Path.Combine(FolderPaths.GeneratedDataPath, FolderPaths.Restorepoints);
+        private readonly string FullMergePath = Path.Combine(FolderPaths.GeneratedDataPath, FolderPaths.Merge);
         //#else
         //        private const string fullRestorePointPath = @"C:\git\RavenNest\src\RavenNest.Blazor\restorepoints";
         //#endif
@@ -330,7 +330,7 @@ namespace RavenNest.BusinessLogic.Data
                     }
                 }
 
-                logger?.LogError("Restore point found, data will be restored to the files found: " + string.Join(", ", entitiesToRestore));
+                logger?.LogWarning("Restore point found, data will be restored to the files found: " + string.Join(", ", entitiesToRestore));
                 return restorePoint;
             }
             finally

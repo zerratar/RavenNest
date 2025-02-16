@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
@@ -25,7 +26,7 @@ namespace RavenNest.BusinessLogic
 #pragma warning restore 4014
         }
 
-        public async Task WriteAsync(string msg, ServerLogSeverity severity, string categoryName)
+        public async Task WriteAsync(string msg, ServerLogSeverity severity, string categoryName, Exception exception = null)
         {
             try
             {
@@ -40,6 +41,23 @@ namespace RavenNest.BusinessLogic
                 {
                     await Console.Error.WriteLineAsync(msg + " [" + categoryName + "]");
                     return;
+                }
+
+                // log to file
+                var logsDir = FolderPaths.LogsPath;//@"G:\Ravenfall\Data\generated-data\logs";
+                if (!Directory.Exists(logsDir))
+                {
+                    Directory.CreateDirectory(logsDir);
+                }
+
+                try
+                {
+                    var logFile = Path.Combine(logsDir, categoryName + ".log");
+                    System.IO.File.AppendAllText(logFile, "[" + DateTime.UtcNow.ToString("u") + "] <" + severity + "> " + msg.Trim() + $". {exception}\n");
+                }
+                catch
+                {
+                    // ignored
                 }
 
                 if (severity > ServerLogSeverity.Debug)
@@ -91,7 +109,7 @@ namespace RavenNest.BusinessLogic
 
 #pragma warning disable 4014
             // used explicitly to not block a synchronous call 
-            dbLogWriter.WriteAsync(message, logLevelSeverityMapping[logLevel], categoryName);
+            dbLogWriter.WriteAsync(message, logLevelSeverityMapping[logLevel], categoryName, exception);
 #pragma warning restore 4014
         }
 

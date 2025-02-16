@@ -1,8 +1,15 @@
-﻿namespace RavenNest.BusinessLogic.Data
+﻿using System.IO;
+
+namespace RavenNest.BusinessLogic.Data
 {
     public static class FolderPaths
     {
-        public const string GeneratedData = "../generated-data";
+        public const string DataFolder = "G:\\Ravenfall\\Data";
+
+        public readonly static string PublishPath = "G:\\Ravenfall\\Projects\\RavenNest\\Publish";
+        public readonly static string GeneratedDataPath = Path.Combine(DataFolder, "generated-data");
+        public readonly static string UserSettingsPath = Path.Combine(DataFolder, "user-settings");
+        public readonly static string LogsPath = Path.Combine(DataFolder, "logs");
 
         // all paths below are acombined with GeneratedDataFolder
         // so the real paths are "GeneratedData/..."
@@ -18,5 +25,6 @@
         public const string SessionPlayers = "session-players";
 
         public const string BadInventory = "bad-inventory";
+
     }
 }

@@ -253,7 +253,7 @@ namespace RavenNest.BusinessLogic.OpenAI.Conversations
 
         private static string GetRepositoryFolder()
         {
-            var folder = System.IO.Path.Combine(FolderPaths.GeneratedData, "ai-conversations");
+            var folder = System.IO.Path.Combine(FolderPaths.GeneratedDataPath, "ai-conversations");
             if (!System.IO.Directory.Exists(folder))
             {
                 System.IO.Directory.CreateDirectory(folder);

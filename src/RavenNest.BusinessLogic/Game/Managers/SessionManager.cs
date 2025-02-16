@@ -540,7 +540,7 @@ namespace RavenNest.BusinessLogic.Game
             try
             {
                 var sessionCharacterIds = sessionCharacters.Select(x => x.Id).ToList();
-                var folder = System.IO.Path.Combine(FolderPaths.GeneratedData, FolderPaths.SessionPlayers);
+                var folder = System.IO.Path.Combine(FolderPaths.GeneratedDataPath, FolderPaths.SessionPlayers);
                 if (!System.IO.Directory.Exists(folder))
                 {
                     System.IO.Directory.CreateDirectory(folder);

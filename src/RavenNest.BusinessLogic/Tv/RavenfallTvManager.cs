@@ -44,6 +44,8 @@ namespace RavenNest.BusinessLogic.Tv
         private readonly TimeSpan throttlePeriod;
         private readonly TransformBlock<GenerateUserEpisodeRequest, Episode> throttler;
 
+        private const bool ENABLED = false;
+
         public RavenfallTvManager(
             ILogger<RavenfallTvManager> logger,
             IOpenAIClient openAI,
@@ -56,8 +58,8 @@ namespace RavenNest.BusinessLogic.Tv
             this.gameData = gameData;
 
             promptGenerator = new RavenfallTvEpisodePromptGenerator(gameData);
-            episodes = new JsonRepository<Episode>("../ravenfall-tv/episodes/");
-            episodeRequests = new JsonRepository<GenerateUserEpisodeRequest>("../ravenfall-tv/episode-requests/");
+            episodes = new JsonRepository<Episode>(System.IO.Path.Combine(FolderPaths.GeneratedDataPath, @"ravenfall-tv\episodes\"));
+            episodeRequests = new JsonRepository<GenerateUserEpisodeRequest>(System.IO.Path.Combine(FolderPaths.GeneratedDataPath, @"ravenfall-tv\episode-requests\"));
 
             requestQueue = new ConcurrentQueue<GenerateUserEpisodeRequest>(episodeRequests.OrderedBy(x => x.Created));
 
@@ -73,11 +75,20 @@ namespace RavenNest.BusinessLogic.Tv
                 });
 
             requestProcessThread = new Thread(ProcessRequests);
-            requestProcessThread.Start();
+            if (ENABLED)
+            {
+                requestProcessThread.Start();
+            }
         }
 
         private async void ProcessRequests()
         {
+            if (!ENABLED)
+            {
+                return;
+            }
+
+
             try
             {
                 while (!disposed)
@@ -118,6 +129,12 @@ namespace RavenNest.BusinessLogic.Tv
         private async Task<Episode> ProcessRequestAsync(GenerateUserEpisodeRequest request, CancellationToken cancellationToken)
         {
             // give me the implementation
+
+            if (!ENABLED)
+            {
+                return null;
+            }
+
 
             int retryCount = 0;
             Episode episode = null;
@@ -232,6 +249,8 @@ namespace RavenNest.BusinessLogic.Tv
             while (content[0] == '\n') content = content.Substring(1);
 
             content = content
+                .Replace("```json\n", "")
+                .Replace("```", "")
                 .Replace("’", "'")
                 .Replace("”", "\"")
                 .Replace(" ( ", " ) ")

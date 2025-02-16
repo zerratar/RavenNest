@@ -458,7 +458,7 @@ namespace RavenNest.BusinessLogic.Game
                     using var streamReader = new StreamReader(r.GetResponseStream());
                     var responseString = await streamReader.ReadToEndAsync();
                     var now = DateTime.UtcNow;
-                    File.WriteAllText(Path.Combine(FolderPaths.GeneratedData, "patreon-identity-request-error_" + now.ToString("yyyy-MM-dd_HHmmss") + ".log"),
+                    File.WriteAllText(Path.Combine(FolderPaths.GeneratedDataPath, "patreon-identity-request-error_" + now.ToString("yyyy-MM-dd_HHmmss") + ".log"),
                         "Exception: " + exc.ToString() + "\r\n\r\n" + responseString);
 
                 }

@@ -228,8 +228,8 @@ namespace RavenNest.Controllers
 
             var ticks = DateTime.UtcNow.Ticks;
 
-            System.IO.File.WriteAllText(Path.Combine(FolderPaths.GeneratedData, "patreon-data", ticks + ".json"), Newtonsoft.Json.JsonConvert.SerializeObject(info));
-            System.IO.File.WriteAllText(Path.Combine(FolderPaths.GeneratedData, "patreon-data", ticks + "-request.txt"), content);
+            System.IO.File.WriteAllText(Path.Combine(FolderPaths.GeneratedDataPath, "patreon-data", ticks + ".json"), Newtonsoft.Json.JsonConvert.SerializeObject(info));
+            System.IO.File.WriteAllText(Path.Combine(FolderPaths.GeneratedDataPath, "patreon-data", ticks + "-request.txt"), content);
 
             return info;
         }

@@ -152,7 +152,7 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     var error = errorMessage.ToString();
 
-                    var folder = System.IO.Path.Combine(FolderPaths.GeneratedData, FolderPaths.BadInventory);
+                    var folder = System.IO.Path.Combine(FolderPaths.GeneratedDataPath, FolderPaths.BadInventory);
                     var dataFolder = new DirectoryInfo(folder);
                     if (!System.IO.Directory.Exists(folder))
                     {
@@ -1131,24 +1131,33 @@ namespace RavenNest.BusinessLogic.Game
             lock (mutex)
             {
                 remainder = 0;
-                if (stack == null || stack.Amount < amount)
+                try
                 {
+                    if (stack == null || stack.Amount < amount)
+                    {
+                        if (stack.Amount <= 0)
+                        {
+                            RemoveStack(stack);
+                        }
+
+                        return false;
+                    }
+
+                    stack.Amount -= amount;
                     if (stack.Amount <= 0)
                     {
+                        remainder = Math.Abs(stack.Amount.Value);
                         RemoveStack(stack);
                     }
 
+                    return true;
+
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError($"Error removing item, stack may have been null. {ex}");
                     return false;
                 }
-
-                stack.Amount -= amount;
-                if (stack.Amount <= 0)
-                {
-                    remainder = Math.Abs(stack.Amount.Value);
-                    RemoveStack(stack);
-                }
-
-                return true;
             }
         }
 

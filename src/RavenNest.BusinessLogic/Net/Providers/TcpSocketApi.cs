@@ -95,7 +95,7 @@ namespace RavenNest.BusinessLogic.Net
                 server.Start(serverPort);
                 running = true;
                 started = true;
-                logger.LogDebug("TCP API Server started on port " + serverPort);
+                logger.LogInformation("TCP API Server started on port " + serverPort);
 
             }
             catch (Exception exc)
@@ -149,7 +149,7 @@ namespace RavenNest.BusinessLogic.Net
             // then we want to say that the server stopped.
             if (started)
             {
-                logger.LogDebug("TCP API Server stopped.");
+                logger.LogInformation("TCP API Server stopped.");
             }
         }
 
@@ -375,7 +375,7 @@ namespace RavenNest.BusinessLogic.Net
         private void OnClientConnected(int connectionId)
         {
             connectionProvider.Add(connectionId, this);
-            logger.LogDebug(connectionId + " Connected");
+            //logger.LogInformation(connectionId + " Connected");
         }
 
         // TODO: make packetManager handle batch of packets

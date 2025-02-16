@@ -15,7 +15,7 @@ namespace RavenNest.BusinessLogic.Providers
             this.extension = extension;
             this.memoryCache = memoryCache;
 
-            var cacheFolder = System.IO.Path.Combine(FolderPaths.GeneratedData, FolderPaths.BinaryCache);
+            var cacheFolder = System.IO.Path.Combine(FolderPaths.GeneratedDataPath, FolderPaths.BinaryCache);
             this.relativePath = System.IO.Path.Combine(cacheFolder, relativePath);
 
             EnsureCacheFolder();

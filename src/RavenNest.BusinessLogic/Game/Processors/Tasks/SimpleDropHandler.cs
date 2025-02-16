@@ -2,9 +2,11 @@
 using RavenNest.BusinessLogic.Data;
 using RavenNest.DataModels;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using TwitchLib.Api.Auth;
 using static RavenNest.BusinessLogic.GameMath;
 
 namespace RavenNest.BusinessLogic.Game.Processors.Tasks
@@ -12,29 +14,29 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     public class SimpleDropHandler
     {
         private static readonly Random dropRandom;
-        private static Dictionary<string, DateTime> dropTimes;
+        private static ConcurrentDictionary<string, DateTime> dropTimes;
 
         private static readonly object mutex = new object();
 
         static SimpleDropHandler()
         {
             dropRandom = new Random();
-            dropTimes = new Dictionary<string, DateTime>();
+            dropTimes = new ConcurrentDictionary<string, DateTime>();
             try
             {
                 lock (mutex)
                 {
-                    var droptimesJson = System.IO.Path.Combine(FolderPaths.GeneratedData, "resource-droptimes.json");
+                    var droptimesJson = System.IO.Path.Combine(FolderPaths.GeneratedDataPath, "resource-droptimes.json");
                     if (System.IO.File.Exists(droptimesJson))
                     {
-                        dropTimes = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, DateTime>>(System.IO.File.ReadAllText(droptimesJson));
+                        dropTimes = Newtonsoft.Json.JsonConvert.DeserializeObject<ConcurrentDictionary<string, DateTime>>(System.IO.File.ReadAllText(droptimesJson));
                     }
                 }
             }
             catch { }
 
             if (dropTimes == null)
-                dropTimes = new Dictionary<string, DateTime>();
+                dropTimes = new ConcurrentDictionary<string, DateTime>();
         }
 
         public static void SaveDropTimes()
@@ -43,7 +45,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             {
                 lock (mutex)
                 {
-                    var droptimesJson = System.IO.Path.Combine(FolderPaths.GeneratedData, "resource-droptimes.json");
+                    var droptimesJson = System.IO.Path.Combine(FolderPaths.GeneratedDataPath, "resource-droptimes.json");
                     System.IO.File.WriteAllText(droptimesJson, Newtonsoft.Json.JsonConvert.SerializeObject(dropTimes));
                 }
             }
@@ -63,18 +65,24 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
         public void ForceReloadDrops(GameData gameData)
         {
-            this.drops.Clear();
-            LoadDrops(gameData);
+            lock (mutex)
+            {
+                this.drops.Clear();
+                LoadDrops(gameData);
+            }
         }
 
         public void LoadDrops(GameData gameData)
         {
-            var skillIndex = Skills.SkillNames.IndexOf(skill);
-            foreach (var drop in gameData.GetResourceItemDrops().Where(x => x != null && (x.Skill == null || x.Skill == skillIndex)))
+            lock (mutex)
             {
-                if (drop != null)
+                var skillIndex = Skills.SkillNames.IndexOf(skill);
+                foreach (var drop in gameData.GetResourceItemDrops().Where(x => x != null && (x.Skill == null || x.Skill == skillIndex)))
                 {
-                    drops.Add(drop);
+                    if (drop != null)
+                    {
+                        drops.Add(drop);
+                    }
                 }
             }
         }
@@ -100,64 +108,66 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 }
 
                 LoadDropsIfRequired(gameData);
-
-                if (drops.Count == 0)
+                lock (mutex)
                 {
-                    return false;
-                }
-
-                var now = DateTime.UtcNow;
-
-                // filter out bad drops
-                var droppable = new List<ResourceDrop>();
-                foreach (var d in drops)
-                {
-                    if (d == null || d.ItemId == Guid.Empty)
+                    var dr = drops.ToList();
+                    if (dr.Count == 0)
                     {
-                        continue;
+                        return false;
                     }
 
-                    if (string.IsNullOrEmpty(d.Name))
+                    var now = DateTime.UtcNow;
+
+                    // filter out bad drops
+                    var droppable = new List<ResourceDrop>();
+                    foreach (var d in dr)
                     {
-                        var item = gameData.GetItem(d.ItemId);
-                        if (item == null)
+                        if (d == null || d.ItemId == Guid.Empty)
                         {
                             continue;
                         }
 
-                        d.Name = item.Name;
+                        if (string.IsNullOrEmpty(d.Name))
+                        {
+                            var item = gameData.GetItem(d.ItemId);
+                            if (item == null)
+                            {
+                                continue;
+                            }
+
+                            d.Name = item.Name;
+                        }
+
+                        droppable.Add(d);
                     }
 
-                    droppable.Add(d);
-                }
-
-                var target = droppable.FirstOrDefault(x => x != null && x?.Name?.ToLower().Trim() == taskArgument?.ToLower().Trim());
-                if (target != null)
-                {
-                    drop = target;
-                    if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, target, canDrop))
+                    var target = droppable.FirstOrDefault(x => x != null && x?.Name?.ToLower().Trim() == taskArgument?.ToLower().Trim());
+                    if (target != null)
                     {
-                        return true;
+                        drop = target;
+                        if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, target, canDrop))
+                        {
+                            return true;
+                        }
+                    }
+
+
+                    foreach (var res in droppable.OrderByRandomWeighted(x => x.SkillLevel, dropRandom))//drops.OrderByDescending(x => x.SkillLevel))
+                    {
+                        // we have already tested this one? if so skip it.
+                        if (target != null && res.ItemId == target.ItemId)
+                        {
+                            continue;
+                        }
+
+
+                        drop = res;
+                        if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, res, canDrop))
+                        {
+                            return true;
+                        }
                     }
                 }
-
-
-                foreach (var res in droppable.OrderByRandomWeighted(x => x.SkillLevel, dropRandom))//drops.OrderByDescending(x => x.SkillLevel))
-                {
-                    // we have already tested this one? if so skip it.
-                    if (target != null && res.ItemId == target.ItemId)
-                    {
-                        continue;
-                    }
-
-
-                    drop = res;
-                    if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, res, canDrop))
-                    {
-                        return true;
-                    }
-                }
-
                 return false;
             }
             catch (Exception exc)
@@ -190,7 +200,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             if (dropTimes == null)
             {
-                dropTimes = new Dictionary<string, DateTime>();
+                dropTimes = new ConcurrentDictionary<string, DateTime>();
             }
 
             if (targetDrop == null)

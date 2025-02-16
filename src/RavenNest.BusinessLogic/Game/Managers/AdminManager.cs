@@ -150,7 +150,7 @@ namespace RavenNest.BusinessLogic.Game
 
             try
             {
-                var folder = System.IO.Path.Combine(FolderPaths.GeneratedData, FolderPaths.SessionPlayers);
+                var folder = System.IO.Path.Combine(FolderPaths.GeneratedDataPath, FolderPaths.SessionPlayers);
                 var playerlistFile = System.IO.Path.Combine(folder, streamerUser.Id.ToString() + ".json");
                 if (System.IO.File.Exists(playerlistFile))
                 {

@@ -4297,7 +4297,7 @@ namespace RavenNest.BusinessLogic.Data
                             errorSaving = true;
                             backupProvider.CreateRestorePoint(new[] { entitySet });
                             logger.LogError("Failed to save " + entityType + " to DB! Restorepoint Created and query saved. Exception: " + exc);
-                            File.WriteAllText(Path.Combine(FolderPaths.GeneratedData, entityType + "_error_query.sql"), lastQuery);
+                            File.WriteAllText(Path.Combine(FolderPaths.GeneratedDataPath, entityType + "_error_query.sql"), lastQuery);
                         }
                     }
 

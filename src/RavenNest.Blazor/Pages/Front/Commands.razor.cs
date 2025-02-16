@@ -12,7 +12,7 @@ namespace RavenNest.Blazor.Pages.Front
         {
             try
             {
-                var commandsPath = System.IO.Path.Combine(FolderPaths.GeneratedData, "commands.json");
+                var commandsPath = System.IO.Path.Combine(FolderPaths.GeneratedDataPath, "commands.json");
                 if (System.IO.File.Exists(commandsPath))
                 {
                     this.commands = Newtonsoft.Json.JsonConvert.DeserializeObject<List<CommandDescriptor>>(System.IO.File.ReadAllText(commandsPath));

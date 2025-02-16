@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <UserSecretsId>6cb7cef3-a971-415f-9577-97280f9779c2</UserSecretsId>
     <Nullable>disable</Nullable>
     <AssemblyName>RavenNest</AssemblyName>
@@ -22,23 +22,23 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="8.0.0" />
+    <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="9.0.0" />
     <PackageReference Include="Blazored.Typeahead" Version="4.7.0" />
-    <PackageReference Include="Blazorise" Version="1.7.2" />
-    <PackageReference Include="Blazorise.Bootstrap" Version="1.7.2" />
-    <PackageReference Include="Blazorise.Charts" Version="1.7.2" />
-    <PackageReference Include="Blazorise.Components" Version="1.7.2" />
-    <PackageReference Include="Blazorise.DataGrid" Version="1.7.2" />
-    <PackageReference Include="Blazorise.Icons.FontAwesome" Version="1.7.2" />
-    <PackageReference Include="Blazorise.TreeView" Version="1.7.2" />
+    <PackageReference Include="Blazorise" Version="1.7.4" />
+    <PackageReference Include="Blazorise.Bootstrap" Version="1.7.4" />
+    <PackageReference Include="Blazorise.Charts" Version="1.7.4" />
+    <PackageReference Include="Blazorise.Components" Version="1.7.4" />
+    <PackageReference Include="Blazorise.DataGrid" Version="1.7.4" />
+    <PackageReference Include="Blazorise.Icons.FontAwesome" Version="1.7.4" />
+    <PackageReference Include="Blazorise.TreeView" Version="1.7.4" />
     <PackageReference Include="BytexDigital.Blazor.Components.CookieConsent" Version="1.2.1" />
     <PackageReference Include="Markdig" Version="0.40.0" />
-    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.1" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.2" />
     <PackageReference Include="PSC.Blazor.Components.AutoComplete" Version="8.0.1" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
     <PackageReference Include="TwitchLib.Api" Version="3.10.0-preview-e47ba7f" />
   </ItemGroup>
 
@@ -59,6 +59,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="cert.pfx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Components\ClanMemberList - Copy.razor.css">
       <DependentUpon>ClanMemberList.razor.css</DependentUpon>
     </None>
@@ -67,12 +70,6 @@
     </None>
     <None Update="Components\RavenButton - Copy.razor.css">
       <DependentUpon>RavenButton.razor.css</DependentUpon>
-    </None>
-    <None Update="Pages\Admin\PlayerManagement - Copy.razor.css">
-      <DependentUpon>PlayerManagement.razor.css</DependentUpon>
-    </None>
-    <None Update="Pages\Login - Copy.razor.css">
-      <DependentUpon>Login.razor.css</DependentUpon>
     </None>
   </ItemGroup>
 
