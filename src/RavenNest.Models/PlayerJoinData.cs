@@ -7,7 +7,6 @@ namespace RavenNest.Models
         public Guid UserId { get; set; }
         public string UserName { get; set; }
 
-        [Obsolete("Please use UserId instead.")]
         public string PlatformId { get; set; }
         public string Platform { get; set; }
         public string Identifier { get; set; }

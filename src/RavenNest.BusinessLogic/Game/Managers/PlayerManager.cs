@@ -1833,7 +1833,10 @@ namespace RavenNest.BusinessLogic.Game
             //var enchantment = item.Enchantment;
             var characterId = character.Id;
             var inventory = inventoryProvider.Get(characterId);
-            var inventoryItems = inventory.AddItem(itemId, amount);
+
+            var inventoryItems = inventory.AddItem(itemId, amount, tag: item.Tag,
+                enchantment: item.Enchantment, name: item.Name,
+                transmogrificationId: item.TransmogrificationId, flags: item.Flags);
 
             // Remove the item from the marketplace
             gameData.Remove(item);
@@ -3748,7 +3751,7 @@ namespace RavenNest.BusinessLogic.Game
                     CharacterId = character.Id
                 });
 
-            gameData.EnqueueGameEvent(gameEvent);
+            gameData.SendGameEventImmediately(gameEvent);
         }
 
         public void SendPlayerAddToSession(Character character, DataModels.GameSession gameSession)
@@ -3813,6 +3816,7 @@ namespace RavenNest.BusinessLogic.Game
                 ? gameData.GetUser(playerData.UserId)
                 : gameData.GetUser(playerData.PlatformId, playerData.Platform);
 
+            string usernamePostfix = null;
             if (user == null)
             {
                 if (Guid.TryParse(playerData.PlatformId, out var characterId) && gameData.GetCharacter(characterId) != null)
@@ -3832,6 +3836,15 @@ namespace RavenNest.BusinessLogic.Game
                     return null;
                 }
 
+                // lets check if there is an existing user with the same username.
+                // if so, we want to set the current username to @<platform>
+
+                var collidingUser = gameData.GetUserByUsername(playerData.UserName);
+                if (collidingUser != null)
+                {
+                    usernamePostfix = "@" + playerData.Platform.ToLower();
+                }
+
                 var resources = new Resources
                 {
                     Id = Guid.NewGuid()
@@ -3843,7 +3856,8 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     Id = Guid.NewGuid(),
                     UserId = playerData.PlatformId,
-                    UserName = playerData.UserName,
+                    UserName = playerData.UserName + usernamePostfix,
+                    DisplayName = playerData.UserName,
                     Resources = resources.Id,
                     Created = DateTime.UtcNow
                 };
@@ -3861,10 +3875,10 @@ namespace RavenNest.BusinessLogic.Game
                 });
             }
 
-            return CreatePlayer(session, user, playerData);
+            return CreatePlayer(session, user, playerData, usernamePostfix);
         }
 
-        private Task<Player> CreatePlayer(DataModels.GameSession session, User user, PlayerJoinData playerData)
+        private Task<Player> CreatePlayer(DataModels.GameSession session, User user, PlayerJoinData playerData, string usernamePostfix = null)
         {
             var userCharacters = gameData.GetCharacters(x => x.UserId == user.Id);
             var index = 0;
@@ -3878,12 +3892,18 @@ namespace RavenNest.BusinessLogic.Game
                 return null;
             }
 
-            logger.LogError("Creating new character for '" + user.UserName + "' Data: " + Newtonsoft.Json.JsonConvert.SerializeObject(playerData));
+            logger.LogInformation("Creating new character for '" + user.UserName + "' Data: " + Newtonsoft.Json.JsonConvert.SerializeObject(playerData));
+
+            var username = user.UserName;
+            if (!string.IsNullOrEmpty(usernamePostfix))
+            {
+                username = username.Replace(usernamePostfix, "");
+            }
 
             var character = new Character
             {
                 Id = Guid.NewGuid(),
-                Name = user.UserName,
+                Name = username,
                 UserId = user.Id,
                 OriginUserId = session?.UserId ?? Guid.Empty,
                 Created = DateTime.UtcNow,

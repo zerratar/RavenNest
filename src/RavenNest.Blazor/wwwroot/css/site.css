@@ -672,6 +672,7 @@ a.nav-link.dd-item {
 }
 
 button.raven-btn.blue.login-btn,
+button.raven-btn.kick.kick-login-btn,
 button.raven-btn.twitch.twitch-login-btn {
     width: 325px;
     max-width: 100%;
@@ -1250,6 +1251,15 @@ td span.item-stat i {
     background: linear-gradient(90deg, rgba(0,60,130,1) 0%, rgba(0,41,94,1) 100%);
 }
 
+
+.raven-btn.kick,
+.raven-btn.kick .inner {
+    background: none;
+    background-color: rgb(83,252,24);    
+    color: black;
+}
+
+
 pre {
     background-color: #2f2f2f;
     color: white;
@@ -1407,7 +1417,9 @@ pre {
     button.raven-btn.twitch.twitch-login-btn{
         margin-top: 10px;
     }
-    button.raven-btn.blue.login-btn, button.raven-btn.twitch.twitch-login-btn {
+    button.raven-btn.blue.login-btn,
+    button.raven-btn.twitch.twitch-login-btn,
+    button.raven-btn.kick.kick-login-btn {
         width: 90vw;
         max-width: 100vw;
     }

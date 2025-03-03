@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
+using System;
 using System.Data.SqlClient;
 
 namespace RavenNest.BusinessLogic.Data
@@ -22,6 +23,11 @@ namespace RavenNest.BusinessLogic.Data
         public SqlConnection GetConnection()
         {
             return new SqlConnection(settings.DbConnectionString);
+        }
+
+        public string GetDbName()
+        {
+            return settings.DbConnectionString.Split("Catalog=", System.StringSplitOptions.RemoveEmptyEntries)[1].Split(';')[0];
         }
     }
 }

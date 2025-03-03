@@ -6,5 +6,6 @@ namespace RavenNest.BusinessLogic.Data
     {
         SqlConnection GetConnection();
         RavenfallDbContext Get();
+        string GetDbName();
     }
 }

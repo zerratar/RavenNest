@@ -44,7 +44,7 @@ namespace RavenNest.BusinessLogic
                 }
 
                 // log to file
-                var logsDir = FolderPaths.LogsPath;//@"G:\Ravenfall\Data\generated-data\logs";
+                var logsDir = FolderPaths.LogsPath;
                 if (!Directory.Exists(logsDir))
                 {
                     Directory.CreateDirectory(logsDir);

@@ -3694,6 +3694,12 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public User GetUserByKickId(string userId)
+        {
+            return GetUser(userId, "kick");
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public User GetUserByDiscordId(long discordUserId)
         {
             return GetUser(discordUserId.ToString(), "discord");
@@ -3722,6 +3728,7 @@ namespace RavenNest.BusinessLogic.Data
         {
             username = username?.ToLower()?.Trim();
             if (string.IsNullOrEmpty(username)) return null;
+
             return users.Entities.FirstOrDefault(x =>
                 x != null && x.UserName != null && x.UserName.Equals(username, StringComparison.OrdinalIgnoreCase));
         }
@@ -4505,6 +4512,25 @@ namespace RavenNest.BusinessLogic.Data
             };
         }
 
+
+        public void SendGameEventImmediately(GameEvent entity)
+        {
+            if (entity == null)
+            {
+                return;
+            }
+
+            // is it possible that there are multiple tcp connections from the client or same streamer?
+            // are we using the wrong connection if so? or wrong session?
+            if (tcpConnectionProvider.TryGet(entity.GameSessionId, out var connection) && connection.Connected)
+            {
+                connection.Send(entity);
+                return;
+            }
+
+            EnqueueGameEvent(entity);
+        }
+
         public void EnqueueGameEvent(GameEvent entity)
         {
             if (entity == null)
@@ -4550,7 +4576,7 @@ namespace RavenNest.BusinessLogic.Data
             this.Flush();
         }
 
-        internal void SetNetworkStats(int threadId, long receiveMessageCount, long receiveRateKBps, long outMessageCount, long outRateKBps)
+        internal void SetNetworkStats(int threadId, long receiveMessageCount, double receiveRateKBps, long outMessageCount, double outRateKBps)
         {
             NetworkStats.ThreadId = threadId;
             NetworkStats.InMessageCount = receiveMessageCount;
@@ -4567,9 +4593,9 @@ namespace RavenNest.BusinessLogic.Data
     {
         public int ThreadId { get; internal set; }
         public long InMessageCount { get; internal set; }
-        public long InTrafficKBps { get; internal set; }
+        public double InTrafficKBps { get; internal set; }
         public long OutMessageCount { get; internal set; }
-        public long OutTrafficKBps { get; internal set; }
+        public double OutTrafficKBps { get; internal set; }
         public DateTime InSampleDateTime { get; internal set; }
     }
 

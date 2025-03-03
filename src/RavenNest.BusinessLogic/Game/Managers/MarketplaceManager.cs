@@ -151,6 +151,11 @@ namespace RavenNest.BusinessLogic.Game
                 return new ItemSellResult(ItemTradeState.DoesNotOwn);
             }
 
+            if (!string.IsNullOrEmpty(itemToSell.Enchantment))
+            {
+                return new ItemSellResult(ItemTradeState.Untradable);
+            }
+
             var totalItemCount = itemToSell.Amount;//itemsToSell.Count > 0 ? itemsToSell.Sum(x => x.Amount.GetValueOrDefault()) : 0;
             var newItemAmount = totalItemCount - amount;
 
@@ -399,7 +404,10 @@ namespace RavenNest.BusinessLogic.Game
             buyerResources.Coins -= totalCost;
 
             var inventory = inventoryProvider.Get(character.Id);
-            inventory.AddItem(itemId, buyAmount, tag: marketItem.Tag);
+            inventory.AddItem(itemId, buyAmount, tag: marketItem.Tag, equipped: false,
+                enchantment: marketItem.Enchantment, name: marketItem.Name,
+                transmogrificationId: marketItem.TransmogrificationId,
+                flags: marketItem.Flags);
 
             gameData.Add(
                 new MarketItemTransaction

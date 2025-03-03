@@ -195,6 +195,10 @@ table.items-list tr.isMe {
     background-color: #940fba;
 }
 
+.raven-btn.kick,
+.raven-btn.kick .inner {
+    background-color: rgb(83,252,24);
+}
 
 @media screen and (max-width: 800px) {
     .section {

@@ -3,6 +3,7 @@
     public static class UserProperties
     {
         public const string Twitch_PubSub = "twitch_pubsub";
+        public const string Kick_AccessToken = "kick_accessToken";
         public const string Comment = "comment";
 
         public const string ChatMessageTransformation = "ChatMessageTransformation";

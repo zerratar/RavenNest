@@ -55,9 +55,16 @@ namespace RavenNest.BusinessLogic
 
                 var json = Newtonsoft.Json.JsonConvert.SerializeObject(settings);
 
+                var lockFile = targetFile + ".lock";
+
                 const int maxRetries = 5;
                 for (int i = 0; i < maxRetries; i++)
                 {
+                    if (System.IO.File.Exists(lockFile))
+                    {
+                        await Task.Delay(100);
+                    }
+
                     try
                     {
                         System.IO.File.WriteAllText(targetFile, json);

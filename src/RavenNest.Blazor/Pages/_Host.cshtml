@@ -23,7 +23,7 @@
     <title>Ravenfall.stream</title>
     <base href="~/" />
 
-    <link rel="shortcut icon" href="https://ravennestblobstorage.blob.core.windows.net/cdn/20230710/TemplateData/favicon.ico">
+    @* <link rel="shortcut icon" href="https://ravennestblobstorage.blob.core.windows.net/cdn/20230710/TemplateData/favicon.ico"> *@
     <link rel="stylesheet" href="https://ravennestblobstorage.blob.core.windows.net/cdn/20230710/TemplateData/style.css">
 
     <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
@@ -48,6 +48,10 @@
     <script src="js/draggable.js"></script>
     <script>
 
+        window.navigateTo = (url) => {
+          window.location.assign(url);
+        };
+      
         window.cookies = {
             acceptMessage: function (cookieString) {
                 document.cookie = cookieString;

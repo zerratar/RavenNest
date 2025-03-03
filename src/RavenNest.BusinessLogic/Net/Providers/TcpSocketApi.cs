@@ -1,26 +1,75 @@
-﻿using RavenNest.BusinessLogic.Data;
-using RavenNest.BusinessLogic.Game;
-using RavenNest.Models;
-using System;
-using System.Runtime.CompilerServices;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Threading;
+using MessagePack;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Diagnostics;
+using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Game;
+using RavenNest.Models;
 using RavenNest.Models.TcpApi;
-using MessagePack;
 
 namespace RavenNest.BusinessLogic.Net
 {
-    public class TcpSocketApi : ITcpSocketApi
+    /// <summary>
+    /// A “typed” packet header so we don’t do repeated TryDeserialize for each message type.
+    /// </summary>
+    public enum TcpMessageType : byte
     {
-        public const int MaxMessageSize = 1_048_576 * 2; // 1024 * 1024
+        None = 0,
+        AuthenticationRequest,
+        SaveExperienceRequest,
+        SaveStateRequest,
+        GameStateRequest,
 
-        public const int MaxMessageSize_v0820 = 16 * 1024;
+        // new partial updates.
+        PlayerUpdatesBatch
+    }
 
-        public const int DefaultServerPort = 3920;
-        //public const int ServerRefreshRate = 120;
+    /// <summary>
+    /// Lightweight “envelope” containing the message type, session token, and
+    /// the actual payload in a serialized form. This avoids multiple deserialization attempts.
+    /// </summary>
+    [MessagePackObject]
+    public class TypedPacket
+    {
+        [Key(0)]
+        public TcpMessageType MessageType { get; set; }
 
+        // We store the session token at the “envelope” level, so we can validate
+        // before fully deserializing the payload (if you want).
+        [Key(1)]
+        public string SessionToken { get; set; }
+
+        // The “raw” payload. We’ll decode this into the correct struct/class.
+        [Key(2)]
+        public byte[] Payload { get; set; }
+
+        internal T Deserialize<T>()
+        {
+            try
+            {
+                return MessagePackSerializer.Deserialize<T>(
+                    Payload,
+                    MessagePack.Resolvers.ContractlessStandardResolver.Options
+                );
+            }
+            catch (Exception ex)
+            {
+                // ignored
+            }
+            return default;
+        }
+    }
+
+    public static class TcpSocketApiConstants
+    {
+        public const int MaxMessageSize = 2_097_152 * 10; // 20 MB, for example
+    }
+
+    public class TcpSocketApi : ITcpSocketApi, IDisposable
+    {
         private readonly IOptions<AppSettings> settings;
         private readonly ILogger<TcpSocketApi> logger;
         private readonly ITcpSocketApiConnectionProvider connectionProvider;
@@ -28,20 +77,26 @@ namespace RavenNest.BusinessLogic.Net
         private readonly GameData gameData;
         private readonly IGameProcessorManager gameProcessorManager;
         private readonly SessionManager sessionManager;
-        private Thread serverThread;
 
-        private readonly int serverPort = DefaultServerPort;
+        private readonly int serverPort;
         private Telepathy.Server server;
-        private bool running;
-        private bool disposed;
+        private Thread serverThread;
+        private volatile bool running;
+        private volatile bool disposed;
 
-        static long messagesSent = 0;
-        static long messagesReceived = 0;
-        static long dataReceived = 0;
-        static long dataSent = 0;
+        private Stopwatch netStatStopwatch = Stopwatch.StartNew();
+        private long messagesReceived, dataReceived, messagesSent, dataSent;
 
-        private readonly object clientMutex = new object();
-        public GameData GameData => gameData;
+        private readonly ConcurrentDictionary<int, string> connectionTokens = new ConcurrentDictionary<int, string>();
+
+        // A thread-safe queue for “real” processing, so the Telepathy
+        // loop doesn’t get blocked by heavy logic.
+        private readonly BlockingCollection<(int ConnectionId, TypedPacket Packet)> messageQueue
+            = new BlockingCollection<(int, TypedPacket)>(new ConcurrentQueue<(int, TypedPacket)>());
+
+        // Simple worker threads to process messages in parallel.
+        private Thread[] workerThreads;
+        private int workerCount = 4;
 
         public TcpSocketApi(
             IOptions<AppSettings> settings,
@@ -59,13 +114,292 @@ namespace RavenNest.BusinessLogic.Net
             this.gameData = gameData;
             this.gameProcessorManager = gameProcessorManager;
             this.sessionManager = sessionManager;
+            workerCount = Math.Max(4, Environment.ProcessorCount);
+            serverPort = (settings.Value?.TcpApiPort > 0) ? settings.Value.TcpApiPort : 3920;
+            Start();
+        }
 
-            if (settings.Value.TcpApiPort > 0)
+        public void Start()
+        {
+            // Start the Telepathy server in a dedicated thread.
+            serverThread = new Thread(ServerLoop)
             {
-                serverPort = settings.Value.TcpApiPort;
+                Name = "TcpApiServerMain",
+                IsBackground = true
+            };
+            running = true;
+            serverThread.Start();
+
+            // Start some worker threads to handle the actual messages
+            workerThreads = new Thread[workerCount];
+            for (int i = 0; i < workerCount; i++)
+            {
+                workerThreads[i] = new Thread(WorkerLoop)
+                {
+                    Name = $"TcpApiWorker{i}",
+                    IsBackground = true
+                };
+                workerThreads[i].Start();
+            }
+        }
+
+        private void ServerLoop()
+        {
+            try
+            {
+                server = new Telepathy.Server(RavenNest.BusinessLogic.Net.TcpSocketApiConstants.MaxMessageSize);
+                server.OnConnected = OnClientConnected;
+                server.OnDisconnected = OnClientDisconnected;
+                server.OnData = OnData;
+                server.Start(serverPort);
+
+                logger.LogInformation("TCP API Server started on port " + serverPort);
+
+                while (running)
+                {
+                    server?.Process();
+                    ReportNetworkStats();
+                    Thread.Sleep(1);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError("Failed to start or run TCP server: " + ex);
+            }
+            finally
+            {
+                logger.LogInformation("TCP API Server stopped.");
+            }
+        }
+
+        private void OnClientConnected(int connectionId)
+        {
+            connectionProvider.Add(connectionId, this, gameData);
+            logger.LogDebug($"ConnectionId={connectionId} connected.");
+        }
+
+        private void OnClientDisconnected(int connectionId)
+        {
+            if (connectionProvider.Remove(connectionId, out var connection))
+            {
+                // Stop any game processor sessions if needed
+                gameProcessorManager.Stop(connection.SessionToken);
+            }
+            logger.LogDebug($"ConnectionId={connectionId} disconnected.");
+        }
+
+        private bool TryDeserializePacket<T>(ArraySegment<byte> data, out T packet)
+        {
+            try
+            {
+                packet = MessagePackSerializer.Deserialize<T>(
+                    data,
+                    MessagePack.Resolvers.ContractlessStandardResolver.Options
+                );
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // ignored
+            }
+            packet = default;
+            return false;
+        }
+
+        private bool TryDeserializeTypedPacket(ArraySegment<byte> data, out TypedPacket envelope)
+        {
+            return TryDeserializePacket<TypedPacket>(data, out envelope);
+        }
+        /// <summary>
+        /// Minimal “OnData” that only does lightweight parsing (TypedPacket)
+        /// and queues the real logic on the worker threads.
+        /// </summary>
+        private void OnData(int connectionId, ArraySegment<byte> data)
+        {
+            Interlocked.Increment(ref messagesReceived);
+            Interlocked.Add(ref dataReceived, data.Count);
+
+            // 1) Try to deserialize a “TypedPacket” envelope
+            if (!TryDeserializeTypedPacket(data, out var envelope))
+            {
+                // handle backward compatibility
+                if (TryDeserializePacket<AuthenticationRequest>(data, out var auth))
+                {
+                    connectionTokens[connectionId] = auth.SessionToken;
+                    return;
+                }
+
+                if (TryDeserializePacket<SaveExperienceRequest>(data, out _))
+                {
+                    connectionTokens.TryGetValue(connectionId, out var token);
+                    envelope = new TypedPacket { MessageType = TcpMessageType.SaveExperienceRequest, Payload = data.ToArray(), SessionToken = token };
+                }
+
+                if (TryDeserializePacket<SaveStateRequest>(data, out _))
+                {
+                    connectionTokens.TryGetValue(connectionId, out var token);
+                    envelope = new TypedPacket { MessageType = TcpMessageType.SaveStateRequest, Payload = data.ToArray(), SessionToken = token };
+                }
+
+                if (TryDeserializePacket<GameStateRequest>(data, out _))
+                {
+                    connectionTokens.TryGetValue(connectionId, out var token);
+                    envelope = new TypedPacket { MessageType = TcpMessageType.GameStateRequest, Payload = data.ToArray(), SessionToken = token };
+                }
             }
 
-            Start();
+
+            // 2) Quickly verify session token is present (if required).
+            //    If it's empty or missing, we might drop immediately.
+            if (string.IsNullOrEmpty(envelope.SessionToken))
+            {
+                logger.LogWarning($"No session token from ConnId={connectionId}. Disconnecting.");
+                server?.Disconnect(connectionId);
+                return;
+            }
+
+            // 3) Enqueue the message for real processing
+            messageQueue.Add((connectionId, envelope));
+        }
+
+        /// <summary>
+        /// This worker loop processes queued messages in parallel. We can do
+        /// heavier deserialization or DB writes here without blocking the Telepathy loop.
+        /// </summary>
+        private void WorkerLoop()
+        {
+            foreach (var (connectionId, packet) in messageQueue.GetConsumingEnumerable())
+            {
+                if (!running) break;
+
+                // Validate the connection still exists, etc.
+                if (!connectionProvider.TryGet(connectionId, out var tcpConnection))
+                {
+                    // Possibly disconnected in the meantime
+                    continue;
+                }
+
+                // Validate the session token
+                var token = sessionManager.Get(packet.SessionToken);
+                if (!CheckSessionTokenValidity(token))
+                {
+                    logger.LogWarning($"Invalid session token for ConnId={connectionId}, token={packet.SessionToken}");
+                    server?.Disconnect(connectionId);
+                    continue;
+                }
+
+                // Set the connection’s session token if not already
+                if (tcpConnection.SessionToken == null)
+                {
+                    tcpConnection.SessionToken = token;
+                    // Start the game session if not started
+                    gameProcessorManager.Start(token);
+                }
+
+                // Now handle the typed payload
+                switch (packet.MessageType)
+                {
+                    case TcpMessageType.AuthenticationRequest:
+                        // no longer necessary as we send token with all requests.
+                        break;
+
+                    case TcpMessageType.SaveExperienceRequest:
+                        ProcessSaveExperience(connectionId, token, packet.Deserialize<SaveExperienceRequest>());
+                        break;
+
+                    case TcpMessageType.SaveStateRequest:
+                        ProcessSaveState(connectionId, token, packet.Deserialize<SaveStateRequest>());
+                        break;
+
+                    case TcpMessageType.GameStateRequest:
+                        ProcessGameStateRequest(connectionId, token, packet.Deserialize<GameStateRequest>());
+                        break;
+
+                    default:
+                        logger.LogWarning($"Unknown message type={packet.MessageType} from ConnId={connectionId}.");
+                        break;
+                }
+            }
+        }
+
+        private void ProcessSaveExperience(int connectionId, SessionToken token, SaveExperienceRequest saveExpReq)
+        {
+            try
+            {
+                playerManager.SaveExperience(token, saveExpReq);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError($"ProcessSaveExperience error: {exc}");
+            }
+        }
+
+        private void ProcessSaveState(int connectionId, SessionToken token, SaveStateRequest saveStateReq)
+        {
+            try
+            {
+                playerManager.SaveState(token, saveStateReq);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError($"ProcessSaveState error: {exc}");
+            }
+        }
+
+        private void ProcessGameStateRequest(int connectionId, SessionToken token, GameStateRequest gameStateReq)
+        {
+            try
+            {
+                playerManager.SendGameStateToTwitchExtension(token, gameStateReq);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError($"ProcessGameStateRequest error: {exc}");
+            }
+        }
+
+        public void Send(int connectionId, ArraySegment<byte> message)
+        {
+            server?.Send(connectionId, message);
+            Interlocked.Add(ref dataSent, message.Count);
+            Interlocked.Increment(ref messagesSent);
+        }
+
+        private bool CheckSessionTokenValidity(SessionToken sessionToken)
+        {
+            return sessionToken != null && sessionToken.SessionId != Guid.Empty && !sessionToken.Expired;
+        }
+
+        private void ReportNetworkStats()
+        {
+            if (netStatStopwatch.ElapsedMilliseconds >= 10_000)
+            {
+                var msReceived = Interlocked.Read(ref messagesReceived);
+                var dtReceived = Interlocked.Read(ref dataReceived);
+                var msSent = Interlocked.Read(ref messagesSent);
+                var dtSent = Interlocked.Read(ref dataSent);
+
+                var inRateKBps = (dtReceived > 0)
+                    ? (dtReceived * 1000.0 / (netStatStopwatch.ElapsedMilliseconds * 1024))
+                    : 0;
+                var outRateKBps = (dtSent > 0)
+                    ? (dtSent * 1000.0 / (netStatStopwatch.ElapsedMilliseconds * 1024))
+                    : 0;
+
+                // You can store or log the stats, e.g.:
+                gameData.SetNetworkStats(Thread.CurrentThread.ManagedThreadId,
+                                         msReceived, inRateKBps,
+                                         msSent, outRateKBps);
+
+                logger.LogDebug($"[TCP] in={msReceived} msgs ({inRateKBps:F2} KB/s), out={msSent} msgs ({outRateKBps:F2} KB/s)");
+
+                netStatStopwatch.Restart();
+                Interlocked.Exchange(ref messagesReceived, 0);
+                Interlocked.Exchange(ref dataReceived, 0);
+                Interlocked.Exchange(ref messagesSent, 0);
+                Interlocked.Exchange(ref dataSent, 0);
+            }
         }
 
         public bool IsConnected(int connectionId)
@@ -73,386 +407,33 @@ namespace RavenNest.BusinessLogic.Net
             return connectionProvider.Contains(connectionId);
         }
 
-        private void StartInternal()
-        {
-            if (server != null && running)
-            {
-                return;
-            }
-
-            messagesReceived = 0;
-            messagesSent = 0;
-            dataReceived = 0;
-            dataSent = 0;
-
-            var started = false;
-            try
-            {
-                server = new Telepathy.Server(MaxMessageSize);
-                server.OnConnected = OnClientConnected;
-                server.OnData = (id, data) => OnData(id, data);
-                server.OnDisconnected = OnClientDisconnected;
-                server.Start(serverPort);
-                running = true;
-                started = true;
-                logger.LogInformation("TCP API Server started on port " + serverPort);
-
-            }
-            catch (Exception exc)
-            {
-                logger.LogError("Failed to start TCP API Server. " + exc.ToString());
-                running = false;
-            }
-
-            Stopwatch stopwatch = Stopwatch.StartNew();
-            if (!running)
-            {
-                return;
-            }
-
-            int errorCount = 0;
-
-            while (running)
-            {
-                // tick and process as many as we can. will auto reply.
-                // (100k limit to avoid deadlocks)
-                if (server == null)
-                {
-                    // we have disposed this server.
-                    break;
-                }
-
-                try
-                {
-                    server.Process();
-
-                    ReportNetworkStats(ref stopwatch);
-
-                    Thread.Sleep(1);
-
-                    errorCount = 0;
-                }
-                catch (Exception exc)
-                {
-                    errorCount++;
-                    logger.LogError("Exception handling data: " + exc.ToString());
-                    if (errorCount > 10)
-                    {
-                        logger.LogError("TCP API received more than 10 errors in a row, to prevent spamming, service will be terminated.");
-                        running = false;
-                        break;
-                    }
-                }
-            }
-
-            // if the server did properly start
-            // then we want to say that the server stopped.
-            if (started)
-            {
-                logger.LogInformation("TCP API Server stopped.");
-            }
-        }
-
-        private void ReportNetworkStats(ref Stopwatch stopwatch)
-        {
-            try
-            {
-                if (stopwatch.ElapsedMilliseconds > 10000 && (messagesReceived > 0 || messagesSent > 0))
-                {
-                    var threadId = Thread.CurrentThread.ManagedThreadId;
-
-                    var inMessageCount = messagesReceived;
-                    var inRateKBps = dataReceived > 0 ? (dataReceived * 1000 / (stopwatch.ElapsedMilliseconds * 1024)) : 0;
-
-                    var outMessageCount = messagesSent;
-                    var outRateKBps = dataSent > 0 ? (dataSent * 1000 / (stopwatch.ElapsedMilliseconds * 1024)) : 0;
-
-                    if (gameData != null)
-                    {
-                        gameData.SetNetworkStats(threadId, inMessageCount, inRateKBps, outMessageCount, outRateKBps);
-                    }
-
-                    //logger.LogDebug(string.Format("Thread[" + threadId + "]: Server in={0} ({1} KB/s)  out={0} ({1} KB/s) ReceiveQueue={2}", messageCount, serverTransferRateKBps, activePipes));
-
-                    stopwatch.Stop();
-                    stopwatch = Stopwatch.StartNew();
-
-                    messagesReceived = 0;
-                    dataReceived = 0;
-
-                    messagesSent = 0;
-                    dataSent = 0;
-                }
-            }
-            catch
-            {
-                // ignored, this is okay if it fails. as long as it does not affect the process loop
-            }
-        }
-
-        public void Start()
-        {
-            serverThread = new Thread(StartInternal);
-            serverThread.Name = "Tcp Api Server";
-            serverThread.IsBackground = true;
-            serverThread.Start();
-        }
-
-        private void OnClientDisconnected(int connectionId)
-        {
-            if (connectionProvider.Remove(connectionId, out var connection))
-            {
-                gameProcessorManager.Stop(connection.SessionToken);
-            }
-
-            logger.LogDebug(connectionId + " Disconnected");
-        }
-
-        public void Send(int connectionId, ArraySegment<byte> message)
-        {
-            server.Send(connectionId, message);
-            dataSent += message.Count;
-            messagesSent++;
-        }
-
-        private void OnData(int connectionId, ReadOnlyMemory<byte> packetData)
-        {
-            messagesReceived++;
-            dataReceived += packetData.Length;
-            TcpSocketApiConnection connection = null;
-            try
-            {
-                lock (clientMutex)
-                {
-                    // we always have one, but don't always have a session token
-                    if (!connectionProvider.TryGet(connectionId, out connection))
-                    {
-                        return;
-                    }
-
-                    if (TryDeserializePacket<SaveExperienceRequest>(packetData, out var saveExp))
-                    {
-                        if (!HandleSessionToken(saveExp.SessionToken, connection))
-                        {
-                            return;
-                        }
-
-                        playerManager.SaveExperience(connection.SessionToken, saveExp);
-                    }
-                    else if (TryDeserializePacket<SaveStateRequest>(packetData, out var stateUpdate))
-                    {
-                        if (!HandleSessionToken(stateUpdate.SessionToken, connection))
-                        {
-                            return;
-                        }
-
-                        playerManager.SaveState(connection.SessionToken, stateUpdate);
-                    }
-                    else if (TryDeserializePacket<GameStateRequest>(packetData, out var gameState))
-                    {
-                        if (!HandleSessionToken(gameState.SessionToken, connection))
-                        {
-                            return;
-                        }
-
-                        playerManager.SendGameStateToTwitchExtension(connection.SessionToken, gameState);
-                    }
-                    else if (TryDeserializePacket<AuthenticationRequest>(packetData, out var authPacket))
-                    {
-                        if (!HandleSessionToken(stateUpdate.SessionToken, connection))
-                        {
-                            return;
-                        }
-                    }
-                }
-            }
-            catch (Exception exc)
-            {
-                if (connection != null)
-                {
-                    logger.LogError("Failed to handle data from connectionId (" + connectionId + ", session token: " + connection.SessionToken + ") len=" + packetData.Length + ": " + exc.ToString());
-                    server.Disconnect(connectionId);
-                    return;
-                }
-
-                logger.LogError("Failed to handle data from connectionId (" + connectionId + ") len=" + packetData.Length + ": " + exc.ToString());
-                server.Disconnect(connectionId);
-            }
-        }
-
-        private bool HandleSessionToken(string sessionToken, TcpSocketApiConnection connection)
-        {
-            var token = sessionManager.Get(sessionToken);
-            if (!CheckSessionTokenValidity(token))
-            {
-                logger.LogWarning("Invalid session token for tcp api connection (" + (token?.SessionId.ToString() ?? "Token Unavailble") + ")");
-                server.Disconnect(connection.ConnectionId);
-                return false;
-            }
-            if (connection.SessionToken == null)
-            {
-                connection.SessionToken = token;
-            }
-
-            // start the game session if its not already started.
-            if (token != null)
-            {
-                gameProcessorManager.Start(token);
-            }
-
-            return true;
-        }
-
-        private static bool TryDeserializePacket<T>(ReadOnlyMemory<byte> packetData, out T value) where T : class
-        {
-            var options = MessagePack.Resolvers.ContractlessStandardResolver.Options;
-            try
-            {
-                value = MessagePackSerializer.Deserialize<T>(packetData, options);
-                return value != null && Validate<T>(value);
-            }
-            catch
-            {
-                value = default;
-                return false;
-            }
-        }
-
-
-        private static T DeserializePacket<T>(ReadOnlyMemory<byte> packetData)
-        {
-            var options = MessagePack.Resolvers.ContractlessStandardResolver.Options;
-            try
-            {
-                return MessagePackSerializer.Deserialize<T>(packetData, options);
-            }
-            catch
-            {
-                return default;
-            }
-        }
-
-        private static bool Validate<T>(T value) where T : class
-        {
-            // ugly hax to validate if our packets are correct.
-
-            if (value is GameStateRequest stateReq)
-            {
-                return !string.IsNullOrEmpty(stateReq.SessionToken);
-            }
-
-            if (value is SaveExperienceRequest saveRequest)
-            {
-                return !string.IsNullOrEmpty(saveRequest.SessionToken) && saveRequest.ExpUpdates != null && saveRequest.ExpUpdates.Length > 0;
-            }
-
-            if (value is CharacterUpdate characterUpdate)
-            {
-                return characterUpdate.CharacterId != Guid.Empty && 
-                    ((characterUpdate.X != 0 || characterUpdate.Y != 0 || characterUpdate.Z != 0) 
-                    || (characterUpdate.Skills != null && characterUpdate.Skills.Length > 0));
-            }
-
-            if (value is AuthenticationRequest tokenRequest)
-            {
-                return !string.IsNullOrEmpty(tokenRequest.SessionToken);
-            }
-
-            if (value is SaveStateRequest stateUpdate)
-            {
-                return !string.IsNullOrEmpty(stateUpdate.SessionToken) && stateUpdate.StateUpdates != null && stateUpdate.StateUpdates.Length > 0;
-            }
-
-            return false;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool CheckSessionTokenValidity(SessionToken sessionToken)
-        {
-            return sessionToken != null && sessionToken.SessionId != Guid.Empty && !sessionToken.Expired;
-        }
-
-        private void OnClientConnected(int connectionId)
-        {
-            connectionProvider.Add(connectionId, this);
-            //logger.LogInformation(connectionId + " Connected");
-        }
-
-        // TODO: make packetManager handle batch of packets
-        //       same with serializer. So we can create a batch of packets to be sent as well.
-
-        // Then for each new connection. Expect client to send session token or disconnect the client if it is not received within moments of connection.
-        // Client needs to retry connection if that happens.
-
-        // Come up with a nice port numaber, make sure its open in the router.
-
         public void Dispose()
         {
-            if (server != null)
-            {
-                try
-                {
-                    server.Stop();
-                }
-                catch { }
-                server = null;
-            }
+            if (disposed) return;
+            disposed = true;
+            running = false;
 
             try
             {
-                if (gameProcessorManager != null)
-                {
-                    gameProcessorManager.Dispose();
-                }
+                messageQueue.CompleteAdding();
             }
             catch { }
 
-            this.running = false;
-            this.disposed = true;
-        }
-    }
+            // Stop Telepathy
+            try
+            {
+                server?.Stop();
+            }
+            catch { }
+            server = null;
 
-    public class PartialByteBuffer
-    {
-        private byte[] data;
-        private readonly int count;
+            // Wait for worker threads to exit
+            foreach (var wt in workerThreads)
+            {
+                try { wt.Join(2000); } catch { }
+            }
 
-        public PartialByteBuffer(byte[] array, int count)
-        {
-            this.data = array;
-            this.count = count;
-        }
-
-        public PartialByteBuffer(ReadOnlyMemory<byte> array)
-        {
-            this.data = array.ToArray();
-            this.count = data.Length;
-        }
-
-        public void Append(ReadOnlyMemory<byte> array)
-        {
-            var tmpArray = new byte[this.count + array.Length];
-            Array.Copy(this.data, 0, tmpArray, 0, this.count);
-            Array.Copy(array.ToArray(), 0, tmpArray, this.count - 1, array.Length);
-            this.data = tmpArray;
-        }
-
-        public void Append(ReadOnlyMemory<byte> array, int count)
-        {
-            var tmpArray = new byte[this.count + count];
-            Array.Copy(this.data, 0, tmpArray, 0, this.count);
-            Array.Copy(array.ToArray(), 0, tmpArray, this.count - 1, count);
-            this.data = tmpArray;
-        }
-
-        public T Deserialize<T>()
-        {
-            return default;
-        }
-
-        public static implicit operator ReadOnlyMemory<byte>(PartialByteBuffer input)
-        {
-            return new ReadOnlyMemory<byte>(input.data);
+            logger.LogInformation("TcpSocketApi disposed.");
         }
     }
 }

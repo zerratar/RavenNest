@@ -21,9 +21,9 @@ namespace RavenNest.BusinessLogic.Net
 
         private DataModels.SessionState sessionState;
 
-        public TcpSocketApiConnection(int connectionId, TcpSocketApi server)
+        public TcpSocketApiConnection(int connectionId, TcpSocketApi server, GameData gameData)
         {
-            this.gameData = server.GameData;
+            this.gameData = gameData;
             this.connectionId = connectionId;
             this.server = server;
             this.Created = DateTime.UtcNow;
@@ -33,7 +33,6 @@ namespace RavenNest.BusinessLogic.Net
         public int ConnectionId => connectionId;
         public SessionToken SessionToken { get; set; }
         public bool Connected => server.IsConnected(this.connectionId);
-        public PartialByteBuffer UnfinishedBuffer { get; set; }
 
         public bool Send<T>(T model)
         {
@@ -53,11 +52,7 @@ namespace RavenNest.BusinessLogic.Net
 
         public int GetMaxMessageSize()
         {
-            if (TryGetClientVersion(out var version) && version == "0.8.2.0a")
-            {
-                return TcpSocketApi.MaxMessageSize_v0820;
-            }
-            return TcpSocketApi.MaxMessageSize;
+            return TcpSocketApiConstants.MaxMessageSize;
         }
 
         public bool TryGetClientVersion(out string version)
@@ -92,6 +87,16 @@ namespace RavenNest.BusinessLogic.Net
             var gameEvent = ModelMapper.Map(model);
 
             sendQueue.Enqueue(gameEvent);
+        }
+
+        internal void Send(DataModels.GameEvent model)
+        {
+            try
+            {
+                var gameEvent = ModelMapper.Map(model);
+                Send(new EventList { Events = new List<GameEvent> { gameEvent } });
+            }
+            catch { }
         }
 
         internal void ProcessSendQueue()

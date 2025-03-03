@@ -25,6 +25,11 @@
         public string OriginBroadcasterId { get; set; }
         #endregion
 
+        #region Kick
+        public string KickClientId { get; set; }
+        public string KickClientSecret { get; set; }
+        #endregion
+
         public string DevelopmentServer { get; set; }
 
         #region Pocket full of Quarters

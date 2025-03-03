@@ -166,7 +166,7 @@
 
                         <tr>
                             <td class="m-item-image"><img src="@(ItemService.GetItemImage(entry.ItemId))" style="width: 40px" /></td>
-                            <td class='marketplace'>@item.Name</td>
+                            <td class='marketplace'>@(entry.Name ?? item.Name)</td>
                             @if (isAdmin)
                             {
                                 <td>@GetUserName(entry.SellerUserId)</td>

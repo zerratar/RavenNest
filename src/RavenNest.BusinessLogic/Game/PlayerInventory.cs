@@ -875,7 +875,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             lock (mutex)
             {
-                var s = CreateInventoryItem(itemId, amount, false, null, soulbound);
+                var s = CreateInventoryItem(itemId, amount, false, null, soulbound, null, null, null, null);
                 items.Add(s);
                 return s.AsReadOnly(gameData);
             }
@@ -886,7 +886,11 @@ namespace RavenNest.BusinessLogic.Game
             long amount = 1,
             bool equipped = false,
             string tag = null,
-            bool soulbound = false)
+            bool soulbound = false,
+            string enchantment = null,
+            string name = null,
+            Guid? transmogrificationId = null,
+            int? flags = null)
         {
             var output = new List<InventoryItem>();
             lock (mutex)
@@ -905,7 +909,7 @@ namespace RavenNest.BusinessLogic.Game
                         UnequipItem(Get(equippedItem));
                     }
 
-                    var invItem = CreateInventoryItem(itemId, amount, true, tag, soulbound);
+                    var invItem = CreateInventoryItem(itemId, amount, true, tag, soulbound, enchantment, name, transmogrificationId, flags);
                     output.Add(invItem);
                     items.Add(invItem);
                 }
@@ -922,7 +926,7 @@ namespace RavenNest.BusinessLogic.Game
                     }
                     else
                     {
-                        var invItem = CreateInventoryItem(itemId, amount, false, tag, soulbound);
+                        var invItem = CreateInventoryItem(itemId, amount, false, tag, soulbound, enchantment, name, transmogrificationId, flags);
                         output.Add(invItem);
                         items.Add(invItem);
                     }
@@ -1077,7 +1081,7 @@ namespace RavenNest.BusinessLogic.Game
 
         private InventoryItem CreateInventoryItem(ReadOnlyInventoryItem invItem, long amount, bool eq, bool soulbound)
         {
-            return CreateInventoryItem(invItem.ItemId, amount, eq, invItem.Tag, soulbound);
+            return CreateInventoryItem(invItem.ItemId, amount, eq, invItem.Tag, soulbound, invItem.Enchantment, invItem.Name, invItem.TransmogrificationId, invItem.Flags);
         }
 
         public bool RemoveItem(ReadOnlyInventoryItem item, long amount, out long remainder)
@@ -1374,7 +1378,7 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        private InventoryItem CreateInventoryItem(Guid itemId, long amount, bool equipped, string tag, bool soulbound)
+        private InventoryItem CreateInventoryItem(Guid itemId, long amount, bool equipped, string tag, bool soulbound, string enchantment, string name, Guid? transmogrificationId, int? flags)
         {
             return new InventoryItem
             {
@@ -1384,6 +1388,10 @@ namespace RavenNest.BusinessLogic.Game
                 ItemId = itemId,
                 Equipped = equipped,
                 Tag = tag,
+                Enchantment = enchantment,
+                Name = name,
+                TransmogrificationId = transmogrificationId,
+                Flags = flags,
                 Soulbound = soulbound
             };
         }

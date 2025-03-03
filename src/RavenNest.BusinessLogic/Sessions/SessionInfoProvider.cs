@@ -11,6 +11,7 @@ using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.DataModels;
+using RavenNest.Kick;
 using RavenNest.Models;
 using RavenNest.Sessions;
 using RavenNest.Twitch;
@@ -21,7 +22,9 @@ namespace RavenNest
     {
         private const string CookieDisclaimer = "cookie_disclaimer";
         private const string TwitchAccessToken = "twitch_access_token";
+        private const string KickAccessToken = "kick_access_token";
         private const string TwitchUser = "twitch_user";
+        private const string KickUser = "kick_user";
         private const string AuthState = "auth_state";
         private const string AuthToken = "auth_token";
 
@@ -71,6 +74,18 @@ namespace RavenNest
             return !string.IsNullOrEmpty(token);
         }
 
+        public bool TryGetKickToken(string sessionId, out string token)
+        {
+            token = null;
+            if (sessionId == null) return false;
+            if (ContainsKey(sessionId, KickAccessToken))
+            {
+                token = GetString(sessionId, KickAccessToken);
+            }
+
+            return !string.IsNullOrEmpty(token);
+        }
+
         public void SetActiveCharacter(SessionInfo session, Guid? characterId)
         {
             session.ActiveCharacterId = characterId;
@@ -110,7 +125,7 @@ namespace RavenNest
             {
                 // verify...
             }
-            
+
             //var activeSession = gameData.GetActiveSessions().FirstOrDefault(x => x.UserId == broadcaster.Id);
             var activeSession = gameData.GetSessionByUserId(broadcaster.Id);
             if (activeSession != null)
@@ -134,7 +149,7 @@ namespace RavenNest
                     si.ActiveCharacterId = activeCharacter.Id;
                 }
             }
-            
+
             si.Extension = true;
             si.SessionId = sessionId;
             UpdateSessionInfoData(si, user);
@@ -145,15 +160,44 @@ namespace RavenNest
             return si;
         }
 
-        public async Task<TwitchUserSessionInfo> StoreAsync(string sessionId)
+        public async Task<UserSessionInfo> StoreAsync(string sessionId)
         {
-            var result = new TwitchUserSessionInfo();
+            var result = new UserSessionInfo();
             var si = new SessionInfo();
             User user = null;
 
-            if (TryGetTwitchToken(sessionId, out var token))
+            if (TryGetKickToken(sessionId, out var kickToken))
             {
-                var twitchUser = await GetTwitchUserAsync(sessionId, token);
+                var kickUser = await GetKickUserAsync(sessionId, kickToken);
+                if (kickUser != null)
+                {
+                    result.KickUser = kickUser;
+                    user = gameData.GetUserByKickId(kickUser.Id.ToString());
+                }
+
+                if (user != null)
+                {
+                    if (!string.IsNullOrEmpty(kickUser.Name) && user.UserName == null)
+                    {
+                        user.UserName = kickUser.Name;
+                        si.UserNameChanged = true;
+                    }
+
+                    if (!string.IsNullOrEmpty(kickUser.Name) && string.IsNullOrEmpty(user.DisplayName))
+                    {
+                        user.DisplayName = kickUser.Name;
+                    }
+
+                    if (string.IsNullOrEmpty(user.Email) && !string.IsNullOrEmpty(kickUser.Email))
+                    {
+                        user.Email = kickUser.Email;
+                    }
+                }
+            }
+
+            if (TryGetTwitchToken(sessionId, out var twitchToken))
+            {
+                var twitchUser = await GetTwitchUserAsync(sessionId, twitchToken);
                 if (twitchUser != null)
                 {
                     result.TwitchUser = twitchUser;
@@ -172,7 +216,7 @@ namespace RavenNest
                         user.DisplayName = twitchUser.DisplayName;
                     }
 
-                    if (!string.IsNullOrEmpty(twitchUser.Email) && twitchUser.Email != user.Email)
+                    if (string.IsNullOrEmpty(user.Email) && !string.IsNullOrEmpty(twitchUser.Email))
                     {
                         user.Email = twitchUser.Email;
                     }
@@ -339,22 +383,64 @@ namespace RavenNest
             GetSessionData(sessionId).Clear();
         }
 
-        public async Task<TwitchUserSessionInfo> SetTwitchTokenAsync(string sessionId, string token)
+        public async Task<UserSessionInfo> SetKickTokenAsync(string sessionId, string token)
+        {
+            SetString(sessionId, KickAccessToken, token);
+            return await this.StoreAsync(sessionId);
+        }
+
+        public async Task<UserSessionInfo> SetTwitchTokenAsync(string sessionId, string token)
         {
             SetString(sessionId, TwitchAccessToken, token);
             return await this.StoreAsync(sessionId);
         }
 
-        public async Task<TwitchUserSessionInfo> SetTwitchUserAsync(string sessionId, string twitchUser)
+        public async Task<UserSessionInfo> SetTwitchUserAsync(string sessionId, string userJson)
         {
-            SetString(sessionId, TwitchUser, twitchUser);
+            SetString(sessionId, TwitchUser, userJson);
             return await StoreAsync(sessionId);
         }
 
-        public async Task<TwitchUserSessionInfo> SetAuthTokenAsync(string sessionId, AuthToken token)
+        public async Task<UserSessionInfo> SetKickUserAsync(string sessionId, string userJson)
+        {
+            SetString(sessionId, KickUser, userJson);
+            return await StoreAsync(sessionId);
+        }
+
+        public async Task<UserSessionInfo> SetAuthTokenAsync(string sessionId, AuthToken token)
         {
             SetString(sessionId, AuthToken, JSON.Stringify(token));
             return await StoreAsync(sessionId);
+        }
+
+        public async Task<KickRequests.KickUser> GetKickUserAsync(string sessionId, string token = null)
+        {
+            var str = GetString(sessionId, KickUser);
+            if (string.IsNullOrEmpty(str) && !string.IsNullOrEmpty(token))
+            {
+                var kick = new KickRequests(token, settings.KickClientId, settings.KickClientSecret);
+                var user = await kick.GetUserAsync();
+                if (user != null)
+                {
+                    await SetKickUserAsync(sessionId, user);
+                }
+                str = user;
+            }
+
+            if (string.IsNullOrEmpty(str))
+            {
+                return null;
+            }
+
+            try
+            {
+                return JSON.Parse<KickRequests.KickUserData>(str).Data?.FirstOrDefault();
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("GET KICK USER (" + sessionId + "): " + str + " --- PARSE ERROR (EXCEPTION): " + exc);
+                return JSON.Parse<KickRequests.KickUser>(str);
+            }
         }
 
         public async Task<TwitchRequests.TwitchUser> GetTwitchUserAsync(string sessionId, string token = null)

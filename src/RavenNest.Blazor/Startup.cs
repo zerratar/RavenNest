@@ -230,8 +230,8 @@ namespace RavenNest.Blazor
             app.UseRewriter(new RewriteOptions()
 #if !DEBUG
                .AddRedirectToWww()
-#endif
                .AddRedirectToHttps()
+#endif
             );
 
             app.UseSwagger();

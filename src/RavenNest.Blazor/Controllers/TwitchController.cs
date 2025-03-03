@@ -348,7 +348,7 @@ namespace RavenNest.Controllers
             if (playerManager.SendRemovePlayerFromSessionToGame(ctx.Character))
             {
                 sessionInfoProvider.SetActiveCharacter(ctx.SessionInfo, null);
-                
+
                 if (ctx.Character.UserIdLock != null)
                     ctx.Character.PrevUserIdLock = ctx.Character.UserIdLock;
 

@@ -56,8 +56,8 @@ namespace RavenNest.BusinessLogic.Data
                     {
                         if (restoreType == typeof(ItemCraftingRequirement))
                             continue;
-
-                        var table = $"[DB_A3551F_ravenfall].[dbo].[{restoreType.Name}]";
+                        var dbName = db.GetDbName();
+                        var table = $"[{dbName}].[dbo].[{restoreType.Name}]";
 
                         var entities = restorePoint.Get(restoreType);
                         if (entities == null)
