@@ -991,7 +991,7 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDrop(typedItems.EldarasMark, 0.03);
 
             // scrolls
-            EnsureDrop(typedItems.FerryScroll, 0.02);
+            //EnsureDrop(typedItems.FerryScroll, 0.02);
             EnsureDrop(typedItems.ExpMultiplierScroll, 0.02);
             EnsureDrop(typedItems.RaidScroll, 0.02);
             EnsureDrop(typedItems.DungeonScroll, 0.01);
