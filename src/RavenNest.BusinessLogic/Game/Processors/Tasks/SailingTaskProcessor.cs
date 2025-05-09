@@ -15,6 +15,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             GameData gameData,
             PlayerInventory inventory,
             GameSession session,
+            User user,
             Character character,
             CharacterState state)
         {

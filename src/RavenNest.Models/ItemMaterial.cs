@@ -16,6 +16,21 @@
         Lionsbane,
         Ether,
         Ancient,
-        Atlarus
+        Atlarus,
+
+        ElderBronze,
+        ElderIron,
+        ElderSteel,
+        ElderBlack,
+        ElderMithril,
+        ElderAdamantite,
+        ElderRune,
+        ElderDragon,
+        ElderAbraxas,
+        ElderPhantom,
+        ElderLionsbane,
+        ElderEther,
+        ElderAncient,
+        ElderAtlarus,
     }
 }

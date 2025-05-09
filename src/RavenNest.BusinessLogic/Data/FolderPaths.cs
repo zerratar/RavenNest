@@ -4,7 +4,7 @@ namespace RavenNest.BusinessLogic.Data
 {
     public static class FolderPaths
     {
-#if DEBUG
+#if DEBUG_DEV
         public const string DataFolder = "G:\\Ravenfall\\Dev-Data\\";
 #else
         public const string DataFolder = "G:\\Ravenfall\\Data";

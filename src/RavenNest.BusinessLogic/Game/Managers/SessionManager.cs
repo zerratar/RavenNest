@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Net;
+using RavenNest.BusinessLogic.Net.DeltaTcpLib;
 using RavenNest.BusinessLogic.ScriptParser;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.DataModels;
@@ -17,8 +18,7 @@ using static RavenNest.Twitch.TwitchRequests;
 
 namespace RavenNest.BusinessLogic.Game
 {
-
-    public class SessionManager
+    public class SessionManager : ISessionTokenProvider
     {
         private readonly ILogger<SessionManager> logger;
         private readonly ITwitchClient twitchClient;
@@ -88,6 +88,10 @@ namespace RavenNest.BusinessLogic.Game
         {
             var game = gameData.Client;
             var user = gameData.GetUser(token.UserId);
+            if (user == null)
+            {
+                return Task.FromResult(BeginSessionResult.UserDoesNotExist);
+            }
 
             if (game.AccessKey != accessKey || !IsExpectedVersion(clientVersion))
             {
@@ -328,7 +332,11 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             user = user ?? gameData.GetUser(gameSession.UserId);
-
+            if (user == null)
+            {
+                logger.LogError(nameof(user) + " is null. Unable to send permission data.");
+                return;
+            }
             DataModels.GameEvent permissionEvent = CreateSessionSettingsChangeEvent(gameSession, user);
 
             gameData.EnqueueGameEvent(permissionEvent);
@@ -346,6 +354,11 @@ namespace RavenNest.BusinessLogic.Game
 
         private DataModels.GameEvent CreateSessionSettingsChangeEvent(DataModels.GameSession gameSession, DataModels.User user)
         {
+            if (user == null)
+            {
+                return null;
+            }
+
             var data = GetSessionSettings(user);
             var permissionEvent = gameData.CreateSessionEvent(GameEventType.SessionSettingsChanged, gameSession, data);
             return permissionEvent;
@@ -353,6 +366,11 @@ namespace RavenNest.BusinessLogic.Game
 
         private SessionSettings GetSessionSettings(DataModels.User user)
         {
+            if (user == null)
+            {
+                return null;
+            }
+
             var isAdmin = user.IsAdmin.GetValueOrDefault();
             var isModerator = user.IsModerator.GetValueOrDefault();
             //var subInfo = await twitchClient.GetSubscriberAsync(user.UserId);

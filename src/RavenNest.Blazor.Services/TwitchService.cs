@@ -23,6 +23,11 @@ namespace RavenNest.Blazor.Services
             {
                 var stream = new TwitchStream();
                 var user = gameData.GetUser(session.UserId);
+                if (user == null)
+                {
+                    continue;
+                }
+
                 stream.TwitchUserName = user.UserName;
                 stream.UserTitle = "";
                 stream.Uptime = DateTime.UtcNow - session.Started;

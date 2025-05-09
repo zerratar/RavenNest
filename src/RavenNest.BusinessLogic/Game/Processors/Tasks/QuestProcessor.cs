@@ -6,7 +6,14 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 {
     public class QuestProcessor : PlayerTaskProcessor
     {
-        public override void Process(ILogger logger, GameData gameData, PlayerInventory inventory, GameSession session, Character character, CharacterState state)
+        public override void Process(
+            ILogger logger,
+            GameData gameData,
+            PlayerInventory inventory,
+            GameSession session,
+            User user,
+            Character character,
+            CharacterState state)
         {
             if (character == null || state == null)
             {

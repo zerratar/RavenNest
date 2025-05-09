@@ -105,6 +105,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             if (session == null) return null;
             var village = gameData.GetOrCreateVillageBySession(session);
+            if (village == null) return null;
             var villageHouses = gameData.GetOrCreateVillageHouses(village);
 
             var state = gameData.GetSessionState(session.Id);

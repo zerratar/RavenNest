@@ -5,5 +5,6 @@
         Raid,
         Dungeon,
         Experience,
+        Ferry
     }
 }

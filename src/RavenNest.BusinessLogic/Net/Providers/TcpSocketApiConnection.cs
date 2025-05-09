@@ -34,6 +34,8 @@ namespace RavenNest.BusinessLogic.Net
         public SessionToken SessionToken { get; set; }
         public bool Connected => server.IsConnected(this.connectionId);
 
+        public TimeSpan TimeOffset { get; set; } = TimeSpan.MaxValue;
+
         public bool Send<T>(T model)
         {
             // send a separate packet first with the incoming model type name?

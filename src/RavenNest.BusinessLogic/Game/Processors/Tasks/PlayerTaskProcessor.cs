@@ -39,6 +39,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             GameData gameData,
             PlayerInventory inventoryProvider,
             DataModels.GameSession session,
+            DataModels.User user,
             Character character,
             DataModels.CharacterState state);
 

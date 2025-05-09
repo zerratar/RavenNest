@@ -32,7 +32,7 @@ namespace RavenNest.Controllers
         }
 
         [Route("extension/{broadcasterId}/{sessionId}")]
-        public async Task GetExtensionWebsocketConnection(string broadcasterId, string sessionId)
+        public async Task GetExtensionWebsocketConnection(string broadcasterId, string sessionId, CancellationToken ct)
         {
             try
             {
@@ -57,13 +57,13 @@ namespace RavenNest.Controllers
                         await webSocket.CloseAsync(
                             WebSocketCloseStatus.InternalServerError,
                             "No active session",
-                            CancellationToken.None);
+                            ct);
 
                         return;
                     }
 
                     await HttpContext.Session.CommitAsync();
-                    await socketSession.KeepAlive();
+                    await socketSession.KeepAlive(ct);
 
                     logger.LogError($"Twitch Extension WS Closing for {broadcasterId}/{sessionId}");
                 }

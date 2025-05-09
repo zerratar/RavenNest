@@ -22,7 +22,7 @@ namespace RavenNest.BusinessLogic.Data
     {
         #region Settings
         private const int BackupInterval = 60 * 60 * 1000; // once per hour
-        private const int SaveInterval = 10000;
+        private const int SaveInterval = 3000;
         private const int SaveMaxBatchSize = 50;
         public const float SessionTimeoutSeconds = 1f;
         #endregion
@@ -1459,6 +1459,10 @@ namespace RavenNest.BusinessLogic.Data
             }
 
             var user = GetUser(userId);
+            if (user == null)
+            {
+                return null;
+            }
 
             settings["is_admin"] = user.IsAdmin.GetValueOrDefault();
             settings["is_moderator"] = user.IsModerator.GetValueOrDefault();
@@ -1643,7 +1647,6 @@ namespace RavenNest.BusinessLogic.Data
             if (item.Category == (int)ItemCategory.Resource && (it == ItemType.Cooking || it == ItemType.Alchemy || it == ItemType.Mining))
             {
                 // ....
-
                 if (material == ItemMaterial.None)
                 {
                     // unidentified.
@@ -1653,7 +1656,7 @@ namespace RavenNest.BusinessLogic.Data
                         material = ItemMaterial.Lionsbane;
                     }
 
-                    if (item.Name.StartsWith("Ether "))
+                    else if (item.Name.StartsWith("Ether "))
                     {
                         material = ItemMaterial.Ether;
                     }
@@ -1676,6 +1679,21 @@ namespace RavenNest.BusinessLogic.Data
                 case ItemMaterial.Ether: return 1370;
                 case ItemMaterial.Ancient: return 1900;
                 case ItemMaterial.Atlarus: return 2600;
+
+                case ItemMaterial.ElderBronze: return 2650;
+                case ItemMaterial.ElderIron: return 2900;
+                case ItemMaterial.ElderSteel: return 3100;
+                case ItemMaterial.ElderBlack: return 3400;
+                case ItemMaterial.ElderMithril: return 3900;
+                case ItemMaterial.ElderAdamantite: return 4400;
+                case ItemMaterial.ElderRune: return 5500;
+                case ItemMaterial.ElderDragon: return 6400;
+                case ItemMaterial.ElderAbraxas: return 7400;
+                case ItemMaterial.ElderPhantom: return 8500;
+                case ItemMaterial.ElderLionsbane: return 9700;
+                case ItemMaterial.ElderEther: return 10900;
+                case ItemMaterial.ElderAncient: return 12000;
+                case ItemMaterial.ElderAtlarus: return 14000;
             }
 
             // still 1? check drop level requirements and use that
@@ -1695,6 +1713,49 @@ namespace RavenNest.BusinessLogic.Data
             return 1;
         }
 
+        private ItemMaterial GetMaterialByName(string name)
+        {
+            var itemNameMaterial = "";
+            if (name.EndsWith("Token"))
+            {
+                return ItemMaterial.None;
+            }
+            if (name.Contains(' '))
+            {
+                if (name.StartsWith("elder ", StringComparison.OrdinalIgnoreCase))
+                {
+                    var otherPart = name.Split(' ')[1];
+                    if (Enum.TryParse<DataModels.ItemMaterial>("Elder" + otherPart, true, out var mat))
+                        return mat;
+                }
+
+                itemNameMaterial = name.Split(' ')[0];
+            }
+            if (itemNameMaterial == "Ethereum")
+            {
+                return ItemMaterial.Ether;
+            }
+            if (itemNameMaterial.ToLower() == "lionite")
+            {
+                return ItemMaterial.Lionsbane;
+            }
+
+            if (itemNameMaterial.ToLower() == "abraxas")
+            {
+                return ItemMaterial.Abraxas;
+            }
+
+            if (!string.IsNullOrEmpty(itemNameMaterial))
+            {
+                if (Enum.TryParse<ItemMaterial>(itemNameMaterial, true, out var res))
+                {
+                    return res;
+                }
+            }
+
+            return ItemMaterial.None;
+        }
+
         private ItemMaterial GetMaterial(RavenNest.DataModels.Item item)
         {
             var mat = (ItemMaterial)item.Material;
@@ -1710,6 +1771,13 @@ namespace RavenNest.BusinessLogic.Data
                 }
                 if (item.Name.Contains(' '))
                 {
+                    if (item.Name.StartsWith("elder ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var otherPart = item.Name.Split(' ')[1];
+                        if (Enum.TryParse<DataModels.ItemMaterial>("Elder" + otherPart, true, out mat))
+                            return mat;
+                    }
+
                     itemNameMaterial = item.Name.Split(' ')[0];
                 }
                 if (itemNameMaterial == "Ethereum")
@@ -1745,21 +1813,20 @@ namespace RavenNest.BusinessLogic.Data
 
         private void ApplyVendorPrices()
         {
-            const double resourceMargins = 1.25;
-            const double redeemableReduction = 0.5;
-            foreach (var item in items.Entities)
-            {
-                if (item.Category != (int)ItemCategory.Resource)
-                {
-                    continue;
-                }
+            const double resourceMargins = 1.05;
+            //foreach (var item in items.Entities)
+            //{
+            //    if (item.Category != (int)ItemCategory.Resource)
+            //    {
+            //        continue;
+            //    }
 
-                var resourceCost = GetResourceCost(item);
-                if (resourceCost > 1)
-                {
-                    item.ShopSellPrice = (long)resourceCost;
-                }
-            }
+            //    var resourceCost = GetResourceCost(item);
+            //    if (resourceCost > 1)
+            //    {
+            //        item.ShopSellPrice = (long)resourceCost;
+            //    }
+            //}
 
             foreach (var item in items.Entities)
             {
@@ -1778,14 +1845,19 @@ namespace RavenNest.BusinessLogic.Data
                     item.ShopSellPrice = 1; // minimum price.
                 }
 
-                if (item.Category == (int)ItemCategory.Resource)
-                {
-                    continue;
-                }
+                //if (item.Category == (int)ItemCategory.Resource)
+                //{
+                //    continue;
+                //}
 
                 var recipe = GetItemRecipeByItem(item.Id);
                 if (recipe == null)
                 {
+                    var resourceCost = GetResourceCost(item);
+                    if (resourceCost > 1)
+                    {
+                        item.ShopSellPrice = (long)resourceCost;
+                    }
                     continue;
                 }
 
@@ -1807,7 +1879,7 @@ namespace RavenNest.BusinessLogic.Data
                         }
                     }
                 }
-                item.ShopSellPrice = RoundTo1000((long)(newPrice * resourceMargins));
+                item.ShopSellPrice = Math.Max(RoundTo1000((long)(recipe.RequiredLevel * resourceMargins)), RoundTo1000((long)(newPrice * resourceMargins)));
             }
         }
 
@@ -2936,6 +3008,18 @@ namespace RavenNest.BusinessLogic.Data
             };
         }
 
+        public static GameSession CreateSession(Guid userId, Guid sessionId)
+        {
+            return new GameSession
+            {
+                Id = sessionId,
+                UserId = userId,
+                Revision = 0,
+                Started = DateTime.UtcNow,
+                Status = (int)SessionStatus.Active
+            };
+        }
+
         public GameEvent CreateSessionEvent<T>(RavenNest.Models.GameEventType type, GameSession session, T data)
         {
             session.Updated = DateTime.UtcNow;
@@ -2968,6 +3052,12 @@ namespace RavenNest.BusinessLogic.Data
 
         public Village CreateVillage(Guid userId)
         {
+            var user = GetUser(userId);
+            if (user == null)
+            {
+                return null;
+            }
+
             var villageResources = new Resources()
             {
                 Id = Guid.NewGuid()
@@ -2975,7 +3065,6 @@ namespace RavenNest.BusinessLogic.Data
 
             Add(villageResources);
 
-            var user = GetUser(userId);
             var minAdminVillageLevel = 30;
             var isAdmin = user.IsAdmin.GetValueOrDefault();
             var villageExp = isAdmin ? (long)GameMath.ExperienceForLevel(minAdminVillageLevel) : 0;
@@ -4696,6 +4785,7 @@ namespace RavenNest.BusinessLogic.Data
         public Item Antlers;
         public Item BlackSantaHat;
 
+        public Item FerryScroll;
         public Item ExpMultiplierScroll;
         public Item RaidScroll;
         public Item DungeonScroll;
@@ -4713,6 +4803,11 @@ namespace RavenNest.BusinessLogic.Data
         public Item DragonwoodLogs;
         public Item GoldwillowLogs;
         public Item ShadowoakLogs;
+        public Item ElderwoodLogs;
+        public Item CelestialLogs;
+        public Item EtherealLogs;
+        public Item ChronosLogs;
+        public Item VoidheartLogs;
 
         // New drops for alchemy
         public Item Hearthstone;
@@ -4992,10 +5087,10 @@ namespace RavenNest.BusinessLogic.Data
         public Item WindcallersAmulet;
         public ItemPets Pets;
         public ItemSet
-            Bronze, Iron, Steel, Black, Mithril, Adamantite, Rune, Dragon, Abraxas, Phantom, Ether, Lionsbane, Ethereum, Ancient, Atlarus;
-        //,ElderBronze, ElderIron, ElderSteel, ElderMithril, ElderAdamantite, ElderRune, ElderDragon,
-        //ElderAbraxas, ElderPhantom, ElderEther, ElderLionite, ElderAncient, ElderAtlarus;
-
+            Bronze, Iron, Steel, Black, Mithril, Adamantite, Rune, Dragon, Abraxas, Phantom, Ether,
+            Lionsbane, Ancient, Atlarus, ElderBronze, ElderIron, ElderSteel, ElderBlack, ElderMithril,
+            ElderAdamantite, ElderRune, ElderDragon, ElderAbraxas, ElderPhantom,
+            ElderEther, ElderLionsbane, ElderAncient, ElderAtlarus;
 
         // halloween 2023 + new generic
         public Item RedTikiMask;

@@ -31,6 +31,9 @@ using RavenNest.BusinessLogic.Data.Aggregators;
 using Shinobytes.OpenAI;
 using Microsoft.Extensions.Localization;
 using BytexDigital.Blazor.Components.CookieConsent;
+using RavenNest.BusinessLogic.Net.DeltaTcpLib;
+using Microsoft.AspNetCore.Localization;
+using System.Globalization;
 
 namespace RavenNest.Blazor
 {
@@ -160,6 +163,21 @@ namespace RavenNest.Blazor
             services.AddHttpContextAccessor();
             services.AddResponseCaching();
 
+            services.AddLocalization();
+            services.Configure<RequestLocalizationOptions>(options =>
+            {
+                var supportedCultures = new[]
+                {
+                    new CultureInfo("en-US"),  // Add other cultures as needed
+                    // new CultureInfo("de-DE"),
+                    // new CultureInfo("fr-FR"),
+                    // etc.
+                };
+
+                options.DefaultRequestCulture = new RequestCulture("en-US");
+                options.SupportedCultures = supportedCultures;
+                options.SupportedUICultures = supportedCultures;
+            });
 
             services
                 .AddBlazorise(options =>
@@ -169,7 +187,7 @@ namespace RavenNest.Blazor
             .AddBootstrapProviders()
             .AddFontAwesomeIcons();
 
-            RegisterServices(services);
+            RegisterServices(services, appSettings);
 
             services.Configure<GzipCompressionProviderOptions>(options =>
               options.Level = System.IO.Compression.CompressionLevel.Optimal);
@@ -201,6 +219,9 @@ namespace RavenNest.Blazor
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowAnyOrigin());
+
+            var localizationOptions = app.ApplicationServices.GetService<IOptions<RequestLocalizationOptions>>();
+            app.UseRequestLocalization(localizationOptions.Value);
 
             if (env.IsDevelopment())
             {
@@ -345,7 +366,8 @@ namespace RavenNest.Blazor
             });
 
             // Start the TCP Api
-            app.ApplicationServices.GetService<ITcpSocketApi>();
+            app.ApplicationServices.GetService<ITcpSocketApi>().Start();
+            //app.ApplicationServices.GetService<DeltaServer>().Start();
 
             // Start Generating Ravenfall Tv Episodes
             app.ApplicationServices.GetService<RavenfallTvManager>();
@@ -363,6 +385,7 @@ namespace RavenNest.Blazor
             Dispose<MarketplaceReportAggregator>(app);
             Dispose<EconomyReportAggregator>(app);
             Dispose<RavenfallTvManager>(app);
+            //Dispose<DeltaServer>(app);
         }
 
         private void Dispose<T>(IApplicationBuilder app) where T : IDisposable
@@ -374,11 +397,11 @@ namespace RavenNest.Blazor
             catch { }
         }
 
-        private static void RegisterServices(IServiceCollection services)
+        private static void RegisterServices(IServiceCollection services, AppSettings settings)
         {
             services.AddSingleton<MarketplaceReportAggregator>();
             services.AddSingleton<EconomyReportAggregator>();
-            
+
             services.AddSingleton<EconomyService>();
             services.AddSingleton<PatreonService>();
             services.AddSingleton<AuthService>();
@@ -399,6 +422,8 @@ namespace RavenNest.Blazor
             services.AddSingleton<AIAssistanceService>();
             services.AddSingleton<LoyaltyService>();
             services.AddSingleton<TownService>();
+
+
 
             services.AddSingleton<IOpenAIFunctionCallService, AIAssistanceFunctionCallbacks>();
             services.AddSingleton<IOpenAIRequestBuilderFactory, OpenAIRequestBuilderFactory>();
@@ -454,6 +479,10 @@ namespace RavenNest.Blazor
             services.AddSingleton<ITcpSocketApi, TcpSocketApi>();
             services.AddSingleton<ITwitchExtensionConnectionProvider, TwitchExtensionConnectionProvider>();
             services.AddSingleton<IExtensionPacketDataSerializer, JsonPacketDataSerializer>();
+
+            //services.AddHostedService<TcpSocketApiHostedService>();
+
+            services.AddSingleton<DeltaServer>(services => new DeltaServer(settings, services.GetService<SessionManager>(), services.GetService<PlayerManager>()));
         }
     }
 }

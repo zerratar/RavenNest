@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Data;
 using System.Diagnostics;
 using System.Threading;
 using MessagePack;
@@ -12,62 +13,6 @@ using RavenNest.Models.TcpApi;
 
 namespace RavenNest.BusinessLogic.Net
 {
-    /// <summary>
-    /// A “typed” packet header so we don’t do repeated TryDeserialize for each message type.
-    /// </summary>
-    public enum TcpMessageType : byte
-    {
-        None = 0,
-        AuthenticationRequest,
-        SaveExperienceRequest,
-        SaveStateRequest,
-        GameStateRequest,
-
-        // new partial updates.
-        PlayerUpdatesBatch
-    }
-
-    /// <summary>
-    /// Lightweight “envelope” containing the message type, session token, and
-    /// the actual payload in a serialized form. This avoids multiple deserialization attempts.
-    /// </summary>
-    [MessagePackObject]
-    public class TypedPacket
-    {
-        [Key(0)]
-        public TcpMessageType MessageType { get; set; }
-
-        // We store the session token at the “envelope” level, so we can validate
-        // before fully deserializing the payload (if you want).
-        [Key(1)]
-        public string SessionToken { get; set; }
-
-        // The “raw” payload. We’ll decode this into the correct struct/class.
-        [Key(2)]
-        public byte[] Payload { get; set; }
-
-        internal T Deserialize<T>()
-        {
-            try
-            {
-                return MessagePackSerializer.Deserialize<T>(
-                    Payload,
-                    MessagePack.Resolvers.ContractlessStandardResolver.Options
-                );
-            }
-            catch (Exception ex)
-            {
-                // ignored
-            }
-            return default;
-        }
-    }
-
-    public static class TcpSocketApiConstants
-    {
-        public const int MaxMessageSize = 2_097_152 * 10; // 20 MB, for example
-    }
-
     public class TcpSocketApi : ITcpSocketApi, IDisposable
     {
         private readonly IOptions<AppSettings> settings;
@@ -87,8 +32,6 @@ namespace RavenNest.BusinessLogic.Net
         private Stopwatch netStatStopwatch = Stopwatch.StartNew();
         private long messagesReceived, dataReceived, messagesSent, dataSent;
 
-        private readonly ConcurrentDictionary<int, string> connectionTokens = new ConcurrentDictionary<int, string>();
-
         // A thread-safe queue for “real” processing, so the Telepathy
         // loop doesn’t get blocked by heavy logic.
         private readonly BlockingCollection<(int ConnectionId, TypedPacket Packet)> messageQueue
@@ -96,7 +39,7 @@ namespace RavenNest.BusinessLogic.Net
 
         // Simple worker threads to process messages in parallel.
         private Thread[] workerThreads;
-        private int workerCount = 4;
+        private int workerCount = 8;
 
         public TcpSocketApi(
             IOptions<AppSettings> settings,
@@ -114,9 +57,8 @@ namespace RavenNest.BusinessLogic.Net
             this.gameData = gameData;
             this.gameProcessorManager = gameProcessorManager;
             this.sessionManager = sessionManager;
-            workerCount = Math.Max(4, Environment.ProcessorCount);
+            workerCount = Math.Min(workerCount, Environment.ProcessorCount);
             serverPort = (settings.Value?.TcpApiPort > 0) ? settings.Value.TcpApiPort : 3920;
-            Start();
         }
 
         public void Start()
@@ -147,6 +89,8 @@ namespace RavenNest.BusinessLogic.Net
         {
             try
             {
+                int serverFrequency = 60;
+
                 server = new Telepathy.Server(RavenNest.BusinessLogic.Net.TcpSocketApiConstants.MaxMessageSize);
                 server.OnConnected = OnClientConnected;
                 server.OnDisconnected = OnClientDisconnected;
@@ -157,10 +101,19 @@ namespace RavenNest.BusinessLogic.Net
 
                 while (running)
                 {
-                    server?.Process();
+                    if (server == null)
+                    {
+                        logger.LogError("TCP server is null. Exiting loop.");
+                        Dispose();
+                        break;
+                    }
+
+                    server.Process(100000, logger);
                     ReportNetworkStats();
-                    Thread.Sleep(1);
+                    Thread.Sleep(1000 / serverFrequency);
                 }
+
+                logger.LogInformation("TCP API Server exiting...");
             }
             catch (Exception ex)
             {
@@ -175,7 +128,7 @@ namespace RavenNest.BusinessLogic.Net
         private void OnClientConnected(int connectionId)
         {
             connectionProvider.Add(connectionId, this, gameData);
-            logger.LogDebug($"ConnectionId={connectionId} connected.");
+            //logger.LogInformation($"ConnectionId={connectionId} connected.");
         }
 
         private void OnClientDisconnected(int connectionId)
@@ -185,7 +138,7 @@ namespace RavenNest.BusinessLogic.Net
                 // Stop any game processor sessions if needed
                 gameProcessorManager.Stop(connection.SessionToken);
             }
-            logger.LogDebug($"ConnectionId={connectionId} disconnected.");
+            //logger.LogInformation($"ConnectionId={connectionId} disconnected.");
         }
 
         private bool TryDeserializePacket<T>(ArraySegment<byte> data, out T packet)
@@ -209,46 +162,97 @@ namespace RavenNest.BusinessLogic.Net
 
         private bool TryDeserializeTypedPacket(ArraySegment<byte> data, out TypedPacket envelope)
         {
-            return TryDeserializePacket<TypedPacket>(data, out envelope);
+            var res = TryDeserializePacket<TypedPacket>(data, out envelope);
+            if (res)
+            {
+                if (envelope.MessageType == TcpMessageType.None || envelope.Payload == null || envelope.Payload.Length == 0)
+                {
+                    res = false;
+                }
+            }
+            return res;
         }
+
         /// <summary>
         /// Minimal “OnData” that only does lightweight parsing (TypedPacket)
         /// and queues the real logic on the worker threads.
         /// </summary>
         private void OnData(int connectionId, ArraySegment<byte> data)
         {
-            Interlocked.Increment(ref messagesReceived);
-            Interlocked.Add(ref dataReceived, data.Count);
+            messagesReceived++;
+            dataReceived += data.Count;
 
             // 1) Try to deserialize a “TypedPacket” envelope
             if (!TryDeserializeTypedPacket(data, out var envelope))
             {
                 // handle backward compatibility
-                if (TryDeserializePacket<AuthenticationRequest>(data, out var auth))
+                if (TryDeserializePacket<GameStateRequest>(data, out var gameState) && gameState.Dungeon != null)
                 {
-                    connectionTokens[connectionId] = auth.SessionToken;
-                    return;
+                    envelope = new TypedPacket
+                    {
+                        MessageType = TcpMessageType.GameStateRequest,
+                        Payload = data.ToArray(),
+                        SessionToken = gameState.SessionToken,
+                        Object = gameState,
+                        Timestamp = DateTimeOffset.UtcNow
+                    };
+                }
+                else if (TryDeserializePacket<SaveExperienceRequest>(data, out var saveExp) && saveExp.ExpUpdates != null)
+                {
+                    envelope = new TypedPacket
+                    {
+                        MessageType = TcpMessageType.SaveExperienceRequest,
+                        Payload = data.ToArray(),
+                        SessionToken = saveExp.SessionToken,
+                        Object = saveExp,
+                        Timestamp = DateTimeOffset.UtcNow
+                    };
+                }
+                else if (TryDeserializePacket<SaveStateRequest>(data, out var saveState) && saveState.StateUpdates != null)
+                {
+                    envelope = new TypedPacket
+                    {
+                        MessageType = TcpMessageType.SaveStateRequest,
+                        Payload = data.ToArray(),
+                        SessionToken = saveState.SessionToken,
+                        Object = saveState,
+                        Timestamp = DateTimeOffset.UtcNow
+                    };
                 }
 
-                if (TryDeserializePacket<SaveExperienceRequest>(data, out _))
+                else if (TryDeserializePacket<AuthenticationRequest>(data, out var auth))
                 {
-                    connectionTokens.TryGetValue(connectionId, out var token);
-                    envelope = new TypedPacket { MessageType = TcpMessageType.SaveExperienceRequest, Payload = data.ToArray(), SessionToken = token };
-                }
-
-                if (TryDeserializePacket<SaveStateRequest>(data, out _))
-                {
-                    connectionTokens.TryGetValue(connectionId, out var token);
-                    envelope = new TypedPacket { MessageType = TcpMessageType.SaveStateRequest, Payload = data.ToArray(), SessionToken = token };
-                }
-
-                if (TryDeserializePacket<GameStateRequest>(data, out _))
-                {
-                    connectionTokens.TryGetValue(connectionId, out var token);
-                    envelope = new TypedPacket { MessageType = TcpMessageType.GameStateRequest, Payload = data.ToArray(), SessionToken = token };
+                    envelope = new TypedPacket
+                    {
+                        MessageType = TcpMessageType.AuthenticationRequest,
+                        Payload = data.ToArray(),
+                        SessionToken = auth.SessionToken,
+                        Object = auth,
+                        Timestamp = DateTimeOffset.UtcNow
+                    };
                 }
             }
 
+            if (envelope == null)
+            {
+                logger.LogWarning($"Packet from ConnId={connectionId}. Could not be deserialized!");
+                return;
+            }
+
+            var now = DateTimeOffset.UtcNow;
+            var packetAge = now - envelope.Timestamp;
+
+            var connectionTimeOffset = TimeSpan.MaxValue;
+            if (connectionProvider.TryGet(connectionId, out var tcpConnection))
+            {
+                connectionTimeOffset = tcpConnection.TimeOffset;
+            }
+
+            if (packetAge >= TimeSpan.FromMinutes(5))
+            {
+                logger.LogWarning($"Packet from ConnId={connectionId} is older than 5 minutes and will be ignored! Type={envelope.MessageType}, Timestamp={envelope.Timestamp}, Age={packetAge.TotalSeconds} seconds");
+                return;
+            }
 
             // 2) Quickly verify session token is present (if required).
             //    If it's empty or missing, we might drop immediately.
@@ -261,6 +265,7 @@ namespace RavenNest.BusinessLogic.Net
 
             // 3) Enqueue the message for real processing
             messageQueue.Add((connectionId, envelope));
+
         }
 
         /// <summary>
@@ -269,57 +274,81 @@ namespace RavenNest.BusinessLogic.Net
         /// </summary>
         private void WorkerLoop()
         {
-            foreach (var (connectionId, packet) in messageQueue.GetConsumingEnumerable())
+            while (running)
             {
-                if (!running) break;
-
-                // Validate the connection still exists, etc.
-                if (!connectionProvider.TryGet(connectionId, out var tcpConnection))
+                try
                 {
-                    // Possibly disconnected in the meantime
-                    continue;
+                    foreach (var (connectionId, packet) in messageQueue.GetConsumingEnumerable())
+                    {
+                        if (!running) break;
+
+                        // Validate the connection still exists, etc.
+                        if (!connectionProvider.TryGet(connectionId, out var tcpConnection))
+                        {
+                            // Possibly disconnected in the meantime
+                            continue;
+                        }
+
+                        // Validate the session token
+                        var token = sessionManager.Get(packet.SessionToken);
+                        if (!CheckSessionTokenValidity(token))
+                        {
+                            logger.LogWarning($"Invalid session token for ConnId={connectionId}, token={packet.SessionToken}");
+                            server?.Disconnect(connectionId);
+                            continue;
+                        }
+
+#if DEBUG
+                        logger.LogDebug($"Processing Packet from ConnId={connectionId}. User={token.UserName}");
+#endif
+
+                        // Synchronize to ensure only one thread sets the SessionToken and calls Start
+                        lock (tcpConnection)
+                        {
+                            var offset = DateTime.UtcNow - packet.Timestamp;
+                            if (tcpConnection.SessionToken == null)
+                            {
+                                tcpConnection.SessionToken = token;
+                                tcpConnection.TimeOffset = offset;
+                                gameProcessorManager.Start(token);
+                            }
+
+                            if (tcpConnection.TimeOffset > offset)
+                            {
+                                tcpConnection.TimeOffset = offset;
+                            }
+                        }
+
+                        // Now handle the typed payload
+                        switch (packet.MessageType)
+                        {
+                            case TcpMessageType.AuthenticationRequest:
+                                break;
+
+                            case TcpMessageType.SaveExperienceRequest:
+                                ProcessSaveExperience(connectionId, token, packet.Deserialize<SaveExperienceRequest>());
+                                break;
+
+                            case TcpMessageType.SaveStateRequest:
+                                ProcessSaveState(connectionId, token, packet.Deserialize<SaveStateRequest>());
+                                break;
+
+                            case TcpMessageType.GameStateRequest:
+                                ProcessGameStateRequest(connectionId, token, packet.Deserialize<GameStateRequest>());
+                                break;
+
+                            default:
+                                logger.LogWarning($"Unknown message type={packet.MessageType} from ConnId={connectionId}.");
+                                break;
+                        }
+                    }
+                }
+                catch (Exception exc)
+                {
+                    logger.LogError($"[TCP] WorkerLoop error: {exc}");
                 }
 
-                // Validate the session token
-                var token = sessionManager.Get(packet.SessionToken);
-                if (!CheckSessionTokenValidity(token))
-                {
-                    logger.LogWarning($"Invalid session token for ConnId={connectionId}, token={packet.SessionToken}");
-                    server?.Disconnect(connectionId);
-                    continue;
-                }
-
-                // Set the connection’s session token if not already
-                if (tcpConnection.SessionToken == null)
-                {
-                    tcpConnection.SessionToken = token;
-                    // Start the game session if not started
-                    gameProcessorManager.Start(token);
-                }
-
-                // Now handle the typed payload
-                switch (packet.MessageType)
-                {
-                    case TcpMessageType.AuthenticationRequest:
-                        // no longer necessary as we send token with all requests.
-                        break;
-
-                    case TcpMessageType.SaveExperienceRequest:
-                        ProcessSaveExperience(connectionId, token, packet.Deserialize<SaveExperienceRequest>());
-                        break;
-
-                    case TcpMessageType.SaveStateRequest:
-                        ProcessSaveState(connectionId, token, packet.Deserialize<SaveStateRequest>());
-                        break;
-
-                    case TcpMessageType.GameStateRequest:
-                        ProcessGameStateRequest(connectionId, token, packet.Deserialize<GameStateRequest>());
-                        break;
-
-                    default:
-                        logger.LogWarning($"Unknown message type={packet.MessageType} from ConnId={connectionId}.");
-                        break;
-                }
+                Thread.Sleep(100);
             }
         }
 
@@ -362,8 +391,8 @@ namespace RavenNest.BusinessLogic.Net
         public void Send(int connectionId, ArraySegment<byte> message)
         {
             server?.Send(connectionId, message);
-            Interlocked.Add(ref dataSent, message.Count);
-            Interlocked.Increment(ref messagesSent);
+            dataSent += message.Count;
+            messagesSent++;
         }
 
         private bool CheckSessionTokenValidity(SessionToken sessionToken)
@@ -373,32 +402,39 @@ namespace RavenNest.BusinessLogic.Net
 
         private void ReportNetworkStats()
         {
-            if (netStatStopwatch.ElapsedMilliseconds >= 10_000)
+            try
             {
-                var msReceived = Interlocked.Read(ref messagesReceived);
-                var dtReceived = Interlocked.Read(ref dataReceived);
-                var msSent = Interlocked.Read(ref messagesSent);
-                var dtSent = Interlocked.Read(ref dataSent);
+                if (netStatStopwatch.ElapsedMilliseconds >= 10_000)
+                {
+                    var msReceived = messagesReceived;
+                    var dtReceived = dataReceived;
+                    var msSent = messagesSent;
+                    var dtSent = dataSent;
 
-                var inRateKBps = (dtReceived > 0)
-                    ? (dtReceived * 1000.0 / (netStatStopwatch.ElapsedMilliseconds * 1024))
-                    : 0;
-                var outRateKBps = (dtSent > 0)
-                    ? (dtSent * 1000.0 / (netStatStopwatch.ElapsedMilliseconds * 1024))
-                    : 0;
+                    var inRateKBps = (dtReceived > 0)
+                        ? (dtReceived * 1000.0 / (netStatStopwatch.ElapsedMilliseconds * 1024))
+                        : 0;
+                    var outRateKBps = (dtSent > 0)
+                        ? (dtSent * 1000.0 / (netStatStopwatch.ElapsedMilliseconds * 1024))
+                        : 0;
 
-                // You can store or log the stats, e.g.:
-                gameData.SetNetworkStats(Thread.CurrentThread.ManagedThreadId,
-                                         msReceived, inRateKBps,
-                                         msSent, outRateKBps);
+                    // You can store or log the stats, e.g.:
+                    gameData.SetNetworkStats(Thread.CurrentThread.ManagedThreadId,
+                                             msReceived, inRateKBps,
+                                             msSent, outRateKBps);
 
-                logger.LogDebug($"[TCP] in={msReceived} msgs ({inRateKBps:F2} KB/s), out={msSent} msgs ({outRateKBps:F2} KB/s)");
+                    logger.LogInformation($"[TCP] in={msReceived} msgs ({inRateKBps:F2} KB/s), out={msSent} msgs ({outRateKBps:F2} KB/s)");
 
-                netStatStopwatch.Restart();
-                Interlocked.Exchange(ref messagesReceived, 0);
-                Interlocked.Exchange(ref dataReceived, 0);
-                Interlocked.Exchange(ref messagesSent, 0);
-                Interlocked.Exchange(ref dataSent, 0);
+                    netStatStopwatch.Restart();
+                    messagesReceived = 0;
+                    dataReceived = 0;
+                    messagesSent = 0;
+                    dataSent = 0;
+                }
+            }
+            catch (Exception exc)
+            {
+                logger.LogError($"ReportNetworkStats error: {exc}");
             }
         }
 

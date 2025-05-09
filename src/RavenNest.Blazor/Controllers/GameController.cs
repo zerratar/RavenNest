@@ -348,6 +348,8 @@ namespace RavenNest.Controllers
                 st = ScrollType.Raid;
             else if (scrollType.ToLower().Contains("dungeon"))
                 st = ScrollType.Dungeon;
+            else if (scrollType.ToLower().Contains("ferry"))
+                st = ScrollType.Ferry;
 
 
             var session = GetSessionToken();

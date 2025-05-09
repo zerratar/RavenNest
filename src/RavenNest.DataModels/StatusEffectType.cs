@@ -116,8 +116,12 @@
         /// </summary>
         IncreasedCriticalHitDamage,
         /// <summary>
-        /// Removes an item from the player's inventory
+        /// Increases the speed of the ferry in the active game.
         /// </summary>
+        IncreasedFerrySpeed,
+        /// <summary>
+        /// Removes an item from the player's inventory
+        /// </summary>       
         RemoveItem = 800,
         /// <summary>
         /// Adds an item to the player's inventory

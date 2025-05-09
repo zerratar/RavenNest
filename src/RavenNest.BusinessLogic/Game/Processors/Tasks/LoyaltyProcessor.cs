@@ -26,11 +26,10 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             GameData gameData,
             PlayerInventory inventory,
             GameSession session,
+            User user,
             Character character,
             CharacterState state)
         {
-            var user = gameData.GetUser(character.UserId);
-
             var loyalty = gameData.GetUserLoyalty(character.UserId, session.UserId);
             if (loyalty == null && character.UserIdLock != null)
             {
@@ -46,16 +45,24 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
             DateTime now = DateTime.UtcNow;
             TimeSpan elapsed = TimeSpan.Zero;
-            if (lastUpdate.TryGetValue(user.Id, out var lastUpdateTime))
+
+            if (!lastUpdate.TryGetValue(user.Id, out var lastUpdateTime))
+            {
+                lastUpdate[user.Id] = now;
+            }
+            else
             {
                 elapsed = now - lastUpdateTime;
-                loyalty.AddPlayTime(elapsed);
             }
-            lastUpdate[user.Id] = now;
 
-            var isSubMdVip = loyalty.IsSubscriber;
-            var activityMultiplier = isSubMdVip ? UserLoyalty.SubscriberMultiplier : 1;
-            loyalty.AddExperience((double)elapsed.TotalSeconds * UserLoyalty.ExpPerSecond * activityMultiplier);
+            if (elapsed.TotalMilliseconds > 500)
+            {
+                lastUpdate[user.Id] = now;
+                loyalty.AddPlayTime(elapsed);
+                var isSubMdVip = loyalty.IsSubscriber;
+                var activityMultiplier = isSubMdVip ? UserLoyalty.SubscriberMultiplier : 1;
+                loyalty.AddExperience((double)elapsed.TotalSeconds * UserLoyalty.ExpPerSecond * activityMultiplier);
+            }
         }
 
         private UserLoyalty CreateUserLoyalty(

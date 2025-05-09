@@ -314,9 +314,9 @@ namespace RavenNest.Blazor.Services
         }
 
 
-        public List<RavenNest.Models.StateParameters> GetDecodedObjectFromState(string encodedState)
+        public List<RavenNest.Models.StateParameters> GetDecodedObjectFromState(string encodedState, string? sourceUrl = null)
         {
-            return authManager.GetDecodedObjectFromState(encodedState);
+            return authManager.GetDecodedObjectFromState(encodedState, sourceUrl);
         }
     }
 

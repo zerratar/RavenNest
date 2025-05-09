@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
+using Microsoft.Identity.Client;
 using RavenNest.DataModels;
 using System;
 using System.Collections.Generic;
@@ -105,24 +106,85 @@ namespace RavenNest.BusinessLogic.Data
                     WoodPlank = GetOrCreateItem(i, "Wood Plank", ItemCategory.Resource, ItemType.Woodcutting),
                 };
 
-                ItemSet GetOrCreateItemSet(string typeName, int levelRequirement = 0)
+                ItemSet GetOrCreateItemSet(string typeName, int levelRequirement = 0, ItemMaterial material = ItemMaterial.None)
                 {
+                    // Copy prefab paths from the corresponding regular sets if needed
+                    var prefabName = typeName.Replace("Elder ", "");
+
+                    if (material == ItemMaterial.None)
+                        material = GetMaterialByName(typeName);
+
                     return new ItemSet
                     {
-                        Boots = GetOrCreateItem(i, typeName + " Boots", ItemCategory.Armor, ItemType.Boots).LevelRequirement(levelRequirement),
-                        Gloves = GetOrCreateItem(i, typeName + " Gloves", ItemCategory.Armor, ItemType.Gloves).LevelRequirement(levelRequirement),
-                        Helmet = GetOrCreateItem(i, typeName + " Helmet", ItemCategory.Armor, ItemType.Helmet).LevelRequirement(levelRequirement),
-                        Leggings = GetOrCreateItem(i, typeName + " Leggings", ItemCategory.Armor, ItemType.Leggings).LevelRequirement(levelRequirement),
-                        Chest = GetOrCreateItem(i, typeName + " Chest", ItemCategory.Armor, ItemType.Chest).LevelRequirement(levelRequirement),
-                        Shield = GetOrCreateItem(i, typeName + " Shield", ItemCategory.Armor, ItemType.Shield).GenericPrefab("Character/Weapons/Shields/" + typeName + " Shield", false).LevelRequirement(levelRequirement),
-                        Sword = GetOrCreateItem(i, typeName + " Sword", ItemCategory.Weapon, ItemType.OneHandedSword).GenericPrefab("Character/Weapons/Swords/" + typeName + " Sword").LevelRequirement(levelRequirement),
-                        Axe = GetOrCreateItem(i, typeName + " Axe", ItemCategory.Weapon, ItemType.OneHandedAxe).GenericPrefab("Character/Weapons/Axes/" + typeName + " Axe").LevelRequirement(levelRequirement),
-                        Bow = GetOrCreateItem(i, typeName + " Bow", ItemCategory.Weapon, ItemType.TwoHandedBow).LevelRequirement(levelRequirement),
-                        Spear = GetOrCreateItem(i, typeName + " Spear", ItemCategory.Weapon, ItemType.TwoHandedSpear, typeName + " 2H Spear").GenericPrefab("Character/Weapons/Spears/" + typeName + " Spear", false).LevelRequirement(levelRequirement),
-                        Staff = GetOrCreateItem(i, typeName + " Staff", ItemCategory.Weapon, ItemType.TwoHandedStaff, typeName + " 2H Staff").GenericPrefab("Character/Weapons/Staffs/" + typeName + " Staff", false).LevelRequirement(levelRequirement),
-                        TwoHandedAxe = GetOrCreateItem(i, typeName + " 2H Axe", ItemCategory.Weapon, ItemType.TwoHandedAxe).GenericPrefab("Character/Weapons/Axes/" + typeName + " 2H Axe").LevelRequirement(levelRequirement),
-                        TwoHandedSword = GetOrCreateItem(i, typeName + " 2H Sword", ItemCategory.Weapon, ItemType.TwoHandedSword).GenericPrefab("Character/Weapons/Swords/" + typeName + " 2H Sword").LevelRequirement(levelRequirement),
-                        Katana = GetOrCreateItem(i, typeName + " Katana", ItemCategory.Weapon, ItemType.TwoHandedSword).GenericPrefab("Character/Weapons/Swords/" + typeName + " Katana", false).LevelRequirement(levelRequirement),
+                        Boots = GetOrCreateItem(i, typeName + " Boots", ItemCategory.Armor, ItemType.Boots)
+                            .ItemMaterial(material)
+                            .LevelRequirement(levelRequirement)
+                            .GenericPrefab(null),
+
+                        Gloves = GetOrCreateItem(i, typeName + " Gloves", ItemCategory.Armor, ItemType.Gloves)
+                            .ItemMaterial(material)
+                            .LevelRequirement(levelRequirement)
+                            .GenericPrefab(null),
+
+                        Helmet = GetOrCreateItem(i, typeName + " Helmet", ItemCategory.Armor, ItemType.Helmet)
+                            .ItemMaterial(material)
+                            .LevelRequirement(levelRequirement)
+                            .GenericPrefab(null),
+
+                        Leggings = GetOrCreateItem(i, typeName + " Leggings", ItemCategory.Armor, ItemType.Leggings)
+                            .ItemMaterial(material)
+                            .LevelRequirement(levelRequirement)
+                            .GenericPrefab(null),
+
+                        Chest = GetOrCreateItem(i, typeName + " Chest", ItemCategory.Armor, ItemType.Chest)
+                            .ItemMaterial(material)
+                            .LevelRequirement(levelRequirement)
+                            .GenericPrefab(null),
+
+                        Shield = GetOrCreateItem(i, typeName + " Shield", ItemCategory.Armor, ItemType.Shield)
+                            .GenericPrefab("Character/Weapons/Shields/" + prefabName + " Shield")
+                            .ItemMaterial(material)
+                            .LevelRequirement(levelRequirement),
+
+                        Sword = GetOrCreateItem(i, typeName + " Sword", ItemCategory.Weapon, ItemType.OneHandedSword)
+                            .GenericPrefab("Character/Weapons/Swords/" + prefabName + " Sword")
+                            .ItemMaterial(material)
+                            .LevelRequirement(levelRequirement),
+
+                        Axe = GetOrCreateItem(i, typeName + " Axe", ItemCategory.Weapon, ItemType.OneHandedAxe)
+                            .GenericPrefab("Character/Weapons/Axes/" + prefabName + " Axe")
+                            .ItemMaterial(material)
+                            .LevelRequirement(levelRequirement),
+
+                        Bow = GetOrCreateItem(i, typeName + " Bow", ItemCategory.Weapon, ItemType.TwoHandedBow)
+                            .GenericPrefab("Character/Weapons/Bows/" + prefabName + " Bow")
+                            .ItemMaterial(material)
+                            .LevelRequirement(levelRequirement),
+
+                        Spear = GetOrCreateItem(i, typeName + " Spear", ItemCategory.Weapon, ItemType.TwoHandedSpear, typeName + " 2H Spear")
+                            .GenericPrefab("Character/Weapons/Spears/" + prefabName + " Spear")
+                            .ItemMaterial(material)
+                            .LevelRequirement(levelRequirement),
+
+                        Staff = GetOrCreateItem(i, typeName + " Staff", ItemCategory.Weapon, ItemType.TwoHandedStaff, typeName + " 2H Staff")
+                            .GenericPrefab("Character/Weapons/Staffs/" + prefabName + " Staff")
+                            .ItemMaterial(material)
+                            .LevelRequirement(levelRequirement),
+
+                        TwoHandedAxe = GetOrCreateItem(i, typeName + " 2H Axe", ItemCategory.Weapon, ItemType.TwoHandedAxe)
+                            .GenericPrefab("Character/Weapons/Axes/" + prefabName + " 2H Axe")
+                            .ItemMaterial(material)
+                            .LevelRequirement(levelRequirement),
+
+                        TwoHandedSword = GetOrCreateItem(i, typeName + " 2H Sword", ItemCategory.Weapon, ItemType.TwoHandedSword)
+                            .GenericPrefab("Character/Weapons/Swords/" + prefabName + " 2H Sword")
+                            .ItemMaterial(material)
+                            .LevelRequirement(levelRequirement),
+
+                        Katana = GetOrCreateItem(i, typeName + " Katana", ItemCategory.Weapon, ItemType.TwoHandedSword)
+                            .GenericPrefab("Character/Weapons/Swords/" + prefabName + " Katana")
+                            .ItemMaterial(material)
+                            .LevelRequirement(levelRequirement),
                     };
                 }
 
@@ -133,34 +195,35 @@ namespace RavenNest.BusinessLogic.Data
                     Pets = GetOrCreatePets(i),
 
                     // Item Sets
-                    Bronze = GetOrCreateItemSet("Bronze", 1),
-                    Iron = GetOrCreateItemSet("Iron", 1),
-                    Steel = GetOrCreateItemSet("Steel", 10),
-                    Black = GetOrCreateItemSet("Black", 20),
-                    Mithril = GetOrCreateItemSet("Mithril", 30),
-                    Adamantite = GetOrCreateItemSet("Adamantite", 50),
-                    Rune = GetOrCreateItemSet("Rune", 70),
-                    Dragon = GetOrCreateItemSet("Dragon", 90),
-                    Abraxas = GetOrCreateItemSet("Abraxas", 120),
-                    Phantom = GetOrCreateItemSet("Phantom", 150),
-                    Lionsbane = GetOrCreateItemSet("Lionsbane", 200),
-                    Ether = GetOrCreateItemSet("Ether", 280),
-                    Ancient = GetOrCreateItemSet("Ancient", 340),
-                    Atlarus = GetOrCreateItemSet("Atlarus", 400),
+                    Bronze = GetOrCreateItemSet("Bronze", 1, ItemMaterial.Bronze),
+                    Iron = GetOrCreateItemSet("Iron", 1, ItemMaterial.Iron),
+                    Steel = GetOrCreateItemSet("Steel", 10, ItemMaterial.Steel),
+                    Black = GetOrCreateItemSet("Black", 20, ItemMaterial.Black),
+                    Mithril = GetOrCreateItemSet("Mithril", 30, ItemMaterial.Mithril),
+                    Adamantite = GetOrCreateItemSet("Adamantite", 50, ItemMaterial.Adamantite),
+                    Rune = GetOrCreateItemSet("Rune", 70, ItemMaterial.Rune),
+                    Dragon = GetOrCreateItemSet("Dragon", 90, ItemMaterial.Dragon),
+                    Abraxas = GetOrCreateItemSet("Abraxas", 120, ItemMaterial.Abraxas),
+                    Phantom = GetOrCreateItemSet("Phantom", 150, ItemMaterial.Phantom),
+                    Lionsbane = GetOrCreateItemSet("Lionsbane", 200, ItemMaterial.Lionsbane),
+                    Ether = GetOrCreateItemSet("Ether", 280, ItemMaterial.Ether),
+                    Ancient = GetOrCreateItemSet("Ancient", 340, ItemMaterial.Ancient),
+                    Atlarus = GetOrCreateItemSet("Atlarus", 400, ItemMaterial.Atlarus),
 
-                    //ElderBronze = GetOrCreateItemSet("Elder Bronze"),
-                    //ElderIron = GetOrCreateItemSet("Elder Iron"),
-                    //ElderSteel = GetOrCreateItemSet("Elder Steel"),
-                    //ElderMithril = GetOrCreateItemSet("Elder Mithril"),
-                    //ElderAdamantite = GetOrCreateItemSet("Elder Adamantite"),
-                    //ElderRune = GetOrCreateItemSet("Elder Rune"),
-                    //ElderDragon = GetOrCreateItemSet("Elder Dragon"),
-                    //ElderAbraxas = GetOrCreateItemSet("Elder Abraxas"),
-                    //ElderPhantom = GetOrCreateItemSet("Elder Phantom"),
-                    //ElderEther = GetOrCreateItemSet("Elder Ether"),
-                    //ElderLionite = GetOrCreateItemSet("Elder Lionsbane"),
-                    //ElderAncient = GetOrCreateItemSet("Elder Ancient"),
-                    //ElderAtlarus = GetOrCreateItemSet("Elder Atlarus"),
+                    ElderBronze = GetOrCreateItemSet("Elder Bronze", 500, ItemMaterial.ElderBronze),
+                    ElderIron = GetOrCreateItemSet("Elder Iron", 525, ItemMaterial.ElderIron),
+                    ElderSteel = GetOrCreateItemSet("Elder Steel", 550, ItemMaterial.ElderSteel),
+                    ElderBlack = GetOrCreateItemSet("Elder Black", 600, ItemMaterial.ElderBlack),
+                    ElderMithril = GetOrCreateItemSet("Elder Mithril", 650, ItemMaterial.ElderMithril),
+                    ElderAdamantite = GetOrCreateItemSet("Elder Adamantite", 700, ItemMaterial.ElderAdamantite),
+                    ElderRune = GetOrCreateItemSet("Elder Rune", 750, ItemMaterial.ElderRune),
+                    ElderDragon = GetOrCreateItemSet("Elder Dragon", 800, ItemMaterial.ElderDragon),
+                    ElderAbraxas = GetOrCreateItemSet("Elder Abraxas", 825, ItemMaterial.ElderAbraxas),
+                    ElderPhantom = GetOrCreateItemSet("Elder Phantom", 850, ItemMaterial.ElderPhantom),
+                    ElderLionsbane = GetOrCreateItemSet("Elder Lionsbane", 875, ItemMaterial.ElderLionsbane),
+                    ElderEther = GetOrCreateItemSet("Elder Ether", 900, ItemMaterial.ElderEther),
+                    ElderAncient = GetOrCreateItemSet("Elder Ancient", 950, ItemMaterial.ElderAncient),
+                    ElderAtlarus = GetOrCreateItemSet("Elder Atlarus", 999, ItemMaterial.ElderAtlarus),
 
 
                     GoldRing = GetOrCreateItem(i, "Gold Ring", ItemCategory.Ring, ItemType.Ring),
@@ -209,6 +272,7 @@ namespace RavenNest.BusinessLogic.Data
                     BrownScarf = GetOrCreateItem(i, "Brown Scarf", "A brown scarf.", ItemCategory.Cosmetic, ItemType.Amulet).GenericPrefab("Character/Appearance/Neck/Brown Neckwrap"),
                     GreenScarf = GetOrCreateItem(i, "Green Scarf", "A green scarf.", ItemCategory.Cosmetic, ItemType.Amulet).GenericPrefab("Character/Appearance/Neck/Green Neckwrap"),
 
+                    FerryScroll = GetOrCreateItem(i, "Ferry Scroll", "A scroll that will temporarily increase the speed of the ferry for 15 minutes. This effect cannot  be stacked.", ItemCategory.Scroll, ItemType.Scroll),
                     ExpMultiplierScroll = GetOrCreateItem(i, "Exp Multiplier Scroll", "A scroll that increases the global experience multiplier by 1 and extends the timer with 15 minutes.", ItemCategory.Scroll, ItemType.Scroll),
                     DungeonScroll = GetOrCreateItem(i, "Dungeon Scroll", "A scroll that allows you to instantanously start and enter a dungeon.", ItemCategory.Scroll, ItemType.Scroll),
                     RaidScroll = GetOrCreateItem(i, "Raid Scroll", "A scroll that allows you to instantanously start and enter a raid.", ItemCategory.Scroll, ItemType.Scroll),
@@ -334,6 +398,11 @@ namespace RavenNest.BusinessLogic.Data
                     DragonwoodLogs = GetOrCreateItem(i, "Dragonwood Logs", "Rare logs infused with the fiery essence of dragons.", ItemCategory.Resource, ItemType.Woodcutting),
                     GoldwillowLogs = GetOrCreateItem(i, "Goldwillow Logs", "Golden logs known to bring good fortune.", ItemCategory.Resource, ItemType.Woodcutting),
                     ShadowoakLogs = GetOrCreateItem(i, "Shadowoak Logs", "Ancient timber that holds the secrets of the shadows.", ItemCategory.Resource, ItemType.Woodcutting),
+                    ElderwoodLogs = GetOrCreateItem(i, "Elderwood Logs", "Ancient timber infused with mystical energy. The wood seems alive to the touch, resonating with ancient power.", ItemCategory.Resource, ItemType.Woodcutting),
+                    CelestialLogs = GetOrCreateItem(i, "Celestial Logs", "Wood that fell from the heavens, gleaming with starlight even in darkness. Incredibly rare and difficult to work with.", ItemCategory.Resource, ItemType.Woodcutting),
+                    EtherealLogs = GetOrCreateItem(i, "Ethereal Logs", "Semi-transparent wood that seems to phase between realities. Hard to grasp even for master woodcutters.", ItemCategory.Resource, ItemType.Woodcutting),
+                    ChronosLogs = GetOrCreateItem(i, "Chronos Logs", "Wood that exists outside normal time. When cut, echoes of different ages can be glimpsed within its rings.", ItemCategory.Resource, ItemType.Woodcutting),
+                    VoidheartLogs = GetOrCreateItem(i, "Voidheart Logs", "The deepest black wood known to exist, harvested from trees that grow at the edge of reality. Said to contain knowledge from beyond.", ItemCategory.Resource, ItemType.Woodcutting),
 
                     // Fishing
                     RawSprat = GetOrCreateItem(i, "Raw Sprat", "A tiny, silver fish. Great for a quick snack.", ItemCategory.Resource, ItemType.Fishing),
@@ -493,6 +562,8 @@ namespace RavenNest.BusinessLogic.Data
                     GoldBar = GetOrCreateItem(i, "Gold Bar", "This opulent bar of pure gold exudes wealth and prestige. Prized by royalty and artisans alike, it has been a symbol of power and luxury for eons.", ItemCategory.Resource, ItemType.Crafting),
                 };
 
+                EnsureElderSetsItemModels(typedItems);
+
                 EnsureSeasonalRedeems(typedItems);
 
                 // Make sure new equipments have stats.
@@ -504,6 +575,68 @@ namespace RavenNest.BusinessLogic.Data
                 EnsureResourceDropRates(typedItems);
             }
             return typedItems;
+        }
+
+        private void EnsureElderSetsItemModels(TypedItems typedItems)
+        {
+            MatchArmorModels(typedItems.Bronze, typedItems.ElderBronze);
+            MatchArmorModels(typedItems.Iron, typedItems.ElderIron);
+            MatchArmorModels(typedItems.Steel, typedItems.ElderSteel);
+            MatchArmorModels(typedItems.Black, typedItems.ElderBlack);
+            MatchArmorModels(typedItems.Mithril, typedItems.ElderMithril);
+            MatchArmorModels(typedItems.Adamantite, typedItems.ElderAdamantite);
+            MatchArmorModels(typedItems.Rune, typedItems.ElderRune);
+            MatchArmorModels(typedItems.Dragon, typedItems.ElderDragon);
+            MatchArmorModels(typedItems.Abraxas, typedItems.ElderAbraxas);
+            MatchArmorModels(typedItems.Phantom, typedItems.ElderPhantom);
+            MatchArmorModels(typedItems.Lionsbane, typedItems.ElderLionsbane);
+            MatchArmorModels(typedItems.Ether, typedItems.ElderEther);
+            MatchArmorModels(typedItems.Ancient, typedItems.ElderAncient);
+            MatchArmorModels(typedItems.Atlarus, typedItems.ElderAtlarus);
+        }
+
+        private void MatchArmorModels(ItemSet source, ItemSet target)
+        {
+            // only match if we have same material, since when we use the proper material we should make sure to use the new ones when possible.
+            if (string.IsNullOrEmpty(target.Helmet.MaleModelId)
+                || string.IsNullOrEmpty(target.Helmet.FemaleModelId)
+                || target.Helmet.Material == source.Helmet.Material)
+            {
+                target.Helmet.MaleModelId = source.Helmet.MaleModelId;
+                target.Helmet.FemaleModelId = source.Helmet.FemaleModelId;
+            }
+
+            if (string.IsNullOrEmpty(target.Chest.MaleModelId)
+                || string.IsNullOrEmpty(target.Chest.FemaleModelId)
+                || target.Chest.Material == source.Chest.Material)
+            {
+                target.Chest.MaleModelId = source.Chest.MaleModelId;
+                target.Chest.FemaleModelId = source.Chest.FemaleModelId;
+            }
+
+            if (string.IsNullOrEmpty(target.Gloves.MaleModelId)
+                || string.IsNullOrEmpty(target.Gloves.FemaleModelId)
+                || target.Gloves.Material == source.Gloves.Material)
+            {
+                target.Gloves.MaleModelId = source.Gloves.MaleModelId;
+                target.Gloves.FemaleModelId = source.Gloves.FemaleModelId;
+            }
+
+            if (string.IsNullOrEmpty(target.Leggings.MaleModelId)
+                || string.IsNullOrEmpty(target.Leggings.FemaleModelId)
+                || target.Leggings.Material == source.Leggings.Material)
+            {
+                target.Leggings.MaleModelId = source.Leggings.MaleModelId;
+                target.Leggings.FemaleModelId = source.Leggings.FemaleModelId;
+            }
+
+            if (string.IsNullOrEmpty(target.Boots.MaleModelId)
+                || string.IsNullOrEmpty(target.Boots.FemaleModelId)
+                || target.Boots.Material == source.Boots.Material)
+            {
+                target.Boots.MaleModelId = source.Boots.MaleModelId;
+                target.Boots.FemaleModelId = source.Boots.FemaleModelId;
+            }
         }
 
         private ItemPets GetOrCreatePets(IReadOnlyList<Item> i)
@@ -637,11 +770,26 @@ namespace RavenNest.BusinessLogic.Data
             EnsureEquipmentStats(typedItems.Lionsbane);
             EnsureEquipmentStats(typedItems.Ancient);
             EnsureEquipmentStats(typedItems.Atlarus);
+
+            EnsureEquipmentStats(typedItems.ElderBronze);
+            EnsureEquipmentStats(typedItems.ElderIron);
+            EnsureEquipmentStats(typedItems.ElderSteel);
+            EnsureEquipmentStats(typedItems.ElderBlack);
+            EnsureEquipmentStats(typedItems.ElderMithril);
+            EnsureEquipmentStats(typedItems.ElderAdamantite);
+            EnsureEquipmentStats(typedItems.ElderRune);
+            EnsureEquipmentStats(typedItems.ElderDragon);
+            EnsureEquipmentStats(typedItems.ElderAbraxas);
+            EnsureEquipmentStats(typedItems.ElderPhantom);
+            EnsureEquipmentStats(typedItems.ElderEther);
+            EnsureEquipmentStats(typedItems.ElderLionsbane);
+            EnsureEquipmentStats(typedItems.ElderAncient);
+            EnsureEquipmentStats(typedItems.ElderAtlarus);
         }
 
         private void EnsureEquipmentStats(ItemSet current)
         {
-            // make sure new shield has stats, same as leggings
+            // Original logic for regular sets remains unchanged
             const float katanaPowerFactor = 1.06f;
             const float katanaAimFactor = 0.94f;
             const float spearPowerFactor = 1.04f;
@@ -665,12 +813,81 @@ namespace RavenNest.BusinessLogic.Data
                 if (current.TwoHandedAxe.WeaponPower == 0) current.TwoHandedAxe.WeaponPower = (int)(current.TwoHandedSword.WeaponPower * axePowerFactor);
                 if (current.TwoHandedAxe.WeaponAim == 0) current.TwoHandedAxe.WeaponAim = (int)(current.TwoHandedSword.WeaponAim * axeAimFactor);
             }
-            /*if (current.Spear.WeaponPower == 0) */
+
             current.Spear.WeaponPower = (int)(current.TwoHandedSword.WeaponPower * spearPowerFactor);
-            /*if (current.Spear.WeaponAim == 0) */
             current.Spear.WeaponAim = (int)(current.TwoHandedSword.WeaponAim * spearAimFactor);
             if (current.Katana.WeaponPower == 0) current.Katana.WeaponPower = (int)(current.TwoHandedSword.WeaponPower * katanaPowerFactor);
             if (current.Katana.WeaponAim == 0) current.Katana.WeaponAim = (int)(current.TwoHandedSword.WeaponAim * katanaAimFactor);
+
+            // Special handling for Elder sets
+            if (current.Helmet.Name.StartsWith("Elder "))
+            {
+                // Find the base set name this Elder set is derived from
+                string baseName = current.Helmet.Name.Replace("Elder ", "");
+
+                // Get the Atlarus set as our base reference
+                var atlarusSet = typedItems.Atlarus;
+
+                // Calculate the stats multiplier based on progression tier
+                float elderMultiplier = 1.5f;  // Base Elder multiplier
+
+                // Additional multiplier based on which Elder set this is
+                float tierMultiplier = 1.0f;
+                if (baseName.Contains("Bronze")) tierMultiplier = 1.0f;
+                else if (baseName.Contains("Iron")) tierMultiplier = 1.05f;
+                else if (baseName.Contains("Steel")) tierMultiplier = 1.1f;
+                else if (baseName.Contains("Mithril")) tierMultiplier = 1.15f;
+                else if (baseName.Contains("Adamantite")) tierMultiplier = 1.2f;
+                else if (baseName.Contains("Rune")) tierMultiplier = 1.25f;
+                else if (baseName.Contains("Dragon")) tierMultiplier = 1.3f;
+                else if (baseName.Contains("Abraxas")) tierMultiplier = 1.35f;
+                else if (baseName.Contains("Phantom")) tierMultiplier = 1.4f;
+                else if (baseName.Contains("Ether")) tierMultiplier = 1.45f;
+                else if (baseName.Contains("Lionsbane")) tierMultiplier = 1.5f;
+                else if (baseName.Contains("Ancient")) tierMultiplier = 1.55f;
+                else if (baseName.Contains("Atlarus")) tierMultiplier = 1.6f;
+
+                // Calculate total multiplier
+                float totalMultiplier = elderMultiplier * tierMultiplier;
+
+                // Apply stats using Atlarus as the base reference
+                // Armor
+                current.Helmet.ArmorPower = (int)(atlarusSet.Helmet.ArmorPower * totalMultiplier);
+                current.Chest.ArmorPower = (int)(atlarusSet.Chest.ArmorPower * totalMultiplier);
+                current.Leggings.ArmorPower = (int)(atlarusSet.Leggings.ArmorPower * totalMultiplier);
+                current.Boots.ArmorPower = (int)(atlarusSet.Boots.ArmorPower * totalMultiplier);
+                current.Gloves.ArmorPower = (int)(atlarusSet.Gloves.ArmorPower * totalMultiplier);
+                current.Shield.ArmorPower = (int)(atlarusSet.Shield.ArmorPower * totalMultiplier);
+
+                // Weapons
+                current.Sword.WeaponPower = (int)(atlarusSet.Sword.WeaponPower * totalMultiplier);
+                current.Sword.WeaponAim = (int)(atlarusSet.Sword.WeaponAim * totalMultiplier);
+                current.TwoHandedSword.WeaponPower = (int)(atlarusSet.TwoHandedSword.WeaponPower * totalMultiplier);
+                current.TwoHandedSword.WeaponAim = (int)(atlarusSet.TwoHandedSword.WeaponAim * totalMultiplier);
+
+                if (current.Axe != null && atlarusSet.Axe != null)
+                {
+                    current.Axe.WeaponPower = (int)(atlarusSet.Axe.WeaponPower * totalMultiplier);
+                    current.Axe.WeaponAim = (int)(atlarusSet.Axe.WeaponAim * totalMultiplier);
+                }
+
+                if (current.TwoHandedAxe != null && atlarusSet.TwoHandedAxe != null)
+                {
+                    current.TwoHandedAxe.WeaponPower = (int)(atlarusSet.TwoHandedAxe.WeaponPower * totalMultiplier);
+                    current.TwoHandedAxe.WeaponAim = (int)(atlarusSet.TwoHandedAxe.WeaponAim * totalMultiplier);
+                }
+
+                current.Spear.WeaponPower = (int)(atlarusSet.Spear.WeaponPower * totalMultiplier);
+                current.Spear.WeaponAim = (int)(atlarusSet.Spear.WeaponAim * totalMultiplier);
+                current.Katana.WeaponPower = (int)(atlarusSet.Katana.WeaponPower * totalMultiplier);
+                current.Katana.WeaponAim = (int)(atlarusSet.Katana.WeaponAim * totalMultiplier);
+
+                // Handle ranged and magic stats if they exist
+                current.Bow.RangedPower = (int)(atlarusSet.Bow.RangedPower * totalMultiplier);
+                current.Bow.RangedAim = (int)(atlarusSet.Bow.RangedAim * totalMultiplier);
+                current.Staff.MagicPower = (int)(atlarusSet.Staff.MagicPower * totalMultiplier);
+                current.Staff.MagicAim = (int)(atlarusSet.Staff.MagicAim * totalMultiplier);
+            }
         }
 
         private void EnsureDungeonAndRaidDrops(TypedItems typedItems)
@@ -774,6 +991,7 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDrop(typedItems.EldarasMark, 0.03);
 
             // scrolls
+            EnsureDrop(typedItems.FerryScroll, 0.02);
             EnsureDrop(typedItems.ExpMultiplierScroll, 0.02);
             EnsureDrop(typedItems.RaidScroll, 0.02);
             EnsureDrop(typedItems.DungeonScroll, 0.01);
@@ -858,6 +1076,11 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDropRate(200, items.DragonwoodLogs, 700, 0.09, woodcutting);
             EnsureDropRate(240, items.GoldwillowLogs, 800, 0.08, woodcutting);
             EnsureDropRate(300, items.ShadowoakLogs, 1000, 0.08, woodcutting);
+            EnsureDropRate(400, items.ElderwoodLogs, 2500, 0.07, woodcutting);
+            EnsureDropRate(500, items.CelestialLogs, 5000, 0.06, woodcutting);
+            EnsureDropRate(650, items.EtherealLogs, 8000, 0.05, woodcutting);
+            EnsureDropRate(800, items.ChronosLogs, 12000, 0.04, woodcutting);
+            EnsureDropRate(950, items.VoidheartLogs, 20000, 0.03, woodcutting);
             #endregion
 
             #region For Cooking
@@ -1069,7 +1292,8 @@ namespace RavenNest.BusinessLogic.Data
             EnsureCraftingRecipe(800, items.ElderPhantomBar, (Ingredient)items.PhantomBar, Ingredient(items.Eldrium, 30), Ingredient(items.Coal, 140));
             EnsureCraftingRecipe(850, items.ElderLioniteBar, (Ingredient)items.LioniteBar, Ingredient(items.Eldrium, 35), Ingredient(items.Coal, 160));
             EnsureCraftingRecipe(900, items.ElderEthereumBar, (Ingredient)items.EthereumBar, Ingredient(items.Eldrium, 40), Ingredient(items.Coal, 180));
-            EnsureCraftingRecipe(950, items.ElderAtlarusBar, (Ingredient)items.AtlarusBar, Ingredient(items.Eldrium, 50), Ingredient(items.Coal, 200));
+            EnsureCraftingRecipe(950, items.ElderAncientBar, (Ingredient)items.AncientBar, Ingredient(items.Eldrium, 50), Ingredient(items.Coal, 200));
+            EnsureCraftingRecipe(990, items.ElderAtlarusBar, (Ingredient)items.AtlarusBar, Ingredient(items.Eldrium, 60), Ingredient(items.Coal, 300));
 
             EnsureCraftingRecipeSet(1, items.Bronze, items.BronzeBar, items.Logs);
             EnsureCraftingRecipeSet(10, items.Iron, items.IronBar, items.Logs);
@@ -1084,6 +1308,19 @@ namespace RavenNest.BusinessLogic.Data
             EnsureCraftingRecipeSet(260, items.Ether, items.EthereumBar, items.DragonwoodLogs);
             EnsureCraftingRecipeSet(300, items.Ancient, items.AncientBar, items.GoldwillowLogs);
             EnsureCraftingRecipeSet(400, items.Atlarus, items.AtlarusBar, items.ShadowoakLogs);
+            EnsureCraftingRecipeSet(500, items.ElderBronze, items.ElderBronzeBar, items.ElderwoodLogs);
+            EnsureCraftingRecipeSet(525, items.ElderIron, items.ElderIronBar, items.ElderwoodLogs);
+            EnsureCraftingRecipeSet(550, items.ElderSteel, items.ElderSteelBar, items.ElderwoodLogs);
+            EnsureCraftingRecipeSet(600, items.ElderMithril, items.ElderMithrilBar, items.CelestialLogs);
+            EnsureCraftingRecipeSet(650, items.ElderAdamantite, items.ElderAdamantiteBar, items.CelestialLogs);
+            EnsureCraftingRecipeSet(700, items.ElderRune, items.ElderRuneBar, items.EtherealLogs);
+            EnsureCraftingRecipeSet(750, items.ElderDragon, items.ElderDragonBar, items.EtherealLogs);
+            EnsureCraftingRecipeSet(800, items.ElderAbraxas, items.ElderAbraxasBar, items.ChronosLogs);
+            EnsureCraftingRecipeSet(850, items.ElderPhantom, items.ElderPhantomBar, items.ChronosLogs);
+            EnsureCraftingRecipeSet(875, items.ElderEther, items.ElderEthereumBar, items.ChronosLogs);
+            EnsureCraftingRecipeSet(900, items.ElderLionsbane, items.ElderLioniteBar, items.VoidheartLogs);
+            EnsureCraftingRecipeSet(950, items.ElderAncient, items.ElderAncientBar, items.VoidheartLogs);
+            EnsureCraftingRecipeSet(999, items.ElderAtlarus, items.ElderAtlarusBar, items.VoidheartLogs);
 
             #endregion
 
@@ -1215,7 +1452,7 @@ namespace RavenNest.BusinessLogic.Data
             EnsureItemStatusEffects(typedItems.ApplePie, Effect(StatusEffectType.Heal, 0.14f, 22), Effect(StatusEffectType.IncreasedMagicPower, 150, 0.05f, 3));
             EnsureItemStatusEffects(typedItems.Bread, Effect(StatusEffectType.Heal, 0.06f, 8));
             EnsureItemStatusEffects(typedItems.Skewers, Effect(StatusEffectType.Heal, 0.11f, 18), Effect(StatusEffectType.IncreasedAttackSpeed, 140, 0.06f, 2));
-            EnsureItemStatusEffects(typedItems.HotChocolate, Effect(StatusEffectType.Heal, 0.05f, 8), Effect(StatusEffectType.IncreasedHitChance, 120,  0.05f, 0));
+            EnsureItemStatusEffects(typedItems.HotChocolate, Effect(StatusEffectType.Heal, 0.05f, 8), Effect(StatusEffectType.IncreasedHitChance, 120, 0.05f, 0));
             EnsureItemStatusEffects(typedItems.ChocolateChipCookies, Effect(StatusEffectType.Heal, 0.07f, 10), Effect(StatusEffectType.IncreaseCriticalHit, 120, 0.10f, 0));
 
             // Burnt :o
@@ -1254,6 +1491,9 @@ namespace RavenNest.BusinessLogic.Data
             // Special dishes
             EnsureItemStatusEffects(typedItems.LeviathansRoyalStew, Effect(StatusEffectType.Heal, 0.50f, 80), Effect(StatusEffectType.IncreasedDefense, 360, 0.15f, 5), Effect(StatusEffectType.IncreasedStrength, 360, 0.15f, 5));
             EnsureItemStatusEffects(typedItems.PoseidonsGuardianFeast, Effect(StatusEffectType.Heal, 0.65f, 100), Effect(StatusEffectType.IncreasedMagicPower, 600, 0.20f, 8), Effect(StatusEffectType.IncreasedAttackPower, 600, 0.20f, 8), Effect(StatusEffectType.IncreasedHealingPower, 600, 0.20f, 8));
+
+            // Ferry Scroll
+            EnsureItemStatusEffects(typedItems.FerryScroll, Effect(StatusEffectType.IncreasedFerrySpeed, 900, 5f, 500));
 
             // Teleportation
             GetOrCreateItemStatusEffect(effects, typedItems.TomeOfHome, StatusEffectType.TeleportToIsland, Island.Home);
@@ -1323,6 +1563,12 @@ namespace RavenNest.BusinessLogic.Data
                 item.Modified = now;
             }
 
+            return item;
+        }
+
+        public static Item ItemMaterial(this Item item, DataModels.ItemMaterial material)
+        {
+            item.Material = (int)material;
             return item;
         }
 

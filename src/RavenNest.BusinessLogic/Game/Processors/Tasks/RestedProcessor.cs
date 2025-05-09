@@ -36,6 +36,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             GameData gameData,
             PlayerInventory inventory,
             GameSession session,
+            User user,
             Character character,
             CharacterState state)
         {
@@ -55,7 +56,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 lastUpdate[character.Id] = (lastUpdateTime = now);
             }
 
-            var user = gameData.GetUser(character.UserId);
             var res = gameData.GetResources(user);
             if (isAutoResting && (res?.Coins).GetValueOrDefault() < PlayerManager.AutoRestCostPerSecond)
             {

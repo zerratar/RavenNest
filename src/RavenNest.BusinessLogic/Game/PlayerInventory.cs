@@ -1086,17 +1086,37 @@ namespace RavenNest.BusinessLogic.Game
 
         public bool RemoveItem(ReadOnlyInventoryItem item, long amount, out long remainder)
         {
-            return RemoveItem(Get(item), amount, out remainder);
+            var invItem = Get(item);
+            if (invItem == null)
+            {
+                logger.LogError($"[{characterId}] Error removing item, item could not be found in backpack. Name='{item.Name}', InstanceID='{item.Id}', ItemID='{item.ItemId}'");
+                remainder = 0;
+                return false;
+            }
+            return RemoveItem(invItem, amount, out remainder);
         }
 
         public bool RemoveItem(ReadOnlyInventoryItem item, long amount)
         {
-            return RemoveItem(Get(item), amount, out long _);
+            var invItem = Get(item);
+            if (invItem == null)
+            {
+                logger.LogError($"[{characterId}] Error removing item, item could not be found in backpack. Name='{item.Name}', InstanceID='{item.Id}', ItemID='{item.ItemId}'");
+                return false;
+            }
+            return RemoveItem(invItem, amount, out long _);
         }
 
         public bool TryRemoveItem(ReadOnlyInventoryItem item, long amount, out InventoryItem removedOrUpdatedStack)
         {
-            return RemoveItem(Get(item), amount, out removedOrUpdatedStack);
+            var invItem = Get(item);
+            if (invItem == null)
+            {
+                logger.LogError($"[{characterId}] Error removing item, item could not be found in backpack. Name='{item.Name}', InstanceID='{item.Id}', ItemID='{item.ItemId}'");
+                removedOrUpdatedStack = null;
+                return false;
+            }
+            return RemoveItem(invItem, amount, out removedOrUpdatedStack);
         }
 
         public bool RemoveItem(InventoryItem stack, long amount)
@@ -1137,7 +1157,13 @@ namespace RavenNest.BusinessLogic.Game
                 remainder = 0;
                 try
                 {
-                    if (stack == null || stack.Amount < amount)
+                    if (stack == null)
+                    {
+                        logger.LogError($"Error removing item, stack provided was null.");
+                        return false;
+                    }
+
+                    if (stack.Amount < amount)
                     {
                         if (stack.Amount <= 0)
                         {

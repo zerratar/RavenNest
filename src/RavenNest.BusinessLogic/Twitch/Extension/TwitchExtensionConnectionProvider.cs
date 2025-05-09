@@ -95,7 +95,18 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
             }
             lock (mutex)
             {
-                return connections.TryGetValue(sessionId, out connection);
+                if (connections.TryGetValue(sessionId, out connection))
+                {
+                    if(connection.Closed)
+                    {
+                        connection = null;
+                        connections.Remove(sessionId);
+                        return false;
+                    }
+                    return true;
+                }
+
+                return false;
             }
         }
 
@@ -109,6 +120,12 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
             lock (mutex)
             {
                 var streamer = gameData.GetUser(streamerUserId);
+                if (streamer == null)
+                {
+                    connections = Array.Empty<IExtensionConnection>();
+                    return false;
+                }
+
                 var twitch = gameData.GetUserAccess(streamer.Id, "twitch");
                 if (twitch == null)
                 {
@@ -116,7 +133,7 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
                     return false;
                 }
 
-                return (connections = this.connections.SelectWhere(x => x.Value.BroadcasterTwitchUserId == twitch.PlatformId, x => x.Value)).Count > 0;
+                return (connections = this.connections.SelectWhere(x => !x.Value.Closed && x.Value.BroadcasterTwitchUserId == twitch.PlatformId, x => x.Value)).Count > 0;
             }
         }
 
@@ -130,7 +147,8 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
 
             lock (mutex)
             {
-                return (connections = this.connections.SelectWhere(x => x.Value.Session.Id == userId, x => x.Value)).Count > 0;
+                return (connections = this.connections.SelectWhere(x => 
+                    !x.Value.Closed && x.Value.Session.Id == userId, x => x.Value)).Count > 0;
             }
         }
 

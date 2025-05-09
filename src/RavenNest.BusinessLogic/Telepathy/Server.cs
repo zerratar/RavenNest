@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
@@ -357,68 +358,79 @@ namespace Telepathy
         // can't process any other messages during a scene change.
         // (could be useful for others too)
         // => make sure to allocate the lambda only once in transports
-        public int Process()
+        public int Process(int processLimit, ILogger logger)
         {
             // only if pipe was created yet (after start())
             if (receivePipe == null)
                 return 0;
 
-            //// process up to 'processLimit' messages for this connection
-            //for (int i = 0; i < processLimit; ++i)
-            //{
-            //    // check enabled in case a Mirror scene message arrived
-            //    if (checkEnabled != null && !checkEnabled())
-            //        break;
-
-            // peek first. allows us to process the first queued entry while
-            // still keeping the pooled byte[] alive by not removing anything.
-            while (receivePipe.TryPeek(out int connectionId, out EventType eventType, out ArraySegment<byte> message))
+            try
             {
-                switch (eventType)
+
+                // process up to 'processLimit' messages for this connection
+                for (int i = 0; i < processLimit; ++i)
                 {
-                    case EventType.Connected:
-                        try
+                    //    // check enabled in case a Mirror scene message arrived
+                    //    if (checkEnabled != null && !checkEnabled())
+                    //        break;
+
+                    // peek first. allows us to process the first queued entry while
+                    // still keeping the pooled byte[] alive by not removing anything.
+                    if (receivePipe.TryPeek(out int connectionId, out EventType eventType, out ArraySegment<byte> message))
+                    {
+                        switch (eventType)
                         {
-                            OnConnected?.Invoke(connectionId);
+                            case EventType.Connected:
+                                try
+                                {
+                                    OnConnected?.Invoke(connectionId);
+                                }
+                                catch (Exception exc)
+                                {
+                                    logger.LogError(exc, "Server.OnConnected exception: {Message}", exc.Message);
+                                    // ignored
+                                }
+                                break;
+                            case EventType.Data:
+                                try
+                                {
+                                    OnData?.Invoke(connectionId, message);
+                                }
+                                catch
+                                {
+                                    logger.LogError("Server.OnData exception: {Message}", message);
+                                    // ignored, we must dequeue the packet later regardless of failed or not.
+                                }
+                                break;
+                            case EventType.Disconnected:
+                                try
+                                {
+                                    OnDisconnected?.Invoke(connectionId);
+                                }
+                                catch
+                                {
+                                    logger.LogError("Server.OnDisconnected exception: {Message}", message);
+                                    // ignored
+                                }
+                                // remove disconnected connection now that the final
+                                // disconnected message was processed.
+                                clients.TryRemove(connectionId, out ConnectionState _);
+                                break;
                         }
-                        catch
-                        {
-                            // ignored
-                        }
-                        break;
-                    case EventType.Data:
-                        try
-                        {
-                            OnData?.Invoke(connectionId, message);
-                        }
-                        catch
-                        {
-                            // ignored, we must dequeue the packet later regardless of failed or not.
-                        }
-                        break;
-                    case EventType.Disconnected:
-                        try
-                        {
-                            OnDisconnected?.Invoke(connectionId);
-                        }
-                        catch
-                        {
-                            // ignored
-                        }
-                        // remove disconnected connection now that the final
-                        // disconnected message was processed.
-                        clients.TryRemove(connectionId, out ConnectionState _);
+
+                        // IMPORTANT: now dequeue and return it to pool AFTER we are
+                        //            done processing the event.
+                        receivePipe.TryDequeue();
+                    }
+                    else
+                        // no more messages. stop the loop.
                         break;
                 }
-
-                // IMPORTANT: now dequeue and return it to pool AFTER we are
-                //            done processing the event.
-                receivePipe.TryDequeue();
             }
-            //    // no more messages. stop the loop.
-            //    else break;
-            //}
-
+            catch (Exception exc)
+            {
+                logger.LogError(exc, "Server.Process exception: {Message}", exc.Message);
+            }
             // return what's left to process for next time
             return receivePipe.TotalCount;
         }

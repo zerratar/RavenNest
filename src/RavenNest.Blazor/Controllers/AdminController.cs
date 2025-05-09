@@ -51,6 +51,13 @@ namespace RavenNest.Controllers
             return adminManager.RefreshPermissions();
         }
 
+        [HttpGet("merge-unknown/{srcUnknownUserName}/{destTwitchUserName}")]
+        public async Task<bool> MergeUnknown(string srcUnknownUserName, string destTwitchUserName)
+        {
+            await AssertAdminAccessAsync();
+            return adminManager.MergeUnknown(srcUnknownUserName, destTwitchUserName);
+        }
+
         [HttpGet("fix-index/{userId}")]
         public async Task<bool> FixIndices(string userId)
         {

@@ -206,7 +206,7 @@
         if (!string.IsNullOrEmpty(state))
         {
 
-            var objects = AuthService.GetDecodedObjectFromState(state);
+            var objects = AuthService.GetDecodedObjectFromState(state, uri.ToString());
             foreach (var parameter in objects)
             {
                 switch (parameter.ParametersName)

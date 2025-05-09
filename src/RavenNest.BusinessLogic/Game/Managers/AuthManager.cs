@@ -133,11 +133,26 @@ namespace RavenNest.BusinessLogic.Game
             return encodedString;
         }
 
-        public List<StateParameters> GetDecodedObjectFromState(string encodedState)
+        public List<StateParameters> GetDecodedObjectFromState(string encodedState, string? sourceUrl = null)
         {
-            //TODO Decode - add check in to compare returned values and cause an error if different
-            var decodedJSONString = Base64UrlEncoder.Decode(encodedState.Trim());
-            return JsonConvert.DeserializeObject<List<StateParameters>>(decodedJSONString);
+            string decodedJSONString = null;
+            try
+            {
+                decodedJSONString = Base64UrlEncoder.Decode(encodedState.Trim());
+            }
+            catch
+            {
+            }
+            try
+            {
+                //TODO Decode - add check in to compare returned values and cause an error if different
+                return JsonConvert.DeserializeObject<List<StateParameters>>(decodedJSONString);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Failed to deserialize state parameter object (State: " + decodedJSONString + "), Requested URI: " + sourceUrl);
+                return new List<StateParameters> { };
+            }
         }
 
     }

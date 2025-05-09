@@ -21,6 +21,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly Guid expScrollId;
         private readonly Guid dungeonScrollId;
         private readonly Guid raidScrollId;
+        private readonly Guid ferryScrollId;
 
         public GameManager(
             ILogger<GameManager> logger,
@@ -40,6 +41,7 @@ namespace RavenNest.BusinessLogic.Game
             this.raidScrollId = items.RaidScroll.Id;
             this.dungeonScrollId = items.DungeonScroll.Id;
             this.expScrollId = items.ExpMultiplierScroll.Id;
+            this.ferryScrollId = items.FerryScroll.Id;
         }
 
         public GameInfo GetGameInfo(SessionToken session)
@@ -189,6 +191,11 @@ namespace RavenNest.BusinessLogic.Game
             if (scrollType == ScrollType.Raid)
             {
                 return item.ItemId == raidScrollId;
+            }
+
+            if (scrollType == ScrollType.Ferry)
+            {
+                return item.ItemId == ferryScrollId;
             }
 
             return item.ItemId == dungeonScrollId;

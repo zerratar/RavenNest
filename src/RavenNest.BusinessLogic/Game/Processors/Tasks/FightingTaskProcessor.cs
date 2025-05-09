@@ -18,6 +18,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             GameData gameData,
             PlayerInventory inventoryProvider,
             GameSession session,
+            User user,
             Character character,
             CharacterState state)
         {
@@ -31,23 +32,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         public void SetTcpSocketApiConnectionProvider(ITcpSocketApiConnectionProvider provider)
         {
             this.TcpConnectionProvider = provider;
-        }
-
-        internal async Task<bool> TrySendToExtensionAsync<T>(Character character, T data)
-        {
-            if (ExtensionConnectionProvider.TryGet(character.Id, out var connection))
-            {
-                try
-                {
-                    await connection.SendAsync(data);
-                    return true;
-                }
-                catch
-                {
-                }
-            }
-
-            return false;
         }
     }
 }

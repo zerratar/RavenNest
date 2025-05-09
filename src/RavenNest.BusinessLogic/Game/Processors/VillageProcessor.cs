@@ -17,6 +17,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             GameData gameData,
             PlayerInventory inventory,
             GameSession session,
+            User user,
             Character character,
             CharacterState state)
         {
@@ -40,6 +41,13 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             }
 
             var village = gameData.GetOrCreateVillageBySession(session);
+
+            // if village is null, the user is null.
+            if (village == null)
+            {
+                return;
+            }
+
             var nextLevel = village.Level + 1;
             var expForNextLevel = GameMath.ExperienceForLevel(nextLevel);
 

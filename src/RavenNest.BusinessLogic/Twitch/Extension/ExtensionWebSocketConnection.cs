@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
@@ -29,7 +30,6 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
             this.session = session;
             this.packetDataSerializer = serializer;
             this.buffer = new byte[4096];
-            this.KillTask = new TaskCompletionSource<object>();
             this.BroadcasterTwitchUserId = twitchBroadcasterId;
         }
 
@@ -37,9 +37,30 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
 
         public bool Closed => closed || this.socket.CloseStatus.HasValue;
 
-        public Task KeepAlive()
+        public async Task KeepAlive(CancellationToken cancellationToken)
         {
-            return this.KillTask.Task;
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                if (Closed)
+                {
+                    return;
+                }
+
+                while (SendQueue.TryDequeue(out var packet))
+                {
+                    try
+                    {
+                        await SendAsync(packet);
+                    }
+                    catch (Exception exc)
+                    {
+                        logger.LogError(exc.ToString());
+                        //this.Close();
+                    }
+                }
+
+                await Task.Delay(1000);
+            }
         }
 
         public TaskCompletionSource<object> KillTask { get; set; }
@@ -77,7 +98,8 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
                 }
                 catch (Exception exc)
                 {
-                    logger.LogError(exc.ToString());
+                    // ignored
+                    // logger.LogError(exc.ToString());
                 }
             }
         }
@@ -126,14 +148,30 @@ namespace RavenNest.BusinessLogic.Twitch.Extension
 
             try
             {
+                if(socket.State != WebSocketState.Open)
+                {
+                    this.Close();
+                    return;
+                }
+
+                if (packet.MessageType == WebSocketMessageType.Close)
+                {
+                    this.Close();
+                    return;
+                }
+
                 if (TryBuildPacket(packet, out var data))
                 {
                     await socket.SendAsync(data, packet.MessageType, packet.EndOfMessage, CancellationToken.None);
                 }
             }
+            catch (WebSocketException exc)
+            {
+                this.Close();
+            }
             catch (Exception exc)
             {
-                logger.LogError(exc.ToString());
+                //logger.LogError(exc.ToString());
                 this.Close();
             }
         }

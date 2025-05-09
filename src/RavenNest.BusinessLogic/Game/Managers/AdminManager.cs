@@ -739,5 +739,72 @@ namespace RavenNest.BusinessLogic.Game
             user.PasswordHash = secureHasher.Get(newPassword.Trim());
             return true;
         }
+
+        public bool MergeUnknown(string srcUnknownUserName, string destTwitchUserName)
+        {
+            // 1. get unknown user
+            // 2. get dest user
+            // 3. delete unknown user
+            // 4. Sum values of resources
+            // 5. Set dest user resources to new values
+            // 6. delete unknown user resources
+            // 7. get all unknown user characters
+            // 8. set all unknown user characters (should only be 1) to dest user.
+            try
+            {
+                var unknownUser = gameData.GetUserByUsername(srcUnknownUserName);
+                if (unknownUser == null)
+                {
+                    return false;
+                }
+
+                var destUser = gameData.GetUserByUsername(destTwitchUserName);
+                if (destUser == null)
+                {
+                    return false;
+                }
+
+                var unknownResources = gameData.GetResources(unknownUser.Resources.Value);
+                var destResources = gameData.GetResources(destUser.Resources.Value);
+
+                if (destResources == null)
+                {
+                    destResources = new DataModels.Resources()
+                    {
+                        Id = Guid.NewGuid(),
+                        Coins = unknownResources.Coins
+                    };
+                    destUser.Resources = destResources.Id;
+                    gameData.Add(destResources);
+                }
+                else if (unknownResources != null && destResources != null)
+                {
+                    var coins = unknownResources.Coins + destResources.Coins;
+                    destResources.Coins = coins;
+                }
+
+                var unknownCharacters = gameData.GetCharactersByUserId(unknownUser.Id);
+                foreach (var character in unknownCharacters)
+                {
+                    character.UserId = destUser.Id;
+                    character.Name = destUser.DisplayName ?? destUser.UserName;
+                }
+
+                // fix indices.
+                var characters = gameData.GetCharactersByUserId(destUser.Id);
+                var index = 0;
+                foreach (var character in characters)
+                {
+                    character.CharacterIndex = index++;
+                }
+
+                return true;
+            }
+            catch (Exception exc)
+            {
+                logger.LogError($"Error merging unknown user ({srcUnknownUserName}) to ({destTwitchUserName}): " + exc);
+                return false;
+            }
+        }
     }
 }

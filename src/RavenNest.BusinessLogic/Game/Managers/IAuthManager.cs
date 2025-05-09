@@ -13,6 +13,6 @@ namespace RavenNest.BusinessLogic.Game
         void SignUp(string userId, string userLogin, string userDisplayName, string userEmail, string password);
         bool IsAdmin(AuthToken authToken);
         string GetRandomizedBase64EncodedStateParameters(List<StateParameters> stateParameters);
-        List<StateParameters> GetDecodedObjectFromState(string encodedState);
+        List<StateParameters> GetDecodedObjectFromState(string encodedState, string? sourceUrl = null);
     }
 }
