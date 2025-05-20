@@ -18,15 +18,11 @@
 
     <script src="https://kit.fontawesome.com/3f217f080c.js" crossorigin="anonymous"></script>
 
-    @*<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1363457225646772" crossorigin="anonymous"></script>*@
-
     <title>Ravenfall.stream</title>
     <base href="~/" />
 
-    @* <link rel="shortcut icon" href="https://ravennestblobstorage.blob.core.windows.net/cdn/20230710/TemplateData/favicon.ico"> *@
     <link rel="stylesheet" href="https://ravennestblobstorage.blob.core.windows.net/cdn/20230710/TemplateData/style.css">
-
-    <link rel="stylesheet" href="css/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="/css/bootstrap/bootstrap.min.css" />
 
     <link rel="icon" type="image/png" href="favicon.png" sizes="32x32">
     <link rel="icon" type="image/png" href="favicon.png" sizes="96x96">
@@ -35,11 +31,10 @@
     <link href="_content/Blazorise.Bootstrap/blazorise.bootstrap.css" rel="stylesheet" />
 
     <link href="_content/PSC.Blazor.Components.AutoComplete/css/autocomplete.css" rel="stylesheet" />
-
-    <link href="css/site.css" rel="stylesheet" />
+    <link href="/css/open-iconic/font/css/open-iconic-bootstrap.min.css" rel="stylesheet" />
     <link href="/RavenNest.styles.css" rel="stylesheet" />
+    <link href="/css/site.css?@(System.Random.Shared.Next())" rel="stylesheet" />
 
-    <link href="css/dark.css" rel="stylesheet" />
     <!-- This is the glue between Blazor and Chart.js -->
     <script src="js/moment.min.js"></script>
 
@@ -51,7 +46,7 @@
         window.navigateTo = (url) => {
           window.location.assign(url);
         };
-      
+
         window.cookies = {
             acceptMessage: function (cookieString) {
                 document.cookie = cookieString;

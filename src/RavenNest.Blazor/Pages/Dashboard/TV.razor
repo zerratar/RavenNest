@@ -17,7 +17,7 @@
 }
 else
 {
-    <div class="-page-container">
+    <div class="-page-container tv">
         <div class="logo-container">
             <img class="ravenfall-tv-logo" src="/imgs/logo-tv.png" />
         </div>
@@ -56,9 +56,9 @@ else
             </div>
         </div>
 
-        <!-- TODO: 
+        <!-- TODO:
 
-            make the actual episode scheduling on the server, so in the future you will be able to even create a playlist of episodes to playback. 
+            make the actual episode scheduling on the server, so in the future you will be able to even create a playlist of episodes to playback.
             Rerun, etc. Or even generate a set of episodes based on certain descriptions, continue on an old episode and much more
 
             1. Tab the Show Description part and Playlists
@@ -67,11 +67,10 @@ else
         -->
 
         <div class="settings unavailable">
-            <EditForm 
-              class="-form"
+            <EditForm class="-form"
                       style="align-items: initial; justify-content: initial;"
-              Model="@settingsModel"
-              OnValidSubmit="@HandleUpdateAsync">
+                      Model="@settingsModel"
+                      OnValidSubmit="@HandleUpdateAsync">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
 
@@ -81,7 +80,7 @@ else
                                                 title="Giving your AI generated show a name won't have much effect on the episodes generated."></i>
                     </label>
 
-                    <InputText name="settings-name" class="settings-name" placeholder="Adventures of Ravenfall" @bind-Value="settingsModel.Name" />                    
+                    <InputText name="settings-name" class="settings-name" placeholder="Adventures of Ravenfall" @bind-Value="settingsModel.Name" />
                 </div>
 
                 <div class="-input-row">
@@ -139,7 +138,7 @@ else
 
     public async Task HandleUpdateAsync()
     {
-        
+
     }
 
     public class ShowSettingsModel

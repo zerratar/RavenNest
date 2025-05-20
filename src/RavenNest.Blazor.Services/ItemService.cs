@@ -44,6 +44,23 @@ namespace RavenNest.Blazor.Services
             return invItems.Count + bankItems.Count + (vendorItem != null ? 1 : 0) + marketItems.Count;
         }
 
+
+        public bool CanTransmogrify(RavenNest.Models.Item a, RavenNest.Models.Item b)
+        {
+            if (a == null || b == null)
+                return false;
+            if (a.Type != b.Type)
+            {
+                if ((a.Type == RavenNest.Models.ItemType.Hat && b.Type == RavenNest.Models.ItemType.Helmet) ||
+                    (a.Type == RavenNest.Models.ItemType.Helmet && b.Type == RavenNest.Models.ItemType.Hat))
+                    return true;
+
+                return false;
+            }
+
+            return true;
+        }
+
         public string GetItemImage(Guid itemId, string itemName)
         {
             return GetItemImage(itemId.ToString(), itemName);
@@ -138,6 +155,16 @@ namespace RavenNest.Blazor.Services
                     gameData.Remove(item);
                 }
             });
+        }
+
+        public RavenNest.Models.Item GetItem(Guid? itemId)
+        {
+            if (itemId == null)
+            {
+                return null;
+            }
+
+            return itemManager.GetItem(itemId.Value);
         }
 
         public RavenNest.Models.Item GetItem(Guid itemId)

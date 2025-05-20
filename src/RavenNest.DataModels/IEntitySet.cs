@@ -13,6 +13,8 @@ namespace RavenNest.DataModels
         void Clear(IReadOnlyList<IEntity> entities);
         IReadOnlyList<IEntity> GetEntities();
         Type GetEntityType();
+        string GetName();
+        string GetFullName();
     }
 
     public interface IEntitySet<TModel> : IEntitySet

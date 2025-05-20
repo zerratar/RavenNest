@@ -170,16 +170,33 @@ namespace RavenNest.Controllers
         }
 
         [HttpGet("state-data/{streamer}")]
-        public async Task<GameSessionPlayerCache> DownloadStreamerStateCache(string streamer)
+        public async Task<ActionResult> DownloadStreamerStateCache(string streamer)
         {
             try
             {
                 await AssertAdminAccessAsync();
-                return adminManager.GetStreamerStateCache(streamer);
             }
             catch
             {
-                return null;
+                return Unauthorized();
+            }
+
+            try
+            {
+                var data = adminManager.GetStreamerStateCache(streamer);
+                if (data == null)
+                {
+                    return NotFound();
+                }
+
+                var json = Newtonsoft.Json.JsonConvert.SerializeObject(data, Newtonsoft.Json.Formatting.Indented);
+                var bytes = System.Text.Encoding.UTF8.GetBytes(json);
+                var fileName = streamer + "-state-data.json";
+                return File(bytes, "application/json", fileName);
+            }
+            catch (Exception exc)
+            {
+                return Content("Error while downloading streamer state data: " + exc);
             }
         }
 

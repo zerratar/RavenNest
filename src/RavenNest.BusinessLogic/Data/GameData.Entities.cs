@@ -330,7 +330,7 @@ namespace RavenNest.BusinessLogic.Data
                     Eggs = GetOrCreateItem(i, "Eggs", "An essential ingredient in many culinary dishes.", ItemCategory.Resource, ItemType.Farming),
                     Milk = GetOrCreateItem(i, "Milk", "A creamy liquid, used in cooking and baking.", ItemCategory.Resource, ItemType.Farming),
                     RawChicken = GetOrCreateItem(i, "Raw Chicken", "Uncooked poultry, ready for the frying pan.", ItemCategory.Resource, ItemType.Farming),
-                    RawChickenLeg = GetOrCreateItem(i, "Raw Chicken Leg", "Uncooked poultry leg, ready to be fried.", ItemCategory.Resource, ItemType.Farming),
+                    RawChickenLeg = GetOrCreateItem(i, "Raw Chicken Leg", "Uncooked poultry leg, ready to be fried.", ItemCategory.Resource, ItemType.Cooking),
                     RawBeef = GetOrCreateItem(i, "Raw Meat", "Uncooked beef, a staple in many dishes.", ItemCategory.Resource, ItemType.Farming),
                     RawPork = GetOrCreateItem(i, "Raw Pork", "Uncooked pork, waiting to be seasoned and cooked.", ItemCategory.Resource, ItemType.Farming),
                     Wheat = GetOrCreateItem(i, "Wheat", "Golden grains, the base for many baked goods.", ItemCategory.Resource, ItemType.Farming),
@@ -424,13 +424,14 @@ namespace RavenNest.BusinessLogic.Data
 
                     // Cooking - Resource Creation
                     Flour = GetOrCreateItem(i, "Flour", "Ground wheat, essential for baking and cooking.", ItemCategory.Resource, ItemType.Cooking),
-                    Sugar = GetOrCreateItem(i, "Sugar", "A sweet crystalline substance often used in baking and cooking to enhance flavors.", ItemCategory.Resource, ItemType.Cooking),
-                    Cinnamon = GetOrCreateItem(i, "Cinnamon", "A fragrant spice obtained from the inner bark of certain trees. Adds a warm and aromatic flavor.", ItemCategory.Resource, ItemType.Cooking),
+                    Sugar = GetOrCreateItem(i, "Sugar", "A sweet crystalline substance often used in baking and cooking to enhance flavors.", ItemCategory.Resource, ItemType.Gathering),
+                    Cinnamon = GetOrCreateItem(i, "Cinnamon", "A fragrant spice obtained from the inner bark of certain trees. Adds a warm and aromatic flavor.", ItemCategory.Resource, ItemType.Gathering),
                     Butter = GetOrCreateItem(i, "Butter", "Creamy and rich, perfect for adding flavor.", ItemCategory.Resource, ItemType.Cooking),
                     Cheese = GetOrCreateItem(i, "Cheese", "Aged to perfection, adding depth to dishes.", ItemCategory.Resource, ItemType.Cooking),
                     SpiceMix = GetOrCreateItem(i, "Spice Mix", "A blend of spices, ready to kick up the heat.", ItemCategory.Resource, ItemType.Cooking),
                     Ham = GetOrCreateItem(i, "Ham", "Salty and savory, cured to perfection.", ItemCategory.Resource, ItemType.Cooking),
-                    Cacao = GetOrCreateItem(i, "Cacao", "The base of all chocolate delights.", ItemCategory.Resource, ItemType.Cooking),
+
+                    Cacao = GetOrCreateItem(i, "Cacao", "The base of all chocolate delights.", ItemCategory.Resource, ItemType.Farming),
                     Chocolate = GetOrCreateItem(i, "Chocolate", "Melted and molded bliss.", ItemCategory.Resource, ItemType.Cooking),
                     GoldenLeaf = GetOrCreateItem(i, "Golden Leaf", "An exquisite ingredient for elite dishes.", ItemCategory.Resource, ItemType.Cooking),
 
@@ -833,19 +834,20 @@ namespace RavenNest.BusinessLogic.Data
 
                 // Additional multiplier based on which Elder set this is
                 float tierMultiplier = 1.0f;
-                if (baseName.Contains("Bronze")) tierMultiplier = 1.0f;
-                else if (baseName.Contains("Iron")) tierMultiplier = 1.05f;
-                else if (baseName.Contains("Steel")) tierMultiplier = 1.1f;
-                else if (baseName.Contains("Mithril")) tierMultiplier = 1.15f;
-                else if (baseName.Contains("Adamantite")) tierMultiplier = 1.2f;
-                else if (baseName.Contains("Rune")) tierMultiplier = 1.25f;
-                else if (baseName.Contains("Dragon")) tierMultiplier = 1.3f;
-                else if (baseName.Contains("Abraxas")) tierMultiplier = 1.35f;
-                else if (baseName.Contains("Phantom")) tierMultiplier = 1.4f;
-                else if (baseName.Contains("Ether")) tierMultiplier = 1.45f;
-                else if (baseName.Contains("Lionsbane")) tierMultiplier = 1.5f;
-                else if (baseName.Contains("Ancient")) tierMultiplier = 1.55f;
-                else if (baseName.Contains("Atlarus")) tierMultiplier = 1.6f;
+                if (baseName.Contains("Bronze", StringComparison.OrdinalIgnoreCase)) tierMultiplier = 1.0f;
+                else if (baseName.Contains("Iron", StringComparison.OrdinalIgnoreCase)) tierMultiplier = 1.05f;
+                else if (baseName.Contains("Steel", StringComparison.OrdinalIgnoreCase)) tierMultiplier = 1.1f;
+                else if (baseName.Contains("Black", StringComparison.OrdinalIgnoreCase)) tierMultiplier = 1.125f;
+                else if (baseName.Contains("Mithril", StringComparison.OrdinalIgnoreCase)) tierMultiplier = 1.15f;
+                else if (baseName.Contains("Adamantite", StringComparison.OrdinalIgnoreCase)) tierMultiplier = 1.2f;
+                else if (baseName.Contains("Rune", StringComparison.OrdinalIgnoreCase)) tierMultiplier = 1.25f;
+                else if (baseName.Contains("Dragon", StringComparison.OrdinalIgnoreCase)) tierMultiplier = 1.3f;
+                else if (baseName.Contains("Abraxas", StringComparison.OrdinalIgnoreCase)) tierMultiplier = 1.35f;
+                else if (baseName.Contains("Phantom", StringComparison.OrdinalIgnoreCase)) tierMultiplier = 1.4f;
+                else if (baseName.Contains("Lionsbane", StringComparison.OrdinalIgnoreCase)) tierMultiplier = 1.46f;
+                else if (baseName.Contains("Ether", StringComparison.OrdinalIgnoreCase)) tierMultiplier = 1.52f;
+                else if (baseName.Contains("Ancient", StringComparison.OrdinalIgnoreCase)) tierMultiplier = 1.58f;
+                else if (baseName.Contains("Atlarus", StringComparison.OrdinalIgnoreCase)) tierMultiplier = 1.66f;
 
                 // Calculate total multiplier
                 float totalMultiplier = elderMultiplier * tierMultiplier;
@@ -991,7 +993,7 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDrop(typedItems.EldarasMark, 0.03);
 
             // scrolls
-            //EnsureDrop(typedItems.FerryScroll, 0.02);
+            EnsureDrop(typedItems.FerryScroll, 0.02);
             EnsureDrop(typedItems.ExpMultiplierScroll, 0.02);
             EnsureDrop(typedItems.RaidScroll, 0.02);
             EnsureDrop(typedItems.DungeonScroll, 0.01);
@@ -1024,6 +1026,22 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDrop(typedItems.Skullcap, 0.05, 4);
             EnsureDrop(typedItems.LemonBalm, 0.05, 4);
             EnsureDrop(typedItems.Realmstone, 0.05, 4);
+
+            EnsureDrop(typedItems.ElderBlack.Helmet, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.ElderBlack.Chest, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.ElderBlack.Gloves, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.ElderBlack.Leggings, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.ElderBlack.Boots, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.ElderBlack.Shield, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.ElderBlack.Staff, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.ElderBlack.Bow, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.ElderBlack.Katana, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.ElderBlack.Axe, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.ElderBlack.Sword, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.ElderBlack.TwoHandedAxe, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.ElderBlack.TwoHandedSword, 0.05, 4, slayerLevelRequirement: 100);
+            EnsureDrop(typedItems.ElderBlack.Spear, 0.05, 4, slayerLevelRequirement: 100);
+
 
             //EnsureDrop(typedItems.Pets.MagicRaccoon, 0.03, 4);
         }
@@ -1317,8 +1335,8 @@ namespace RavenNest.BusinessLogic.Data
             EnsureCraftingRecipeSet(750, items.ElderDragon, items.ElderDragonBar, items.EtherealLogs);
             EnsureCraftingRecipeSet(800, items.ElderAbraxas, items.ElderAbraxasBar, items.ChronosLogs);
             EnsureCraftingRecipeSet(850, items.ElderPhantom, items.ElderPhantomBar, items.ChronosLogs);
-            EnsureCraftingRecipeSet(875, items.ElderEther, items.ElderEthereumBar, items.ChronosLogs);
-            EnsureCraftingRecipeSet(900, items.ElderLionsbane, items.ElderLioniteBar, items.VoidheartLogs);
+            EnsureCraftingRecipeSet(875, items.ElderLionsbane, items.ElderLioniteBar, items.ChronosLogs);
+            EnsureCraftingRecipeSet(900, items.ElderEther, items.ElderEthereumBar, items.VoidheartLogs);
             EnsureCraftingRecipeSet(950, items.ElderAncient, items.ElderAncientBar, items.VoidheartLogs);
             EnsureCraftingRecipeSet(999, items.ElderAtlarus, items.ElderAtlarusBar, items.VoidheartLogs);
 

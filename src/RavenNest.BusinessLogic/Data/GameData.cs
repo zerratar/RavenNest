@@ -22,7 +22,7 @@ namespace RavenNest.BusinessLogic.Data
     {
         #region Settings
         private const int BackupInterval = 60 * 60 * 1000; // once per hour
-        private const int SaveInterval = 3000;
+        private const int SaveInterval = 2000; // 10_000
         private const int SaveMaxBatchSize = 50;
         public const float SessionTimeoutSeconds = 1f;
         #endregion
@@ -4338,14 +4338,24 @@ namespace RavenNest.BusinessLogic.Data
             }
         }
 
+        public DateTime LastDbWriteCompleted { get; private set; }
+        public DateTime LastDbWriteStarted { get; private set; }
+        public int LastDbWriteCount { get; private set; }
+        public IReadOnlyDictionary<string, int> LastDbWriteEntities { get; private set; } = new Dictionary<string, int>();
+        public TimeSpan LastDbWriteDuration { get; private set; }
+
         private void SaveChanges()
         {
-            SimpleDropHandler.SaveDropTimes();
             kernel.ClearTimeout(scheduleHandler);
             scheduleHandler = null;
             var lastQuery = "";
             var entityType = "";
             var errorSaving = false;
+            var genericException = false;
+            int savedEntitiesCount = 0;
+            var lastSavedEntities = new Dictionary<string, int>();
+            var ts = Stopwatch.GetTimestamp();
+            var start = DateTime.UtcNow;
             try
             {
                 lock (SyncLock)
@@ -4354,6 +4364,8 @@ namespace RavenNest.BusinessLogic.Data
 
                     foreach (var entitySet in entitySets)
                     {
+                        var name = entitySet.GetName();
+                        var fullName = entitySet.GetFullName();
                         try
                         {
                             var queue = BuildSaveQueue(entitySet);
@@ -4375,11 +4387,17 @@ namespace RavenNest.BusinessLogic.Data
                                         queue.Dequeue();
                                         continue;
                                     }
-                                    entityType = saveData.Entities[0]?.GetType().FullName;
+
+                                    entityType = fullName;
                                     var command = con.CreateCommand();
                                     lastQuery = command.CommandText = query.Command;
                                     var result = command.ExecuteNonQuery();
 
+
+                                    lastSavedEntities.TryGetValue(name, out var c);
+                                    c += result;
+                                    lastSavedEntities[name] = c;
+                                    savedEntitiesCount += result;
                                     ClearChangeSetState(saveData);
                                     queue.Dequeue();
                                     con.Close();
@@ -4436,10 +4454,20 @@ namespace RavenNest.BusinessLogic.Data
             catch (Exception exc)
             {
                 logger.LogError("ERROR SAVING DATA!! " + exc);
+                genericException = true;
                 // log this
             }
             finally
             {
+                LastDbWriteCount = savedEntitiesCount;
+                LastDbWriteStarted = start;
+                LastDbWriteCompleted = DateTime.UtcNow;
+                LastDbWriteEntities = new Dictionary<string, int>(lastSavedEntities);
+                LastDbWriteDuration = Stopwatch.GetElapsedTime(ts);
+                if (LastDbWriteCount > 0)
+                {
+                    MessageBus.Shared.Send("OnDataSaved");
+                }
                 ScheduleNextSave();
             }
 
@@ -4611,13 +4639,21 @@ namespace RavenNest.BusinessLogic.Data
 
             // is it possible that there are multiple tcp connections from the client or same streamer?
             // are we using the wrong connection if so? or wrong session?
-            if (tcpConnectionProvider.TryGet(entity.GameSessionId, out var connection) && connection.Connected)
+            var wasSent = false;
+            foreach (var connection in tcpConnectionProvider.GetAllConnectionsByUserId(entity.UserId))
             {
+                if (!connection.Connected)
+                {
+                    continue;
+                }
                 connection.Send(entity);
-                return;
+                wasSent = true;
             }
 
-            EnqueueGameEvent(entity);
+            if (!wasSent)
+            {
+                EnqueueGameEvent(entity);
+            }
         }
 
         public void EnqueueGameEvent(GameEvent entity)
@@ -4626,16 +4662,21 @@ namespace RavenNest.BusinessLogic.Data
             {
                 return;
             }
-
             // is it possible that there are multiple tcp connections from the client or same streamer?
             // are we using the wrong connection if so? or wrong session?
-            if (tcpConnectionProvider.TryGet(entity.GameSessionId, out var connection) && connection.Connected)
+            var wasEnqueued = false;
+            foreach (var connection in tcpConnectionProvider.GetAllConnectionsByUserId(entity.UserId))
             {
+                if (!connection.Connected)
+                {
+                    continue;
+                }
                 connection.Enqueue(entity);
-                return;
+                wasEnqueued = true;
             }
 
-            Add(entity);
+            if (!wasEnqueued)
+                Add(entity);
         }
 
 
@@ -4662,20 +4703,32 @@ namespace RavenNest.BusinessLogic.Data
 
         public void Dispose()
         {
+            logger.LogDebug("Disposing data store. Saving any unsaved changes...");
             this.Flush();
         }
 
-        internal void SetNetworkStats(int threadId, long receiveMessageCount, double receiveRateKBps, long outMessageCount, double outRateKBps)
+        internal void SetEventServerNetworkStats(int threadId, long receiveMessageCount, double receiveRateKBps, long outMessageCount, double outRateKBps)
         {
-            NetworkStats.ThreadId = threadId;
-            NetworkStats.InMessageCount = receiveMessageCount;
-            NetworkStats.InTrafficKBps = receiveRateKBps;
-            NetworkStats.OutMessageCount = outMessageCount;
-            NetworkStats.OutTrafficKBps = outRateKBps;
-            NetworkStats.InSampleDateTime = DateTime.UtcNow;
+            EventServerNetworkStats.ThreadId = threadId;
+            EventServerNetworkStats.InMessageCount = receiveMessageCount;
+            EventServerNetworkStats.InTrafficKBps = receiveRateKBps;
+            EventServerNetworkStats.OutMessageCount = outMessageCount;
+            EventServerNetworkStats.OutTrafficKBps = outRateKBps;
+            EventServerNetworkStats.InSampleDateTime = DateTime.UtcNow;
         }
 
-        public readonly NetworkStats NetworkStats = new NetworkStats();
+        internal void SetDeltaServerNetworkStats(int threadId, long receiveMessageCount, double receiveRateKBps, long outMessageCount, double outRateKBps)
+        {
+            DeltaServerNetworkStats.ThreadId = threadId;
+            DeltaServerNetworkStats.InMessageCount = receiveMessageCount;
+            DeltaServerNetworkStats.InTrafficKBps = receiveRateKBps;
+            DeltaServerNetworkStats.OutMessageCount = outMessageCount;
+            DeltaServerNetworkStats.OutTrafficKBps = outRateKBps;
+            DeltaServerNetworkStats.InSampleDateTime = DateTime.UtcNow;
+        }
+
+        public readonly NetworkStats EventServerNetworkStats = new NetworkStats();
+        public readonly NetworkStats DeltaServerNetworkStats = new NetworkStats();
     }
 
     public class NetworkStats
@@ -5087,10 +5140,10 @@ namespace RavenNest.BusinessLogic.Data
         public Item WindcallersAmulet;
         public ItemPets Pets;
         public ItemSet
-            Bronze, Iron, Steel, Black, Mithril, Adamantite, Rune, Dragon, Abraxas, Phantom, Ether,
-            Lionsbane, Ancient, Atlarus, ElderBronze, ElderIron, ElderSteel, ElderBlack, ElderMithril,
+            Bronze, Iron, Steel, Black, Mithril, Adamantite, Rune, Dragon, Abraxas, Phantom,
+            Lionsbane, Ether, Ancient, Atlarus, ElderBronze, ElderIron, ElderSteel, ElderBlack, ElderMithril,
             ElderAdamantite, ElderRune, ElderDragon, ElderAbraxas, ElderPhantom,
-            ElderEther, ElderLionsbane, ElderAncient, ElderAtlarus;
+            ElderLionsbane, ElderEther, ElderAncient, ElderAtlarus;
 
         // halloween 2023 + new generic
         public Item RedTikiMask;

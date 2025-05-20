@@ -1,32 +1,3 @@
-a.nav-link.login {
-    color: black;
-}
-
-.nav-item .fas,
-.nav-item .fa-solid,
-.nav-item .fa-brands {
-    width: 2rem;
-}
-
-.page {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-}
-
-.sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
-}
-
-    .top-row ::deep a, .top-row .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-    }
-
-    .top-row a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
 
 @media (max-width: 641px) {
     .top-row:not(.auth) {

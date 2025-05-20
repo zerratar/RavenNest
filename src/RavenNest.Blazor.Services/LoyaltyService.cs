@@ -68,7 +68,7 @@ namespace RavenNest.Blazor.Services
                     leftToReduct -= a;
                     if (leftToReduct <= 0) break;
                 }
-                
+
                 // this is still risky, as the value may change from a different thread
                 // accessing this value is not thread-safe. therefor this check may fail if
                 // the user gets the same amount of loyalty points added as the cost of the reward
@@ -186,7 +186,7 @@ namespace RavenNest.Blazor.Services
                     {
                         TwitchUserId = twitch?.PlatformId,
                         UserName = u.UserName,
-                        DisplayName = u.DisplayName,
+                        DisplayName = Utility.SanitizeUserName(u.DisplayName, u.UserName),
                         CheeredBits = d.CheeredBits,
                         Experience = d.Experience,
                         GiftedSubs = d.GiftedSubs,
@@ -258,9 +258,9 @@ namespace RavenNest.Blazor.Services
                         RankId = l.RankId,
                         Level = l.Level,
                         Points = l.Points,
-                        StreamerUserName = streamer.UserName,
+                        StreamerUserName = Utility.SanitizeUserName(streamer.UserName),
                         StreamerUserId = l.StreamerUserId,
-                        StreamerDisplayName = streamer.DisplayName,
+                        StreamerDisplayName = Utility.SanitizeUserName(streamer.DisplayName, streamer.UserName),
                         StreamerTwitchUserId = twitch?.PlatformId,
                         TotalPlayTime = totalPlayTime
                     });

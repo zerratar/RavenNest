@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace RavenNest.Models
 {
@@ -21,5 +22,11 @@ namespace RavenNest.Models
         public Guid PlayerId { get; set; }
         public Guid InventoryItemId { get; set; }
         public bool IsEquipped { get; set; }
+    }
+
+    public class ItemSync
+    {
+        public Guid PlayerId { get; set; }
+        public List<InventoryItem> Items { get; set; }
     }
 }

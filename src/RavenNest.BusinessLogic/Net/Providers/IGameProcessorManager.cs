@@ -54,6 +54,7 @@ namespace RavenNest.BusinessLogic.Net
 
         public void Dispose()
         {
+            logger.LogDebug("Disposing all game instances...");
             foreach (var i in gameInstances)
             {
                 if (i.Value != null)

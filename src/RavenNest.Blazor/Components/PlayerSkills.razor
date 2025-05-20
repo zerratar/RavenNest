@@ -108,7 +108,7 @@
         <div class="stats-row@(isActive ? " active" : "")" title="@(isActive?"You're currently training this skill." : "")">
             <div class="stats-label">@skill.Name</div>
             <div class="stats-progress" title="@ExpDisplay(skill.Experience)">
-                <div class="stats-progress-value" style="@StyleWidth((int)(skill.Percent*120))"></div>
+                <div class="stats-progress-value" style="@StyleWidth((int)(skill.Percent*100))"></div>
                 <div class="stats-progress-percent">@Math.Round(skill.Percent * 100, 2)%</div>
             </div>
 

@@ -13,18 +13,6 @@
     margin-bottom: 5px;
 }
 
-.summary-block {
-    padding: 10px;
-    border: 1px solid #e0e0e0;
-    margin-top: 15px;
-    margin-bottom: 25px;
-    background-color: #fdfdfd;
-}
-
-.summary-block p {
-    margin-bottom: 0;
-}
-
 .btn-quick {
     font-weight: 300;
     font-size: 10pt;
@@ -57,7 +45,6 @@ a.refresh-logo {
     cursor: pointer;
 }
 .item-actions button.btn {
-    font-weight: 300;
     font-size: 10pt;
     box-shadow: 0px 2px 4px rgb(0 0 0 / 25%);
     margin-left: 10px;
@@ -151,43 +138,4 @@ button.tab-link.active {
 .item-stat {
     margin-right: 5px;
     white-space: nowrap;
-}
-
-th, td {
-    text-align: right;
-    padding: 10px 15px;
-    border: 1px solid #eeeeee;
-}
-
-.items-list th {
-    cursor: pointer;
-    user-select: none;
-}
-
-table.items-list tr {
-    border: none;
-}
-
-table.items-list th:nth-of-type(2),
-table.items-list td:nth-of-type(2) {
-    text-align: left;
-}
-
-table.items-list tr:nth-of-type(even) {
-    background-color: #f6f6f6;
-}
-
-table.items-list tr:nth-of-type(even).selected,
-.item-row.selected {
-    background-color: aquamarine;
-}
-
-table.items-list tr.isMe {
-    background-color: #6acc91;
-    color: white;
-}
-
-.items {
-    margin-top: 140px;
-    flex-grow: 1;
 }

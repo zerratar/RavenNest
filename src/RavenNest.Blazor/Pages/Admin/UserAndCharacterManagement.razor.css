@@ -30,7 +30,7 @@ button.tab-link {
         background-color: darkred;
     }
     button.tab-link:hover {
-        border: 1px, solid, black;
+        border: 1px solid black;
     }
 .control-floating:hover .tab-link{
     opacity:100%;

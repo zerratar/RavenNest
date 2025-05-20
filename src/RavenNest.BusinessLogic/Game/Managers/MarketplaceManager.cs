@@ -151,7 +151,7 @@ namespace RavenNest.BusinessLogic.Game
                 return new ItemSellResult(ItemTradeState.DoesNotOwn);
             }
 
-            if (!string.IsNullOrEmpty(itemToSell.Enchantment))
+            if (!string.IsNullOrEmpty(itemToSell.Enchantment) || itemToSell.TransmogrificationId != null)
             {
                 return new ItemSellResult(ItemTradeState.Untradable);
             }

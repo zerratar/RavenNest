@@ -272,6 +272,7 @@ namespace RavenNest.BusinessLogic.Tv
 
         public void Dispose()
         {
+            logger.LogDebug("Disposing Ravenfall TV Manager..");
             disposed = true;
             cancellationTokenSource.Cancel();
         }

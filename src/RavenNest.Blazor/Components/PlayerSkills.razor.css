@@ -1,85 +1,4 @@
 ﻿
-.stats-row {
-    display: -webkit-box;
-    display: -ms-flexbox;
-    display: flex;
-    padding: 10px 25px;
-    -webkit-box-pack: space-evenly;
-    -ms-flex-pack: space-evenly;
-    justify-content: space-evenly;
-    max-width: 100%;
-    BOX-SIZING: border-box;
-    margin-left: auto;
-    margin-right: auto;
-    border-bottom: 1px solid #f3f3f3;
-}
-
-.admin-controls button.btn-icon {
-    padding: 10px 15px 10px 15px;
-    background-color: #141414;
-    color: white;
-    margin-bottom: 10px;
-    margin-left: 0;
-    margin-right: 10px;
-}
-
-.training-skill {
-    margin-bottom: 10px;
-    padding: 5px;
-    background-color: #f6f6f6;
-    border: 2px solid #ebebeb;
-    text-align: center;
-}
-
-.current-health {
-
-}
-
-.stats-row.active {
-    color: white;
-    background-image: linear-gradient(90deg, rgb(5, 39, 103) 0%, #3a0647 70%);
-}
-.stats-row.active .stats-progress {
-    background-color: rgba(244,244,244, 0.05);
-}
-
-.stats-combat-level {
-    font-size: 14pt;
-    margin-bottom: 10px;
-    padding-bottom: 25px;
-    border-bottom: 1px solid #e6e6e6;
-    display: block;
-    width: 100%;
-}
-
-.stats-row:nth-of-type(2n+2) {
-    background-color: #fafafa;
-}
-
-.stats-label {
-    width: 190px;
-    text-align: left;
-    text-transform: uppercase;
-}
-
-.stats-progress {
-    height: 23px;
-    text-align: right;
-    min-width: 120px;
-    text-align: center;
-    background-color: #f4f4f4;
-}
-
-.stats-value {
-    width: 190px;
-    text-align: right;
-}
-
-.stats-progress-value {
-    height: 23px;
-    position: absolute;
-    background-color: #81a1f829;
-}
 
 .skill-modify-modal {
     position: fixed;
@@ -132,22 +51,8 @@ input.blazored-typeahead__input {
     margin-top: 15px;
 }
 
-button.btn-icon {
-    background-color: transparent;
-    border: 0;
-    color: #333;
-    margin-left: 10px;
-}
-
-
 .stats-row.active button.btn-icon {
     color: white;
-}
-
-button.btn-icon:active,
-button.btn-icon:focus {
-    outline: 0;
-    background-color: rgba(0,0,0,0.15);
 }
 
 .input-label {
@@ -157,4 +62,11 @@ button.btn-icon:focus {
 .last-updated {
     text-align: center;
     font-size: 9pt;
+}
+
+
+@media (max-width: 500px) {
+    .stats-row {
+        font-size: 10pt;
+    }
 }

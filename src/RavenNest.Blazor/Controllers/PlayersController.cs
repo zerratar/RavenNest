@@ -150,6 +150,14 @@ namespace RavenNest.Controllers
             return playerManager.AddPlayer(AssertGetSessionToken(), playerData);
         }
 
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("remove-failed/{characterId}")]
+        public Task<bool> PlayerRemoveFailed(Guid characterId, [FromBody] string reason)
+        {
+            return playerManager.PlayerRemoveFailed(AssertGetSessionToken(), characterId, reason);
+        }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("restore")]
         public Task<PlayerRestoreResult> Restore([FromBody] PlayerRestoreData players)

@@ -44,11 +44,11 @@
     <div class="server-details">
         <h2>TCP Api Network Details (last 10s)</h2>
         <ul class="details">
-            <li><strong>Message Count in/out:</strong>&nbsp;@(ServerService.GameData.NetworkStats.InMessageCount)&nbsp;/&nbsp;@(ServerService.GameData.NetworkStats.OutMessageCount)</li>
-            <li><strong>Traffic in (KB/s):</strong>&nbsp;@ServerService.GameData.NetworkStats.InTrafficKBps</li>
-            <li><strong>Traffic out (KB/s):</strong>&nbsp;@ServerService.GameData.NetworkStats.OutTrafficKBps</li>
-            <li><strong>Traffic Total (KB/s):</strong>&nbsp;@(ServerService.GameData.NetworkStats.OutTrafficKBps + ServerService.GameData.NetworkStats.InTrafficKBps)</li>
-            <li><strong>Date Sampled:</strong>&nbsp;@ServerService.GameData.NetworkStats.InSampleDateTime</li>
+            <li><strong>Message Count in/out:</strong>&nbsp;@(ServerService.GameData.EventServerNetworkStats.InMessageCount)&nbsp;/&nbsp;@(ServerService.GameData.EventServerNetworkStats.OutMessageCount)</li>
+            <li><strong>Traffic in (KB/s):</strong>&nbsp;@ServerService.GameData.EventServerNetworkStats.InTrafficKBps</li>
+            <li><strong>Traffic out (KB/s):</strong>&nbsp;@ServerService.GameData.EventServerNetworkStats.OutTrafficKBps</li>
+            <li><strong>Traffic Total (KB/s):</strong>&nbsp;@(ServerService.GameData.EventServerNetworkStats.OutTrafficKBps + ServerService.GameData.EventServerNetworkStats.InTrafficKBps)</li>
+            <li><strong>Date Sampled:</strong>&nbsp;@ServerService.GameData.EventServerNetworkStats.InSampleDateTime</li>
         </ul>
     </div>
 

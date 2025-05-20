@@ -35,25 +35,6 @@ span.character-level:after {
 
 /*  Buttons Styling  */
 
-.character-control button.btn-icon {
-    background-color: #141414;
-    color: white;
-    max-height: 30px;
-}
-
-button.btn-icon {
-    background-color: transparent;
-    border: 0;
-    color: #333;
-    margin-left: 10px;
-}
-
-    button.btn-icon:active,
-    button.btn-icon:focus {
-        outline: 0;
-        background-color: rgba(0,0,0,0.15);
-    }
-
 /* Skill modal/window Styling */
 
 .skill-modify-modal {
@@ -113,27 +94,19 @@ input.blazored-typeahead__input {
 
 /* Skills Styling */
 
-.training-skill {
-    margin-bottom: 10px;
-    padding: 5px;
-    background-color: #f6f6f6;
-    border: 2px solid #ebebeb;
-    text-align: center;
-}
-
 .current-health {
 }
 
 .stats-progress {
     height: 23px;
     text-align: right;
-    min-width: 120px;
+    min-width: 100px;
     text-align: center;
     background-color: #f4f4f4;
 }
 
 .stats-value {
-    width: 120px;
+    width: 100px;
     text-align: right;
 }
 
@@ -145,7 +118,7 @@ input.blazored-typeahead__input {
 
 .stats-progress-percent {
     height: 23px;
-    min-width: 120px;
+    min-width: 100px;
     text-align: center;
     background-color: #f4f4f4;
 }
@@ -167,13 +140,6 @@ input.blazored-typeahead__input {
 }
 
 /*  Characters Table Styling  */
-
-th, td {
-    padding: 0.25rem;
-    text-align: center;
-    /*border: 1px solid #ccc;*/
-}
-
 
 table.characters-table {
     width: 100%;

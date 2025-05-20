@@ -44,88 +44,11 @@
     justify-content: center;
 }
 
-.feature-list {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-around;
-    max-width: 100%;
-    width: 1280px;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.feature-item img {
-    width: 127px;
-    margin-bottom: 25px;
-}
-
-.feature-item {
-    margin-top: 50px;
-    width: 300px;
-    display: flex;
-    flex-flow: column;
-    justify-content: center;
-    align-items: center;
-}
-
-.feature-item-text {
-    font-size: 14pt;
-    color: #303030;
-    text-align: center;
-    font-weight: 300;
-    font-family: 'Heebo', sans-serif;
-}
 
 .section:last-of-type {
     padding-bottom: 220px;
 }
 
-.section:nth-child(even) {
-    background-color: #eae9e1;
-}
-
-.patreon-content {
-    font-family: 'Heebo', sans-serif;
-    text-shadow: 3px 2px 7px rgba(0,0,0,0.5);
-    display: flex;
-    flex-flow: column;
-    max-width: 100%;
-    width: 500px;
-    margin-left: auto;
-    margin-right: auto;
-    align-items: center;
-    justify-items: center;
-    text-align: center;
-}
-
-.patreon-content .raven-btn {
-    width: 280px;
-}
-
-.patreon-text {
-    font-size: 16pt;
-    margin-top: 10px;
-    margin-bottom: 25px;
-}
-
-.patreon-header {
-    font-weight: bold;
-    font-size: 44pt;
-    text-shadow: 3px 2px 7px rgba(0,0,0,0.5);
-}
-
-.patreon-text b {
-    white-space: nowrap;
-}
-
-.section.patreon {
-    background-color: white;
-    background-image: url(/imgs/PatreonBackground.jpg);
-    background-size: cover;
-    background-position: center;
-    color: white;
-}
 
 .section.patreon h1,
 .section.patreon h2,
@@ -138,36 +61,10 @@
     text-shadow: 3px 2px 7px rgba(0,0,0,0.5);
 }
 
-
-.hero-text {
-    font-size: 14pt;
-    text-align: center;
-    margin-bottom: 30px;
-    color: white;
-    max-width: 100%;
-    width: 840px;
-}
-
 a.raven-btn {
     margin: 5px;
 }
 
-.hero-text b {
-    font-weight: 600;
-}
-
-p.invalid {
-    color: red;
-    /* font-weight: bold; */
-    font-size: 14pt;
-}
-
-.hero-buttons {
-    margin-top: 25px;
-    max-width: 100%;
-    display: flex;
-    justify-content: center;
-}
 
 .raven-btn {
     margin: 5px;

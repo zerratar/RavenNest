@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Timers;
 using TwitchLib.Api.Auth;
 using static RavenNest.BusinessLogic.GameMath;
 
@@ -15,16 +16,48 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     {
         private static readonly Random dropRandom;
         private static ConcurrentDictionary<string, DateTime> dropTimes;
+        private static Timer saveTimer;
+        private static readonly object dropsMutex = new object();
+        private static readonly object fileMutex = new object();
 
-        private static readonly object mutex = new object();
+        public static bool SaveEnabled = true;
+
+        public static void StopSaving()
+        {
+            SaveEnabled = false;
+            try
+            {
+                saveTimer.Stop();
+                saveTimer.Dispose();
+            }
+            catch { }
+        }
 
         static SimpleDropHandler()
         {
             dropRandom = new Random();
             dropTimes = new ConcurrentDictionary<string, DateTime>();
+
+            saveTimer = new System.Timers.Timer(5000);
+            saveTimer.Elapsed += (s, e) =>
+            {
+                if (SaveEnabled)
+                    SaveDropTimes();
+
+                if (!SaveEnabled)
+                {
+                    try
+                    {
+                        saveTimer.Stop();
+                        saveTimer.Dispose();
+                    }
+                    catch { }
+                }
+            };
+
             try
             {
-                lock (mutex)
+                lock (fileMutex)
                 {
                     var droptimesJson = System.IO.Path.Combine(FolderPaths.GeneratedDataPath, "resource-droptimes.json");
                     if (System.IO.File.Exists(droptimesJson))
@@ -43,7 +76,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         {
             try
             {
-                lock (mutex)
+                lock (fileMutex)
                 {
                     var droptimesJson = System.IO.Path.Combine(FolderPaths.GeneratedDataPath, "resource-droptimes.json");
                     System.IO.File.WriteAllText(droptimesJson, Newtonsoft.Json.JsonConvert.SerializeObject(dropTimes));
@@ -65,25 +98,31 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
         public void ForceReloadDrops(GameData gameData)
         {
-            lock (mutex)
+            lock (dropsMutex)
             {
                 this.drops.Clear();
-                LoadDrops(gameData);
             }
+
+            LoadDrops(gameData);
         }
 
         public void LoadDrops(GameData gameData)
         {
-            lock (mutex)
+
+            var skillIndex = Skills.SkillNames.IndexOf(skill);
+            var dropsToAdd = new List<ResourceDrop>();
+            foreach (var drop in gameData.GetResourceItemDrops().Where(x => x != null && (x.Skill == null || x.Skill == skillIndex)))
             {
-                var skillIndex = Skills.SkillNames.IndexOf(skill);
-                foreach (var drop in gameData.GetResourceItemDrops().Where(x => x != null && (x.Skill == null || x.Skill == skillIndex)))
+                if (drop != null)
                 {
-                    if (drop != null)
-                    {
-                        drops.Add(drop);
-                    }
+                    dropsToAdd.Add(drop);
+
                 }
+            }
+            lock (dropsMutex)
+            {
+                if (dropsToAdd.Count > 0)
+                    drops.AddRange(dropsToAdd);
             }
         }
 
@@ -108,66 +147,70 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 }
 
                 LoadDropsIfRequired(gameData);
-                lock (mutex)
+                List<ResourceDrop> dr;
+
+                lock (dropsMutex)
                 {
-                    var dr = drops.ToList();
-                    if (dr.Count == 0)
+                    dr = drops.ToList();
+                }
+
+                if (dr.Count == 0)
+                {
+                    return false;
+                }
+
+                var now = DateTime.UtcNow;
+
+                // filter out bad drops
+                var droppable = new List<ResourceDrop>();
+                foreach (var d in dr)
+                {
+                    if (d == null || d.ItemId == Guid.Empty)
                     {
-                        return false;
+                        continue;
                     }
 
-                    var now = DateTime.UtcNow;
-
-                    // filter out bad drops
-                    var droppable = new List<ResourceDrop>();
-                    foreach (var d in dr)
+                    if (string.IsNullOrEmpty(d.Name))
                     {
-                        if (d == null || d.ItemId == Guid.Empty)
+                        var item = gameData.GetItem(d.ItemId);
+                        if (item == null)
                         {
                             continue;
                         }
 
-                        if (string.IsNullOrEmpty(d.Name))
-                        {
-                            var item = gameData.GetItem(d.ItemId);
-                            if (item == null)
-                            {
-                                continue;
-                            }
-
-                            d.Name = item.Name;
-                        }
-
-                        droppable.Add(d);
+                        d.Name = item.Name;
                     }
 
-                    var target = droppable.FirstOrDefault(x => x != null && x?.Name?.ToLower().Trim() == taskArgument?.ToLower().Trim());
-                    if (target != null)
+                    droppable.Add(d);
+                }
+
+                var target = droppable.FirstOrDefault(x => x != null && x?.Name?.ToLower().Trim() == taskArgument?.ToLower().Trim());
+                if (target != null)
+                {
+                    drop = target;
+                    if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, target, canDrop))
                     {
-                        drop = target;
-                        if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, target, canDrop))
-                        {
-                            return true;
-                        }
-                    }
-
-
-                    foreach (var res in droppable.OrderByRandomWeighted(x => x.SkillLevel, dropRandom))//drops.OrderByDescending(x => x.SkillLevel))
-                    {
-                        // we have already tested this one? if so skip it.
-                        if (target != null && res.ItemId == target.ItemId)
-                        {
-                            continue;
-                        }
-
-
-                        drop = res;
-                        if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, res, canDrop))
-                        {
-                            return true;
-                        }
+                        return true;
                     }
                 }
+
+
+                foreach (var res in droppable.OrderByRandomWeighted(x => x.SkillLevel, dropRandom))//drops.OrderByDescending(x => x.SkillLevel))
+                {
+                    // we have already tested this one? if so skip it.
+                    if (target != null && res.ItemId == target.ItemId)
+                    {
+                        continue;
+                    }
+
+
+                    drop = res;
+                    if (TryDrop(logger, gameData, inventory, session, resProcessor, character, skillLevel, res, canDrop))
+                    {
+                        return true;
+                    }
+                }
+
                 return false;
             }
             catch (Exception exc)
@@ -269,7 +312,10 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
         private void LoadDropsIfRequired(GameData gameData)
         {
-            if (initialized || drops.Count > 0) return;
+            lock (dropsMutex)
+            {
+                if (initialized || drops.Count > 0) return;
+            }
             LoadDrops(gameData);
             initialized = true;
         }

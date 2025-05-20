@@ -23,50 +23,9 @@
     white-space: nowrap;
 }
 
-th, td {
-    text-align: right;
-    padding: 10px 15px;
-    border: 1px solid #eeeeee;
-}
-
-.items-list th {
-    cursor: pointer;
-    user-select: none;
-}
-
-table.items-list tr {
-    border: none;
-}
-
-table.items-list th:nth-of-type(2),
-table.items-list td:nth-of-type(2) {
-    text-align: left;
-}
-
-table.items-list tr:nth-of-type(even) {
-    background-color: #f6f6f6;
-}
-
-table.items-list tr:nth-of-type(even).selected,
-.item-row.selected {
-    background-color: aquamarine;
-}
-
-table.items-list tr.isMe {
-    background-color: #6acc91;
-    color: white;
-}
-
 .items {
     margin-top: 140px;
     flex-grow: 1;
-}
-
-.ravenCoins {
-    margin-bottom: 5.5px;
-    /* height: 100%; */
-    height: 22px;
-    margin-right: 1px;
 }
 
 @media screen and (max-width: 800px) {

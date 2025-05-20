@@ -1,25 +1,23 @@
-﻿using System;
+﻿using RavenNest.DataAnnotations;
+using System;
 using System.Collections.Generic;
 
 namespace RavenNest.DataModels
 {
-    public class SyntyAppearance : Entity<SyntyAppearance>
+    public partial class SyntyAppearance : Entity<SyntyAppearance>
     {
-        private Gender gender; public Gender Gender { get => gender; set => Set(ref gender, value); }
-        private int hair; public int Hair { get => hair; set => Set(ref hair, value); }
-        private int head; public int Head { get => head; set => Set(ref head, value); }
-        private int eyebrows; public int Eyebrows { get => eyebrows; set => Set(ref eyebrows, value); }
-        private int facialHair; public int FacialHair { get => facialHair; set => Set(ref facialHair, value); }
-        private int cape; public int Cape { get => cape; set => Set(ref cape, value); }
-        private string skinColor; public string SkinColor { get => skinColor; set => Set(ref skinColor, value); }
-        private string hairColor; public string HairColor { get => hairColor; set => Set(ref hairColor, value); }
-        private string beardColor; public string BeardColor { get => beardColor; set => Set(ref beardColor, value); }
-        private string eyeColor; public string EyeColor { get => eyeColor; set => Set(ref eyeColor, value); }
-        private bool helmetVisible; public bool HelmetVisible { get => helmetVisible; set => Set(ref helmetVisible, value); }
-
-        private string stubbleColor; public string StubbleColor { get => stubbleColor; set => Set(ref stubbleColor, value); }
-        private string warPaintColor; public string WarPaintColor { get => warPaintColor; set => Set(ref warPaintColor, value); }
-
-        //public ICollection<Character> Character { get; set; }
+        [PersistentData] private Gender gender;
+        [PersistentData] private int hair;
+        [PersistentData] private int head;
+        [PersistentData] private int eyebrows;
+        [PersistentData] private int facialHair;
+        [PersistentData] private int cape;
+        [PersistentData] private string skinColor;
+        [PersistentData] private string hairColor;
+        [PersistentData] private string beardColor;
+        [PersistentData] private string eyeColor;
+        [PersistentData] private bool helmetVisible;
+        [PersistentData] private string stubbleColor;
+        [PersistentData] private string warPaintColor;
     }
 }

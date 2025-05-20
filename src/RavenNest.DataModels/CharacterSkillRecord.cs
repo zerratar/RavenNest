@@ -1,15 +1,15 @@
-﻿using System;
+﻿using RavenNest.DataAnnotations;
+using System;
 
 namespace RavenNest.DataModels
 {
     public partial class CharacterSkillRecord : Entity<CharacterSkillRecord>
     {
-
-        private int skillIndex; public int SkillIndex { get => skillIndex; set => Set(ref skillIndex, value); }
-        private string skillName; public string SkillName { get => skillName; set => Set(ref skillName, value); }
-        private int skillLevel; public int SkillLevel { get => skillLevel; set => Set(ref skillLevel, value); }
-        private double skillExperience; public double SkillExperience { get => skillExperience; set => Set(ref skillExperience, value); }
-        private Guid characterId; public Guid CharacterId { get => characterId; set => Set(ref characterId, value); }
-        private DateTime dateReached; public DateTime DateReached { get => dateReached; set => Set(ref dateReached, value); }
+        [PersistentData] private int skillIndex;
+        [PersistentData] private string skillName;
+        [PersistentData] private int skillLevel;
+        [PersistentData] private double skillExperience;
+        [PersistentData] private Guid characterId;
+        [PersistentData] private DateTime dateReached;
     }
 }

@@ -5,6 +5,7 @@ using RavenNest.BusinessLogic.Net.DeltaTcpLib;
 using RavenNest.Models;
 using System.Runtime.CompilerServices;
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace DeltaServerTest
 {
@@ -12,26 +13,19 @@ namespace DeltaServerTest
     {
         static void Main(string[] args)
         {
-
-            var t = TimeSpan.FromDays(365);
-            var t2 = t.ToString();
-            if (TimeSpan.TryParse(t2, out var t3))
-            {
-
-            }
-
             Action<string> logger = (msg) =>
             {
                 Console.WriteLine(msg);
             };
+            var loggerProvider = new LoggerFactory();
             var sessionTokenProvider = new SessionTokenProvider();
             var deltaHandler = new DeltaHandler(logger);
             var settings = new RavenNest.BusinessLogic.AppSettings
             {
-                TcpApiPort = 3920
+                TcpApiPort = 3921
             };
 
-            var server = new DeltaServer(settings, sessionTokenProvider, deltaHandler);
+            var server = new DeltaServer(loggerProvider.CreateLogger<DeltaServer>(), settings, null, sessionTokenProvider, deltaHandler);
             server.Start();
             Console.WriteLine("Server started. Press any key to exit...");
             Console.ReadKey();

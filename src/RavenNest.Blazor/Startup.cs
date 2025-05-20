@@ -1,39 +1,41 @@
 ﻿using Blazorise;
 using Blazorise.Bootstrap;
+using Blazorise.Icons.FontAwesome;
+using BytexDigital.Blazor.Components.CookieConsent;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Json;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Rewrite;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RavenNest.Blazor.Services;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Data;
+using RavenNest.BusinessLogic.Data.Aggregators;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.BusinessLogic.Github;
 using RavenNest.BusinessLogic.Net;
+using RavenNest.BusinessLogic.Net.DeltaTcpLib;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Serializers;
 using RavenNest.BusinessLogic.Tv;
 using RavenNest.BusinessLogic.Twitch.Extension;
 using RavenNest.Health;
 using RavenNest.Sessions;
-using System;
-using System.Text.Json.Serialization;
-using Blazorise.Icons.FontAwesome;
-using RavenNest.BusinessLogic.Data.Aggregators;
 using Shinobytes.OpenAI;
-using Microsoft.Extensions.Localization;
-using BytexDigital.Blazor.Components.CookieConsent;
-using RavenNest.BusinessLogic.Net.DeltaTcpLib;
-using Microsoft.AspNetCore.Localization;
+using System;
 using System.Globalization;
+using System.Text.Json.Serialization;
 
 namespace RavenNest.Blazor
 {
@@ -258,6 +260,20 @@ namespace RavenNest.Blazor
             app.UseSwagger();
             app.UseSwaggerUI();
             app.UseStaticFiles();
+            //app.UseStaticFiles(new StaticFileOptions()
+            //{
+            //    FileProvider = new PhysicalFileProvider(PublicAssetsFolder),
+            //    RequestPath = new PathString(""),
+            //    DefaultContentType = "application/json",
+            //    ServeUnknownFileTypes = true,
+            //});
+
+            //app.UseStaticFiles(new StaticFileOptions()
+            //{
+            //    FileProvider = new PhysicalFileProvider("G:\\Ravenfall\\Projects\\RavenNest\\Publish\\wwwroot"),
+            //    DefaultContentType = "application/json",
+            //    ServeUnknownFileTypes = true,
+            //});
 
             //app.UseUseBlazorise(options => { options.DelayTextOnKeyPress = true; });
 
@@ -281,13 +297,13 @@ namespace RavenNest.Blazor
                             client.DownloadLink = release.UpdateDownloadUrl_Win;
                         }
 
-                        var url = release.UpdateDownloadUrl_Linux;
+                        var url = release.FullDownloadUrl_Linux;
                         context.Response.Redirect(url);
                         return;
                     }
 
                     // fall back to saved settings in db.
-                    var redirectUrl = gameData.Client.DownloadLink;
+                    var redirectUrl = gameData.Client.DownloadLink;//Ravenfall.v0.9.4.1a-alpha-linux.7z
                     redirectUrl = redirectUrl.Replace("update-linux.7z", $"Ravenfall.v{client.ClientVersion}-alpha-linux.7z");
                     context.Response.Redirect(redirectUrl);
                 });
@@ -367,7 +383,7 @@ namespace RavenNest.Blazor
 
             // Start the TCP Api
             app.ApplicationServices.GetService<ITcpSocketApi>().Start();
-            //app.ApplicationServices.GetService<DeltaServer>().Start();
+            app.ApplicationServices.GetService<DeltaServer>().Start();
 
             // Start Generating Ravenfall Tv Episodes
             app.ApplicationServices.GetService<RavenfallTvManager>();
@@ -379,13 +395,14 @@ namespace RavenNest.Blazor
 
         private void OnApplicaftionStopping(IApplicationBuilder app)
         {
+            SimpleDropHandler.StopSaving();
             Dispose<GameData>(app);
             Dispose<ITcpSocketApi>(app);
             Dispose<IGameProcessorManager>(app);
             Dispose<MarketplaceReportAggregator>(app);
             Dispose<EconomyReportAggregator>(app);
             Dispose<RavenfallTvManager>(app);
-            //Dispose<DeltaServer>(app);
+            Dispose<DeltaServer>(app);
         }
 
         private void Dispose<T>(IApplicationBuilder app) where T : IDisposable
@@ -399,6 +416,11 @@ namespace RavenNest.Blazor
 
         private static void RegisterServices(IServiceCollection services, AppSettings settings)
         {
+            var bus = MessageBus.Shared;
+            services.AddSingleton<IMessageBus>(bus);
+
+            services.AddHostedService<ServerEventService>();
+
             services.AddSingleton<MarketplaceReportAggregator>();
             services.AddSingleton<EconomyReportAggregator>();
 
@@ -482,7 +504,12 @@ namespace RavenNest.Blazor
 
             //services.AddHostedService<TcpSocketApiHostedService>();
 
-            services.AddSingleton<DeltaServer>(services => new DeltaServer(settings, services.GetService<SessionManager>(), services.GetService<PlayerManager>()));
+            services.AddSingleton<DeltaServer>(services => new DeltaServer(
+                services.GetService<ILogger<DeltaServer>>(),
+                settings,
+                services.GetService<GameData>(),
+                services.GetService<SessionManager>(),
+                services.GetService<PlayerManager>()));
         }
     }
 }

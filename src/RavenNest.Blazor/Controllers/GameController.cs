@@ -137,6 +137,35 @@ namespace RavenNest.Controllers
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{clientVersion}/{accessKey}/{gameTime}/skip-update")]
+        public async Task<BeginSessionResult> BeginSessionSkipUpdateAsync(string clientVersion, string accessKey, float gameTime)
+        {
+            var authToken = GetAuthToken();
+            AssertAuthTokenValidity(authToken);
+
+            BeginSessionResult session = await this.sessionManager.BeginSessionAsync(
+                authToken,
+                clientVersion,
+                accessKey,
+                gameTime,
+                true);
+
+            if (session == null)
+            {
+                HttpContext.Response.StatusCode = 403;
+                return null;
+            }
+
+            if (session.SessionToken?.AuthToken == null)
+            {
+                return null;
+            }
+
+
+            return session;
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{clientVersion}/{accessKey}/{gameTime}")]
         public async Task<BeginSessionResult> BeginSessionAsync(string clientVersion, string accessKey, float gameTime)
         {

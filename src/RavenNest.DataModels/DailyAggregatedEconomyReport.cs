@@ -1,177 +1,93 @@
-﻿using System;
+﻿using RavenNest.DataAnnotations;
+using System;
 
 namespace RavenNest.DataModels
 {
     public partial class DailyAggregatedEconomyReport : Entity<DailyAggregatedEconomyReport>
     {
-        private DateTime date;
         /// <summary>
         /// The date of the report.
         /// </summary>
-        public DateTime Date
-        {
-            get => date;
-            set => Set(ref date, value);
-        }
+        [PersistentData] private DateTime date;
 
-        private double avgCoinsPerPlayer;
         /// <summary>
         /// The average amount of coins per player.
         /// </summary>
-        public double AvgCoinsPerPlayer
-        {
-            get => avgCoinsPerPlayer;
-            set => Set(ref avgCoinsPerPlayer, value);
-        }
+        [PersistentData] private double avgCoinsPerPlayer;
 
-        private long totalCoins;
         /// <summary>
         /// The total amount of coins in the game.
         /// </summary>
-        public long TotalCoins
-        {
-            get => totalCoins;
-            set => Set(ref totalCoins, value);
-        }
+        [PersistentData] private long totalCoins;
 
-        private int totalPlayers;
         /// <summary>
         /// The total number of players in the game.
         /// </summary>
-        public int TotalPlayers
-        {
-            get => totalPlayers;
-            set => Set(ref totalPlayers, value);
-        }
+        [PersistentData] private int totalPlayers;
 
-        private int activePlayers;
         /// <summary>
         /// The number of players who were active during the day.
         /// </summary>
-        public int ActivePlayers
-        {
-            get => activePlayers;
-            set => Set(ref activePlayers, value);
-        }
+        [PersistentData] private int activePlayers;
 
-        private int newPlayers;
         /// <summary>
         /// The number of new players who joined the game during the day.
         /// </summary>
-        public int NewPlayers
-        {
-            get => newPlayers;
-            set => Set(ref newPlayers, value);
-        }
+        [PersistentData] private int newPlayers;
 
-        private long itemsSold;
         /// <summary>
         /// The total number of items sold in the game during the day.
         /// </summary>
-        public long ItemsSold
-        {
-            get => itemsSold;
-            set => Set(ref itemsSold, value);
-        }
+        [PersistentData] private long itemsSold;
 
-        private long itemsSoldToMarketplace;
         /// <summary>
         /// The total number of items sold to the marketplace during the day.
         /// </summary>
-        public long ItemsSoldToMarketplace
-        {
-            get => itemsSoldToMarketplace;
-            set => Set(ref itemsSoldToMarketplace, value);
-        }
+        [PersistentData] private long itemsSoldToMarketplace;
 
-        private long itemsSoldToNpc;
         /// <summary>
         /// The total number of items sold to NPC merchants during the day.
         /// </summary>
-        public long ItemsSoldToNpc
-        {
-            get => itemsSoldToNpc;
-            set => Set(ref itemsSoldToNpc, value);
-        }
+        [PersistentData] private long itemsSoldToNpc;
 
-        private long uniqueItemsSold;
         /// <summary>
         /// The number of unique items sold in the game during the day.
         /// </summary>
-        public long UniqueItemsSold
-        {
-            get => uniqueItemsSold;
-            set => Set(ref uniqueItemsSold, value);
-        }
+        [PersistentData] private long uniqueItemsSold;
 
-        private long totalTransactions;
         /// <summary>
         /// The total number of transactions in the game during the day.
         /// </summary>
-        public long TotalTransactions
-        {
-            get => totalTransactions;
-            set => Set(ref totalTransactions, value);
-        }
+        [PersistentData] private long totalTransactions;
 
-        private long totalCoinsSpent;
         /// <summary>
         /// The total amount of coins spent by players during the day.
-        /// </summary>
-        public long TotalCoinsSpent
-        {
-            get => totalCoinsSpent;
-            set => Set(ref totalCoinsSpent, value);
-        }
+        /// </summary>        
+        [PersistentData] private long totalCoinsSpent;
 
-        private long coinsSpentOnItems;
         /// <summary>
         /// The total amount of coins spent on purchasing items during the day.
         /// </summary>
-        public long CoinsSpentOnItems
-        {
-            get => coinsSpentOnItems;
-            set => Set(ref coinsSpentOnItems, value);
-        }
+        [PersistentData] private long coinsSpentOnItems;
 
-        private long coinsSpentOnServices;
         /// <summary>
         /// The total amount of coins spent on in-game services during the day.
         /// </summary>
-        public long CoinsSpentOnServices
-        {
-            get => coinsSpentOnServices;
-            set => Set(ref coinsSpentOnServices, value);
-        }
+        [PersistentData] private long coinsSpentOnServices;
 
-        private long coinsGainedFromQuests;
         /// <summary>
         /// The total amount of coins earned by players from completing quests during the day.
-        /// </summary>
-        public long CoinsGainedFromQuests
-        {
-            get => coinsGainedFromQuests;
-            set => Set(ref coinsGainedFromQuests, value);
-        }
+        /// </summary>        
+        [PersistentData] private long coinsGainedFromQuests;
 
-        private long coinsGainedFromActivities;
         /// <summary>
         /// The total amount of coins earned by players from various in-game activities during the day.
-        /// </summary>
-        public long CoinsGainedFromActivities
-        {
-            get => coinsGainedFromActivities;
-            set => Set(ref coinsGainedFromActivities, value);
-        }
+        /// </summary>        
+        [PersistentData] private long coinsGainedFromActivities;
 
-        private long coinsGainedFromTrading;
         /// <summary>
         /// The total amount of coins earned by players from trading items during the day.
         /// </summary>
-        public long CoinsGainedFromTrading
-        {
-            get => coinsGainedFromTrading;
-            set => Set(ref coinsGainedFromTrading, value);
-        }
+        [PersistentData] private long coinsGainedFromTrading;
     }
 }

@@ -47,6 +47,7 @@
     <ProjectReference Include="..\RavenNest.BusinessLogic\RavenNest.BusinessLogic.csproj" />
     <ProjectReference Include="..\RavenNest.DataModels\RavenNest.DataModels.csproj" />
     <ProjectReference Include="..\RavenNest.Models\RavenNest.Models.csproj" />
+    <ProjectReference Include="..\RavenNest.DataModels.Generators\RavenNest.DataModels.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
@@ -61,6 +62,9 @@
   <ItemGroup>
     <None Update="cert.pfx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="_cert.pfx">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
     <None Update="Components\ClanMemberList - Copy.razor.css">
       <DependentUpon>ClanMemberList.razor.css</DependentUpon>

@@ -3,293 +3,376 @@
 @using RavenNest.Models
 @using RavenNest.Blazor.Services
 @using Blazored.Typeahead
-
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject RavenNest.Blazor.Services.ItemService ItemService
-
 <div class="player-inventory">
-
-    @if (CanModify)
-    {
-        <div class="inventory-management">
-            <button @onclick="ShowAddItem" class="btn btn-primary">Add item</button>
+    <div class="inventory-header">
+        <div class="inventory-tabs">
+            <button class="inventory-tab @(activeTab == "equipment" ? "active" : "")" @onclick="() => SetEquipmentTab()">Equipment</button>
+            <button class="inventory-tab @(activeTab == "inventory" ? "active" : "")" @onclick="() => SetInventoryTab()">Inventory</button>
+            @if (CanModify)
+            {
+                <button @onclick="ShowAddItem" class="btn btn-primary">Add item</button>
+            }
         </div>
-    }
-
-    @if (CanManage)
-    {
         <div class="account-coins">
             <i class="fa-solid fa-coins"></i>
-            <span>
-                @Utility.FormatAmount(coins)
-            </span>
-        </div>
-    }
-    <div class="equipped-items">
-        <h2>Equipped</h2>
-        <div class="inventory-items">
-            @foreach (var item in GetEquippedItems())
-            {
-                <div class="inventory-item equipped @GetEnchantedItemClass(item.Enchantment)" @onclick="(()=>ShowItemDetails(item))">
-                    <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
-                </div>
-            }
+            <span>@Utility.FormatAmount(coins)</span>
         </div>
     </div>
 
-    <div class="unequipped-items">
+    @if (activeTab == "equipment")
+    {
+        <div class="equipment-view">
+            <div class="equipment-slots">
+                @foreach (var slot in GetItemSlots())
+                {
+                    var equipped = GetEquippedItemForSlot(slot);
+                    var label = GetEquipmentSlotName(slot);
 
-
-        <h2>Inventory</h2>
-
-        <div class="item-filters">
-            <button class="item-filter @(itemFilter == ItemFilter.All ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.All)">
-                <span class="item-filter-text">All</span>
-                <i class="fa-sharp fa-solid fa-rectangles-mixed"></i>
-            </button>
-            <button class="item-filter @(itemFilter == ItemFilter.Swords ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Swords)">
-                <span class="item-filter-text">Swords</span>
-                <i class="fa-sharp fa-solid fa-sword"></i>
-            </button>
-            <button class="item-filter @(itemFilter == ItemFilter.Axes ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Axes)">
-                <span class="item-filter-text">Axes</span>
-                <i class="fa-sharp fa-solid fa-axe"></i>
-            </button>
-            <button class="item-filter @(itemFilter == ItemFilter.Spears ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Spears)">
-                <span class="item-filter-text">Spears</span>
-                <i class="fa-solid fa-scythe"></i>
-            </button>
-            <button class="item-filter @(itemFilter == ItemFilter.Bows ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Bows)">
-                <span class="item-filter-text">Bows</span>
-                <i class="fa-sharp fa-solid fa-bow-arrow"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Staves ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Staves)">
-                <span class="item-filter-text">Staves</span>
-                <i class="fa-sharp fa-solid fa-staff"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Shields ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Shields)">
-                <span class="item-filter-text">Shields</span>
-                <i class="fa-sharp fa-solid fa-shield"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Armors ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Armors)">
-                <span class="item-filter-text">Armors</span>
-                <i class="fa-sharp fa-solid fa-helmet-battle"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Accessories ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Accessories)">
-                <span class="item-filter-text">Accessories</span>
-                <i class="fa-sharp fa-solid fa-gem"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Pets ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Pets)">
-                <span class="item-filter-text">Pets</span>
-                <i class="fa-sharp fa-solid fa-dog"></i>
-            </button>
-
-
-            <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
-                <span class="item-filter-text">Scrolls</span>
-                <i class="fa-sharp fa-solid fa-scroll"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Woodcutting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Woodcutting)">
-                <span class="item-filter-text">Woodcutting</span>
-                <i class="fa-solid fa-tree"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Mining ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Mining)">
-                <span class="item-filter-text">Mining</span>
-                <i class="fa-solid fa-pickaxe"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Fishing ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Fishing)">
-                <span class="item-filter-text">Fishing</span>
-                <i class="fa-sharp fa-solid fa-fishing-rod"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Farming ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Farming)">
-                <span class="item-filter-text">Farming</span>
-                <i class="fa-solid fa-wheat"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Gathering ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Gathering)">
-                <span class="item-filter-text">Gathering</span>
-                <i class="fa-solid fa-mushroom"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Crafting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Crafting)">
-                <span class="item-filter-text">Crafting</span>
-                <i class="fa-sharp fa-solid fa-hammer"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Cooking ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Cooking)">
-                <span class="item-filter-text">Cooking</span>
-                <i class="fa-sharp fa-solid fa-user-chef"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Alchemy ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Alchemy)">
-                <span class="item-filter-text">Alchemy</span>
-                <i class="fa-sharp fa-solid fa-flask-round-potion"></i>
-            </button>
-        </div>
-
-        @if (CanManage)
-        {
-            <div class="item-actions inventory-actions">
-                <button @onclick="SendAllToStash" class="btn btn-action stash">@("Send all to stash")</button>
-                <button @onclick="ShowVendorAllDialog" class="btn btn-action vendor">@("Vendor All (" + GetVendorPrice() + ")")</button>
-            </div>
-        }
-
-        <div class="inventory-items inventory">
-
-            @foreach (var item in GetInventoryItems())
-            {
-                <div class="inventory-item @GetEnchantedItemClass(item.Enchantment)" @onclick="(()=>ShowItemDetails(item))">
-                    <div class="item-image" data-item="@item.Id"><img src="@GetItemImage(item.ItemId, item.Tag)" /></div>
-                    @if (item.Amount > 1)
-                    {
-                        <div class="item-amount">@GetItemAmount(item)</div>
-                    }
-                </div>
-            }
-        </div>
-
-        @if (vendorAllConfirmationDialogVisible)
-        {
-            <div class="item-details-dialog-container vendor">
-                <div class="item-details-dialog-background" @onclick="CloseVendorAllDialog"></div>
-                <div class="item-details-dialog vendor">
-                    <div class="dialog-header">
-                        @* <button class="close" @onclick="CloseVendorAllDialog">x</button> *@
-                    </div>
-
-                    <div class="item-details-content vendor">
-                        <div class="warning-row">
-                            <span>You are about to vendor</span>
-                            <span>@GetItemCountForVendor()</span>
-                            <span> items in this category for</span>
-                            <span class="vendor-price">@(GetVendorPrice())</span>
-                        </div>
-                        <div class="warning-row">Are you sure you want to continue?</div>
-                    </div>
-                    <div class="item-actions">
-                        <button @onclick="CloseVendorAllDialog" class="btn btn-action">Cancel</button>
-                        <button @onclick="VendorAll" class="btn btn-action vendor">Confirm</button>
-                    </div>
-                </div>
-            </div>
-        }
-
-        @if (vendorConfirmationDialogVisible)
-        {
-            <div class="item-details-dialog-container vendor">
-                <div class="item-details-dialog-background" @onclick="CloseVendorDialog"></div>
-                <div class="item-details-dialog vendor">
-                    <div class="dialog-header">
-                        <h3>Vendor @GetItemName(vendorItem)</h3>
-                    </div>
-                    <div class="item-details-content vendor">
-
-                        @if (canVendorMany)
+                    <div class="equipment-slot" title="@label">
+                        <div class="slot-label">@label</div>
+                        @if (equipped != null)
                         {
-                            <div class="amount-inputs">
-                                <label>Amount:</label>
-                                <input @bind="vendorAmount" type="number" min="1" max="@vendorItem.Amount" />
-
-                                <div class="quick-buttons">
-                                    @foreach (var amount in quickButtons)
-                                    {
-                                        <button @onclick="() => SetVendorAmount(amount)" class="btn btn-action btn-quick">
-                                            @(amount == vendorItem.Amount ? $"{amount} (All)" : $"{amount}")
-                                        </button>
-                                    }
-                                </div>
+                            <div class="item-image" @onclick="() => ShowItemDetails(equipped)">
+                                <img src="@GetItemImage(equipped.TransmogrificationId ?? equipped.ItemId, equipped.Tag)" />
+                                @if (equipped.TransmogrificationId != null)
+                                {
+                                    <span class="transmog-icon" title="Transmogrified">
+                                        <i class="fa-solid fa-mask"></i>
+                                    </span>
+                                }
+                                @if (!string.IsNullOrEmpty(equipped.Enchantment))
+                                {
+                                    <span class="enchant-icon" title="Enchanted">
+                                        <i class="fa-solid fa-sparkles"></i>
+                                    </span>
+                                }
                             </div>
                         }
-
-                        <div class="summary-block">
-                            <p>You are about to vendor <strong>@vendorAmount</strong> @GetItemName(vendorItem) for <strong>@((ItemService.GetItem(vendorItem.ItemId).ShopSellPrice * vendorAmount) + " coins")</strong>.</p>
-                        </div>
-                        <div class="warning-row">Are you sure you want to continue?</div>
-                    </div>
-                    <div class="item-actions">
-                        <button @onclick="CloseVendorDialog" class="btn btn-action">Cancel</button>
-                        <button @onclick="Vendor" class="btn btn-action vendor">Confirm</button>
-                    </div>
-                </div>
-            </div>
-        }
-
-    </div>
-</div>
-
-@if (itemDetailDialogVisible)
-{
-    var item = ItemService.GetItem(itemDetailsDialogItem.ItemId);
-    <div class="item-details-dialog-container item-view">
-        <div class="item-details-dialog-background" @onclick="CloseItemDetails"></div>
-        <div class="item-details-dialog">
-            <div class="dialog-header">
-                <div class="item-name" data-tier="@GetItemTier()">@GetItemName()</div>
-                <button class="close" @onclick="CloseItemDetails">x</button>
-            </div>
-
-            <div class="item-details-content">
-                <div class="item-type">@GetItemType()</div>
-                @if (itemDetailsDialogItem.Soulbound)
-                {
-                    <div class="item-soulbound">Soulbound - this item can't be gifted</div>
-                }
-                <div class="item-image" data-item="@itemDetailsDialogItem.Id"><img src="@GetItemImage(itemDetailsDialogItem.ItemId, itemDetailsDialogItem.Tag)" /></div>
-
-                @foreach (var stat in GetItemStats())
-                {
-                    <div class="item-stat">
-                        <div class="item-stat-name">@stat.Name</div>
-                        <div class="item-stat-value">
-                            <span>@stat.Value</span>
-                            @if (stat.Bonus > 0)
-                            {
-                                <span class="item-stat-enchantment" title="Enchantment Bonus">(+@stat.Bonus)</span>
-                            }
-                        </div>
+                        else
+                        {
+                            <div class="item-image empty">
+                                <i class="fa-regular fa-square"></i>
+                            </div>
+                        }
                     </div>
                 }
-                @if (!string.IsNullOrEmpty(itemDetailsDialogItem.Enchantment))
+            </div>
+            <div class="equipment-stats">
+                <h3>Total Equipment Stats</h3>
+                @if (EquippedStats.Count == 0)
                 {
-                    <div class="item-enchantment-header">Enchantments</div>
-                    @foreach (var stat in GetItemEnchantments())
+                    <div class="no-stats">No equipment stats</div>
+                }
+                else
+                {
+                    @foreach (var stat in EquippedStats)
                     {
-                        <div class="item-stat enchantment">
-                            <div class="item-stat-name">@GetEnchantmentName(stat)</div>
-                            <div class="item-stat-value">+@GetEnchantmentValue(stat)</div>
+                        <div class="stat-row">
+                            <span class="stat-name">@stat.Key</span>
+                            <span class="stat-value">@stat.Value</span>
                         </div>
                     }
                 }
-                <div class="item-requirement">
-                    <div class="item-stat-name">@GetItemRequirementSkill()</div>
-                    <div class="item-stat-value">@GetItemRequirementLevel()</div>
-                </div>
-
-                @if (item.RequiredSlayerLevel > 0)
-                {
-                    <div class="item-requirement">
-                        <div class="item-stat-name">Requires Slayer Level</div>
-                        <div class="item-stat-value">@item.RequiredSlayerLevel</div>
-                    </div>
-                }
             </div>
-
+        </div>
+    }
+    else if (activeTab == "inventory")
+    {
+        <div class="unequipped-items">
+            <div class="item-filters">
+                <button class="item-filter @(itemFilter == ItemFilter.All ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.All)">
+                    <span class="item-filter-text">All</span>
+                    <i class="fa-sharp fa-solid fa-rectangles-mixed"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Swords ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Swords)">
+                    <span class="item-filter-text">Swords</span>
+                    <i class="fa-sharp fa-solid fa-sword"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Axes ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Axes)">
+                    <span class="item-filter-text">Axes</span>
+                    <i class="fa-sharp fa-solid fa-axe"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Spears ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Spears)">
+                    <span class="item-filter-text">Spears</span>
+                    <i class="fa-solid fa-scythe"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Bows ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Bows)">
+                    <span class="item-filter-text">Bows</span>
+                    <i class="fa-sharp fa-solid fa-bow-arrow"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Staves ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Staves)">
+                    <span class="item-filter-text">Staves</span>
+                    <i class="fa-sharp fa-solid fa-staff"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Shields ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Shields)">
+                    <span class="item-filter-text">Shields</span>
+                    <i class="fa-sharp fa-solid fa-shield"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Armors ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Armors)">
+                    <span class="item-filter-text">Armors</span>
+                    <i class="fa-sharp fa-solid fa-helmet-battle"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Accessories ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Accessories)">
+                    <span class="item-filter-text">Accessories</span>
+                    <i class="fa-sharp fa-solid fa-gem"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Pets ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Pets)">
+                    <span class="item-filter-text">Pets</span>
+                    <i class="fa-sharp fa-solid fa-dog"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
+                    <span class="item-filter-text">Scrolls</span>
+                    <i class="fa-sharp fa-solid fa-scroll"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Woodcutting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Woodcutting)">
+                    <span class="item-filter-text">Woodcutting</span>
+                    <i class="fa-solid fa-tree"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Mining ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Mining)">
+                    <span class="item-filter-text">Mining</span>
+                    <i class="fa-solid fa-pickaxe"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Fishing ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Fishing)">
+                    <span class="item-filter-text">Fishing</span>
+                    <i class="fa-sharp fa-solid fa-fishing-rod"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Farming ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Farming)">
+                    <span class="item-filter-text">Farming</span>
+                    <i class="fa-solid fa-wheat"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Gathering ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Gathering)">
+                    <span class="item-filter-text">Gathering</span>
+                    <i class="fa-solid fa-mushroom"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Crafting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Crafting)">
+                    <span class="item-filter-text">Crafting</span>
+                    <i class="fa-sharp fa-solid fa-hammer"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Cooking ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Cooking)">
+                    <span class="item-filter-text">Cooking</span>
+                    <i class="fa-sharp fa-solid fa-user-chef"></i>
+                </button>
+                <button class="item-filter @(itemFilter == ItemFilter.Alchemy ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Alchemy)">
+                    <span class="item-filter-text">Alchemy</span>
+                    <i class="fa-sharp fa-solid fa-flask-round-potion"></i>
+                </button>
+            </div>
 
             @if (CanManage)
             {
-                <div class="item-actions">
+                <div class="item-actions inventory-actions">
+                    <button @onclick="SendAllToStash" class="btn btn-action stash">@("Send all to stash")</button>
+                    <button @onclick="ShowVendorAllDialog" class="btn btn-action vendor">@("Vendor All (" + GetVendorPrice() + ")")</button>
+                </div>
+            }
 
+            <div class="inventory-items inventory">
+                @foreach (var item in GetInventoryItems())
+                {
+                    <div class="inventory-item @GetEnchantedItemClass(item.Enchantment) @(item.TransmogrificationId != null ? "transmogrified" : "")" @onclick="(() => ShowItemDetails(item))">
+                        <div class="item-image" data-item="@item.Id">
+                            <img src="@GetItemImage(item.TransmogrificationId ?? item.ItemId, item.Tag)" />
+                            @if (item.TransmogrificationId != null)
+                            {
+                                <span class="transmog-icon" title="Transmogrified">
+                                    <i class="fa-solid fa-mask"></i>
+                                </span>
+                            }
+                            @if (!string.IsNullOrEmpty(item.Enchantment))
+                            {
+                                <span class="enchant-icon" title="Enchanted">
+                                    <i class="fa-solid fa-sparkles"></i>
+                                </span>
+                            }
+                        </div>
+                        @if (item.Amount > 1)
+                        {
+                            <div class="item-amount">@GetItemAmount(item)</div>
+                        }
+                    </div>
+                }
+            </div>
+
+            @if (vendorAllConfirmationDialogVisible)
+            {
+                <div class="item-details-dialog-container vendor">
+                    <div class="item-details-dialog-background" @onclick="CloseVendorAllDialog"></div>
+                    <div class="item-details-dialog vendor">
+                        <div class="dialog-header">
+                            @* <button class="close" @onclick="CloseVendorAllDialog">x</button> *@
+                        </div>
+                        <div class="item-details-content vendor">
+                            <div class="warning-row">
+                                <span>You are about to vendor</span>
+                                <span>@GetItemCountForVendor()</span>
+                                <span> items in this category for</span>
+                                <span class="vendor-price">@(GetVendorPrice())</span>
+                            </div>
+                            <div class="warning-row">Are you sure you want to continue?</div>
+                        </div>
+                        <div class="item-actions">
+                            <button @onclick="CloseVendorAllDialog" class="btn btn-action">Cancel</button>
+                            <button @onclick="VendorAll" class="btn btn-action vendor">Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (vendorConfirmationDialogVisible)
+            {
+                <div class="item-details-dialog-container vendor">
+                    <div class="item-details-dialog-background" @onclick="CloseVendorDialog"></div>
+                    <div class="item-details-dialog vendor">
+                        <div class="dialog-header">
+                            <h3>Vendor @GetItemName(vendorItem)</h3>
+                        </div>
+                        <div class="item-details-content vendor">
+                            @if (canVendorMany)
+                            {
+                                <div class="amount-inputs">
+                                    <label>Amount:</label>
+                                    <input @bind="vendorAmount" type="number" min="1" max="@vendorItem.Amount" />
+                                    <div class="quick-buttons">
+                                        @foreach (var amount in quickButtons)
+                                        {
+                                            <button @onclick="() => SetVendorAmount(amount)" class="btn btn-action btn-quick">
+                                                @(amount == vendorItem.Amount ? $"{amount} (All)" : $"{amount}")
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            <div class="summary-block">
+                                <p>You are about to vendor <strong>@vendorAmount</strong> @GetItemName(vendorItem) for <strong>@((ItemService.GetItem(vendorItem.ItemId).ShopSellPrice * vendorAmount) + " coins")</strong>.</p>
+                            </div>
+                            <div class="warning-row">Are you sure you want to continue?</div>
+                        </div>
+                        <div class="item-actions">
+                            <button @onclick="CloseVendorDialog" class="btn btn-action">Cancel</button>
+                            <button @onclick="Vendor" class="btn btn-action vendor">Confirm</button>
+                        </div>
+                    </div>
+                </div>
+            }
+
+        </div>
+    }
+</div>
+@if (itemDetailDialogVisible)
+{
+    var item = ItemService.GetItem(itemDetailsDialogItem.ItemId);
+    var itemSkin = itemDetailsDialogItem.TransmogrificationId != null ? ItemService.GetItem(itemDetailsDialogItem.TransmogrificationId.Value) : null;
+    <div class="item-details-dialog-container item-view">
+        <div class="item-details-dialog-background" @onclick="CloseItemDetails"></div>
+        <div class="item-details-dialog improved">
+            <div class="dialog-header">
+                <div class="item-name" data-tier="@GetItemTier()">
+                    @GetItemName()
+                </div>
+                <button class="close" @onclick="CloseItemDetails">×</button>
+            </div>
+            <div class="item-details-content improved">
+                <div class="item-badges">
+                    @if (!string.IsNullOrEmpty(itemDetailsDialogItem.Enchantment))
+                    {
+                        <span class="badge enchanted" title="Enchanted"><i class="fa-solid fa-sparkles"></i> Enchanted</span>
+                    }
+                    @if (itemSkin != null)
+                    {
+                        <span class="badge transmogrified" title="Transmogrified"><i class="fa-solid fa-mask"></i> Transmogrified</span>
+                    }
+                    @if (itemDetailsDialogItem.Soulbound)
+                    {
+                        <span class="badge soulbound" title="Soulbound"><i class="fa-solid fa-link"></i> Soulbound</span>
+                    }
+                </div>
+                <div class="item-details-left">
+                    <div class="item-image-wrapper">
+                        <img src="@GetItemImage(itemDetailsDialogItem.ItemId, itemDetailsDialogItem.Tag)" class="main-item-image" />
+                        @if (itemSkin != null)
+                        {
+                            <div class="transmog-preview">
+                                <img src="@GetItemImage(itemSkin.Id, itemDetailsDialogItem.Tag)" class="skin-image" />
+                            </div>
+                        }
+                        @if (itemDetailsDialogItem.Amount > 1)
+                        {
+                            <div class="item-amount">@GetItemAmount(itemDetailsDialogItem)</div>
+                        }
+                    </div>
+                    <div class="item-tier">Tier: <span>@GetItemTier()</span></div>
+                    <div class="item-type">Type: <span>@GetItemType()</span></div>
+                </div>
+                <div class="item-details-right">
+                    @if (!string.IsNullOrEmpty(item?.Description))
+                    {
+                        <div class="item-description">@item.Description</div>
+                    }
+
+                    @{
+                        var itemStats = GetItemStats();
+                        if (itemStats != null && itemStats.Count > 0)
+                        {
+                            <div class="item-stats">
+                                <h4>Stats</h4>
+                                @foreach (var stat in itemStats)
+                                {
+                                    <div class="item-stat">
+                                        <span class="item-stat-name">@stat.Name</span>
+                                        <span class="item-stat-value">@stat.Value</span>
+                                        @if (stat.Bonus > 0)
+                                        {
+                                            <span class="item-stat-enchantment" title="Enchantment Bonus">(+@stat.Bonus)</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+
+
+                    @if (!string.IsNullOrEmpty(itemDetailsDialogItem.Enchantment))
+                    {
+                        <div class="item-enchantments">
+                            <h4>Enchantments</h4>
+                            @foreach (var stat in GetItemEnchantments())
+                            {
+                                <div class="item-stat enchantment">
+                                    <span class="item-stat-name">@GetEnchantmentName(stat)</span>
+                                    <span class="item-stat-value">+@GetEnchantmentValue(stat)</span>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @{
+                        var itemReqs = GetItemRequirementLevel();
+                        if (!string.IsNullOrEmpty(itemReqs))
+                        {
+                            <div class="item-requirements">
+                                <h4>Requirements</h4>
+                                <div>
+                                    <span>@GetItemRequirementSkill()</span>
+                                    <span>@itemReqs</span>
+                                </div>
+                                @if (item.RequiredSlayerLevel > 0)
+                                {
+                                    <div>
+                                        <span>Slayer Level:</span>
+                                        <span>@item.RequiredSlayerLevel</span>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+
+                </div>
+            </div>
+            @if (CanManage)
+            {
+                <div class="item-actions">
                     @if (itemDetailsDialogItem.Equipped)
                     {
                         <button @onclick="UnequipItem" class="btn btn-action">Unequip</button>
@@ -298,65 +381,110 @@
                     {
                         <button @onclick="EquipItem" class="btn btn-action">Equip</button>
                     }
-
-                    <button @onclick="SendToStash" class="btn btn-action">@("Send " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : "") + "to stash")</button>
-
+                    <button @onclick="SendToStash" class="btn btn-action">Send to stash</button>
                     @if (characters != null)
                     {
                         foreach (var plr in characters)
                         {
-                            if (plr.Id == Player.Id)
-                            {
-                                continue;
-                            }
-
-                            <button @onclick="()=>SendToCharacter(plr)" class="btn btn-action">@("Send " + (itemDetailsDialogItem.Amount > 1 ? itemDetailsDialogItem.Amount + " " : "") + "to " + plr.Alias)</button>
+                            if (plr.Id == Player.Id) continue;
+                            <button @onclick="() => SendToCharacter(plr)" class="btn btn-action">Send to @plr.Alias</button>
                         }
                     }
-
-                    @if (!itemDetailsDialogItem.Equipped)
+                    @if (!itemDetailsDialogItem.Equipped && itemDetailsDialogItem.TransmogrificationId == null)
                     {
                         <button @onclick="() => ShowVendorDialog(itemDetailsDialogItem)" class="btn btn-action vendor">Vendor</button>
                     }
                 </div>
+
+                @if (CanBeTransmogrified(itemDetailsDialogItem))
+                {
+                    <div class="item-transmogrification improved">
+                        <h4>Transmogrification</h4>
+                        <p>
+                            Change the appearance of this item using another item as a skin.<br />
+                            <small>Note: The skin item will be removed until transmogrification is cleared or replaced.</small>
+                        </p>
+                        @if (isTransmogrificationItemSelectorVisible)
+                        {
+                            <div class="item-select">
+                                <label>Search for item to use for transmogrifaction</label>
+                                <BlazoredTypeahead SearchMethod="SearchSkinnableItem" @bind-Value="selectedSkin">
+                                    <SelectedTemplate>
+                                        @context.Name
+                                    </SelectedTemplate>
+                                    <ResultTemplate>
+                                        @context.Name
+                                    </ResultTemplate>
+                                </BlazoredTypeahead>
+                                @if (selectedSkin != null)
+                                {
+                                    <div class="transmogrification-item">
+                                        <img src="@GetItemImage(selectedSkin.Id, itemDetailsDialogItem.Tag)" />
+                                        <span>@GetItemName(selectedSkin)</span>
+                                    </div>
+                                }
+                            </div>
+                            <div class="item-actions">
+                                @if (itemSkin != null)
+                                {
+                                    <button @onclick="ReplaceTransmogrification" class="btn btn-action">Replace</button>
+                                }
+                                else
+                                {
+                                    <button @onclick="AddTransmogrification" class="btn btn-action">Apply</button>
+                                }
+                                <button @onclick="HideApplyTransmogrificationDialog" class="btn btn-action">Cancel</button>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="item-actions">
+                                @if (itemSkin != null)
+                                {
+                                    <button @onclick="ShowApplyTransmogrificationDialog" class="btn btn-action">Replace</button>
+                                    <button @onclick="RemoveTransmogrification" class="btn btn-action">Remove</button>
+                                }
+                                else
+                                {
+                                    <button @onclick="ShowApplyTransmogrificationDialog" class="btn btn-action">Find item to use for Transmogrification</button>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
             }
         </div>
     </div>
 }
-
 @if (CanModify)
 {
     if (addItemDialogVisible)
     {
-      <div class="item-modal-background">
-        <div class="clan-member-invite">
-            <div class="clan-member-invite-header">
-                <h2>Search for item to add</h2>
-                <button class="close" @onclick="HideAddItem">x</button>
-            </div>
-            <BlazoredTypeahead SearchMethod="SearchItem" @bind-Value="selectedItem">
-                <SelectedTemplate>
-                    @context.Name
-                </SelectedTemplate>
-                <ResultTemplate>
-                    @context.Name
-                </ResultTemplate>
-            </BlazoredTypeahead>
-
-            @* <InputNumber @bind-Value="addItemAmount" DisplayName="Add Amount"></InputNumber> *@
-
-            <div class="clan-member-invite-controls">
-                @if (selectedItem != null)
-                {
-                    <button @onclick="AddItem" class="btn btn-primary">Add</button>
-                }
-                <button @onclick="HideAddItem" class="btn btn-secondary">Cancel</button>
-            </div>
+        <div class="item-modal-background">
+            <div class="clan-member-invite">
+                <div class="clan-member-invite-header">
+                    <h2>Search for item to add</h2>
+                    <button class="close" @onclick="HideAddItem">x</button>
+                </div>
+                <BlazoredTypeahead SearchMethod="SearchItem" @bind-Value="selectedItem">
+                    <SelectedTemplate>
+                        @context.Name
+                    </SelectedTemplate>
+                    <ResultTemplate>
+                        @context.Name
+                    </ResultTemplate>
+                </BlazoredTypeahead>
+                <div class="clan-member-invite-controls">
+                    @if (selectedItem != null)
+                    {
+                        <button @onclick="AddItem" class="btn btn-primary">Add</button>
+                    }
+                    <button @onclick="HideAddItem" class="btn btn-secondary">Cancel</button>
+                </div>
             </div>
         </div>
     }
 }
-
 @code {
     [Parameter]
     public WebsitePlayer Player { get; set; }
@@ -368,6 +496,7 @@
     private SessionInfo session;
 
     private bool itemDetailDialogVisible;
+    private bool isTransmogrificationItemSelectorVisible;
     private bool vendorConfirmationDialogVisible;
     private bool vendorAllConfirmationDialogVisible;
     private bool canVendorMany;
@@ -375,6 +504,8 @@
     private IReadOnlyList<Models.InventoryItem> itemsToVendor;
     private Models.InventoryItem itemDetailsDialogItem;
     private Models.InventoryItem vendorItem;
+    // private Guid? itemSkinId;
+    private Item selectedSkin;
     private long vendorAmount;
 
     private long vendorAllSum;
@@ -386,6 +517,146 @@
     private bool addItemDialogVisible;
     private bool CanModify => session != null && session.Administrator;
     private ItemFilter itemFilter = ItemFilter.All;
+
+    private string activeTab = "equipment";
+
+    public enum ItemSlot
+    {
+        None,
+        Head,
+        Amulet,
+        Ring,
+        Chest,
+        Gloves,
+        Belt,
+        Leggings,
+        Boots,
+        MeleeWeapon,
+        MagicWeapon,
+        RangedWeapon,
+        Shield,
+        Pet,
+        Cape
+    }
+
+    public static ItemSlot[] GetItemSlots()
+    {
+        return new ItemSlot[]
+        {
+            ItemSlot.Head,
+            ItemSlot.Amulet,
+            ItemSlot.Ring,
+            ItemSlot.Chest,
+            ItemSlot.Gloves,
+            // ItemSlot.Belt,
+            ItemSlot.Leggings,
+            ItemSlot.Boots,
+            ItemSlot.MeleeWeapon,
+            ItemSlot.MagicWeapon,
+            ItemSlot.RangedWeapon,
+            ItemSlot.Shield,
+            ItemSlot.Pet,
+                // ItemSlot.Cape
+        };
+    }
+
+    public static ItemSlot GetEquipmentSlot(ItemType? type)
+    {
+        if (type == null)
+        {
+            return ItemSlot.None;
+        }
+
+        switch (type.Value)
+        {
+            case ItemType.Amulet: return ItemSlot.Amulet;
+            case ItemType.Ring: return ItemSlot.Ring;
+            case ItemType.Shield: return ItemSlot.Shield;
+            case ItemType.Hat: return ItemSlot.Head;
+            case ItemType.Mask: return ItemSlot.Head;
+            case ItemType.Helmet: return ItemSlot.Head;
+            case ItemType.HeadCovering: return ItemSlot.Head;
+            case ItemType.Chest: return ItemSlot.Chest;
+            case ItemType.Gloves: return ItemSlot.Gloves;
+            case ItemType.Leggings: return ItemSlot.Leggings;
+            case ItemType.Boots: return ItemSlot.Boots;
+            case ItemType.Pet: return ItemSlot.Pet;
+            case ItemType.OneHandedAxe: return ItemSlot.MeleeWeapon;
+            case ItemType.TwoHandedAxe: return ItemSlot.MeleeWeapon;
+            case ItemType.TwoHandedSpear: return ItemSlot.MeleeWeapon;
+            case ItemType.OneHandedSword: return ItemSlot.MeleeWeapon;
+            case ItemType.TwoHandedSword: return ItemSlot.MeleeWeapon;
+            case ItemType.TwoHandedStaff: return ItemSlot.MagicWeapon;
+            case ItemType.TwoHandedBow: return ItemSlot.RangedWeapon;
+        }
+
+        return ItemSlot.None;
+    }
+    public static string GetEquipmentSlotName(ItemSlot slot)
+    {
+        var n = slot.ToString();
+        // find capital letters and insert space before them
+        var result = new System.Text.StringBuilder();
+        for (int i = 0; i < n.Length; i++)
+        {
+            if (i > 0 && char.IsUpper(n[i]))
+            {
+                result.Append(" ");
+            }
+            result.Append(n[i]);
+        }
+        return result.ToString().Replace(" Weapon", "");
+    }
+
+
+    private Dictionary<string, int> EquippedStats => GetTotalEquippedStats();
+
+    private void SetInventoryTab()
+    {
+        activeTab = "inventory";
+    }
+
+    private void SetEquipmentTab()
+    {
+        activeTab = "equipment";
+    }
+
+    private bool CanBeTransmogrified(Models.InventoryItem invItem)
+    {
+        var item = ItemService.GetItem(invItem.ItemId);
+        if (item == null)
+            return false;
+
+        if (item.Type == ItemType.Pet || item.Type == ItemType.Ring || item.Type == ItemType.StreamerToken
+            || item.Category == ItemCategory.Food || item.Category == ItemCategory.Resource || item.Category == ItemCategory.Scroll
+            || item.Category == ItemCategory.Potion || item.Category == ItemCategory.Skin || item.Category == ItemCategory.Cosmetic
+            || item.Category == ItemCategory.QuestItem || item.Category == ItemCategory.LootBox)
+            return false;
+
+        return item.Category == ItemCategory.Armor || item.Category == ItemCategory.Weapon || item.Category == ItemCategory.Amulet;
+    }
+
+    private InventoryItem GetEquippedItemForSlot(ItemSlot slotType)
+    {
+        return Player.InventoryItems.FirstOrDefault(x => x.Equipped
+          && GetEquipmentSlot(ItemService.GetItem(x.ItemId)?.Type) == slotType);
+    }
+
+    private Dictionary<string, int> GetTotalEquippedStats()
+    {
+        var stats = new Dictionary<string, int>();
+        foreach (var item in GetEquippedItems())
+        {
+            foreach (var stat in ItemService.GetItemStats(item))
+            {
+                if (stats.ContainsKey(stat.Name))
+                    stats[stat.Name] += stat.Value + stat.Bonus;
+                else
+                    stats[stat.Name] = stat.Value + stat.Bonus;
+            }
+        }
+        return stats;
+    }
 
     void UpdateQuickButtons()
     {
@@ -422,8 +693,18 @@
     protected override async Task OnInitializedAsync()
     {
         session = AuthService.GetSession();
-        coins = PlayerService.GetMyCoins();
-        characters = await PlayerService.GetMyPlayersAsync();
+
+        if (Player != null && Player.UserId != session.UserId)
+        {
+            coins = PlayerService.GetCoins(Player.UserId);
+        }
+        else
+        {
+            coins = PlayerService.GetMyCoins();
+            characters = await PlayerService.GetMyPlayersAsync();
+        }
+
+
         UpdateItemsToVendor();
     }
 
@@ -536,6 +817,42 @@
         CloseItemDetails();
     }
 
+    public async Task HideApplyTransmogrificationDialog()
+    {
+        this.isTransmogrificationItemSelectorVisible = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async Task ShowApplyTransmogrificationDialog()
+    {
+        this.isTransmogrificationItemSelectorVisible = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void RemoveTransmogrification()
+    {
+        Player = PlayerService.RemoveTransmogrification(Player.Id, itemDetailsDialogItem);
+        CloseItemDetails();
+    }
+
+    public void ReplaceTransmogrification()
+    {
+        if (selectedSkin != null)
+        {
+            Player = PlayerService.AddTransmogrification(Player.Id, itemDetailsDialogItem, selectedSkin.Id);
+            CloseItemDetails();
+        }
+    }
+
+    public void AddTransmogrification()
+    {
+        if (selectedSkin != null)
+        {
+            Player = PlayerService.AddTransmogrification(Player.Id, itemDetailsDialogItem, selectedSkin.Id);
+            CloseItemDetails();
+        }
+    }
+
     public void UnequipItem()
     {
         Player = PlayerService.UnequipItem(Player.Id, itemDetailsDialogItem);
@@ -607,6 +924,12 @@
         return i.Name ?? ItemService.GetItem(itemDetailsDialogItem.ItemId)?.Name;
     }
 
+    public string GetItemName(Models.Item i)
+    {
+        if (i == null) return null;
+        return i.Name;
+    }
+
     public string GetItemType()
     {
         if (itemDetailsDialogItem == null) return null;
@@ -655,6 +978,8 @@
 
     public void CloseItemDetails()
     {
+        selectedSkin = null;
+        isTransmogrificationItemSelectorVisible = false;
         itemDetailDialogVisible = false;
         InvokeAsync(StateHasChanged);
     }
@@ -680,9 +1005,9 @@
         addItemDialogVisible = true;
     }
 
-    public IReadOnlyList<Models.InventoryItem> GetInventoryItems(bool includeStreamerTokens = true)
+    public IReadOnlyList<Models.InventoryItem> GetInventoryItems(bool includeStreamerTokens = true, bool includeSkinnedItems = true)
     {
-        return Player.InventoryItems.Where(x => !x.Equipped && Filter(x, includeStreamerTokens)).ToList();
+        return Player.InventoryItems.Where(x => !x.Equipped && Filter(x, includeStreamerTokens, includeSkinnedItems)).ToList();
     }
 
     public IReadOnlyList<Models.InventoryItem> GetEquippedItems()
@@ -690,13 +1015,16 @@
         return Player.InventoryItems.Where(x => x.Equipped).ToList();
     }
 
-    private bool Filter(Models.InventoryItem item, bool includeStreamerTokens = true)
+    private bool Filter(Models.InventoryItem item, bool includeStreamerTokens = true, bool includeSkinnedItems = true)
     {
         if (!includeStreamerTokens && !string.IsNullOrEmpty(item.Tag))
             return false;
 
         if (itemFilter == ItemFilter.All)
             return true;
+
+        if (!includeSkinnedItems && item.TransmogrificationId != null)
+            return false;
 
         return ItemService.GetItemFilter(item.ItemId) == itemFilter;
     }
@@ -716,6 +1044,38 @@
         return Utility.FormatAmount(item.Amount);
     }
 
+    private async Task<IEnumerable<Item>> SearchSkinnableItem(string searchText)
+    {
+        var search = await ItemService.SearchAsync(searchText);
+        var currentItem = ItemService.GetItem(itemDetailsDialogItem.ItemId);
+        if (currentItem == null)
+        {
+            return new List<Item>();
+        }
+
+        List<Item> result = new List<Item>();
+        foreach (var i in Player.InventoryItems
+          .Where(x =>
+            string.IsNullOrEmpty(x.Enchantment)
+          ))
+        {
+            var item = search.FirstOrDefault(x => x.Id == i.ItemId);
+            if (item != null)
+            {
+                // check if  this is a ssuitable item
+                var canTransmogrify = ItemService.CanTransmogrify(item, currentItem);
+
+                if (!canTransmogrify || item.Id == currentItem.Id || itemDetailsDialogItem.TransmogrificationId == item.Id)
+                {
+                    continue;
+                }
+
+                result.Add(item);
+            }
+        }
+
+        return result;
+    }
 
     private async Task<IEnumerable<Item>> SearchItem(string searchText)
     {

@@ -1,4 +1,5 @@
-﻿using SevenZip;
+﻿using Microsoft.AspNetCore.Http.Features;
+using SevenZip;
 using Shinobytes.Console.Forms;
 using System;
 using System.Collections.Generic;
@@ -25,6 +26,9 @@ namespace RavenNest.Tools.Actions
         /// Until we have an updated, the files are the same therefor we don't need to compress it twice.
         /// </summary>
         private const bool LinuxUpdateIsCopyOfReleaseBuild = true;
+
+        private const string LinuxCompression = ".7z";//".tar.gz";
+        private const string WindowsCompression = ".7z";
 
 
         private BuildState buildState = BuildState.Full_Windows;
@@ -140,12 +144,12 @@ namespace RavenNest.Tools.Actions
         {
             if (buildState == BuildState.Update_Windows)
             {
-                return "update.7z";
+                return "update" + WindowsCompression;
             }
 
             if (buildState == BuildState.Update_Linux)
             {
-                return "update-linux.7z";
+                return "update-linux" + LinuxCompression;
             }
 
             var isWindowsBuild = IsWindowsBuild();
@@ -164,7 +168,9 @@ namespace RavenNest.Tools.Actions
         private string GetReleaseFileName(bool windowsBuild)
         {
             var platformExtension = windowsBuild ? "" : "-linux";
-            return "Ravenfall.v" + BuildVersion.ToString(4) + "a-alpha" + platformExtension + ".7z";
+            var extension = windowsBuild ? WindowsCompression : LinuxCompression;
+            var fileName = "Ravenfall.v" + BuildVersion.ToString(4) + "a-alpha" + platformExtension;
+            return fileName + extension;
         }
 
 
@@ -182,8 +188,8 @@ namespace RavenNest.Tools.Actions
 
                 var strPosIndex = gm.IndexOf("0.9.", index);
                 //strPosIndex -= 4;
-
-                return GetVersion(gm.ReadString(strPosIndex)); 
+                var v = GetVersion(gm.ReadString(strPosIndex));
+                return IncrementVersion(v, MajorIncrement, MinorIncrement, BuildIncrement, RevisionIncrement);
             }
             var archives = existingArchives.Select(x => new { File = x, Version = GetVersion(x) }).OrderByDescending(x => x.Version).ToList();
             var a = archives.FirstOrDefault();
@@ -330,7 +336,19 @@ namespace RavenNest.Tools.Actions
             if (buildState == BuildState.Update_Windows)
             {
                 test &= NotContains(lower,
-                    "fonts\\", "RavenWeave");
+                    "fonts\\",
+                    "RavenWeave",
+                    "build\\Microsoft.Bcl.AsyncInterfaces",
+                    "build\\SharpCompress",
+                    "build\\System.Buffers",
+                    "build\\Newtonsoft.Json",
+                    "build\\System.Memory",
+                    "build\\System.Numerics.Vectors",
+                    "build\\System.Runtime.CompilerServices.Unsafe",
+                    "build\\System.Text.Encoding.CodePages",
+                    "build\\System.Threading.Tasks.Extensions",
+                    "build\\ZstdSharp"
+                );
             }
 
             return test;

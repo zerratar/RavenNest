@@ -171,26 +171,6 @@ table.highscore-list {
     margin-bottom: 160px;
 }
 
-th,
-td {
-    text-align: right;
-    padding: 10px 15px;
-    border: 1px solid #eeeeee;
-}
-
-table.highscore-list tr {
-    border: none;
-}
-
-table.highscore-list th:nth-of-type(2),
-table.highscore-list td:nth-of-type(2) {
-    text-align: left;
-}
-
-table.highscore-list tr:nth-of-type(even) {
-    background-color: #f6f6f6;
-}
-
 table.highscore-list tr.isMe {
     background-color: #6acc91;
     color: white;

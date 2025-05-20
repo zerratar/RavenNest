@@ -1,15 +1,16 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Data;
-using System.Diagnostics;
-using System.Threading;
-using MessagePack;
+﻿using MessagePack;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
 using RavenNest.Models.TcpApi;
+using System;
+using System.Collections.Concurrent;
+using System.Data;
+using System.Diagnostics;
+using System.Threading;
+using TwitchLib.Api.Helix.Models.Bits;
 
 namespace RavenNest.BusinessLogic.Net
 {
@@ -310,6 +311,7 @@ namespace RavenNest.BusinessLogic.Net
                             {
                                 tcpConnection.SessionToken = token;
                                 tcpConnection.TimeOffset = offset;
+                                connectionProvider.AttachSessionToken(tcpConnection.ConnectionId, token, offset);
                                 gameProcessorManager.Start(token);
                             }
 
@@ -419,17 +421,19 @@ namespace RavenNest.BusinessLogic.Net
                         : 0;
 
                     // You can store or log the stats, e.g.:
-                    gameData.SetNetworkStats(Thread.CurrentThread.ManagedThreadId,
-                                             msReceived, inRateKBps,
-                                             msSent, outRateKBps);
-
-                    logger.LogInformation($"[TCP] in={msReceived} msgs ({inRateKBps:F2} KB/s), out={msSent} msgs ({outRateKBps:F2} KB/s)");
+                    gameData.SetEventServerNetworkStats(
+                        Thread.CurrentThread.ManagedThreadId,
+                        msReceived, inRateKBps, msSent, outRateKBps);
 
                     netStatStopwatch.Restart();
                     messagesReceived = 0;
                     dataReceived = 0;
                     messagesSent = 0;
                     dataSent = 0;
+
+                    MessageBus.Shared.Send("OnEventServerStatsUpdated");
+
+                    //logger.LogInformation($"[TCP] in={msReceived} msgs ({inRateKBps:F2} KB/s), out={msSent} msgs ({outRateKBps:F2} KB/s)");
                 }
             }
             catch (Exception exc)
@@ -449,6 +453,7 @@ namespace RavenNest.BusinessLogic.Net
             disposed = true;
             running = false;
 
+            logger.LogDebug("Disposing TcpSocketApi.");
             try
             {
                 messageQueue.CompleteAdding();
@@ -468,8 +473,6 @@ namespace RavenNest.BusinessLogic.Net
             {
                 try { wt.Join(2000); } catch { }
             }
-
-            logger.LogInformation("TcpSocketApi disposed.");
         }
     }
 }

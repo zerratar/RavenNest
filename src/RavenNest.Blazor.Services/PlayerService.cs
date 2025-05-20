@@ -95,7 +95,7 @@ namespace RavenNest.Blazor.Services
 
                 player.SessionInfo = new CharacterSessionInfo
                 {
-                    OwnerDisplayName = owner.DisplayName,
+                    OwnerDisplayName = Utility.SanitizeUserName(owner.DisplayName, owner.UserName),
                     OwnerUserName = owner.UserName,
                 };
 
@@ -172,6 +172,17 @@ namespace RavenNest.Blazor.Services
             return playerManager.GetWebsitePlayer(characterId);
         }
 
+        public WebsitePlayer RemoveTransmogrification(Guid characterId, RavenNest.Models.InventoryItem item)
+        {
+            playerManager.RemoveTransmogrification(characterId, item);
+            return playerManager.GetWebsitePlayer(characterId);
+        }
+
+        public WebsitePlayer AddTransmogrification(Guid characterId, RavenNest.Models.InventoryItem targetItem, Guid transmogrifactionItemId)
+        {
+            playerManager.AddTransmogrification(characterId, targetItem, transmogrifactionItemId);
+            return playerManager.GetWebsitePlayer(characterId);
+        }
         public WebsitePlayer UnequipItem(Guid characterId, RavenNest.Models.InventoryItem item)
         {
             playerManager.UnequipItem(characterId, item);
@@ -230,6 +241,15 @@ namespace RavenNest.Blazor.Services
                 var userId = session.UserId;
                 return playerManager.GetWebsitePlayer(userId, index.ToString());
             });
+        }
+
+        public long GetCoins(Guid userId)
+        {
+            var user = gameData.GetUser(userId);
+            if (user == null) return 0;
+            var resx = gameData.GetResources(user.Resources.GetValueOrDefault());
+            if (resx == null) return 0;
+            return (long)resx.Coins;
         }
 
         public long GetMyCoins()

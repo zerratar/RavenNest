@@ -5,4 +5,9 @@
     <LangVersion>10</LangVersion>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\RavenNest.DataAnnotations\RavenNest.DataAnnotations.csproj" />
+    <ProjectReference Include="..\RavenNest.DataModels.Generators\RavenNest.DataModels.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
 </Project>

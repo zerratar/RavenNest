@@ -13,6 +13,8 @@
         StreamerToken,
         Scroll,
         Skin,
-        Cosmetic
+        Cosmetic,
+        QuestItem,
+        LootBox,
     }
 }

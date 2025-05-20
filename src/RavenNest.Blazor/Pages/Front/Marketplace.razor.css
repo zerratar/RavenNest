@@ -18,30 +18,6 @@ table.marketplace-list {
     margin-bottom: 160px;
 }
 
-th, td {
-    text-align: right;
-    padding: 10px 15px;
-    border: 1px solid #eeeeee;
-}
-
-table.marketplace-list tr {
-    border: none;
-}
-
-table.marketplace-list th:nth-of-type(2),
-table.marketplace-list td:nth-of-type(2) {
-    text-align: left;
-}
-
-table.marketplace-list tr:nth-of-type(even) {
-    background-color: #f6f6f6;
-}
-
-table.marketplace-list tr.isMe {
-    background-color: #6acc91;
-    color: white;
-}
-
 .marketplace {
     margin-top: 140px;
     flex-grow: 1;

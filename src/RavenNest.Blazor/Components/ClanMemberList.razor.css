@@ -12,45 +12,6 @@
 button.btn.btn-secondary {
     margin-left: 10px;
 }
-.clan-member-invite {
-    position: absolute;
-    background-color: #ffffff;
-    width: 100%;
-    left: 50%;
-    width: 620px;
-    max-width: 100%;
-    transform: translateX(-50%);
-    padding: 15px;
-    box-shadow: 5px 5px 20px rgba(0,0,0,0.25);
-    display: flex;
-    flex-flow: column;
-    z-index:10;
-}
-
-.clan-member-invite-controls {
-    display: flex;
-    flex-flow: row;
-    justify-content: flex-end;
-    margin-top: 15px;
-}
-.clan-member-invite-header {
-    display: flex;
-    justify-content: space-between;
-}
-
-.clan-member-invite-header h2 {
-    font-weight: 300;
-    font-size: 18pt;
-    text-align: center;
-    width: 100%;
-    position: relative;
-    top: 5px;
-    margin-bottom: 25px;
-}
-
-.clan-member-invite-header button.close {
-    margin-top: -20px;
-}
 
 input.blazored-typeahead__input {
     border-radius: 0;
@@ -59,51 +20,4 @@ input.blazored-typeahead__input {
 .blazored-typeahead {
     border-radius: 0;
     margin-top: 15px;
-}
-
-
-.item-stat {
-    margin-right: 5px;
-    white-space: nowrap;
-}
-
-th, td {
-    text-align: right;
-    padding: 10px 15px;
-    border: 1px solid #eeeeee;
-}
-
-table.items-list tr {
-    border: none;
-}
-
-table.items-list th:nth-of-type(2),
-table.items-list td:nth-of-type(2) {
-    text-align: left;
-}
-
-table.items-list tr:nth-of-type(even) {
-    background-color: #f6f6f6;
-}
-
-    table.items-list tr:nth-of-type(even).selected,
-    .item-row.selected {
-        background-color: aquamarine;
-    }
-
-table.items-list tr.isMe {
-    background-color: #6acc91;
-    color: white;
-}
-
-.items {
-    margin-top: 140px;
-    flex-grow: 1;
-}
-
-.ravenCoins {
-    margin-bottom: 5.5px;
-    /* height: 100%; */
-    height: 22px;
-    margin-right: 1px;
 }

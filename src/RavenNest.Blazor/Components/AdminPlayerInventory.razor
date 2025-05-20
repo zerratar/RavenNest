@@ -63,7 +63,13 @@
                         {
                             <div class="item-soulbound">Soulbound - this item can't be gifted</div>
                         }
-                        <div class="item-image" data-item="@itemDetailsDialogItem.Id"><img src="@GetItemImage(itemDetailsDialogItem.ItemId, itemDetailsDialogItem.Tag)" /></div>
+                        <div class="item-image" data-item="@itemDetailsDialogItem.Id">
+                          <img src="@GetItemImage(itemDetailsDialogItem.ItemId, itemDetailsDialogItem.Tag)" />
+                            @if (itemDetailsDialogItem.Amount > 1)
+                            {
+                                <div class="item-amount">@GetItemAmount(itemDetailsDialogItem)</div>
+                            }
+                        </div>
 
                         @foreach (var stat in GetItemStats())
                         {

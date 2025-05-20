@@ -3,7 +3,7 @@
     var isActive = IsTrainingSkill(skill);
     <div class="character-skill-row char-row@(isActive ? " active" : "")" title="@(isActive?"You're currently training this skill." : "")">
         <div class="skill-progress" title="@ExpDisplay(skill.Experience)">
-            <div class="skill-progress-value" style="@StyleWidth((int)(skill.Percent*120))"></div>
+            <div class="skill-progress-value" style="@StyleWidth((int)(skill.Percent*100))"></div>
             <div class="skill-progress-percent">@Math.Round(skill.Percent * 100, 2)%</div>
         </div>
 

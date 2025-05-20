@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extended;
+using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Models;
 using RavenNest.DataModels;
 using RavenNest.Models;
@@ -70,7 +71,7 @@ namespace RavenNest.BusinessLogic.Extensions
             }
 
             session.TwitchUserId = user.UserId;
-            session.UserName = user.UserName;
+            session.UserName = Utility.SanitizeUserName(user.UserName);
             session.AdminPrivileges = user.IsAdmin.GetValueOrDefault();
             session.ModPrivileges = user.IsModerator.GetValueOrDefault();
             session.Players = gameData.GetActiveSessionCharacters(data)

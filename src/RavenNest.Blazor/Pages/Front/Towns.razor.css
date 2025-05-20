@@ -4,10 +4,7 @@
     background: black;
     color: white;
 }
-th, td {
-    max-width: 25%;
-    width: 25%;
-}
+
 .section {
     padding: 30px 100px 200px 100px;
 }
@@ -20,14 +17,6 @@ table.type-group-town-list {
     display: inline-block;
     color: #a2a2a2;
     font-size: 9pt;
-}
-
-.town-item {
-    cursor: pointer;
-}
-
-.town-item:hover {
-    background-color: beige !important;
 }
 
 button.btn.active {
@@ -99,26 +88,6 @@ table.town-list {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: 160px;
-}
-
-th,
-td {
-    text-align: right;
-    padding: 10px 15px;
-    border: 1px solid #eeeeee;
-}
-
-table.town-list tr {
-    border: none;
-}
-
-table.town-list th:nth-of-type(2),
-table.town-list td:nth-of-type(2) {
-    text-align: left;
-}
-
-table.town-list tr:nth-of-type(even) {
-    background-color: #f6f6f6;
 }
 
 table.town-list tr.isMe {

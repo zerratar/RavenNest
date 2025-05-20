@@ -54,5 +54,10 @@
         Teleport = 42,
 
         ItemRemoveByCategory = 43,
+
+        /// <summary>
+        ///     Used for syncing one or more inventory items.
+        /// </summary>
+        ItemSync = 44,
     }
 }

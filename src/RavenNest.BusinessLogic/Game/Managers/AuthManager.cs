@@ -58,7 +58,7 @@ namespace RavenNest.BusinessLogic.Game
                     return;
                 }
 
-                user.DisplayName = userDisplayName;
+                user.DisplayName = Utility.SanitizeUserName(userDisplayName, userLogin);
                 user.UserName = userLogin;
                 user.Email = userEmail;
                 user.PasswordHash = secureHash.Get(password);

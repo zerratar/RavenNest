@@ -1,22 +1,320 @@
-@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
-
 html, body {
     font-family: 'Heebo', sans-serif;
     height: 100%;
+    color: white;
+    background-color: #141619;
+}
+
+img.ravenCoins {
+    height: 24px;
+}
+
+div#components-reconnect-modal {
+    color: black;
+}
+
+th {
+    cursor: pointer;
+}
+
+th, td {
+    text-align: right;
+    padding: 10px 15px;
+    border: 1px solid #0f0f0f;
+}
+
+.main-nav {
+    display: flex;
+    flex-grow: 1;
+    width: 100%;
+    justify-content: center;
+    align-items: baseline;
+}
+
+.sidebar {
+    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    display: flex;
+    flex-flow: column;
+}
+
+.top-row.stretch {
+    flex-grow: 1;
+}
+
+img.logo {
+    width: 160px;
+}
+
+/*.top-social {
+    display: flex;
+    justify-items: start;
+    justify-content: center;
+    position: absolute;
+    top: -45px;
+    left: 0;
+}*/
+
+.top-social a.nav-link {
+    margin: 0;
+}
+
+.top-nav {
+    width: 100%;
+    flex-flow: column;
+    justify-content: flex-end;
+    display: flex;
+    align-items: center;
+    position: absolute;
+    z-index: 1;
+    flex-wrap: wrap;
+}
+
+
+.top-nav ::deep a, .top-nav .btn-link {
+    white-space: nowrap;
+    margin-left: 1.5rem;
+    color: white;
+}
+
+.top-nav a:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.page.front-page {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background-color: white;
+}
+
+.front-page .content {
+    display: flex;
+    flex-flow: column;
+    width: 100vw;
+    min-height: 770px;
+}
+
+.front-page .hero-text {
+    font-size: 14pt;
+    text-align: center;
+    margin-bottom: 30px;
+    color: white;
+    max-width: 100%;
+    width: 840px;
+}
+
+.front-page .hero-text b {
+    font-weight: 600;
+}
+
+.front-page .hero-buttons {
+    margin-top: 25px;
+    max-width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+
+.front-page .section:nth-child(even) {
+    background-color: black;
+}
+
+.patreon-content {
+    font-family: 'Heebo', sans-serif;
+    text-shadow: 3px 2px 7px rgba(0,0,0,0.5);
+    display: flex;
+    flex-flow: column;
+    max-width: 100%;
+    width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+    align-items: center;
+    justify-items: center;
+    text-align: center;
+    height: 600px;
+}
+
+.patreon-content .raven-btn {
+    width: 280px;
+    max-width:100%;
+}
+
+.patreon-text {
+    font-size: 16pt;
+    margin-top: 10px;
+    margin-bottom: 25px;
+}
+
+.patreon-header {
+    font-weight: bold;
+    font-size: 44pt;
+    text-shadow: 3px 2px 7px rgba(0,0,0,0.5);
+}
+
+.patreon-text b {
+    white-space: nowrap;
+}
+
+.section.patreon {
+    background-color: white;
+    background-image: url(/imgs/PatreonBackground.jpg);
+    background-size: cover;
+    background-position: center;
+    color: white;
+}
+
+.front-page h1 {
+    font-weight: 800;
+}
+
+/*
+    Twitch Streams
+*/
+
+
+.stream-view {
+    height: 180px;
+    width: 320px;
+    box-sizing: border-box;
+    background-color: black;
+    background-size: contain;
+    color: white;
+    cursor: pointer;
+    margin-bottom: 7px;
+    max-width:100%;
+}
+
+
+.twitch-streams i.fas.fa-play {
+    color: white;
+    z-index: 1;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    line-height: 180px;
+    text-align: center;
+    font-size: 54pt;
+    text-shadow: 3px 4px 6px rgb(0 0 0 / 20%);
+}
+
+.twitch-stream-item {
+    width: 320px;
+    max-width:100%;
+}
+
+.streamer-name {
+    font-size: 21pt;
+}
+
+.twitch-content h3 {
+    font-weight: 500;
+    margin-bottom: 60px;
+    margin-top: 30px;
+}
+
+.twitch-streams {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-around;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.twitch-content {
+    width: 100%;
+    max-width: 100%;
+}
+
+.twitch-stream-header {
+    position: absolute;
+    box-sizing: border-box;
+    width: 320px;
+    padding: 7px 15px 108px 15px;
+    background: linear-gradient(180deg, black, rgba(0,0,0,0.75), transparent);
+    color: white;
+    max-width:100%;
+}
+
+.twitch-content p {
+    text-align: center;
+    font-size: 19pt;
+    color: #303030;
+    font-weight: 300;
+    font-family: 'Heebo', sans-serif;
+}
+
+
+table.items-list tr {
+    border: none;
+}
+
+table.items-list th:nth-of-type(2),
+table.items-list td:nth-of-type(2) {
+    text-align: left;
+}
+
+table.items-list tr:nth-of-type(even).selected,
+.item-row.selected {
+    background-color: aquamarine;
+}
+
+table.items-list tr.isMe {
+    background-color: #6acc91;
+    color: white;
 }
 
 table.highscore-list,
-table.items-list, table.marketplace-list {
+table.items-list,
+table.marketplace-list {
     width: 100%;
     border-collapse: collapse;
     box-shadow: 0px 1px 3px 1px rgb(0 0 0 / 12%);
     border-radius: 15px;
-    background-color: white;
+    background-color: #141619;
+}
+
+.page.admin table.table {
+    color: white;
+}
+
+.player-list-modal .player-list {
+    background-color: #141619;
+    height: 500px;
+    max-height: 100%;
+    overflow-y: scroll;
+}
+
+.player-list-modal-header h3 {
+    margin: 0;
+    flex-grow: 1;
+    text-align: center;
+}
+
+.player-list-modal {
+    position: absolute;
+    top: 300px;
+    left: 50%;
+    transform: translate(-50%, 0);
+    max-width: 100%;
+    background-color: #141619;
+    border: 1px solid #121212;
+    display: flex;
+    flex-flow: column;
+    box-shadow: 0 0 10px rgb(0 0 0 / 20%);
+    width: 900px;
+}
+
+tr:nth-of-type(even) {
+    background-color: #1e2125;
 }
 
 .main {
     flex: 1;
-    background-color: #f3f4f8;
+    /*background-color: #f3f4f8;*/
+    background-color: #141619;
 }
 
 .content-box {
@@ -40,12 +338,38 @@ table.items-list, table.marketplace-list {
 }
 
 a.nav-link.login {
-    color: black;
+    color: white;
 }
 
 a.navbar-brand {
     margin-left: -5px;
     margin-top: 5px;
+}
+
+.nav-item .fas,
+.nav-item .fa-solid,
+.nav-item .fa-brands {
+    width: 2rem;
+}
+
+.page {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar {
+    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+}
+
+.top-row ::deep a, .top-row .btn-link {
+    white-space: nowrap;
+    margin-left: 1.5rem;
+}
+
+.top-row a:first-child {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .h1, h1 {
@@ -85,22 +409,25 @@ ul.patreon-reward-list {
     display: flex;
     list-style: none;
     padding: 0;
+    font-size: 8pt;
 }
 
 li.patreon-reward {
     padding: 5px 10px;
-    border: 1px solid #f1f1f1;
+    border: 1px solid black;
     border-radius: 13px;
     box-shadow: 0px 1px 3px 0px rgb(0 0 0 / 10%);
 }
 
 li.patreon-reward.clans {
+    color: black;
     margin-right: 10px;
     background: linear-gradient(45deg, #ffdd00, #ffc135);
 }
 
 li.patreon-reward.xp-x2 {
     background: linear-gradient(45deg, #f6ffe3, #fff6c5);
+    color: black;
 }
 
 li.patreon-reward.xp-x3 {
@@ -183,26 +510,60 @@ img.profile-image {
 
 .page-title {
     margin-top: -30px;
-    border-bottom: 1px solid #cacaca;
+    border-bottom: 1px solid #000000;
     padding-bottom: 0px;
     height: 35px;
     text-transform: none;
-    color: #082465;
+    color: #ff7f00;
     font-size: 20pt;
     margin-bottom: 25px;
 }
 
 .page-title:after {
     background-image: none;
-    border-top: 1px solid white;
+    border-top: 1px solid #595959;
     margin: 0;
     position: relative;
     top: 3px;
 }
 
+.feature-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-around;
+    max-width: 100%;
+    width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.feature-item img {
+    width: 127px;
+    margin-bottom: 25px;
+    filter: invert(1);
+}
+
+.feature-item {
+    margin-top: 50px;
+    width: 300px;
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.feature-item-text {
+    font-size: 14pt;
+    color: #d8d8d8;
+    text-align: center;
+    font-weight: 300;
+    font-family: 'Heebo', sans-serif;
+}
+
 .section {
     padding: 30px 100px 50px 100px;
-    background-color: #f3f4f8;
+    background-color: #0c0b07;
 }
 
 .content {
@@ -265,6 +626,8 @@ button.tab-link {
     box-shadow: 0px 2px 5px 1px rgb(0 0 0 / 10%);
     border-radius: 7px;
     flex-wrap: wrap;
+    color: white;
+    background-color: black;
 }
 
 button.tab-link.active, .tab-link.active {
@@ -321,9 +684,7 @@ td.item.link {
 }
 
 td.item.item-actions {
-    width: 1px; /* since we have no-wrap this will ensure smallest size */
-    flex-wrap: nowrap;
-    white-space: nowrap;
+    border: 0;
 }
 
 .item-soulbound {
@@ -360,18 +721,17 @@ span.item-stat-enchantment {
 
 div.item-actions {
     display: flex;
-    justify-content: space-evenly;
+    justify-content: center;
     margin-top: 5px;
-    background-color: #f4f4f4;
+    background-color: #181b20;
     padding: 10px 15px 15px 15px;
     flex-wrap: wrap;
 }
 
 .item-actions button.btn {
-    font-weight: 300;
     font-size: 10pt;
     box-shadow: 0px 2px 4px rgb(0 0 0 / 25%);
-    .item-actions button.btn
+    font-weight: normal;
 }
 
 button.btn.btn-action {
@@ -393,6 +753,7 @@ button.btn.btn-action:active {
     display: inline-block;
     z-index: 0;
     pointer-events: none;
+    filter: invert(1);
 }
 
 .loyalty-reward-list {
@@ -414,7 +775,7 @@ button.btn.btn-action:active {
     flex-flow: column;
     border-radius: 6px;
     /*padding: 5px;*/
-    background-color: white;
+    background-color: #0f1113;
     min-width: 225px;
     margin-top: 5px;
     align-items: center;
@@ -483,8 +844,8 @@ button.btn.btn-action:active {
     left: 50%;
     transform: translate(-50%, -50%);
     padding: 20px;
-    background-color: white;
-    5 display: flex;
+    background-color: #0f1113;
+    display: flex;
     flex-flow: column;
     box-shadow: 3px 3px 6px rgba(0,0,0,0.125);
     max-width: 100%;
@@ -504,7 +865,7 @@ button.btn.btn-action:active {
     /* text-transform: uppercase; */
     font-weight: 300;
     font-size: 13pt;
-    background-color: white;
+    background-color: #141619;
 }
 
 .confirm-body select {
@@ -532,6 +893,7 @@ button.btn.btn-action:active {
     max-width: 100%;
     margin-top: -166px;
     padding: 0;
+    background-color: #0c0b07;
 }
 
 .nav-link.dd:hover .dd-content {
@@ -546,11 +908,13 @@ button.btn.btn-action:active {
     margin-left: -16px;
     margin-top: 8px;
     z-index: 999;
+    width: 150px;
+    height: 334px;
 }
 
 .nav-link.dd {
     cursor: pointer;
-    margin-left: 1.5rem;
+    /*margin-left: 1.5rem;*/
 }
 
 .top-row a.nav-link.dd-item:hover,
@@ -660,8 +1024,22 @@ a.nav-link.dd-item {
 
 .admin-controls {
     position: absolute;
-    top: 210px;
+    top: 158px;
     right: 15px;
+    color: white;
+}
+
+button.btn-icon {
+    background-color: transparent;
+    border: 0;
+    color: #333;
+    margin-left: 10px;
+}
+
+button.btn-icon:active,
+button.btn-icon:focus {
+    outline: 0;
+    background-color: rgba(0,0,0,0.15);
 }
 
 .content form {
@@ -684,18 +1062,18 @@ button.raven-btn.twitch.twitch-login-btn {
 
 h1 {
     font-weight: 700;
-    color: #303030;
+    color: #ff7f00;
 }
 
 h2 {
     font-weight: bold;
-    color: #303030;
+    color: #ff7f00;
 }
 
 h3 {
     font-weight: 300;
     margin-bottom: 20px;
-    color: #303030;
+    color: #ff7f00;
 }
 
 .player-inventory h2 {
@@ -717,6 +1095,7 @@ h1:after {
 .front-page h1:after,
 .section.patreon h1:after {
     background-image: url('/imgs/LineBreakBlack.png');
+    filter: invert(1);
 }
 
 .section.patreon h1:after {
@@ -736,6 +1115,14 @@ h1:after {
     height: 2px;
     margin-top: 60px;
     margin-bottom: 40px;
+}
+
+.training-skill {
+    margin-bottom: 10px;
+    padding: 5px;
+    background-color: #1a1a1a;
+    border: 2px solid #252525;
+    text-align: center;
 }
 
 /*.cookies {
@@ -908,11 +1295,61 @@ button.btn.btn-primary.reload {
     margin-left: 15px;
 }
 
+.character-name {
+    margin-right: 5px;
+    font-weight: 300;
+}
+
+.character-index {
+    color: #ff9090;
+    margin-right: 5px;
+    font-size: 9pt;
+}
+
+button.tab-link.active .character-index {
+    color: #efefef;
+}
+
+.character-index:before {
+    content: "#";
+}
+
+a.change-identifier {
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 15px;
+    margin-left: 10px;
+    border: 1px solid white;
+    padding: 5px 10px;
+    text-decoration: none;
+    color: white;
+}
+
+input.input.edit-identifier {
+    padding: 5px 15px;
+    margin-bottom: 10px;
+    margin-right: 5px;
+    border: 2px solid black;
+    width: 240px;
+    max-width: 100%;
+}
+
+.character-level:before {
+    content: "level ";
+    font-weight: 500;
+}
+
 
 .player-inventory {
     padding-top: 25px;
     margin-top: 25px;
     padding-bottom: 25px;
+}
+
+.player-skills {
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.25);
+    padding: 12px;
+    border-radius: 10px;
 }
 
 .item-filters {
@@ -950,11 +1387,60 @@ button.item-filter:focus {
 
 span.item-filter-text {
     font-size: 9pt;
+    color: white;
+}
+
+.fa-solid,
+.fa-sharp,
+.fa,
+.fa-icon {
+    color: white;
 }
 
 .item-details-content {
     padding: 25px;
     padding-top: 0;
+}
+
+.clan-member-invite {
+    position: absolute;
+    background-color: #ffffff;
+    width: 100%;
+    left: 50%;
+    width: 620px;
+    max-width: 100%;
+    transform: translateX(-50%);
+    padding: 15px;
+    box-shadow: 5px 5px 20px rgba(0,0,0,0.25);
+    display: flex;
+    flex-flow: column;
+    z-index: 10;
+}
+
+.clan-member-invite-controls {
+    display: flex;
+    flex-flow: row;
+    justify-content: flex-end;
+    margin-top: 15px;
+}
+
+.clan-member-invite-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.clan-member-invite-header h2 {
+    font-weight: 300;
+    font-size: 18pt;
+    text-align: center;
+    width: 100%;
+    position: relative;
+    top: 5px;
+    margin-bottom: 25px;
+}
+
+.clan-member-invite-header button.close {
+    margin-top: -20px;
 }
 
 .vendor .dialog-header {
@@ -991,7 +1477,7 @@ span.vendor-amount {
 }
 
 .item-details-dialog .dialog-header {
-    padding: 25px 25px 0px 25px;
+    padding: 15px;
 }
 
 
@@ -1015,17 +1501,29 @@ span.vendor-amount {
 }
 
 .item-details-dialog {
-    position: fixed;
+    /*    position: fixed;
     top: 50%;
     left: 50%;
-    background-color: white;
+    transform: translate(-50%, -50%);*/
+    background-color: #121212;
     /*padding: 25px;*/
-    transform: translate(-50%, -50%);
     box-shadow: 5px 5px 10px rgb(0 0 0 / 25%);
-    min-width: 520px;
+    width: 520px;
     max-width: 100%;
     width: fit-content;
     z-index: 10;
+}
+
+.summary-block {
+    padding: 10px;
+    border: 1px solid #3b3b3b;
+    margin-top: 15px;
+    margin-bottom: 25px;
+    background-color: #131313;
+}
+
+.summary-block p {
+    margin-bottom: 0;
 }
 
 .vendor .item-details-dialog {
@@ -1060,6 +1558,10 @@ span.vendor-amount {
     right: 0;
     top: 0;
     bottom: 0;
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
 }
 
 .item-details-dialog-background {
@@ -1090,23 +1592,21 @@ button.item-filter.active-filter {
     display: flex;
     flex-flow: row;
     flex-wrap: wrap;
+    gap: 15px;
     justify-content: center;
 }
 
 .inventory .inventory-item {
-    margin: 10px;
-    margin-bottom: -15px;
     cursor: pointer;
 }
 
 .inventory-item.equipped {
-    margin: 10px;
     cursor: pointer;
 }
 
 .inventory-item.enchanted .item-image img {
     border: 1px solid #90e19f;
-    background-color: #f9fff9;
+    background-color: #00ff0012;
     box-shadow: 1px 1px 4px hsl(113deg 37% 50% / 38%);
 }
 
@@ -1120,39 +1620,42 @@ button.item-filter.active-filter {
 }
 
 .stash-item-amount {
-    position: relative;
-    top: -19px;
-    right: 12px;
-    background-color: rgba(255,255,255,0.7);
-    width: 23px;
+    position: absolute;
+    background-color: rgb(0 0 0 / 70%);
     height: 20px;
-    color: #353535;
-    border: 1px solid #ffffff;
+    color: white;
+    border: none;
+    border-radius: 5px;
     padding: 0;
-    line-height: 2;
-    text-align: center;
+    text-align: left;
     font-weight: 500;
     font-size: 8pt;
     display: inline-block;
     margin: 0;
     padding: 0;
-    margin-right: -25px;
+    padding: 2px 5px;
+    margin-top: 40px;
+    margin-left: -57px;
 }
 
 .item-amount {
-    position: relative;
-    top: -15px;
-    right: -42px;
-    background-color: rgba(255,255,255,0.7);
-    width: 23px;
+    position: absolute;
+    background-color: rgb(0 0 0 / 70%);
+    width: fit-content;
     height: 20px;
-    color: #353535;
-    border: 1px solid #ffffff;
-    padding: 0;
-    line-height: 2;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 2px 5px;
     text-align: center;
     font-weight: 500;
     font-size: 8pt;
+    margin-top: -25px;
+}
+
+.item-details-dialog .item-amount {
+    margin-top: 95px;
+    left: 0;
 }
 
 .inventory-item .item-image img {
@@ -1161,8 +1664,8 @@ button.item-filter.active-filter {
     max-width: 100%;
     padding: 5px;
     border-radius: 3px;
-    background-color: white;
-    box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    /*background-color: white;
+    box-shadow: 1px 1px 2px rgba(0,0,0,0.1);*/
 }
 
 .inventory-item.equipped .item-image img {
@@ -1255,7 +1758,7 @@ td span.item-stat i {
 .raven-btn.kick,
 .raven-btn.kick .inner {
     background: none;
-    background-color: rgb(83,252,24);    
+    background-color: rgb(83,252,24);
     color: black;
 }
 
@@ -1267,13 +1770,1386 @@ pre {
     border-radius: 6px;
 }
 
+.card-header {
+    background-color: transparent;
+}
+
+.card {
+    background-color: transparent;
+}
+
+/* STATS */
+
+.stats-row {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    padding: 10px 25px;
+    -webkit-box-pack: space-evenly;
+    -ms-flex-pack: space-evenly;
+    justify-content: space-evenly;
+    max-width: 100%;
+    BOX-SIZING: border-box;
+}
+
+.stats-row:nth-of-type(2n+2) {
+    background-color: #1a1a1a;
+}
+
+.stats-row.active {
+    color: white;
+    background-image: linear-gradient(90deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+}
+
+.stats-row.active .stats-progress {
+    background-color: rgba(244,244,244, 0.05);
+}
+
+.stats-combat-level {
+    font-size: 14pt;
+    margin-bottom: 10px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #e6e6e6;
+    display: block;
+    width: 100%;
+}
+
+.stats-label {
+    width: 190px;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.stats-progress {
+    height: 23px;
+    text-align: right;
+    min-width: 100px;
+    text-align: center;
+    background-color: #000000;
+}
+
+.stats-value {
+    width: 190px;
+    text-align: right;
+}
+
+.stats-progress-value {
+    height: 23px;
+    position: absolute;
+    background-color: #5a82f042;
+}
+
+.loyalty-stats-rows {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.loyalty-stats-rows .stats-row {
+    background-color: #1a1a1a;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.loyalty-streamer-details .loyalty-stats-rows {
+    justify-content: flex-start;
+}
+
+.loyalty-streamer-details h3 {
+    margin-top: 25px;
+}
+
+.loyalty-stats-rows .stats-row.level {
+    display: flex;
+    flex-direction: column;
+    align-content: flex-start;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.loyalty-stats-row .stats-value {
+    text-align: left;
+}
+
+.admin-controls button.btn-icon {
+    padding: 10px 15px 10px 15px;
+    background-color: #141414;
+    color: white;
+    margin-bottom: 10px;
+    margin-left: 0;
+    margin-right: 10px;
+}
+
+/* LOGIN */
+
+
+.login-header {
+    color: white;
+}
+
+.login-header:after {
+    background-image: url(/imgs/LineBreakWhite.png);
+}
+
+.login-slogan {
+    color: white;
+    font-weight: 300;
+    font-size: 14pt;
+    margin-bottom: 30px;
+    text-align: center;
+    margin-top: -20px;
+}
+
+.login-separator {
+    color: white;
+    width: 1095px;
+    max-width: 100%;
+    text-align: center;
+    height: 2px;
+    background-size: cover;
+}
+
+.login form {
+    display: flex;
+    flex-flow: column;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.login .input-fields {
+    display: flex;
+    flex-flow: column;
+}
+
+.login .input-row {
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+    -ms-flex-flow: column;
+    flex-flow: column;
+    max-width: 100%;
+    width: 410px;
+    left: 50%;
+    -webkit-transform: translate(-50%);
+    transform: translate(-50%);
+    position: relative;
+}
+
+.login label {
+    text-align: left;
+    font-size: 12pt;
+    font-weight: 600;
+    padding: 5px 0;
+}
+
+input#inputPassword,
+input#inputUsername {
+    padding: 16px 35px;
+    font-size: 13pt;
+    border: 1px solid #cecccc;
+    MARGIN-BOTTOM: 10px;
+    background-color: transparent;
+    width: 100%;
+    display: inline-block;
+    box-sizing: border-box;
+}
+
+.login input#inputUsername {
+    margin-top: 20px;
+}
+
+.content > .login {
+    flex-grow: 1;
+    padding-bottom: 40px;
+}
+
+.login .login-title {
+}
+
+.login .login-subtitle {
+    font-size: 18pt;
+    font-weight: 500;
+    max-width: 100%;
+    width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.login button.login-button {
+    font-size: 12pt;
+    font-weight: 300;
+    background: none;
+    border: 0;
+    background-color: #2a93d2;
+    color: white;
+    padding: 15px 25px;
+    width: 350px;
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    width: 100%;
+    cursor: pointer;
+    user-select: none;
+    margin-top: 10px;
+    margin-bottom: 30px;
+}
+
+.login button.login-button:active {
+    /* border:1px solid #0a5585; */
+    background-color: #0a5585;
+}
+
+.login.seperator {
+    display: block;
+    background: url(/assets/imgs/line.png) 0 50% no-repeat;
+    text-align: center;
+}
+
+.login .seperator.text {
+    display: inline-block;
+    padding: 0 12px;
+    font-weight: bold;
+    font-size: 17px;
+    background: white;
+    vertical-align: top;
+}
+
+.login .login.twitch {
+    PADDING: 15PX 25px;
+    color: white;
+    background-color: #6441a3;
+    cursor: pointer;
+    user-select: none;
+    margin-top: 25px;
+}
+
+.login .login.twitch:active {
+    background-color: #3a2464;
+}
+
+.login .bad-login-result {
+    color: #e84118;
+    margin-bottom: 25px;
+}
+
+.login .bad-login-result:empty {
+    margin-bottom: 0;
+}
+
+.login .input-icon {
+    position: absolute;
+    z-index: 10;
+    margin-left: 13px;
+    margin-top: 15px;
+    color: #c7c7c7;
+}
+
+.login .input-icon.user {
+    margin-top: 36px;
+}
+
+.login p.invalid {
+    color: red;
+    /* font-weight: bold; */
+    font-size: 14pt;
+}
+
+
+/* DASHBOARD NAV */
+
+.dashboard .nav {
+    width: 100%;
+}
+
+.dashboard .nav-item .fas,
+.dashboard .nav-item .fa-solid,
+.dashboard .nav-item .fa-brands {
+    width: 2rem;
+}
+
+.dashboard .top-row {
+    height: 3.5rem;
+}
+
+.navbar-brand {
+    font-size: 1.1rem;
+}
+
+.dashboard .nav-list {
+    display: flex;
+    flex-grow: 1;
+}
+
+.navbar-brand img {
+    height: 40px;
+    position: relative;
+    top: 0px;
+    left: 25px;
+}
+
+.dashboard .oi {
+    width: 2rem;
+    font-size: 1.1rem;
+    vertical-align: text-top;
+    top: -2px;
+}
+
+.dashboard .nav-item {
+    font-size: 0.9rem;
+    padding-bottom: 0.5rem;
+}
+
+.dashboard .nav-item:first-of-type {
+    padding-top: 1rem;
+}
+
+.dashboard .nav-item:last-of-type {
+    padding-bottom: 1rem;
+}
+
+.dashboard .nav-item ::deep a {
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    line-height: 3rem;
+    margin-left: 15px;
+    margin-top: 5px;
+    border-radius: 20px 0px 0px 20px;
+}
+
+.dashboard .nav-item ::deep a.active {
+    background-color: #141619;
+    color: #ffffff;
+}
+
+.dashboard .nav-item ::deep a:hover {
+    background-color: rgb(20 22 25 / 73%);
+    color: #d6d6d6;
+}
+
+.dashboard .collapse {
+    display: none;
+}
+
+.dashboard .notifications {
+    position: absolute;
+    top: 18px;
+    right: 100px;
+    color: white;
+    display: none;
+}
+
+/*.notifications,
+.login {
+    display: none;
+}*/
+
+/* Ravenfall TV */
+
+.tv button {
+    border: 0;
+    padding: 10px;
+    outline: 0;
+    background: linear-gradient(45deg, #082465, #3a0647);
+    color: white;
+    border-radius: 7px;
+    box-shadow: 0px 2px 5px 1px rgb(0 0 0 / 10%);
+    cursor: pointer;
+    text-align: center;
+}
+
+.tv button:hover {
+    background: linear-gradient(45deg, #051c53, #290432);
+    color: white;
+}
+
+.tv button:active {
+    background: linear-gradient(45deg, #03153f, #1e0325);
+    box-shadow: 0;
+}
+
+.tv button.error {
+    background: linear-gradient(45deg, #650808, #8e3d3d);
+}
+
+
+.tv .-page-container {
+    max-width: 100%;
+    width: 700px;
+    display: flex;
+    flex-flow: column;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.tv .btn.download {
+    font-size: 11pt;
+    font-weight: 300;
+    padding: 12px;
+    margin-bottom: 25px;
+}
+
+
+.tv .btn-list {
+    display: flex;
+}
+
+.tv .logo-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+
+.tv .details {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-flow: column;
+}
+
+.tv .details-section {
+    margin-bottom: 25px;
+    text-align: center;
+    line-height: 23pt;
+}
+
+.tv .details-section.notice {
+    text-align: center;
+    font-size: 9pt;
+    font-style: italic;
+    line-height: 17pt;
+}
+
+.tv .ravenfall-tv-logo {
+    max-width: 100%;
+    width: 450px;
+}
+
+.tv .settings form, .tv .-form,
+.tv .content form.-form,
+.tv form.-form, .tv form {
+    justify-content: initial;
+    -webkit-align-items: initial;
+    align-items: initial;
+}
+
+.tv .-input-row {
+    display: flex;
+    flex-flow: column;
+}
+
+.tv .settings {
+    display: flex;
+    flex-flow: column;
+}
+
+.tv .locked,
+.tv .unavailable {
+    user-select: none;
+    pointer-events: none;
+    position: relative;
+}
+
+.tv .locked::before,
+.tv .unavailable::before {
+    font-family: "Font Awesome 6 Sharp";
+    content: "\f30d";
+    font-weight: bold;
+    z-index: 11;
+    position: absolute;
+    font-size: 24pt;
+    top: calc(50% - 42px);
+    width: 100%;
+    text-align: center;
+}
+
+.tv .locked::after,
+.tv .unavailable::after {
+    content: "Unlock by becoming a patron";
+    font-size: 10pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    padding-top: 25px;
+    background-color: #f3f4f8c6;
+    z-index: 10;
+    opacity: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.tv .unavailable::after {
+    content: "coming soon";
+}
+
+.tv .settings label {
+    margin-bottom: 3px;
+    font-size: 8pt;
+    font-weight: bold;
+    margin-left: 3px;
+}
+
+.tv .settings input,
+.tv .settings select,
+.tv .settings textarea {
+    padding: 5px 10px;
+    margin-bottom: 10px;
+    /* use transparent could be better for user accessibility, but it does not go well with borders.*/
+    outline: none;
+    border: 1px solid rgb(218 218 218);
+    border-radius: 5px;
+}
+
+.tv .settings textarea {
+    padding: 10px;
+}
+
+.tv .-badge-list {
+    display: flex;
+    margin-bottom: 15px;
+}
+
+.tv .-badge {
+    padding: 3px 9px;
+    border-radius: 2px;
+    font-size: 8pt;
+    color: white;
+    text-transform: uppercase;
+    justify-content: space-evenly;
+    align-content: space-evenly;
+    margin: 3px;
+}
+
+.tv .-badge.twitch {
+    background-color: rgb(118, 38, 174);
+}
+
+.tv .-badge.patreon {
+    background-color: rgb(218, 79, 69);
+}
+
+.tv .-badge.experimental {
+    background-color: rgb(181, 45, 45);
+}
+
+
+/* Player Inventory */
+.item-details-dialog {
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    background: #23272e;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    padding: 0;
+    overflow-y: auto;
+    max-height: 100%;
+    color: #f3f3f3;
+    font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+.dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #181b20;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #333;
+}
+
+.dialog-header h3 {
+    color: white;
+}
+
+.item-name {
+    font-size: 1.4rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    padding: 0.2em 0.6em;
+    margin-left: 0.5em;
+    font-weight: 600;
+    background: #444;
+    color: #fff;
+    gap: 0.3em;
+}
+
+.badge.enchanted {
+    background: #5e3ec9;
+    color: #fff;
+}
+
+.badge.transmogrified {
+    background: #2e8b57;
+    color: #fff;
+}
+
+.badge.soulbound {
+    background: #b22222;
+    color: #fff;
+}
+
+.transmogrification-item img {
+    height: 70px;
+}
+
+.item-transmogrification .blazored-typeahead__input {
+    flex: 1;
+    max-width: 100%;
+    border: none;
+    padding: .5rem;
+    border-radius: 5px;
+    background-color: transparent;
+    color: white;
+}
+
+.item-details-content.improved {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    padding: 1.5rem;
+    justify-content: center;
+}
+
+.item-details-left {
+    flex: 0 0 180px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.item-image-wrapper {
+    position: relative;
+    width: 120px;
+    height: 120px;
+    background: #181b20;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.main-item-image {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+}
+
+.transmog-preview {
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    color: #2e8b57;
+    position: absolute;
+    margin-left: 85px;
+    margin-top: 80px;
+}
+
+.skin-image {
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    border: 1px solid #2e8b57;
+    margin-right: 0.3em;
+}
+
+.item-tier, .item-type {
+    font-size: 0.95rem;
+    color: #aaa;
+}
+
+.item-details-right {
+    /*flex: 1 1 0;*/
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+.item-description {
+    font-size: 1rem;
+    color: #e0e0e0;
+    margin-bottom: 0.5rem;
+}
+
+.item-details-right .item-description {
+    max-width: 100%;
+    width: 220px;
+}
+
+.item-stats, .item-enchantments, .item-requirements {
+    margin-bottom: 0.5rem;
+}
+
+.item-stats h4, .item-enchantments h4, .item-requirements h4 {
+    font-size: 1.05rem;
+    margin-bottom: 0.3em;
+    color: #bdbdbd;
+}
+
+.item-stat {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    font-size: 0.98rem;
+}
+
+.item-stat.enchantment {
+    color: #5e3ec9;
+}
+
+.item-stat-enchantment {
+    color: #5e3ec9;
+    font-size: 0.9em;
+    margin-left: 0.3em;
+}
+
+.item-actions {
+    display: flex;
+    gap: 0.7em;
+    margin: 1.2em 0 0 0;
+    flex-wrap: wrap;
+}
+
+.item-badges {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.item-transmogrification.improved {
+    background: #1a1d22;
+    /*
+    margin-top: 1.5em;
+    border-radius: 8px;
+    border: 1px solid #2e8b57;
+    */
+    padding: 1em;
+    flex-wrap: wrap;
+    flex-direction: column;
+}
+
+.item-transmogrification h4 {
+    color: #2e8b57;
+    margin-bottom: 0.3em;
+}
+
+.transmogrification-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-top: 0.5em;
+}
+
+.inventory-item.transmogrified .item-image {
+    position: relative;
+}
+
+.transmog-icon {
+    position: absolute;
+    background: #2e8b57;
+    color: #fff;
+    border-radius: 50%;
+    padding: 2px 4px;
+    font-size: 1em;
+    width: 28px;
+    height: 28px;
+    margin-left: -15px;
+    transform: scale(0.75);
+    margin-top: -5px;
+}
+
+.enchant-icon {
+    position: absolute;
+    background: #5e3ec9;
+    color: #fff;
+    border-radius: 50%;
+    padding: 2px 4px;
+    font-size: 1em;
+    width: 28px;
+    height: 28px;
+    margin-left: -15px;
+    transform: scale(0.75);
+    margin-top: -5px;
+}
+
+button.close {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 1.5em;
+    cursor: pointer;
+    margin-left: 1em;
+}
+
+button.close:hover {
+    color: #fff;
+}
+
+.unequipped-items {
+    padding-top: 20px;
+    margin-top: 0;
+}
+
+.item-actions.inventory-actions {
+    margin-bottom: 20px;
+    background-color: #141619;
+    border-bottom: 1px solid #cfcfcf;
+}
+
+.player-inventory {
+    margin: 0 auto;
+    padding: 1.5rem 1rem;
+}
+
+.inventory-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    /*    margin-bottom: 1.2rem;*/
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.inventory-tabs {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.inventory-tab {
+    background: hsl(216 9% 7% / 1);
+    color: #fff;
+    border: none;
+    border-radius: 6px 6px 0 0;
+    padding: 0.7em 1.5em;
+    font-size: 1.1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    outline: none;
+}
+
+.inventory-tab.active,
+.inventory-tab:hover {
+    background: #1a1c1f;
+    color: #fff;
+}
+
+.account-coins {
+    background: #1a1c1f;
+    color: #ffd700;
+    border-radius: 8px;
+    padding: 0.5em 1.2em;
+    font-size: 1.2em;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+}
+
+.equipment-view {
+    display: flex;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2rem;
+    justify-content: space-between;
+    background-color: #1a1c1f;
+    padding: 15px;
+}
+
+.unequipped-items {
+    background-color: #1a1c1f;
+}
+
+.equipment-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    max-width: 400px;
+}
+
+.equipment-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 90px;
+    min-height: 120px;
+    /*background: #181b20;*/
+    background: hsl(218 17% 9% / 1);
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    padding: 0.7em 0.3em 0.5em 0.3em;
+    position: relative;
+}
+
+.slot-label {
+    font-size: 0.95em;
+    color: #aaa;
+    margin-bottom: 0.4em;
+    text-align: center;
+}
+
+.item-image {
+    width: 64px;
+    height: 64px;
+    /*background: #23272e;*/
+    background: hsl(218 14% 14% / 1);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    margin-bottom: 0.3em;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border 0.2s;
+}
+
+.item-image:hover {
+    border: 2px solid #2e8b57;
+}
+
+.item-image.empty {
+    background: #23272e;
+    color: #444;
+    border: 2px dashed #333;
+    cursor: default;
+}
+
+.transmog-icon {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: #2e8b57;
+    color: #fff;
+    border-radius: 50%;
+    padding: 2px 4px;
+    font-size: 1em;
+}
+
+.enchant-icon {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    background: #5e3ec9;
+    color: #fff;
+    border-radius: 50%;
+    padding: 2px 4px;
+    font-size: 1em;
+}
+
+.equipment-stats {
+    flex: 1 1 200px;
+    min-width: 220px;
+    background: #13161b;
+    border-radius: 8px;
+    padding: 1.2em 1.5em;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+    max-width: 350px;
+}
+
+.equipment-stats h3 {
+    color: #2e8b57;
+    margin-bottom: 0.7em;
+    font-size: 1.15em;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 1.05em;
+    color: #e0e0e0;
+    padding: 0.2em 0;
+}
+
+.stat-name {
+    color: #bdbdbd;
+}
+
+.no-stats {
+    color: #888;
+    font-size: 1em;
+    margin-top: 1em;
+}
+
+.item-image img {
+    width: 50px;
+}
+table.type-group-town-list {
+    background-color: #101112;
+}
+td.town-level,
+td.town-slots,
+td.town-bonus,
+td.town-owner {
+    background-color: #1e2125;
+}
+.type-groups {
+    padding-bottom: 100px;
+}
+/*
+    PATREON
+*/
+
+.content-box {
+    background-color: #0e1012;
+}
+
+/* ADMIN */
+.admin .modal-actions {
+    display: flex;
+}
+
+.admin .modal-header h2 {
+    font-size: 16pt;
+}
+
+.admin .form-group-header {
+    font-weight: bold;
+}
+
+.admin .form-row {
+    display: flex;
+    flex-grow: 1;
+    width: 100%;
+    margin: 0;
+    margin-top: 7px;
+    justify-content: space-between;
+}
+
+.admin .modal-input {
+    flex-grow: 1;
+}
+
+.admin .form-group {
+    width: 100%;
+    background-color: #f2f9f6;
+    padding: 13px;
+    margin-top: 10px;
+}
+
+.admin button.btn:hover, button.btn:active {
+    background-color: #e0f1ff;
+}
+
+.admin button.btn {
+    font-weight: 300;
+    font-size: 10pt;
+    box-shadow: 0px 2px 4px rgb(0 0 0 / 25%);
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+.admin .modal-window button.btn {
+    background-color: white;
+    cursor: pointer;
+}
+
+.admin .modal-window button.btn.ok {
+    background: #c31432;
+    background: -webkit-linear-gradient(to bottom, #65189d, #c31432);
+    background: linear-gradient(to bottom, #65189d, #c31432);
+    color: white;
+    border: 0;
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+.admin button.btn.ok:hover, button.btn.ok:active {
+    background: #961027;
+    background: -webkit-linear-gradient(to bottom, #470f6f, #8b0f24);
+    background: linear-gradient(to bottom, #470f6f, #8b0f24);
+}
+
+.admin button.btn.cancel:hover, button.btn.cancel:active {
+}
+
+.admin .modal-background {
+    display: flex;
+    position: absolute;
+    background-color: rgba(0,0,0,0.2);
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    flex-direction: row;
+    align-content: center;
+    justify-content: center;
+    height: 100%;
+    width: 100%;
+}
+
+.admin .modal-window {
+    max-width: 100%;
+    width: 500px;
+    display: flex;
+    flex-flow: column;
+    background-color: white;
+    height: 430px;
+    height: fit-content;
+    max-height: 100%;
+    padding: 20px;
+    margin-top: 70px;
+}
+
+.admin button.link-button.edit {
+    background-color: #0045c1;
+}
+
+
+.admin .modal-actions {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.admin .profile-picture {
+    width: 32px;
+    height: 32px;
+}
+
+.admin .player-character-index {
+    margin-left: 5px;
+    display: inline-block;
+    color: #a2a2a2;
+    font-size: 9pt;
+}
+
+.admin input.table-edit {
+    padding: 3px;
+    margin: 2px;
+}
+
+.admin button.link-button {
+    background-color: #0e0e0f;
+    color: #fff;
+    border: 0;
+    padding: 5px 10px;
+    cursor: pointer;
+    margin: 2px;
+}
+
+.admin input.search-input {
+    padding: 10px 15px;
+    border-radius: 10px;
+    border: 1px solid #d5d5d5;
+    width: 500px;
+    max-width: 100%;
+    box-sizing: border-box;
+    outline: none;
+    font-size: 13pt;
+}
+
+.admin .pagenation {
+    display: flex;
+    flex-flow: row;
+    justify-content: space-between;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    margin-left: 25px;
+    margin-right: 25px;
+}
+
+.admin .page-navigation {
+    display: flex;
+    flex-flow: row;
+    align-items: flex-end;
+    height: 35px;
+}
+
+.admin .pages {
+    display: flex;
+    line-height: 17px;
+    margin: 5px;
+}
+
+.top-social {
+    display: none;
+}
+
+
+@media (max-width: 900px) {
+    .equipment-view {
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .equipment-stats {
+        max-width: 100%;
+        min-width: 0;
+    }
+}
+
+@media (max-width: 600px) {
+    .player-inventory {
+        padding: 0.5rem 0.2rem;
+    }
+
+    .equipment-slots {
+        gap: 0.5rem;
+        max-width: 100%;
+    }
+
+    .equipment-slot {
+        width: 70px;
+        min-height: 90px;
+        padding: 0.4em 0.1em 0.3em 0.1em;
+    }
+
+    .equipment-stats {
+        padding: 0.7em 0.5em;
+    }
+
+    .account-coins {
+        font-size: 1em;
+        padding: 0.3em 0.7em;
+    }
+}
+
+
+@media (max-width: 641px) {
+
+    .notifications,
+    .login {
+        display: block;
+    }
+}
+
+@media (min-width: 641px) {
+    .navbar-toggler {
+        display: none;
+    }
+
+    .collapse {
+        display: flex !important;
+    }
+}
+
+
+
+@media screen and (max-width: 450px) {
+    .login-header {
+        text-align: center;
+    }
+}
+
+
+@media (max-width: 810px) {
+    .top-nav.auth {
+        justify-content: space-between;
+    }
+
+    .section {
+        padding: 30px 20px 50px 20px;
+    }
+    /*
+    .top-section {
+        margin-top: -135px;
+    }*/
+
+    .main-nav {
+        margin-top: 15px;
+    }
+
+    .logo-link {
+        position: absolute;
+        top: -40px;
+        left: 40px;
+    }
+    /*
+    .top-social {
+        position: fixed;
+        top: 50px;
+        right: 20px;
+        justify-items: end;
+        justify-content: flex-end;
+    }*/
+
+    .top-nav a, .top-nav .btn-link {
+        margin-left: 0;
+    }
+}
+
+@media (max-width: 570px) {
+
+    .main-nav {
+        margin-top: 50px;
+    }
+
+    img.logo {
+        width: 120px;
+    }
+
+    a.logo-link {
+        top: -90px;
+        margin-left: auto;
+        margin-right: auto;
+        left: initial;
+    }
+
+    .top-social a {
+        font-size: 8pt;
+    }
+}
+
+/*@media (max-width: 550px) {
+    .btn-admin {
+        position: fixed !important;
+        top: 300px !important;
+    }
+}*/
+
+@media screen and (max-width: 450px) {
+
+    .top-social {
+        display: none;
+    }
+
+    .wds-icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .main-nav {
+        margin-top: -30px;
+    }
+}
+
 @media (max-width: 641px) {
     .page-title {
         margin-top: 20px;
     }
 
     .section {
-        padding: 30px 20px 50px 20px !important;
+        padding: 30px 20px 50px 20px;
     }
 
     .dd-content {
@@ -1285,7 +3161,7 @@ pre {
     }
 
     .top-section {
-        margin-top: -140px !important;
+        margin-top: -140px;
     }
 
     .patreon-content {
@@ -1305,28 +3181,6 @@ pre {
         font-size: 14pt;
     }
 }
-
-/*@media (max-width: 1100px) {
-    table.items-list.stash tbody {
-        display: flex;
-        flex-flow: column;
-    }
-    table.items-list.stash thead {
-        display: none;
-    }
-    table.items-list.stash .item-row {
-        flex-grow: 1;
-        display: flex;
-        flex-wrap: wrap;
-    }
-
-    table.items-list.stash .item.name {
-        flex-grow: 1;
-    }
-    table.items-list.stash .item.item-actions {
-        flex-grow: 1;
-    }
-}*/
 
 @media (max-width: 985px) {
 
@@ -1369,7 +3223,7 @@ pre {
     }
 }
 
-
+/*
 @media (max-width: 1290px) {
     .top-social {
         display: flex;
@@ -1381,7 +3235,7 @@ pre {
     }
 }
 
-
+*/
 @media (max-width: 640.98px) {
     .front-page .content {
         margin-top: 140px;
@@ -1414,9 +3268,11 @@ pre {
         align-content: center;
         justify-content: center;
     }
-    button.raven-btn.twitch.twitch-login-btn{
+
+    button.raven-btn.twitch.twitch-login-btn {
         margin-top: 10px;
     }
+
     button.raven-btn.blue.login-btn,
     button.raven-btn.twitch.twitch-login-btn,
     button.raven-btn.kick.kick-login-btn {
@@ -1427,6 +3283,7 @@ pre {
     .raven-btn i {
         margin: 0;
     }
+
     .raven-btn {
         display: flex;
         flex-direction: column;
@@ -1435,6 +3292,7 @@ pre {
         flex-wrap: wrap;
         justify-content: center;
     }
+
     .hero-text h1 {
         font-size: 16pt;
         text-decoration: underline;
@@ -1443,8 +3301,10 @@ pre {
 
     .top-section {
         margin-top: -180px !important;
-        height: 595px;
+        height: 685px;
+        padding: 140px 20px;
     }
+
     .wds-icon {
         width: 24px;
         height: 24px;

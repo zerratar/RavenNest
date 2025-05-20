@@ -36,6 +36,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RavenfallPlayerLogCleaner",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeltaServerTest", "src\tools\DeltaServerTest\DeltaServerTest.csproj", "{A2517929-EA6A-4B18-AA53-9C5F5DA49B63}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RavenNest.DataModels.Generators", "src\RavenNest.DataModels.Generators\RavenNest.DataModels.Generators.csproj", "{046714CE-1C01-4C54-AB91-BD376EF1618F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RavenNest.DataAnnotations", "src\RavenNest.DataAnnotations\RavenNest.DataAnnotations.csproj", "{AEDF85B4-0CB4-4C67-B6CC-38A3CFACF3A1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -86,6 +90,14 @@ Global
 		{A2517929-EA6A-4B18-AA53-9C5F5DA49B63}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A2517929-EA6A-4B18-AA53-9C5F5DA49B63}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A2517929-EA6A-4B18-AA53-9C5F5DA49B63}.Release|Any CPU.Build.0 = Release|Any CPU
+		{046714CE-1C01-4C54-AB91-BD376EF1618F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{046714CE-1C01-4C54-AB91-BD376EF1618F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{046714CE-1C01-4C54-AB91-BD376EF1618F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{046714CE-1C01-4C54-AB91-BD376EF1618F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AEDF85B4-0CB4-4C67-B6CC-38A3CFACF3A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AEDF85B4-0CB4-4C67-B6CC-38A3CFACF3A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AEDF85B4-0CB4-4C67-B6CC-38A3CFACF3A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AEDF85B4-0CB4-4C67-B6CC-38A3CFACF3A1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -99,6 +111,8 @@ Global
 		{2230B21C-23E7-4575-B80A-F5357FC6BA6A} = {4B6B7254-0011-4E8D-B51D-24AE557028D2}
 		{473FC467-FFEA-48AD-B7AB-A0BF9E0B12B0} = {4B6B7254-0011-4E8D-B51D-24AE557028D2}
 		{A2517929-EA6A-4B18-AA53-9C5F5DA49B63} = {4B6B7254-0011-4E8D-B51D-24AE557028D2}
+		{046714CE-1C01-4C54-AB91-BD376EF1618F} = {FF1E1C79-7C4E-40D4-AB60-A79AB55ABAF1}
+		{AEDF85B4-0CB4-4C67-B6CC-38A3CFACF3A1} = {FF1E1C79-7C4E-40D4-AB60-A79AB55ABAF1}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1D18B908-6D56-49FE-B09D-0DE940AE5265}

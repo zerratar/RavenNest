@@ -94,5 +94,23 @@ namespace RavenNest.BusinessLogic.Game
 
             return EquipmentSlot.None;
         }
+
+        internal InventoryItem AsUntrackedInventoryItem(Guid characterId)
+        {
+            return new InventoryItem
+            {
+                Id = Id,
+                ItemId = ItemId,
+                TransmogrificationId = TransmogrificationId,
+                Name = Name,
+                Enchantment = Enchantment,
+                Amount = Amount,
+                Equipped = Equipped,
+                Tag = Tag,
+                Flags = Flags,
+                Soulbound = Soulbound,
+                CharacterId = characterId
+            };
+        }
     }
 }

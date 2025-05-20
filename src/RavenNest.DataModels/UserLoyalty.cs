@@ -1,8 +1,9 @@
-﻿using System;
+﻿using RavenNest.DataAnnotations;
+using System;
 
 namespace RavenNest.DataModels
 {
-    public class UserLoyalty : Entity<UserLoyalty>
+    public partial class UserLoyalty : Entity<UserLoyalty>
     {
         public const double MinExpForLevel = 1000;
         public const double ExpPerBit = 5;
@@ -14,18 +15,18 @@ namespace RavenNest.DataModels
         public const int PointsPerGiftedSub = 200;
         public const int PointsPerLevel = 100;
 
-        private Guid userId; public Guid UserId { get => userId; set => Set(ref userId, value); }
-        private Guid streamerUserId; public Guid StreamerUserId { get => streamerUserId; set => Set(ref streamerUserId, value); }
-        private Guid? rankId; public Guid? RankId { get => rankId; set => Set(ref rankId, value); }
-        private long level; public long Level { get => level; set => Set(ref level, value); }
-        private double experience; public double Experience { get => experience; set => Set(ref experience, value); }
-        private long giftedSubs; public long GiftedSubs { get => giftedSubs; set => Set(ref giftedSubs, value); }
-        private long cheeredBits; public long CheeredBits { get => cheeredBits; set => Set(ref cheeredBits, value); }
-        private long points; public long Points { get => points; set => Set(ref points, value); }
-        private bool isSubscriber; public bool IsSubscriber { get => isSubscriber; set => Set(ref isSubscriber, value); }
-        private bool isModerator; public bool IsModerator { get => isModerator; set => Set(ref isModerator, value); }
-        private bool isVip; public bool IsVip { get => isVip; set => Set(ref isVip, value); }
-        private string playtime; public string Playtime { get => playtime; set => Set(ref playtime, value); }
+        [PersistentData] private Guid userId;
+        [PersistentData] private Guid streamerUserId;
+        [PersistentData] private Guid? rankId;
+        [PersistentData] private long level;
+        [PersistentData] private double experience;
+        [PersistentData] private long giftedSubs;
+        [PersistentData] private long cheeredBits;
+        [PersistentData] private long points;
+        [PersistentData] private bool isSubscriber;
+        [PersistentData] private bool isModerator;
+        [PersistentData] private bool isVip;
+        [PersistentData] private string playtime;
 
         private TimeSpan totalPlayTime;
 

@@ -1,5 +1,5 @@
 ﻿
-button {
+.tv button {
     border: 0;
     padding: 10px;
     outline: 0;
@@ -11,22 +11,22 @@ button {
     text-align: center;
 }
 
-button:hover {
+.tv button:hover {
     background: linear-gradient(45deg, #051c53, #290432);
-    color:white;
+    color: white;
 }
 
-button:active {
+.tv button:active {
     background: linear-gradient(45deg, #03153f, #1e0325);
     box-shadow: 0;
 }
 
-button.error {
+.tv button.error {
     background: linear-gradient(45deg, #650808, #8e3d3d);
 }
 
 
-.-page-container {
+.tv .-page-container {
     max-width: 100%;
     width: 700px;
     display: flex;
@@ -35,7 +35,7 @@ button.error {
     margin-right: auto;
 }
 
-.btn.download {
+.tv .btn.download {
     font-size: 11pt;
     font-weight: 300;
     padding: 12px;
@@ -43,69 +43,69 @@ button.error {
 }
 
 
-.btn-list {
+.tv .btn-list {
     display: flex;
 }
 
-.logo-container {
+.tv .logo-container {
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
 
-.details {
+.tv .details {
     display: flex;
     justify-content: center;
     align-items: center;
     flex-flow: column;
 }
 
-.details-section {
+.tv .details-section {
     margin-bottom: 25px;
     text-align: center;
     line-height: 23pt;
 }
 
-.details-section.notice {
+.tv .details-section.notice {
     text-align: center;
     font-size: 9pt;
     font-style: italic;
     line-height: 17pt;
 }
 
-.ravenfall-tv-logo {
+.tv .ravenfall-tv-logo {
     max-width: 100%;
     width: 450px;
 }
 
-.settings form,.-form,
-.content form.-form,
-form.-form, form {
+.tv .settings form, .tv .-form,
+.tv .content form.-form,
+.tv form.-form, .tv form {
     justify-content: initial;
     -webkit-align-items: initial;
     align-items: initial;
 }
 
-.-input-row {
+.tv .-input-row {
     display: flex;
     flex-flow: column;
 }
 
-.settings {
+.tv .settings {
     display: flex;
     flex-flow: column;
 }
 
-.locked,
-.unavailable {
+.tv .locked,
+.tv .unavailable {
     user-select: none;
     pointer-events: none;
     position: relative;
 }
 
-.locked::before,
-.unavailable::before {
+.tv .locked::before,
+.tv .unavailable::before {
     font-family: "Font Awesome 6 Sharp";
     content: "\f30d";
     font-weight: bold;
@@ -117,8 +117,8 @@ form.-form, form {
     text-align: center;
 }
 
-.locked::after,
-.unavailable::after {
+.tv .locked::after,
+.tv .unavailable::after {
     content: "Unlock by becoming a patron";
     font-size: 10pt;
     font-weight: bold;
@@ -137,20 +137,20 @@ form.-form, form {
     align-items: center;
 }
 
-.unavailable::after {
+.tv .unavailable::after {
     content: "coming soon";
 }
 
-.settings label {
+.tv .settings label {
     margin-bottom: 3px;
     font-size: 8pt;
     font-weight: bold;
     margin-left: 3px;
 }
 
-.settings input,
-.settings select,
-.settings textarea {
+.tv .settings input,
+.tv .settings select,
+.tv .settings textarea {
     padding: 5px 10px;
     margin-bottom: 10px;
     /* use transparent could be better for user accessibility, but it does not go well with borders.*/
@@ -159,16 +159,16 @@ form.-form, form {
     border-radius: 5px;
 }
 
-.settings textarea {
+.tv .settings textarea {
     padding: 10px;
 }
 
-.-badge-list {
+.tv .-badge-list {
     display: flex;
     margin-bottom: 15px;
 }
 
-.-badge {
+.tv .-badge {
     padding: 3px 9px;
     border-radius: 2px;
     font-size: 8pt;
@@ -179,14 +179,14 @@ form.-form, form {
     margin: 3px;
 }
 
-.-badge.twitch {
+.tv .-badge.twitch {
     background-color: rgb(118, 38, 174);
 }
 
-.-badge.patreon {
+.tv .-badge.patreon {
     background-color: rgb(218, 79, 69);
 }
 
-.-badge.experimental {
+.tv .-badge.experimental {
     background-color: rgb(181, 45, 45);
 }

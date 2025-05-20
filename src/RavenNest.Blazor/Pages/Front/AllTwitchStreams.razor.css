@@ -2,76 +2,7 @@
 .top-section {
     height: 335px;
 }
-.stream-view {
-    height: 180px;
-    width: 320px;
-    box-sizing: border-box;
-    background-color: black;
-    background-size: contain;
-    color: white;
-    cursor: pointer;
-    margin-bottom: 7px;
-}
-
-
-i.fas.fa-play {
-    color: white;
-    z-index: 1;
-    position: relative;
-    width: 100%;
-    height: 100%;
-    line-height: 180px;
-    text-align: center;
-    font-size: 54pt;
-    text-shadow: 3px 4px 6px rgb(0 0 0 / 20%);
-}
 
 .section:last-of-type {
     padding-bottom: 220px;
-}
-
-.twitch-stream-item {
-    width: 320px;
-}
-
-.streamer-name {
-    font-size: 21pt;
-}
-
-.twitch-content h3 {
-    font-weight: 500;
-    margin-bottom: 60px;
-    margin-top: 30px;
-}
-
-.twitch-streams {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-around;
-    max-width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-.twitch-content {
-    width: 100%;
-    max-width: 100%;
-}
-
-.twitch-stream-header {
-    position: absolute;
-    box-sizing: border-box;
-    width: 320px;
-    padding: 7px 15px 108px 15px;
-    background: linear-gradient(180deg, black, rgba(0,0,0,0.75), transparent);
-    color: white;
-}
-
-.twitch-content p {
-    text-align: center;
-    font-size: 19pt;
-    color: #303030;
-    font-weight: 300;
-    font-family: 'Heebo', sans-serif;
 }

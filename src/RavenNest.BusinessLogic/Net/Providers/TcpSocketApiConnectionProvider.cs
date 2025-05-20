@@ -1,5 +1,8 @@
 ﻿using RavenNest.BusinessLogic.Data;
+using RavenNest.Models;
 using System;
+using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -7,79 +10,102 @@ namespace RavenNest.BusinessLogic.Net
 {
     public class TcpSocketApiConnectionProvider : ITcpSocketApiConnectionProvider
     {
-        private readonly Dictionary<int, TcpSocketApiConnection> connections = new Dictionary<int, TcpSocketApiConnection>();
-        private readonly object syncRoot = new object();
+        private readonly ConcurrentDictionary<int, TcpSocketApiConnection> connections = new ConcurrentDictionary<int, TcpSocketApiConnection>();
+        private readonly ConcurrentDictionary<Guid, List<TcpSocketApiConnection>> userConnections = new ConcurrentDictionary<Guid, List<TcpSocketApiConnection>>();
+        private readonly ConcurrentDictionary<Guid, TcpSocketApiConnection> sessionConnections = new ConcurrentDictionary<Guid, TcpSocketApiConnection>();
 
         public TcpSocketApiConnection Add(int connectionId, TcpSocketApi server, GameData gameData)
         {
-            lock (syncRoot)
+            var connection = new TcpSocketApiConnection(connectionId, server, gameData);
+            connections[connectionId] = connection;
+            return connection;
+        }
+
+        public void AttachSessionToken(int connectionId, SessionToken token, TimeSpan offset)
+        {
+            if (!connections.TryGetValue(connectionId, out var connection))
+                return;
+
+            connection.SessionToken = token;
+            connection.TimeOffset = offset;
+            if (token != null)
             {
-                var connection = new TcpSocketApiConnection(connectionId, server, gameData);
-                connections[connectionId] = connection;
-                return connection;
+                userConnections.AddOrUpdate(token.UserId,
+                    new List<TcpSocketApiConnection> {
+                            connection
+                    },
+                    (key, list) =>
+                    {
+                        list.Add(connection);
+                        return list;
+                    });
+                sessionConnections[token.SessionId] = connection;
             }
         }
 
         public bool Contains(int connectionId)
         {
-            lock (syncRoot)
-                return connections.ContainsKey(connectionId);
+            return connections.ContainsKey(connectionId);
         }
 
         public bool Remove(int connectionId, out TcpSocketApiConnection connection)
         {
-            lock (syncRoot)
+            connections.TryGetValue(connectionId, out connection);
+            var wasRemoved = connections.TryRemove(connectionId, out _);
+
+            if (connection.SessionToken != null)
             {
-                connections.TryGetValue(connectionId, out connection);
-                return connections.Remove(connectionId);
+                if (sessionConnections.TryGetValue(connection.SessionToken.SessionId, out var sessionConnection) && !sessionConnection.Connected)
+                {
+                    sessionConnections.TryRemove(connection.SessionToken.SessionId, out _);
+                }
+
+                if (userConnections.TryGetValue(connection.SessionToken.UserId, out var uCon))
+                {
+                    uCon.RemoveAll(x => !x.Connected || x.ConnectionId == connectionId);
+                    userConnections[connection.SessionToken.UserId] = uCon;
+                }
             }
+
+            return wasRemoved;
         }
 
         public bool TryGet(int connectionId, out TcpSocketApiConnection connection)
         {
-            lock (syncRoot)
-                return connections.TryGetValue(connectionId, out connection);
+            return connections.TryGetValue(connectionId, out connection);
+        }
 
+        public IReadOnlyList<TcpSocketApiConnection> GetAllConnectionsByUserId(Guid userId)
+        {
+            userConnections.TryGetValue(userId, out var connections);
+            if (connections != null)
+                return connections;
+
+            return Array.Empty<TcpSocketApiConnection>();
         }
 
         public bool TryGet(Guid sessionId, out TcpSocketApiConnection connection)
         {
-            lock (syncRoot)
+            if (sessionConnections.TryGetValue(sessionId, out connection))
             {
-                //connection = connections.Values.OrderByDescending(x => x.Created).FirstOrDefault(x => x.SessionToken != null && x.SessionToken.SessionId == sessionId);
-                connection = null;
-                List<int> removeConnections = null;
-                foreach (var c in connections.Values.OrderByDescending(x => x.Created).Where(x =>
-                     x.SessionToken != null &&
-                     x.SessionToken.SessionId == sessionId))
+                if (connection.Connected)
                 {
-                    if (connection == null || !connection.Connected)
-                    {
-                        connection = c;
-                    }
-
-                    if (!c.Connected)
-                    {
-                        // this is not good, we still have disconnected clients.
-                        // add for removal.
-                        if (removeConnections == null)
-                        {
-                            removeConnections = new List<int>();
-                        }
-                        removeConnections.Add(c.ConnectionId);
-                    }
+                    return true;
                 }
 
-                if (removeConnections != null && removeConnections.Count > 0)
+                if (!connection.Connected)
                 {
-                    foreach (var c in removeConnections)
-                    {
-                        Remove(c, out _);
-                    }
+                    Remove(connection.ConnectionId, out _);
                 }
-
-                return connection != null;
             }
+
+            if (userConnections.TryGetValue(connection.SessionToken.UserId, out var uCon))
+            {
+                connection = uCon.FirstOrDefault(x => x.Connected);
+            }
+
+            return connection != null;
         }
+
     }
 }

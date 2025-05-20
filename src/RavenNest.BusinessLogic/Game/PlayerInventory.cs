@@ -294,15 +294,14 @@ namespace RavenNest.BusinessLogic.Game
                 lock (mutex)
                 {
                     var character = gameData.GetCharacter(characterId);
-                    var equippedPetInventoryItem = GetEquippedItem(ItemCategory.Pet);
 
-                    UnequipAllItems();
+                    UnequipAllItems(ItemCategory.Pet);
 
                     var skills = gameData.GetCharacterSkills(character.SkillsId);
                     var inventoryItems = GetUnequippedItems()
                         //.Select(x => new { InventoryItem = x, Item = x.Item })
                         .Where(x => CanEquipItem(x.Item, skills))
-                        .OrderByDescending(x => GetItemValue(x.Item))
+                        .OrderByDescending(x => GetItemValue(x))
                         .ToList();
 
                     var meleeWeaponToEquip = inventoryItems.FirstOrDefault(x => x.Item.Category == (int)ItemCategory.Weapon && (x.Item.Type == (int)ItemType.OneHandedSword || x.Item.Type == (int)ItemType.TwoHandedSword || x.Item.Type == (int)ItemType.TwoHandedAxe));
@@ -317,16 +316,9 @@ namespace RavenNest.BusinessLogic.Game
                     if (magicWeaponToEquip.IsNotNull())
                         EquipItem(magicWeaponToEquip);
 
-                    ReadOnlyInventoryItem equippedPet;
-                    if (equippedPetInventoryItem.IsNotNull())
-                    {
-                        equippedPet = GetUnequippedItem(equippedPetInventoryItem.ItemId);
-                        if (equippedPet.IsNotNull())
-                        {
-                            EquipItem(equippedPet);
-                        }
-                    }
-                    else
+                    // attempt equipping a pet if we dont have one equipped already
+                    var equippedPetInventoryItem = GetEquippedItem(ItemCategory.Pet);
+                    if (equippedPetInventoryItem.IsNull())
                     {
                         var petToEquip = GetUnequippedItem(ItemCategory.Pet);
                         if (petToEquip.IsNotNull())
@@ -335,22 +327,44 @@ namespace RavenNest.BusinessLogic.Game
                         }
                     }
 
+                    // we already attempted equipping weapon and pets, so no need to attempt equipping them again
+                    // we should avoid any cosmetic items as well since they will never provide any stats.
+
                     foreach (var itemGroup in inventoryItems
                         .Where(x =>
                             x.Item.Category != (int)ItemCategory.Weapon &&
-                            x.Item.Category != (int)ItemCategory.Pet &&
-                            x.Item.Category != (int)ItemCategory.StreamerToken &&
-                            x.Item.Category != (int)ItemCategory.Scroll)
+                            x.Item.Category != (int)ItemCategory.Pet)
                         .GroupBy(x => x.Item.Type))
                     {
-                        var itemToEquip = itemGroup
-                            .OrderByDescending(x => GetItemValue(x.Item))
-                            .FirstOrDefault();
-
-                        if (itemToEquip.IsNotNull())
+                        // get currently equipped item, check if stats are better with this new one or not.
+                        var equipmentSlot = ReadOnlyInventoryItem.GetEquipmentSlot((DataModels.ItemType)itemGroup.Key);
+                        if (equipmentSlot != EquipmentSlot.None)
                         {
-                            EquipItem(itemToEquip);
+                            var equippedItem = GetEquippedItem(equipmentSlot);
+
+                            var itemToEquip = itemGroup
+                                .OrderByDescending(x => GetItemValue(x))
+                                .FirstOrDefault(x => GetItemValue(x) > GetItemValue(equippedItem));
+
+                            if (itemToEquip.IsNotNull())
+                            {
+                                EquipItem(itemToEquip);
+                            }
                         }
+                        else
+                        {
+                            // old path, we would still need to check so we dont equip an item if we already got the same slot equipped.
+                            // but hopefully first path will fix that.
+                            var itemToEquip = itemGroup
+                                .OrderByDescending(x => GetItemValue(x))
+                                .FirstOrDefault();
+
+                            if (itemToEquip.IsNotNull())
+                            {
+                                EquipItem(itemToEquip);
+                            }
+                        }
+
                     }
                 }
             }
@@ -777,6 +791,38 @@ namespace RavenNest.BusinessLogic.Game
                 return result != null;
             }
         }
+        //public bool TryAddItem(Guid itemId, long amount, out InventoryItem result)
+        //{
+        //    lock (mutex)
+        //    {
+        //        var ai = new AddItemRequest
+        //        {
+        //            ItemId = itemId
+        //        };
+
+        //        if (CanBeStacked(ai))
+        //        {
+        //            var existing = GetUnequipped(ai);
+        //            if (existing != null)
+        //            {
+        //                existing.Amount += amount;
+        //                result = existing;
+        //                return true;
+        //            }
+        //        }
+        //        result = AddItem(itemId, amount);
+        //        return result != null;
+        //    }
+        //}
+        public InventoryItem AddItemStack(InventoryItem itemToCopy, long amount)
+        {
+            lock (mutex)
+            {
+                var resultStack = Copy(itemToCopy, amount);
+                this.items.Add(resultStack);
+                return resultStack;
+            }
+        }
 
         public InventoryItem AddItemStack(ReadOnlyInventoryItem itemToCopy, long amount)
         {
@@ -867,6 +913,102 @@ namespace RavenNest.BusinessLogic.Game
                 TransmogrificationId = itemToCopy.TransmogrificationId,
             };
         }
+
+        internal bool RemoveTransmogrification(InventoryItem inventoryItem, out ReadOnlyInventoryItem[] affectedItemStacks)
+        {
+            lock (mutex)
+            {
+                affectedItemStacks = new ReadOnlyInventoryItem[0];
+                if (inventoryItem == null)
+                {
+                    return false;
+                }
+                if (inventoryItem.TransmogrificationId != null)
+                {
+                    var targetItem = inventoryItem;
+                    var skinId = inventoryItem.TransmogrificationId;
+                    inventoryItem.TransmogrificationId = null;
+
+                    if (!inventoryItem.Equipped)
+                    {
+                        // add to existing stack if possible.
+                        if (CanBeStacked(inventoryItem))
+                        {
+                            var existingStack = GetUnequippedItem(inventoryItem.ItemId, includeSkinned: false);
+                            if (existingStack.IsNotNull())
+                            {
+                                RemoveStack(inventoryItem.Id);
+                                targetItem = AddItem(inventoryItem, 1);
+                            }
+                        }
+                    }
+
+                    // add the transmogrified item as a item in backpack
+                    var itemDetails = gameData.GetItem(skinId.GetValueOrDefault());
+
+
+                    var returnedItem = AddItem(skinId.GetValueOrDefault(), 1, equipped: false, soulbound: itemDetails.Soulbound)
+                        .FirstOrDefault();
+
+                    affectedItemStacks = new ReadOnlyInventoryItem[2]
+                    {
+                        targetItem.AsReadOnly(gameData),
+                        returnedItem.AsReadOnly(gameData)
+                    };
+                }
+                return true;
+            }
+        }
+
+        internal bool AddTransmogrification(InventoryItem inventoryItem, Guid transmogrificationId, out ReadOnlyInventoryItem[] affectedItemStacks)
+        {
+            lock (mutex)
+            {
+                affectedItemStacks = new ReadOnlyInventoryItem[0];
+                if (inventoryItem == null)
+                    return false;
+
+                // If already transmogrified, remove the old skin first
+                if (inventoryItem.TransmogrificationId != null)
+                {
+                    RemoveTransmogrification(inventoryItem, out _);
+                }
+
+                // Find the skin item in inventory
+                var unequipped = GetUnequippedItem(transmogrificationId);
+                if (unequipped.IsNull())
+                    return false;
+
+                var itemToAddSkinTo = inventoryItem;
+                if (inventoryItem.Amount > 1)
+                {
+                    if (!RemoveItem(itemToAddSkinTo, 1))
+                        return false;
+                    itemToAddSkinTo = AddItemStack(inventoryItem, 1);
+                }
+
+                if (inventoryItem.Equipped)
+                {
+                    itemToAddSkinTo.Equipped = true;
+                }
+
+                // Remove the skin item from inventory
+                if (!RemoveItem(unequipped, 1))
+                    return false;
+
+                // Set the new transmogrification
+                itemToAddSkinTo.TransmogrificationId = transmogrificationId;
+
+                affectedItemStacks = new ReadOnlyInventoryItem[2]
+                {
+                    itemToAddSkinTo.AsReadOnly(gameData),
+                    unequipped
+                };
+
+                return true;
+            }
+        }
+
 
         public ReadOnlyInventoryItem AddItem(
             Guid itemId,
@@ -1167,7 +1309,7 @@ namespace RavenNest.BusinessLogic.Game
                     {
                         if (stack.Amount <= 0)
                         {
-                            RemoveStack(stack);
+                            return RemoveStack(stack);
                         }
 
                         return false;
@@ -1201,12 +1343,13 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        public ReadOnlyInventoryItem GetUnequippedItem(Guid itemId, string tag = null)
+        public ReadOnlyInventoryItem GetUnequippedItem(Guid itemId, string tag = null, bool includeSkinned = true)
         {
             lock (mutex)
             {
                 return items
-                    .FirstOrDefault(x => x.ItemId == itemId && x.Equipped == false && (x.Tag == tag || tag == null))
+                    .FirstOrDefault(x => x.ItemId == itemId && x.Equipped == false && (x.Tag == tag || tag == null)
+                    && ((!includeSkinned && x.TransmogrificationId == null) || includeSkinned))
                     .AsReadOnly(gameData);
             }
         }
@@ -1367,38 +1510,65 @@ namespace RavenNest.BusinessLogic.Game
         }
 
 
-        public void RemoveStack(ReadOnlyInventoryItem stack)
+        public bool RemoveStack(ReadOnlyInventoryItem stack)
         {
-            RemoveStack(Get(stack));
+            return RemoveStack(Get(stack));
         }
 
-        public void RemoveStack(InventoryItem stack)
+        public bool RemoveStack(InventoryItem stack)
         {
             lock (mutex)
             {
-                items.Remove(stack);
+                if (!items.Remove(stack))
+                {
+                    var existing = items.FirstOrDefault(x => x.Id == stack.Id);
+                    if (existing != null)
+                    {
+                        return items.Remove(existing);
+                    }
+
+                    return false;
+                }
+
+                return true;
             }
         }
 
-        public void RemoveStack(Guid inventoryItemId)
+        public bool RemoveStack(Guid inventoryItemId)
         {
             lock (mutex)
             {
                 var stack = items.FirstOrDefault(x => x.Id == inventoryItemId);
                 if (stack == null)
                 {
-                    return;
+                    return false;
                 }
-                RemoveStack(stack);
+                return RemoveStack(stack);
             }
         }
-        public void UnequipAllItems()
+
+        /// <summary>
+        /// Unequip all equipped items except for the excluded item categories.
+        /// </summary>
+        /// <param name="excluded"></param>
+        public void UnequipAllItems(params ItemCategory[] excluded)
         {
             lock (mutex)
             {
+                var hasFilter = excluded != null && excluded.Length > 0;
+                var filter = new HashSet<int>();
+                if (hasFilter) excluded.ForEach(x => filter.Add((int)x));
                 var equippedItems = items.AsList(x => x.Equipped);
                 foreach (var equippedItem in equippedItems)
                 {
+                    if (hasFilter)
+                    {
+                        var eqItem = gameData.GetItem(equippedItem.ItemId);
+                        if (eqItem != null && filter.Contains(eqItem.Category))
+                        {
+                            continue;
+                        }
+                    }
                     UnequipItem(equippedItem);
                 }
             }
@@ -1431,11 +1601,16 @@ namespace RavenNest.BusinessLogic.Game
             if (item == null)
                 return false;
 
-            return item.Category != RavenNest.Models.ItemCategory.Resource &&
-                   item.Category != RavenNest.Models.ItemCategory.StreamerToken &&
-                   item.Category != RavenNest.Models.ItemCategory.Scroll &&
-                   item.Category != RavenNest.Models.ItemCategory.Potion &&
-                   item.Category != RavenNest.Models.ItemCategory.Food &&
+            if (item.Category == RavenNest.Models.ItemCategory.Resource ||
+                   item.Category == RavenNest.Models.ItemCategory.StreamerToken ||
+                   item.Category == RavenNest.Models.ItemCategory.Scroll ||
+                   item.Category == RavenNest.Models.ItemCategory.Potion ||
+                   item.Category == RavenNest.Models.ItemCategory.Food ||
+                   item.Category == RavenNest.Models.ItemCategory.LootBox ||
+                   item.Category == RavenNest.Models.ItemCategory.QuestItem)
+                return false;
+
+            return
                    item.RequiredSlayerLevel <= skills.Skills.SlayerLevel &&
                    (item.RequiredMagicLevel <= skills.Skills.MagicLevel || item.RequiredMagicLevel <= skills.Skills.HealingLevel) &&
                    item.RequiredRangedLevel <= skills.Skills.RangedLevel &&
@@ -1450,11 +1625,16 @@ namespace RavenNest.BusinessLogic.Game
             if (item == null)
                 return false;
 
-            return item.Category != (int)ItemCategory.Resource &&
-                   item.Category != (int)ItemCategory.StreamerToken &&
-                   item.Category != (int)ItemCategory.Scroll &&
-                   item.Category != (int)ItemCategory.Food &&
-                   item.Category != (int)ItemCategory.Potion &&
+            if (item.Category == (int)ItemCategory.Resource ||
+                   item.Category == (int)ItemCategory.StreamerToken ||
+                   item.Category == (int)ItemCategory.Scroll ||
+                   item.Category == (int)ItemCategory.Food ||
+                   item.Category == (int)ItemCategory.Potion ||
+                   item.Category == (int)ItemCategory.QuestItem ||
+                   item.Category == (int)ItemCategory.LootBox)
+                return false;
+
+            return
                    item.RequiredSlayerLevel <= skills.SlayerLevel &&
                    (item.RequiredMagicLevel <= skills.MagicLevel || item.RequiredMagicLevel <= skills.HealingLevel) &&
                    item.RequiredRangedLevel <= skills.RangedLevel &&
@@ -1472,9 +1652,56 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int GetItemValue(ReadOnlyInventoryItem i)
+        {
+            var item = i.Item;
+            double eqStats = item.WeaponAim + item.WeaponPower + item.ArmorPower + item.MagicAim + item.MagicPower + item.RangedAim + item.RangedPower;
+
+            // items with enchantments should be valued higher.
+            if (!string.IsNullOrEmpty(i.Enchantment))
+            {
+                var availableAttributes = gameData.GetItemAttributes();
+                var enchantments = i.GetItemEnchantments(availableAttributes);
+                var totalWeaponPower = 0.0;
+                var totalRangedPower = 0.0;
+                var totalMagicPower = 0.0;
+                var totalWeaponAim = 0.0;
+                var totalRangedAim = 0.0;
+                var totalMagicAim = 0.0;
+                var totalArmorPower = 0.0;
+                foreach (var e in enchantments)
+                {
+                    if (e.Name.ToLower().Contains("power"))
+                    {
+                        totalWeaponPower += (item.WeaponPower * e.Value);
+                        totalRangedPower += (item.RangedPower * e.Value);
+                        totalMagicPower += (item.MagicPower + e.Value);
+                    }
+
+                    if (e.Name.ToLower().Contains("aim"))
+                    {
+                        totalWeaponAim += (item.WeaponAim * e.Value);
+                        totalRangedAim += (item.RangedAim * e.Value);
+                        totalMagicAim += (item.MagicAim + e.Value);
+                    }
+
+                    if (e.Name.ToLower().Contains("armor") || e.Name.ToLower().Contains("armour"))
+                    {
+                        totalArmorPower += (item.ArmorPower * e.Value);
+                    }
+                }
+
+                eqStats = totalWeaponAim + totalWeaponPower + totalArmorPower + totalMagicAim + totalMagicPower + totalRangedAim + totalRangedPower;
+            }
+
+            return (int)eqStats;
+        }
+
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static int GetItemValue(Item item)
         {
-            return item.Level + item.WeaponAim + item.WeaponPower + item.ArmorPower + item.MagicAim + item.MagicPower + item.RangedAim + item.RangedPower;
+            return item.WeaponAim + item.WeaponPower + item.ArmorPower + item.MagicAim + item.MagicPower + item.RangedAim + item.RangedPower;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1519,6 +1746,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment);
         }
+
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(ReadOnlyInventoryItem item)
@@ -1596,6 +1824,7 @@ namespace RavenNest.BusinessLogic.Game
             }
             return enchantments;
         }
+
 
         #endregion
     }

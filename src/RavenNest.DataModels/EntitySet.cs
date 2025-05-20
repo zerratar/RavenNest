@@ -20,9 +20,13 @@ namespace RavenNest.DataModels
         public IReadOnlyList<EntityChangeSet> Removed => removedEntities.Values.AsReadOnlyList();
 
         public DateTime LastModified { get; private set; }
+        public readonly string FullName;
+        public readonly string Name;
 
         public EntitySet(bool trackChanges = true)
         {
+            this.FullName = typeof(TModel).FullName;
+            this.Name = typeof(TModel).Name;
             this.trackChanges = trackChanges;
             this.entities = new ConcurrentDictionary<Guid, TModel>();
             this.addedEntities = new ConcurrentDictionary<Guid, EntityChangeSet>();
@@ -32,6 +36,9 @@ namespace RavenNest.DataModels
 
         public EntitySet(IEnumerable<TModel> collection, bool trackChanges = true)
         {
+            this.FullName = typeof(TModel).FullName;
+            this.Name = typeof(TModel).Name;
+
             this.trackChanges = trackChanges;
             this.entities = new ConcurrentDictionary<Guid, TModel>();
             this.addedEntities = new ConcurrentDictionary<Guid, EntityChangeSet>();
@@ -46,6 +53,16 @@ namespace RavenNest.DataModels
                 }
                 entities[entity.Id] = entity;
             }
+        }
+
+        public string GetName()
+        {
+            return Name;
+        }
+
+        public string GetFullName()
+        {
+            return FullName;
         }
 
         // This is okay, its only used for saving backups or restoring from a backup.        

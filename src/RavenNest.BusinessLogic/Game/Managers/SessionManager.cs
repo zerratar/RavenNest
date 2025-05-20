@@ -61,7 +61,7 @@ namespace RavenNest.BusinessLogic.Game
             this.tcpConnectionProvider = tcpConnectionProvider;
         }
 
-        public bool IsExpectedVersion(string clientVersion)
+        public bool IsExpectedVersion(string clientVersion, bool skipVersion = false)
         {
             var game = gameData.Client;
 
@@ -78,14 +78,25 @@ namespace RavenNest.BusinessLogic.Game
                     return false;
                 }
 
+                // if skipUpdate is true, user is attempting to create a new session without enforcing a new version.
+                // this should be allowed as long as the version is not breaking changes.
+
+                if (skipVersion)
+                {
+                    return true;
+                }
+
                 return version >= expectedVersion;
             }
 
             return true;
         }
 
-        public Task<BeginSessionResult> BeginSessionAsync(AuthToken token, string clientVersion, string accessKey, float gameTime)
+        public Task<BeginSessionResult> BeginSessionAsync(AuthToken token, string clientVersion, string accessKey, float gameTime, bool skipUpdate = false)
         {
+            // if skipUpdate is true, user is attempting to create a new session without enforcing a new version.
+            // this should be allowed as long as the version is not breaking changes.
+
             var game = gameData.Client;
             var user = gameData.GetUser(token.UserId);
             if (user == null)
@@ -93,7 +104,7 @@ namespace RavenNest.BusinessLogic.Game
                 return Task.FromResult(BeginSessionResult.UserDoesNotExist);
             }
 
-            if (game.AccessKey != accessKey || !IsExpectedVersion(clientVersion))
+            if (game.AccessKey != accessKey || !IsExpectedVersion(clientVersion, skipUpdate))
             {
                 var invalidAccessKey = BeginSessionResult.InvalidVersion;
                 invalidAccessKey.ExpectedClientVersion = game.ClientVersion;

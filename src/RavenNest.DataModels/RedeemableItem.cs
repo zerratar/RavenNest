@@ -1,13 +1,14 @@
-﻿using System;
+﻿using RavenNest.DataAnnotations;
+using System;
 
 namespace RavenNest.DataModels
 {
-    public class RedeemableItem : Entity<RedeemableItem>
+    public partial class RedeemableItem : Entity<RedeemableItem>
     {
-        private Guid itemId; public Guid ItemId { get => itemId; set => Set(ref itemId, value); }
-        private Guid currencyItemId; public Guid CurrencyItemId { get => currencyItemId; set => Set(ref currencyItemId, value); }
-        private int cost; public int Cost { get => cost; set => Set(ref cost, value); }
-        private int amount; public int Amount { get => amount; set => Set(ref amount, value); }
-        private string availableDateRange; public string AvailableDateRange { get => availableDateRange; set => Set(ref availableDateRange, value); }
+        [PersistentData] private Guid itemId;
+        [PersistentData] private Guid currencyItemId;
+        [PersistentData] private int cost;
+        [PersistentData] private int amount;
+        [PersistentData] private string availableDateRange;
     }
 }

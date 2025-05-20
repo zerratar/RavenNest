@@ -83,5 +83,36 @@ namespace RavenNest.BusinessLogic.Game
             return Math.Round(value, 1).ToString(CultureInfo.InvariantCulture) + postfix[0] + postfix[p0] + q;
         }
 
+        public static string SanitizeUserName(string displayName, string? fallback = null)
+        {
+            if (string.IsNullOrWhiteSpace(displayName))
+                return fallback ?? string.Empty;
+
+            // Remove non-printable and surrogate characters (e.g., emojis)
+            //var sanitized = new string(displayName
+            //    .Where(c => !char.IsControl(c) && !char.IsSurrogate(c))
+            //    .ToArray());
+
+            var sanitized = new string(displayName
+                .Where(c =>
+                    (c >= 'a' && c <= 'z') ||
+                    (c >= 'A' && c <= 'Z') ||
+                    (c >= '0' && c <= '9') ||
+                    c == ' ' || c == '_' || c == '-' || c == '.' || c == ',')
+                .ToArray());
+
+            // Trim whitespace
+            sanitized = sanitized.Trim();
+
+            const int MaxLength = 32;
+            if (sanitized.Length > MaxLength)
+                sanitized = sanitized.Substring(0, MaxLength);
+
+            // If still empty, use fallback
+            if (string.IsNullOrWhiteSpace(sanitized))
+                return fallback ?? string.Empty;
+
+            return sanitized;
+        }
     }
 }

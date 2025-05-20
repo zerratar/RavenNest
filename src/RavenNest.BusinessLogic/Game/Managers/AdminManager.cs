@@ -172,8 +172,16 @@ namespace RavenNest.BusinessLogic.Game
 
             foreach (var character in characters)
             {
+                if (character == null) continue;
                 var user = gameData.GetUser(character.UserId);
+                if (user == null)
+                {
+                    logger.LogError($"Failed to get user for character {character.Name} ({character.Id})");
+                    continue;
+                }
+
                 var userAccess = gameData.GetUserAccess(character.UserId).FirstOrDefault();
+                if (userAccess == null) continue;
                 players.Add(new GameSessionPlayerCache.GameCachePlayerItem
                 {
                     CharacterId = character.Id,
@@ -787,7 +795,7 @@ namespace RavenNest.BusinessLogic.Game
                 foreach (var character in unknownCharacters)
                 {
                     character.UserId = destUser.Id;
-                    character.Name = destUser.DisplayName ?? destUser.UserName;
+                    character.Name = Utility.SanitizeUserName(destUser.DisplayName, destUser.UserName);
                 }
 
                 // fix indices.
