@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace RavenNest.Models
 {
@@ -13,5 +14,23 @@ namespace RavenNest.Models
         public long Wheat { get; set; }
         public long Fish { get; set; }
         public IReadOnlyList<VillageHouseInfo> Houses { get; set; }
+    }
+
+    public class PlayerLogRequest
+    {
+        public Guid RequestId { get; set; }
+        public PlayerLogRequestType Type { get; set; }
+        public string LogFile { get; set; }
+    }
+
+    public class GameStateRequest
+    {
+        public Guid RequestId { get; set; }
+    }
+
+    public enum PlayerLogRequestType
+    {
+        Current,
+        File
     }
 }

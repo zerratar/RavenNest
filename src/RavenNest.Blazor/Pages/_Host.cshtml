@@ -42,6 +42,15 @@
     <script src="https://embed.twitch.tv/embed/v1.js"></script>
     <script src="js/draggable.js"></script>
     <script>
+      
+        window.downloadFileFromBytes = (fileName, byteBase64) => {
+          const link = document.createElement('a');
+          link.download = fileName;
+          link.href = "data:application/octet-stream;base64," + byteBase64;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        };
 
         window.navigateTo = (url) => {
           window.location.assign(url);

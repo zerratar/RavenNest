@@ -187,7 +187,7 @@ namespace RavenNest.BusinessLogic.Net
             if (!TryDeserializeTypedPacket(data, out var envelope))
             {
                 // handle backward compatibility
-                if (TryDeserializePacket<GameStateRequest>(data, out var gameState) && gameState.Dungeon != null)
+                if (TryDeserializePacket<RavenNest.Models.TcpApi.GameStateRequest>(data, out var gameState) && gameState.Dungeon != null)
                 {
                     envelope = new TypedPacket
                     {
@@ -336,7 +336,7 @@ namespace RavenNest.BusinessLogic.Net
                                 break;
 
                             case TcpMessageType.GameStateRequest:
-                                ProcessGameStateRequest(connectionId, token, packet.Deserialize<GameStateRequest>());
+                                ProcessGameStateRequest(connectionId, token, packet.Deserialize<RavenNest.Models.TcpApi.GameStateRequest>());
                                 break;
 
                             default:
@@ -378,7 +378,7 @@ namespace RavenNest.BusinessLogic.Net
             }
         }
 
-        private void ProcessGameStateRequest(int connectionId, SessionToken token, GameStateRequest gameStateReq)
+        private void ProcessGameStateRequest(int connectionId, SessionToken token, RavenNest.Models.TcpApi.GameStateRequest gameStateReq)
         {
             try
             {

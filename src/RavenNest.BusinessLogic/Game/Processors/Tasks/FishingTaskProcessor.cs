@@ -27,8 +27,16 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 if (skills == null)
                     return;
 
+                if (!TryGetIsland(state.Island, out var island))
+                {
+                    // island not found, this should not happen.
+                    var sessionState = gameData.GetSessionState(session.Id);
+                    logger.LogError($"[{sessionState?.ClientVersion}] <Fishing> Island not found: '{state.Island}' for user {user.UserName} ({user.Id}) in session {session.Id}.");
+                    return;
+                }
+
                 var level = skills.FishingLevel + inventory.GetFishingBonus();
-                if (!TryGetIsland(state.Island, out var island) || islandLevelRequirements[island][RavenNest.Models.Skill.Fishing] > level)
+                if (islandLevelRequirements[island][RavenNest.Models.Skill.Fishing] > level)
                     return;
 
                 var villageResources = GetVillageResources(gameData, session);

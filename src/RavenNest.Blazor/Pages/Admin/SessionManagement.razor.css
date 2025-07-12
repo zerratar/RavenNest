@@ -63,3 +63,32 @@ input.search-input {
     line-height: 17px;
     margin: 5px;
 }
+
+.processing-status {
+    color: orange;
+    margin-left: 10px;
+    font-style: italic;
+    font-size: 0.95em;
+}
+
+.processing-status.error {
+    color: #d9534f;
+}
+
+.spinner {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    margin-left: 5px;
+    border: 2px solid #ccc;
+    border-top: 2px solid #333;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}

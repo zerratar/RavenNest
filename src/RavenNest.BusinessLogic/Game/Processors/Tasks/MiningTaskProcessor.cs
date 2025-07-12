@@ -28,8 +28,19 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     return;
 
                 var level = skills.MiningLevel + inventory.GetMiningBonus();
-                if (!TryGetIsland(state.Island, out var island) || islandLevelRequirements[island][RavenNest.Models.Skill.Mining] > level)
+                if (!TryGetIsland(state.Island, out var island))
+                {
+                    // island not found, this should not happen.
+                    var sessionState = gameData.GetSessionState(session.Id);
+                    logger.LogError($"[{sessionState?.ClientVersion}] <Mining> Island not found: '{state.Island}' for user {user.UserName} ({user.Id}) in session {session.Id}.");
                     return;
+                }
+
+                if (islandLevelRequirements[island][RavenNest.Models.Skill.Mining] > level)
+                {
+                    // mining level requirement not met for gaining resources.
+                    return;
+                }
 
                 session.Updated = DateTime.UtcNow;
                 var villageResources = GetVillageResources(gameData, session);
@@ -37,7 +48,6 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 {
                     ++villageResources.Ore;
                 }
-
 
                 Drops.TryDropItem(this, logger, gameData, inventory, session, character, level, state.TaskArgument);
             });

@@ -59,5 +59,15 @@
         ///     Used for syncing one or more inventory items.
         /// </summary>
         ItemSync = 44,
+
+        /// <summary>
+        ///     Server requesting a certain log file to be sent from the client.
+        /// </summary>
+        PlayerLogRequest = 45,
+
+        /// <summary>
+        ///     Server requesting the current player state to be sent from the client.  
+        /// </summary>
+        GameStateRequest = 46,
     }
 }

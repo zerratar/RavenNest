@@ -54,7 +54,7 @@ namespace DeltaServerTest
             }
         }
 
-        public void OnGameState(SessionToken session, GameStateRequest state)
+        public void OnGameState(SessionToken session, RavenNest.BusinessLogic.Net.DeltaTcpLib.GameStateRequest state)
         {
             logger($"Session ID: {session.SessionId}");
             logger($"Players Joined: {state.PlayerCount}");

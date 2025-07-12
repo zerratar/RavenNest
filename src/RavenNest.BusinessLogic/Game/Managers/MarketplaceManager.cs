@@ -409,6 +409,8 @@ namespace RavenNest.BusinessLogic.Game
                 transmogrificationId: marketItem.TransmogrificationId,
                 flags: marketItem.Flags);
 
+            var pricerPerItem = (totalCost / buyAmount);
+
             gameData.Add(
                 new MarketItemTransaction
                 {
@@ -417,10 +419,30 @@ namespace RavenNest.BusinessLogic.Game
                     BuyerCharacterId = character.Id,
                     SellerCharacterId = sellerCharacter.Id,
                     ItemId = itemId,
-                    PricePerItem = (totalCost / buyAmount),
+                    PricePerItem = pricerPerItem,
                     TotalPrice = totalCost,
                     Created = DateTime.UtcNow
                 });
+
+            gameData.Add(new UserNotification
+            {
+                Id = Guid.NewGuid(),
+                Title = $"You bought {buyAmount}x {marketItem.Name} for {totalCost} coins",
+                Description = $"You bought {buyAmount}x {marketItem.Name} from {sellerCharacter.Name} for {totalCost} coins.",
+                UserId = character.UserId,
+                RedirectUrl = "/characters",
+                Time = DateTime.UtcNow
+            });
+
+            gameData.Add(new UserNotification
+            {
+                Id = Guid.NewGuid(),
+                Title = $"{character.Name} bought {buyAmount}x {marketItem.Name} for {totalCost} coins",
+                Description = $"{character.Name} bought {buyAmount}x {marketItem.Name} from you for {totalCost} coins.",
+                UserId = sellerCharacter.UserId,
+                RedirectUrl = "/characters",
+                Time = DateTime.UtcNow
+            });
 
             var model = new ItemTradeUpdate
             {

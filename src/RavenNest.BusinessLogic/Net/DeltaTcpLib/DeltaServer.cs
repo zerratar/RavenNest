@@ -3,9 +3,7 @@
 // A reusable .NET Standard library for delta-based TCP messaging
 // -----------------------------------------------------------------------------
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using RavenNest.BusinessLogic.Data;
-using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
 using RavenNest.Models.TcpApi;
 using System;
@@ -153,9 +151,48 @@ namespace RavenNest.BusinessLogic.Net.DeltaTcpLib
                         }
                         else if (_sessions.TryGetValue(client, out var session))
                         {
-                            if (type == 2) ParseExperience(span, ref pos, session);
-                            else if (type == 3) ParsePlayerState(span, ref pos, session);
-                            else if (type == 4) ParseGameState(span, ref pos, session);
+                            if (type == 2)
+                            {
+                                try
+                                {
+                                    var list = ParseExperience(span, ref pos);
+                                    if (list.Count == 0) continue; // no updates
+                                    _handler.OnExperienceDelta(session, list);
+                                }
+                                catch (Exception exc)
+                                {
+                                    logger?.LogError($"Failed to parse experience update from client ({session.UserName}): " + exc);
+                                    break;
+                                }
+                            }
+                            else if (type == 3)
+                            {
+                                try
+                                {
+                                    var list = ParsePlayerState(span, ref pos, session.ClientVersion);
+                                    if (list.Count == 0) continue; // no updates
+                                    _handler.OnPlayerStateDelta(session, list);
+                                }
+                                catch (Exception exc)
+                                {
+                                    logger?.LogError($"Failed to parse player state update from client ({session.UserName}): " + exc);
+                                    break;
+                                }
+                            }
+                            else if (type == 4)
+                            {
+                                try
+                                {
+                                    var gs = ParseGameState(span, ref pos);
+                                    if (gs == null) continue; // no updates
+                                    _handler.OnGameState(session, gs);
+                                }
+                                catch (Exception exc)
+                                {
+                                    logger?.LogError($"Failed to parse game state update from client ({session.UserName}): " + exc);
+                                    break;
+                                }
+                            }
                         }
                     }
                     finally { ArrayPool<byte>.Shared.Return(buf); }
@@ -165,94 +202,70 @@ namespace RavenNest.BusinessLogic.Net.DeltaTcpLib
             finally { client.Close(); }
         }
 
-        private void ParseExperience(ReadOnlySpan<byte> span, ref int pos, SessionToken session)
+        public static List<DeltaExperienceUpdate> ParseExperience(ReadOnlySpan<byte> span, ref int pos)
         {
-            try
+            int cnt = (int)span.ReadVarUInt(ref pos);
+            var list = new List<DeltaExperienceUpdate>(cnt);
+            for (int i = 0; i < cnt; i++)
             {
-                int cnt = (int)span.ReadVarUInt(ref pos);
-                var list = new List<DeltaExperienceUpdate>(cnt);
-                for (int i = 0; i < cnt; i++)
-                {
-                    var cid = span.ReadGuid(ref pos);
-                    var mask = span.ReadUInt32BE(ref pos);
-                    int cc = (int)span.ReadVarUInt(ref pos);
-                    var arr = new SkillDelta[cc];
-                    for (int j = 0; j < cc; j++)
-                        arr[j] = new SkillDelta
-                        {
-                            Index = span.ReadByte(ref pos),
-                            Experience = (long)span.ReadVarUInt(ref pos),
-                            Level = (short)span.ReadVarUInt(ref pos)
-                        };
-                    list.Add(new DeltaExperienceUpdate { CharacterId = cid, DirtyMask = mask, Changes = arr });
-                }
-                _handler.OnExperienceDelta(session, list);
+                var cid = span.ReadGuid(ref pos);
+                var mask = span.ReadUInt32BE(ref pos);
+                int cc = (int)span.ReadVarUInt(ref pos);
+                var arr = new SkillDelta[cc];
+                for (int j = 0; j < cc; j++)
+                    arr[j] = new SkillDelta
+                    {
+                        Index = span.ReadByte(ref pos),
+                        Experience = (long)span.ReadVarUInt(ref pos),
+                        Level = (short)span.ReadVarUInt(ref pos)
+                    };
+                list.Add(new DeltaExperienceUpdate { CharacterId = cid, DirtyMask = mask, Changes = arr });
             }
-            catch (Exception exc)
-            {
-                logger?.LogError($"Failed to parse experience update from client ({session.UserName}): " + exc);
-            }
+            return list;
         }
 
 
-        private void ParsePlayerState(ReadOnlySpan<byte> span, ref int pos, SessionToken session)
+        public static List<CharacterStateDelta> ParsePlayerState(ReadOnlySpan<byte> span, ref int pos, string? clientVersion = "")
         {
-            try
+            int cnt = (int)span.ReadVarUInt(ref pos);
+            var list = new List<CharacterStateDelta>(cnt);
+            for (int i = 0; i < cnt; i++)
             {
-                int cnt = (int)span.ReadVarUInt(ref pos);
-                var list = new List<CharacterStateDelta>(cnt);
-                for (int i = 0; i < cnt; i++)
+                // Read character ID (always present)
+                var characterId = span.ReadGuid(ref pos);
+
+                // Read the dirty mask
+                uint dirtyMask = span.ReadUInt32BE(ref pos);
+
+                // Initialize delta with default values
+                var d = new CharacterStateDelta
                 {
-                    try
+                    CharacterId = characterId,
+                    DirtyMask = dirtyMask
+                };
+
+                if (clientVersion.Contains("9.4.0"))
+                {
+                    if (!ReadPlayerStateV940(ref d, span, ref pos, dirtyMask, characterId))
                     {
-                        // Read character ID (always present)
-                        var characterId = span.ReadGuid(ref pos);
-
-                        // Read the dirty mask
-                        uint dirtyMask = span.ReadUInt32BE(ref pos);
-
-                        // Initialize delta with default values
-                        var d = new CharacterStateDelta
-                        {
-                            CharacterId = characterId,
-                            DirtyMask = dirtyMask
-                        };
-
-                        if (session.ClientVersion.Contains("9.4.0"))
-                        {
-                            if (!ReadPlayerStateV940(ref d, span, ref pos, dirtyMask, session, characterId))
-                            {
-                                break;
-                            }
-                        }
-                        else
-                        {
-                            if (!ReadPlayerState(ref d, span, ref pos, dirtyMask, session, characterId))
-                            {
-                                break;
-                            }
-                        }
-
-                        list.Add(d);
-                    }
-                    catch (Exception exc)
-                    {
-                        logger?.LogError($"Failed to parse player state update from client ({session.UserName}). {i}/{cnt} players processed. Error: " + exc);
                         break;
                     }
                 }
-                if (list.Count > 0)
+                else
                 {
-                    _handler.OnPlayerStateDelta(session, list);
+                    if (!ReadPlayerState(ref d, span, ref pos, dirtyMask, characterId))
+                    {
+                        break;
+                    }
                 }
+
+                list.Add(d);
             }
-            catch (Exception exc)
-            {
-                logger?.LogError($"Failed to parse player state update from client ({session.UserName}): " + exc);
-            }
+            return list;
+
         }
 
-        private bool ReadPlayerState(ref CharacterStateDelta d, ReadOnlySpan<byte> span, ref int pos, uint dirtyMask, SessionToken session, Guid characterId)
+        public static bool ReadPlayerState(ref CharacterStateDelta d, ReadOnlySpan<byte> span, ref int pos, uint dirtyMask, Guid characterId)
         {
             // Read fields that are marked as dirty
             if ((dirtyMask & (uint)CharacterStateFields.Health) != 0)
@@ -352,6 +365,7 @@ namespace RavenNest.BusinessLogic.Net.DeltaTcpLib
             {
                 d.PlatformUserId = span.ReadShortString(ref pos);
                 d.PlatformUserName = span.ReadShortString(ref pos);
+                d.Platform = "twitch";
             }
 
             if (characterId.ToString().StartsWith("000") || (!string.IsNullOrEmpty(d.TaskArgument) && d.TaskArgument.Contains('\0')))
@@ -368,7 +382,7 @@ namespace RavenNest.BusinessLogic.Net.DeltaTcpLib
             return true;
         }
 
-        private bool ReadPlayerStateV940(ref CharacterStateDelta d, ReadOnlySpan<byte> span, ref int pos, uint dirtyMask, SessionToken session, Guid characterId)
+        public static bool ReadPlayerStateV940(ref CharacterStateDelta d, ReadOnlySpan<byte> span, ref int pos, uint dirtyMask, Guid characterId)
         {
 
             // Read fields that are marked as dirty
@@ -465,21 +479,15 @@ namespace RavenNest.BusinessLogic.Net.DeltaTcpLib
                     d.RaidCombatStyle = null;
             }
 
-            try
-            {
-                if ((dirtyMask & (uint)CharacterStateFields.Platform) != 0)
-                    d.Platform = span.ReadString(ref pos);
+            if ((dirtyMask & (uint)CharacterStateFields.Platform) != 0)
+                d.Platform = span.ReadString(ref pos);
 
-                if ((dirtyMask & (uint)CharacterStateFields.PlatformUserId) != 0)
-                    d.PlatformUserId = span.ReadString(ref pos);
+            if ((dirtyMask & (uint)CharacterStateFields.PlatformUserId) != 0)
+                d.PlatformUserId = span.ReadString(ref pos);
 
-                if ((dirtyMask & (uint)CharacterStateFields.PlatformUserName) != 0)
-                    d.PlatformUserName = span.ReadString(ref pos);
-            }
-            catch (Exception ex)
-            {
-                logger?.LogError($"Failed to parse platform data for character {characterId}: {ex}");
-            }
+            if ((dirtyMask & (uint)CharacterStateFields.PlatformUserName) != 0)
+                d.PlatformUserName = span.ReadString(ref pos);
+
             if (characterId.ToString().StartsWith("000") || (!string.IsNullOrEmpty(d.TaskArgument) && d.TaskArgument.Contains('\0')))
             {
                 return false; // broken
@@ -494,7 +502,7 @@ namespace RavenNest.BusinessLogic.Net.DeltaTcpLib
             return true;
         }
 
-        private void ParseGameState(ReadOnlySpan<byte> span, ref int pos, SessionToken session)
+        public static GameStateRequest ParseGameState(ReadOnlySpan<byte> span, ref int pos)
         {
             var gs = new GameStateRequest();
             gs.PlayerCount = (int)span.ReadVarUInt(ref pos);
@@ -550,7 +558,7 @@ namespace RavenNest.BusinessLogic.Net.DeltaTcpLib
 
             gs.Dungeon.NextDungeon = span.ReadDateTime(ref pos);
 
-            _handler.OnGameState(session, gs);
+            return gs;
         }
 
         private int ReceiveExact(Socket s, byte[] buf, int need = 4)

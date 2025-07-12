@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Spectre.Console" Version="0.50.1-preview.0.20" />
+    <PackageReference Include="Spectre.Console.Analyzer" Version="1.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Spectre.Console.Extensions.Progress" Version="1.0.0" />
+    <PackageReference Include="Spectre.Console.Extensions.Table" Version="1.0.0" />
+    <PackageReference Include="Spectre.Console.ImageSharp" Version="0.50.1-preview.0.20" />
+    <PackageReference Include="Spectre.Console.Json" Version="0.50.1-preview.0.20" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\RavenNest.BusinessLogic\RavenNest.BusinessLogic.csproj" />
+    <ProjectReference Include="..\..\RavenNest.DataModels\RavenNest.DataModels.csproj" />
+    <ProjectReference Include="..\..\RavenNest.Models\RavenNest.Models.csproj" />
+  </ItemGroup>
+
+</Project>

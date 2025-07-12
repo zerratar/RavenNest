@@ -5,6 +5,7 @@ using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace RavenNest.Controllers
@@ -46,6 +47,68 @@ namespace RavenNest.Controllers
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
             return gameManager.GetGameInfo(session);
+        }
+
+        [HttpPost("upload-log/{requestId}")]
+        public async Task<IActionResult> UploadLogAsync(Guid requestId)
+        {
+            try
+            {
+                var session = GetSessionToken();
+                if (session == null)
+                {
+                    return Unauthorized("Session is not valid or does not exist.");
+                }
+
+                var user = gameData.GetUser(session.UserId);
+                if (user == null)
+                {
+                    return NotFound("User not found.");
+                }
+
+                using var ms = new MemoryStream();
+                await Request.Body.CopyToAsync(ms);
+                var logContent = ms.ToArray();
+
+                await adminManager.UploadLogAsync(requestId, session.SessionId, user, logContent);
+                return Ok("Log uploaded successfully.");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error uploading log");
+                return StatusCode(500, "Internal server error while uploading log.");
+            }
+        }
+
+        [HttpPost("upload-state/{requestId}")]
+        public async Task<IActionResult> UploadStateAsync(Guid requestId)
+        {
+            try
+            {
+                var session = GetSessionToken();
+                if (session == null)
+                {
+                    return Unauthorized("Session is not valid or does not exist.");
+                }
+
+                var user = gameData.GetUser(session.UserId);
+                if (user == null)
+                {
+                    return NotFound("User not found.");
+                }
+
+                using var ms = new MemoryStream();
+                await Request.Body.CopyToAsync(ms);
+                var logContent = ms.ToArray();
+
+                await adminManager.UploadGameStateAsync(requestId, session.SessionId, user, logContent);
+                return Ok("Game state uploaded successfully.");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error uploading game state");
+                return StatusCode(500, "Internal server error while uploading game state.");
+            }
         }
 
         [HttpGet("exp-multiplier")]

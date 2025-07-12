@@ -52,12 +52,36 @@ namespace RavenNest.Controllers
         [HttpPost("twitch-cheer")]
         public async Task OnUserCheer([FromBody] CheerBitsEvent evt)
         {
+            var receivingUser = evt.Channel;
+            var cheeringUser = evt.UserName;
+            var amount = evt.Bits;
+            var isSubscriber = evt.IsSubscriber;
+            var isModerator = evt.IsModerator;
+
+            logger.LogInformation(amount.ToString() + " bits cheered by " + cheeringUser + " to " + receivingUser);
+
             // TODO!
         }
 
         [HttpPost("twitch-sub")]
         public async Task OnUserSub([FromBody] UserSubscriptionEvent evt)
         {
+            var streamerUser = evt.Channel;
+            var receivingUserId = evt.ReceiverUserId;
+            var giftingUserId = evt.UserId;
+            var giftingUserName = evt.UserName;
+            var totalMonthsSubscribed = evt.Months;
+
+            // if we have a receiver id, then its a gift, otherwise its a normal sub
+            if (string.IsNullOrEmpty(receivingUserId))
+            {
+                logger.LogInformation(giftingUserName + " subscribed to " + streamerUser + ", total months subscribed " + totalMonthsSubscribed);
+            }
+            else
+            {
+                logger.LogInformation(giftingUserName + " gifted a sub to " + receivingUserId + " on " + streamerUser);
+            }
+
             // TODO!
         }
 

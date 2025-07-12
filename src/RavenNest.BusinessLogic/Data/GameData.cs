@@ -3020,6 +3020,17 @@ namespace RavenNest.BusinessLogic.Data
             };
         }
 
+        public GameEvent CreateSessionEvent<T>(RavenNest.Models.GameEventType type, Guid sessionId, T data)
+        {
+            var session = GetSession(sessionId, false);
+            if (session == null)
+            {
+                return null;
+            }
+            return CreateSessionEvent(type, session, data);
+        }
+
+
         public GameEvent CreateSessionEvent<T>(RavenNest.Models.GameEventType type, GameSession session, T data)
         {
             session.Updated = DateTime.UtcNow;

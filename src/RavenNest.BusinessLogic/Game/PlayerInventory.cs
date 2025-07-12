@@ -341,10 +341,20 @@ namespace RavenNest.BusinessLogic.Game
                         if (equipmentSlot != EquipmentSlot.None)
                         {
                             var equippedItem = GetEquippedItem(equipmentSlot);
-
-                            var itemToEquip = itemGroup
-                                .OrderByDescending(x => GetItemValue(x))
-                                .FirstOrDefault(x => GetItemValue(x) > GetItemValue(equippedItem));
+                            ReadOnlyInventoryItem itemToEquip;
+                            if (equippedItem.IsNotNull())
+                            {
+                                var eqValue = GetItemValue(equippedItem);
+                                itemToEquip = itemGroup
+                                    .OrderByDescending(x => GetItemValue(x))
+                                    .FirstOrDefault(x => GetItemValue(x) > eqValue);
+                            }
+                            else
+                            {
+                                itemToEquip = itemGroup
+                                    .OrderByDescending(x => GetItemValue(x))
+                                    .FirstOrDefault();
+                            }
 
                             if (itemToEquip.IsNotNull())
                             {
@@ -367,6 +377,16 @@ namespace RavenNest.BusinessLogic.Game
 
                     }
                 }
+            }
+            catch (Exception exc)
+            {
+                MessageBus.Shared.Send("OnUnhandledException", new UnhandledExceptionMessage
+                {
+                    CharacterId = characterId,
+                    Exception = exc,
+                    Message = "Error while equipping best items",
+                    StackTrace = exc.StackTrace,
+                });
             }
             finally
             {
@@ -1655,6 +1675,16 @@ namespace RavenNest.BusinessLogic.Game
         public int GetItemValue(ReadOnlyInventoryItem i)
         {
             var item = i.Item;
+
+            if (item == null)
+            {
+                item = gameData.GetItem(i.ItemId);
+            }
+            if (item == null)
+            {
+                return 0;
+            }
+
             double eqStats = item.WeaponAim + item.WeaponPower + item.ArmorPower + item.MagicAim + item.MagicPower + item.RangedAim + item.RangedPower;
 
             // items with enchantments should be valued higher.

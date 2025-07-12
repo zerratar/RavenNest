@@ -38,8 +38,21 @@ namespace RavenNest.BusinessLogic
             subscriptions.Add(this.messageBus.Subscribe("OnDeltaServerStatsUpdated", OnDeltaServerStatsUpdated));
             subscriptions.Add(this.messageBus.Subscribe("OnEventServerStatsUpdated", OnEventServerStatsUpdated));
             subscriptions.Add(this.messageBus.Subscribe("OnDataSaved", OnDataSaved));
+            subscriptions.Add(this.messageBus.Subscribe<UnhandledExceptionMessage>("OnUnhandledException", OnUnhandledException));
 
             return Task.CompletedTask;
+        }
+
+        private void OnUnhandledException(UnhandledExceptionMessage message)
+        {
+            if (message.Exception != null)
+            {
+                logger.LogError(message.Message + ": " + message.Exception);
+            }
+            else
+            {
+                logger.LogError(message.Message);
+            }
         }
 
         private void OnEventServerStatsUpdated()

@@ -1,10 +1,15 @@
 ﻿@layout AdminLayout
 @page "/admin/sessions"
 @using RavenNest.BusinessLogic.Extensions
+@using RavenNest.BusinessLogic.Game
+@using RavenNest.BusinessLogic.Messages
+@using RavenNest.Models
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.BusinessLogic.Data.GameData GameData
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject RavenNest.Blazor.Services.SessionService SessionService
+@implements IDisposable
+@inject IJSRuntime JS
 
 @if (isAdmin)
 {
@@ -53,10 +58,46 @@
                         <td>@session.AdminPrivileges</td>
                         <td>@session.ModPrivileges</td>
                         <td>@session.ClientVersion</td>
-                        <td @onclick="()=>ShowPlayerList(session)">@session.Players.Count</td>
+                        <td @onclick="() => ShowPlayerList(session)">@session.Players.Count</td>
                         <td>
-                            <button title="(TEST) Make this user initiate a Raid against our game session" class="inline-button raid" @onclick="(()=> RaidOurSession(session))"><i class="fa-solid fa-people-group"></i> Raid</button>
-                            <button title="(TEST) Make this user initiate a Raid War against our game session" class="inline-button raidwar" @onclick="(()=> RaidWarOurSession(session))"><i class="fa-solid fa-swords"></i> War</button>
+                            @if (GameVersion.IsLessThanOrEquals("0.9.4.2a", session.ClientVersion))
+                            {
+                                var logState = GetDownloadState(DownloadType.Log, session);
+                                <button title="Request player log file"
+                                        class="inline-button"
+                                        @onclick="(() => RequestPlayerLog(session))"
+                                        disabled="@(logState != null && logState.IsProcessing)">
+                                    <i class="fa-regular fa-circle-down"></i> player.log
+                                    @if (logState != null && logState.IsProcessing)
+                                    {
+                                        <span class="spinner"></span>
+                                    }
+                                </button>
+                                @if (logState != null && !string.IsNullOrEmpty(logState.Status))
+                                {
+                                    <span class="processing-status @((logState.Failed ? "error" : ""))">@logState.Status</span>
+                                }
+
+                                var stateDl = GetDownloadState(DownloadType.State, session);
+                                <button title="Request player state file"
+                                        class="inline-button"
+                                        @onclick="(() => RequestPlayerState(session))"
+                                        disabled="@(stateDl != null && stateDl.IsProcessing)">
+                                    <i class="fa-regular fa-circle-down"></i> player.state
+                                    @if (stateDl != null && stateDl.IsProcessing)
+                                    {
+                                        <span class="spinner"></span>
+                                    }
+                                </button>
+                                @if (stateDl != null && !string.IsNullOrEmpty(stateDl.Status))
+                                {
+                                    <span class="processing-status @((stateDl.Failed ? "error" : ""))">@stateDl.Status</span>
+                                }
+
+                            }
+
+                            <button title="(TEST) Make this user initiate a Raid against our game session" class="inline-button raid" @onclick="(() => RaidOurSession(session))"><i class="fa-solid fa-people-group"></i> Raid</button>
+                            <button title="(TEST) Make this user initiate a Raid War against our game session" class="inline-button raidwar" @onclick="(() => RaidWarOurSession(session))"><i class="fa-solid fa-swords"></i> War</button>
                         </td>
                     </tr>
                 }
@@ -122,10 +163,46 @@
     private bool isAdmin;
     private bool playerListVisible;
     private bool loading = false;
+
     private IReadOnlyList<RavenNest.Models.GameSession> gameSessions;
     private DateTime UtcNow = DateTime.UtcNow;
-
+    private IMessageBusSubscription downloadLogHandler, downloadStateHandler;
     private bool activeSessionsOnly = true;
+
+    private Dictionary<string, DownloadState> downloadStates = new();
+
+    private class DownloadState
+    {
+        public bool IsProcessing { get; set; }
+        public bool DownloadReady { get; set; }
+        public string Status { get; set; }
+        public DateTime StartTime { get; set; }
+        public Guid RequestId { get; set; }
+        public bool Failed { get; set; }
+    }
+
+    private enum DownloadType
+    {
+        Log,
+        State
+    }
+
+    private static string GetKey(DownloadType downloadType, GameSession session)
+    {
+        return $"{downloadType.ToString().ToLower()}_{session.Id}";
+    }
+
+    private static string GetKey(DownloadType downloadType, Guid sessionId)
+    {
+        return $"{downloadType.ToString().ToLower()}_{sessionId}";
+    }
+
+    private DownloadState? GetDownloadState(DownloadType downloadType, GameSession session)
+    {
+        var key = GetKey(downloadType, session);
+        downloadStates.TryGetValue(key, out var state);
+        return state;
+    }
 
     protected override void OnInitialized()
     {
@@ -134,14 +211,180 @@
         if (isAdmin)
         {
             activeSessionsOnly = true;
+            if (downloadLogHandler != null)
+            {
+                downloadLogHandler.Unsubscribe();
+            }
+
+            if (downloadStateHandler != null)
+            {
+                downloadStateHandler.Unsubscribe();
+            }
+
+            downloadLogHandler = MessageBus.Shared.Subscribe<FileUploadedMessage>("LogUploaded", OnLogFileAvailable);
+            downloadStateHandler = MessageBus.Shared.Subscribe<FileUploadedMessage>("StateUploaded", OnStateFileAvailable);
+
             LoadGameSessionsAsync();
         }
+    }
+
+    private async void OnStateFileAvailable(FileUploadedMessage message)
+    {
+        if (message == null || message.SessionId == Guid.Empty)
+            return;
+        var key = GetKey(DownloadType.State, message.SessionId);
+        if (!downloadStates.TryGetValue(key, out var state))
+            return;
+        state.Status = "";//"Downloading state file...";
+        var stateBytes = await System.IO.File.ReadAllBytesAsync(message.FilePath);
+        if (stateBytes != null)
+        {
+            var base64 = Convert.ToBase64String(stateBytes);
+            await JS.InvokeVoidAsync("downloadFileFromBytes", $"playerstate_{message.SessionId}.state", base64);
+            state.Status = "";//"Download started.";
+            state.DownloadReady = true;
+        }
+        else
+        {
+            state.Status = "Failed to download state file";
+            state.Failed = true;
+        }
+        state.IsProcessing = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+
+    private async void OnLogFileAvailable(FileUploadedMessage message)
+    {
+        if (message == null || message.SessionId == Guid.Empty)
+            return;
+
+        var key = GetKey(DownloadType.Log, message.SessionId);
+        if (!downloadStates.TryGetValue(key, out var state))
+            return;
+
+        state.Status = "";//"Downloading log file...";
+        var logBytes = await System.IO.File.ReadAllBytesAsync(message.FilePath);
+        if (logBytes != null)
+        {
+            var base64 = Convert.ToBase64String(logBytes);
+            await JS.InvokeVoidAsync("downloadFileFromBytes", $"playerlog_{message.SessionId}.log", base64);
+
+            state.Status = "";//"Download started.";
+            state.DownloadReady = true;
+        }
+        else
+        {
+            state.Status = "Failed to download log file";
+            state.Failed = true;
+        }
+        state.IsProcessing = false;
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private async void ActiveSessionsOnlyChanged(object value)
     {
         activeSessionsOnly = (bool)value;
         await LoadGameSessionsAsync();
+    }
+
+    private void RequestPlayerState(RavenNest.Models.GameSession session)
+    {
+        var key = GetKey(DownloadType.State, session);
+        if (downloadStates.TryGetValue(key, out var state))
+        {
+            if (state.IsProcessing && (DateTime.UtcNow - state.StartTime).TotalSeconds < 10)
+            {
+                // Already processing, block
+                return;
+            }
+        }
+        // Create new or reset state
+        var reqId = Guid.NewGuid();
+        downloadStates[key] = new DownloadState
+        {
+            IsProcessing = true,
+            DownloadReady = false,
+            Failed = false,
+            Status = "Awaiting state file from Client...",
+            StartTime = DateTime.UtcNow,
+            RequestId = reqId
+        };
+        StateHasChanged();
+        var evt = GameData.CreateSessionEvent(Models.GameEventType.GameStateRequest, session.Id,
+            new GameStateRequest
+            {
+                RequestId = reqId
+            });
+        GameData.SendGameEventImmediately(evt);
+        // Timeout unblocks after 10s if not finished
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(10000);
+            if (downloadStates.TryGetValue(key, out var s)
+                && s.IsProcessing
+                && !s.DownloadReady
+                && (DateTime.UtcNow - s.StartTime).TotalSeconds >= 10)
+            {
+                s.Status = "Timeout – try again.";
+                s.IsProcessing = false;
+                s.Failed = true;
+                await InvokeAsync(StateHasChanged);
+            }
+        });
+    }
+
+    private void RequestPlayerLog(RavenNest.Models.GameSession session)
+    {
+        var key = GetKey(DownloadType.Log, session);
+        if (downloadStates.TryGetValue(key, out var state))
+        {
+            if (state.IsProcessing && (DateTime.UtcNow - state.StartTime).TotalSeconds < 10)
+            {
+                // Already processing, block
+                return;
+            }
+        }
+
+        // Create new or reset state
+        var reqId = Guid.NewGuid();
+        downloadStates[key] = new DownloadState
+        {
+            IsProcessing = true,
+            DownloadReady = false,
+            Failed = false,
+            Status = "Awaiting log file from Client...",
+            StartTime = DateTime.UtcNow,
+            RequestId = reqId
+        };
+        StateHasChanged();
+
+        var evt = GameData.CreateSessionEvent(Models.GameEventType.PlayerLogRequest, session.Id,
+            new PlayerLogRequest
+            {
+                RequestId = reqId,
+                LogFile = "ravenfall.log",
+                Type = PlayerLogRequestType.Current
+            });
+
+        GameData.SendGameEventImmediately(evt);
+
+        // Timeout unblocks after 10s if not finished
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(10000);
+            if (downloadStates.TryGetValue(key, out var s)
+                && s.IsProcessing
+                && !s.DownloadReady
+                && (DateTime.UtcNow - s.StartTime).TotalSeconds >= 10)
+            {
+                s.Status = "Timeout – try again.";
+                s.IsProcessing = false;
+                s.Failed = true;
+                await InvokeAsync(StateHasChanged);
+            }
+        });
     }
 
 
@@ -231,6 +474,20 @@
         }
 
         return "Ended";
+    }
+
+    public void Dispose()
+    {
+        if (downloadLogHandler != null)
+        {
+            MessageBus.Shared.Unsubscribe(downloadLogHandler);
+        }
+
+        if (downloadStateHandler != null)
+        {
+            MessageBus.Shared.Unsubscribe(downloadStateHandler);
+        }
+
     }
 
     private async Task LoadGameSessionsAsync()

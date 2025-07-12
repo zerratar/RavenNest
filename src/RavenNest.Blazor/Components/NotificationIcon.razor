@@ -29,16 +29,26 @@
             @foreach (var n in notifications)
             {
                 <li class="notification-item">
-                    <div class="--icon @(!n.HasRead ? "new" : "")" @onclick="(()=>FollowNavigation(n))">
+                    <div class="--icon @(!n.HasRead ? "new" : "")" @onclick="(() => FollowNavigation(n))">
                         @(GetNotificationIcon(n))
                     </div>
-                    <div class="--content" @onclick="(()=>FollowNavigation(n))">
+                    <div class="--content" @onclick="(() => FollowNavigation(n))">
                         <div class="notification-title">@n.Title</div>
                         <div class="notification-date">@FormatDate(n.Time)</div>
                     </div>
 
                     <div class="--status">
-                        <button class="remove" @onclick="(async ()=> await DeleteNotificationAsync(n))"><span class="fas fa-times"></span></button>
+                        <button class="remove" @onclick="(async () => await DeleteNotificationAsync(n))"><span class="fas fa-times"></span></button>
+                    </div>
+                </li>
+            }
+
+            @if (hasMore)
+            {
+                <!-- show one for reading all -->
+                <li class="notification-item more">
+                    <div class="--content">
+                        <button class="read-all" @onclick="GotoNotificationsPage">See all notifications (@totalCount)</button>
                     </div>
                 </li>
             }
@@ -50,6 +60,8 @@
     [Parameter]
     public Guid UserId { get; set; }
 
+    private bool hasMore = false;
+    private int totalCount;
     public bool ListVisible;
     public int UnreadMessageCount = 0;
 
@@ -76,9 +88,17 @@
         }
     }
 
+    private void GotoNotificationsPage()
+    {
+        ListVisible = false;
+        NavigationManager.NavigateTo("/notifications");
+    }
+
     private async Task DeleteNotificationAsync(UserNotification n)
     {
         var data = await NotificationService.DeleteNotificationAsync(UserId, n.Id);
+        hasMore = data.Count > 5;
+        totalCount = data.Count;
         notifications = data.Take(5).ToList();
         await InvokeAsync(this.StateHasChanged);
     }
@@ -116,6 +136,8 @@
     private async Task ReloadNotifications()
     {
         var data = await NotificationService.GetNotificationsAsync(UserId);
+        hasMore = data.Count > 5;
+        totalCount = data.Count;
         notifications = data.Take(5).ToList();
         var newCount = data.Count(x => !x.HasRead);
         var newMessages = UnreadMessageCount != newCount;

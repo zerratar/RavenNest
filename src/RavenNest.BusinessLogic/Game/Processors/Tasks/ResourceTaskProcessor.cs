@@ -92,8 +92,12 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             {
                 return false;
             }
-
-            return Enum.TryParse<Island>(islandName, out island);
+            Enum.TryParse<Island>(islandName, out island);
+            if (island == Island.None || island == Island.Any || island == Island.Ferry)
+            {
+                return false;
+            }
+            return true;
         }
 
         protected void UpdateResourceGain(

@@ -3266,8 +3266,9 @@ namespace RavenNest.BusinessLogic.Game
 
                             var characterSessionOwner = character.UserIdLock != null ? gameData.GetUser(character.UserIdLock.GetValueOrDefault()) : null;
                             var partOfSession = characterSessionOwner != null ? characterSessionOwner.UserName : "";
-
+#if DEBUG
                             logger.LogError(character.Name + " is getting state updates from '" + sessionOwner.UserName + "' but is actually part of '" + partOfSession + "'. Update has been ignored.");
+#endif
                             SendRemovePlayerFromSession(character, gameSession, "Character is part of another session.");
                             continue;
                             // send remove from this session.
@@ -3430,7 +3431,9 @@ namespace RavenNest.BusinessLogic.Game
                         var partOfSession = characterSessionOwner != null ? characterSessionOwner.UserName : "";
                         // check if we had a recent update from the other session owner. If so, we should remove it from this session, otherwise we will keep the player in this session.
                         //logger.LogError("User session lock mismatch. Character: " + character.Name + " Session: " + sessionOwner.UserName + " UserIdLock: " + partOfSession);
+#if DEBUG
                         logger.LogError(character.Name + " is getting exp updates from '" + sessionOwner.UserName + "' but is actually part of '" + partOfSession + "'. Update has been ignored.");
+#endif
                         SendRemovePlayerFromSession(character, gameSession, "Character is part of another session.");
                         continue;
                     }
@@ -4476,13 +4479,12 @@ namespace RavenNest.BusinessLogic.Game
 
                 var currentSessionOwner = character.UserIdLock != null ? gameData.GetUser(character.UserIdLock.Value) : null;
 
-#if DEBUG
-                var logMsg = currentSessionOwner != null
-                    ? $"Sent Remove Player {character.Name} to {targetSessionOwner.UserName}. Player is part of {currentSessionOwner.UserName}'s session. " + reason
-                    : $"Sent Remove Player {character.Name} to {targetSessionOwner.UserName}. Player is not part of any sessions.";
-
-                logger.LogError(logMsg);
-#endif
+                //#if DEBUG
+                //                var logMsg = currentSessionOwner != null
+                //                    ? $"Sent Remove Player {character.Name} to {targetSessionOwner.UserName}. Player is part of {currentSessionOwner.UserName}'s session. " + reason
+                //                    : $"Sent Remove Player {character.Name} to {targetSessionOwner.UserName}. Player is not part of any sessions.";
+                //                logger.LogError(logMsg);
+                //#endif
 
                 var clientMessage = currentSessionOwner != null
                     ? $"{character.Name} joined {currentSessionOwner.UserName}'s session."
@@ -4998,20 +5000,7 @@ namespace RavenNest.BusinessLogic.Game
             }
 
 
-            state.AutoJoinRaidCounter = update.AutoJoinRaidCounter;
-
             var coinCost = 0L;
-            if (update.AutoJoinRaidCount > state.AutoJoinRaidCount)
-            {
-                var delta = (update.AutoJoinRaidCount - state.AutoJoinRaidCount);
-                coinCost += delta * AutoJoinRaidCost;
-            }
-
-            if (update.AutoJoinDungeonCount > state.AutoJoinDungeonCount)
-            {
-                var delta = (update.AutoJoinDungeonCount - state.AutoJoinDungeonCount);
-                coinCost += delta * AutoJoinDungeonCost;
-            }
 
             //if (update.AutoRestCount > state.IsAutoResting)
             //{
@@ -5019,16 +5008,30 @@ namespace RavenNest.BusinessLogic.Game
             //    coinCost += delta * AutoRestCost;
             //}
 
-            if (update.HasValue(CharacterStateFields.AutoJoinDungeon))
-            {
-                state.AutoJoinDungeonCount = update.AutoJoinDungeonCount;
-                state.AutoJoinDungeonCounter = update.AutoJoinDungeonCounter;
-            }
-
             if (update.HasValue(CharacterStateFields.AutoJoinRaid))
             {
-                state.AutoJoinRaidCount = update.AutoJoinRaidCount;
                 state.AutoJoinRaidCounter = update.AutoJoinRaidCounter;
+                if (update.AutoJoinRaidCount > state.AutoJoinRaidCount)
+                {
+                    var delta = (update.AutoJoinRaidCount - state.AutoJoinRaidCount);
+                    coinCost += delta * AutoJoinRaidCost;
+                }
+
+                state.AutoJoinDungeonCount = update.AutoJoinDungeonCount;
+            }
+
+
+
+            if (update.HasValue(CharacterStateFields.AutoJoinDungeon))
+            {
+                state.AutoJoinDungeonCounter = update.AutoJoinDungeonCounter;
+                if (update.AutoJoinDungeonCount > state.AutoJoinDungeonCount)
+                {
+                    var delta = (update.AutoJoinDungeonCount - state.AutoJoinDungeonCount);
+                    coinCost += delta * AutoJoinDungeonCost;
+                }
+                state.AutoJoinDungeonCount = update.AutoJoinDungeonCount;
+
             }
 
             if (update.HasValue(CharacterStateFields.IsAutoResting))

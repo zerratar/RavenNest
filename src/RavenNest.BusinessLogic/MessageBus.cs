@@ -32,6 +32,14 @@ namespace RavenNest.BusinessLogic
         void DelayedSend<T>(string key, T message, int delayMilliseconds, CancellationToken token);
     }
 
+    public class UnhandledExceptionMessage
+    {
+        public Exception Exception { get; set; }
+        public string Message { get; set; }
+        public string StackTrace { get; set; }
+        public Guid? CharacterId { get; set; }
+    }
+
     public class MessageBus : IMessageBus
     {
         private readonly ConcurrentDictionary<string, List<MessageBusSubscription>> subscriptions = new ConcurrentDictionary<string, List<MessageBusSubscription>>();

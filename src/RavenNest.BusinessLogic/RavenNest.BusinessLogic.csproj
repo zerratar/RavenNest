@@ -16,6 +16,11 @@
 	<PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
 	<PackageReference Include="TwitchLib.Api" Version="3.10.0-preview-e47ba7f" />
 	<PackageReference Include="TwitchLib.Api.Helix" Version="3.10.0-preview-e47ba7f" />
+	<PackageReference Include="ZLinq" Version="1.4.6" />
+	<PackageReference Include="ZLinq.DropInGenerator" Version="1.4.6">
+	  <PrivateAssets>all</PrivateAssets>
+	  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+	</PackageReference>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\RavenNest.DataAnnotations\RavenNest.DataAnnotations.csproj" />

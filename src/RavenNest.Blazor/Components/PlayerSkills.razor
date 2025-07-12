@@ -55,6 +55,13 @@
 
                         <span>&nbsp;</span>
                     }
+
+                    @if (Player.State.ExpPerHour > 0)
+                    {
+                        <span>gaining&nbsp;</span>
+                        <b title="@Player.State.ExpPerHour">@Utility.FormatExp(Player.State.ExpPerHour??0)</b>
+                        <span>exp/hour&nbsp;</span>
+                    }
                 }
                 else
                 {

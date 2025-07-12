@@ -40,6 +40,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RavenNest.DataModels.Genera
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RavenNest.DataAnnotations", "src\RavenNest.DataAnnotations\RavenNest.DataAnnotations.csproj", "{AEDF85B4-0CB4-4C67-B6CC-38A3CFACF3A1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameStateValidator", "src\tools\GameStateValidator\GameStateValidator.csproj", "{4B651B72-B661-4FE8-9C03-8052E6A1393A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -98,6 +100,10 @@ Global
 		{AEDF85B4-0CB4-4C67-B6CC-38A3CFACF3A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AEDF85B4-0CB4-4C67-B6CC-38A3CFACF3A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AEDF85B4-0CB4-4C67-B6CC-38A3CFACF3A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4B651B72-B661-4FE8-9C03-8052E6A1393A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B651B72-B661-4FE8-9C03-8052E6A1393A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B651B72-B661-4FE8-9C03-8052E6A1393A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B651B72-B661-4FE8-9C03-8052E6A1393A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -113,6 +119,7 @@ Global
 		{A2517929-EA6A-4B18-AA53-9C5F5DA49B63} = {4B6B7254-0011-4E8D-B51D-24AE557028D2}
 		{046714CE-1C01-4C54-AB91-BD376EF1618F} = {FF1E1C79-7C4E-40D4-AB60-A79AB55ABAF1}
 		{AEDF85B4-0CB4-4C67-B6CC-38A3CFACF3A1} = {FF1E1C79-7C4E-40D4-AB60-A79AB55ABAF1}
+		{4B651B72-B661-4FE8-9C03-8052E6A1393A} = {4B6B7254-0011-4E8D-B51D-24AE557028D2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {1D18B908-6D56-49FE-B09D-0DE940AE5265}

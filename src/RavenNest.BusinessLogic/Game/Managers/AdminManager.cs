@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using InventoryItem = RavenNest.DataModels.InventoryItem;
+using RavenNest.BusinessLogic.Messages;
 
 namespace RavenNest.BusinessLogic.Game
 {
@@ -812,6 +813,73 @@ namespace RavenNest.BusinessLogic.Game
             {
                 logger.LogError($"Error merging unknown user ({srcUnknownUserName}) to ({destTwitchUserName}): " + exc);
                 return false;
+            }
+        }
+
+        public async Task UploadGameStateAsync(Guid requestId, Guid sessionId, User user, byte[] stateBlob)
+        {
+            if (stateBlob == null || stateBlob.Length == 0)
+            {
+                logger.LogWarning($"UploadGameStateAsync: No content to upload for request {requestId} by user {user?.UserName}");
+                return;
+            }
+            try
+            {
+                var fileName = $"{DateTime.UtcNow:yyyyMMdd_HHmmss}_{user.UserName}.state";
+                if (!System.IO.Directory.Exists(FolderPaths.UserStatesPath))
+                {
+                    System.IO.Directory.CreateDirectory(FolderPaths.UserStatesPath);
+                }
+                var filePath = System.IO.Path.Combine(FolderPaths.UserStatesPath, fileName);
+                await System.IO.File.WriteAllBytesAsync(filePath, stateBlob);
+                logger.LogInformation($"Game State uploaded successfully for request {requestId} by user {user?.UserName} to {filePath}");
+                MessageBus.Shared.Send("StateUploaded", new FileUploadedMessage
+                {
+                    RequestId = requestId,
+                    UserId = user.Id,
+                    SessionId = sessionId,
+                    UserName = user.UserName,
+                    FileName = fileName,
+                    FilePath = filePath
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, $"Failed to upload game state for request {requestId} by user {user?.UserName}");
+            }
+        }
+
+        public async Task UploadLogAsync(Guid requestId, Guid sessionId, User user, byte[] logContent)
+        {
+            if (logContent == null || logContent.Length == 0)
+            {
+                logger.LogWarning($"UploadLogAsync: No content to upload for request {requestId} by user {user?.UserName}");
+                return;
+            }
+            try
+            {
+                var fileName = $"{DateTime.UtcNow:yyyyMMdd_HHmmss}_{user.UserName}.log";
+                if (!System.IO.Directory.Exists(FolderPaths.UserLogsPath))
+                {
+                    System.IO.Directory.CreateDirectory(FolderPaths.UserLogsPath);
+                }
+                var filePath = System.IO.Path.Combine(FolderPaths.UserLogsPath, fileName);
+                await System.IO.File.WriteAllBytesAsync(filePath, logContent);
+                logger.LogInformation($"Log uploaded successfully for request {requestId} by user {user?.UserName} to {filePath}");
+
+                MessageBus.Shared.Send("LogUploaded", new FileUploadedMessage
+                {
+                    RequestId = requestId,
+                    UserId = user.Id,
+                    SessionId = sessionId,
+                    UserName = user.UserName,
+                    FileName = fileName,
+                    FilePath = filePath
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, $"Failed to upload log for request {requestId} by user {user?.UserName}");
             }
         }
     }
