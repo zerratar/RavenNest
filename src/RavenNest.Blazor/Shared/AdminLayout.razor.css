@@ -3,6 +3,13 @@
     .top-row:not(.auth) {
         display: none;
     }
+    .main {
+        margin-top: 20px;
+        margin-bottom: 20px;
+    }
+    footer {
+        padding: 1rem 0;
+    }
 }
 
 @media (min-width: 641px) {
