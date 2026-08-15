@@ -2793,6 +2793,19 @@ a.rf-badge:hover {
     overflow-wrap: anywhere;
 }
 
+/* The action sits below the divider rather than beside the badge: at the width
+   these tiles reach on a phone there is no room next to it, and a control that
+   drops out of reach at one breakpoint is worse than one that always wraps. */
+.rf-plot__action {
+    display: flex;
+}
+
+.rf-plot__action .rf-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    text-align: center;
+}
+
 /* ---- Bonus summary -----------------------------------------------------
    "What is my town actually giving me", answered in one place rather than by
    adding up plots. Idle sits next to active so the gap between what the town

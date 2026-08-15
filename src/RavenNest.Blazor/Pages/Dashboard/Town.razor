@@ -9,8 +9,9 @@
 @inject NavigationManager NavigationManager
 
 @*
-    Read only. Assigning a house from the website is a write into live game state and belongs
-    with the plan and commit work, not here. See docs/town-page-design.md.
+    Mostly a reading page. The one write it makes is who lives on a plot, which is state a running
+    game is reading, so the service pushes a VillageInfo event after every change rather than
+    leaving the client on stale data. See docs/town-page-design.md.
 *@
 
 <header class="rf-page-head">
@@ -162,6 +163,14 @@ else
         </dl>
     </section>
 
+    @if (actionResult != null)
+    {
+        <div class="rf-banner @(actionResult.Success ? "rf-banner--good" : "rf-banner--bad")">
+            <h2 class="rf-banner__title">@(actionResult.Success ? "Done" : "That did not work")</h2>
+            <p>@actionResult.Message</p>
+        </div>
+    }
+
     <section class="rf-panel">
         <h2 class="rf-panel__title">Plots</h2>
 
@@ -237,6 +246,19 @@ else
                                 <span class="rf-plot__skill">empty plot</span>
                             }
                         </div>
+
+                        @*
+                            Nothing is offered on a plot with no house on it. There is nothing to
+                            assign to, and the fix is building one in game.
+                        *@
+                        @if (plot.IsBuilt)
+                        {
+                            <div class="rf-plot__action">
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="() => OpenPicker(plot)">
+                                    @(plot.IsAssigned ? "Change who lives here" : "Choose who lives here")
+                                </button>
+                            </div>
+                        }
                     </div>
                 }
             </div>
@@ -303,6 +325,109 @@ else
     }
 }
 
+@*
+    Choosing an occupant. Applied on the click rather than behind a confirm: it is the streamer's
+    own town, the change is undone by choosing again, and the game applies !village the same way.
+*@
+@if (pickerPlot != null)
+{
+    @*
+        The modal nests inside the backdrop, which is the flex box that centres it. As siblings it
+        is not centred by anything and lands below the fold.
+    *@
+    <div class="rf-modal-backdrop" @onclick="ClosePicker">
+    <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Choose who lives on this plot"
+         @onclick:stopPropagation="true">
+        <div class="rf-modal__head">
+            <h2 class="rf-modal__title">
+                Plot @(pickerPlot.Slot + 1) &middot; @TownHouseTypes.LabelOf(pickerPlot.Type)
+            </h2>
+            <button type="button" class="rf-modal__close" @onclick="ClosePicker" aria-label="Close">&times;</button>
+        </div>
+
+        <p class="rf-meta">
+            Whoever lives here boosts @PickerSkillName for everyone on your stream, by their
+            @PickerSkillName level out of @GameMath.MaxLevel of the @Percent(MaxBonusPerPlot) a
+            plot can give.
+        </p>
+
+        @if (busy)
+        {
+            <LoadIndicator></LoadIndicator>
+        }
+        else if (!town.IsStreamLive)
+        {
+            @*
+                A plot can only be given to somebody locked to this stream, and nobody is while the
+                game is off. Emptying it still works, and is the useful half: it frees a plot held
+                by someone who has stopped playing.
+            *@
+            <div class="rf-banner rf-banner--warn">
+                <h3 class="rf-banner__title">Your game is not running</h3>
+                <p>
+                    A plot can only be given to somebody playing on your stream, so there is nobody
+                    to choose from right now. You can still empty it, and the next person to type
+                    <span class="rf-cmd">!village</span> can take it.
+                </p>
+            </div>
+        }
+        else if (candidates == null || candidates.Count == 0)
+        {
+            <div class="rf-banner rf-banner--warn">
+                <h3 class="rf-banner__title">Nobody is playing right now</h3>
+                <p>
+                    Your game is running but no characters have joined it yet. Anyone who does can
+                    be put in this plot, or can claim it themselves with
+                    <span class="rf-cmd">!village</span>.
+                </p>
+            </div>
+        }
+        else
+        {
+            <p class="rf-label">Playing on your stream, best for this plot first</p>
+            <div class="rf-charpick rf-charpick--compact">
+                @foreach (var c in candidates)
+                {
+                    <button type="button"
+                            class="rf-char @(c.IsCurrentOccupant ? "is-active" : "")"
+                            disabled="@c.IsCurrentOccupant"
+                            @onclick="() => ChooseAsync(c)">
+                        <span class="rf-char__name">@(string.IsNullOrEmpty(c.Name) ? c.UserName : c.Name)</span>
+                        <span class="rf-char__level">@Percent(c.Bonus)</span>
+                        <span class="rf-char__slot">
+                            @if (c.IsCurrentOccupant)
+                            {
+                                <span>Lives here already</span>
+                            }
+                            else if (c.CurrentSlot != null)
+                            {
+                                <span class="rf-char__warn">Moves off plot @(c.CurrentSlot + 1)</span>
+                            }
+                            else
+                            {
+                                <span>@PickerSkillName @c.SkillLevel</span>
+                            }
+                        </span>
+                    </button>
+                }
+            </div>
+        }
+
+        <div class="rf-modal__foot rf-modal__foot--spread">
+            @if (pickerPlot.IsAssigned && !busy)
+            {
+                <button type="button" class="rf-btn rf-btn--danger" @onclick="ClearAsync">Leave it empty</button>
+            }
+            else
+            {
+                <span></span>
+            }
+            <button type="button" class="rf-btn" @onclick="ClosePicker">Cancel</button>
+        </div>
+    </div>
+    </div>
+}
+
 @code {
     /// <summary>Matches MaxExpBonusPerSlot in TownService.</summary>
     private const float MaxBonusPerPlot = 200f;
@@ -310,6 +435,14 @@ else
     private RavenNest.Models.SessionInfo session;
     private MyTownData town;
     private bool loading = true;
+
+    private MyTownHouseData pickerPlot;
+    private IReadOnlyList<TownCandidate> candidates;
+    private TownActionResult actionResult;
+    private bool busy;
+
+    private string PickerSkillName =>
+        pickerPlot == null ? "" : (TownHouseTypes.Get(pickerPlot.Type)?.SkillName ?? "the skill");
 
     private List<MyTownHouseData> IdlePlots =>
         town == null
@@ -391,6 +524,73 @@ else
         {
             NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
         }
+    }
+
+    private async Task OpenPicker(MyTownHouseData plot)
+    {
+        pickerPlot = plot;
+        candidates = null;
+        actionResult = null;
+
+        // Only worth asking when there is a stream for anyone to be playing on.
+        if (town.IsStreamLive)
+        {
+            busy = true;
+            candidates = await TownService.GetHouseCandidatesAsync(session.UserId, plot.Slot);
+            busy = false;
+        }
+    }
+
+    private void ClosePicker()
+    {
+        pickerPlot = null;
+        candidates = null;
+        busy = false;
+    }
+
+    private Task ChooseAsync(TownCandidate candidate)
+    {
+        return ApplyAsync(candidate.CharacterId);
+    }
+
+    private Task ClearAsync()
+    {
+        return ApplyAsync(null);
+    }
+
+    /// <summary>
+    ///     The town is reloaded rather than patched in place, because the write moves whoever was
+    ///     chosen off whichever plot they were on and that second plot is on screen too.
+    /// </summary>
+    private async Task ApplyAsync(Guid? characterId)
+    {
+        if (pickerPlot == null) return;
+
+        busy = true;
+        actionResult = await TownService.SetHouseOccupantAsync(session.UserId, pickerPlot.Slot, characterId);
+        town = await TownService.GetMyTownAsync(session.UserId);
+        busy = false;
+
+        if (actionResult.Success)
+        {
+            ClosePicker();
+            return;
+        }
+
+        // Kept open on failure so the reason sits next to the thing that failed. The plot has to
+        // be looked up again in the reloaded town: the one the dialog was opened with belongs to
+        // the object that has just been replaced.
+        var slot = pickerPlot.Slot;
+        pickerPlot = town?.Houses.FirstOrDefault(x => x.Slot == slot);
+        if (pickerPlot == null)
+        {
+            ClosePicker();
+            return;
+        }
+
+        candidates = town.IsStreamLive
+            ? await TownService.GetHouseCandidatesAsync(session.UserId, slot)
+            : null;
     }
 
     private static string PlotModifier(MyTownHouseData plot)

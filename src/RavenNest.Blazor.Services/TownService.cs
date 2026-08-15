@@ -11,6 +11,7 @@ namespace RavenNest.Blazor.Services
     public class TownService
     {
         private readonly GameData gameData;
+        private readonly RavenNest.BusinessLogic.Game.VillageManager villageManager;
         private const float MaxExpBonusPerSlot = 200f;
 
         /// <summary>
@@ -20,9 +21,10 @@ namespace RavenNest.Blazor.Services
         /// </summary>
         private const int VillageProcessorPlayerCount = 750;
 
-        public TownService(GameData gameData)
+        public TownService(GameData gameData, RavenNest.BusinessLogic.Game.VillageManager villageManager)
         {
             this.gameData = gameData;
+            this.villageManager = villageManager;
         }
 
         public async Task<IReadOnlyList<TownData>> GetTownsAsync()
@@ -150,6 +152,7 @@ namespace RavenNest.Blazor.Services
                 var owner = gameData.GetUser(village.UserId);
                 var patreonTier = owner?.PatreonTier ?? 0;
                 var resources = gameData.GetResources(village.ResourcesId);
+                var session = gameData.GetOwnedSessionByUserId(village.UserId);
 
                 // Clamped the same way VillageManager.GetVillageInfo clamps it for the game client.
                 // GameData.CreateVillage sets an administrator's Level from ExperienceForLevel(30)
@@ -162,6 +165,10 @@ namespace RavenNest.Blazor.Services
                     Id = village.Id,
                     Name = village.Name,
                     OwnerUserName = owner?.UserName,
+                    // Whether the game is running decides what can be done here: a plot can only
+                    // be given to somebody playing on the stream, so with nothing running the only
+                    // move available is emptying one.
+                    IsStreamLive = session != null,
                     Level = level,
                     Experience = village.Experience,
                     // Village experience counts progress within the current level: VillageProcessor
@@ -229,8 +236,14 @@ namespace RavenNest.Blazor.Services
             h.AssignedUserName = assignedUser?.UserName;
 
             var candidates = new List<Character>();
+
+            // The named character is only trusted when it still belongs to the assigned user.
+            // VillageManager.AssignPlayerToHouse sets UserId without touching CharacterId, and
+            // RemoveHouse clears UserId and leaves CharacterId behind, so a slot can hold a
+            // character id belonging to whoever had it before. Believing it names the wrong
+            // person in the town, and would let their skill decide the bonus.
             var named = house.CharacterId != null ? gameData.GetCharacter(house.CharacterId.Value) : null;
-            if (named != null) candidates.Add(named);
+            if (named != null && named.UserId == house.UserId.Value) candidates.Add(named);
 
             var others = gameData.GetCharactersByUserId(house.UserId.Value);
             if (others != null) candidates.AddRange(others.Where(x => x != null && x.Id != named?.Id));
@@ -265,6 +278,147 @@ namespace RavenNest.Blazor.Services
             h.SkillLevel = bestSkill.Level;
             h.Bonus = CalculateHouseExpBonus(bestSkill);
             return h;
+        }
+
+        /// <summary>
+        ///     Who could take a plot of this type, best first.
+        ///
+        ///     Only characters currently playing on the stream: a plot assigned to anybody else
+        ///     contributes nothing until they arrive, which is the state this page exists to warn
+        ///     about, so offering it as a choice would be offering the problem.
+        /// </summary>
+        public async Task<IReadOnlyList<TownCandidate>> GetHouseCandidatesAsync(Guid userId, int slot)
+        {
+            return await Task.Run(() =>
+            {
+                var empty = (IReadOnlyList<TownCandidate>)Array.Empty<TownCandidate>();
+
+                var village = gameData.GetVillageByUserId(userId);
+                if (village == null) return empty;
+
+                var house = FindHouse(village, slot);
+                if (house == null) return empty;
+
+                var type = (TownHouseSlotType)house.Type;
+                if (type <= TownHouseSlotType.NoSkill) return empty;
+
+                var session = gameData.GetOwnedSessionByUserId(village.UserId);
+                var playing = gameData.GetActiveSessionCharacters(session);
+                if (playing == null || playing.Count == 0) return empty;
+
+                var houses = gameData.GetOrCreateVillageHouses(village);
+                var result = new List<TownCandidate>();
+
+                foreach (var c in playing)
+                {
+                    var skills = gameData.GetCharacterSkills(c.SkillsId);
+                    if (skills == null) continue;
+
+                    var skill = GetSkillByHouseType(skills, type);
+                    var held = houses.FirstOrDefault(x => x.UserId == c.UserId);
+
+                    result.Add(new TownCandidate
+                    {
+                        CharacterId = c.Id,
+                        Name = c.Name,
+                        UserName = gameData.GetUser(c.UserId)?.UserName,
+                        SkillLevel = skill.Level,
+                        Bonus = CalculateHouseExpBonus(skill),
+                        // A person holds one plot. Naming the one they are on makes it clear that
+                        // choosing them here moves them rather than adding them.
+                        CurrentSlot = held == null || held.Slot == slot ? (int?)null : held.Slot,
+                        IsCurrentOccupant = held != null && held.Slot == slot
+                    });
+                }
+
+                return (IReadOnlyList<TownCandidate>)result
+                    .OrderByDescending(x => x.Bonus)
+                    .ThenBy(x => x.Name)
+                    .ToList();
+            });
+        }
+
+        /// <summary>
+        ///     Puts a character in a plot, or empties it when characterId is null.
+        ///
+        ///     This writes into state a running game is reading, so it does two things beyond the
+        ///     write itself: it keeps a person to one plot, the way the in game assignment does,
+        ///     and it pushes a VillageInfo event to the owner's session. Without that event a
+        ///     running client would not see the change until the next session start, because
+        ///     Assets/Scripts/VillageManager.cs loads village info once and then waits for events.
+        /// </summary>
+        public async Task<TownActionResult> SetHouseOccupantAsync(Guid userId, int slot, Guid? characterId)
+        {
+            return await Task.Run(() =>
+            {
+                var village = gameData.GetVillageByUserId(userId);
+                if (village == null) return TownActionResult.Failed("You do not have a town.");
+
+                var house = FindHouse(village, slot);
+                if (house == null) return TownActionResult.Failed("That plot does not exist.");
+
+                if ((TownHouseSlotType)house.Type <= TownHouseSlotType.NoSkill)
+                {
+                    return TownActionResult.Failed("Nothing is built on that plot, so nobody can live in it.");
+                }
+
+                if (characterId == null)
+                {
+                    house.UserId = null;
+                    house.CharacterId = null;
+                    PushVillageInfo(village);
+                    return TownActionResult.Ok("The plot is empty. Anyone on your stream can claim it with !village.");
+                }
+
+                var character = gameData.GetCharacter(characterId.Value);
+                if (character == null) return TownActionResult.Failed("That character no longer exists.");
+
+                // Only somebody playing here, for the same reason the candidate list is built that
+                // way: anyone else would take the plot and contribute nothing.
+                if (character.UserIdLock != village.UserId)
+                {
+                    return TownActionResult.Failed(character.Name + " is not playing on your stream at the moment.");
+                }
+
+                var houses = gameData.GetOrCreateVillageHouses(village);
+                foreach (var other in houses)
+                {
+                    if (other.Slot != slot && other.UserId == character.UserId)
+                    {
+                        other.UserId = null;
+                        other.CharacterId = null;
+                    }
+                }
+
+                house.UserId = character.UserId;
+                // Set together, unlike VillageManager.AssignPlayerToHouse, which leaves the old
+                // character id in place and is why a plot can name somebody who does not own it.
+                house.CharacterId = character.Id;
+
+                PushVillageInfo(village);
+                return TownActionResult.Ok(character.Name + " now lives on plot " + (slot + 1) + ".");
+            });
+        }
+
+        private VillageHouse FindHouse(Village village, int slot)
+        {
+            var houses = gameData.GetOrCreateVillageHouses(village);
+            return houses?.FirstOrDefault(x => x.Slot == slot);
+        }
+
+        /// <summary>
+        ///     Tells a running game the town changed. Silent when the streamer is offline: there is
+        ///     no session to send to, and the client reads the village fresh when one starts.
+        /// </summary>
+        private void PushVillageInfo(Village village)
+        {
+            var session = gameData.GetOwnedSessionByUserId(village.UserId);
+            if (session == null) return;
+
+            var info = villageManager.GetVillageInfo(session);
+            if (info == null) return;
+
+            gameData.EnqueueGameEvent(gameData.CreateSessionEvent(RavenNest.Models.GameEventType.VillageInfo, session, info));
         }
 
         /// <summary>
@@ -385,6 +539,7 @@ namespace RavenNest.Blazor.Services
         public Guid Id { get; set; }
         public string Name { get; set; }
         public string OwnerUserName { get; set; }
+        public bool IsStreamLive { get; set; }
 
         public int Level { get; set; }
         public double Experience { get; set; }
@@ -444,6 +599,30 @@ namespace RavenNest.Blazor.Services
             }
             return bonusValue;
         }
+    }
+
+    /// <summary>Somebody who could take a plot, with what they would be worth in it.</summary>
+    public class TownCandidate
+    {
+        public Guid CharacterId { get; set; }
+        public string Name { get; set; }
+        public string UserName { get; set; }
+        public int SkillLevel { get; set; }
+        public float Bonus { get; set; }
+
+        /// <summary>The plot they are on now, when choosing them here would move them off it.</summary>
+        public int? CurrentSlot { get; set; }
+
+        public bool IsCurrentOccupant { get; set; }
+    }
+
+    public sealed class TownActionResult
+    {
+        public bool Success { get; private set; }
+        public string Message { get; private set; }
+
+        public static TownActionResult Ok(string message) => new TownActionResult { Success = true, Message = message };
+        public static TownActionResult Failed(string message) => new TownActionResult { Success = false, Message = message };
     }
 
     public class MyTownHouseData
