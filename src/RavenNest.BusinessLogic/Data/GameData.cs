@@ -3076,16 +3076,21 @@ namespace RavenNest.BusinessLogic.Data
 
             Add(villageResources);
 
+            // An administrator starts at level 30 so there are houses to test against. The level
+            // was being assigned ExperienceForLevel(30) rather than 30, so those rows held a
+            // village level in the tens of thousands: past MaxVillageLevel, which meant the
+            // processor's level up loop could never run on them and the house count sat at the
+            // cap of 40. Existing rows still carry the old value; VillageManager.GetVillageInfo
+            // and TownService both clamp the level before showing it.
             var minAdminVillageLevel = 30;
             var isAdmin = user.IsAdmin.GetValueOrDefault();
-            var villageExp = isAdmin ? (long)GameMath.ExperienceForLevel(minAdminVillageLevel) : 0;
-            var villageLevel = isAdmin ? GameMath.ExperienceForLevel(minAdminVillageLevel) : 1;
+            var villageLevel = isAdmin ? minAdminVillageLevel : 1;
             var village = new Village()
             {
                 Id = Guid.NewGuid(),
                 ResourcesId = villageResources.Id,
-                Level = (int)villageLevel,
-                Experience = (long)villageExp,
+                Level = villageLevel,
+                Experience = 0,
                 Name = "Village",
                 UserId = userId
             };
