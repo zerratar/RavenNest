@@ -287,7 +287,18 @@
 
     private string MenuTitle => Dashboard ? "Dashboard" : "Ravenfall";
 
-    private bool collapseNavMenu = false;
+    /// <summary>
+    ///     Starts collapsed, which only affects a phone.
+    ///
+    ///     It started expanded, from when this sidebar was a desktop only concern. Below 641px the
+    ///     sidebar stacks above the page rather than beside it, so an expanded menu meant a screen
+    ///     of navigation to scroll past before reaching the page you had opened.
+    ///
+    ///     Safe to default this way because site.css forces `.collapse { display: flex !important }`
+    ///     above 641px, so the desktop sidebar ignores the class entirely and only the phone acts
+    ///     on it.
+    /// </summary>
+    private bool collapseNavMenu = true;
     private string NavMenuCssClass => collapseNavMenu ? "nav-list collapse" : "nav-list";
 
     protected override void OnInitialized()
