@@ -312,6 +312,17 @@
     z-index: 30;
 }
 
+/* Below 641px the top right corner belongs to the menu button, which lives in
+   the sidebar and so cannot simply be laid out next to this. The bell steps far
+   enough left to clear it: the button measures 83px at its widest with the
+   "Menu" label, and it sits on the same 24px of right padding, so 7.5rem leaves
+   about 13px between the two. */
+@media (max-width: 640.98px) {
+    .rf-dash__notify {
+        right: 7.5rem;
+    }
+}
+
 .rf-dash .notification-icon {
     display: flex;
     align-items: center;
