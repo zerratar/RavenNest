@@ -1,0 +1,440 @@
+@layout DashboardLayout
+@page "/town"
+@using RavenNest.Blazor.Services
+@using RavenNest.BusinessLogic
+@using RavenNest.BusinessLogic.Game
+@using RavenNest.BusinessLogic.Net
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.Blazor.Services.TownService TownService
+@inject NavigationManager NavigationManager
+
+@*
+    Read only. Assigning a house from the website is a write into live game state and belongs
+    with the plan and commit work, not here. See docs/town-page-design.md.
+*@
+
+<header class="rf-page-head">
+    <h1 class="rf-page-title">Town</h1>
+    <p class="rf-page-subtitle">
+        Your plots, who is in them, and the experience bonus your viewers are getting from them.
+    </p>
+</header>
+
+@if (loading)
+{
+    <LoadIndicator></LoadIndicator>
+}
+else if (town == null)
+{
+    <div class="rf-panel rf-panel--accent">
+        <h2 class="rf-panel__title">You do not have a town yet</h2>
+        <p>
+            A town is created for your channel the first time you start Ravenfall on it. Once it
+            exists it keeps levelling whenever you stream, and this page fills in.
+        </p>
+        <div class="rf-actions">
+            <a class="rf-btn rf-btn--primary" href="/download">Download Ravenfall</a>
+            <a class="rf-btn" href="/bot">Check your bot</a>
+        </div>
+    </div>
+}
+else
+{
+    @*
+        The one thing worth interrupting for: plots assigned to people who have stopped playing
+        here. That bonus is not being applied and nothing in the game says so. Wording carries it,
+        colour only reinforces.
+    *@
+    @if (IdlePlots.Count > 0)
+    {
+        <div class="rf-banner rf-banner--warn">
+            <h2 class="rf-banner__title">
+                @IdlePlots.Count of your @town.UsedSlotCount filled @Plural(town.UsedSlotCount, "plot", "plots")
+                @(IdlePlots.Count == 1 ? "is" : "are") not counting
+            </h2>
+            <p>
+                They are assigned to people who are not playing on your stream at the moment, so the
+                <strong>@Percent(IdleBonusTotal)</strong> they would add is not being applied.
+                Reassigning a plot is done in game with <span class="rf-cmd">!village</span>.
+            </p>
+        </div>
+    }
+    else if (town.TotalSlotCount > 0 && town.UsedSlotCount == 0)
+    {
+        <div class="rf-banner rf-banner--warn">
+            <h2 class="rf-banner__title">Nobody is assigned to a plot</h2>
+            <p>
+                Your town has @town.TotalSlotCount @Plural(town.TotalSlotCount, "plot", "plots") and
+                none of them is helping anyone yet. Viewers claim one in chat with
+                <span class="rf-cmd">!village</span>.
+            </p>
+        </div>
+    }
+
+    <div class="rf-stats">
+        <div class="rf-stat">
+            <div class="rf-stat__value">@town.Level</div>
+            <div class="rf-stat__label">Town level</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value">@town.ActiveSlotCount / @town.TotalSlotCount</div>
+            <div class="rf-stat__label">Plots counting</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value">@Percent(ActiveBonusTotal)</div>
+            <div class="rf-stat__label">Bonus in play</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value">@Utility.FormatAmount(town.Coins)</div>
+            <div class="rf-stat__label">Town coins</div>
+        </div>
+    </div>
+
+    @*
+        Progress, and the answer to "why do I only have three plots". Slots are earned ten town
+        levels apiece and the game never says when the next one lands.
+    *@
+    <section class="rf-panel">
+        <h2 class="rf-panel__title">Town progress</h2>
+        <div class="rf-next">
+            <div class="rf-next__head">
+                <span class="rf-label">Next town level</span>
+                <span class="rf-next__skill">Level <b>@(town.Level + 1)</b></span>
+            </div>
+            <div class="rf-skill__bar rf-next__bar">
+                <span class="rf-skill__fill" style="@Bar(town.LevelProgress)"></span>
+            </div>
+            <div class="rf-next__foot">
+                <span>@Utility.FormatExp(town.ExperienceToNextLevel) exp to go</span>
+                <span class="rf-meta">@Math.Round(town.LevelProgress * 100, 1)% of the way</span>
+            </div>
+        </div>
+
+        <dl class="rf-facts">
+            <dt>Time to that level</dt>
+            <dd>
+                @if (town.Level >= GameMath.MaxVillageLevel)
+                {
+                    <span>Your town is at the maximum level.</span>
+                }
+                else
+                {
+                    <span>@FormatDuration(town.TimeToNextLevel) with the game running</span>
+                    <span class="rf-meta">
+                        &middot; town experience does not depend on how many viewers are playing
+                    </span>
+                }
+            </dd>
+
+            <dt>Next plot</dt>
+            <dd>
+                @if (town.NextSlotAtTownLevel == null)
+                {
+                    <span>You have all @town.MaxSlotCount plots.</span>
+                }
+                else
+                {
+                    <span>
+                        Plot @(town.TotalSlotCount + 1) is built at town level
+                        <strong>@town.NextSlotAtTownLevel</strong>
+                    </span>
+                    <span class="rf-meta">&middot; @(town.NextSlotAtTownLevel - town.Level) levels away</span>
+                }
+            </dd>
+
+            <dt>Plots</dt>
+            <dd>
+                @town.TotalSlotCount in total
+                <span class="rf-meta">
+                    &middot; @town.BuiltSlotCount built
+                    &middot; @town.UsedSlotCount filled
+                    &middot; @town.ActiveSlotCount counting
+                </span>
+                @if (town.SlotsFromPatreon > 0)
+                {
+                    <div class="rf-meta">
+                        @town.SlotsFromLevel earned by your town level and @town.SlotsFromPatreon
+                        granted by your Patreon tier. Levelling adds the next one at town level
+                        @town.NextSlotAtTownLevel rather than at the next multiple of ten.
+                    </div>
+                }
+            </dd>
+        </dl>
+    </section>
+
+    <section class="rf-panel">
+        <h2 class="rf-panel__title">Plots</h2>
+
+        @if (town.TotalSlotCount == 0)
+        {
+            <p>
+                Your town has no plots yet. The first one is built at town level
+                <strong>@town.NextSlotAtTownLevel</strong>, and your town is level @town.Level.
+            </p>
+        }
+        else
+        {
+            <div class="rf-plots">
+                @foreach (var plot in town.Houses)
+                {
+                    var type = TownHouseTypes.Get(plot.Type);
+                    <div class="rf-plot @PlotModifier(plot)">
+                        <div class="rf-plot__head">
+                            <span class="rf-plot__slot">Plot @(plot.Slot + 1)</span>
+                            @if (plot.IsActive)
+                            {
+                                <span class="rf-badge rf-badge--good">Counting</span>
+                            }
+                            else if (plot.IsAssigned)
+                            {
+                                <span class="rf-badge rf-badge--warn">Away</span>
+                            }
+                            else if (plot.IsBuilt)
+                            {
+                                <span class="rf-badge rf-badge--quiet">Free</span>
+                            }
+                            else
+                            {
+                                <span class="rf-badge rf-badge--quiet">Nothing built</span>
+                            }
+                        </div>
+
+                        <div class="rf-plot__body">
+                            <i class="rf-plot__icon @TownHouseTypes.IconOf(plot.Type)" aria-hidden="true"></i>
+                            <div class="rf-plot__id">
+                                <div class="rf-plot__type">@TownHouseTypes.LabelOf(plot.Type)</div>
+                                <div class="rf-plot__who">
+                                    @if (plot.IsAssigned)
+                                    {
+                                        <a class="rf-item__name" href="/inspect/@plot.AssignedCharacterId">@NameOf(plot)</a>
+                                    }
+                                    else if (plot.IsBuilt)
+                                    {
+                                        <span>No one assigned</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Build one in game</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rf-plot__foot">
+                            @if (plot.IsAssigned)
+                            {
+                                <span class="rf-plot__bonus">@Percent(plot.Bonus)</span>
+                                <span class="rf-plot__skill">@type?.SkillName @plot.SkillLevel</span>
+                            }
+                            else if (plot.IsBuilt)
+                            {
+                                <span class="rf-plot__bonus">@Percent(0)</span>
+                                <span class="rf-plot__skill">needs @type?.SkillName</span>
+                            }
+                            else
+                            {
+                                <span class="rf-plot__bonus">@Percent(0)</span>
+                                <span class="rf-plot__skill">empty plot</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <p class="rf-meta">
+                A plot gives up to @Percent(MaxBonusPerPlot) at skill level @GameMath.MaxLevel, scaling
+                straight from the assignee's level. A Melee plot reads their Health level, which is the
+                one house type not named after the skill behind it.
+            </p>
+        }
+    </section>
+
+    @if (BonusRows.Count > 0)
+    {
+        <section class="rf-panel">
+            <h2 class="rf-panel__title">What your town is giving</h2>
+            <div class="rf-bonus">
+                @foreach (var row in BonusRows)
+                {
+                    <div class="rf-bonus__row">
+                        <div class="rf-bonus__name">
+                            <i class="@TownHouseTypes.IconOf(row.Type)" aria-hidden="true"></i>
+                            <span>@TownHouseTypes.LabelOf(row.Type)</span>
+                        </div>
+                        <div class="rf-bonus__bar">
+                            <span class="rf-bonus__track">
+                                <span class="rf-bonus__fill" style="@Bar(row.Active / BonusScale)"></span>
+                                <span class="rf-bonus__fill rf-bonus__fill--idle" style="@Bar(row.Idle / BonusScale)"></span>
+                            </span>
+                        </div>
+                        <div class="rf-bonus__value @(row.Active > 0 ? "" : "is-zero")">
+                            @Percent(row.Active)
+                            @if (row.Idle > 0)
+                            {
+                                <small>@Percent(row.Idle) away</small>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+            <p class="rf-meta">
+                Every skill listed is boosted for everyone playing on your stream. Bars are drawn
+                against your own largest bonus, so they compare your skills with each other rather
+                than against a ceiling.
+            </p>
+        </section>
+    }
+
+    @if (OtherResources.Count > 0)
+    {
+        <section class="rf-panel">
+            <h2 class="rf-panel__title">Other town resources</h2>
+            <p class="rf-meta">
+                These belong to an older version of the game and nothing spends them now. They are
+                listed because your town still holds a balance, not because it can be used.
+            </p>
+            <div class="rf-chips">
+                @foreach (var res in OtherResources)
+                {
+                    <span class="rf-chip">@res.Key <b>@Utility.FormatAmount(res.Value)</b></span>
+                }
+            </div>
+        </section>
+    }
+}
+
+@code {
+    /// <summary>Matches MaxExpBonusPerSlot in TownService.</summary>
+    private const float MaxBonusPerPlot = 200f;
+
+    private RavenNest.Models.SessionInfo session;
+    private MyTownData town;
+    private bool loading = true;
+
+    private List<MyTownHouseData> IdlePlots =>
+        town == null
+            ? new List<MyTownHouseData>()
+            : town.Houses.Where(x => x.IsAssigned && !x.IsActive).ToList();
+
+    private float IdleBonusTotal => IdlePlots.Sum(x => x.Bonus);
+
+    private float ActiveBonusTotal =>
+        town == null ? 0 : town.Houses.Where(x => x.IsActive).Sum(x => x.Bonus);
+
+    private record BonusRow(TownHouseSlotType Type, float Active, float Idle);
+
+    /// <summary>
+    ///     One row per house type that contributes anything, biggest first. Types nobody has
+    ///     built are left out: fourteen rows of zero says nothing.
+    /// </summary>
+    private List<BonusRow> BonusRows
+    {
+        get
+        {
+            if (town == null) return new List<BonusRow>();
+
+            return TownHouseTypes.All
+                .Select(x => new BonusRow(x.Type, town.GetActiveBonus(x.Type), town.GetIdleBonus(x.Type)))
+                .Where(x => x.Active > 0 || x.Idle > 0)
+                .OrderByDescending(x => x.Active + x.Idle)
+                .ToList();
+        }
+    }
+
+    private float BonusScale
+    {
+        get
+        {
+            var rows = BonusRows;
+            var max = rows.Count == 0 ? 0 : rows.Max(x => x.Active + x.Idle);
+            return max <= 0 ? 1 : max;
+        }
+    }
+
+    /// <summary>
+    ///     Same treatment the character overview gives them: shown only when there is a balance to
+    ///     explain, so a stockpile is accounted for rather than silently dropped.
+    /// </summary>
+    private List<KeyValuePair<string, double>> OtherResources
+    {
+        get
+        {
+            if (town == null) return new List<KeyValuePair<string, double>>();
+
+            return new[]
+            {
+                new KeyValuePair<string, double>("Wood", town.Wood),
+                new KeyValuePair<string, double>("Ore", town.Ore),
+                new KeyValuePair<string, double>("Fish", town.Fish),
+                new KeyValuePair<string, double>("Wheat", town.Wheat),
+                new KeyValuePair<string, double>("Magic", town.Magic),
+                new KeyValuePair<string, double>("Arrows", town.Arrows),
+            }.Where(x => x.Value > 0).ToList();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        session = AuthService.GetSession();
+        if (session == null || !session.Authenticated)
+        {
+            return;
+        }
+
+        town = await TownService.GetMyTownAsync(session.UserId);
+        loading = false;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (session == null || !session.Authenticated)
+        {
+            NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
+        }
+    }
+
+    private static string PlotModifier(MyTownHouseData plot)
+    {
+        if (plot.IsActive) return "rf-plot--active";
+        if (plot.IsAssigned) return "rf-plot--idle";
+        return plot.IsBuilt ? "rf-plot--vacant" : "rf-plot--empty";
+    }
+
+    private static string NameOf(MyTownHouseData plot)
+    {
+        if (!string.IsNullOrEmpty(plot.AssignedCharacterName)) return plot.AssignedCharacterName;
+        if (!string.IsNullOrEmpty(plot.AssignedUserName)) return plot.AssignedUserName;
+        return "Unknown player";
+    }
+
+    private static string Percent(double value)
+    {
+        return Math.Round(value, 1).ToString("0.#", System.Globalization.CultureInfo.CurrentCulture) + "%";
+    }
+
+    private static string Plural(int count, string one, string many)
+    {
+        return count == 1 ? one : many;
+    }
+
+    /// <summary>
+    ///     Invariant culture on purpose. A width written as "43,2%" under a Swedish locale is
+    ///     ignored by the browser and the bar renders empty.
+    /// </summary>
+    private static string Bar(double progress)
+    {
+        var clamped = Math.Clamp(progress * 100d, 0d, 100d);
+        return "width: " + clamped.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%";
+    }
+
+    private static string FormatDuration(TimeSpan? value)
+    {
+        if (value == null) return "unknown";
+
+        var span = value.Value;
+        if (span.TotalMinutes < 1) return "under a minute";
+        if (span.TotalHours < 1) return "about " + (int)span.TotalMinutes + " minutes";
+        if (span.TotalHours < 48) return "about " + Math.Round(span.TotalHours, 1) + " hours";
+        return "about " + Math.Round(span.TotalDays, 1) + " days";
+    }
+}

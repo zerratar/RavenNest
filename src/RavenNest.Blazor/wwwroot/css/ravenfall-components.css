@@ -442,6 +442,12 @@
 .rf-badge--bad { color: var(--rf-bad); background: var(--rf-bad-wash); }
 .rf-badge--gold { color: var(--rf-gold); background: var(--rf-gold-wash); }
 
+/* An unremarkable state still wants naming, but a plain badge is drawn in full
+   ink and outranks the good and warn ones next to it. Muted rather than faint:
+   faint is for labels whose shape you already know, and a state word is a fact.
+   Verified at ~6.6:1 on surface 2. */
+.rf-badge--quiet { color: var(--rf-ink-muted); }
+
 /* A badge carrying a rarity class borrows that colour for its text and, through
    currentColor, its border. The wash would fight it, so it goes flat. */
 .rf-badge[class*="rf-rarity-"] {
@@ -2628,5 +2634,266 @@ a.rf-badge:hover {
     .rf-roster *,
     .rf-inv * {
         transition: none !important;
+    }
+}
+
+/* ==========================================================================
+   Town plots
+   ==========================================================================
+   The town is a fixed number of plots, which is what the game is, so the page
+   is a grid of them rather than a table of the ones that happen to be filled.
+   Named rf-plot rather than rf-slot because rf-slot is already an equipment
+   square and the two are different shapes.
+
+   Four states, and each one says what it is in words as well as in colour:
+   active, idle (assigned to somebody who is not playing here), vacant (built
+   with nobody in it) and empty (no house on the plot at all). Idle is the state
+   the page exists for: it is a bonus the streamer is not getting. */
+
+.rf-plots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    gap: var(--rf-space-2);
+}
+
+.rf-plot {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+    min-width: 0;
+    padding: var(--rf-space-3);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+}
+
+/* A plot with nothing in it is an outline, not a filled panel. Thirty filled
+   boxes for thirty empty plots reads as a full town. */
+.rf-plot--vacant,
+.rf-plot--empty {
+    background: none;
+    border-style: dashed;
+    box-shadow: none;
+}
+
+.rf-plot--active {
+    border-color: var(--rf-line-gold);
+}
+
+.rf-plot__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--rf-space-2);
+}
+
+.rf-plot__slot {
+    font-size: var(--rf-size-tiny);
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    color: var(--rf-ink-faint);
+    font-weight: 700;
+}
+
+.rf-plot__body {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    min-width: 0;
+}
+
+.rf-plot__icon {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-ink-muted);
+    font-size: 1rem;
+}
+
+.rf-plot--active .rf-plot__icon {
+    color: var(--rf-gold);
+    border-color: var(--rf-line-gold);
+}
+
+.rf-plot--vacant .rf-plot__icon,
+.rf-plot--empty .rf-plot__icon {
+    background: none;
+    color: var(--rf-ink-faint);
+}
+
+.rf-plot__id {
+    min-width: 0;
+}
+
+.rf-plot__type {
+    font-weight: 700;
+    font-size: var(--rf-size-small);
+    overflow-wrap: anywhere;
+}
+
+.rf-plot--empty .rf-plot__type {
+    color: var(--rf-ink-faint);
+    font-weight: 600;
+}
+
+.rf-plot__who {
+    font-size: var(--rf-size-tiny);
+    color: var(--rf-ink-muted);
+    overflow-wrap: anywhere;
+}
+
+.rf-plot--vacant .rf-plot__who,
+.rf-plot--empty .rf-plot__who {
+    color: var(--rf-ink-faint);
+}
+
+/* Label takes what is left and wraps, the number is sized by its own content
+   and never breaks. Same shape as rf-statlist, and for the same reason. */
+.rf-plot__foot {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--rf-space-2);
+    margin-top: auto;
+    padding-top: var(--rf-space-2);
+    border-top: 1px solid var(--rf-line);
+    font-size: var(--rf-size-tiny);
+}
+
+.rf-plot__bonus {
+    flex: 0 0 auto;
+    font-size: var(--rf-size-small);
+    font-weight: 800;
+    color: var(--rf-gold);
+    font-variant-numeric: tabular-nums;
+}
+
+/* An idle plot's bonus is not being received, so it must not read as gold. */
+.rf-plot--idle .rf-plot__bonus {
+    color: var(--rf-ink-muted);
+    text-decoration: line-through;
+}
+
+.rf-plot--vacant .rf-plot__bonus,
+.rf-plot--empty .rf-plot__bonus {
+    color: var(--rf-ink-faint);
+    font-weight: 600;
+}
+
+.rf-plot__skill {
+    min-width: 0;
+    color: var(--rf-ink-muted);
+    overflow-wrap: anywhere;
+}
+
+/* ---- Bonus summary -----------------------------------------------------
+   "What is my town actually giving me", answered in one place rather than by
+   adding up plots. Idle sits next to active so the gap between what the town
+   could give and what it does give is the thing you read. */
+
+.rf-bonus {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+}
+
+/* Each row is its own grid with named areas rather than every cell of every row
+   sharing one grid. One grid looks tidier and breaks the moment a breakpoint
+   changes the column count: the cells reflow by auto placement, so a bar told to
+   span the full width pushes the value onto the next row and the next row's name
+   into the value's column. Named areas cannot do that. */
+/* Both side tracks are fixed rather than content sized. With fit-content and
+   auto the bar track came out a different width on every row, and a set of bars
+   drawn at different lengths cannot be compared by eye, which is the only thing
+   they are for. 7rem holds the longest skill name and 5.5rem holds the widest
+   value a town can reach, which is forty plots of one type at 200% each. */
+.rf-bonus__row {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr) 5.5rem;
+    grid-template-areas: "name bar value";
+    align-items: center;
+    gap: var(--rf-space-1) var(--rf-space-3);
+}
+
+.rf-bonus__name {
+    grid-area: name;
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    font-weight: 600;
+    font-size: var(--rf-size-small);
+}
+
+.rf-bonus__name i {
+    color: var(--rf-ink-faint);
+    width: 1rem;
+    text-align: center;
+}
+
+.rf-bonus__bar {
+    grid-area: bar;
+    position: relative;
+    height: 8px;
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+    overflow: hidden;
+}
+
+.rf-bonus__fill {
+    display: block;
+    height: 100%;
+    background: var(--rf-gold);
+}
+
+/* Idle share of the same bar, drawn after the active part in a flat muted
+   tone. It is deliberately not a second colour: the point is that it is the
+   part that is switched off. */
+.rf-bonus__fill--idle {
+    background: var(--rf-ink-faint);
+}
+
+.rf-bonus__track {
+    display: flex;
+    height: 100%;
+}
+
+.rf-bonus__value {
+    grid-area: value;
+    text-align: right;
+    font-weight: 800;
+    color: var(--rf-gold);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* Nothing is being received, so it must not read as an achievement. Gold is
+   scarce on purpose and a row of gold zeroes spends it on the worst rows. */
+.rf-bonus__value.is-zero {
+    color: var(--rf-ink-muted);
+    font-weight: 600;
+}
+
+.rf-bonus__value small {
+    display: block;
+    font-size: var(--rf-size-tiny);
+    font-weight: 600;
+    color: var(--rf-ink-muted);
+    white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+    .rf-bonus__row {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "name  value"
+            "bar   bar";
     }
 }
