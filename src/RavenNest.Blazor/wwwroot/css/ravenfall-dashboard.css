@@ -159,6 +159,46 @@
     color: var(--rf-gold);
 }
 
+/* ---- The menu button on a phone ----------------------------------------
+   Below 641px the sidebar stacks above the content and this button is the only
+   way to fold it away, so it has to look like a button. site.css strips its
+   border and Bootstrap's icon image is not in this build, so it was an invisible
+   transparent box. */
+
+.rf-dash .navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-right: var(--rf-space-4);
+}
+
+.rf-dash .navbar-toggler {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    padding: var(--rf-space-2) var(--rf-space-3);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius-sm);
+    background: var(--rf-surface-3);
+    color: var(--rf-ink);
+    font-family: inherit;
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    cursor: pointer;
+}
+
+.rf-dash .navbar-toggler:hover {
+    background: var(--rf-surface-raised);
+    color: var(--rf-gold);
+}
+
+.rf-dash .navbar-toggler:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
 /* site.css sizes the sidebar logo at 40px tall and nudges it 25px to the right,
    which was tuned for the wider sidebar. Smaller, and centred by its own padding
    rather than by an offset that has to be kept in step with the width. */
@@ -241,6 +281,14 @@
     .rf-dash .main {
         flex: 1 1 auto;
         min-width: 0;
+    }
+
+    /* The sidebar is always on screen at this width, so there is nothing for the
+       menu button to do. site.css hides it here too, but with one class less
+       specificity than the rule that styles it above, so it has to be said again
+       rather than relied on. */
+    .rf-dash .navbar-toggler {
+        display: none;
     }
 
     /* Beats Bootstrap's px-4 on specificity rather than with !important, which

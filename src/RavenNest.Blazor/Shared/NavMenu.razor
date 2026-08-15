@@ -3,12 +3,21 @@
 
 <div class="pl-4 navbar navbar-dark">
     <a class="navbar-brand" href=""><img src="/imgs/logo.png" /></a>
-    <button class="navbar-toggler" @onclick="ToggleNavMenu">
-        <span class="navbar-toggler-icon"></span>
+    @*
+        The icon was <span class="navbar-toggler-icon">, which Bootstrap draws with a background
+        image. This build does not ship that image, so the button rendered as an empty transparent
+        box and the dashboard looked on a phone as though it had no menu control at all.
+    *@
+    <button class="navbar-toggler"
+            aria-expanded="@((!collapseNavMenu).ToString().ToLowerInvariant())"
+            aria-controls="rf-dash-nav"
+            @onclick="ToggleNavMenu">
+        <i class="fa-solid @(collapseNavMenu ? "fa-bars" : "fa-xmark")" aria-hidden="true"></i>
+        Menu
     </button>
 </div>
 
-<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+<div id="rf-dash-nav" class="@NavMenuCssClass" @onclick="ToggleNavMenu">
     <ul class="nav flex-column">
         @if (Dashboard)
         {
