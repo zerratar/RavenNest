@@ -474,9 +474,11 @@
         flex-wrap: wrap;
     }
 
+    /* The logo was pressed against the left edge of the screen with 12px of air.
+       The page content below it sits on 20px, so this matches it. */
     .rf-front .rf-sitehead__inner {
         gap: var(--rf-space-3);
-        padding: var(--rf-space-3);
+        padding: var(--rf-space-4) var(--rf-space-5);
     }
 
     .rf-front .rf-sitehead__logo img {
@@ -522,6 +524,62 @@
     font-size: var(--rf-size-body);
     max-width: 90rem;
     margin: 0 auto;
+}
+
+/* ---- Login --------------------------------------------------------------
+   Three things were misaligned and each had its own cause.
+
+   The heading and the slogan sit outside the form, and the thing that centres
+   anything on this page is site.css's `.content form { align-items: center }`,
+   so they were left aligned against centred fields.
+
+   The Login button is inside that form and the Twitch button is outside it, so
+   the two were centred by different things and lined up with neither each other
+   nor the inputs.
+
+   And the buttons take their width from a fixed 325px that becomes 90vw under
+   450px, while the inputs are 324px, so no two controls on the page agreed.
+
+   Centring the whole block once, and giving every control the same width, is
+   less code than the rules it replaces. */
+
+.rf-front .login {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.rf-front .login-header,
+.rf-front .login-slogan {
+    width: 100%;
+    text-align: center;
+}
+
+/* One width for the inputs and both buttons, so they form a single column. */
+/* The button selector names the element as well, to match the specificity of
+   site.css's `button.raven-btn.blue.login-btn { width: 325px }` rather than lose
+   to it and leave the buttons 16px narrower than the fields above them. */
+.rf-front .login .raven-input,
+.rf-front .login button.raven-btn,
+.rf-front .login .input-fields {
+    width: min(22rem, 100%);
+    max-width: 100%;
+}
+
+/* raven-btn carries a 5px margin all round, which left the buttons 10px narrower
+   than the inputs above them and just off the same edges. */
+.rf-front .login .raven-btn {
+    justify-content: center;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+/* The form is only there to submit; it should not also be a layout box of a
+   different width from the block it sits in. */
+.rf-front .login form {
+    width: min(22rem, 100%);
+    align-items: center;
 }
 
 /* ---- Highscore ----------------------------------------------------------
