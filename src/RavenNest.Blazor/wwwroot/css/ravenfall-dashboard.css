@@ -159,6 +159,20 @@
     color: var(--rf-gold);
 }
 
+/* site.css sizes the sidebar logo at 40px tall and nudges it 25px to the right,
+   which was tuned for the wider sidebar. Smaller, and centred by its own padding
+   rather than by an offset that has to be kept in step with the width. */
+.rf-dash .navbar-brand img {
+    height: 30px;
+    left: 0;
+}
+
+/* The navbar already carries Bootstrap's pl-4, so the brand adds nothing of its
+   own and the logo lines up with the nav labels below it. */
+.rf-dash .navbar-brand {
+    padding-left: 0;
+}
+
 .rf-dash .navbar-brand img,
 .rf-dash img.logo {
     filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
@@ -204,9 +218,12 @@
        below its width by default. On any page with a wide table the sidebar was
        being squeezed narrower to make room, which is why the nav changed width
        from page to page. */
+    /* 216px rather than 250. The longest label in either nav is "Other Admin
+       Tools", which needs about 180px with its icon and padding, so the old
+       width was carrying 70px of nothing down the whole height of the page. */
     .rf-dash .sidebar {
-        flex: 0 0 250px;
-        width: 250px;
+        flex: 0 0 13.5rem;
+        width: 13.5rem;
         height: 100vh;
         position: sticky;
         top: 0;
