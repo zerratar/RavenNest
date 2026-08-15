@@ -44,6 +44,7 @@
 </div>
 
 <div class="character-details-tabs">
+ <button class="tab-link @SelectedClass(CharacterViewState.Overview)" @onclick="ShowOverview">Overview</button>
  <button class="tab-link @SelectedClass(CharacterViewState.Skills)" @onclick="ShowSkills">Skills</button>
  <button class="tab-link @SelectedClass(CharacterViewState.Inventory)" @onclick="ShowInventory">Inventory</button>
 
@@ -61,6 +62,9 @@
 
 @switch (viewState)
 {
+	case CharacterViewState.Overview:
+		<PlayerOverview Player="@SelectedPlayer" CanManage="CanManage"></PlayerOverview>
+		break;
 	case CharacterViewState.Inventory:
 		<PlayerInventory Player="@SelectedPlayer" CanManage="CanManage"></PlayerInventory>
 		break;

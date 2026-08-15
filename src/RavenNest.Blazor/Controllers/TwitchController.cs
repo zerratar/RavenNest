@@ -82,12 +82,11 @@ namespace RavenNest.Controllers
         {
             var reqCode = HttpContext.Request.Query["code"];
             var reqState = HttpContext.Request.Query["state"];
-#if DEBUG
-            var requestUrl = $"https://{HttpContext.Request.Host}/login/twitch";
-            Console.WriteLine(requestUrl);
-#else 
-            var requestUrl = "https://www.ravenfall.stream/login/twitch";
-#endif
+            // Derived from the request rather than switched on build configuration. This is a real
+            // HTTP request so the host is always available here, and using it is correct in
+            // production too, where the host is www.ravenfall.stream anyway. Branching on DEBUG
+            // meant a Release build run locally sent people to the live site.
+            var requestUrl = $"{HttpContext.Request.Scheme}://{HttpContext.Request.Host}/login/twitch";
             try
             {
                 var sessionInfo = await TwitchAuthenticateAsync(reqCode);

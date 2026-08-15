@@ -276,8 +276,14 @@
                                                     var ingredients = itemRecipe.Ingredients;
                                                     foreach (var req in ingredients)
                                                     {
-                                                        var reqItem = availableItems.First(x => x.Id == req.ItemId);
-                                                        <span><a href="/items/@reqItem.Id">@(reqItem.Name)</a> x@(req.Amount)&nbsp;</span>
+                                                        @*
+                                                            Was .First(...), which throws rather than returning null when a
+                                                            recipe names an ingredient that has since been deleted. This is
+                                                            the public item list, so one such recipe took the page down for
+                                                            everybody. The admin item list had the same fault.
+                                                        *@
+                                                        var reqItem = availableItems.FirstOrDefault(x => x.Id == req.ItemId);
+                                                        <span><a href="/items/@req.ItemId">@(reqItem?.Name ?? "Unknown item")</a> x@(req.Amount)&nbsp;</span>
                                                     }
                                                 }
                                             </div>

@@ -1,30 +1,24 @@
 ﻿@inherits LayoutComponentBase
 @using RavenNest.Blazor.Components
 @inject RavenNest.Blazor.Services.AuthService AuthService
-<div class="page dashboard">
+<div class="page dashboard rf-dash">
     <div class="sidebar">
         <NavMenu Dashboard="true" />
     </div>
 
+    @*
+        The top bar is gone. It was 3.5rem tall on every dashboard page and held two things: a
+        logout link the sidebar already carries under Account, and the notification bell. The bell
+        floats at the top right, which is where it already appeared to be, and the page title now
+        starts at the top of the page rather than under an empty strip.
+    *@
     <div class="main">
-        <div class="top-row px-4">
-
-
-
-            @if (IsAuthenticated)
-            {
+        @if (IsAuthenticated)
+        {
+            <div class="rf-dash__notify">
                 <NotificationIcon UserId="@session.UserId"></NotificationIcon>
-                <NavLink class="nav-link login" href="/logout" Match="NavLinkMatch.All">
-                    <span class="oi oi-account-logout" aria-hidden="true"></span> logout
-                </NavLink>
-            }
-            else
-            {
-                <NavLink class="nav-link" href="/login" Match="NavLinkMatch.All">
-                    <span class="oi oi-account-login" aria-hidden="true"></span> login
-                </NavLink>
-            }
-        </div>
+            </div>
+        }
 
         <div class="content px-4">
             @Body

@@ -1,87 +1,144 @@
 ﻿@layout AdminLayout
 @page "/admin/search"
 
+<header class="rf-page-head">
+    <h1 class="rf-page-title">Find a user</h1>
+    <p class="rf-page-subtitle">
+        Search by user id, username, email or character name. The first @pageSize matches are shown.
+    </p>
+</header>
 
-<div class="pagenation">
-    <div class="search-bar">
-        <EditForm Model="searchModel" OnSubmit="Filter">
-            <InputText class="search-input" placeholder="Search for id, username or name" @bind-Value="searchModel.Query" />
-        </EditForm>
-    </div>
-    <div class="total-players"><span>@totalCount</span> users</div>
+<div class="rf-toolbar">
+    <EditForm Model="searchModel" OnSubmit="Filter">
+        <input type="search"
+               class="rf-input rf-search"
+               placeholder="Search for id, username, email or character name"
+               aria-label="Search for a user"
+               @bind="searchModel.Query" />
+    </EditForm>
+
+    @if (users != null && !loading)
+    {
+        @*
+            This used to read "@totalCount users", where totalCount was the length of the page just
+            fetched. With a limit of 25 it said "25 users" for any search that matched more than
+            25, which is the opposite of what an administrator needs to know.
+        *@
+        <span class="rf-meta">
+            @users.Count @(users.Count == 1 ? "match" : "matches")@(users.Count >= pageSize ? ", limit reached" : "")
+        </span>
+    }
 </div>
-
 
 @if (string.IsNullOrEmpty(searchModel.Query))
 {
-    <div>Enter search for ID, username, email, or character name</div>
+    <div class="rf-panel">
+        <p class="rf-meta">
+            Enter a user id, a username, an email address or a character name.
+        </p>
+    </div>
 }
 else if (users == null || loading)
 {
     <LoadIndicator></LoadIndicator>
 }
+else if (users.Count == 0)
+{
+    <div class="rf-panel">
+        <p class="rf-meta">Nothing matches "@searchModel.Query".</p>
+    </div>
+}
 else
 {
-    <table class="player-table">
-        <thead>
-            <tr>
-                <th></th>
-                <th>UserId</th>
-                <th>UserName</th>
-                <th>Email</th>
-                <th>Patreon</th>
-                <th>Characters</th>
-                <th>Admin</th>
-                <th>Mod</th>
-                <th>Hidden Highscore</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var user in users)
-            {
-                <tr class="player-row">
-                    <td><img src="/api/twitch/logo/@(user.Id)" class="profile-picture" /></td>
-                    <td><a href="/admin/user/@user.Id">@user.Id</a></td>
-                    <td>
-                        <span>@user.UserName</span>
-                        @if (user.Status >= 1)
-                        {
-                            <span style="color: white; background-color:red;font-size:9pt;">&nbsp;BANNED</span>
-                        }
-                    </td>
-                    <td>
-                        @user.Email
-                    </td>
-                    <td>
-                        @if (user.PatreonTier != null && user.PatreonTier >= patreonNames.Length)
-                        {
-                            @patreonNames[patreonNames.Length - 1]
-                        }
-                        else
-                        {
-                            @patreonNames[user.PatreonTier?? 0]
-                        }
-                    </td>
-                    <td>
-                        @if (@user.Characters.Count > 0)
-                        {
-                            <ul>
-                                @foreach (var character in @user.Characters)
+    <div class="rf-panel">
+        <div class="rf-scroll-x">
+            <table class="rf-table">
+                <thead>
+                    <tr>
+                        <th scope="col"><span class="rf-th rf-th--static">User</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Characters</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Patreon</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Roles</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Account</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in users)
+                    {
+                        <tr>
+                            <td>
+                                @* The name is the link. The old row linked the guid instead, which
+                                   is the one part of the row nobody reads. *@
+                                <div class="rf-item">
+                                    <span class="rf-item__img">
+                                        <img src="/api/twitch/logo/@(user.Id)" alt="" loading="lazy" />
+                                    </span>
+                                    <span class="rf-item__body">
+                                        <a class="rf-item__name" href="/admin/user/@user.Id">@user.UserName</a>
+                                        <span class="rf-item__meta">
+                                            @if (!string.IsNullOrEmpty(user.Email))
+                                            {
+                                                <span>@user.Email</span>
+                                            }
+                                            @if (user.Status >= 1)
+                                            {
+                                                <span class="rf-badge rf-badge--bad">@StatusName(user.Status)</span>
+                                            }
+                                        </span>
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                @if (user.Characters == null || user.Characters.Count == 0)
                                 {
-                                    <li class="character-list">
-                                        <div class=character-session><span class=player-character>@character.UserName<span class='player-character-index' alt='Character Number'>@character.CharacterIndex</span></span> <span class=session>@character.SessionName</span></div>
-                                    </li>
+                                    <span class="rf-meta">None</span>
                                 }
-                            </ul>
-                        }
-                    </td>
-                    <td>@user.IsAdmin</td>
-                    <td>@user.IsModerator</td>
-                    <td>
-                        @user.IsHiddenInHighscore
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+                                else
+                                {
+                                    <div class="rf-chips">
+                                        @foreach (var character in user.Characters)
+                                        {
+                                            @*
+                                                Combat level and whether the character is on a live
+                                                stream were both already on the wire and neither was
+                                                rendered. Which stream someone is playing on is most
+                                                of what a support question turns out to be about.
+                                            *@
+                                            <a class="rf-chip" href="/inspect/@character.Id" title="@SessionNote(character)">
+                                                <span>@(character.Name ?? character.UserName)</span>
+                                                <span class="rf-chip__index">#@character.CharacterIndex</span>
+                                                <span>lv @character.CombatLevel</span>
+                                            </a>
+                                        }
+                                    </div>
+                                }
+                            </td>
+                            <td class="rf-table__quiet">@PatreonName(user.PatreonTier)</td>
+                            <td>
+                                @if (user.IsAdmin)
+                                {
+                                    <span class="rf-badge rf-badge--gold">Admin</span>
+                                }
+                                @if (user.IsModerator)
+                                {
+                                    <span class="rf-badge rf-badge--gold">Mod</span>
+                                }
+                                @if (user.IsHiddenInHighscore)
+                                {
+                                    <span class="rf-badge">Hidden</span>
+                                }
+                                @if (!user.IsAdmin && !user.IsModerator && !user.IsHiddenInHighscore)
+                                {
+                                    <span class="rf-meta">Player</span>
+                                }
+                            </td>
+                            <td class="rf-table__quiet" title="@user.Created.ToString("yyyy-MM-dd HH:mm")">
+                                @user.Created.ToString("yyyy-MM-dd")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 }

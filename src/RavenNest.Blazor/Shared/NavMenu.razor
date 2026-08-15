@@ -82,13 +82,21 @@
             }
             else
             {
+                @*
+                    Grouped by what the person is doing, not by which controller serves it.
+                    A player opens this to look after their own characters, to do something with
+                    other people, or to check their stream. A flat list of ten links made every
+                    one of those feel equally likely, which is why nothing was findable.
+                *@
                 <li class="nav-item">
-                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                        <span class="oi oi-arrow-left" aria-hidden="true"></span> Frontpage
+                    <NavLink class="nav-link" href="/dashboard" Match="NavLinkMatch.All">
+                        <span class="fas fa-home" aria-hidden="true"></span>&nbsp;Overview
                     </NavLink>
                 </li>
+
+                <li class="rf-nav-group">You</li>
                 <li class="nav-item">
-                    <NavLink class="nav-link" href="/characters" Match="NavLinkMatch.All">
+                    <NavLink class="nav-link" href="/characters">
                         <span class="fas fa-users" aria-hidden="true"></span>&nbsp;Characters
                     </NavLink>
                 </li>
@@ -98,35 +106,38 @@
                     </NavLink>
                 </li>
 
+                <li class="rf-nav-group">Together</li>
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/clan" Match="NavLinkMatch.All">
                         <span class="fas fa-shield-alt" aria-hidden="true"></span>&nbsp;Clan
                     </NavLink>
                 </li>
-
-                @if (activeGame)
-                {
-                    <li class="nav-item">
-                        <NavLink class="nav-link" href="/session" Match="NavLinkMatch.All">
-                            <span class="fas fa-users" aria-hidden="true"></span>&nbsp;My Game Session
-                        </NavLink>
-                    </li>
-                }
-
+                @*
+                    Marketplace and Vendor belong here, but as dashboard pages. Linking the front
+                    page version threw you out of the dashboard entirely, so it is left out until
+                    the dashboard version exists. The front page nav still carries it meanwhile.
+                *@
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/loyalty" Match="NavLinkMatch.All">
-                        <span class="fas fa-users" aria-hidden="true"></span>&nbsp;Loyalty
+                        <span class="fas fa-heart" aria-hidden="true"></span>&nbsp;Loyalty
+                    </NavLink>
+                </li>
+
+                @*
+                    Streaming tools are only relevant if you actually stream, so they are grouped
+                    rather than mixed in with the pages every viewer uses. Bot stays visible even
+                    with no active session: the reason to open it is usually that nothing is
+                    running.
+                *@
+                <li class="rf-nav-group">Your stream</li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/bot" Match="NavLinkMatch.All">
+                        <span class="fas fa-robot" aria-hidden="true"></span>&nbsp;Bot
                     </NavLink>
                 </li>
 
                 @if (IsAdministrator)
                 {
-                    <li class="nav-item">
-                        <NavLink class="nav-link" href="/tv" Match="NavLinkMatch.All">
-                            <span class="fa-sharp fa-solid fa-tv-retro" aria-hidden="true"></span>&nbsp;TV
-                        </NavLink>
-                    </li>
-
                     <li class="nav-item">
                         <NavLink class="nav-link" href="/admin" Match="NavLinkMatch.All">
                             <span class="fas fa-key" aria-hidden="true"></span>&nbsp;Admin
@@ -137,6 +148,12 @@
 
             @if (session != null && session.Authenticated)
             {
+                <li class="rf-nav-group">Account</li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                        <span class="oi oi-arrow-left" aria-hidden="true"></span>&nbsp;Back to site
+                    </NavLink>
+                </li>
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/patreon" Match="NavLinkMatch.All">
                         <span class="fa-brands fa-patreon" aria-hidden="true"></span>&nbsp;Patreon

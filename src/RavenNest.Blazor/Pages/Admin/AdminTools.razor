@@ -7,57 +7,65 @@
 @inject RavenNest.Blazor.Services.UserService UserService
 @inject NavigationManager NavigationManager
 
-<h3>Other Admin Tools</h3>
+<header class="rf-page-head">
+    <h1 class="rf-page-title">Other admin tools</h1>
+    <p class="rf-page-subtitle">
+        The things that do not belong to a screen of their own.
+    </p>
+</header>
 
-<ul>
-    <li>
-        <NavLink class="link" href="/api/admin/backup/download" Match="NavLinkMatch.All">
-            <span class="oi oi-arrow-left" aria-hidden="true"></span> Download Latest Backup
-        </NavLink>
-    </li>
-    <li>
-        <span>Generate New State_Data.Json</span> 
+<section class="rf-panel">
+    <h2 class="rf-panel__title">Database backup</h2>
+    <p class="rf-meta">
+        Downloads the most recent backup file the server has produced. It is a large download.
+    </p>
+    <div class="rf-actions">
+        <a class="rf-btn" href="/api/admin/backup/download">
+            <i class="fa-solid fa-download" aria-hidden="true"></i> Download the latest backup
+        </a>
+    </div>
+</section>
 
-        <Autocomplete SearchMethod="@SearchUser"
-                      @bind-Value="@selectedUser">
-            <SelectedTemplate>
-                @context.UserName
-            </SelectedTemplate>
-            <ResultTemplate>
-                @context.UserName
-            </ResultTemplate>
-            <NotFoundTemplate>
-                No users found.
-            </NotFoundTemplate>
+<section class="rf-panel">
+    <h2 class="rf-panel__title">Generate state data</h2>
+    <p class="rf-meta">
+        Builds a fresh <span class="rf-cmd">state_data.json</span> for one user and downloads it.
+        Used when a character's saved state needs to be inspected outside the game.
+    </p>
+
+    <label class="rf-field">
+        <span class="rf-label">User</span>
+        <Autocomplete SearchMethod="@SearchUser" @bind-Value="@selectedUser">
+            <SelectedTemplate>@context.UserName</SelectedTemplate>
+            <ResultTemplate>@context.UserName</ResultTemplate>
+            <NotFoundTemplate>No users found.</NotFoundTemplate>
         </Autocomplete>
+    </label>
 
-@*         <BlazoredTypeahead SearchMethod="SearchUser"
-                           @bind-Value="selectedUser"
-                           @onselectionchange="SelectedUserChanged">
-            <SelectedTemplate>
-                @context.UserName
-            </SelectedTemplate>
-            <ResultTemplate>
-                @context.UserName
-            </ResultTemplate>
-        </BlazoredTypeahead> *@
-
-        @if (selectedUser != null)
+    <div class="rf-actions">
+        @*
+            The button used to appear only once a user was picked, which reads as a missing feature
+            rather than as an answer. It is now always there and says what it is waiting for.
+        *@
+        <button type="button" class="rf-btn rf-btn--primary" disabled="@(selectedUser == null)" @onclick="GenerateStateData">
+            Generate
+        </button>
+        @if (selectedUser == null)
         {
-            <button @onclick="GenerateStateData" class="btn btn-primary">Generate</button>
+            <span class="rf-meta">Pick a user first.</span>
         }
-    </li>
-</ul>
+        else
+        {
+            <span class="rf-meta">Generates for <b>@selectedUser.UserName</b>.</span>
+        }
+    </div>
+</section>
 
 @code {
     private WebsiteAdminUser selectedUser;
 
-    private void SelectedUserChanged()
-    {
-    }
     private void GenerateStateData()
     {
-
         if (selectedUser == null)
             return;
 

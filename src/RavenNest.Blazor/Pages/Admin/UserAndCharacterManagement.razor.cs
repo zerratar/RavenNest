@@ -29,6 +29,10 @@ namespace RavenNest.Blazor.Pages.Admin
         private WebsiteAdminUser SelectedUser { get; set; }
         private SessionInfo Session { get; set; }
 
+        private bool loading = true;
+        private bool confirmingStatusChange;
+        private bool liftingSuspension;
+
         protected override async Task OnInitializedAsync()
         {
             Session = AuthService.GetSession();
@@ -37,31 +41,52 @@ namespace RavenNest.Blazor.Pages.Admin
             {
                 SelectedUser = UserService.GetUser(Id.Value);
             }
+
+            loading = false;
         }
 
+        /// <summary>
+        ///     An id that resolves to nothing used to bounce the administrator to the login page,
+        ///     which reads as "you are not allowed in here" when the truth is "there is no such
+        ///     user". Only the session check redirects now; the page says the rest itself.
+        /// </summary>
         protected override void OnAfterRender(bool firstRender)
         {
-            if (Session == null || !Session.Authenticated || SelectedUser == null)
+            if (Session == null || !Session.Authenticated)
             {
                 NavigationManager.NavigateTo("/login");
             }
         }
-        private async Task BanUser()
+
+        private void Confirm(bool lift)
         {
-            if (await UserService.SetUserStatusAsync(SelectedUser.Id, BusinessLogic.Data.AccountStatus.PermanentlySuspended))
-            {
-                SelectedUser.Status = 2;
-                await InvokeAsync(StateHasChanged);
-            }
+            liftingSuspension = lift;
+            confirmingStatusChange = true;
         }
 
-        private async Task UnbanUser()
+        private void CancelStatusChange()
         {
-            if (await UserService.SetUserStatusAsync(SelectedUser.Id, BusinessLogic.Data.AccountStatus.OK))
+            confirmingStatusChange = false;
+        }
+
+        /// <summary>
+        ///     Suspending an account used to happen on the first click of a button that was held at
+        ///     40% opacity until the pointer passed over it.
+        /// </summary>
+        private async Task ApplyStatusChange()
+        {
+            confirmingStatusChange = false;
+
+            var target = liftingSuspension
+                ? BusinessLogic.Data.AccountStatus.OK
+                : BusinessLogic.Data.AccountStatus.PermanentlySuspended;
+
+            if (await UserService.SetUserStatusAsync(SelectedUser.Id, target))
             {
-                SelectedUser.Status = 0;
-                await InvokeAsync(StateHasChanged);
+                SelectedUser.Status = (int)target;
             }
+
+            await InvokeAsync(StateHasChanged);
         }
 
         private void ShowInventory()

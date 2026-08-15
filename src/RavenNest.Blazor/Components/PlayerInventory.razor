@@ -6,408 +6,439 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject RavenNest.Blazor.Services.ItemService ItemService
-<div class="player-inventory">
-    <div class="inventory-header">
-        <div class="inventory-tabs">
-            <button class="inventory-tab @(activeTab == "equipment" ? "active" : "")" @onclick="() => SetEquipmentTab()">Equipment</button>
-            <button class="inventory-tab @(activeTab == "inventory" ? "active" : "")" @onclick="() => SetInventoryTab()">Inventory</button>
-            @if (CanModify)
-            {
-                <button @onclick="ShowAddItem" class="btn btn-primary">Add item</button>
-            }
+
+@*
+    Shares its item vocabulary with the stash page: the same filter list, the same rarity bands,
+    the same item cell. The two used to be separate implementations of the same screen, which is
+    how they ended up with different labels for the same category.
+*@
+<div class="rf-inv">
+    <div class="rf-inv__head">
+        <div class="rf-tabs" role="tablist">
+            <button type="button" role="tab" aria-selected="@(activeTab == "equipment")" class="rf-tab @(activeTab == "equipment" ? "is-active" : "")" @onclick="() => SetEquipmentTab()">Equipment</button>
+            <button type="button" role="tab" aria-selected="@(activeTab == "inventory")" class="rf-tab @(activeTab == "inventory" ? "is-active" : "")" @onclick="() => SetInventoryTab()">Inventory</button>
         </div>
-        <div class="account-coins">
-            <i class="fa-solid fa-coins"></i>
+        <div class="rf-inv__coins" title="@coins.ToString("N0") coins">
+            <i class="fa-solid fa-coins" aria-hidden="true"></i>
             <span>@Utility.FormatAmount(coins)</span>
         </div>
     </div>
 
     @if (activeTab == "equipment")
     {
-        <div class="equipment-view">
-            <div class="equipment-slots">
-                @foreach (var slot in GetItemSlots())
-                {
-                    var equipped = GetEquippedItemForSlot(slot);
-                    var label = GetEquipmentSlotName(slot);
+        <div class="rf-gear">
+            <section class="rf-panel">
+                <h3 class="rf-panel__title">Equipped</h3>
+                @*
+                    Slots were image squares with a label and nothing else, so working out what was
+                    actually equipped meant clicking each one. The name is right there in the data.
+                *@
+                <div class="rf-slots">
+                    @foreach (var slot in GetItemSlots())
+                    {
+                        var equipped = GetEquippedItemForSlot(slot);
+                        var equippedItem = equipped == null ? null : ItemService.GetItem(equipped.ItemId);
+                        var label = GetEquipmentSlotName(slot);
 
-                    <div class="equipment-slot" title="@label">
-                        <div class="slot-label">@label</div>
-                        @if (equipped != null)
+                        <button type="button"
+                                class="rf-slot @(equipped == null ? "is-empty" : "")"
+                                title="@(equipped == null ? label + ": empty" : label + ": " + GetItemName(equipped))"
+                                disabled="@(equipped == null)"
+                                @onclick="() => ShowItemDetails(equipped)">
+                            <span class="rf-slot__label">@label</span>
+                            @if (equipped != null)
+                            {
+                                <span class="rf-slot__img">
+                                    <img src="@GetItemImage(equipped.TransmogrificationId ?? equipped.ItemId, equipped.Tag)" alt="" loading="lazy" />
+                                    @if (equipped.TransmogrificationId != null)
+                                    {
+                                        <span class="rf-slot__mark" title="Transmogrified"><i class="fa-solid fa-mask" aria-hidden="true"></i></span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(equipped.Enchantment))
+                                    {
+                                        <span class="rf-slot__mark rf-slot__mark--enchant" title="Enchanted"><i class="fa-solid fa-sparkles" aria-hidden="true"></i></span>
+                                    }
+                                </span>
+                                <span class="rf-slot__name @ItemService.GetRarityClass(equippedItem)">@GetItemName(equipped)</span>
+                            }
+                            else
+                            {
+                                <span class="rf-slot__img rf-slot__img--empty"><i class="fa-regular fa-square" aria-hidden="true"></i></span>
+                                <span class="rf-slot__name">Empty</span>
+                            }
+                        </button>
+                    }
+                </div>
+            </section>
+
+            <section class="rf-panel">
+                <h3 class="rf-panel__title">Total stats</h3>
+                @if (EquippedStats.Count == 0)
+                {
+                    <p class="rf-meta">Nothing equipped, so no bonuses.</p>
+                }
+                else
+                {
+                    @*
+                        A label and a number, not a facts grid. rf-facts reserves a fixed label
+                        column, and this panel is the narrow third of the gear layout, so the value
+                        column was left about one character wide and every number broke down the
+                        page a digit at a time: 2,626 rendered as five stacked lines.
+                    *@
+                    <div class="rf-statlist">
+                        @foreach (var stat in EquippedStats)
                         {
-                            <div class="item-image" @onclick="() => ShowItemDetails(equipped)">
-                                <img src="@GetItemImage(equipped.TransmogrificationId ?? equipped.ItemId, equipped.Tag)" />
-                                @if (equipped.TransmogrificationId != null)
-                                {
-                                    <span class="transmog-icon" title="Transmogrified">
-                                        <i class="fa-solid fa-mask"></i>
-                                    </span>
-                                }
-                                @if (!string.IsNullOrEmpty(equipped.Enchantment))
-                                {
-                                    <span class="enchant-icon" title="Enchanted">
-                                        <i class="fa-solid fa-sparkles"></i>
-                                    </span>
-                                }
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="item-image empty">
-                                <i class="fa-regular fa-square"></i>
+                            <div class="rf-statlist__row">
+                                <span class="rf-statlist__label">@stat.Key</span>
+                                <span class="rf-statlist__value">@stat.Value.ToString("N0")</span>
                             </div>
                         }
                     </div>
                 }
-            </div>
-            <div class="equipment-stats">
-                <h3>Total Equipment Stats</h3>
-                @if (EquippedStats.Count == 0)
+
+                @*
+                    An empty slot is free stats you are not wearing, and nothing said which ones
+                    were empty without counting the squares.
+                *@
+                @if (EmptySlotNames.Count > 0)
                 {
-                    <div class="no-stats">No equipment stats</div>
+                    <p class="rf-meta rf-gear__gaps">
+                        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+                        @EmptySlotNames.Count of @GetItemSlots().Length slots are empty:
+                        <b>@string.Join(", ", EmptySlotNames)</b>
+                    </p>
                 }
-                else
-                {
-                    @foreach (var stat in EquippedStats)
-                    {
-                        <div class="stat-row">
-                            <span class="stat-name">@stat.Key</span>
-                            <span class="stat-value">@stat.Value</span>
-                        </div>
-                    }
-                }
-            </div>
+            </section>
         </div>
     }
     else if (activeTab == "inventory")
     {
-        <div class="unequipped-items">
-            <div class="item-filters">
-                <button class="item-filter @(itemFilter == ItemFilter.All ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.All)">
-                    <span class="item-filter-text">All</span>
-                    <i class="fa-sharp fa-solid fa-rectangles-mixed"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Swords ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Swords)">
-                    <span class="item-filter-text">Swords</span>
-                    <i class="fa-sharp fa-solid fa-sword"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Axes ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Axes)">
-                    <span class="item-filter-text">Axes</span>
-                    <i class="fa-sharp fa-solid fa-axe"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Spears ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Spears)">
-                    <span class="item-filter-text">Spears</span>
-                    <i class="fa-solid fa-scythe"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Bows ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Bows)">
-                    <span class="item-filter-text">Bows</span>
-                    <i class="fa-sharp fa-solid fa-bow-arrow"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Staves ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Staves)">
-                    <span class="item-filter-text">Staves</span>
-                    <i class="fa-sharp fa-solid fa-staff"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Shields ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Shields)">
-                    <span class="item-filter-text">Shields</span>
-                    <i class="fa-sharp fa-solid fa-shield"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Armors ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Armors)">
-                    <span class="item-filter-text">Armors</span>
-                    <i class="fa-sharp fa-solid fa-helmet-battle"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Accessories ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Accessories)">
-                    <span class="item-filter-text">Accessories</span>
-                    <i class="fa-sharp fa-solid fa-gem"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Pets ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Pets)">
-                    <span class="item-filter-text">Pets</span>
-                    <i class="fa-sharp fa-solid fa-dog"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
-                    <span class="item-filter-text">Scrolls</span>
-                    <i class="fa-sharp fa-solid fa-scroll"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Woodcutting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Woodcutting)">
-                    <span class="item-filter-text">Woodcutting</span>
-                    <i class="fa-solid fa-tree"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Mining ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Mining)">
-                    <span class="item-filter-text">Mining</span>
-                    <i class="fa-solid fa-pickaxe"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Fishing ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Fishing)">
-                    <span class="item-filter-text">Fishing</span>
-                    <i class="fa-sharp fa-solid fa-fishing-rod"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Farming ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Farming)">
-                    <span class="item-filter-text">Farming</span>
-                    <i class="fa-solid fa-wheat"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Gathering ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Gathering)">
-                    <span class="item-filter-text">Gathering</span>
-                    <i class="fa-solid fa-mushroom"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Crafting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Crafting)">
-                    <span class="item-filter-text">Crafting</span>
-                    <i class="fa-sharp fa-solid fa-hammer"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Cooking ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Cooking)">
-                    <span class="item-filter-text">Cooking</span>
-                    <i class="fa-sharp fa-solid fa-user-chef"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Alchemy ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Alchemy)">
-                    <span class="item-filter-text">Alchemy</span>
-                    <i class="fa-sharp fa-solid fa-flask-round-potion"></i>
-                </button>
+        <section class="rf-panel">
+            <div class="rf-toolbar">
+                @* An inventory of a few hundred items had no way to find one by name. *@
+                <input type="search"
+                       class="rf-input rf-search"
+                       placeholder="Search by name"
+                       aria-label="Search inventory by item name"
+                       value="@search"
+                       @oninput="OnSearchChanged" />
+                @if (!string.IsNullOrWhiteSpace(search) || itemFilter != ItemFilter.All)
+                {
+                    <button type="button" class="rf-btn rf-btn--small" @onclick="ClearFilters">Clear filters</button>
+                }
+                <span class="rf-meta">Showing @VisibleItems.Count of @GetInventoryItems().Count</span>
+            </div>
+
+            @* One shared list with the stash page rather than nineteen blocks in each. *@
+            <div class="rf-filters" role="group" aria-label="Filter items by category">
+                @foreach (var f in ItemFilterOptions.All)
+                {
+                    <button type="button"
+                            class="rf-filter @(itemFilter == f.Filter ? "is-active" : "")"
+                            aria-pressed="@(itemFilter == f.Filter)"
+                            @onclick="() => SelectItemFilter(f.Filter)">
+                        <i class="@f.Icon" aria-hidden="true"></i>
+                        <span>@f.Label</span>
+                    </button>
+                }
             </div>
 
             @if (CanManage)
             {
-                <div class="item-actions inventory-actions">
-                    <button @onclick="SendAllToStash" class="btn btn-action stash">@("Send all to stash")</button>
-                    <button @onclick="ShowVendorAllDialog" class="btn btn-action vendor">@("Vendor All (" + GetVendorPrice() + ")")</button>
+                <div class="rf-actions rf-inv__bulk">
+                    <button type="button" class="rf-btn rf-btn--small" @onclick="SendAllToStash">Send all to stash</button>
+                    <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="ShowVendorAllDialog">Vendor all (@GetVendorPrice())</button>
+                    @if (CanModify)
+                    {
+                        <button type="button" class="rf-btn rf-btn--small" @onclick="ShowAddItem">Add item</button>
+                    }
                 </div>
             }
 
-            <div class="inventory-items inventory">
-                @foreach (var item in GetInventoryItems())
-                {
-                    <div class="inventory-item @GetEnchantedItemClass(item.Enchantment) @(item.TransmogrificationId != null ? "transmogrified" : "")" @onclick="(() => ShowItemDetails(item))">
-                        <div class="item-image" data-item="@item.Id">
-                            <img src="@GetItemImage(item.TransmogrificationId ?? item.ItemId, item.Tag)" />
-                            @if (item.TransmogrificationId != null)
-                            {
-                                <span class="transmog-icon" title="Transmogrified">
-                                    <i class="fa-solid fa-mask"></i>
-                                </span>
-                            }
-                            @if (!string.IsNullOrEmpty(item.Enchantment))
-                            {
-                                <span class="enchant-icon" title="Enchanted">
-                                    <i class="fa-solid fa-sparkles"></i>
-                                </span>
-                            }
-                        </div>
-                        @if (item.Amount > 1)
-                        {
-                            <div class="item-amount">@GetItemAmount(item)</div>
-                        }
-                    </div>
-                }
-            </div>
-
-            @if (vendorAllConfirmationDialogVisible)
+            @if (VisibleItems.Count == 0)
             {
-                <div class="item-details-dialog-container vendor">
-                    <div class="item-details-dialog-background" @onclick="CloseVendorAllDialog"></div>
-                    <div class="item-details-dialog vendor">
-                        <div class="dialog-header">
-                            @* <button class="close" @onclick="CloseVendorAllDialog">x</button> *@
-                        </div>
-                        <div class="item-details-content vendor">
-                            <div class="warning-row">
-                                <span>You are about to vendor</span>
-                                <span>@GetItemCountForVendor()</span>
-                                <span> items in this category for</span>
-                                <span class="vendor-price">@(GetVendorPrice())</span>
-                            </div>
-                            <div class="warning-row">Are you sure you want to continue?</div>
-                        </div>
-                        <div class="item-actions">
-                            <button @onclick="CloseVendorAllDialog" class="btn btn-action">Cancel</button>
-                            <button @onclick="VendorAll" class="btn btn-action vendor">Confirm</button>
-                        </div>
-                    </div>
-                </div>
+                <p class="rf-meta">
+                    @if (GetInventoryItems().Count == 0)
+                    {
+                        <span>Nothing in this character's inventory.</span>
+                    }
+                    else
+                    {
+                        <span>Nothing matches that. Try a different category or clear the search.</span>
+                    }
+                </p>
             }
-            @if (vendorConfirmationDialogVisible)
+            else
             {
-                <div class="item-details-dialog-container vendor">
-                    <div class="item-details-dialog-background" @onclick="CloseVendorDialog"></div>
-                    <div class="item-details-dialog vendor">
-                        <div class="dialog-header">
-                            <h3>Vendor @GetItemName(vendorItem)</h3>
-                        </div>
-                        <div class="item-details-content vendor">
-                            @if (canVendorMany)
+                @*
+                    The tiles carry their rarity as a bar along the bottom, so a legendary drop is
+                    findable in a wall of two hundred squares without hovering every one. The title
+                    gives the name, which the grid never did.
+                *@
+                <div class="rf-invgrid">
+                    @foreach (var item in VisibleItems)
+                    {
+                        var i = ItemService.GetItem(item.ItemId);
+                        <button type="button"
+                                class="rf-tile @ItemService.GetRarityClass(i)"
+                                title="@TileTitle(item, i)"
+                                @onclick="(() => ShowItemDetails(item))">
+                            <span class="rf-tile__img">
+                                <img src="@GetItemImage(item.TransmogrificationId ?? item.ItemId, item.Tag)" alt="" loading="lazy" />
+                                @if (item.TransmogrificationId != null)
+                                {
+                                    <span class="rf-tile__mark" title="Transmogrified"><i class="fa-solid fa-mask" aria-hidden="true"></i></span>
+                                }
+                                @if (!string.IsNullOrEmpty(item.Enchantment))
+                                {
+                                    <span class="rf-tile__mark rf-tile__mark--enchant" title="Enchanted"><i class="fa-solid fa-sparkles" aria-hidden="true"></i></span>
+                                }
+                            </span>
+                            @if (item.Amount > 1)
                             {
-                                <div class="amount-inputs">
-                                    <label>Amount:</label>
-                                    <input @bind="vendorAmount" type="number" min="1" max="@vendorItem.Amount" />
-                                    <div class="quick-buttons">
-                                        @foreach (var amount in quickButtons)
-                                        {
-                                            <button @onclick="() => SetVendorAmount(amount)" class="btn btn-action btn-quick">
-                                                @(amount == vendorItem.Amount ? $"{amount} (All)" : $"{amount}")
-                                            </button>
-                                        }
-                                    </div>
-                                </div>
+                                <span class="rf-tile__amount">@GetItemAmount(item)</span>
                             }
-                            <div class="summary-block">
-                                <p>You are about to vendor <strong>@vendorAmount</strong> @GetItemName(vendorItem) for <strong>@((ItemService.GetItem(vendorItem.ItemId).ShopSellPrice * vendorAmount) + " coins")</strong>.</p>
-                            </div>
-                            <div class="warning-row">Are you sure you want to continue?</div>
-                        </div>
-                        <div class="item-actions">
-                            <button @onclick="CloseVendorDialog" class="btn btn-action">Cancel</button>
-                            <button @onclick="Vendor" class="btn btn-action vendor">Confirm</button>
-                        </div>
-                    </div>
+                        </button>
+                    }
                 </div>
             }
-
-        </div>
+        </section>
     }
 </div>
+
+@if (vendorAllConfirmationDialogVisible)
+{
+    <div class="rf-modal-backdrop" @onclick="CloseVendorAllDialog">
+        <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Vendor all" @onclick:stopPropagation="true">
+            <div class="rf-modal__head">
+                <h2 class="rf-modal__title">Vendor everything shown</h2>
+                <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CloseVendorAllDialog">&times;</button>
+            </div>
+            <p>
+                This sells <b>@GetItemCountForVendor()</b> items in this category for
+                <b class="rf-inv__price">@GetVendorPrice()</b>.
+            </p>
+            <p class="rf-meta">Vendored items cannot be bought back.</p>
+            <div class="rf-modal__foot">
+                <button type="button" class="rf-btn" @onclick="CloseVendorAllDialog">Cancel</button>
+                <button type="button" class="rf-btn rf-btn--danger" @onclick="VendorAll">Vendor them</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (vendorConfirmationDialogVisible)
+{
+    <div class="rf-modal-backdrop" @onclick="CloseVendorDialog">
+        <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Vendor @GetItemName(vendorItem)" @onclick:stopPropagation="true">
+            <div class="rf-modal__head">
+                <h2 class="rf-modal__title">Vendor @GetItemName(vendorItem)</h2>
+                <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CloseVendorDialog">&times;</button>
+            </div>
+
+            @if (canVendorMany)
+            {
+                <label class="rf-field">
+                    <span class="rf-label">Amount</span>
+                    <input type="number" class="rf-input" min="1" max="@vendorItem.Amount" @bind="vendorAmount" />
+                </label>
+                <div class="rf-actions">
+                    @foreach (var amount in quickButtons)
+                    {
+                        <button type="button" class="rf-btn rf-btn--small" @onclick="() => SetVendorAmount(amount)">
+                            @(amount == vendorItem.Amount ? $"All ({Utility.FormatAmount(amount)})" : Utility.FormatAmount(amount))
+                        </button>
+                    }
+                </div>
+            }
+
+            <p>
+                This sells <b>@vendorAmount</b> @GetItemName(vendorItem) for
+                <b class="rf-inv__price">@((ItemService.GetItem(vendorItem.ItemId).ShopSellPrice * vendorAmount).ToString("N0")) coins</b>.
+            </p>
+            <p class="rf-meta">Vendored items cannot be bought back.</p>
+
+            <div class="rf-modal__foot">
+                <button type="button" class="rf-btn" @onclick="CloseVendorDialog">Cancel</button>
+                <button type="button" class="rf-btn rf-btn--danger" @onclick="Vendor">Vendor it</button>
+            </div>
+        </div>
+    </div>
+}
+
 @if (itemDetailDialogVisible)
 {
     var item = ItemService.GetItem(itemDetailsDialogItem.ItemId);
     var itemSkin = itemDetailsDialogItem.TransmogrificationId != null ? ItemService.GetItem(itemDetailsDialogItem.TransmogrificationId.Value) : null;
-    <div class="item-details-dialog-container item-view">
-        <div class="item-details-dialog-background" @onclick="CloseItemDetails"></div>
-        <div class="item-details-dialog improved">
-            <div class="dialog-header">
-                <div class="item-name" data-tier="@GetItemTier()">
-                    @GetItemName()
-                </div>
-                <button class="close" @onclick="CloseItemDetails">×</button>
+    var blocking = RequirementNote(item);
+
+    <div class="rf-modal-backdrop" @onclick="CloseItemDetails">
+        <div class="rf-modal rf-modal--wide" role="dialog" aria-modal="true" aria-label="@GetItemName()" @onclick:stopPropagation="true">
+            <div class="rf-modal__head">
+                <h2 class="rf-modal__title @ItemService.GetRarityClass(item)">@GetItemName()</h2>
+                <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CloseItemDetails">&times;</button>
             </div>
-            <div class="item-details-content improved">
-                <div class="item-badges">
-                    @if (!string.IsNullOrEmpty(itemDetailsDialogItem.Enchantment))
-                    {
-                        <span class="badge enchanted" title="Enchanted"><i class="fa-solid fa-sparkles"></i> Enchanted</span>
-                    }
-                    @if (itemSkin != null)
-                    {
-                        <span class="badge transmogrified" title="Transmogrified"><i class="fa-solid fa-mask"></i> Transmogrified</span>
-                    }
-                    @if (itemDetailsDialogItem.Soulbound)
-                    {
-                        <span class="badge soulbound" title="Soulbound"><i class="fa-solid fa-link"></i> Soulbound</span>
-                    }
-                </div>
-                <div class="item-details-left">
-                    <div class="item-image-wrapper">
-                        <img src="@GetItemImage(itemDetailsDialogItem.ItemId, itemDetailsDialogItem.Tag)" class="main-item-image" />
-                        @if (itemSkin != null)
-                        {
-                            <div class="transmog-preview">
-                                <img src="@GetItemImage(itemSkin.Id, itemDetailsDialogItem.Tag)" class="skin-image" />
-                            </div>
-                        }
+
+            <div class="rf-itemview">
+                <div class="rf-itemview__art">
+                    <span class="rf-item__img rf-itemview__img">
+                        <img src="@GetItemImage(itemDetailsDialogItem.ItemId, itemDetailsDialogItem.Tag)" alt="" />
                         @if (itemDetailsDialogItem.Amount > 1)
                         {
-                            <div class="item-amount">@GetItemAmount(itemDetailsDialogItem)</div>
+                            <span class="rf-item__amount">@GetItemAmount(itemDetailsDialogItem)</span>
+                        }
+                    </span>
+                    @if (itemSkin != null)
+                    {
+                        <span class="rf-itemview__skin" title="Appearance in game">
+                            <img src="@GetItemImage(itemSkin.Id, itemDetailsDialogItem.Tag)" alt="" />
+                        </span>
+                    }
+                </div>
+
+                <div class="rf-itemview__body">
+                    <div class="rf-actions">
+                        <span class="rf-badge @ItemService.GetRarityClass(item)">@ItemService.GetRarityName(item)</span>
+                        @if (!string.IsNullOrEmpty(itemDetailsDialogItem.Enchantment))
+                        {
+                            <span class="rf-badge rf-badge--gold"><i class="fa-solid fa-sparkles" aria-hidden="true"></i> Enchanted</span>
+                        }
+                        @if (itemSkin != null)
+                        {
+                            <span class="rf-badge rf-badge--gold"><i class="fa-solid fa-mask" aria-hidden="true"></i> Transmogrified</span>
+                        }
+                        @if (itemDetailsDialogItem.Soulbound)
+                        {
+                            <span class="rf-badge rf-badge--warn"><i class="fa-solid fa-link" aria-hidden="true"></i> Soulbound</span>
                         }
                     </div>
-                    <div class="item-tier">Tier: <span>@GetItemTier()</span></div>
-                    <div class="item-type">Type: <span>@GetItemType()</span></div>
-                </div>
-                <div class="item-details-right">
+
                     @if (!string.IsNullOrEmpty(item?.Description))
                     {
-                        <div class="item-description">@item.Description</div>
+                        <p class="rf-meta">@item.Description</p>
                     }
 
-                    @{
-                        var itemStats = GetItemStats();
-                        if (itemStats != null && itemStats.Count > 0)
-                        {
-                            <div class="item-stats">
-                                <h4>Stats</h4>
-                                @foreach (var stat in itemStats)
-                                {
-                                    <div class="item-stat">
-                                        <span class="item-stat-name">@stat.Name</span>
-                                        <span class="item-stat-value">@stat.Value</span>
-                                        @if (stat.Bonus > 0)
-                                        {
-                                            <span class="item-stat-enchantment" title="Enchantment Bonus">(+@stat.Bonus)</span>
-                                        }
-                                    </div>
-                                }
-                            </div>
+                    <dl class="rf-facts">
+                        <dt>Type</dt>
+                        <dd>@GetItemType()</dd>
+                        <dt>Material</dt>
+                        <dd>@(item == null ? "Unknown" : ItemService.GetMaterialName(item))</dd>
+
+                        @{
+                            var itemStats = GetItemStats();
                         }
-                    }
+                        @if (itemStats != null && itemStats.Count > 0)
+                        {
+                            @foreach (var stat in itemStats)
+                            {
+                                <dt>@stat.Name</dt>
+                                <dd>
+                                    @stat.Value
+                                    @if (stat.Bonus > 0)
+                                    {
+                                        <span class="rf-itemview__bonus" title="Enchantment bonus">+@stat.Bonus</span>
+                                    }
+                                </dd>
+                            }
+                        }
 
-
-                    @if (!string.IsNullOrEmpty(itemDetailsDialogItem.Enchantment))
-                    {
-                        <div class="item-enchantments">
-                            <h4>Enchantments</h4>
+                        @if (!string.IsNullOrEmpty(itemDetailsDialogItem.Enchantment))
+                        {
                             @foreach (var stat in GetItemEnchantments())
                             {
-                                <div class="item-stat enchantment">
-                                    <span class="item-stat-name">@GetEnchantmentName(stat)</span>
-                                    <span class="item-stat-value">+@GetEnchantmentValue(stat)</span>
-                                </div>
+                                <dt>@GetEnchantmentName(stat)</dt>
+                                <dd><span class="rf-itemview__bonus">+@GetEnchantmentValue(stat)</span></dd>
                             }
-                        </div>
-                    }
-
-                    @{
-                        var itemReqs = GetItemRequirementLevel();
-                        if (!string.IsNullOrEmpty(itemReqs))
-                        {
-                            <div class="item-requirements">
-                                <h4>Requirements</h4>
-                                <div>
-                                    <span>@GetItemRequirementSkill()</span>
-                                    <span>@itemReqs</span>
-                                </div>
-                                @if (item.RequiredSlayerLevel > 0)
-                                {
-                                    <div>
-                                        <span>Slayer Level:</span>
-                                        <span>@item.RequiredSlayerLevel</span>
-                                    </div>
-                                }
-                            </div>
                         }
-                    }
 
+                        @if (item != null && item.RequiredAttackLevel > 0)
+                        {
+                            <dt>Requires attack</dt>
+                            <dd>@item.RequiredAttackLevel</dd>
+                        }
+                        @if (item != null && item.RequiredDefenseLevel > 0)
+                        {
+                            <dt>Requires defense</dt>
+                            <dd>@item.RequiredDefenseLevel</dd>
+                        }
+                        @if (item != null && item.RequiredRangedLevel > 0)
+                        {
+                            <dt>Requires ranged</dt>
+                            <dd>@item.RequiredRangedLevel</dd>
+                        }
+                        @if (item != null && item.RequiredMagicLevel > 0)
+                        {
+                            <dt>Requires magic or healing</dt>
+                            <dd>@item.RequiredMagicLevel</dd>
+                        }
+                        @if (item != null && item.RequiredSlayerLevel > 0)
+                        {
+                            <dt>Requires slayer</dt>
+                            <dd>@item.RequiredSlayerLevel</dd>
+                        }
+                        @if (item != null && item.ShopSellPrice > 0)
+                        {
+                            <dt>Vendor price</dt>
+                            <dd>@item.ShopSellPrice.ToString("N0") coins each</dd>
+                        }
+                    </dl>
+
+                    @*
+                        The Equip button used to simply not be rendered when a requirement was not
+                        met, which reads as a missing feature rather than an answer.
+                    *@
+                    @if (blocking != null && !itemDetailsDialogItem.Equipped)
+                    {
+                        <p class="rf-itemview__blocked">
+                            <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                            @Player.Name cannot equip this yet. @blocking
+                        </p>
+                    }
                 </div>
             </div>
+
             @if (CanManage)
             {
-                <div class="item-actions">
-                    @if (itemDetailsDialogItem.Equipped)
-                    {
-                        <button @onclick="UnequipItem" class="btn btn-action">Unequip</button>
-                    }
-                    else if (CanBeEquipped())
-                    {
-                        <button @onclick="EquipItem" class="btn btn-action">Equip</button>
-                    }
-                    <button @onclick="SendToStash" class="btn btn-action">Send to stash</button>
-                    @if (characters != null)
-                    {
-                        foreach (var plr in characters)
+                <div class="rf-modal__foot rf-modal__foot--spread">
+                    <div class="rf-actions">
+                        @if (!itemDetailsDialogItem.Equipped && itemDetailsDialogItem.TransmogrificationId == null)
                         {
-                            if (plr.Id == Player.Id) continue;
-                            <button @onclick="() => SendToCharacter(plr)" class="btn btn-action">Send to @plr.Alias</button>
+                            <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="() => ShowVendorDialog(itemDetailsDialogItem)">Vendor</button>
                         }
-                    }
-                    @if (!itemDetailsDialogItem.Equipped && itemDetailsDialogItem.TransmogrificationId == null)
-                    {
-                        <button @onclick="() => ShowVendorDialog(itemDetailsDialogItem)" class="btn btn-action vendor">Vendor</button>
-                    }
+                    </div>
+                    <div class="rf-actions">
+                        <button type="button" class="rf-btn rf-btn--small" @onclick="SendToStash">Send to stash</button>
+                        @if (characters != null)
+                        {
+                            foreach (var plr in characters)
+                            {
+                                if (plr.Id == Player.Id) continue;
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="() => SendToCharacter(plr)">Send to @plr.Alias</button>
+                            }
+                        }
+                        @if (itemDetailsDialogItem.Equipped)
+                        {
+                            <button type="button" class="rf-btn rf-btn--primary" @onclick="UnequipItem">Unequip</button>
+                        }
+                        else if (CanBeEquipped())
+                        {
+                            <button type="button" class="rf-btn rf-btn--primary" @onclick="EquipItem">Equip</button>
+                        }
+                    </div>
                 </div>
 
                 @if (CanBeTransmogrified(itemDetailsDialogItem))
                 {
-                    <div class="item-transmogrification improved">
-                        <h4>Transmogrification</h4>
-                        <p>
-                            Change the appearance of this item using another item as a skin.<br />
-                            <small>Note: The skin item will be removed until transmogrification is cleared or replaced.</small>
+                    <div class="rf-itemview__transmog">
+                        <h3 class="rf-panel__title">Transmogrification</h3>
+                        <p class="rf-meta">
+                            Change the appearance of this item using another item as a skin. The skin item is
+                            removed until the transmogrification is cleared or replaced.
                         </p>
                         @if (isTransmogrificationItemSelectorVisible)
                         {
-                            <div class="item-select">
-                                <label>Search for item to use for transmogrifaction</label>
+                            <label class="rf-field">
+                                <span class="rf-label">Item to use as a skin</span>
                                 <BlazoredTypeahead SearchMethod="SearchSkinnableItem" @bind-Value="selectedSkin">
                                     <SelectedTemplate>
                                         @context.Name
@@ -416,37 +447,41 @@
                                         @context.Name
                                     </ResultTemplate>
                                 </BlazoredTypeahead>
-                                @if (selectedSkin != null)
-                                {
-                                    <div class="transmogrification-item">
-                                        <img src="@GetItemImage(selectedSkin.Id, itemDetailsDialogItem.Tag)" />
-                                        <span>@GetItemName(selectedSkin)</span>
-                                    </div>
-                                }
-                            </div>
-                            <div class="item-actions">
+                            </label>
+                            @if (selectedSkin != null)
+                            {
+                                <div class="rf-item">
+                                    <span class="rf-item__img">
+                                        <img src="@GetItemImage(selectedSkin.Id, itemDetailsDialogItem.Tag)" alt="" />
+                                    </span>
+                                    <span class="rf-item__body">
+                                        <span class="rf-item__name @ItemService.GetRarityClass(selectedSkin)">@GetItemName(selectedSkin)</span>
+                                    </span>
+                                </div>
+                            }
+                            <div class="rf-actions">
                                 @if (itemSkin != null)
                                 {
-                                    <button @onclick="ReplaceTransmogrification" class="btn btn-action">Replace</button>
+                                    <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="ReplaceTransmogrification">Replace</button>
                                 }
                                 else
                                 {
-                                    <button @onclick="AddTransmogrification" class="btn btn-action">Apply</button>
+                                    <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="AddTransmogrification">Apply</button>
                                 }
-                                <button @onclick="HideApplyTransmogrificationDialog" class="btn btn-action">Cancel</button>
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="HideApplyTransmogrificationDialog">Cancel</button>
                             </div>
                         }
                         else
                         {
-                            <div class="item-actions">
+                            <div class="rf-actions">
                                 @if (itemSkin != null)
                                 {
-                                    <button @onclick="ShowApplyTransmogrificationDialog" class="btn btn-action">Replace</button>
-                                    <button @onclick="RemoveTransmogrification" class="btn btn-action">Remove</button>
+                                    <button type="button" class="rf-btn rf-btn--small" @onclick="ShowApplyTransmogrificationDialog">Replace skin</button>
+                                    <button type="button" class="rf-btn rf-btn--small" @onclick="RemoveTransmogrification">Remove skin</button>
                                 }
                                 else
                                 {
-                                    <button @onclick="ShowApplyTransmogrificationDialog" class="btn btn-action">Find item to use for Transmogrification</button>
+                                    <button type="button" class="rf-btn rf-btn--small" @onclick="ShowApplyTransmogrificationDialog">Choose a skin</button>
                                 }
                             </div>
                         }
@@ -456,16 +491,17 @@
         </div>
     </div>
 }
-@if (CanModify)
+
+@if (CanModify && addItemDialogVisible)
 {
-    if (addItemDialogVisible)
-    {
-        <div class="item-modal-background">
-            <div class="clan-member-invite">
-                <div class="clan-member-invite-header">
-                    <h2>Search for item to add</h2>
-                    <button class="close" @onclick="HideAddItem">x</button>
-                </div>
+    <div class="rf-modal-backdrop" @onclick="HideAddItem">
+        <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Add item" @onclick:stopPropagation="true">
+            <div class="rf-modal__head">
+                <h2 class="rf-modal__title">Add item</h2>
+                <button type="button" class="rf-modal__close" aria-label="Close" @onclick="HideAddItem">&times;</button>
+            </div>
+            <label class="rf-field">
+                <span class="rf-label">Search for an item</span>
                 <BlazoredTypeahead SearchMethod="SearchItem" @bind-Value="selectedItem">
                     <SelectedTemplate>
                         @context.Name
@@ -474,16 +510,33 @@
                         @context.Name
                     </ResultTemplate>
                 </BlazoredTypeahead>
-                <div class="clan-member-invite-controls">
-                    @if (selectedItem != null)
-                    {
-                        <button @onclick="AddItem" class="btn btn-primary">Add</button>
-                    }
-                    <button @onclick="HideAddItem" class="btn btn-secondary">Cancel</button>
-                </div>
+            </label>
+
+            @* Granting a hundred of something used to mean a hundred clicks. *@
+            <label class="rf-field">
+                <span class="rf-label">Amount</span>
+                <input type="number" class="rf-input" min="1" @bind-value="addItemAmount" />
+            </label>
+            <div class="rf-actions">
+                @foreach (var quick in new[] { 1, 10, 100, 1000 })
+                {
+                    <button type="button" class="rf-btn rf-btn--small" @onclick="() => addItemAmount = quick">@quick</button>
+                }
+            </div>
+
+            @if (selectedItem != null)
+            {
+                <p class="rf-meta">Adds <b>@addItemAmount</b> @selectedItem.Name to <b>@Player.Name</b>.</p>
+            }
+            <div class="rf-modal__foot">
+                <button type="button" class="rf-btn" @onclick="HideAddItem">Cancel</button>
+                @if (selectedItem != null)
+                {
+                    <button type="button" class="rf-btn rf-btn--primary" @onclick="AddItem">Add</button>
+                }
             </div>
         </div>
-    }
+    </div>
 }
 @code {
     [Parameter]
@@ -514,11 +567,88 @@
     List<long> quickButtons = new List<long>();
 
     private Item selectedItem;
+    private int addItemAmount = 1;
     private bool addItemDialogVisible;
     private bool CanModify => session != null && session.Administrator;
     private ItemFilter itemFilter = ItemFilter.All;
 
     private string activeTab = "equipment";
+    private string search = "";
+
+    /// <summary>
+    ///     The category filter narrowed by the search box. Kept separate from
+    ///     <see cref="GetInventoryItems"/> so the bulk vendor actions keep operating on the whole
+    ///     category, which is what their wording promises, rather than on whatever happens to be
+    ///     typed in the search box at the time.
+    /// </summary>
+    private IReadOnlyList<Models.InventoryItem> VisibleItems
+    {
+        get
+        {
+            var items = GetInventoryItems();
+            if (string.IsNullOrWhiteSpace(search))
+                return items;
+
+            var needle = search.Trim();
+            return items.Where(x => (GetItemName(x) ?? "").Contains(needle, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        search = e.Value?.ToString() ?? "";
+    }
+
+    private void ClearFilters()
+    {
+        search = "";
+        SelectItemFilter(ItemFilter.All);
+    }
+
+    /// <summary>Names of the equipment slots with nothing in them.</summary>
+    private List<string> EmptySlotNames =>
+        GetItemSlots()
+            .Where(x => GetEquippedItemForSlot(x) == null)
+            .Select(GetEquipmentSlotName)
+            .ToList();
+
+    /// <summary>
+    ///     The grid is images only, so without this there is no way to tell what anything is
+    ///     without opening it one at a time.
+    /// </summary>
+    private string TileTitle(Models.InventoryItem entry, Item item)
+    {
+        var name = GetItemName(entry);
+        var parts = new List<string>();
+        if (entry.Amount > 1) parts.Add(GetItemAmount(entry));
+        if (item != null) parts.Add(ItemService.GetRarityName(item));
+        if (!string.IsNullOrEmpty(entry.Enchantment)) parts.Add("enchanted");
+        if (entry.Soulbound) parts.Add("soulbound");
+
+        return parts.Count == 0 ? name : name + " (" + string.Join(", ", parts) + ")";
+    }
+
+    /// <summary>
+    ///     Null when this character meets every requirement on the item, otherwise what is
+    ///     missing. Magic requirements are satisfied by either magic or healing, which is what the
+    ///     in game tooltip has always said.
+    /// </summary>
+    private string RequirementNote(Item item)
+    {
+        if (item == null || Player?.Skills == null)
+            return null;
+
+        var missing = new List<string>();
+        if (item.RequiredAttackLevel > Player.Skills.AttackLevel) missing.Add("Attack " + item.RequiredAttackLevel);
+        if (item.RequiredDefenseLevel > Player.Skills.DefenseLevel) missing.Add("Defense " + item.RequiredDefenseLevel);
+        if (item.RequiredRangedLevel > Player.Skills.RangedLevel) missing.Add("Ranged " + item.RequiredRangedLevel);
+        if (item.RequiredSlayerLevel > Player.Skills.SlayerLevel) missing.Add("Slayer " + item.RequiredSlayerLevel);
+
+        var magic = Math.Max(Player.Skills.MagicLevel, Player.Skills.HealingLevel);
+        if (item.RequiredMagicLevel > magic) missing.Add("Magic " + item.RequiredMagicLevel);
+
+        return missing.Count == 0 ? null : "Needs " + string.Join(", ", missing) + ".";
+    }
 
     public enum ItemSlot
     {
@@ -694,18 +824,29 @@
     {
         session = AuthService.GetSession();
 
-        if (Player != null && Player.UserId != session.UserId)
+        UpdateCoins();
+
+        if (IsMyCharacter)
         {
-            coins = PlayerService.GetCoins(Player.UserId);
-        }
-        else
-        {
-            coins = PlayerService.GetMyCoins();
             characters = await PlayerService.GetMyPlayersAsync();
         }
 
-
         UpdateItemsToVendor();
+    }
+
+    /// <summary>
+    ///     This component renders on /inspect as well as on the dashboard, where the character
+    ///     belongs to someone else and there may be nobody signed in at all. The session check used
+    ///     to read session.UserId without a null check, which threw for a signed out visitor
+    ///     looking at any character.
+    /// </summary>
+    private bool IsMyCharacter => Player == null || session == null || Player.UserId == session.UserId;
+
+    private void UpdateCoins()
+    {
+        coins = IsMyCharacter
+            ? PlayerService.GetMyCoins()
+            : PlayerService.GetCoins(Player.UserId);
     }
 
     private void SelectItemFilter(ItemFilter newItemFilter)
@@ -719,7 +860,10 @@
     {
         this.itemsToVendor = GetInventoryItems(false);
         this.vendorAllSum = itemsToVendor.Sum(x => x.Amount * ItemService.GetItem(x.ItemId).ShopSellPrice);
-        this.coins = PlayerService.GetMyCoins();
+        // Was GetMyCoins() unconditionally, which overwrote the figure loaded a moment earlier for
+        // whichever character is being looked at: on /inspect the coin count shown against someone
+        // else's inventory was your own.
+        UpdateCoins();
     }
 
 
@@ -921,7 +1065,12 @@
     public string GetItemName(Models.InventoryItem i)
     {
         if (i == null) return null;
-        return i.Name ?? ItemService.GetItem(itemDetailsDialogItem.ItemId)?.Name;
+        // Was itemDetailsDialogItem.ItemId, which is the item the details dialog happens to be
+        // showing rather than the one being asked about. Every caller outside that dialog - the
+        // equipment slots, the tile titles, the search filter - asks about an item while no dialog
+        // is open, and InventoryItem.Name is only set for renamed items, so the null coalesce fell
+        // through to a null field for every ordinary item on the page.
+        return i.Name ?? ItemService.GetItem(i.ItemId)?.Name;
     }
 
     public string GetItemName(Models.Item i)
@@ -991,8 +1140,9 @@
 
         HideAddItem();
 
-        Player = PlayerService.AddItem(Player.Id, selectedItem);
+        Player = PlayerService.AddItem(Player.Id, selectedItem, addItemAmount);
         selectedItem = null;
+        addItemAmount = 1;
     }
 
     public void HideAddItem()

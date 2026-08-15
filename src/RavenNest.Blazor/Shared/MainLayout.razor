@@ -1,148 +1,194 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@implements IDisposable
 @inject RavenNest.Blazor.Services.AuthService AuthService
+@inject NavigationManager NavigationManager
 
-<div class="page front-page">
-    @*<div class="sidebar">
-    <NavMenu Authenticated="IsAuthenticated" Administrator="IsAdministrator"></NavMenu>
-    </div>*@
+@*
+    The front page layout. .rf-front is what scopes ravenfall-front.css, the same way
+    DashboardLayout's .rf-dash scopes ravenfall-dashboard.css.
 
+    Note what is deliberately not here: nothing switches off site.css's h1::after separator image
+    or its #ff7f00 headings for .rf-front as a whole. Most front pages have not been converted yet
+    and are still drawn against those rules, so each converted page turns them off for itself.
+*@
+<div class="page front-page rf-front">
     <div class="main">
-        <div class="top-nav">
-            <div class="top-row corner">
-                @if (IsAuthenticated)
-                {
-                    <NotificationIcon UserId="@session.UserId"></NotificationIcon>
-                    <NavLink class="nav-link" href="/logout" Match="NavLinkMatch.All">
-                        <span class="oi oi-account-logout" aria-hidden="true"></span> LOGOUT
-                    </NavLink>
-                }
-                else
-                {
-                    <NavLink class="nav-link" href="/login" Match="NavLinkMatch.All">
-                        <span class="oi oi-account-login" aria-hidden="true"></span> LOGIN
-                    </NavLink>
-                }
-
-                <a class="nav-link" href="https://discord.gg/gtfDts7" target="_blank">
-                    SUPPORT
+        <header class="rf-sitehead">
+            <div class="rf-sitehead__inner">
+                <a href="/" class="rf-sitehead__logo" aria-label="Ravenfall home">
+                    <img src="/imgs/logo.png" alt="Ravenfall" />
                 </a>
 
-                <a class="nav-link" href="http://ravenfall.fandom.com/" target="_blank">
-                    <svg class="wds-icon"><use xlink:href="#wds-brand-fandom-logomark"></use></svg> FANDOM
-                </a>
-            </div>
-            <div class="top-row stretch">
-                <div class="main-nav">
-                    <a href="/" class="logo-link">
-                        <img src="/imgs/logo.png" class="logo" />
-                    </a>
+                <button type="button"
+                        class="rf-btn rf-btn--small rf-sitehead__toggle"
+                        aria-expanded="@(menuOpen ? "true" : "false")"
+                        aria-controls="rf-site-menu"
+                        @onclick="ToggleMenu">
+                    <i class="fa-solid @(menuOpen ? "fa-xmark" : "fa-bars")" aria-hidden="true"></i>
+                    Menu
+                </button>
 
-                    <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
-                        HOME
-                    </NavLink>
-                    <div class="nav-link dd">
-                        <span>GAME</span>
-                        <div class="dd-content">
-                            <NavLink class="nav-link dd-item" href="/download" Match="NavLinkMatch.All">
-                                DOWNLOAD
-                            </NavLink>
-                            <NavLink class="nav-link dd-item" href="/commands" Match="NavLinkMatch.All">
-                                COMMAND LIST
-                            </NavLink>
-                            <a class="nav-link dd-item" href="https://www.youtube.com/watch?v=lTMs19hsvNc&ab_channel=Zerratar" target="_blank">GAME TRAILER</a>
-                            <NavLink class="nav-link dd-item" href="/leaderboard" Match="NavLinkMatch.All">
-                                LEADERBOARD
-                            </NavLink>
-                            <NavLink class="nav-link dd-item" href="/marketplace" Match="NavLinkMatch.All">
-                                MARKETPLACE
-                            </NavLink>
-                            <NavLink class="nav-link dd-item" href="/items" Match="NavLinkMatch.All">
-                                ITEM LIST
-                            </NavLink>
-                            <NavLink class="nav-link dd-item" href="/streams" Match="NavLinkMatch.All">
-                                STREAMS
-                            </NavLink>
-                            <NavLink class="nav-link dd-item" href="/towns" Match="NavLinkMatch.All">
-                                TOWNS
-                            </NavLink>
+                <nav id="rf-site-menu" class="rf-sitenav @(menuOpen ? "is-open" : "")" aria-label="Main">
+                    <NavLink class="rf-sitenav__link" href="/" Match="NavLinkMatch.All">Home</NavLink>
+
+                    @*
+                        Was a hover only dropdown with a hardcoded height, which meant it could not
+                        be opened on a phone or from a keyboard at all. <details> gets both for
+                        free and needs no script.
+                    *@
+                    <details class="rf-dd">
+                        <summary class="rf-sitenav__link rf-dd__summary">
+                            Game <i class="fa-solid fa-chevron-down rf-dd__caret" aria-hidden="true"></i>
+                        </summary>
+                        <div class="rf-dd__menu">
+                            <NavLink class="rf-sitenav__link" href="/download" Match="NavLinkMatch.All">Download</NavLink>
+                            <NavLink class="rf-sitenav__link" href="/commands" Match="NavLinkMatch.All">Command list</NavLink>
+                            <NavLink class="rf-sitenav__link" href="/items" Match="NavLinkMatch.All">Item list</NavLink>
+                            <NavLink class="rf-sitenav__link" href="/towns" Match="NavLinkMatch.All">Towns</NavLink>
+                            <a class="rf-sitenav__link" href="https://www.youtube.com/watch?v=lTMs19hsvNc&ab_channel=Zerratar" target="_blank" rel="noopener">Game trailer</a>
+                            <a class="rf-sitenav__link" href="http://ravenfall.fandom.com/" target="_blank" rel="noopener">Wiki</a>
                         </div>
-                    </div>
+                    </details>
 
-                    <a class="nav-link" href="https://discord.gg/gtfDts7" target="_blank">
-                        COMMUNITY
-                    </a>
+                    @* Promoted out of the dropdown. These are the three pages a visitor actually
+                       comes here for, and they were all buried one hover deep. *@
+                    <NavLink class="rf-sitenav__link" href="/highscore" Match="NavLinkMatch.All">Highscore</NavLink>
+                    <NavLink class="rf-sitenav__link" href="/marketplace" Match="NavLinkMatch.All">Marketplace</NavLink>
+                    <NavLink class="rf-sitenav__link" href="/streams" Match="NavLinkMatch.All">Streams</NavLink>
+
+                    @* SUPPORT, COMMUNITY and the Discord icon were three links to the same invite.
+                       One of them is enough, and it is the icon in the social row. *@
+
                     @if (IsAuthenticated)
                     {
-                        <NavLink class="nav-link" href="characters" Match="NavLinkMatch.All">
-                            DASHBOARD
-                        </NavLink>
+                        <NavLink class="rf-sitenav__link" href="/dashboard">Dashboard</NavLink>
                         if (IsAdministrator)
                         {
-                            <NavLink class="nav-link btn-admin" href="/admin" Match="NavLinkMatch.All">ADMIN</NavLink>
+                            <NavLink class="rf-sitenav__link" href="/admin" Match="NavLinkMatch.All">Admin</NavLink>
                         }
                     }
                     else
                     {
-                        <NavLink class="nav-link" href="/login/redirect/characters" Match="NavLinkMatch.All">
-                            DASHBOARD
-                        </NavLink>
+                        <NavLink class="rf-sitenav__link" href="/login/redirect/characters" Match="NavLinkMatch.All">Dashboard</NavLink>
                     }
 
-                </div>
-                <div class="top-social">
-                    <a class="nav-link" href="https://www.twitch.tv/zerratar" target="_blank">
-                        <i class="fab fa-twitch"></i>
-                    </a>
-                    <a class="nav-link" href="https://discord.gg/gtfDts7" target="_blank">
-                        <i class="fab fa-discord"></i>
-                    </a>
-                    <a class="nav-link" href="https://www.twitter.com/zerratar" target="_blank">
-                        <i class="fab fa-twitter"></i>
-                    </a>
-                    <a class="nav-link" href="https://www.youtube.com/zerratar" target="_blank">
-                        <i class="fab fa-youtube"></i>
-                    </a>
-                    <a class="nav-link" href="https://www.patreon.com/ravenfall" target="_blank">
-                        <i class="fab fa-patreon"></i>
-                    </a>
-                    @*<a class="nav-link" href="#">
-                    <i class="fab fa-reddit"></i>
-                    </a>*@
-                </div>
+                    <div class="rf-sitenav__end">
+                        <div class="rf-social">
+                            <a class="rf-social__link" href="https://www.twitch.tv/zerratar" target="_blank" rel="noopener" aria-label="Ravenfall on Twitch" title="Twitch">
+                                <i class="fab fa-twitch" aria-hidden="true"></i>
+                            </a>
+                            <a class="rf-social__link" href="https://discord.gg/gtfDts7" target="_blank" rel="noopener" aria-label="Ravenfall on Discord" title="Discord">
+                                <i class="fab fa-discord" aria-hidden="true"></i>
+                            </a>
+                            <a class="rf-social__link" href="https://www.youtube.com/zerratar" target="_blank" rel="noopener" aria-label="Ravenfall on YouTube" title="YouTube">
+                                <i class="fab fa-youtube" aria-hidden="true"></i>
+                            </a>
+                            <a class="rf-social__link" href="https://www.patreon.com/ravenfall" target="_blank" rel="noopener" aria-label="Ravenfall on Patreon" title="Patreon">
+                                <i class="fab fa-patreon" aria-hidden="true"></i>
+                            </a>
+                        </div>
+
+                        @if (IsAuthenticated)
+                        {
+                            <NotificationIcon UserId="@session.UserId"></NotificationIcon>
+                            <NavLink class="rf-btn rf-btn--small" href="/logout" Match="NavLinkMatch.All">
+                                <i class="fa-solid fa-arrow-right-from-bracket" aria-hidden="true"></i> Log out
+                            </NavLink>
+                        }
+                        else
+                        {
+                            <NavLink class="rf-btn rf-btn--small" href="/login" Match="NavLinkMatch.All">
+                                <i class="fa-solid fa-arrow-right-to-bracket" aria-hidden="true"></i> Log in
+                            </NavLink>
+                        }
+                    </div>
+                </nav>
             </div>
-        </div>
+        </header>
 
         <div class="content">
             @Body
         </div>
 
-        <footer>
-            <div class="footer-row top">
-                <img class="footer-logo" src="/imgs/logo.png" />
-
-                <div class="footer-social">
-                    <a class="nav-link" href="https://www.twitch.tv/zerratar" target="_blank">
-                        <i class="fab fa-twitch"></i>
-                    </a>
-                    <a class="nav-link" href="https://discord.gg/gtfDts7" target="_blank">
-                        <i class="fab fa-discord"></i>
-                    </a>
-                    <a class="nav-link" href="https://www.twitter.com/zerratar" target="_blank">
-                        <i class="fab fa-twitter"></i>
-                    </a>
-                    <a class="nav-link" href="https://www.youtube.com/zerratar" target="_blank">
-                        <i class="fab fa-youtube"></i>
-                    </a>
-                    <a class="nav-link" href="https://www.patreon.com/ravenfall" target="_blank">
-                        <i class="fab fa-patreon"></i>
-                    </a>
+        @*
+            The footer is the end of every page on the site and it carried no navigation: a logo,
+            five icons and a copyright line marked up as an h3 so it would pick up a separator
+            image. Someone who reaches the bottom of a page is looking for somewhere to go next.
+        *@
+        <footer class="rf-sitefoot">
+            <div class="rf-sitefoot__inner">
+                <div class="rf-sitefoot__brand">
+                    <img class="rf-sitefoot__logo" src="/imgs/logo.png" alt="Ravenfall" />
+                    <p class="rf-sitefoot__tag">
+                        A Twitch integrated idle RPG your viewers play from chat while you stream.
+                    </p>
+                    <div class="rf-social">
+                        <a class="rf-social__link" href="https://www.twitch.tv/zerratar" target="_blank" rel="noopener" aria-label="Ravenfall on Twitch" title="Twitch">
+                            <i class="fab fa-twitch" aria-hidden="true"></i>
+                        </a>
+                        <a class="rf-social__link" href="https://discord.gg/gtfDts7" target="_blank" rel="noopener" aria-label="Ravenfall on Discord" title="Discord">
+                            <i class="fab fa-discord" aria-hidden="true"></i>
+                        </a>
+                        <a class="rf-social__link" href="https://www.twitter.com/zerratar" target="_blank" rel="noopener" aria-label="Ravenfall on Twitter" title="Twitter">
+                            <i class="fab fa-twitter" aria-hidden="true"></i>
+                        </a>
+                        <a class="rf-social__link" href="https://www.youtube.com/zerratar" target="_blank" rel="noopener" aria-label="Ravenfall on YouTube" title="YouTube">
+                            <i class="fab fa-youtube" aria-hidden="true"></i>
+                        </a>
+                        <a class="rf-social__link" href="https://www.patreon.com/ravenfall" target="_blank" rel="noopener" aria-label="Ravenfall on Patreon" title="Patreon">
+                            <i class="fab fa-patreon" aria-hidden="true"></i>
+                        </a>
+                    </div>
                 </div>
 
-                <h3>Copyright &copy; @(DateTime.Now.Year) <a href="http://www.shinobytes.com/">shinobytes.com</a>, all rights reserved.<br /></h3>
-                <div class="cookies"><a href="/cookies">Click here if you want to read how we use cookies.</a></div>
-
+                <nav class="rf-sitefoot__cols" aria-label="Footer">
+                    <div class="rf-sitefoot__col">
+                        <h2>Game</h2>
+                        <ul>
+                            <li><a href="/download">Download</a></li>
+                            <li><a href="/commands">Command list</a></li>
+                            <li><a href="/items">Item list</a></li>
+                            <li><a href="/towns">Towns</a></li>
+                        </ul>
+                    </div>
+                    <div class="rf-sitefoot__col">
+                        <h2>Play</h2>
+                        <ul>
+                            <li><a href="/highscore">Highscore</a></li>
+                            <li><a href="/marketplace">Marketplace</a></li>
+                            <li><a href="/streams">Streams</a></li>
+                            <li><a href="/calc">Experience calculator</a></li>
+                        </ul>
+                    </div>
+                    <div class="rf-sitefoot__col">
+                        <h2>Community</h2>
+                        <ul>
+                            <li><a href="https://discord.gg/gtfDts7" target="_blank" rel="noopener">Discord</a></li>
+                            <li><a href="http://ravenfall.fandom.com/" target="_blank" rel="noopener">Wiki</a></li>
+                            <li><a href="https://www.patreon.com/ravenfall" target="_blank" rel="noopener">Patreon</a></li>
+                        </ul>
+                    </div>
+                    <div class="rf-sitefoot__col">
+                        <h2>Your account</h2>
+                        <ul>
+                            @if (IsAuthenticated)
+                            {
+                                <li><a href="/dashboard">Dashboard</a></li>
+                                <li><a href="/characters">Characters</a></li>
+                                <li><a href="/logout">Log out</a></li>
+                            }
+                            else
+                            {
+                                <li><a href="/login">Log in</a></li>
+                            }
+                        </ul>
+                    </div>
+                </nav>
             </div>
-            <div class="footer-row">
+
+            <div class="rf-sitefoot__legal">
+                <p>Copyright &copy; @(DateTime.Now.Year) <a href="http://www.shinobytes.com/">shinobytes.com</a>, all rights reserved.</p>
+                <p><a href="/cookies">How we use cookies</a></p>
             </div>
         </footer>
 
@@ -156,37 +202,50 @@
             }
         }
     </div>
-
-    <svg xmlns="http://www.w3.org/2000/svg"
-         xmlns:xlink="http://www.w3.org/1999/xlink" style="height: 0px; width: 0px; position: absolute; overflow: hidden;" aria-hidden="true">
-        <defs>
-            <filter id="a" width="130%" height="130%" x="-15%" y="-15%" filterUnits="objectBoundingBox">
-                <feOffset in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
-                <feGaussianBlur in="shadowOffsetOuter1" result="shadowBlurOuter1" stdDeviation="7.5"></feGaussianBlur>
-                <feColorMatrix in="shadowBlurOuter1" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.3 0"></feColorMatrix>
-            </filter>
-        </defs>
-        <symbol id="wds-brand-fandom-logomark" viewBox="0 0 174 242">
-            <path fill="#FA005A" d="M166.935 118.154L50.108 1.273C49.504.67 48.735.259 47.898.093c-.837-.166-1.705-.08-2.493.247-.788.327-1.461.88-1.935 1.59-.474.71-.727 1.546-.727 2.4v98.276L7.365 67.22c-.604-.604-1.373-1.014-2.21-1.18-.837-.166-1.704-.08-2.492.247-.789.327-1.462.88-1.936 1.59-.474.71-.727 1.545-.727 2.4v101.487c-.003 3.172.62 6.312 1.833 9.242 1.214 2.929 2.993 5.59 5.237 7.83l46.037 46.099c4.528 4.53 10.666 7.078 17.068 7.085h33.68c6.4-.003 12.537-2.547 17.063-7.075l46.027-46.099c2.239-2.242 4.014-4.904 5.225-7.833 1.21-2.93 1.832-6.069 1.83-9.239v-36.533c.002-3.173-.621-6.315-1.834-9.247-1.212-2.932-2.989-5.596-5.231-7.84z"></path>
-            <path fill="#FFC500" d="M131.297 160.901c.001 1.915-.757 3.754-2.108 5.111l-37.11 37.3c-.672.677-1.472 1.215-2.354 1.582-.88.366-1.826.555-2.78.555-.954 0-1.9-.189-2.78-.555-.882-.367-1.682-.905-2.355-1.582l-36.99-37.3c-1.352-1.351-2.114-3.184-2.117-5.096v-14.191c0-.951.19-1.892.554-2.77.366-.878.9-1.675 1.574-2.346l13.317-13.328c.672-.675 1.47-1.209 2.35-1.574.879-.365 1.82-.553 2.772-.553.952 0 1.894.188 2.773.553.879.365 1.677.899 2.35 1.574l18.624 18.645 18.596-18.65c.672-.675 1.47-1.209 2.349-1.574.879-.365 1.821-.553 2.773-.553.951 0 1.893.188 2.772.553.879.365 1.677.899 2.349 1.574l13.318 13.328c.673.671 1.207 1.469 1.571 2.347.364.877.552 1.819.552 2.769v14.181z"></path>
-        </symbol>
-    </svg>
 </div>
 
 @code {
     public static MainLayout Instance { get; private set; }
     private RavenNest.Models.SessionInfo session;
+    private bool menuOpen;
 
     protected override void OnInitialized()
     {
         Instance = this;
         UpdateSession();
+
+        // The layout is not recreated when you move between pages, so menuOpen survived the
+        // navigation and the phone menu stayed open over whatever page you had just opened. It is
+        // the layout that outlives the page, so it is the layout's job to close it.
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        if (!menuOpen)
+        {
+            return;
+        }
+
+        menuOpen = false;
+        InvokeAsync(StateHasChanged);
     }
 
     public void UpdateSession()
     {
         session = AuthService.GetSession();
     }
+
+    private void ToggleMenu()
+    {
+        menuOpen = !menuOpen;
+    }
+
     private bool IsAdministrator => IsAuthenticated && session.Administrator;
     private bool IsAuthenticated => session != null && session.Authenticated;
 }

@@ -1,43 +1,19 @@
 ﻿@layout DashboardLayout
 @page "/session"
-@inject RavenNest.Blazor.Services.AuthService AuthService
-@inject RavenNest.Blazor.Services.LoyaltyService LoyaltyService
-@inject RavenNest.Blazor.Services.PlayerService PlayerService
-@inject RavenNest.Blazor.Services.ItemService ItemService
-
 @inject NavigationManager NavigationManager
 
-<h1 class="page-title">My active game session</h1>
+@*
+    Folded into the Bot page.
 
-@if (gameSession == null)
-{
-    <LoadIndicator></LoadIndicator>
-}
-else
-{
-    <p>It seem like you're streaming right now but this page is not done yet. Please come back later.</p>
-}
+    This route existed to show your active game session and never got past
+    "this page is not done yet". Everything it was going to show, whether the session is running
+    and whether the bot reached your channel, is now on /bot and is actually built. Kept as a
+    redirect so old links and bookmarks still land somewhere useful.
+*@
 
 @code {
-    private RavenNest.Models.SessionInfo session;
-    private RavenNest.DataModels.GameSession gameSession;
-
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        session = AuthService.GetSession();
-        if (session == null || !session.Authenticated)
-        {
-            return;
-        }
-
-        gameSession = AuthService.GetActiveGameSession();
-    }
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-        if (session == null || !session.Authenticated)
-        {
-            NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
-        }
+        NavigationManager.NavigateTo("/bot", replace: true);
     }
 }

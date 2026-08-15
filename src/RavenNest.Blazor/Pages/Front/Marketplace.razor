@@ -1,4 +1,4 @@
-﻿@page "/marketplace"
+@page "/marketplace"
 
 @using RavenNest.BusinessLogic.Game
 @using RavenNest.Blazor.Services.Models
@@ -11,6 +11,10 @@
 @inject ItemService ItemService
 @inject AuthService AuthService
 
+@*
+    The hero stays. It is one of the few places the site looks like a game before you log in, and
+    the design system has nothing that replaces a photograph of the world.
+*@
 <div class="top-section">
     <div class="hero-text">
         <h1>Marketplace</h1>
@@ -20,269 +24,324 @@
 <div class="white-section-break"></div>
 <div class="page-content">
     <div class="section">
-        @if (items == null)
-        {
-            <LoadIndicator></LoadIndicator>
-        }
-        else
-        {
-
-            @if (isAdmin)
+        <div class="rf-market">
+            @if (items == null)
             {
-                <button class="btn btn-action" @onclick="CancelExpiredListings">Cancel all Expired listings</button>
+                <LoadIndicator></LoadIndicator>
             }
+            else
+            {
+                @*
+                    None of these three numbers existed. What is on the market, how many different
+                    things it is, and what the whole board is asking for are the questions a trader
+                    opens this page with, and all three are sums over rows the page already had.
+                *@
+                <div class="rf-stats">
+                    <div class="rf-stat">
+                        <div class="rf-stat__value">@items.Count.ToString("N0")</div>
+                        <div class="rf-stat__label">Listings</div>
+                    </div>
+                    <div class="rf-stat">
+                        <div class="rf-stat__value">@DistinctItemCount.ToString("N0")</div>
+                        <div class="rf-stat__label">Distinct items</div>
+                    </div>
+                    <div class="rf-stat">
+                        <div class="rf-stat__value" title="@TotalAsked.ToString("N0") coins">@Utility.FormatAmount(TotalAsked)</div>
+                        <div class="rf-stat__label">Coins asked</div>
+                    </div>
+                </div>
 
-            <p>Note: Listings expires <b>14</b> days after being posted. These items are returned to their sellers.</p>
+                <p class="rf-meta">
+                    Listings expire <b>14 days</b> after being posted, and the items go back to
+                    whoever listed them. Buying happens in game with
+                    <span class="rf-cmd">!market buy</span>.
+                </p>
 
-            <div class="stash item-filters">
-                <button class="item-filter @(itemFilter == ItemFilter.All ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.All)">
-                    <span class="item-filter-text">All</span>
-                    <i class="fa-sharp fa-solid fa-rectangles-mixed"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Swords ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Swords)">
-                    <span class="item-filter-text">Swords</span>
-                    <i class="fa-sharp fa-solid fa-sword"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Axes ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Axes)">
-                    <span class="item-filter-text">Axes</span>
-                    <i class="fa-sharp fa-solid fa-axe"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Spears ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Spears)">
-                    <span class="item-filter-text">Spears</span>
-                    <i class="fa-solid fa-scythe"></i>
-                </button>
-                <button class="item-filter @(itemFilter == ItemFilter.Bows ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Bows)">
-                    <span class="item-filter-text">Bows</span>
-                    <i class="fa-sharp fa-solid fa-bow-arrow"></i>
-                </button>
-
-                <button class="item-filter @(itemFilter == ItemFilter.Staves ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Staves)">
-                    <span class="item-filter-text">Staves</span>
-                    <i class="fa-sharp fa-solid fa-staff"></i>
-                </button>
-
-                <button class="item-filter @(itemFilter == ItemFilter.Shields ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Shields)">
-                    <span class="item-filter-text">Shields</span>
-                    <i class="fa-sharp fa-solid fa-shield"></i>
-                </button>
-
-                <button class="item-filter @(itemFilter == ItemFilter.Armors ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Armors)">
-                    <span class="item-filter-text">Armors</span>
-                    <i class="fa-sharp fa-solid fa-helmet-battle"></i>
-                </button>
-
-                <button class="item-filter @(itemFilter == ItemFilter.Accessories ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Accessories)">
-                    <span class="item-filter-text">Accessories</span>
-                    <i class="fa-sharp fa-solid fa-gem"></i>
-                </button>
-
-                <button class="item-filter @(itemFilter == ItemFilter.Pets ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Pets)">
-                    <span class="item-filter-text">Pets</span>
-                    <i class="fa-sharp fa-solid fa-dog"></i>
-                </button>
-
-
-                <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
-                    <span class="item-filter-text">Scrolls</span>
-                    <i class="fa-sharp fa-solid fa-scroll"></i>
-                </button>
-
-                <button class="item-filter @(itemFilter == ItemFilter.Woodcutting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Woodcutting)">
-                    <span class="item-filter-text">Woodcutting</span>
-                    <i class="fa-solid fa-tree"></i>
-                </button>
-
-                <button class="item-filter @(itemFilter == ItemFilter.Mining ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Mining)">
-                    <span class="item-filter-text">Mining</span>
-                    <i class="fa-solid fa-pickaxe"></i>
-                </button>
-
-                <button class="item-filter @(itemFilter == ItemFilter.Fishing ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Fishing)">
-                    <span class="item-filter-text">Fishing</span>
-                    <i class="fa-sharp fa-solid fa-fishing-rod"></i>
-                </button>
-
-                <button class="item-filter @(itemFilter == ItemFilter.Farming ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Farming)">
-                    <span class="item-filter-text">Farming</span>
-                    <i class="fa-solid fa-wheat"></i>
-                </button>
-
-                <button class="item-filter @(itemFilter == ItemFilter.Gathering ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Gathering)">
-                    <span class="item-filter-text">Gathering</span>
-                    <i class="fa-solid fa-mushroom"></i>
-                </button>
-
-                <button class="item-filter @(itemFilter == ItemFilter.Crafting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Crafting)">
-                    <span class="item-filter-text">Crafting</span>
-                    <i class="fa-sharp fa-solid fa-hammer"></i>
-                </button>
-
-                <button class="item-filter @(itemFilter == ItemFilter.Cooking ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Cooking)">
-                    <span class="item-filter-text">Cooking</span>
-                    <i class="fa-sharp fa-solid fa-user-chef"></i>
-                </button>
-
-                <button class="item-filter @(itemFilter == ItemFilter.Alchemy ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Alchemy)">
-                    <span class="item-filter-text">Alchemy</span>
-                    <i class="fa-sharp fa-solid fa-flask-round-potion"></i>
-                </button>
-            </div>
-
-            <table class="marketplace-list">
-                <thead>
-                    <tr>
-                        <th></th>
-
-                        @*                        <th @onclick="SortByCraftingLevel">Crafting Level <span>@GetIndicator("crafting")</span></th>
-                    <th @onclick="SortByVendorPrice">Vendor Price <span>@GetIndicator("vendor")</span></th>*@
-                        <th @onclick="SortByName">Name <span>@GetIndicator("name")</span></th>
-                        @if (isAdmin)
-                        {
-                            <th @onclick="SortBySeller">Seller <span>@GetIndicator("seller")</span></th>
-                        }
-                        <th class="m-item-stats" @onclick="SortByStats">Stats <span>@GetIndicator("stats")</span></th>
-                        <th class="m-item-level" @onclick="SortByLevelReq">Level Req <span>@GetIndicator("lev-req")</span></th>
-                        <th class="m-item-category" @onclick="SortByCategory">Category <span>@GetIndicator("category")</span></th>
-                        <th class="m-item-type" @onclick="SortByType">Item Type <span>@GetIndicator("type")</span></th>
-                        <th class="m-item-material" @onclick="SortByMaterial">Material Type <span>@GetIndicator("material")</span></th>
-                        <th class="m-item-amount" @onclick="SortByAvailableAmount">Available Amount <span>@GetIndicator("amount")</span></th>
-                        <th class="m-item-price" @onclick="SortByAskingPrice">Asking Price <span>@GetIndicator("ask-price")</span></th>
-                        <th class="m-item-expires" @onclick="SortByExpiryDate">Expires <span>@GetIndicator("expires")</span></th>
-
-                        @if (canCancelItems)
-                        {
-                            <th>Actions</th>
-                        }
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var entry in items)
+                @*
+                    Search. Nineteen category buttons and no way to look for a name, on the page
+                    whose whole purpose is finding one particular thing.
+                *@
+                <div class="rf-toolbar">
+                    <input type="search"
+                           class="rf-input rf-search"
+                           placeholder="Search by name"
+                           aria-label="Search the marketplace by item name"
+                           value="@search"
+                           @oninput="OnSearchChanged" />
+                    @if (!string.IsNullOrWhiteSpace(search) || itemFilter != ItemFilter.All)
                     {
-                        var item = GetItem(entry.ItemId);
-                        if (item == null)
-                        {
-                            continue;
-                        }
-
-                        <tr>
-                            <td class="m-item-image"><img src="@(ItemService.GetItemImage(entry.ItemId))" style="width: 40px" /></td>
-                            <td class='marketplace'>@(entry.Name ?? item.Name)</td>
-                            @if (isAdmin)
-                            {
-                                <td>@GetUserName(entry.SellerUserId)</td>
-                            }
-                            <!-- <td class='marketplace'></td> -->
-                            <td class='item m-item-stats'>
-                                @if (item.WeaponAim > 0)
-                                {
-                                    <span class="item-stat" title="Weapon Aim - Increases your hit rate in melee"><i class="fas fa-crosshairs"></i>@item.WeaponAim</span>
-                                }
-                                @if (item.WeaponPower > 0)
-                                {
-                                    <span class="item-stat" title="Weapon Power - Increases your maximum damage in melee"><i class="fas fa-swords"></i>@item.WeaponPower</span>
-                                }
-                                @if (item.RangedAim > 0)
-                                {
-                                    <span class="item-stat" title="Ranged Aim - Increases your ranged hit rate"><i class="fas fa-crosshairs"></i>@item.RangedAim</span>
-                                }
-                                @if (item.RangedPower > 0)
-                                {
-                                    <span class="item-stat" title="Ranged Power - Increases your ranged maximum damage"><i class="fas fa-bow-arrow"></i>@item.RangedPower</span>
-                                }
-                                @if (item.MagicAim > 0)
-                                {
-                                    <span class="item-stat" title="Magic Aim - Increases your magic hit rate">
-                                        <i class="fas fa-wand"></i>@item.MagicAim
-                                    </span>
-                                }
-                                @if (item.MagicPower > 0)
-                                {
-                                    <span class="item-stat" title="Magic Power - Increases your magic maximum damage">
-                                        <i class="fas fa-hand-holding-magic"></i>
-                                        @item.MagicPower
-                                    </span>
-                                }
-                                @if (item.ArmorPower > 0)
-                                {
-                                    <span class="item-stat" title="Armor Power - Decreases the hit rate of your attacker"><i class="fas fa-shield"></i>@item.ArmorPower</span>
-                                }
-                            </td>
-                            <td class='item m-item-level'>
-                                @if (item.RequiredSlayerLevel > 0)
-                                {
-                                    <span class="item-stat" title="Required Slayer Level">
-                                        <i class="fas fa-skull"></i>
-                                        @item.RequiredSlayerLevel
-                                    </span>
-                                }
-                                @if (item.RequiredAttackLevel > 0)
-                                {
-                                    <span class="item-stat" title="Required Attack Level">
-                                        <i class="fas fa-swords"></i>
-                                        @item.RequiredAttackLevel
-                                    </span>
-                                }
-                                @if (item.RequiredDefenseLevel > 0)
-                                {
-                                    <span class="item-stat" title="Required Defense Level">
-                                        <i class="fas fa-shield"></i>
-                                        @item.RequiredDefenseLevel
-                                    </span>
-                                }
-                                @if (item.RequiredMagicLevel > 0)
-                                {
-                                    <span class="item-stat" title="Required Magic or Healing Level">
-                                        <i class="fas fa-hand-holding-magic"></i>
-                                        @item.RequiredMagicLevel
-                                    </span>
-                                }
-                                @if (item.RequiredRangedLevel > 0)
-                                {
-                                    <span class="item-stat" title="Required Ranged Level">
-                                        <i class="fas fa-bow-arrow"></i>
-                                        @item.RequiredRangedLevel
-                                    </span>
-                                }
-                            </td>
-                            <td class='marketplace m-item-category'>@item.Category</td>
-                            <td class='marketplace m-item-type'>@ItemService.GetTypeName(item)</td>
-                            <td class='marketplace m-item-material'>@ItemService.GetMaterialName(item)</td>
-                            <td class='marketplace m-item-amount'>@entry.Amount</td>
-                            <td class='marketplace m-item-price'><img class="ravenCoins" src="/favicon.ico" />@entry.PricePerItem</td>
-
-                            <td class='marketplace m-item-expires'>
-                                @{
-                                    var expires = entry.Expires.Value;
-                                }
-                                @if (expires.Date == DateTime.UtcNow.Date)
-                                {
-                                    <span>
-                                        @Utility.FormatTime(expires - DateTime.UtcNow)
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span>@expires.ToShortDateString()</span>
-                                }
-                                @if (isAdmin && expires < DateTime.UtcNow)
-                                {
-                                    <span class="expired">&nbsp;Expired</span>
-                                }
-                            </td>
-
-                            @if (canCancelItems)
-                            {
-                                <td class='marketplace m-item-actions'>
-                                    @if (isAdmin || CanCancelItem(entry))
-                                    {
-                                        <button class="link-button" @onclick="(()=> CancelListing(entry.Id))">Cancel</button>
-                                    }
-                                </td>
-                            }
-                        </tr>
+                        <button type="button" class="rf-btn rf-btn--small" @onclick="ClearFilters">Clear filters</button>
                     }
-                </tbody>
-            </table>
-        }
+                    <span class="rf-meta">Showing @filtered.Count of @items.Count</span>
+
+                    @if (isAdmin && ExpiredCount > 0)
+                    {
+                        <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="CancelExpiredListings">
+                            Cancel @ExpiredCount expired
+                        </button>
+                    }
+                </div>
+
+                <div class="rf-filters" role="group" aria-label="Filter listings by category">
+                    @foreach (var f in ItemFilterOptions.All)
+                    {
+                        <button type="button"
+                                class="rf-filter @(itemFilter == f.Filter ? "is-active" : "")"
+                                aria-pressed="@(itemFilter == f.Filter)"
+                                @onclick="() => SelectItemFilter(f.Filter)">
+                            <i class="@f.Icon" aria-hidden="true"></i>
+                            <span>@f.Label</span>
+                        </button>
+                    }
+                </div>
+
+                @if (filtered.Count == 0)
+                {
+                    <div class="rf-panel">
+                        <p class="rf-meta">
+                            @if (items.Count == 0)
+                            {
+                                <span>Nothing is listed right now. Players list items in game with <span class="rf-cmd">!market sell</span>.</span>
+                            }
+                            else
+                            {
+                                <span>Nothing matches that. Try a different category or clear the search.</span>
+                            }
+                        </p>
+                    </div>
+                }
+                else
+                {
+                    <div class="rf-panel">
+                        <div class="rf-scroll-x">
+                            <table class="rf-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" aria-sort="@AriaSort("name")">
+                                            <button type="button" class="rf-th" @onclick="SortByName">Item @(Indicator("name"))</button>
+                                        </th>
+                                        @if (isAdmin)
+                                        {
+                                            <th scope="col" aria-sort="@AriaSort("seller")">
+                                                <button type="button" class="rf-th" @onclick="SortBySeller">Seller @(Indicator("seller"))</button>
+                                            </th>
+                                        }
+                                        <th scope="col" aria-sort="@AriaSort("stats")">
+                                            <button type="button" class="rf-th" @onclick="SortByStats">Stats @(Indicator("stats"))</button>
+                                        </th>
+                                        <th scope="col" aria-sort="@AriaSort("lev-req")">
+                                            <button type="button" class="rf-th" @onclick="SortByLevelReq">Requires @(Indicator("lev-req"))</button>
+                                        </th>
+                                        <th scope="col" aria-sort="@AriaSort("ask-price")">
+                                            <button type="button" class="rf-th" @onclick="SortByAskingPrice">Each @(Indicator("ask-price"))</button>
+                                        </th>
+                                        <th scope="col" aria-sort="@AriaSort("amount")">
+                                            <button type="button" class="rf-th" @onclick="SortByAvailableAmount">Amount @(Indicator("amount"))</button>
+                                        </th>
+                                        <th scope="col" aria-sort="@AriaSort("total")">
+                                            <button type="button" class="rf-th" @onclick="SortByTotal">Whole lot @(Indicator("total"))</button>
+                                        </th>
+                                        <th scope="col" aria-sort="@AriaSort("expires")">
+                                            <button type="button" class="rf-th" @onclick="SortByExpiryDate">Expires @(Indicator("expires"))</button>
+                                        </th>
+                                        @if (canCancelItems)
+                                        {
+                                            <th scope="col"><span class="rf-th rf-th--static">Actions</span></th>
+                                        }
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var entry in filtered)
+                                    {
+                                        var item = GetItem(entry.ItemId);
+                                        if (item == null)
+                                        {
+                                            continue;
+                                        }
+
+                                        var offers = OffersFor(entry);
+                                        <tr>
+                                            <td>
+                                                <div class="rf-item">
+                                                    <span class="rf-item__img">
+                                                        <img src="@(ItemService.GetItemImage(item.Id.ToString(), item.Name))" alt="" loading="lazy" />
+                                                        @if (entry.Amount > 1)
+                                                        {
+                                                            <span class="rf-item__amount">@Utility.FormatAmount(entry.Amount)</span>
+                                                        }
+                                                    </span>
+                                                    <span class="rf-item__body">
+                                                        <span class="rf-item__name @ItemService.GetRarityClass(item)">@(entry.Name ?? item.Name)</span>
+                                                        <span class="rf-item__meta">
+                                                            @ItemService.GetTypeName(item)
+                                                            <span>@ItemService.GetMaterialName(item)</span>
+                                                            @*
+                                                                An enchanted item was listed exactly like a plain one. It is a
+                                                                different item and it is priced like one; the field was on
+                                                                every row and rendered on none of them.
+                                                            *@
+                                                            @if (!string.IsNullOrEmpty(entry.Enchantment))
+                                                            {
+                                                                <span class="rf-item__mark" title="@entry.Enchantment"><i class="fa-solid fa-sparkles" aria-hidden="true"></i> Enchanted</span>
+                                                            }
+                                                        </span>
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            @if (isAdmin)
+                                            {
+                                                <td class="rf-table__quiet">@GetUserName(entry.SellerUserId)</td>
+                                            }
+                                            <td>
+                                                <div class="rf-chips">
+                                                    @if (item.WeaponAim > 0)
+                                                    {
+                                                        <span class="rf-chip" title="Weapon aim, increases your hit rate in melee"><i class="fas fa-crosshairs" aria-hidden="true"></i>@item.WeaponAim</span>
+                                                    }
+                                                    @if (item.WeaponPower > 0)
+                                                    {
+                                                        <span class="rf-chip" title="Weapon power, increases your maximum damage in melee"><i class="fas fa-swords" aria-hidden="true"></i>@item.WeaponPower</span>
+                                                    }
+                                                    @if (item.RangedAim > 0)
+                                                    {
+                                                        <span class="rf-chip" title="Ranged aim, increases your ranged hit rate"><i class="fas fa-crosshairs" aria-hidden="true"></i>@item.RangedAim</span>
+                                                    }
+                                                    @if (item.RangedPower > 0)
+                                                    {
+                                                        <span class="rf-chip" title="Ranged power, increases your ranged maximum damage"><i class="fas fa-bow-arrow" aria-hidden="true"></i>@item.RangedPower</span>
+                                                    }
+                                                    @if (item.MagicAim > 0)
+                                                    {
+                                                        <span class="rf-chip" title="Magic aim, increases your magic hit rate"><i class="fas fa-wand" aria-hidden="true"></i>@item.MagicAim</span>
+                                                    }
+                                                    @if (item.MagicPower > 0)
+                                                    {
+                                                        <span class="rf-chip" title="Magic power, increases your magic maximum damage"><i class="fas fa-hand-holding-magic" aria-hidden="true"></i>@item.MagicPower</span>
+                                                    }
+                                                    @if (item.ArmorPower > 0)
+                                                    {
+                                                        <span class="rf-chip" title="Armour power, decreases the hit rate of your attacker"><i class="fas fa-shield" aria-hidden="true"></i>@item.ArmorPower</span>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="rf-chips">
+                                                    @if (item.RequiredSlayerLevel > 0)
+                                                    {
+                                                        <span class="rf-chip" title="Required slayer level"><i class="fas fa-skull" aria-hidden="true"></i>@item.RequiredSlayerLevel</span>
+                                                    }
+                                                    @if (item.RequiredAttackLevel > 0)
+                                                    {
+                                                        <span class="rf-chip" title="Required attack level"><i class="fas fa-swords" aria-hidden="true"></i>@item.RequiredAttackLevel</span>
+                                                    }
+                                                    @if (item.RequiredDefenseLevel > 0)
+                                                    {
+                                                        <span class="rf-chip" title="Required defense level"><i class="fas fa-shield" aria-hidden="true"></i>@item.RequiredDefenseLevel</span>
+                                                    }
+                                                    @if (item.RequiredMagicLevel > 0)
+                                                    {
+                                                        <span class="rf-chip" title="Required magic or healing level"><i class="fas fa-hand-holding-magic" aria-hidden="true"></i>@item.RequiredMagicLevel</span>
+                                                    }
+                                                    @if (item.RequiredRangedLevel > 0)
+                                                    {
+                                                        <span class="rf-chip" title="Required ranged level"><i class="fas fa-bow-arrow" aria-hidden="true"></i>@item.RequiredRangedLevel</span>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @*
+                                                    The price cell answers "is that a good price" rather than only
+                                                    stating a number. Both answers come from data the page already
+                                                    had: the vendor price is on the item, and the cheapest listing
+                                                    is the minimum over the rows in front of you.
+                                                *@
+                                                <div class="rf-price">
+                                                    <span class="rf-price__value">
+                                                        <img class="rf-price__coin" src="/favicon.ico" alt="coins" />
+                                                        @entry.PricePerItem.ToString("N0")
+                                                    </span>
+                                                    <span class="rf-price__meta">@VendorNote(item, entry.PricePerItem)</span>
+                                                    @if (offers.Count > 1)
+                                                    {
+                                                        @if (IsCheapest(entry, offers))
+                                                        {
+                                                            <span class="rf-badge rf-badge--good">Cheapest of @offers.Count</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="rf-price__meta" title="@CheapestNote(offers)">
+                                                                @OverCheapestNote(entry, offers)
+                                                            </span>
+                                                        }
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td class="rf-table__quiet">@Utility.FormatAmount(entry.Amount)</td>
+                                            <td>
+                                                @*
+                                                    What the listing costs if you take all of it. Nowhere on the old
+                                                    page could you find out without multiplying two columns.
+                                                *@
+                                                <span class="rf-price__value" title="@LotTotal(entry).ToString("N0") coins">
+                                                    @Utility.FormatAmount(LotTotal(entry))
+                                                </span>
+                                            </td>
+                                            <td class="rf-table__quiet" title="@ListedNote(entry)">
+                                                @if (entry.Expires == null)
+                                                {
+                                                    <span>No expiry</span>
+                                                }
+                                                else if (entry.Expires.Value <= DateTime.UtcNow)
+                                                {
+                                                    <span class="rf-badge rf-badge--bad">Expired</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>@Utility.FormatTime(entry.Expires.Value - DateTime.UtcNow) left</span>
+                                                }
+                                            </td>
+                                            @if (canCancelItems)
+                                            {
+                                                <td>
+                                                    @if (isAdmin || CanCancelItem(entry))
+                                                    {
+                                                        <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="(() => ConfirmCancel(entry))">Cancel</button>
+                                                    }
+                                                </td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+
+                @*
+                    Cancelling used to happen on the first click. A listing you cancel by accident
+                    cannot be put back at the same price without listing it again from the game.
+                *@
+                @if (listingToCancel != null)
+                {
+                    <div class="rf-modal-backdrop" @onclick="HideCancelConfirm">
+                        <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Cancel listing" @onclick:stopPropagation="true">
+                            <div class="rf-modal__head">
+                                <h2 class="rf-modal__title">Cancel this listing?</h2>
+                                <button type="button" class="rf-modal__close" aria-label="Close" @onclick="HideCancelConfirm">&times;</button>
+                            </div>
+                            <p>
+                                <b>@(listingToCancel.Name ?? GetItem(listingToCancel.ItemId)?.Name)</b>
+                                &times; @Utility.FormatAmount(listingToCancel.Amount)
+                                comes off the market and goes back to the character that listed it.
+                            </p>
+                            <div class="rf-modal__foot">
+                                <button type="button" class="rf-btn" @onclick="HideCancelConfirm">Keep it listed</button>
+                                <button type="button" class="rf-btn rf-btn--danger" @onclick="CancelListing">Cancel listing</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
     </div>
 </div>

@@ -1,4 +1,4 @@
-﻿@page "/streams"
+@page "/streams"
 @using RavenNest.Blazor.Services;
 @inject RavenNest.Blazor.Services.TwitchService TwitchService
 
@@ -8,62 +8,119 @@
     </div>
 </div>
 
-
 <div class="white-section-break"></div>
 <div class="page-content">
     <div class="section">
-        @if (twitchStreams == null)
-        {
-            <LoadIndicator></LoadIndicator>
-        }
-        else if (twitchStreams.Count == 0)
-        {
-            <div class="twitch-content">
-                <h3>The ravens are chasing something shiny right now, check back in a bit...</h3>
-                <p>Want to be featured here? Stream Ravenfall!</p>
-            </div>
-        }
-        else
-        {
-            <div class="twitch-content">
-                <h3>Want to get right into the feel of the game? Check out who is streaming it right now.</h3>
-            </div>
+        <div class="rf-streams">
+            @if (twitchStreams == null)
+            {
+                <LoadIndicator></LoadIndicator>
+            }
+            else if (twitchStreams.Count == 0)
+            {
+                @*
+                    The empty state was an h3 and a p with different alignments, different sizes and
+                    a dark grey that did not show up on the section behind it, so the one page a
+                    visitor lands on when nobody is streaming was also the worst looking one.
 
-            <div class="twitch-streams">
-                @foreach (var stream in twitchStreams)
-                {
-                    <div class="twitch-stream-item" @onclick="() => ShowStream(stream)">
-
-                        @if (stream.IsVisible)
-                        {
-                            <iframe src="https://player.twitch.tv/?channel=@(stream.TwitchUserName)&autoplay=false&parent=www.ravenfall.stream&parent=ravenfall.stream&parent=www.ravenfall.gg&parent=ravenfall.gg&parent=localhost"
-                        height="180"
-                        width="320"
-                        frameborder="0"
-                        scrolling="no"
-                        allowfullscreen="true">
-                            </iframe>
-                        }
-                        else
-                        {
-                            <div class="twitch-stream-header">
-                                <div class="streamer-name">@stream.TwitchUserName</div>
-                                <div class="streamer-title">@stream.UserTitle</div>
-                                <div class="streamer-details">@stream.PlayerCount players</div>
-                            </div>
-                            <div class="stream-view" style="background: url('@("https://static-cdn.jtvnw.net/previews-ttv/live_user_"+stream.TwitchUserName+"-320x180.jpg")')">
-                                <i class="fas fa-play"></i>
-                            </div>
-                        }
+                    It says what to do next now. Somebody who arrives here and finds nothing live is
+                    exactly the person worth sending to the download or to Discord.
+                *@
+                <div class="rf-panel rf-panel--accent rf-streams__empty">
+                    <h2 class="rf-streams__empty-title">Nobody is streaming Ravenfall right now</h2>
+                    <p class="rf-streams__empty-body">
+                        The ravens are chasing something shiny. Live streams show up here
+                        automatically, so it is worth checking back.
+                    </p>
+                    <div class="rf-actions rf-streams__empty-actions">
+                        <a class="rf-btn rf-btn--primary" href="/download">
+                            <i class="fa-solid fa-download" aria-hidden="true"></i> Download the game
+                        </a>
+                        <a class="rf-btn" href="https://discord.gg/gtfDts7" target="_blank" rel="noopener">
+                            <i class="fab fa-discord" aria-hidden="true"></i> Ask in Discord
+                        </a>
                     </div>
-                }
-            </div>
-        }
+                    <p class="rf-meta">
+                        Streaming it yourself puts you on this page with no setup beyond running the
+                        game.
+                    </p>
+                </div>
+            }
+            else
+            {
+                @*
+                    Two numbers that were on the page already and never added up. How many streams
+                    are live and how many people are playing across them is the whole question this
+                    page answers, and a visitor had to count the tiles.
+                *@
+                <div class="rf-stats">
+                    <div class="rf-stat">
+                        <div class="rf-stat__value">@twitchStreams.Count</div>
+                        <div class="rf-stat__label">@(twitchStreams.Count == 1 ? "Stream live" : "Streams live")</div>
+                    </div>
+                    <div class="rf-stat">
+                        <div class="rf-stat__value">@TotalPlayers.ToString("N0")</div>
+                        <div class="rf-stat__label">Players in game</div>
+                    </div>
+                </div>
+
+                <p class="rf-meta rf-streams__lead">
+                    Pick one to watch it here, or open it on Twitch.
+                </p>
+
+                <div class="rf-streams__grid">
+                    @foreach (var stream in twitchStreams)
+                    {
+                        <div class="rf-stream">
+                            @if (stream.IsVisible)
+                            {
+                                <iframe class="rf-stream__player"
+                                        title="@stream.TwitchUserName on Twitch"
+                                        src="https://player.twitch.tv/?channel=@(stream.TwitchUserName)&autoplay=false&parent=www.ravenfall.stream&parent=ravenfall.stream&parent=www.ravenfall.gg&parent=ravenfall.gg&parent=localhost"
+                                        height="180"
+                                        width="320"
+                                        frameborder="0"
+                                        scrolling="no"
+                                        allowfullscreen="true">
+                                </iframe>
+                            }
+                            else
+                            {
+                                <button type="button"
+                                        class="rf-stream__preview"
+                                        aria-label="Watch @stream.TwitchUserName here"
+                                        style="background-image: url('@("https://static-cdn.jtvnw.net/previews-ttv/live_user_" + stream.TwitchUserName + "-320x180.jpg")')"
+                                        @onclick="() => ShowStream(stream)">
+                                    <span class="rf-stream__play"><i class="fas fa-play" aria-hidden="true"></i></span>
+                                </button>
+                            }
+
+                            <div class="rf-stream__body">
+                                <a class="rf-stream__name" href="https://www.twitch.tv/@stream.TwitchUserName" target="_blank" rel="noopener">
+                                    <i class="fab fa-twitch" aria-hidden="true"></i> @stream.TwitchUserName
+                                </a>
+                                @if (!string.IsNullOrEmpty(stream.UserTitle))
+                                {
+                                    <span class="rf-stream__title" title="@stream.UserTitle">@stream.UserTitle</span>
+                                }
+                                <span class="rf-stream__meta">
+                                    <span class="rf-badge rf-badge--good">Live</span>
+                                    <span>@stream.PlayerCount @(stream.PlayerCount == 1 ? "player" : "players")</span>
+                                </span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
     </div>
 </div>
 
 @code {
     private IReadOnlyList<TwitchStream> twitchStreams;
+
+    private int TotalPlayers => twitchStreams?.Sum(x => x.PlayerCount) ?? 0;
+
     protected override async Task OnInitializedAsync()
     {
         twitchStreams = await Task.Run(() => TwitchService.GetTwitchStreams());

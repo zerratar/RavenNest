@@ -13,149 +13,261 @@
 
 @if (isAdmin)
 {
-    <div>
-        <label>Hide Inactive Sessions</label>
-        <input type="checkbox" value="@activeSessionsOnly" @onchange="ev => ActiveSessionsOnlyChanged(ev.Value)">
-    </div>
+    <header class="rf-page-head">
+        <h1 class="rf-page-title">Game sessions</h1>
+        <p class="rf-page-subtitle">Every stream connected to the game, and who is playing on it.</p>
+    </header>
+
     @if (gameSessions == null || loading)
     {
-        <h1>Game Sessions</h1>
         <LoadIndicator></LoadIndicator>
     }
     else
     {
-        <h1>Game Sessions (@gameSessions.Count)</h1>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Owner</th>
-                    <th>Status</th>
-                    <th>Started</th>
-                    <th>Exp Req</th>
-                    <th>State Req</th>
-                    <th>Uptime</th>
-                    <th>Admin</th>
-                    <th>Mod</th>
-                    <th>Client Version</th>
-                    <th>Players (@gameSessions.Sum(x => x != null && x.Players != null ? x.Players.Count : 0))</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var session in gameSessions)
-                {
-                    @if (session == null)
-                    {
-                        continue;
-                    }
-                    <tr class="table-row">
-                        <td><span>Twitch: @session.TwitchUserId</span> <span>@session.UserName</span></td>
-                        <td>@GetSessionStatus(session.Status)</td>
-                        <td>@session.Started</td>
-                        <td>@GetLastUpdateStringShort(session.LastExpRequest)</td>
-                        <td>@GetLastUpdateStringShort(session.LastStateRequest)</td>
-                        <td>@GetUptime(session)</td>
-                        <td>@session.AdminPrivileges</td>
-                        <td>@session.ModPrivileges</td>
-                        <td>@session.ClientVersion</td>
-                        <td @onclick="() => ShowPlayerList(session)">@session.Players.Count</td>
-                        <td>
-                            @if (GameVersion.IsLessThanOrEquals("0.9.4.2a", session.ClientVersion))
-                            {
-                                var logState = GetDownloadState(DownloadType.Log, session);
-                                <button title="Request player log file"
-                                        class="inline-button"
-                                        @onclick="(() => RequestPlayerLog(session))"
-                                        disabled="@(logState != null && logState.IsProcessing)">
-                                    <i class="fa-regular fa-circle-down"></i> player.log
-                                    @if (logState != null && logState.IsProcessing)
-                                    {
-                                        <span class="spinner"></span>
-                                    }
-                                </button>
-                                @if (logState != null && !string.IsNullOrEmpty(logState.Status))
-                                {
-                                    <span class="processing-status @((logState.Failed ? "error" : ""))">@logState.Status</span>
-                                }
-
-                                var stateDl = GetDownloadState(DownloadType.State, session);
-                                <button title="Request player state file"
-                                        class="inline-button"
-                                        @onclick="(() => RequestPlayerState(session))"
-                                        disabled="@(stateDl != null && stateDl.IsProcessing)">
-                                    <i class="fa-regular fa-circle-down"></i> player.state
-                                    @if (stateDl != null && stateDl.IsProcessing)
-                                    {
-                                        <span class="spinner"></span>
-                                    }
-                                </button>
-                                @if (stateDl != null && !string.IsNullOrEmpty(stateDl.Status))
-                                {
-                                    <span class="processing-status @((stateDl.Failed ? "error" : ""))">@stateDl.Status</span>
-                                }
-
-                            }
-
-                            <button title="(TEST) Make this user initiate a Raid against our game session" class="inline-button raid" @onclick="(() => RaidOurSession(session))"><i class="fa-solid fa-people-group"></i> Raid</button>
-                            <button title="(TEST) Make this user initiate a Raid War against our game session" class="inline-button raidwar" @onclick="(() => RaidWarOurSession(session))"><i class="fa-solid fa-swords"></i> War</button>
-                        </td>
-                    </tr>
-                }
-
-            </tbody>
-        </table>
-    }
-
-    @if (playerListVisible)
-    {
-        <div class="player-list-modal">
-            <div class="player-list-modal-header">
-                @if (inspectingSession != null)
-                {
-                    <h3>@(inspectingSession.UserName + " - " + (inspectingSession.Players?.Count ?? 0) + " players")</h3>
-                }
-                <div @onclick="HidePlayerList" class="btn-close">&times;</div>
+        @*
+            Three numbers the page had and never stated. How many streams are up and how many
+            people are in the game is the question this screen exists to answer, and it was left
+            to be counted off the table.
+        *@
+        <div class="rf-stats">
+            <div class="rf-stat">
+                <div class="rf-stat__value">@gameSessions.Count</div>
+                <div class="rf-stat__label">@(activeSessionsOnly ? "Active sessions" : "Sessions")</div>
             </div>
-            <div class="player-list">
-                @if (inspectingSession != null)
-                {
-                    <table class="table">
+            <div class="rf-stat">
+                <div class="rf-stat__value">@TotalPlayers.ToString("N0")</div>
+                <div class="rf-stat__label">Players in game</div>
+            </div>
+            <div class="rf-stat">
+                <div class="rf-stat__value">@BusiestSessionName</div>
+                <div class="rf-stat__label">Busiest stream</div>
+            </div>
+        </div>
+
+        <div class="rf-toolbar">
+            @*
+                Was <input type="checkbox" value="@activeSessionsOnly">, which does not set a
+                checkbox: it rendered unchecked whatever the filter was actually doing. That is the
+                fourth copy of this same mistake in the admin panel.
+            *@
+            <label class="rf-check">
+                <input type="checkbox" checked="@activeSessionsOnly" @onchange="ev => ActiveSessionsOnlyChanged(ev.Value)" />
+                <span>Hide inactive sessions</span>
+            </label>
+        </div>
+
+        @if (gameSessions.Count == 0)
+        {
+            <div class="rf-panel">
+                <p class="rf-meta">
+                    @(activeSessionsOnly ? "No streams are active right now." : "There are no sessions.")
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="rf-panel">
+                <div class="rf-scroll-x">
+                    <table class="rf-table">
                         <thead>
                             <tr>
-                                <th>User Name</th>
-                                <th>Administrator</th>
-                                <th>Moderator</th>
-                                <th>Last Req</th>
-                                <th>Last Saved</th>
+                                <th scope="col"><span class="rf-th rf-th--static">Owner</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Status</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Uptime</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Last exp</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Last state</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Client</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Players</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Actions</span></th>
                             </tr>
                         </thead>
                         <tbody>
-                            @{
-                                if (inspectingSession.Players != null)
+                            @foreach (var session in gameSessions)
+                            {
+                                @if (session == null)
                                 {
-                                    foreach (var player in inspectingSession.Players)
-                                    {
-                                        <tr class="table-row">
-                                            <td>@player.UserName</td>
-                                            <td>@player.IsAdmin</td>
-                                            <td>@player.IsModerator</td>
-                                            <td>
-                                                <div class="last-updated">@GetLastUpdateStringShort(player.LastExpSaveRequest)</div>
-                                            </td>
-                                            <td>
-                                                <div class="last-updated">@GetLastUpdateStringShort(player.LastExpUpdate)</div>
-                                            </td>
-                                        </tr>
-                                    }
+                                    continue;
                                 }
+
+                                <tr>
+                                    <td>
+                                        <div class="rf-item">
+                                            <span class="rf-item__body">
+                                                <a class="rf-item__name" href="https://www.twitch.tv/@session.UserName" target="_blank" rel="noopener">
+                                                    @session.UserName
+                                                </a>
+                                                <span class="rf-item__meta">
+                                                    <span title="Twitch user id">@session.TwitchUserId</span>
+                                                    @if (session.AdminPrivileges)
+                                                    {
+                                                        <span class="rf-item__mark">Admin</span>
+                                                    }
+                                                    @if (session.ModPrivileges)
+                                                    {
+                                                        <span class="rf-item__mark">Mod</span>
+                                                    }
+                                                </span>
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var status = GetSessionStatus(session.Status);
+                                        }
+                                        <span class="rf-badge @(IsActive(session) ? "rf-badge--good" : "")">@status</span>
+                                    </td>
+                                    <td class="rf-table__quiet" title="Started @session.Started">@GetUptime(session)</td>
+                                    <td class="rf-table__quiet">@GetLastUpdateStringShort(session.LastExpRequest)</td>
+                                    <td class="rf-table__quiet">@GetLastUpdateStringShort(session.LastStateRequest)</td>
+                                    <td class="rf-table__quiet">@session.ClientVersion</td>
+                                    <td>
+                                        @*
+                                            The count was a td with a click handler on it, which no
+                                            keyboard can reach and nothing announces as clickable.
+                                        *@
+                                        <button type="button" class="rf-btn rf-btn--small" @onclick="() => ShowPlayerList(session)">
+                                            @(session.Players?.Count ?? 0) players
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <div class="rf-actions">
+                                            @if (GameVersion.IsLessThanOrEquals("0.9.4.2a", session.ClientVersion))
+                                            {
+                                                var logState = GetDownloadState(DownloadType.Log, session);
+                                                <button type="button"
+                                                        title="Request player log file"
+                                                        class="rf-btn rf-btn--small"
+                                                        @onclick="(() => RequestPlayerLog(session))"
+                                                        disabled="@(logState != null && logState.IsProcessing)">
+                                                    <i class="fa-regular fa-circle-down" aria-hidden="true"></i> player.log
+                                                </button>
+                                                @if (logState != null && !string.IsNullOrEmpty(logState.Status))
+                                                {
+                                                    <span class="rf-meta @(logState.Failed ? "rf-session__failed" : "")">@logState.Status</span>
+                                                }
+
+                                                var stateDl = GetDownloadState(DownloadType.State, session);
+                                                <button type="button"
+                                                        title="Request player state file"
+                                                        class="rf-btn rf-btn--small"
+                                                        @onclick="(() => RequestPlayerState(session))"
+                                                        disabled="@(stateDl != null && stateDl.IsProcessing)">
+                                                    <i class="fa-regular fa-circle-down" aria-hidden="true"></i> player.state
+                                                </button>
+                                                @if (stateDl != null && !string.IsNullOrEmpty(stateDl.Status))
+                                                {
+                                                    <span class="rf-meta @(stateDl.Failed ? "rf-session__failed" : "")">@stateDl.Status</span>
+                                                }
+                                            }
+
+                                            @*
+                                                These two fire a real in game event on somebody
+                                                else's live stream, and they were labelled only by
+                                                a title attribute nobody hovers.
+                                            *@
+                                            <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="(() => ConfirmRaid(session, false))">
+                                                Raid me
+                                            </button>
+                                            <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="(() => ConfirmRaid(session, true))">
+                                                War me
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
                             }
                         </tbody>
                     </table>
+                </div>
+            </div>
+        }
+    }
+
+    @if (playerListVisible && inspectingSession != null)
+    {
+        @*
+            Was a bare div positioned by site.css with no backdrop, so it read as part of the page
+            rather than as something opened over it.
+        *@
+        <div class="rf-modal-backdrop" @onclick="HidePlayerList">
+            <div class="rf-modal rf-modal--wide" role="dialog" aria-modal="true" aria-label="Players in this session" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">
+                        @inspectingSession.UserName
+                        <span class="rf-meta">@(inspectingSession.Players?.Count ?? 0) players</span>
+                    </h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="HidePlayerList">&times;</button>
+                </div>
+
+                @if (inspectingSession.Players == null || inspectingSession.Players.Count == 0)
+                {
+                    <p class="rf-meta">Nobody is playing on this stream.</p>
+                }
+                else
+                {
+                    <div class="rf-scroll-x">
+                        <table class="rf-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col"><span class="rf-th rf-th--static">Player</span></th>
+                                    <th scope="col"><span class="rf-th rf-th--static">Roles</span></th>
+                                    <th scope="col"><span class="rf-th rf-th--static">Last request</span></th>
+                                    <th scope="col"><span class="rf-th rf-th--static">Last saved</span></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var player in inspectingSession.Players)
+                                {
+                                    <tr>
+                                        <td>@player.UserName</td>
+                                        <td>
+                                            @if (player.IsAdmin)
+                                            {
+                                                <span class="rf-badge rf-badge--gold">Admin</span>
+                                            }
+                                            @if (player.IsModerator)
+                                            {
+                                                <span class="rf-badge rf-badge--gold">Mod</span>
+                                            }
+                                            @if (!player.IsAdmin && !player.IsModerator)
+                                            {
+                                                <span class="rf-meta">Player</span>
+                                            }
+                                        </td>
+                                        <td class="rf-table__quiet">@GetLastUpdateStringShort(player.LastExpSaveRequest)</td>
+                                        <td class="rf-table__quiet">@GetLastUpdateStringShort(player.LastExpUpdate)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
                 }
             </div>
         </div>
     }
+
+    @if (raidTarget != null)
+    {
+        <div class="rf-modal-backdrop" @onclick="CancelRaid">
+            <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Start a raid" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">@(raidIsWar ? "Start a raid war?" : "Start a raid?")</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CancelRaid">&times;</button>
+                </div>
+                <p>
+                    This makes <b>@raidTarget.UserName</b> raid your own session, for real, on their
+                    live stream. It is a test tool and their viewers will see it happen.
+                </p>
+                <div class="rf-modal__foot">
+                    <button type="button" class="rf-btn" @onclick="CancelRaid">Cancel</button>
+                    <button type="button" class="rf-btn rf-btn--danger" @onclick="ApplyRaid">
+                        @(raidIsWar ? "Start the war" : "Start the raid")
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
 }
+
 
 @code {
     private RavenNest.Models.SessionInfo session;
@@ -388,14 +500,67 @@
     }
 
 
-    private void RaidOurSession(RavenNest.Models.GameSession session)
+    private RavenNest.Models.GameSession raidTarget;
+    private bool raidIsWar;
+
+    /// <summary>
+    ///     Both of these fire a real in game event on somebody else's live stream, and both used to
+    ///     go off on the first click of a small button in a row of four, labelled only by a title
+    ///     attribute nobody hovers.
+    /// </summary>
+    private void ConfirmRaid(RavenNest.Models.GameSession session, bool war)
     {
-        SessionService.InitiateRaid(session);
+        raidTarget = session;
+        raidIsWar = war;
     }
 
-    private void RaidWarOurSession(RavenNest.Models.GameSession session)
+    private void CancelRaid()
     {
-        SessionService.InitiateRaidWar(session);
+        raidTarget = null;
+    }
+
+    private void ApplyRaid()
+    {
+        var target = raidTarget;
+        var war = raidIsWar;
+        raidTarget = null;
+        if (target == null) return;
+
+        if (war)
+        {
+            SessionService.InitiateRaidWar(target);
+        }
+        else
+        {
+            SessionService.InitiateRaid(target);
+        }
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private int TotalPlayers =>
+        gameSessions == null ? 0 : gameSessions.Sum(x => x?.Players?.Count ?? 0);
+
+    private string BusiestSessionName
+    {
+        get
+        {
+            var top = gameSessions?
+                .Where(x => x != null)
+                .OrderByDescending(x => x.Players?.Count ?? 0)
+                .FirstOrDefault();
+
+            return top == null || (top.Players?.Count ?? 0) == 0 ? "n/a" : top.UserName;
+        }
+    }
+
+    /// <summary>
+    ///     Reads the same status GetSessionStatus prints rather than repeating the magic number, so
+    ///     the badge and the word can never disagree.
+    /// </summary>
+    private bool IsActive(RavenNest.Models.GameSession session)
+    {
+        return session != null && GetSessionStatus(session.Status) == "Active";
     }
 
 

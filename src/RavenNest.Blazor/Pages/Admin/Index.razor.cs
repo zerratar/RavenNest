@@ -23,6 +23,42 @@ namespace RavenNest.Blazor.Pages.Admin
 
         public ChartTimeFrame[] TimeFrames => Enum.GetValues<ChartTimeFrame>();
 
+        // The chart library takes colour strings rather than CSS, so this is the one place a value
+        // from ravenfall-tokens.css has to be repeated by hand. It is --rf-gold.
+        private const string ChartGold = "#e8a33d";
+
+        private int[] newUserSeries = Array.Empty<int>();
+        private List<string> newUserLabels = new();
+        private int[] hourSeries = Array.Empty<int>();
+
+        /// <summary>
+        ///     The page drew two charts and stated no numbers, so the answer to "how many signed up
+        ///     this month" had to be read off an axis. These three are sums over the series the
+        ///     chart is already plotting, so they cost nothing.
+        /// </summary>
+        private int NewUserTotal => newUserSeries.Length == 0 ? 0 : newUserSeries.Sum();
+
+        private int BestPeriodValue => newUserSeries.Length == 0 ? 0 : newUserSeries.Max();
+
+        private string BestPeriodLabel
+        {
+            get
+            {
+                if (newUserSeries.Length == 0) return null;
+                var index = Array.IndexOf(newUserSeries, newUserSeries.Max());
+                return index >= 0 && index < newUserLabels.Count ? newUserLabels[index] : null;
+            }
+        }
+
+        private string BusiestHour
+        {
+            get
+            {
+                if (hourSeries.Length == 0 || hourSeries.Max() == 0) return "n/a";
+                return Array.IndexOf(hourSeries, hourSeries.Max()).ToString("00") + ":00";
+            }
+        }
+
         protected override async Task OnInitializedAsync()
         {
             session = AuthService.GetSession();
@@ -108,18 +144,30 @@ namespace RavenNest.Blazor.Pages.Admin
             var outputData = GetChartData(userData, start, labels.Count, tf, avgUserPerHour);
             var total = outputData.Length > 0 ? outputData.Sum() : 0;
 
+            // Kept so the panel above the chart can state the numbers rather than leaving them to
+            // be read off an axis.
+            if (avgUserPerHour)
+            {
+                hourSeries = outputData;
+            }
+            else
+            {
+                newUserSeries = outputData;
+                newUserLabels = labels;
+            }
+
             var lineDataSet = new LineChartDataset<double>
             {
                 Label = "New users (" + total + ")",
                 Data = new List<double>(),
                 Fill = false,
-                BorderColor = "rgba(75, 192, 192, 1)",
-                PointBorderColor = "rgba(75, 192, 192, 1)",
-                PointBackgroundColor = "#fff",
+                BorderColor = ChartGold,
+                PointBorderColor = ChartGold,
+                PointBackgroundColor = ChartGold,
                 PointBorderWidth = 1,
                 PointHoverRadius = 5,
-                PointHoverBackgroundColor = "rgba(75, 192, 192, 1)",
-                PointHoverBorderColor = "rgba(220, 220, 220, 1)",
+                PointHoverBackgroundColor = ChartGold,
+                PointHoverBorderColor = ChartGold,
                 PointHoverBorderWidth = 2,
                 PointRadius = 1,
                 PointHitRadius = 10
@@ -179,8 +227,11 @@ namespace RavenNest.Blazor.Pages.Admin
 
                 for (var i = 0; i < outputData.Length; ++i)
                 {
+                    // Was outputData[record.Key], which dereferences the grouping before the null
+                    // check on the very next expression: any hour of the day with no signups in it
+                    // threw rather than plotting a zero.
                     var record = data.FirstOrDefault(x => x.Key == i);
-                    outputData[record.Key] = record?.Count() ?? 0;
+                    outputData[i] = record?.Count() ?? 0;
                 }
                 return outputData;
             }

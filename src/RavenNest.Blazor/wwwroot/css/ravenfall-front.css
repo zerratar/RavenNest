@@ -1,0 +1,856 @@
+/*
+  Ravenfall front page chrome.
+
+  The fourth file of the design system, and the front page counterpart of ravenfall-dashboard.css.
+  The split across the four is:
+
+    ravenfall-tokens.css       values only, inert until referenced
+    ravenfall-components.css   the pieces a page is assembled from, selected by rf- class names
+                               alone, so they work on the dashboard, the front page and the admin
+                               panel without any ancestor scope
+    ravenfall-dashboard.css    dashboard chrome and legacy overrides, scoped under .rf-dash
+    ravenfall-front.css        this file: front page chrome and legacy overrides, scoped under
+                               .rf-front, which MainLayout puts on its root element
+
+  One rule matters more than the rest here. site.css styles bare headings globally: h1::after
+  injects a decorative LineBreakWhite.png, and h1/h2/h3 are #ff7f00. On the dashboard both are
+  switched off wholesale inside .rf-dash. On the front page they are still load bearing, because
+  most front pages have not been converted yet, so nothing in this file switches them off for
+  .rf-front as a whole. Each converted page or component switches them off for itself, exactly as
+  .rf-player, .rf-skills and .rf-clan already do.
+
+  No raw colours. Every value comes from ravenfall-tokens.css.
+*/
+
+.rf-front {
+    font-family: var(--rf-font);
+}
+
+/* The footer floated up the page whenever the content was short. site.css asks
+   for `flex-flow: column` on .main without ever setting `display: flex`, so the
+   declaration does nothing, the `flex-grow: 1` on .content has no flex container
+   to grow inside, and the footer simply followed the content wherever it ended.
+   Declaring the column here is the whole fix. */
+.rf-front .main {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.rf-front .content {
+    flex: 1 0 auto;
+}
+
+.rf-front .rf-sitefoot {
+    flex: 0 0 auto;
+}
+
+/* The front layout set `width: 100vw` on the content and the hero. 100vw counts the vertical
+   scrollbar, so every front page was a few pixels wider than its own viewport and scrolled
+   sideways. Rule 5 says the page body never scrolls sideways; this is where that was broken. */
+.rf-front .content,
+.rf-front .top-section {
+    width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rf-front * {
+        transition: none !important;
+    }
+}
+
+/* ==========================================================================
+   Front page baseline
+   ==========================================================================
+   This is the part that could not be written until the layout carried .rf-front.
+   It applies to every front page, converted or not, because the faults below are
+   on all of them and waiting for each page's own conversion means the site stays
+   broken in the meantime.
+
+   The earlier note in this file said the legacy heading rules were load bearing
+   and had to be left alone until each page converted. That was too cautious, and
+   reported use is what settled it: the rules are not load bearing, they are the
+   fault. h1::after is a 28px image with 30px of margin under every heading, and
+   the heading colours are a legacy orange that several pages then override with a
+   dark grey left over from when this was a white site. Dark grey text on the near
+   black sections is invisible.
+   ========================================================================== */
+
+.rf-front h1,
+.rf-front h2,
+.rf-front h3,
+.rf-front h4,
+.rf-front .page-title {
+    color: var(--rf-ink);
+}
+
+/* The decorative LineBreakWhite.png separator becomes the same gold hairline the
+   converted page headers use: it still separates, it reads as deliberate, and it
+   gives back about 50 vertical pixels under every heading on the site. */
+/* The patreon section on the landing page carries its own copy of this at
+   `.section.patreon h1:after`, which is one class more specific than the front
+   page rule it overrides, so it has to be named here or it keeps the image. */
+.rf-front h1::after,
+.rf-front .section.patreon h1::after {
+    background: linear-gradient(90deg, var(--rf-line-gold), transparent 65%);
+    height: 1px;
+    margin: var(--rf-space-3) 0 var(--rf-space-5) 0;
+    filter: none;
+    max-width: 36rem;
+}
+
+.rf-front .hero-text h1::after,
+.rf-front .rf-page-head h1::after {
+    content: none;
+    display: none;
+}
+
+/* Dark on dark, from the era when the front page had a white background. All of
+   these are in per page stylesheets that will be deleted as each page converts;
+   until then the value is wrong on screen and correcting it here is one rule
+   rather than nine edits.
+
+   .skill-selector is the highscore and towns skill rail, .usage-example is the
+   command list, and .page-title still carried the orange. */
+.rf-front .skill-selector a,
+.rf-front .usage-example,
+.rf-front .twitch-content p,
+.rf-front .hero-text .note,
+.rf-front .command .alias,
+.rf-front .command .category,
+.rf-front summary .header-description {
+    color: var(--rf-ink-muted);
+}
+
+.rf-front .skill-selector a:hover,
+.rf-front .skill-selector a.selected {
+    color: var(--rf-gold);
+}
+
+/* ---- Hero and content geometry -----------------------------------------
+   Reported as "way too much white space with hero and content on many pages",
+   and there were three separate causes.
+
+   1. The hero was a fixed height, set to 535px in site.css for the landing page
+      and overridden to 335px by seven of the subpages in their own stylesheets.
+      The pages that never got the override - login, the calculator, cookies, the
+      password page - carried a 535px photograph over a single line of text. The
+      marketplace joined them when its stylesheet was deleted during its
+      conversion, which was a regression this fixes.
+
+      It is now one rule and the height comes from the content, so no page needs
+      an override and none of them can drift again.
+
+   2. The top padding was 150px, tuned for the old two row header. The header is
+      now 62px, so a third of that padding was empty by definition.
+
+   3. .front-page .content had a 770px floor under it, so a short page reserved
+      most of a screen it had nothing to put in.
+
+   The height rules here beat the per page ones on document order: this file is
+   loaded after RavenNest.styles.css, and a scoped page rule has the same
+   specificity rather than a higher one. */
+
+/* The top padding clears the header, which is absolutely positioned over this.
+   The minimum height is what keeps the hero text clear of the torn edge graphic:
+   .white-section-break lays 166px of it over the foot of the hero, so at 20rem
+   the text ends about 16px above where the splitter starts. Content is at the top
+   rather than centred for the same reason; centring inside a minimum height moves
+   the text down into the splitter as soon as the hero is taller than its content.
+
+   Two pages, /login and /calc, have a hero and no splitter at all, which is why
+   the clearance is a minimum height rather than bottom padding: padding they do
+   not need would be dead space on those two. */
+.rf-front .top-section {
+    height: auto;
+    min-height: 20rem;
+    padding: 6rem var(--rf-space-6) var(--rf-space-7);
+}
+
+/* The landing page is the exception, and says so in its markup rather than
+   through a stylesheet nobody can find. It is the one hero carrying a paragraph
+   and two buttons, and the one place a large image of the world is the point. */
+/* The landing hero always has the splitter under it, and on a phone its paragraph
+   wraps to six lines, so the buttons ended up 118px behind the torn edge graphic.
+   This one does get real bottom padding, because it is the one hero whose content
+   can grow past the minimum height. */
+.rf-front .top-section--tall {
+    min-height: 32rem;
+    padding-bottom: 11rem;
+}
+
+.rf-front .content {
+    min-height: 0;
+    color: var(--rf-ink);
+}
+
+/* A 220px tail under the last section of several pages, which is a footer's
+   worth of space above the footer. */
+.rf-front .section:last-of-type {
+    padding-bottom: var(--rf-space-7);
+}
+
+/* ==========================================================================
+   Site header
+   ==========================================================================
+   Sits over the hero rather than above it, which is what lets the hero image
+   fill the top of the page. That was already true; what was not is that the
+   text sat directly on the photograph with nothing behind it, so legibility
+   depended on whichever image happened to be there. A scrim fading to nothing
+   fixes that without hiding the image.
+
+   Two rows became one. SUPPORT, COMMUNITY and the Discord social icon were
+   three links to the same Discord invite, and FANDOM was a second row on its
+   own for one link.
+   ========================================================================== */
+
+.rf-front .rf-sitehead {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    background: linear-gradient(180deg, var(--rf-scrim) 0%, transparent 100%);
+}
+
+.rf-front .rf-sitehead__inner {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-5);
+    max-width: 90rem;
+    margin: 0 auto;
+    padding: var(--rf-space-3) var(--rf-space-5);
+}
+
+.rf-front .rf-sitehead__logo {
+    flex: 0 0 auto;
+    line-height: 0;
+}
+
+.rf-front .rf-sitehead__logo img {
+    width: 150px;
+    max-width: 100%;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+
+/* ---- Links -------------------------------------------------------------
+   Small uppercase, the way the old header read, but tracked out so it does
+   not look cramped, and with brass for the page you are on so the header
+   answers "where am I" the same way the dashboard sidebar does. */
+
+.rf-front .rf-sitenav {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-1);
+    flex: 1 1 auto;
+}
+
+.rf-front .rf-sitenav__end {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    margin-left: auto;
+}
+
+/* Without this the sign in button is the first thing to give when the row gets
+   tight: it wraps to two lines and takes the height of the whole header with
+   it, which is what happens between the breakpoint and about 1150px. */
+.rf-front .rf-sitenav__end .rf-btn {
+    white-space: nowrap;
+}
+
+.rf-front .rf-sitenav__link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    padding: var(--rf-space-2) var(--rf-space-3);
+    border: 0;
+    border-radius: var(--rf-radius-sm);
+    background: none;
+    color: var(--rf-ink);
+    font-family: inherit;
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    letter-spacing: var(--rf-tracking-label);
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background var(--rf-transition), color var(--rf-transition);
+}
+
+/* Rule 3: an interactive state sets both background and text colour. */
+.rf-front .rf-sitenav__link:hover,
+.rf-front .rf-sitenav__link:focus-visible {
+    background: var(--rf-gold-wash);
+    color: var(--rf-gold-bright);
+    text-decoration: none;
+}
+
+.rf-front .rf-sitenav__link:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+.rf-front .rf-sitenav__link.active {
+    color: var(--rf-gold);
+}
+
+/* The current page is marked by an underline as well as by colour, so it does
+   not depend on being able to tell brass from parchment. */
+.rf-front .rf-sitenav__link.active::after {
+    content: "";
+    position: absolute;
+    left: var(--rf-space-3);
+    right: var(--rf-space-3);
+    bottom: var(--rf-space-1);
+    height: 2px;
+    background: var(--rf-gold);
+}
+
+.rf-front .rf-sitenav__link {
+    position: relative;
+}
+
+/* ---- The Game menu -----------------------------------------------------
+   Was a hover only div with a hardcoded 150px width and 334px height, so it
+   could not be opened from a touch screen or a keyboard, and adding a ninth
+   entry would have overflowed it. A <details> element is open on click, is
+   reachable from the keyboard, and sizes itself. */
+
+.rf-front .rf-dd {
+    position: relative;
+}
+
+.rf-front .rf-dd__summary {
+    list-style: none;
+}
+
+.rf-front .rf-dd__summary::-webkit-details-marker {
+    display: none;
+}
+
+.rf-front .rf-dd__caret {
+    font-size: 0.6em;
+    color: var(--rf-ink-faint);
+    transition: transform var(--rf-transition);
+}
+
+.rf-front .rf-dd[open] .rf-dd__caret {
+    transform: rotate(180deg);
+}
+
+.rf-front .rf-dd__menu {
+    position: absolute;
+    top: calc(100% + var(--rf-space-2));
+    left: 0;
+    z-index: 30;
+    min-width: 12rem;
+    padding: var(--rf-space-2);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-shadow-lg), var(--rf-bevel);
+}
+
+.rf-front .rf-dd__menu .rf-sitenav__link {
+    display: flex;
+    width: 100%;
+}
+
+/* ---- Social row --------------------------------------------------------- */
+
+.rf-front .rf-social {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-1);
+}
+
+.rf-front .rf-social__link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-ink-muted);
+    font-size: 1rem;
+    text-decoration: none;
+    transition: background var(--rf-transition), color var(--rf-transition);
+}
+
+.rf-front .rf-social__link:hover,
+.rf-front .rf-social__link:focus-visible {
+    background: var(--rf-gold-wash);
+    color: var(--rf-gold-bright);
+    text-decoration: none;
+}
+
+.rf-front .rf-social__link:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+/* ---- Phone -------------------------------------------------------------
+   There was no phone treatment at all. The logo alone is 150px and the links
+   are a flex row that never wrapped, so at 375px the header ran off the side
+   of the page and took the whole document with it. */
+
+.rf-front .rf-sitehead__toggle {
+    display: none;
+    margin-left: auto;
+}
+
+/* ---- Making the row need less before giving up on it -------------------
+   The first version of this switched to the hamburger at 68rem, because that is
+   where the row measured out at full size: 1101px with the admin link, 1035
+   without. That is a very wide window to be showing a hamburger in, and it left
+   the top bar looking empty on any normal laptop screen.
+
+   So the row gets smaller before it gets replaced. Between the breakpoint and
+   75rem the links tighten and the social icons drop out: they are decoration
+   next to the navigation, they are the one thing in the header duplicated
+   verbatim in the footer, and they cost about 130px. That buys roughly 190px,
+   which is the difference between the full nav appearing at 1090px and at
+   900px. */
+
+@media (max-width: 75rem) {
+    .rf-front .rf-sitehead .rf-social {
+        display: none;
+    }
+
+    .rf-front .rf-sitenav__link {
+        padding-left: var(--rf-space-2);
+        padding-right: var(--rf-space-2);
+    }
+
+    .rf-front .rf-sitehead__inner {
+        gap: var(--rf-space-3);
+    }
+}
+
+/* Below this the row genuinely cannot hold the links, so it becomes a menu. */
+@media (max-width: 56rem) {
+    .rf-front .rf-sitehead__toggle {
+        display: inline-flex;
+    }
+
+    .rf-front .rf-sitenav {
+        display: none;
+    }
+
+    .rf-front .rf-sitenav.is-open {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--rf-space-1);
+        position: absolute;
+        top: 100%;
+        left: var(--rf-space-3);
+        right: var(--rf-space-3);
+        padding: var(--rf-space-3);
+        background: var(--rf-surface-1);
+        border: 1px solid var(--rf-line-strong);
+        border-radius: var(--rf-radius);
+        box-shadow: var(--rf-shadow-lg), var(--rf-bevel);
+    }
+
+    /* Open on a phone the menu is a stack, so the dropdown belongs inline in
+       that stack rather than floating over it. */
+    .rf-front .rf-sitenav.is-open .rf-dd__menu {
+        position: static;
+        padding: 0 0 0 var(--rf-space-4);
+        border: 0;
+        border-left: 1px solid var(--rf-line);
+        border-radius: 0;
+        box-shadow: none;
+        background: none;
+    }
+
+    .rf-front .rf-sitenav.is-open .rf-sitenav__end {
+        margin-left: 0;
+        padding-top: var(--rf-space-3);
+        border-top: 1px solid var(--rf-line);
+        flex-wrap: wrap;
+    }
+
+    .rf-front .rf-sitehead__inner {
+        gap: var(--rf-space-3);
+        padding: var(--rf-space-3);
+    }
+
+    .rf-front .rf-sitehead__logo img {
+        width: 120px;
+    }
+}
+
+/* ==========================================================================
+   Converted front pages
+   ==========================================================================
+   One root class per converted page. Each one switches off the legacy heading
+   rules for itself, which is the whole reason nothing in this file does it for
+   .rf-front as a whole: the unconverted front pages are still drawn against
+   them.
+   ========================================================================== */
+
+.rf-front .rf-highscore h1,
+.rf-front .rf-highscore h2,
+.rf-front .rf-highscore h3,
+.rf-front .rf-streams h1,
+.rf-front .rf-streams h2,
+.rf-front .rf-streams h3,
+.rf-front .rf-market h1,
+.rf-front .rf-market h2,
+.rf-front .rf-market h3 {
+    color: var(--rf-ink);
+}
+
+.rf-front .rf-streams h1::after,
+.rf-front .rf-streams h2::after,
+.rf-front .rf-streams h3::after,
+.rf-front .rf-market h1::after,
+.rf-front .rf-market h2::after,
+.rf-front .rf-market h3::after {
+    content: none;
+    display: none;
+}
+
+.rf-front .rf-market,
+.rf-front .rf-highscore,
+.rf-front .rf-streams {
+    color: var(--rf-ink);
+    font-size: var(--rf-size-body);
+    max-width: 90rem;
+    margin: 0 auto;
+}
+
+/* ---- Highscore ----------------------------------------------------------
+   The table was site.css's default, which right aligns every cell and gives it a
+   black border, so the character column was an ocean of empty space with a name
+   pushed against its right edge and the rank was nowhere near the row it
+   belonged to.
+
+   The medals for the first three characters to reach the level cap in a skill
+   are kept: they are a real thing the game awards and the only ornament on the
+   page that means something. Their stylesheet stays for now, since redoing that
+   text shadow stack is not worth it, but everything around them is the system. */
+
+.rf-front .rf-highscore__row {
+    cursor: pointer;
+}
+
+.rf-front .rf-highscore__rank {
+    width: 4rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--rf-ink-muted);
+    font-weight: 700;
+}
+
+/* The top three of any list are worth marking. Rank alone is a number you have
+   to read; this is one you can see. */
+.rf-front .rf-highscore__row:nth-child(1) .rf-highscore__rank,
+.rf-front .rf-highscore__row:nth-child(2) .rf-highscore__rank,
+.rf-front .rf-highscore__row:nth-child(3) .rf-highscore__rank {
+    color: var(--rf-gold);
+}
+
+.rf-front .rf-highscore__name {
+    font-weight: 700;
+    color: var(--rf-ink);
+}
+
+.rf-front .rf-highscore__slot {
+    margin-left: var(--rf-space-1);
+    font-size: var(--rf-size-tiny);
+    color: var(--rf-ink-faint);
+}
+
+.rf-front .rf-highscore__exp {
+    font-variant-numeric: tabular-nums;
+    color: var(--rf-ink-muted);
+    white-space: nowrap;
+}
+
+/* The level cell holds the medal markup, which brings its own sizing. */
+.rf-front .rf-highscore .player-level {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* ---- Streams ------------------------------------------------------------ */
+
+.rf-front .rf-streams__empty {
+    max-width: 40rem;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+.rf-front .rf-streams__empty-title {
+    font-size: var(--rf-size-title);
+    font-weight: 700;
+    margin: 0 0 var(--rf-space-3) 0;
+}
+
+.rf-front .rf-streams__empty-body {
+    margin: 0 auto var(--rf-space-5);
+    max-width: 44ch;
+    color: var(--rf-ink-muted);
+}
+
+.rf-front .rf-streams__empty-actions {
+    justify-content: center;
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-front .rf-streams__lead {
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-front .rf-streams__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    gap: var(--rf-space-5);
+}
+
+.rf-front .rf-stream {
+    display: flex;
+    flex-direction: column;
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-shadow), var(--rf-bevel);
+    overflow: hidden;
+}
+
+/* The preview was a div with a click handler, so it could not be reached from a
+   keyboard and announced nothing. It is a button now. */
+.rf-front .rf-stream__preview {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    padding: 0;
+    border: 0;
+    background-color: var(--rf-surface-3);
+    background-size: cover;
+    background-position: center;
+    cursor: pointer;
+}
+
+.rf-front .rf-stream__play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    color: var(--rf-ink);
+    background: rgba(8, 10, 14, 0.35);
+    transition: background var(--rf-transition), color var(--rf-transition);
+}
+
+.rf-front .rf-stream__preview:hover .rf-stream__play,
+.rf-front .rf-stream__preview:focus-visible .rf-stream__play {
+    background: rgba(8, 10, 14, 0.15);
+    color: var(--rf-gold-bright);
+}
+
+.rf-front .rf-stream__preview:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+.rf-front .rf-stream__player {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    height: auto;
+    border: 0;
+    display: block;
+}
+
+.rf-front .rf-stream__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+    padding: var(--rf-space-4);
+}
+
+.rf-front .rf-stream__name {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    font-size: var(--rf-size-heading);
+    font-weight: 700;
+    color: var(--rf-ink);
+    text-decoration: none;
+}
+
+.rf-front .rf-stream__name:hover,
+.rf-front .rf-stream__name:focus-visible {
+    color: var(--rf-gold-bright);
+    text-decoration: underline;
+}
+
+/* A stream title is one line of someone else's text and can be any length. */
+.rf-front .rf-stream__title {
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rf-front .rf-stream__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    font-size: var(--rf-size-small);
+    color: var(--rf-ink-muted);
+}
+
+/* site.css right aligns every th and td with a black border, from the highscore
+   tables, and that reaches into any table on a front page. rf-table already
+   resets it, but the bare th cursor and the striping on tr do not belong to a
+   converted table either. */
+.rf-front .rf-market tr:nth-of-type(even) {
+    background-color: transparent;
+}
+
+/* ==========================================================================
+   Site footer
+   ==========================================================================
+   Was a logo, five icons and a copyright line marked up as an h3 so that it
+   would pick up a decorative separator image. Every page on the site ends
+   here and it carried no navigation at all.
+
+   footer:before painted FooterSplit.png, a grunge fade designed for a white
+   page, 400px above the footer and overlapping whatever was there. Against
+   the near black sections it has been sitting on it did nothing but overlap.
+   It is switched off in scope and replaced by the same gold hairline the page
+   headers use.
+   ========================================================================== */
+
+.rf-front .rf-sitefoot {
+    display: block;
+    min-height: 0;
+    padding: var(--rf-space-7) var(--rf-space-5) var(--rf-space-5);
+    background: var(--rf-surface-1);
+    border-top: 1px solid var(--rf-line);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    position: relative;
+}
+
+/* This also replaces site.css's footer:before, which is the same pseudo element
+   and which painted FooterSplit.png 400px above the footer. Every property that
+   rule sets has to be answered here, the margin in particular, or the hairline
+   inherits the -400px and lands in the middle of the page content. */
+.rf-front .rf-sitefoot::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    margin: 0;
+    background: linear-gradient(90deg, transparent, var(--rf-line-gold) 50%, transparent);
+}
+
+.rf-front .rf-sitefoot__inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-7);
+    max-width: 72rem;
+    margin: 0 auto;
+}
+
+.rf-front .rf-sitefoot__brand {
+    flex: 1 1 18rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-3);
+    align-items: flex-start;
+}
+
+.rf-front .rf-sitefoot__logo {
+    width: 180px;
+    max-width: 100%;
+}
+
+.rf-front .rf-sitefoot__tag {
+    margin: 0;
+    max-width: 34ch;
+    color: var(--rf-ink-muted);
+}
+
+.rf-front .rf-sitefoot__cols {
+    flex: 2 1 28rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: var(--rf-space-5);
+}
+
+.rf-front .rf-sitefoot__col h2 {
+    margin: 0 0 var(--rf-space-3) 0;
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    /* site.css colours every bare h2 #ff7f00, a legacy orange that is not in
+       the palette. Overridden here rather than deleted, because the front
+       pages that have not been converted still depend on that rule. */
+    color: var(--rf-ink-faint);
+}
+
+.rf-front .rf-sitefoot__col ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+}
+
+.rf-front .rf-sitefoot a {
+    color: var(--rf-ink-muted);
+    text-decoration: none;
+    transition: color var(--rf-transition);
+}
+
+.rf-front .rf-sitefoot a:hover,
+.rf-front .rf-sitefoot a:focus-visible {
+    color: var(--rf-gold);
+    text-decoration: underline;
+}
+
+.rf-front .rf-sitefoot a:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+    border-radius: var(--rf-radius-sm);
+}
+
+.rf-front .rf-sitefoot__legal {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--rf-space-3);
+    max-width: 72rem;
+    margin: var(--rf-space-6) auto 0;
+    padding-top: var(--rf-space-4);
+    border-top: 1px solid var(--rf-line);
+    color: var(--rf-ink-faint);
+    font-size: var(--rf-size-tiny);
+}
+
+.rf-front .rf-sitefoot__legal p {
+    margin: 0;
+}
+
+/* site.css hangs a WhiteHeaderSplit.png separator off every h3 inside a footer.
+   Switched off for this footer only: the rule selects bare elements, so it
+   still reaches any front page that has not been converted. */
+.rf-front .rf-sitefoot h3::before {
+    content: none;
+    display: none;
+}

@@ -3,83 +3,138 @@
 @using RavenNest.Blazor.Services
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.ClanService ClanService
+@inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject NavigationManager NavigationManager
+
+<header class="rf-page-head">
+    <h1 class="rf-page-title">Clan invites</h1>
+    <p class="rf-page-subtitle">
+        Invitations sent to your characters. Each invite is for one character, not for your account.
+    </p>
+</header>
 
 @if (!session.Authenticated)
 {
-  <p>You don't seem to be logged in.</p>
+    <p class="rf-meta">You don't seem to be logged in.</p>
+}
+else if (invites == null)
+{
+    <LoadIndicator></LoadIndicator>
+}
+else if (invites.Count == 0)
+{
+    @* The page had no empty state at all, so a player with no invites got an empty table header. *@
+    <div class="rf-panel rf-panel--accent">
+        <h2 class="rf-panel__title">No invites right now</h2>
+        <p class="rf-meta">
+            A clan owner has to invite one of your characters by name. When they do it shows up here.
+            You can also start your own clan from the <a href="/clan">clan page</a>.
+        </p>
+    </div>
 }
 else
 {
-  if (invites == null)
-  {
-    <LoadIndicator></LoadIndicator>
-  }
-  else
-  {
-    <table class="items-list">
-      <thead>
-        <tr>
-          <th></th>
-          <th>Clan</th>
-          <th>Received</th>
-          <th>Sender</th>
-          <th>Character</th>
-          <th>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        @foreach (var item in invites)
+    @*
+        Cards rather than a table. An invite is a decision about one character, and the two things
+        that decide it are which clan and which of your characters, both of which read better as a
+        block than as cells.
+    *@
+    <div class="rf-invites">
+        @foreach (var item in invites.OrderByDescending(x => x.Created))
         {
-          <tr id="@item.InviteId" class="item-row">
-            <td><img src="@item.ClanLogo" style="width: 40px" /></td>
-            <td class='item'>@item.ClanName</td>
-            <td class='item'>@item.Created</td>
-            <td class='item'>@item.Inviter.DisplayName</td>
-            <td class='item'>@item.Character.Name #@item.Character.CharacterIndex</td>
-            <td>
-              <button class="btn btn-success" @onclick="(()=>AcceptInvite(item.InviteId))">Accept</button>
-              <button class="btn btn-danger" @onclick="(()=>DeclineInvite(item.InviteId))">Decline</button>
-            </td>
-          </tr>
+            <div class="rf-invite">
+                <span class="rf-item__img rf-invite__logo">
+                    <img src="@item.ClanLogo" alt="@item.ClanName" loading="lazy" />
+                </span>
+
+                <div class="rf-invite__body">
+                    <span class="rf-item__name">@item.ClanName</span>
+                    <dl class="rf-facts rf-facts--tight">
+                        <dt>For</dt>
+                        <dd>@item.Character.Name @(item.Character.CharacterIndex > 0 ? "#" + item.Character.CharacterIndex : "")</dd>
+                        <dt>Invited by</dt>
+                        <dd>@(item.Inviter?.DisplayName ?? item.Inviter?.UserName ?? "Unknown")</dd>
+                        <dt>Received</dt>
+                        <dd title="@item.Created.ToString("f")">@Ago(item.Created)</dd>
+                    </dl>
+                </div>
+
+                <div class="rf-invite__actions">
+                    @if (decliningInvite == item.InviteId)
+                    {
+                        <span class="rf-meta">Decline this?</span>
+                        <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="(()=>DeclineInvite(item.InviteId))">Yes, decline</button>
+                        <button type="button" class="rf-btn rf-btn--small" @onclick="CancelDecline">Keep it</button>
+                    }
+                    else
+                    {
+                        <button type="button" class="rf-btn rf-btn--primary rf-btn--small" @onclick="(()=>AcceptInvite(item.InviteId))">Accept</button>
+                        @* Declining cannot be undone from this side, so it asks. *@
+                        <button type="button" class="rf-btn rf-btn--small" @onclick="(()=>decliningInvite=item.InviteId)">Decline</button>
+                    }
+                </div>
+            </div>
         }
-      </tbody>
-    </table>
-  }
+    </div>
+
+    <p class="rf-meta">
+        Accepting puts that character in the clan. A character can only be in one clan at a time.
+    </p>
 }
 
 @code {
-  private RavenNest.Models.SessionInfo session;
-  private IReadOnlyList<ClanInvite> invites;
-  protected override async Task OnInitializedAsync()
-  {
-    session = AuthService.GetSession();
-    if (session == null || !session.Authenticated)
+    private RavenNest.Models.SessionInfo session;
+    private IReadOnlyList<ClanInvite> invites;
+    private Guid? decliningInvite;
+
+    protected override async Task OnInitializedAsync()
     {
-      return;
+        session = AuthService.GetSession();
+        if (session == null || !session.Authenticated)
+        {
+            return;
+        }
+
+        invites = await ClanService.GetClanInvitesAsync();
     }
 
-    invites = await ClanService.GetClanInvitesAsync();
-  }
-
-  public async void AcceptInvite(Guid inviteId)
-  {
-    this.invites = await ClanService.AcceptClanInviteAsync(inviteId);
-    InvokeAsync(this.StateHasChanged);
-  }
-
-  public async void DeclineInvite(Guid inviteId)
-  {
-    this.invites = await ClanService.DeclineClanInviteAsync(inviteId);
-    InvokeAsync(this.StateHasChanged);
-  }
-
-  protected override void OnAfterRender(bool firstRender)
-  {
-    if (session == null || !session.Authenticated)
+    private static string Ago(DateTime time)
     {
+        if (time <= DateTime.UnixEpoch)
+            return "Unknown";
+
+        var elapsed = DateTime.UtcNow - time;
+        if (elapsed.TotalMinutes < 1) return "Just now";
+        if (elapsed.TotalHours < 1) return (int)elapsed.TotalMinutes + " minutes ago";
+        if (elapsed.TotalDays < 1) return (int)elapsed.TotalHours + " hours ago";
+        if (elapsed.TotalDays < 30) return (int)elapsed.TotalDays + " days ago";
+        return time.ToString("d MMMM yyyy");
+    }
+
+    private void CancelDecline()
+    {
+        decliningInvite = null;
+    }
+
+    public async void AcceptInvite(Guid inviteId)
+    {
+        decliningInvite = null;
+        this.invites = await ClanService.AcceptClanInviteAsync(inviteId);
+        await InvokeAsync(this.StateHasChanged);
+    }
+
+    public async void DeclineInvite(Guid inviteId)
+    {
+        decliningInvite = null;
+        this.invites = await ClanService.DeclineClanInviteAsync(inviteId);
+        await InvokeAsync(this.StateHasChanged);
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (session == null || !session.Authenticated)
+        {
             NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
+        }
     }
-  }
 }

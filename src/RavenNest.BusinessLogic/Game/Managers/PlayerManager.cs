@@ -277,8 +277,17 @@ namespace RavenNest.BusinessLogic.Game
 
                 if (!string.IsNullOrEmpty(userName))
                 {
-                    user.UserName = userName;
-                    user.DisplayName = Utility.SanitizeUserName(userName, userName);
+                    // Chat is the most current source we have for a name, so a rename is picked up
+                    // as soon as the person types. Going through the shared path means the access
+                    // row and the character names follow, which they did not before.
+                    // No display name travels with a join, so it is derived from the login, which is
+                    // what this path did before.
+                    if (UserNameSync.Apply(gameData, user, platform, platformId, userName) && ravenbotApi != null)
+                    {
+                        // Only on a real change, which is rare. This path runs for every player
+                        // joining, so an unconditional push would be thousands of requests a stream.
+                        await ravenbotApi.PushUserNamesAsync(user.Id);
+                    }
                 }
 
                 if (user.Status.GetValueOrDefault() == (int)AccountStatus.TemporarilySuspended)
@@ -2183,23 +2192,39 @@ namespace RavenNest.BusinessLogic.Game
             var resources = gameData.GetResources(player);
             if (resources == null) return 0;
 
+            // The other two SellItemToVendor overloads already guard on this. This one did not, so
+            // a failed remove paid the player and left them holding the item, which creates coins
+            // out of nothing. Pay only for goods actually handed over.
             var session = gameData.GetSession(sessionToken.SessionId);
             if (amount <= itemToVendor.Amount)
             {
+                if (!inventory.RemoveItem(itemToVendor, amount))
+                {
+                    logger.LogError($"Vendor sale aborted for character '{player.Id}': unable to remove {amount}x item '{itemToVendor.ItemId}'. No coins were paid.");
+                    return 0;
+                }
+
                 var price = itemToVendor.Item.ShopSellPrice * amount;
-                inventory.RemoveItem(itemToVendor, amount);
-                resources.Coins += itemToVendor.Item.ShopSellPrice * amount;
+                resources.Coins += price;
                 UpdateResources(session, player, resources);
                 UpdateStockAndLogTransaction(player.Id, itemToVendor.ItemId, amount, price, false);
                 return amount;
             }
 
-            inventory.RemoveStack(itemToVendor);
-            var totalPrice = itemToVendor.Amount * itemToVendor.Item.ShopSellPrice;
+            // Asking to sell more than the stack holds sells the whole stack. The amount is read
+            // before the remove, since removing the stack is what makes it unavailable afterwards.
+            var stackAmount = itemToVendor.Amount;
+            if (!inventory.RemoveStack(itemToVendor))
+            {
+                logger.LogError($"Vendor sale aborted for character '{player.Id}': unable to remove stack '{itemToVendor.Id}'. No coins were paid.");
+                return 0;
+            }
+
+            var totalPrice = stackAmount * itemToVendor.Item.ShopSellPrice;
             resources.Coins += totalPrice;
             UpdateResources(session, player, resources);
-            UpdateStockAndLogTransaction(player.Id, itemToVendor.ItemId, itemToVendor.Amount, totalPrice, false);
-            return (int)itemToVendor.Amount;
+            UpdateStockAndLogTransaction(player.Id, itemToVendor.ItemId, stackAmount, totalPrice, false);
+            return stackAmount;
         }
         public bool SellItemToVendor(Guid characterId, ItemFilter filter, IReadOnlyList<RavenNest.Models.InventoryItem> items)
         {
@@ -2614,7 +2639,9 @@ namespace RavenNest.BusinessLogic.Game
             if (character == null) return new ClearEnchantmentCooldownResult();
             var res = gameData.GetResources(character);
             var cd = gameData.GetEnchantmentCooldown(character.Id);
-            if (cd.CooldownEnd <= DateTime.UtcNow) return new ClearEnchantmentCooldownResult { Success = true };
+            // Null whenever there is nothing to be on cooldown for: no clan, or a clan that has
+            // never levelled Enchanting. Nothing to clear is the same answer as already clear.
+            if (cd == null || cd.CooldownEnd <= DateTime.UtcNow) return new ClearEnchantmentCooldownResult { Success = true };
 
             var secondsLeft = (cd.CooldownEnd - DateTime.UtcNow).TotalSeconds;
             var cost = (long)(Enchanting_CooldownCoinsPerSecond * secondsLeft);
@@ -2629,7 +2656,8 @@ namespace RavenNest.BusinessLogic.Game
             var character = GetCharacter(sessionToken, characterId);
             if (character == null) return new EnchantmentCooldownResult();
             var cd = gameData.GetEnchantmentCooldown(character.Id);
-            if (cd.CooldownEnd <= DateTime.UtcNow) return new EnchantmentCooldownResult();
+            // Same as above: no clan, or a clan with no Enchanting skill row, means no cooldown.
+            if (cd == null || cd.CooldownEnd <= DateTime.UtcNow) return new EnchantmentCooldownResult();
             return new EnchantmentCooldownResult
             {
                 Cooldown = cd.CooldownEnd,
@@ -3287,40 +3315,23 @@ namespace RavenNest.BusinessLogic.Game
                     }
 
 
-                    // todo: fix unknowns, we have the data.Platform, data.PlatformUserId, data.PlatformUserName
+                    // Last line of defence for a name that drifted out of step.
+                    //
+                    // This used to only log the mismatch, because repairing it here meant repeating
+                    // the update in a fourth place with its own idea of which fields to touch. There
+                    // is one function for that now, so the repair can simply be made. In practice
+                    // this should no longer trigger: session start and the join path both keep the
+                    // names aligned, so anything reaching here is worth knowing about.
                     if (!character.Name.Equals(user.UserName, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(data.PlatformUserName))
                     {
-                        // ...
-                        logger.LogError($"User name mismatch. Character: {character.Name}, User: {user.UserName}. Attempting to fix from data.");
+                        logger.LogWarning($"User name mismatch. Character: {character.Name}, User: {user.UserName}. Fixing from session data.");
 
-                        //var platform = data.Platform ?? "twitch";
-                        //var username = Utility.SanitizeUserName(data.PlatformUserName);
-                        //if (!string.IsNullOrEmpty(username))
-                        //{
-                        //    character.Name = username;
-                        //    user.UserName = username;
-                        //}
-                        //if (!string.IsNullOrEmpty(data.PlatformUserId))
-                        //{
-                        //    var access = gameData.GetUserAccess(user.Id, data.Platform);
-                        //    if (access == null)
-                        //    {
-                        //        gameData.Add(new UserAccess
-                        //        {
-                        //            Id = Guid.NewGuid(),
-                        //            UserId = user.Id,
-                        //            Platform = platform,
-                        //            PlatformId = data.PlatformUserId, // needs to be resolved.
-                        //            PlatformUsername = username,
-                        //            Created = DateTime.UtcNow
-                        //        });
-                        //    }
-                        //    else
-                        //    {
-                        //        access.PlatformId = data.PlatformUserId;
-                        //        access.PlatformUsername = data.PlatformUserName;
-                        //    }
-                        //}
+                        UserNameSync.Apply(
+                            gameData,
+                            user,
+                            data.Platform ?? "twitch",
+                            data.PlatformUserId,
+                            Utility.SanitizeUserName(data.PlatformUserName, data.PlatformUserName));
                     }
 
                     var characterSessionState = gameData.GetCharacterSessionState(sessionToken.SessionId, character.Id);

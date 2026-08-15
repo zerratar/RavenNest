@@ -296,6 +296,28 @@ namespace RavenNest.Blazor.Services
             return (ItemFilter)RavenNest.Models.ItemFilterExtensions.GetItemFilter(item);
         }
 
+        /// <summary>
+        ///     Which of the six rarity bands an item falls into. See <see cref="ItemRarity"/> for
+        ///     why material index is the thing being banded.
+        /// </summary>
+        public ItemRarityBand GetRarity(RavenNest.Models.Item item)
+        {
+            if (item == null)
+                return ItemRarityBand.Common;
+
+            return ItemRarity.FromMaterialIndex(GetMaterialIndex(item));
+        }
+
+        public string GetRarityClass(RavenNest.Models.Item item)
+        {
+            return ItemRarity.CssClass(GetRarity(item));
+        }
+
+        public string GetRarityName(RavenNest.Models.Item item)
+        {
+            return ItemRarity.Name(GetRarity(item));
+        }
+
         public string GetTypeName(RavenNest.Models.Item item)
         {
             var str = item.Type.ToString();

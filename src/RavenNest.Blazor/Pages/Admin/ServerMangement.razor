@@ -7,183 +7,154 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.ServerService ServerService
 
-
 @if (isAdmin)
 {
-    <h1>Send Server Announcement</h1>
-    <div class="server-notification">
-        <EditForm Model="@serverNotificationModel" OnValidSubmit="@SendServerNotification">
+    <header class="rf-page-head">
+        <h1 class="rf-page-title">Server</h1>
+        <p class="rf-page-subtitle">
+            Announcements, experience events, and what the bot and the event server are doing.
+        </p>
+    </header>
+
+    @if (!string.IsNullOrEmpty(status))
+    {
+        <div class="rf-banner @(statusIsError ? "rf-banner--bad" : "rf-banner--good")">
+            <div class="rf-banner__title">@(statusIsError ? "Not sent" : "Sent")</div>
+            <p>@status</p>
+        </div>
+    }
+
+    <section class="rf-panel rf-panel--accent">
+        <h2 class="rf-panel__title">Server announcement</h2>
+        <p class="rf-meta">
+            This appears in front of every player currently in the game. It cannot be recalled.
+        </p>
+        <EditForm Model="@serverNotificationModel" OnValidSubmit="@ConfirmAnnouncement">
             <DataAnnotationsValidator />
-
-            <div class="input-fields">
-                <InputText class="input" placeholder="Server Message" @bind-Value="serverNotificationModel.Value" />
-            </div>
-
+            <label class="rf-field">
+                <span class="rf-label">Message</span>
+                <InputText class="rf-input" placeholder="Server message" @bind-Value="serverNotificationModel.Value" />
+            </label>
             <ValidationSummary />
-            <button class="btn btn-primary" Type="submit">Send</button>
+            <div class="rf-actions">
+                @*
+                    This broadcast to everyone playing, on one click, with nothing asked. It is the
+                    most outward facing button in the admin panel.
+                *@
+                <button class="rf-btn rf-btn--primary" type="submit">Send to everyone</button>
+            </div>
         </EditForm>
-    </div>
+    </section>
 
-    <h1>Set Global Exp Multiplier</h1>
-    <div class="experience-multiplier">
+    <section class="rf-panel">
+        <h2 class="rf-panel__title">Global experience multiplier</h2>
         <EditForm Model="@expMultiplierEventModel" OnValidSubmit="@SetExpMultiplierEvent">
             <DataAnnotationsValidator />
 
-            <div class="input-fields">
-                <InputText class="input" placeholder="Exp Multiplier" @bind-Value="expMultiplierEventModel.Multiplier" />
-                <InputText class="input" placeholder="Message" @bind-Value="expMultiplierEventModel.Message" />
-                <InputText class="input" placeholder="Start Time" @bind-Value="expMultiplierEventModel.StartTime" />
-                <InputText class="input" placeholder="End Time" @bind-Value="expMultiplierEventModel.EndTime" />
+            <div class="rf-formgrid">
+                <label class="rf-field">
+                    <span class="rf-label">Multiplier</span>
+                    @* Was a free text box parsed with int.TryParse, which returned silently on
+                       anything that was not a number. *@
+                    <InputText type="number" class="rf-input" placeholder="2" @bind-Value="expMultiplierEventModel.Multiplier" />
+                </label>
+                <label class="rf-field">
+                    <span class="rf-label">Message</span>
+                    <InputText class="rf-input" placeholder="Shown with the event" @bind-Value="expMultiplierEventModel.Message" />
+                </label>
+                <label class="rf-field">
+                    <span class="rf-label">Starts</span>
+                    <InputText type="datetime-local" class="rf-input" @bind-Value="expMultiplierEventModel.StartTime" />
+                </label>
+                <label class="rf-field">
+                    <span class="rf-label">Ends</span>
+                    <InputText type="datetime-local" class="rf-input" @bind-Value="expMultiplierEventModel.EndTime" />
+                </label>
             </div>
 
             <ValidationSummary />
-            <button class="btn btn-primary" Type="submit"> Send</button>
+            <div class="rf-actions">
+                <button class="rf-btn rf-btn--primary" type="submit">Start the event</button>
+            </div>
         </EditForm>
-    </div>
+    </section>
 
-    <div class="server-details">
-        <h2>TCP Api Network Details (last 10s)</h2>
-        <ul class="details">
-            <li><strong>Message Count in/out:</strong>&nbsp;@(ServerService.GameData.EventServerNetworkStats.InMessageCount)&nbsp;/&nbsp;@(ServerService.GameData.EventServerNetworkStats.OutMessageCount)</li>
-            <li><strong>Traffic in (KB/s):</strong>&nbsp;@ServerService.GameData.EventServerNetworkStats.InTrafficKBps</li>
-            <li><strong>Traffic out (KB/s):</strong>&nbsp;@ServerService.GameData.EventServerNetworkStats.OutTrafficKBps</li>
-            <li><strong>Traffic Total (KB/s):</strong>&nbsp;@(ServerService.GameData.EventServerNetworkStats.OutTrafficKBps + ServerService.GameData.EventServerNetworkStats.InTrafficKBps)</li>
-            <li><strong>Date Sampled:</strong>&nbsp;@ServerService.GameData.EventServerNetworkStats.InSampleDateTime</li>
-        </ul>
-    </div>
+    <section class="rf-panel">
+        <h2 class="rf-panel__title">Event server, last 10 seconds</h2>
+        <dl class="rf-facts">
+            <dt>Messages in and out</dt>
+            <dd>@Net.InMessageCount.ToString("N0") in, @Net.OutMessageCount.ToString("N0") out</dd>
+            <dt>Traffic in</dt>
+            <dd>@Net.InTrafficKBps KB/s</dd>
+            <dt>Traffic out</dt>
+            <dd>@Net.OutTrafficKBps KB/s</dd>
+            <dt>Traffic total</dt>
+            <dd>@(Net.InTrafficKBps + Net.OutTrafficKBps) KB/s</dd>
+            <dt>Sampled</dt>
+            <dd>@Net.InSampleDateTime</dd>
+        </dl>
+    </section>
 
-    <div class="bot-details">
-        <h2>RavenBot Details<button class="btn btn-primary reload" @onclick="()=>ReloadStats()">Reload</button></h2>
+    <section class="rf-panel">
+        <div class="rf-inv__head">
+            <h2 class="rf-panel__title">Ravenbot</h2>
+            <button type="button" class="rf-btn rf-btn--small" @onclick="ReloadStats">
+                <i class="fa-solid fa-rotate" aria-hidden="true"></i> Reload
+            </button>
+        </div>
 
-        <div class="bot-detail-rows">
-            <div class="bot-detail-row">
-                <div class="bot-label">
-                    Last Ping
+        @if (botStats == null)
+        {
+            <p class="rf-meta">The bot has not reported anything.</p>
+        }
+        else
+        {
+            <dl class="rf-facts">
+                <dt>Last ping</dt>
+                <dd>@FormatTimeSpan(botStats.TimeSinceUpdate)</dd>
+
+                @*
+                    The fallback branch of this used to be eleven hand written label and value
+                    divs, all identical apart from the two strings in them. It is a list now, so
+                    adding a stat is a line rather than six.
+                *@
+                @if (botStats.Values != null && botStats.Values.Count > 0)
+                {
+                    @foreach (var key in botStats.Values.Keys)
+                    {
+                        <dt>@Sentence(key)</dt>
+                        <dd>@FormatValue(botStats.Values[key])</dd>
+                    }
+                }
+                else
+                {
+                    @foreach (var row in FallbackStats)
+                    {
+                        <dt>@row.Label</dt>
+                        <dd>@row.Value</dd>
+                    }
+                }
+            </dl>
+        }
+    </section>
+
+    @if (confirmingAnnouncement)
+    {
+        <div class="rf-modal-backdrop" @onclick="CancelAnnouncement">
+            <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Send server announcement" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">Send this to everyone?</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CancelAnnouncement">&times;</button>
                 </div>
-
-                <div class="bot-value">
-                    @FormatTimeSpan(botStats.TimeSinceUpdate)
+                <p>Every player currently in the game sees this, and it cannot be recalled:</p>
+                <p class="rf-cmd">@serverNotificationModel.Value</p>
+                <div class="rf-modal__foot">
+                    <button type="button" class="rf-btn" @onclick="CancelAnnouncement">Cancel</button>
+                    <button type="button" class="rf-btn rf-btn--primary" @onclick="SendServerNotification">Send it</button>
                 </div>
             </div>
-
-            @if (botStats.Values != null && botStats.Values.Count > 0)
-            {
-                @foreach (var key in botStats.Values.Keys)
-                {
-                    <div class="bot-detail-row">
-                        <div class="bot-label">
-                            @Sentence(key)
-                        </div>
-
-                        <div class="bot-value">
-                            @FormatValue(botStats.Values[key])
-                        </div>
-                    </div>
-                }
-            }
-            else
-            {
-                <div class="bot-detail-row">
-                    <div class="bot-label">
-                        Joined Channels
-                    </div>
-
-                    <div class="bot-value">
-                        @botStats.JoinedChannelsCount
-                    </div>
-                </div>
-                <div class="bot-detail-row">
-                    <div class="bot-label">
-                        User Count
-                    </div>
-
-                    <div class="bot-value">
-                        @botStats.UserCount
-                    </div>
-                </div>
-                <div class="bot-detail-row">
-                    <div class="bot-label">
-                        Connection Count
-                    </div>
-
-                    <div class="bot-value">
-                        @botStats.ConnectionCount
-                    </div>
-                </div>
-                <div class="bot-detail-row">
-                    <div class="bot-label">
-                        Session Count
-                    </div>
-
-                    <div class="bot-value">
-                        @botStats.SessionCount
-                    </div>
-                </div>
-                <div class="bot-detail-row">
-                    <div class="bot-label">
-                        Total Commands Received
-                    </div>
-
-                    <div class="bot-value">
-                        @botStats.TotalCommandCount
-                    </div>
-                </div>
-                <div class="bot-detail-row">
-                    <div class="bot-label">
-                        Commands Per Seconds
-                    </div>
-                    <div class="bot-value">
-                        @botStats.CommandsPerSecondsDelta
-                    </div>
-                </div>
-                <div class="bot-detail-row">
-                    <div class="bot-label">
-                        Peak Commands Per Seconds
-                    </div>
-
-                    <div class="bot-value">
-                        @botStats.CommandsPerSecondsMax
-                    </div>
-                </div>
-                <div class="bot-detail-row">
-                    <div class="bot-label">
-                        Last Session Started
-                    </div>
-
-                    <div class="bot-value">
-                        @botStats.LastSessionStarted
-                    </div>
-                </div>
-                <div class="bot-detail-row">
-                    <div class="bot-label">
-                        Last Session Ended
-                    </div>
-
-                    <div class="bot-value">
-                        @botStats.LastSessionEnded
-                    </div>
-                </div>
-                <div class="bot-detail-row">
-                    <div class="bot-label">
-                        Started
-                    </div>
-
-                    <div class="bot-value">
-                        @botStats.Started
-                    </div>
-                </div>
-                <div class="bot-detail-row">
-                    <div class="bot-label">
-                        Uptime
-                    </div>
-
-                    <div class="bot-value">
-                        @FormatTimeSpan(botStats.Uptime)
-                    </div>
-                </div>
-            }
         </div>
-    </div>
+    }
 }
 
 @code {
@@ -191,12 +162,36 @@
     private BotStats botStats;
     private ExpMultiplierModel expMultiplierEventModel = new ExpMultiplierModel
         {
-            StartTime = DateTime.UtcNow.ToString(),
-            EndTime = DateTime.UtcNow.AddHours(1).ToString()
+            StartTime = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm"),
+            EndTime = DateTime.UtcNow.AddHours(1).ToString("yyyy-MM-ddTHH:mm")
         };
 
     private RavenNest.Models.SessionInfo session;
     private bool isAdmin;
+
+    private bool confirmingAnnouncement;
+    private string status = "";
+    private bool statusIsError;
+
+    private RavenNest.BusinessLogic.Data.NetworkStats Net => ServerService.GameData.EventServerNetworkStats;
+
+    private sealed record StatRow(string Label, string Value);
+
+    private IEnumerable<StatRow> FallbackStats => new[]
+    {
+        new StatRow("Joined channels", botStats.JoinedChannelsCount.ToString("N0")),
+        new StatRow("Users", botStats.UserCount.ToString("N0")),
+        new StatRow("Connections", botStats.ConnectionCount.ToString("N0")),
+        new StatRow("Sessions", botStats.SessionCount.ToString("N0")),
+        new StatRow("Commands received", botStats.TotalCommandCount.ToString("N0")),
+        new StatRow("Commands per second", botStats.CommandsPerSecondsDelta.ToString()),
+        new StatRow("Peak commands per second", botStats.CommandsPerSecondsMax.ToString()),
+        new StatRow("Last session started", FormatDateTime(botStats.LastSessionStarted)),
+        new StatRow("Last session ended", FormatDateTime(botStats.LastSessionEnded)),
+        new StatRow("Started", FormatDateTime(botStats.Started)),
+        new StatRow("Uptime", FormatTimeSpan(botStats.Uptime)),
+    };
+
     private string FormatValue(object val)
     {
         var str = val?.ToString();
@@ -216,7 +211,7 @@
         return str;
     }
 
-    private string FormatDateTime(DateTime dt)
+    private static string FormatDateTime(DateTime dt)
     {
         if (dt <= DateTime.UnixEpoch)
         {
@@ -226,25 +221,30 @@
         return dt.ToString();
     }
 
+    /// <summary>
+    ///     Splits a CamelCase key into words. Guarded because it indexed the first character
+    ///     without checking there was one, so an empty key took the page down.
+    /// </summary>
     private string Sentence(string input)
     {
-        var str = input;
-        var start = Char.ToUpper(str[0]);
-        var process = str.Substring(1);
-        process.Select((x, i) =>
+        if (string.IsNullOrEmpty(input))
         {
-            if (Char.IsUpper(x)) return i;
-            return -1;
-        })
-        .Reverse()
-        .ForEach(x =>
-        {
-            if (x != -1)
-                process = process.Insert(x, " ");
-        });
+            return input;
+        }
+
+        var start = Char.ToUpper(input[0]);
+        var process = input.Substring(1);
+        process.Select((x, i) => Char.IsUpper(x) ? i : -1)
+            .Reverse()
+            .ForEach(x =>
+            {
+                if (x != -1)
+                    process = process.Insert(x, " ");
+            });
 
         return start + process;
     }
+
     protected override void OnInitialized()
     {
         session = AuthService.GetSession();
@@ -258,19 +258,47 @@
         InvokeAsync(StateHasChanged);
     }
 
+    private void ConfirmAnnouncement()
+    {
+        if (!isAdmin || string.IsNullOrWhiteSpace(serverNotificationModel.Value))
+        {
+            return;
+        }
+
+        confirmingAnnouncement = true;
+    }
+
+    private void CancelAnnouncement()
+    {
+        confirmingAnnouncement = false;
+    }
+
     private void SendServerNotification()
     {
+        confirmingAnnouncement = false;
+
         if (!isAdmin)
         {
             return;
         }
 
         var msg = serverNotificationModel.Value;
+        if (string.IsNullOrWhiteSpace(msg))
+        {
+            return;
+        }
+
+        // The message stays on screen long enough to read: a second a word, never less than five.
         var minDuration = 5000;
         var wordCount = msg.Split(' ').Length;
         ServerService.SendServerAnnouncement(msg, Math.Max(minDuration, wordCount * 1000));
+
         serverNotificationModel.Value = null;
+        statusIsError = false;
+        status = "The announcement went out to everyone in the game.";
+        InvokeAsync(StateHasChanged);
     }
+
     private string FormatTimeSpan(TimeSpan elapsed)
     {
         var str = "";
@@ -291,7 +319,10 @@
         return str;
     }
 
-
+    /// <summary>
+    ///     Every failure path here used to be a bare return: press Send, nothing happens, no way to
+    ///     tell whether the event started or the multiplier simply would not parse.
+    /// </summary>
     private void SetExpMultiplierEvent()
     {
         if (!isAdmin)
@@ -299,19 +330,37 @@
             return;
         }
 
+        if (!int.TryParse(expMultiplierEventModel.Multiplier, out var multiplier) || multiplier <= 0)
+        {
+            statusIsError = true;
+            status = "The multiplier has to be a whole number above zero.";
+            return;
+        }
+
         if (!DateTime.TryParse(expMultiplierEventModel.EndTime, out var endTime))
         {
-            return;
-        }
-        if (!int.TryParse(expMultiplierEventModel.Multiplier, out var multiplier))
-        {
+            statusIsError = true;
+            status = "The end time could not be read as a date and time.";
             return;
         }
 
-        var startTime = DateTime.UtcNow;
-        DateTime.TryParse(expMultiplierEventModel.StartTime, out startTime);
+        if (!DateTime.TryParse(expMultiplierEventModel.StartTime, out var startTime))
+        {
+            startTime = DateTime.UtcNow;
+        }
+
+        if (endTime <= startTime)
+        {
+            statusIsError = true;
+            status = "The event ends before it starts.";
+            return;
+        }
 
         ServerService.SendExpMultiplierEvent(multiplier, expMultiplierEventModel.Message, startTime, endTime);
+
+        statusIsError = false;
+        status = $"Experience is multiplied by {multiplier} until {endTime}.";
+
         expMultiplierEventModel.Multiplier = null;
         expMultiplierEventModel.Message = null;
     }

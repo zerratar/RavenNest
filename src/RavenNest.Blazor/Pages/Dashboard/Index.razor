@@ -1,31 +1,156 @@
 ﻿@layout DashboardLayout
 @page "/dashboard"
 @using RavenNest
+@using RavenNest.Models
+@using RavenNest.BusinessLogic.Extended
 @inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.Blazor.Services.PlayerService PlayerService
+@inject RavenNest.Blazor.Services.BotService BotService
 @inject NavigationManager NavigationManager
 
-@if (!session.Authenticated)
+@*
+    The front door. This page used to be the single line "Welcome back, name", which meant the
+    dashboard opened on nothing and every visit started with a hunt through the sidebar.
+
+    It now answers the three questions someone actually arrives with: how are my characters, is
+    my stream working, and where do I go next.
+*@
+
+<header class="rf-page-head">
+    <h1 class="rf-page-title">Welcome back, @(session?.UserName)</h1>
+    <p class="rf-page-subtitle">
+        Everything you can do outside the game, in one place.
+    </p>
+</header>
+
+@if (players == null)
 {
-  <p>You don't seem to be logged in.</p>
+    <LoadIndicator></LoadIndicator>
 }
 else
 {
-  <p>Welcome back, @session.UserName</p>
+    @*
+        Stream state leads, but only when there is something to say. A viewer who never streams
+        should not open their dashboard to a warning about a bot they do not use.
+    *@
+    @if (bot != null && bot.HasTwitchAccount && bot.NameMismatch)
+    {
+        <div class="rf-banner rf-banner--warn">
+            <h2 class="rf-banner__title">Your Twitch name has changed</h2>
+            <p>
+                Ravenfall still knows you as <strong>@bot.AccountName</strong>, so the bot is
+                joining the wrong channel.
+                <NavLink href="/bot">See what to do</NavLink>.
+            </p>
+        </div>
+    }
+    else if (bot != null && bot.HasActiveGameSession)
+    {
+        <div class="rf-banner rf-banner--good">
+            <h2 class="rf-banner__title">Your stream is live</h2>
+            <p>
+                @(bot.BotInChannel
+                    ? "The bot is in your channel and viewers can use commands."
+                    : "The bot has not joined your channel yet.")
+                <NavLink href="/bot">Bot status</NavLink>.
+            </p>
+        </div>
+    }
+
+    <div class="rf-stats">
+        <div class="rf-stat">
+            <div class="rf-stat__value">@players.Count</div>
+            <div class="rf-stat__label">Characters</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value">@HighestLevel</div>
+            <div class="rf-stat__label">Highest combat</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value">@(bot != null && bot.HasActiveGameSession ? "Live" : "Idle")</div>
+            <div class="rf-stat__label">Your stream</div>
+        </div>
+    </div>
+
+    <section class="rf-panel">
+        <h2 class="rf-panel__title">Your characters</h2>
+        @if (players.Count == 0)
+        {
+            <p class="rf-meta">
+                No characters yet. Type <strong>!join</strong> in any channel running Ravenfall
+                and one will be created for you.
+            </p>
+        }
+        else
+        {
+            <div class="rf-charpick" style="margin-bottom:0">
+                @foreach (var p in players)
+                {
+                    <NavLink class="rf-char" href="@($"/character/{p.Id}")">
+                        <span class="rf-char__name">@p.Name</span>
+                        <span class="rf-char__level">@PlayerService.GetCombatLevel(p)</span>
+                        <span class="rf-char__slot">
+                            Slot @p.CharacterIndex@(p.Identifier != null ? $" · {p.Identifier}" : "")
+                        </span>
+                    </NavLink>
+                }
+            </div>
+        }
+    </section>
+
+    @*
+        Destinations rather than a link list. Each one says what it is for, because half of these
+        are pages people never found.
+    *@
+    <section class="rf-panel">
+        <h2 class="rf-panel__title">Where to go</h2>
+        <div class="rf-cards">
+            <NavLink class="rf-card" href="/stash">
+                <span class="rf-card__title">Item Stash</span>
+                <span class="rf-card__body">Everything not carried by a character, and what it is worth.</span>
+            </NavLink>
+            <NavLink class="rf-card" href="/clan">
+                <span class="rf-card__title">Clan</span>
+                <span class="rf-card__body">Members, roles and invites for the clan you belong to.</span>
+            </NavLink>
+            <NavLink class="rf-card" href="/marketplace">
+                <span class="rf-card__title">Marketplace</span>
+                <span class="rf-card__body">Buy and sell with other players without waiting for a stream.</span>
+            </NavLink>
+            <NavLink class="rf-card" href="/loyalty">
+                <span class="rf-card__title">Loyalty</span>
+                <span class="rf-card__body">Time spent in each streamer's channel, and the rewards it earns.</span>
+            </NavLink>
+        </div>
+    </section>
 }
 
 @code {
-  private RavenNest.Models.SessionInfo session;
+    private RavenNest.Models.SessionInfo session;
+    private IReadOnlyList<WebsitePlayer> players;
+    private RavenNest.Blazor.Services.BotStatus bot;
 
-  protected override void OnInitialized()
-  {
-    session = AuthService.GetSession();
-  }
+    private int HighestLevel => players == null || players.Count == 0
+        ? 0
+        : players.Max(p => PlayerService.GetCombatLevel(p));
 
-  protected override void OnAfterRender(bool firstRender)
-  {
-    if (session == null || !session.Authenticated)
+    protected override async Task OnInitializedAsync()
     {
-            NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
+        session = AuthService.GetSession();
+        if (session == null || !session.Authenticated)
+        {
+            return;
+        }
+
+        players = await PlayerService.GetMyPlayersAsync();
+        bot = BotService.GetBotStatus();
     }
-  }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (session == null || !session.Authenticated)
+        {
+            NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
+        }
+    }
 }

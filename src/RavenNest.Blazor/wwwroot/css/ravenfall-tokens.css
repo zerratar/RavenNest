@@ -1,0 +1,120 @@
+/*
+  Ravenfall design tokens.
+
+  Every colour, size and radius the dashboard uses is declared here and nowhere else. The reason
+  is measurable: before this file, our own stylesheets contained 253 distinct hardcoded colour
+  values and zero variables, which is why nothing matched anything and why "light and dark were
+  fighting". There was never a theme system to fight with, only scattered literals that disagreed.
+
+  Rules for anyone adding to the dashboard:
+    - never write a raw colour in a component stylesheet, reference a token
+    - if a token is missing, add it here rather than inventing a one off value
+    - tokens are values only, no selectors and no components
+
+  This file is inert on its own. Declaring a variable costs nothing until something references it,
+  so loading it globally cannot affect the existing front and admin pages.
+*/
+
+:root {
+    /* ---- Surfaces -------------------------------------------------------
+       A cool stone base, deliberately blue leaning rather than neutral grey,
+       so the warm gold accent has something to sit against. Steps are even so
+       stacked panels read as depth rather than noise. */
+    --rf-bg: #12151c;
+    --rf-surface-1: #171b24;
+    --rf-surface-2: #1d222d;
+    --rf-surface-3: #252b38;
+    --rf-surface-raised: #2c3340;
+
+    /* ---- Ink ------------------------------------------------------------
+       Parchment tinted rather than pure white. Pure white on dark reads as a
+       spreadsheet; a warm off white reads as a game. */
+    --rf-ink: #ece4d6;
+    --rf-ink-muted: #a9a396;
+    --rf-ink-faint: #6f6b63;
+    --rf-ink-inverse: #14161c;
+
+    /* ---- Accent ---------------------------------------------------------
+       The same gold used to highlight chat commands in the in game
+       announcements, so the site and the game agree on what "important" looks
+       like. */
+    --rf-gold: #e8a33d;
+    --rf-gold-bright: #f5b957;
+    --rf-gold-dim: #a8752a;
+    --rf-gold-wash: rgba(232, 163, 61, 0.12);
+
+    /* ---- Status ---------------------------------------------------------
+       Each of these is paired with wording in the markup. Colour is never the
+       only carrier of meaning. */
+    --rf-good: #4cbf6a;
+    --rf-good-wash: rgba(76, 191, 106, 0.12);
+    --rf-warn: #d9a13a;
+    --rf-warn-wash: rgba(217, 161, 58, 0.12);
+    --rf-bad: #e05a52;
+    --rf-bad-wash: rgba(224, 90, 82, 0.12);
+
+    /* ---- Item rarity ----------------------------------------------------
+       An RPG convention players already know from the game itself. Having it
+       as tokens means inventory, stash, marketplace and clan views can finally
+       agree on what "rare" looks like. */
+    --rf-rarity-common: #9aa3ad;
+    --rf-rarity-uncommon: #5cc98a;
+    --rf-rarity-rare: #4f9de8;
+    --rf-rarity-epic: #a874e8;
+    --rf-rarity-legendary: #e8a33d;
+    --rf-rarity-mythic: #e8615f;
+
+    /* ---- Lines ----------------------------------------------------------- */
+    --rf-line: rgba(236, 228, 214, 0.09);
+    --rf-line-strong: rgba(236, 228, 214, 0.16);
+    --rf-line-gold: rgba(232, 163, 61, 0.35);
+
+    /* ---- Type -----------------------------------------------------------
+       One family, not three. The RPG character comes from colour, weight and
+       spacing rather than a novelty typeface, which ages badly and reads
+       poorly at small sizes. */
+    --rf-font: 'Heebo', 'Segoe UI', system-ui, sans-serif;
+    --rf-font-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+    --rf-size-display: 2rem;
+    --rf-size-title: 1.4rem;
+    --rf-size-heading: 1.1rem;
+    --rf-size-body: 0.95rem;
+    --rf-size-small: 0.85rem;
+    --rf-size-tiny: 0.75rem;
+
+    /* Applied to small uppercase labels. Uppercase without extra tracking
+       looks cramped and cheap. */
+    --rf-tracking-label: 0.08em;
+
+    /* ---- Space ----------------------------------------------------------
+       A 4px scale. Anything not on the scale is a mistake, not a decision. */
+    --rf-space-1: 0.25rem;
+    --rf-space-2: 0.5rem;
+    --rf-space-3: 0.75rem;
+    --rf-space-4: 1rem;
+    --rf-space-5: 1.5rem;
+    --rf-space-6: 2rem;
+    --rf-space-7: 3rem;
+
+    /* ---- Shape ----------------------------------------------------------- */
+    --rf-radius-sm: 3px;
+    --rf-radius: 6px;
+    --rf-radius-lg: 10px;
+
+    /* ---- Depth ----------------------------------------------------------
+       Shadow plus a one pixel top highlight. The highlight is what makes a
+       panel look lit from above and slightly raised, which is most of the
+       difference between "game panel" and "div with a border". */
+    --rf-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+    --rf-shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.45);
+    --rf-bevel: inset 0 1px 0 rgba(236, 228, 214, 0.06);
+
+    --rf-focus: 0 0 0 2px var(--rf-bg), 0 0 0 4px var(--rf-gold);
+
+    /* Dims the page behind a dialog. Dark rather than a tinted surface, so it
+       reads as "the page is switched off" rather than as another panel. */
+    --rf-scrim: rgba(8, 10, 14, 0.72);
+
+    --rf-transition: 140ms ease;
+}

@@ -1,4 +1,4 @@
-﻿@layout AdminLayout
+@layout AdminLayout
 @page "/admin/players"
 @using RavenNest
 @using RavenNest.BusinessLogic.Extended
@@ -6,108 +6,194 @@
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject NavigationManager NavigationManager
 
-<div class="pagenation">
-    <div class="page-navigation">
-        <button class="link-button" @onclick="PreviousPage"><i class="fas fa-chevron-left"></i></button>
-        <div class="pages">
-            <div class="current-page">@(pageIndex + 1)</div>&nbsp;/&nbsp;
-            <div class="total-pages">@pageCount</div>
-        </div>
-        <button class="link-button" @onclick="NextPage"><i class="fas fa-chevron-right"></i></button>
+<header class="rf-page-head">
+    <h1 class="rf-page-title">Characters</h1>
+    <p class="rf-page-subtitle">
+        Every character in the game, newest page first. Search matches an id, a username or a
+        character name.
+    </p>
+</header>
+
+<div class="rf-toolbar">
+    <EditForm Model="searchModel" OnSubmit="Filter">
+        <input type="search"
+               class="rf-input rf-search"
+               placeholder="Search for id, username or name"
+               aria-label="Search characters"
+               @bind="searchModel.Query" />
+    </EditForm>
+
+    <div class="rf-actions">
+        <button type="button" class="rf-btn rf-btn--small" disabled="@(pageIndex == 0)" @onclick="PreviousPage">
+            <i class="fas fa-chevron-left" aria-hidden="true"></i> Previous
+        </button>
+        <span class="rf-meta">Page @(pageIndex + 1) of @pageCount</span>
+        @*
+            Next used to increment the page index with no upper bound, so you could page past the
+            end of the table into an empty screen and had to guess your way back.
+        *@
+        <button type="button" class="rf-btn rf-btn--small" disabled="@(pageIndex + 1 >= pageCount)" @onclick="NextPage">
+            Next <i class="fas fa-chevron-right" aria-hidden="true"></i>
+        </button>
     </div>
-    <div class="search-bar">
-        <EditForm Model="searchModel" OnSubmit="Filter">
-            <InputText class="search-input" placeholder="Search for id, username or name" @bind-Value="searchModel.Query" />
-        </EditForm>
-    </div>
-    <div class="total-players"><span>@totalCount</span> players</div>
+
+    <span class="rf-meta">@totalCount.ToString("N0") characters</span>
 </div>
 
-
-<table class="player-table">
-    <thead>
-        <tr>
-            @*<th>Id</th>*@
-            <th>UserName</th>
-            <th>Name</th>
-            <th>Session</th>
-            <th>Admin</th>
-            <th>Mod</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (players == null || loading)
-        {
-            <LoadIndicator></LoadIndicator>
-        }
-        else
-        {
-            @foreach (var player in players)
-            {
-                <tr class="player-row">
-                    @*<td>@player.Id</td>*@
-                    <td><a href="/inspect/@player.Id" target="_blank">@player.UserName<span class='player-character-index' alt='Character Number'>#@player.CharacterIndex</span></a></td>
-                    <td>
-
-                        @*<span v-if="editingName(player.userId)">
-                <input class="table-edit" v-model="player.name" />
-                <button class="link-button" @click="applyEditName(player.id)"><i class="fas fa-check"></i></button>
-                <button class="link-button" @click="cancelEditName(player.id)"><i class="fas fa-times"></i></button>
-                </span>*@
-
-                        <span>
-                            @*v-if="!editingName(player.userId)"*@
-                            @player.Name
-                            @*<button class="link-button" @click="editName(player.id)"><i class="fas fa-pencil-alt"></i></button>*@
-                        </span>
-
-                    </td>
-                    <td><a href="https://www.twitch.tv/@player.SessionName" target="_blank">@player.SessionName</a></td>
-                    <td>@(player.IsAdmin ? "Yes" : "No")</td>
-                    <td>@(player.IsModerator ? "Yes" : "No")</td>
-                    <td>
-
-                        <button title="Delete" class="inline-button error" @onclick="(()=>DeletePlayer(player))"><i class="fa-solid fa-trash"></i></button>
-
-                        @if (!player.UserName.Equals(player.Name, StringComparison.OrdinalIgnoreCase))
-                        {
-                            <button title="Rename player to match Username" class="inline-button secondary" @onclick="(()=>MakeNameMatchUsername(player))"><i class="fa-sharp fa-regular fa-signature"></i></button>
-                        }
-
-                        @if (!string.IsNullOrEmpty(player.SessionName))
-                        {
-                            <button title="Kick from game session" class="inline-button error" @onclick="(()=>KickPlayer(player))"><i class="fa-solid fa-user-xmark"></i></button>
-                        }
-
-                        @if (string.IsNullOrEmpty(player.SessionName) || !player.SessionName.Equals(session.UserName, StringComparison.OrdinalIgnoreCase))
-                        {
-                            <button title="Add to game session" class="inline-button success" @onclick="(()=>AddToMyGame(player))"><i class="fa-solid fa-user-plus"></i></button>
-                        }
-
-                    </td>
-                </tr>
-            }
-        }
-    </tbody>
-</table>
-
-@if (confirmDeletePlayer)
+@if (players == null || loading)
 {
-    <div class="delete-player-modal-background">
-        <div class="delete-player-modal">
-            <div class="delete-player-content">
-                Are you sure you want to delete @playerToDelete.Name ?
+    @* This used to sit inside the tbody, which is not somewhere a div can go: the browser hoists
+       it out of the table and the loading state rendered above the header row. *@
+    <LoadIndicator></LoadIndicator>
+}
+else if (players.Count == 0)
+{
+    <div class="rf-panel">
+        <p class="rf-meta">No characters match that search.</p>
+    </div>
+}
+else
+{
+    <div class="rf-panel">
+        <div class="rf-scroll-x">
+            <table class="rf-table">
+                <thead>
+                    <tr>
+                        <th scope="col"><span class="rf-th rf-th--static">Character</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Level</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Playing on</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Roles</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var player in players)
+                    {
+                        <tr>
+                            <td>
+                                <div class="rf-item">
+                                    <span class="rf-item__body">
+                                        <a class="rf-item__name" href="/inspect/@player.Id" target="_blank">
+                                            @(player.Name ?? player.UserName)
+                                        </a>
+                                        <span class="rf-item__meta">
+                                            <span>@player.UserName #@player.CharacterIndex</span>
+                                            @*
+                                                The alias is what a viewer types after !join to pick this
+                                                character. It is the one identifier support questions are
+                                                actually about and it was on the row already.
+                                            *@
+                                            @if (!string.IsNullOrEmpty(player.Identifier))
+                                            {
+                                                <span class="rf-item__mark" title="Joined in chat with this alias">@player.Identifier</span>
+                                            }
+                                        </span>
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="rf-table__quiet">@player.CombatLevel</td>
+                            <td>
+                                @if (string.IsNullOrEmpty(player.SessionName))
+                                {
+                                    <span class="rf-meta">Not on a stream</span>
+                                }
+                                else
+                                {
+                                    <a class="rf-chip" href="https://www.twitch.tv/@player.SessionName" target="_blank" rel="noopener">
+                                        <i class="fab fa-twitch" aria-hidden="true"></i>@player.SessionName
+                                    </a>
+                                }
+                            </td>
+                            <td>
+                                @if (player.IsAdmin)
+                                {
+                                    <span class="rf-badge rf-badge--gold">Admin</span>
+                                }
+                                @if (player.IsModerator)
+                                {
+                                    <span class="rf-badge rf-badge--gold">Mod</span>
+                                }
+                                @if (!player.IsAdmin && !player.IsModerator)
+                                {
+                                    <span class="rf-meta">Player</span>
+                                }
+                            </td>
+                            <td>
+                                @*
+                                    Four icon only buttons with a title attribute, two of which were
+                                    the same shade of red for "kick from the session" and "delete the
+                                    character for ever". Words now, and the two that cannot be undone
+                                    ask first.
+                                *@
+                                <div class="rf-actions">
+                                    @if (NameDiffersFromUsername(player))
+                                    {
+                                        <button type="button" class="rf-btn rf-btn--small" @onclick="() => MakeNameMatchUsername(player)">
+                                            Rename to @player.UserName
+                                        </button>
+                                    }
+
+                                    @if (!string.IsNullOrEmpty(player.SessionName))
+                                    {
+                                        <button type="button" class="rf-btn rf-btn--small" @onclick="() => ConfirmKick(player)">Kick</button>
+                                    }
+
+                                    @if (CanAddToMySession(player))
+                                    {
+                                        <button type="button" class="rf-btn rf-btn--small" @onclick="() => AddToMyGame(player)">Add to my stream</button>
+                                    }
+
+                                    <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="() => DeletePlayer(player)">Delete</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (confirmDeletePlayer && playerToDelete != null)
+{
+    <div class="rf-modal-backdrop" @onclick="CancelDeletePlayer">
+        <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Delete character" @onclick:stopPropagation="true">
+            <div class="rf-modal__head">
+                <h2 class="rf-modal__title">Delete this character?</h2>
+                <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CancelDeletePlayer">&times;</button>
             </div>
-            <div class="delete-player-actions">
-                <button class="btn btn-secondary" @onclick="CancelDeletePlayer">Cancel</button>
-                <button class="btn btn-primary" @onclick="ConfirmDeletePlayer">Confirm</button>
+            <p>
+                <b>@(playerToDelete.Name ?? playerToDelete.UserName)</b> (@playerToDelete.UserName
+                #@playerToDelete.CharacterIndex, combat level @playerToDelete.CombatLevel) and
+                everything on it goes away. This cannot be undone.
+            </p>
+            <div class="rf-modal__foot">
+                <button type="button" class="rf-btn" @onclick="CancelDeletePlayer">Keep it</button>
+                <button type="button" class="rf-btn rf-btn--danger" @onclick="ConfirmDeletePlayer">Delete the character</button>
             </div>
         </div>
     </div>
 }
 
-
+@if (playerToKick != null)
+{
+    <div class="rf-modal-backdrop" @onclick="CancelKick">
+        <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Kick from session" @onclick:stopPropagation="true">
+            <div class="rf-modal__head">
+                <h2 class="rf-modal__title">Kick from the stream?</h2>
+                <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CancelKick">&times;</button>
+            </div>
+            <p>
+                <b>@(playerToKick.Name ?? playerToKick.UserName)</b> leaves
+                <b>@playerToKick.SessionName</b> and stops training until they join again.
+            </p>
+            <div class="rf-modal__foot">
+                <button type="button" class="rf-btn" @onclick="CancelKick">Cancel</button>
+                <button type="button" class="rf-btn rf-btn--danger" @onclick="ApplyKick">Kick</button>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     private bool loading = false;
@@ -121,29 +207,43 @@
 
     private bool confirmDeletePlayer;
     private WebsiteAdminPlayer playerToDelete;
+    private WebsiteAdminPlayer playerToKick;
 
-    private async void ConfirmDeletePlayer()
+    /// <summary>
+    ///     Both of these used to call Equals on a name that can be null, so one character with no
+    ///     username took the whole page down rather than one row.
+    /// </summary>
+    private static bool NameDiffersFromUsername(WebsiteAdminPlayer player)
+    {
+        return !string.IsNullOrEmpty(player.UserName)
+            && !string.Equals(player.UserName, player.Name, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool CanAddToMySession(WebsiteAdminPlayer player)
+    {
+        return string.IsNullOrEmpty(player.SessionName)
+            || !string.Equals(player.SessionName, session?.UserName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task ConfirmDeletePlayer()
     {
         if (playerToDelete == null) return;
         await PlayerService.DeletePlayerAsync(playerToDelete.Id);
-        await LoadPlayerPageAsync(pageIndex, pageSize);
         confirmDeletePlayer = false;
         playerToDelete = null;
-        await InvokeAsync(StateHasChanged);
+        await LoadPlayerPageAsync(pageIndex, pageSize);
     }
 
-    private async void CancelDeletePlayer()
+    private void CancelDeletePlayer()
     {
         playerToDelete = null;
         confirmDeletePlayer = false;
-        await InvokeAsync(StateHasChanged);
     }
 
-    private async void DeletePlayer(WebsiteAdminPlayer player)
+    private void DeletePlayer(WebsiteAdminPlayer player)
     {
         playerToDelete = player;
         confirmDeletePlayer = true;
-        await InvokeAsync(StateHasChanged);
     }
 
     protected override async Task OnInitializedAsync()
@@ -152,50 +252,56 @@
         await LoadPlayerPageAsync(pageIndex, pageSize);
     }
 
-    private async void KickPlayer(WebsiteAdminPlayer player)
+    private void ConfirmKick(WebsiteAdminPlayer player)
     {
-        PlayerService.Kick(player);
-
-        await InvokeAsync(StateHasChanged);
+        playerToKick = player;
     }
 
-    private async void AddToMyGame(WebsiteAdminPlayer player)
+    private void CancelKick()
+    {
+        playerToKick = null;
+    }
+
+    private async Task ApplyKick()
+    {
+        var player = playerToKick;
+        playerToKick = null;
+        if (player == null) return;
+
+        PlayerService.Kick(player);
+        await LoadPlayerPageAsync(pageIndex, pageSize);
+    }
+
+    private async Task AddToMyGame(WebsiteAdminPlayer player)
     {
         PlayerService.AddToMySession(player);
-
-        await InvokeAsync(StateHasChanged);
+        await LoadPlayerPageAsync(pageIndex, pageSize);
     }
 
-    private async void MakeNameMatchUsername(WebsiteAdminPlayer player)
+    private async Task MakeNameMatchUsername(WebsiteAdminPlayer player)
     {
         PlayerService.MakeNameMatchUsername(player);
-        await InvokeAsync(StateHasChanged);
+        await LoadPlayerPageAsync(pageIndex, pageSize);
     }
 
-    // private void DisplayPlayer(WebsiteAdminPlayer player)
-    // {
-    //     NavigationManager.NavigateTo("/inspect/" + player.Id);
-    // }
-
-    private void Filter()
+    private async Task Filter()
     {
         pageIndex = 0;
-        LoadPlayerPageAsync(pageIndex, pageSize);
+        await LoadPlayerPageAsync(pageIndex, pageSize);
     }
 
-    private void NextPage()
+    private async Task NextPage()
     {
+        if (pageIndex + 1 >= pageCount) return;
         ++pageIndex;
-        LoadPlayerPageAsync(pageIndex, pageSize);
+        await LoadPlayerPageAsync(pageIndex, pageSize);
     }
 
-    private void PreviousPage()
+    private async Task PreviousPage()
     {
-        var oldPage = pageIndex;
-        if (--pageIndex < 0)
-            pageIndex = 0;
-        if (oldPage != pageIndex)
-            LoadPlayerPageAsync(pageIndex, pageSize);
+        if (pageIndex == 0) return;
+        --pageIndex;
+        await LoadPlayerPageAsync(pageIndex, pageSize);
     }
 
     private async Task LoadPlayerPageAsync(int index, int take)
@@ -205,7 +311,9 @@
         var result = await PlayerService.GetPlayerPageAsync(filter, index, take);
         players = result.Items;
         totalCount = result.TotalSize;
-        pageCount = (int)Math.Floor((double)this.totalCount / this.pageSize) + 1;
+        // Was floor(total / pageSize) + 1, which claims one page too many whenever the total
+        // divides evenly: 100 characters over 50 a page reported three pages.
+        pageCount = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
         loading = false;
         await InvokeAsync(StateHasChanged);
     }

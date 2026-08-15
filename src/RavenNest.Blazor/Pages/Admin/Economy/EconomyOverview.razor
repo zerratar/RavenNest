@@ -2,6 +2,7 @@
 @page "/admin/economy"
 @using Blazorise
 @using Blazorise.Charts
+@using RavenNest.BusinessLogic.Game
 
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.EconomyService EconomyService
@@ -9,59 +10,117 @@
 
 @if (isAdmin)
 {
-    <ul>
-        <li><a href="/admin/economy/marketplace">Marketplace</a></li>
-        <li><a href="/admin/economy/marketplace/avg-price">Average Item Price</a></li>
-        @*<li><a href="/admin/economy/marketplace/item-amounts-sellers">Item Amounts and Number of Sellers</a></li>*@
-    </ul>
+    <header class="rf-page-head">
+        <h1 class="rf-page-title">Game economy</h1>
+        <p class="rf-page-subtitle">
+            Coins are the only resource the game still uses, so this is the whole of it.
+        </p>
+    </header>
 
-    <h3>Economy Overview</h3>
-    <p>
-        Total amount of coins in the game: @totalCoins<br />
-        Average amount of coins per player: @averageCoins
-    </p>
+    <EconomyNav Current="overview"></EconomyNav>
 
-    <h4>Average coins based on character age</h4>
-    <LineChart TItem="double" Data="@lineChartData" Options="@lineChartOptions"></LineChart>
-
-    <h4>Top 10 Richest Players</h4>
-    if (topRichestUsers == null)
+    @if (loadFailed)
     {
-        <LoadIndicator></LoadIndicator>
+        @*
+            The load used to be wrapped in a catch that discarded the exception and let the page
+            render as though nothing had happened, so a failure looked like an economy with no
+            coins in it. It says so now.
+        *@
+        <div class="rf-banner rf-banner--bad">
+            <div class="rf-banner__title">The figures below could not be built</div>
+            <p>Reading the accounts failed part way through, so what is shown is incomplete.</p>
+        </div>
     }
-    else
-    {
-        <table class="table table-striped table-bordered">
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Coins</th>
-                    <th>Time Since Created</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var user in topRichestUsers)
-                {
-                    var coins = GameData.GetResources(user)?.Coins ?? 0;
-                    <tr>
-                        <td>@user.UserName</td>
-                        <td title="@coins">@FormatCoins(coins)</td>
-                        <td>@(DateTime.UtcNow - user.Created)</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
+
+    <div class="rf-stats">
+        <div class="rf-stat">
+            <div class="rf-stat__value" title="@totalCoins.ToString("N0") coins">@Utility.FormatAmount(totalCoins)</div>
+            <div class="rf-stat__label">Coins in the game</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value" title="@averageCoins.ToString("N0") coins">@Utility.FormatAmount(averageCoins)</div>
+            <div class="rf-stat__label">Average per account</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value" title="@medianCoins.ToString("N0") coins">@Utility.FormatAmount(medianCoins)</div>
+            <div class="rf-stat__label">Median per account</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value">@accountsCounted.ToString("N0")</div>
+            <div class="rf-stat__label">Accounts counted</div>
+        </div>
+    </div>
+
+    @*
+        The average and the median are both here on purpose. A handful of accounts hold most of the
+        coins in any game economy, so an average on its own says almost nothing about what a normal
+        player has, and the gap between the two is the interesting number.
+    *@
+
+    <section class="rf-panel">
+        <h2 class="rf-panel__title">Average coins by account age</h2>
+        <p class="rf-meta">
+            Each point is the average balance of the accounts created that many days ago.
+        </p>
+        <LineChart TItem="double" Data="@lineChartData" Options="@lineChartOptions"></LineChart>
+    </section>
+
+    <section class="rf-panel">
+        <h2 class="rf-panel__title">Richest accounts</h2>
+        @if (topRichestUsers == null)
+        {
+            <LoadIndicator></LoadIndicator>
+        }
+        else
+        {
+            <div class="rf-scroll-x">
+                <table class="rf-table">
+                    <thead>
+                        <tr>
+                            <th scope="col"><span class="rf-th rf-th--static">Account</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Coins</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Share of all coins</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Account age</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in topRichestUsers)
+                        {
+                            var coins = GameData.GetResources(user)?.Coins ?? 0;
+                            <tr>
+                                <td>
+                                    <a class="rf-item__name" href="/admin/user/@user.Id">@user.UserName</a>
+                                </td>
+                                <td class="rf-price__value" title="@coins.ToString("N0") coins">@Utility.FormatAmount(coins)</td>
+                                @*
+                                    Being told an account holds 4.2T means nothing without knowing
+                                    what fraction of the game that is, and the total is right here.
+                                *@
+                                <td class="rf-table__quiet">@ShareOfTotal(coins)</td>
+                                <td class="rf-table__quiet">@AccountAge(user.Created)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
 }
 
 @code {
-
     private IReadOnlyList<RavenNest.DataModels.User> topRichestUsers;
 
     private bool isAdmin;
+    private bool loadFailed;
 
     private double totalCoins;
     private double averageCoins;
+    private double medianCoins;
+    private int accountsCounted;
+
+    // The chart library takes colour strings rather than CSS, so this repeats --rf-gold by hand.
+    private const string ChartGold = "#e8a33d";
+
     private ChartData<double> lineChartData = new()
         {
             Labels = new(),
@@ -70,21 +129,16 @@
 
     private LineChartOptions lineChartOptions = new LineChartOptions
         {
+            Responsive = true,
             Scales = new ChartScales
             {
                 X = new ChartAxis
                 {
-                    Title = new ChartScaleTitle
-                    {
-                        Text = new IndexableOption<string>("Days")
-                    }
+                    Title = new ChartScaleTitle { Text = new IndexableOption<string>("Account age in days") }
                 },
                 Y = new ChartAxis
                 {
-                    Title = new ChartScaleTitle
-                    {
-                        Text = new IndexableOption<string>("Average Coins")
-                    }
+                    Title = new ChartScaleTitle { Text = new IndexableOption<string>("Average coins") }
                 }
             }
         };
@@ -99,67 +153,106 @@
 
         try
         {
-            var characters = GameData.GetCharacters();
-            var totalCharacters = characters.Count;
-            var coinsByCharacterAge = new Dictionary<int, (double coins, int count)>();
-
-            foreach (var character in characters)
-            {
-                var resources = GameData.GetResources(character);
-                totalCoins += resources.Coins;
-
-                var daysSinceCreation = (DateTime.UtcNow.Date - character.Created.Date).Days;
-                if (coinsByCharacterAge.TryGetValue(daysSinceCreation, out var coinData))
-                {
-                    coinsByCharacterAge[daysSinceCreation] = (coinData.coins + resources.Coins, coinData.count + 1);
-                }
-                else
-                {
-                    coinsByCharacterAge[daysSinceCreation] = (resources.Coins, 1);
-                }
-            }
-
-            averageCoins = totalCoins / totalCharacters;
-
-            var lineDataSet = new LineChartDataset<double>
-                {
-                    Label = "Average Coins",
-                    BackgroundColor = "rgba(75, 192, 192, 0.2)",
-                    BorderColor = "rgba(75, 192, 192, 1)",
-                    Fill = false,
-                    Data = new List<double>()
-                };
-
-            lineChartData.Labels = new List<object>();
-
-            foreach (var kvp in coinsByCharacterAge.OrderBy(kvp => kvp.Key))
-            {
-                var days = kvp.Key;
-                var (coins, count) = kvp.Value;
-                var avgCoins = coins / count;
-
-                lineDataSet.Data.Add(avgCoins);
-                lineChartData.Labels.Add(days.ToString());
-            }
-
-            lineChartData.Datasets.Add(lineDataSet);
+            BuildEconomy();
         }
-        catch (System.Exception exc)
+        catch
         {
+            loadFailed = true;
         }
     }
 
-    private string FormatCoins(double coins)
+    /// <summary>
+    ///     Coins are stored per account, not per character.
+    ///
+    ///     This walked every character and added its account's balance to the total, so an account
+    ///     with five characters had its coins counted five times: the reported total was inflated
+    ///     by however many characters people happen to have, and the "average per player" divided
+    ///     that inflated total by the character count. Both numbers were wrong and neither was
+    ///     wrong by a constant factor, so they could not even be compared over time.
+    ///
+    ///     Walking accounts instead is both correct and cheaper, since it is one resource lookup
+    ///     per account rather than one per character.
+    /// </summary>
+    private void BuildEconomy()
     {
-        if (coins >= 1_000_000_000_000)
-            return $"{coins / 1_000_000_000_000:0.##}T";
-        if (coins >= 1_000_000_000)
-            return $"{coins / 1_000_000_000:0.##}B";
-        if (coins >= 1_000_000)
-            return $"{coins / 1_000_000:0.##}M";
-        if (coins >= 1_000)
-            return $"{coins / 1_000:0.##}K";
+        var users = GameData.GetUsers();
+        var coinsByAccountAge = new Dictionary<int, (double coins, int count)>();
+        var balances = new List<double>();
+        var today = DateTime.UtcNow.Date;
 
-        return coins.ToString("0.##");
+        foreach (var user in users)
+        {
+            var resources = GameData.GetResources(user);
+            if (resources == null)
+            {
+                // An account can have no resources row. It is not an error, it is an account that
+                // has never held anything.
+                continue;
+            }
+
+            var coins = resources.Coins;
+            totalCoins += coins;
+            balances.Add(coins);
+
+            var days = Math.Max(0, (today - user.Created.Date).Days);
+            if (coinsByAccountAge.TryGetValue(days, out var bucket))
+            {
+                coinsByAccountAge[days] = (bucket.coins + coins, bucket.count + 1);
+            }
+            else
+            {
+                coinsByAccountAge[days] = (coins, 1);
+            }
+        }
+
+        accountsCounted = balances.Count;
+        averageCoins = accountsCounted == 0 ? 0 : totalCoins / accountsCounted;
+
+        if (accountsCounted > 0)
+        {
+            balances.Sort();
+            medianCoins = accountsCounted % 2 == 1
+                ? balances[accountsCounted / 2]
+                : (balances[(accountsCounted / 2) - 1] + balances[accountsCounted / 2]) / 2d;
+        }
+
+        var lineDataSet = new LineChartDataset<double>
+            {
+                Label = "Average coins",
+                BorderColor = ChartGold,
+                PointBackgroundColor = ChartGold,
+                PointBorderColor = ChartGold,
+                PointRadius = 1,
+                Fill = false,
+                Data = new List<double>()
+            };
+
+        lineChartData.Labels = new List<object>();
+
+        foreach (var kvp in coinsByAccountAge.OrderBy(kvp => kvp.Key))
+        {
+            var (coins, count) = kvp.Value;
+            lineDataSet.Data.Add(coins / count);
+            lineChartData.Labels.Add(kvp.Key.ToString());
+        }
+
+        lineChartData.Datasets.Clear();
+        lineChartData.Datasets.Add(lineDataSet);
+    }
+
+    private string ShareOfTotal(double coins)
+    {
+        if (totalCoins <= 0) return "n/a";
+        var pct = coins / totalCoins * 100d;
+        return pct < 0.01 ? "under 0.01%" : Math.Round(pct, 2) + "%";
+    }
+
+    private static string AccountAge(DateTime created)
+    {
+        var days = (int)(DateTime.UtcNow - created).TotalDays;
+        if (days < 1) return "today";
+        if (days < 60) return days + " days";
+        if (days < 730) return (days / 30) + " months";
+        return (days / 365) + " years";
     }
 }

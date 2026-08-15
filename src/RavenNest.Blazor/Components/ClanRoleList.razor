@@ -1,44 +1,238 @@
 ﻿@using RavenNest.Models;
+@using RavenNest.BusinessLogic.Game
 @inject RavenNest.Blazor.Services.ClanService ClanService
 
-<h3>Ranks</h3>
+@*
+    Ranks listed a name and a level and nothing else, which does not answer the question anyone
+    opens this tab with: who is in each rank, and what is each rank allowed to do.
 
+    The permissions themselves are not new. ClanManager has had thirteen typed clan role
+    permissions for a long time, backfilled on startup and enforced by the chat commands. There has
+    simply never been anywhere to see or change them, and the website ignored them entirely in
+    favour of "are you the founder".
+*@
 @if (roles == null)
 {
-  <LoadIndicator></LoadIndicator>
+    <LoadIndicator></LoadIndicator>
 }
 else
 {
-  <table class="items-list">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Level</th>
-      </tr>
-    </thead>
-    <tbody>
-      @foreach (var item in roles)
-      {
-        <tr id="@item.Id" class="item-row">
-          <td class='item'>@item.Name</td>
-          <td class='item'>@item.Level</td>
-        </tr>
-      }
-    </tbody>
-  </table>
+    <div class="rf-scroll-x">
+        <table class="rf-table">
+            <thead>
+                <tr>
+                    <th scope="col"><span class="rf-th rf-th--static">Rank</span></th>
+                    <th scope="col"><span class="rf-th rf-th--static">Rank level</span></th>
+                    <th scope="col"><span class="rf-th rf-th--static">Members</span></th>
+                    <th scope="col"><span class="rf-th rf-th--static">Playing now</span></th>
+                    <th scope="col"><span class="rf-th rf-th--static">Can do</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in roles.OrderByDescending(x => x.Level))
+                {
+                    var count = MemberCount(item.Id);
+                    var playing = PlayingCount(item.Id);
+                    var perms = PermissionsFor(item.Id);
+                    <tr>
+                        <td><span class="rf-item__name">@item.Name</span></td>
+                        <td class="rf-table__quiet">@item.Level</td>
+                        <td class="rf-table__quiet">
+                            @if (count == 0)
+                            {
+                                <span>Nobody</span>
+                            }
+                            else
+                            {
+                                <span>@count</span>
+                            }
+                        </td>
+                        <td>
+                            @if (playing > 0)
+                            {
+                                <span class="rf-badge rf-badge--good">@playing</span>
+                            }
+                            else
+                            {
+                                <span class="rf-table__quiet">None</span>
+                            }
+                        </td>
+                        <td>
+                            <div class="rf-actions">
+                                <span class="rf-table__quiet">@Summary(perms)</span>
+                                @if (CanManage)
+                                {
+                                    <button type="button" class="rf-btn rf-btn--small" @onclick="() => Edit(item)">Edit</button>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (!CanManage)
+    {
+        <p class="rf-meta">Only ranks that may edit ranks can change these.</p>
+    }
+
+    @if (editing != null && draft != null)
+    {
+        <div class="rf-modal-backdrop" @onclick="Cancel">
+            <div class="rf-modal rf-modal--wide" role="dialog" aria-modal="true" aria-label="Permissions for @editing.Name" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">What @editing.Name can do</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="Cancel">&times;</button>
+                </div>
+
+                <p class="rf-meta">
+                    These apply in game and on the site. The clan founder always has everything and
+                    cannot be locked out.
+                </p>
+
+                @foreach (var group in Groups)
+                {
+                    <h3 class="rf-label rf-perms__group">@group.Title</h3>
+                    <div class="rf-perms">
+                        @foreach (var p in group.Items)
+                        {
+                            <label class="rf-check">
+                                <input type="checkbox" checked="@p.Get(draft)" @onchange="e => p.Set(draft, (bool)(e.Value ?? false))" />
+                                <span>
+                                    <b>@p.Label</b>
+                                    <span class="rf-meta">@p.Help</span>
+                                </span>
+                            </label>
+                        }
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(error))
+                {
+                    <p class="rf-form__error">@error</p>
+                }
+
+                <div class="rf-modal__foot">
+                    <button type="button" class="rf-btn" @onclick="Cancel">Cancel</button>
+                    <button type="button" class="rf-btn rf-btn--primary" @onclick="Save">Save</button>
+                </div>
+            </div>
+        </div>
+    }
 }
 
 @code {
-  [Parameter]
-  public Guid ClanId { get; set; }
+    [Parameter]
+    public Guid ClanId { get; set; }
 
-  [Parameter]
-  public bool CanManage { get; set; }
+    /// <summary>True when the signed in user's rank may edit ranks.</summary>
+    [Parameter]
+    public bool CanManage { get; set; }
 
-  IReadOnlyList<ClanRole> roles = null;
+    private sealed record Perm(string Label, string Help, Func<TypedClanRolePermissions, bool> Get, Action<TypedClanRolePermissions, bool> Set);
+    private sealed record PermGroup(string Title, Perm[] Items);
 
-  protected override void OnInitialized()
-  {
-    roles = ClanService.GetRoles(ClanId);
-  }
+    // Grouped by what a person is trying to do, not by the order the flags happen to be stored in.
+    private static readonly PermGroup[] Groups = new[]
+    {
+        new PermGroup("Members", new[]
+        {
+            new Perm("Invite characters", "Send clan invites.", p => p.CanCreateInvite, (p, v) => p.CanCreateInvite = v),
+            new Perm("Cancel invites", "Withdraw an invite that has not been accepted.", p => p.CanDeleteInvite, (p, v) => p.CanDeleteInvite = v),
+            new Perm("Remove members", "Only members of a lower rank.", p => p.CanKickMembers, (p, v) => p.CanKickMembers = v),
+            new Perm("Remove any member", "Including ranks equal to or above this one. Give this out sparingly.", p => p.CanKickAllMembers, (p, v) => p.CanKickAllMembers = v),
+        }),
+        new PermGroup("Ranks", new[]
+        {
+            new Perm("Assign ranks", "Only ranks below their own.", p => p.CanAssignRoles, (p, v) => p.CanAssignRoles = v),
+            new Perm("Assign any rank", "Including ranks at or above their own, which lets them promote themselves.", p => p.CanAssignAllRoles, (p, v) => p.CanAssignAllRoles = v),
+            new Perm("Create ranks", "Add a new rank to the clan.", p => p.CanAddClanRole, (p, v) => p.CanAddClanRole = v),
+            new Perm("Delete ranks", "Remove a rank from the clan.", p => p.CanRemoveClanRole, (p, v) => p.CanRemoveClanRole = v),
+            new Perm("Edit ranks", "Rename ranks and change what each rank may do, including this screen.", p => p.CanRenameClanRole, (p, v) => p.CanRenameClanRole = v),
+        }),
+        new PermGroup("The clan", new[]
+        {
+            new Perm("Rename the clan", "Free name changes are limited, so this is worth keeping tight.", p => p.CanRenameClan, (p, v) => p.CanRenameClan = v),
+            new Perm("Change who may join", "Open or close the clan to public joining.", p => p.CanMakePublic, (p, v) => p.CanMakePublic = v),
+            new Perm("See clan details", "View the roster and the clan's progress.", p => p.CanSeeClanDetails, (p, v) => p.CanSeeClanDetails = v),
+            new Perm("Use clan skills", "Enchant using the clan's enchanting level.", p => p.CanUseClanSkills, (p, v) => p.CanUseClanSkills = v),
+        }),
+    };
+
+    IReadOnlyList<ClanRole> roles = null;
+    IReadOnlyList<RavenNest.Blazor.Services.ClanMember> members = null;
+
+    private ClanRole editing;
+    private TypedClanRolePermissions draft;
+    private string error;
+
+    private readonly Dictionary<Guid, TypedClanRolePermissions> permissionCache = new();
+
+    protected override void OnInitialized()
+    {
+        roles = ClanService.GetRoles(ClanId);
+        members = ClanService.GetMembers(ClanId);
+    }
+
+    private TypedClanRolePermissions PermissionsFor(Guid roleId)
+    {
+        if (!permissionCache.TryGetValue(roleId, out var p))
+        {
+            p = ClanService.GetRolePermissions(roleId);
+            permissionCache[roleId] = p;
+        }
+        return p;
+    }
+
+    /// <summary>A one line answer, so the table is readable without opening every rank.</summary>
+    private static string Summary(TypedClanRolePermissions p)
+    {
+        if (p == null) return "Unknown";
+
+        var granted = Groups.SelectMany(g => g.Items).Count(x => x.Get(p));
+        var total = Groups.Sum(g => g.Items.Length);
+
+        if (granted == 0) return "Nothing";
+        if (granted == total) return "Everything";
+        return granted + " of " + total;
+    }
+
+    private void Edit(ClanRole role)
+    {
+        error = null;
+        editing = role;
+
+        // Edit a copy, so cancelling actually cancels.
+        var current = PermissionsFor(role.Id);
+        draft = current == null ? new TypedClanRolePermissions() : ClanRolePermissionsBuilder.Parse(ClanRolePermissionsBuilder.Generate(current));
+    }
+
+    private void Cancel()
+    {
+        editing = null;
+        draft = null;
+        error = null;
+    }
+
+    private void Save()
+    {
+        if (editing == null || draft == null)
+            return;
+
+        if (!ClanService.UpdateRolePermissions(ClanId, editing.Id, draft))
+        {
+            error = "That could not be saved. Your rank may no longer be allowed to edit ranks.";
+            return;
+        }
+
+        permissionCache[editing.Id] = draft;
+        Cancel();
+    }
+
+    private int MemberCount(Guid roleId) =>
+        members?.Count(x => !x.InvitationPending && x.Player.ClanRole?.Id == roleId) ?? 0;
+
+    private int PlayingCount(Guid roleId) =>
+        members?.Count(x => x.IsPlaying && x.Player.ClanRole?.Id == roleId) ?? 0;
 }

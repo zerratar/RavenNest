@@ -1,7 +1,9 @@
 ﻿@using RavenNest.Models
 @using RavenNest.Blazor.Services
 @using Blazored.Typeahead
+@using RavenNest.BusinessLogic.Game
 @inject RavenNest.Blazor.Services.ClanService ClanService
+@inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject NavigationManager NavigationManager
 
@@ -11,129 +13,195 @@
 }
 else
 {
-    if (invitePlayerVisible)
+    <div class="rf-toolbar">
+        @* A roster of a hundred characters had no way to find one. *@
+        <input type="search"
+               class="rf-input rf-search"
+               placeholder="Search members"
+               aria-label="Search clan members by name"
+               value="@search"
+               @oninput="OnSearchChanged" />
+
+        @*
+            Who is actually playing right now was never on this page, and it is the thing a clan
+            most wants from a member list. The character is locked to the session it joined, so
+            the answer was one join away the whole time.
+        *@
+        @if (PlayingCount > 0)
+        {
+            <button type="button"
+                    class="rf-filter @(onlineOnly ? "is-active" : "")"
+                    aria-pressed="@onlineOnly"
+                    @onclick="ToggleOnlineOnly">
+                <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i>
+                <span>@PlayingCount playing now</span>
+            </button>
+        }
+
+        <span class="rf-meta">Showing @Visible.Count of @members.Count</span>
+
+        @if (CanInvite)
+        {
+            <button type="button" class="rf-btn rf-btn--small rf-btn--primary rf-toolbar__end" @onclick="ShowInvitePlayer">
+                <i class="fas fa-user-plus" aria-hidden="true"></i> Invite a character
+            </button>
+        }
+    </div>
+
+    @if (Visible.Count == 0)
     {
-        <div class="clan-member-invite">
-            <div class="clan-member-invite-header">
-                <h2>Search for character to invite</h2>
-                <button class="close" @onclick="HideInvitePlayer">x</button>
-            </div>
-
-
-            <Autocomplete SearchMethod="@SearchPlayer"
-                          @bind-Value="@selectedPlayer">
-                <SelectedTemplate>
-                    @context.UserName (Level @PlayerService.GetCombatLevel(context) #@context.CharacterIndex)
-                </SelectedTemplate>
-                <ResultTemplate>
-                    @context.UserName (Level @PlayerService.GetCombatLevel(context) #@context.CharacterIndex)
-                </ResultTemplate>
-                <NotFoundTemplate>
-                    No player found
-                </NotFoundTemplate>
-            </Autocomplete>
-@* 
-            <BlazoredTypeahead SearchMethod="SearchPlayer"
-                               @bind-Value="selectedPlayer"
-                               @onselectionchange="SelectedPlayerChanged">
-                <SelectedTemplate>
-                    @context.UserName (Level @PlayerService.GetCombatLevel(context) #@context.CharacterIndex)
-                </SelectedTemplate>
-                <ResultTemplate>
-                    @context.UserName (Level @PlayerService.GetCombatLevel(context) #@context.CharacterIndex)
-                </ResultTemplate>
-            </BlazoredTypeahead> *@
-
-            <div class="clan-member-invite-controls">
-                @if (selectedPlayer != null)
-                {
-                    <button @onclick="SendInvite" class="btn btn-primary">Send Invite</button>
-                }
-                <button @onclick="HideInvitePlayer" class="btn btn-secondary">Cancel</button>
-            </div>
-        </div>
+        <p class="rf-meta">Nothing matches that.</p>
     }
-
-    <div class="clan-member-list">
-        <div class="clan-member-list-header">
-            <h2>Clan Members</h2>
-            <button class="btn btn-success" @onclick="ShowInvitePlayer" title="Invite player to your clan"><span class="fas fa-user-plus"></span>&nbsp;Invite Player</button>
-        </div>
-        <table class="items-list">
-            <thead>
-                <tr>
-                    <th></th>
-                    <th>Name</th>
-                    <th>Rank</th>
-                    <th>Joined</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in members)
-                {
-                    <tr id="@item.Player.Id" class="item-row">
-                        <td><img src="/api/twitch/logo/@(item.Player.Twitch?.PlatformId)" style="width: 40px" /></td>
-                        <td class='item link' @onclick="(()=>InspectPlayer(item.Player))">
-                            @GetPlayerName(item.Player)
-                        </td>
-                        <td class='item'>
-                            @if (item.InvitationPending)
-                            {
-                                <span>-</span>
-                            }
-                            else
-                            {
-                                if (savingChanges)
+    else
+    {
+        <div class="rf-scroll-x">
+            <table class="rf-table">
+                <thead>
+                    <tr>
+                        <th scope="col"><span class="rf-th rf-th--static">Character</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Rank</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Joined</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Now</span></th>
+                        @if (ShowManageColumn)
+                        {
+                            <th scope="col"><span class="rf-th rf-th--static">Manage</span></th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Visible)
+                    {
+                        <tr>
+                            <td>
+                                <div class="rf-item">
+                                    <span class="rf-item__img">
+                                        <img src="/api/twitch/logo/@(item.Player.Twitch?.PlatformId)" alt="" loading="lazy" />
+                                    </span>
+                                    <span class="rf-item__body">
+                                        <a class="rf-item__name" href="/inspect/@item.Player.Id">@GetPlayerName(item.Player)</a>
+                                        @* Combat level was in the data and shown on neither clan screen. *@
+                                        <span class="rf-item__meta">Combat level @PlayerService.GetCombatLevel(item.Player)</span>
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                @if (item.InvitationPending)
+                                {
+                                    <span class="rf-badge rf-badge--warn">Invited</span>
+                                }
+                                else if (savingChanges && rankEditPlayerId == item.Player.Id)
                                 {
                                     <LoadIndicator></LoadIndicator>
                                 }
                                 else if (rankEditPlayerId == item.Player.Id)
                                 {
-                                    <select class="clan-role-selector" @onchange="SelectedRoleChanged">
-                                        @foreach (var role in roles)
-                                        {
-                                            if (role.Id == item.Player.ClanRole?.Id)
+                                    <div class="rf-actions">
+                                        <select class="rf-input" aria-label="Rank" @onchange="SelectedRoleChanged">
+                                            @foreach (var role in AssignableRoles)
                                             {
-                                                <option id="@role.Id" value="@role.Id" selected>
-                                                    @role.Name
-                                                </option>
+                                                <option value="@role.Id" selected="@(role.Id == item.Player.ClanRole?.Id)">@role.Name</option>
                                             }
-                                            else
-                                            {
-                                                <option id="@role.Id" value="@role.Id">
-                                                    @role.Name
-                                                </option>
-                                            }
-                                        }
-                                    </select>
-                                    <span class="fas fa-check" @onclick="UpdatePlayerRole"></span>
-                                    <span class="fas fa-times" @onclick="CancelEditPlayerRole"></span>
+                                        </select>
+                                        <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="UpdatePlayerRole">Save</button>
+                                        <button type="button" class="rf-btn rf-btn--small" @onclick="CancelEditPlayerRole">Cancel</button>
+                                    </div>
                                 }
                                 else
                                 {
-                                    <span>@(item.Player.ClanRole.Name)&nbsp;</span>
-
-                                    <span class="fas fa-pencil" @onclick="(()=>rankEditPlayerId=item.Player.Id)"></span>
+                                    <span class="rf-table__quiet">@(item.Player.ClanRole?.Name ?? "Member")</span>
+                                    @if (CanChangeRank(item))
+                                    {
+                                        <button type="button" class="rf-iconbtn" title="Change rank" @onclick="(()=>rankEditPlayerId=item.Player.Id)">
+                                            <i class="fas fa-pencil" aria-hidden="true"></i>
+                                        </button>
+                                    }
                                 }
-                            }
-                        </td>
-                        <td class='item'>@(item.InvitationPending ? "Invite Pending" : item.Player.ClanRole.Joined)</td>
-                        <td>
-                            @if (item.InvitationPending)
+                            </td>
+                            <td class="rf-table__quiet">
+                                @if (item.InvitationPending)
+                                {
+                                    <span>Not yet</span>
+                                }
+                                else
+                                {
+                                    @* Was a raw timestamp. Nobody counts back from 2024-03-04 12:33:21. *@
+                                    <span title="@(item.Player.ClanRole?.Joined?.ToString("f"))">@JoinedText(item.Player.ClanRole?.Joined)</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.IsPlaying)
+                                {
+                                    <a class="rf-badge rf-badge--good" href="https://www.twitch.tv/@item.PlayingOn" target="_blank" title="Playing on @(item.PlayingOn)'s stream">
+                                        <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i> @item.PlayingOn
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="rf-table__quiet">Not playing</span>
+                                }
+                            </td>
+                            @if (ShowManageColumn)
                             {
-                                <button class="btn btn-warning" @onclick="(()=>RemoveInvite(item.Player.Id))">Remove Invite</button>
+                                <td>
+                                    @if (confirmingRemoval == item.Player.Id)
+                                    {
+                                        <div class="rf-actions">
+                                            <span class="rf-meta">Sure?</span>
+                                            <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="(()=>ConfirmRemove(item))">Yes</button>
+                                            <button type="button" class="rf-btn rf-btn--small" @onclick="CancelRemove">No</button>
+                                        </div>
+                                    }
+                                    else if (CanRemove(item))
+                                    {
+                                        @* Removing someone used to happen on the first click. *@
+                                        <button type="button" class="rf-btn rf-btn--small" @onclick="(()=>confirmingRemoval=item.Player.Id)">
+                                            @(item.InvitationPending ? "Cancel invite" : "Remove")
+                                        </button>
+                                    }
+                                </td>
                             }
-                            else
-                            {
-                                <button class="btn btn-danger" @onclick="(()=>RemoveMember(item.Player.Id))">Remove Member</button>
-                            }
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    @if (invitePlayerVisible)
+    {
+        <div class="rf-modal-backdrop" @onclick="HideInvitePlayer">
+            <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Invite a character" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">Invite a character</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="HideInvitePlayer">&times;</button>
+                </div>
+
+                <label class="rf-field">
+                    <span class="rf-label">Search for a character</span>
+                    <Autocomplete SearchMethod="@SearchPlayer" @bind-Value="@selectedPlayer">
+                        <SelectedTemplate>
+                            @context.UserName (Level @PlayerService.GetCombatLevel(context) #@context.CharacterIndex)
+                        </SelectedTemplate>
+                        <ResultTemplate>
+                            @context.UserName (Level @PlayerService.GetCombatLevel(context) #@context.CharacterIndex)
+                        </ResultTemplate>
+                        <NotFoundTemplate>
+                            No character found
+                        </NotFoundTemplate>
+                    </Autocomplete>
+                </label>
+                <p class="rf-meta">Only characters that are not already in a clan can be invited.</p>
+
+                <div class="rf-modal__foot">
+                    <button type="button" class="rf-btn" @onclick="HideInvitePlayer">Cancel</button>
+                    @if (selectedPlayer != null)
+                    {
+                        <button type="button" class="rf-btn rf-btn--primary" @onclick="SendInvite">Send invite</button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
 }
 
 @code {
@@ -147,17 +215,115 @@ else
     private bool invitePlayerVisible;
     private Guid? rankEditPlayerId;
     private Guid? targetRoleId;
+    private Guid? confirmingRemoval;
+    private string search = "";
+    private bool onlineOnly;
 
     private Player selectedPlayer;
+
+    // Each action is its own permission. Gating them all behind one flag was how the site ended
+    // up with a Remove button that the server then refused.
+    private TypedClanRolePermissions perms;
+    private int myRoleLevel;
+
+    private bool CanInvite => perms?.CanCreateInvite == true;
+
+    private bool ShowManageColumn =>
+        perms != null && (perms.CanCreateInvite || perms.CanDeleteInvite || perms.CanKickMembers
+            || perms.CanKickAllMembers || perms.CanAssignRoles || perms.CanAssignAllRoles);
+
+    private static int LevelOf(ClanMember m) => m.Player.ClanRole?.Level ?? 0;
+
+    private bool CanRemove(ClanMember m)
+    {
+        if (perms == null) return false;
+        if (m.InvitationPending) return perms.CanDeleteInvite;
+        return perms.CanKickAllMembers || (perms.CanKickMembers && LevelOf(m) < myRoleLevel);
+    }
+
+    private bool CanChangeRank(ClanMember m)
+    {
+        if (perms == null || m.InvitationPending) return false;
+        return perms.CanAssignAllRoles || (perms.CanAssignRoles && LevelOf(m) < myRoleLevel);
+    }
+
+    // You cannot promote anyone into a rank at or above your own unless you hold the sudo variant.
+    private IEnumerable<ClanRole> AssignableRoles =>
+        roles == null
+            ? Enumerable.Empty<ClanRole>()
+            : (perms?.CanAssignAllRoles == true ? roles : roles.Where(x => x.Level < myRoleLevel));
 
     IReadOnlyList<ClanMember> members = null;
 
     IReadOnlyList<ClanRole> roles = null;
 
+    private int PlayingCount => members?.Count(x => x.IsPlaying) ?? 0;
+
+    // Playing first, then rank, then strength. A member list is read to find someone to play with.
+    private IReadOnlyList<ClanMember> Visible
+    {
+        get
+        {
+            if (members == null)
+                return Array.Empty<ClanMember>();
+
+            IEnumerable<ClanMember> q = members;
+
+            if (onlineOnly)
+                q = q.Where(x => x.IsPlaying);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var needle = search.Trim();
+                q = q.Where(x => (x.Player.Name ?? "").Contains(needle, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return q
+                .OrderByDescending(x => x.IsPlaying)
+                .ThenBy(x => x.InvitationPending ? 1 : 0)
+                .ThenByDescending(x => x.Player.ClanRole?.Level ?? 0)
+                .ThenByDescending(x => PlayerService.GetCombatLevel(x.Player))
+                .ToList();
+        }
+    }
+
     protected override void OnInitialized()
     {
         members = ClanService.GetMembers(ClanId);
         roles = ClanService.GetRoles(ClanId);
+        perms = ClanService.GetMyPermissions(ClanId);
+
+        var session = AuthService.GetSession();
+        var me = members?.FirstOrDefault(x => !x.InvitationPending && x.Player.UserId == session.UserId);
+        // The owner outranks every rank, and holds the sudo permissions anyway.
+        myRoleLevel = perms != null && perms.CanKickAllMembers && perms.CanAssignAllRoles
+            ? int.MaxValue
+            : (me?.Player.ClanRole?.Level ?? -1);
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        search = e.Value?.ToString() ?? "";
+    }
+
+    private void ToggleOnlineOnly()
+    {
+        onlineOnly = !onlineOnly;
+    }
+
+    private static string JoinedText(DateTime? joined)
+    {
+        if (joined == null || joined.Value <= DateTime.UnixEpoch)
+            return "Unknown";
+
+        var days = (int)(DateTime.UtcNow - joined.Value).TotalDays;
+        if (days < 1) return "Today";
+        if (days == 1) return "Yesterday";
+        if (days < 30) return days + " days ago";
+        if (days < 365) return Math.Max(1, days / 30) + " months ago";
+
+        var years = days / 365;
+        return years == 1 ? "A year ago" : years + " years ago";
     }
 
     private string GetPlayerName(Player player)
@@ -168,11 +334,6 @@ else
         if (player.CharacterIndex > 0)
             name += " #" + player.CharacterIndex;
         return name;
-    }
-
-    private void InspectPlayer(Player player)
-    {
-        NavigationManager.NavigateTo("/inspect/" + player.Id);
     }
 
     private void SelectedRoleChanged(ChangeEventArgs e)
@@ -222,24 +383,23 @@ else
         if (selectedPlayer == null)
             return;
 
-
         invitePlayerVisible = false;
         members = ClanService.InvitePlayer(ClanId, selectedPlayer.Id);
         selectedPlayer = null;
     }
 
-    private void RemoveInvite(Guid characterId)
+    private void CancelRemove()
     {
-        members = ClanService.RemoveInvite(ClanId, characterId);
+        confirmingRemoval = null;
     }
 
-    private void RemoveMember(Guid characterId)
+    private void ConfirmRemove(ClanMember member)
     {
-        members = ClanService.RemoveMember(ClanId, characterId);
-    }
+        confirmingRemoval = null;
 
-    private void SelectedPlayerChanged()
-    {
+        members = member.InvitationPending
+            ? ClanService.RemoveInvite(ClanId, member.Player.Id)
+            : ClanService.RemoveMember(ClanId, member.Player.Id);
     }
 
     private async Task<IEnumerable<Player>> SearchPlayer(string searchText)

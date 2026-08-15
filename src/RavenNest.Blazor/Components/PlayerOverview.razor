@@ -1,0 +1,394 @@
+@using RavenNest.BusinessLogic
+@using RavenNest.BusinessLogic.Extended
+@using RavenNest.BusinessLogic.Game
+@using System.Globalization
+
+@inject RavenNest.Blazor.Services.PlayerService PlayerService
+
+@*
+    The character overview: what this character is doing right now, what levels next, the settings
+    that only exist in game, and what it is carrying.
+
+    All of this used to sit on top of the Skills tab. It grew until the skill list, which is what
+    the tab is named after, started below the fold: you had to scroll past half a screen of context
+    to reach the twenty rows you came for. It is its own tab now, and the Skills tab opens on the
+    skills.
+*@
+<div class="rf-skills">
+
+    @if (skills != null)
+    {
+        @* Total level is a number every RPG player knows and compares, and the site had never
+           shown it. It is a sum of data the page already had. *@
+        <div class="rf-stats">
+            <div class="rf-stat">
+                <div class="rf-stat__value">@Player.CombatLevel</div>
+                <div class="rf-stat__label">Combat level</div>
+            </div>
+            <div class="rf-stat">
+                <div class="rf-stat__value">@TotalLevel.ToString("N0")</div>
+                <div class="rf-stat__label">Total level</div>
+            </div>
+            @if (Player.State?.ExpPerHour > 0)
+            {
+                <div class="rf-stat">
+                    <div class="rf-stat__value" title="@Player.State.ExpPerHour exp per hour">@Utility.FormatExp(Player.State.ExpPerHour ?? 0)</div>
+                    <div class="rf-stat__label">Exp per hour</div>
+                </div>
+            }
+            @if (Player.State?.RestedTime > 0)
+            {
+                <div class="rf-stat">
+                    <div class="rf-stat__value">@Utility.FormatTime(TimeSpan.FromSeconds(Player.State.RestedTime))</div>
+                    <div class="rf-stat__label">Rested time</div>
+                </div>
+            }
+            @if (Player.Resources != null)
+            {
+                @* Coins are the only resource the game still uses, so they belong up here with the
+                   numbers a player checks, not in a grid of seven where six are dead. *@
+                <div class="rf-stat">
+                    <div class="rf-stat__value" title="@ExactExp(Player.Resources.Coins) coins">@Utility.FormatAmount(Player.Resources.Coins)</div>
+                    <div class="rf-stat__label">Coins</div>
+                </div>
+            }
+        </div>
+    }
+
+    @if (Player != null && Player.State != null)
+    {
+        <section class="rf-panel">
+            <h3 class="rf-panel__title">Right now</h3>
+
+            @* What the character is doing, in one sentence. The gold picks out the skill, the
+               rate and the island, which is what a player is actually scanning for. *@
+            <p class="rf-skills__status">
+                @if (Player.State.InOnsen)
+                {
+                    <span>You're currently resting and have </span>
+                    <b>@GetRestedTime()</b>
+                    <span> of rested time </span>
+                }
+                else if (trainingSkill != null)
+                {
+                    if (trainingSkill.IsCollectingItem)
+                    {
+                        <span>You're currently </span>
+                        <b>@TrainingSkillName</b>
+                        <span> </span>
+                        <b>@(trainingSkill.ItemName)</b>
+                        <span> </span>
+                    }
+                    else
+                    {
+                        <span>You're currently training </span>
+                        <b>@TrainingSkillName</b>
+                        <span> </span>
+                    }
+
+                    @if (Player.State.ExpPerHour > 0)
+                    {
+                        <span>gaining </span>
+                        <b title="@Player.State.ExpPerHour">@Utility.FormatExp(Player.State.ExpPerHour ?? 0)</b>
+                        <span> exp/hour </span>
+                    }
+                }
+                else
+                {
+                    <span>You're currently </span>
+                }
+
+                @if (Player.State.InDungeon)
+                {
+                    <span>in the dungeon</span>
+                }
+                else if (Player.State.InArena)
+                {
+                    <span>in the Arena</span>
+                }
+                else if (Player.State.InRaid)
+                {
+                    <span>in a Raid</span>
+                }
+                else if (!string.IsNullOrEmpty(Player.State.Island))
+                {
+                    <span>at </span>
+                    <b>@Player.State.Island</b>
+                }
+                else
+                {
+                    <b>sailing</b>
+                    @if (!string.IsNullOrEmpty(Player.State.Destination))
+                    {
+                        <span> to </span>
+                        <b>@Player.State.Destination</b>
+                    }
+                }
+
+                @if (!string.IsNullOrEmpty(Player.SessionInfo?.OwnerUserName))
+                {
+                    <span> on </span>
+                    <a href="https://www.twitch.tv/@Player.SessionInfo.OwnerUserName" target="_blank">@Player.SessionInfo.OwnerUserName</a>
+                    <span>'s stream.</span>
+                }
+            </p>
+
+            @*
+                The headline answer the site could never give: not how far through the level you
+                are, but how much is left and roughly how long that takes. Both numbers were
+                already on the server, they were just never divided by each other.
+            *@
+            @if (nextUp != null && !SkillProgress.IsMaxLevel(nextUp))
+            {
+                <div class="rf-next">
+                    <div class="rf-next__head">
+                        <span class="rf-label">Next level</span>
+                        <span class="rf-next__skill">@nextUp.Name <b>@(nextUp.Level + 1)</b></span>
+                    </div>
+                    <div class="rf-skill__bar rf-next__bar">
+                        <span class="rf-skill__fill" style="@BarWidth(nextUp.Percent)"></span>
+                    </div>
+                    <div class="rf-next__foot">
+                        <span title="@ExactExp(SkillProgress.ExpToNextLevel(nextUp))">@Utility.FormatExp(SkillProgress.ExpToNextLevel(nextUp)) exp to go</span>
+                        @if (NextLevelEta != null)
+                        {
+                            <span class="rf-next__eta">about @Utility.FormatTime(NextLevelEta.Value)</span>
+                        }
+                        else
+                        {
+                            <span class="rf-meta">no rate yet, so no estimate</span>
+                        }
+                    </div>
+                </div>
+            }
+
+            @*
+                Everything below is set in game and has never been visible anywhere else. Checking
+                whether your auto train target or your remaining auto joins are still what you
+                think they are previously meant asking the streamer.
+            *@
+            @if (HasStateFacts)
+            {
+                <dl class="rf-facts">
+                    @if (AutoTrainTarget != null)
+                    {
+                        <dt>Auto training to</dt>
+                        <dd>
+                            Level @Player.State.AutoTrainTargetLevel
+                            @if (AutoTrainEta != null)
+                            {
+                                <span class="rf-meta"> &middot; about @Utility.FormatTime(AutoTrainEta.Value)</span>
+                            }
+                        </dd>
+                    }
+                    @if (Player.State.AutoJoinRaidCounter > 0)
+                    {
+                        <dt>Auto joining raids</dt>
+                        <dd>@AutoJoinText(Player.State.AutoJoinRaidCounter) <span class="rf-meta">&middot; @Player.State.AutoJoinRaidCount joined so far</span></dd>
+                    }
+                    @if (Player.State.AutoJoinDungeonCounter > 0)
+                    {
+                        <dt>Auto joining dungeons</dt>
+                        <dd>@AutoJoinText(Player.State.AutoJoinDungeonCounter) <span class="rf-meta">&middot; @Player.State.AutoJoinDungeonCount joined so far</span></dd>
+                    }
+                    @if (Player.State.IsAutoResting)
+                    {
+                        <dt>Auto resting</dt>
+                        <dd>On</dd>
+                    }
+                    @if (Player.State.IsCaptain == true)
+                    {
+                        <dt>Ferry</dt>
+                        <dd>Captain</dd>
+                    }
+                    @*
+                        Enchanting is gated by a per character cooldown that has never been visible
+                        anywhere but in game, so the only way to know whether you could enchant
+                        again was to go and try.
+                    *@
+                    @if (enchantCooldownEnd != null)
+                    {
+                        <dt>Enchanting</dt>
+                        <dd>
+                            <span class="rf-cooldown">On cooldown for @Utility.FormatTime(enchantCooldownEnd.Value - DateTime.UtcNow)</span>
+                            <span class="rf-meta"> &middot; ready @enchantCooldownEnd.Value.ToLocalTime().ToString("t")</span>
+                        </dd>
+                    }
+                </dl>
+            }
+
+            @if (Player.SessionInfo != null && !string.IsNullOrEmpty(GetLastUpdateString(Player.SessionInfo.SkillsUpdated)))
+            {
+                <p class="rf-meta rf-skills__updated">@GetLastUpdateString(Player.SessionInfo.SkillsUpdated)</p>
+            }
+        </section>
+    }
+
+    @*
+        Coins are the only resource the game still uses, and they moved up into the headline stats.
+
+        Wood, ore, fish, wheat, magic and arrows belong to an older version. Listing all seven side
+        by side said they were seven live resources, which was wrong and is the sort of thing a
+        player only finds out by trying to spend one. They are shown only when a character is
+        actually still holding some, so an account with a stockpile can see where it went and
+        everyone else sees nothing at all.
+    *@
+    @if (LegacyResources.Count > 0)
+    {
+        <section class="rf-panel">
+            <h3 class="rf-panel__title">No longer used</h3>
+            <p class="rf-meta">
+                The game does not use these any more. They are still on this character, and shown
+                here so the amounts are not simply missing.
+            </p>
+            <div class="rf-chips">
+                @foreach (var res in LegacyResources)
+                {
+                    <span class="rf-chip" title="@ExactExp(res.Amount) @res.Name.ToLowerInvariant()">
+                        @res.Name <b>@Utility.FormatAmount(res.Amount)</b>
+                    </span>
+                }
+            </div>
+        </section>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public WebsitePlayer Player { get; set; }
+
+    [Parameter]
+    public bool CanManage { get; set; }
+
+    private TrainingSkill trainingSkill;
+    private bool isSailing;
+    private IReadOnlyList<PlayerSkill> skills;
+    private DateTime? enchantCooldownEnd;
+    private PlayerSkill nextUp;
+
+    private int TotalLevel => skills == null ? 0 : skills.Sum(x => x.Level);
+
+    /// <summary>
+    ///     The resources from the older version of the game, and only the ones this character has
+    ///     a balance in. Coins are not here: they are the one resource still in use.
+    /// </summary>
+    private List<(string Name, double Amount)> LegacyResources
+    {
+        get
+        {
+            var r = Player?.Resources;
+            if (r == null)
+                return new List<(string, double)>();
+
+            return new List<(string Name, double Amount)>
+            {
+                ("Wood", r.Wood),
+                ("Ore", r.Ore),
+                ("Fish", r.Fish),
+                ("Wheat", r.Wheat),
+                ("Magic", r.Magic),
+                ("Arrows", r.Arrows),
+            }.Where(x => x.Amount > 0).ToList();
+        }
+    }
+
+    private string TrainingSkillName => TrainingSkills.DisplayName(skills, trainingSkill, isSailing);
+
+    // Only the skill being trained has a rate to divide by, so it is the only one that can carry
+    // an honest estimate.
+    private TimeSpan? NextLevelEta =>
+        nextUp == null ? null : SkillProgress.TimeFor(SkillProgress.ExpToNextLevel(nextUp), Player.State?.ExpPerHour);
+
+    private PlayerSkill AutoTrainTarget =>
+        nextUp != null && Player.State != null && Player.State.AutoTrainTargetLevel > nextUp.Level ? nextUp : null;
+
+    private TimeSpan? AutoTrainEta =>
+        AutoTrainTarget == null
+            ? null
+            : SkillProgress.TimeFor(SkillProgress.ExpToLevel(AutoTrainTarget, Player.State.AutoTrainTargetLevel), Player.State.ExpPerHour);
+
+    private bool HasStateFacts =>
+        AutoTrainTarget != null
+        || Player.State.AutoJoinRaidCounter > 0
+        || Player.State.AutoJoinDungeonCounter > 0
+        || Player.State.IsAutoResting
+        || Player.State.IsCaptain == true
+        || enchantCooldownEnd != null;
+
+    protected override void OnParametersSet()
+    {
+        if (Player == null)
+            return;
+
+        if (Player.State != null)
+        {
+            trainingSkill = PlayerService.GetTrainingSkill(Player.State);
+            isSailing = trainingSkill == null && string.IsNullOrEmpty(Player.State.Island);
+        }
+
+        skills = Player.Skills?.AsList();
+        enchantCooldownEnd = PlayerService.GetEnchantmentCooldownEnd(Player.Id);
+        nextUp = TrainingSkills.NextUp(skills, trainingSkill, isSailing);
+    }
+
+    // The counter counts down and is what the game means by "you will join this many more".
+    // int.MaxValue is how the game stores "keep going".
+    private string AutoJoinText(int counter)
+    {
+        return counter == int.MaxValue ? "Until turned off" : counter + " more";
+    }
+
+    private string ExactExp(double value)
+    {
+        return Math.Round(value).ToString("N0");
+    }
+
+    public string GetLastUpdateString(DateTime update)
+    {
+        var elapsed = DateTime.UtcNow - update;
+        if (update <= DateTime.UnixEpoch)
+        {
+            return "";
+        }
+        var prefix = "Exp Last updated: ";
+        if (elapsed.TotalHours >= 24)
+        {
+            return prefix + (int)elapsed.TotalDays + " days ago";
+        }
+
+        if (elapsed.TotalHours >= 1)
+        {
+            return prefix + (int)elapsed.TotalHours + " hours ago";
+        }
+
+        if (elapsed.TotalMinutes >= 1)
+        {
+            return prefix + (int)elapsed.TotalMinutes + " minutes ago";
+        }
+
+        return prefix + (int)elapsed.TotalSeconds + " seconds ago";
+    }
+
+    private string GetRestedTime()
+    {
+        return FormatTime(TimeSpan.FromSeconds(Player.State.RestedTime));
+    }
+
+    private string FormatTime(TimeSpan time)
+    {
+        if (time.TotalSeconds < 60) return time.TotalSeconds + " seconds";
+        if (time.TotalMinutes < 60)
+            return (int)Math.Floor(time.TotalMinutes) + " minutes";
+
+        return $"{time.Hours} hours, {time.Minutes} minutes";
+    }
+
+    // The old bar was a fixed 100px box with the fill set to "{percent}px", so it only looked
+    // like a percentage because the box happened to be 100px wide. Invariant culture matters
+    // here: a Swedish locale would emit "43,2%", which is not a CSS length.
+    private string BarWidth(double percent)
+    {
+        var clamped = Math.Clamp(percent * 100d, 0d, 100d);
+        return "width: " + clamped.ToString("0.##", CultureInfo.InvariantCulture) + "%";
+    }
+}

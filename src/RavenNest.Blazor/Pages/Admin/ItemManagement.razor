@@ -14,27 +14,36 @@
 
     @if (ItemEditorVisible)
     {
-        <div class="item-editor-background">
-            <div class="item-editor-modal">
-                @*Model="editedItem"*@
-                <div class="btn btn-close" @onclick="(() => ItemEditorVisible = false)">&times;</div>
+        @*
+            The editor was its own modal implementation: a fixed background div, a close button
+            made from a div, and a tab strip made from more divs, none of which a keyboard could
+            reach. The shell is the shared modal and tab components now. The form inside it is
+            three hundred lines of label and input rows and is styled by .rf-form rather than
+            being rewritten row by row.
+        *@
+        <div class="rf-modal-backdrop" @onclick="(() => ItemEditorVisible = false)">
+            <div class="rf-modal rf-modal--wide rf-itemedit" role="dialog" aria-modal="true" aria-label="Edit item" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">@(string.IsNullOrEmpty(editedItem?.Name) ? "New item" : editedItem.Name)</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="(() => ItemEditorVisible = false)">&times;</button>
+                </div>
                 <div class="tabs">
-                    <div class="tab-buttons">
-                        <div class="btn-tab @(activeTab == ItemEditTab.Form ? "active" : "")" @onclick="ShowForm">Form</div>
-                        <div class="btn-tab @(activeTab == ItemEditTab.Json ? "active" : "")" @onclick="ShowJson">Json</div>
+                    <div class="rf-tabs" role="tablist">
+                        <button type="button" role="tab" aria-selected="@(activeTab == ItemEditTab.Form)" class="rf-tab @(activeTab == ItemEditTab.Form ? "is-active" : "")" @onclick="ShowForm">Form</button>
+                        <button type="button" role="tab" aria-selected="@(activeTab == ItemEditTab.Json)" class="rf-tab @(activeTab == ItemEditTab.Json ? "is-active" : "")" @onclick="ShowJson">Json</button>
                     </div>
 
                     @if (activeTab == ItemEditTab.Json)
                     {
                         <div class="tab-content">
-                            <textarea @bind="jsonPresentation" class="item-editor-json"></textarea>
+                            <textarea @bind="jsonPresentation" class="rf-input rf-textarea rf-itemedit__json"></textarea>
                         </div>
                     }
 
                     @if (activeTab == ItemEditTab.Form)
                     {
                         <div class="tab-content">
-                            <EditForm class="item-editor-form" EditContext="context" OnValidSubmit="HandleSaveItem">
+                            <EditForm class="rf-form" EditContext="context" OnValidSubmit="HandleSaveItem">
                                 <DataAnnotationsValidator />
                                 <ValidationSummary />
 
@@ -302,8 +311,9 @@
                         }
                         </div>*@
                                 </div>
-                                <div class="modal-buttons">
-                                    <button type="submit" class="btn">Save</button>
+                                <div class="rf-modal__foot">
+                                    <button type="button" class="rf-btn" @onclick="(() => ItemEditorVisible = false)">Cancel</button>
+                                    <button type="submit" class="rf-btn rf-btn--primary">Save the item</button>
                                 </div>
                             </EditForm>
                         </div>
@@ -316,271 +326,299 @@
 
     @if (items == null)
     {
-        <span>Loading items... Please wait</span>
         <LoadIndicator></LoadIndicator>
     }
     else
     {
-        <button class="btn" @onclick="CreateNewItem">Create New Item</button>
+        <header class="rf-page-head">
+            <h1 class="rf-page-title">Items</h1>
+            <p class="rf-page-subtitle">
+                Every item definition in the game. Editing one changes it for everybody who holds it.
+            </p>
+        </header>
 
-        <div class="stash item-filters">
-            <button class="item-filter @(itemFilter == ItemFilter.All ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.All)">
-                <span class="item-filter-text">All</span>
-                <i class="fa-sharp fa-solid fa-rectangles-mixed"></i>
-            </button>
-            <button class="item-filter @(itemFilter == ItemFilter.Swords ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Swords)">
-                <span class="item-filter-text">Swords</span>
-                <i class="fa-sharp fa-solid fa-sword"></i>
-            </button>
-            <button class="item-filter @(itemFilter == ItemFilter.Axes ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Axes)">
-                <span class="item-filter-text">Axes</span>
-                <i class="fa-sharp fa-solid fa-axe"></i>
-            </button>
-            <button class="item-filter @(itemFilter == ItemFilter.Spears ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Spears)">
-                <span class="item-filter-text">Spears</span>
-                <i class="fa-solid fa-scythe"></i>
-            </button>
-            <button class="item-filter @(itemFilter == ItemFilter.Bows ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Bows)">
-                <span class="item-filter-text">Bows</span>
-                <i class="fa-sharp fa-solid fa-bow-arrow"></i>
-            </button>
+        @if (!string.IsNullOrEmpty(updateError))
+        {
+            <div class="rf-banner rf-banner--bad">
+                <div class="rf-banner__title">That did not work</div>
+                <p>@updateError</p>
+            </div>
+        }
 
-            <button class="item-filter @(itemFilter == ItemFilter.Staves ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Staves)">
-                <span class="item-filter-text">Staves</span>
-                <i class="fa-sharp fa-solid fa-staff"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Shields ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Shields)">
-                <span class="item-filter-text">Shields</span>
-                <i class="fa-sharp fa-solid fa-shield"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Armors ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Armors)">
-                <span class="item-filter-text">Armors</span>
-                <i class="fa-sharp fa-solid fa-helmet-battle"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Accessories ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Accessories)">
-                <span class="item-filter-text">Accessories</span>
-                <i class="fa-sharp fa-solid fa-gem"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Pets ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Pets)">
-                <span class="item-filter-text">Pets</span>
-                <i class="fa-sharp fa-solid fa-dog"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
-                <span class="item-filter-text">Scrolls</span>
-                <i class="fa-sharp fa-solid fa-scroll"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Woodcutting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Woodcutting)">
-                <span class="item-filter-text">Woodcutting</span>
-                <i class="fa-solid fa-tree"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Mining ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Mining)">
-                <span class="item-filter-text">Mining</span>
-                <i class="fa-solid fa-pickaxe"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Fishing ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Fishing)">
-                <span class="item-filter-text">Fishing</span>
-                <i class="fa-sharp fa-solid fa-fishing-rod"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Farming ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Farming)">
-                <span class="item-filter-text">Farming</span>
-                <i class="fa-solid fa-wheat"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Gathering ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Gathering)">
-                <span class="item-filter-text">Gathering</span>
-                <i class="fa-solid fa-mushroom"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Crafting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Crafting)">
-                <span class="item-filter-text">Crafting</span>
-                <i class="fa-sharp fa-solid fa-hammer"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Cooking ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Cooking)">
-                <span class="item-filter-text">Cooking</span>
-                <i class="fa-sharp fa-solid fa-user-chef"></i>
-            </button>
-
-            <button class="item-filter @(itemFilter == ItemFilter.Alchemy ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Alchemy)">
-                <span class="item-filter-text">Alchemy</span>
-                <i class="fa-sharp fa-solid fa-flask-round-potion"></i>
+        @*
+            There was no way to search a list of every item in the game, only nineteen category
+            buttons, so finding one item meant knowing its category and then reading the column.
+        *@
+        <div class="rf-toolbar">
+            <input type="search"
+                   class="rf-input rf-search"
+                   placeholder="Search by name"
+                   aria-label="Search items by name"
+                   value="@search"
+                   @oninput="OnSearchChanged" />
+            @if (!string.IsNullOrWhiteSpace(search) || itemFilter != ItemFilter.All)
+            {
+                <button type="button" class="rf-btn rf-btn--small" @onclick="ClearFilters">Clear filters</button>
+            }
+            <span class="rf-meta">Showing @items.Count of @(availableItems?.Count ?? 0)</span>
+            <button type="button" class="rf-btn rf-btn--primary" @onclick="CreateNewItem">
+                <i class="fa-solid fa-plus" aria-hidden="true"></i> New item
             </button>
         </div>
 
-        <table class="items-list">
-            <thead>
-                <tr>
-                    <th></th>
-                    <th class="name">Name</th>
-                    <th class="stats">Stats</th>
-                    <th class="level-requirement">Level Req</th>
-                    <th class="category">Category</th>
-                    <th class="type">Item Type</th>
-                    <th class="material">Material Type</th>
-                    <th class="shop-sell-price">Vendor Price</th>
-                    <th class="crafting-requirement">Use &amp; Source</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in items)
-                {
-                    <tr id="@item.Id" class="item-row">
-                        <td><img src="@(ItemService.GetItemImage(item.Id.ToString(), item.Name))" style="width: 40px" /></td>
-                        <td class='item name'>@item.Name</td>
-                        <td class='item stats'>
-                            @if (item.WeaponAim > 0)
-                            {
-                                <span class="item-stat" title="Weapon Aim - Increases your hit rate in melee"><i class="fas fa-crosshairs"></i>@item.WeaponAim</span>
-                            }
-                            @if (item.WeaponPower > 0)
-                            {
-                                <span class="item-stat" title="Weapon Power - Increases your maximum damage in melee"><i class="fas fa-swords"></i>@item.WeaponPower</span>
-                            }
-                            @if (item.RangedAim > 0)
-                            {
-                                <span class="item-stat" title="Ranged Aim - Increases your ranged hit rate"><i class="fas fa-crosshairs"></i>@item.RangedAim</span>
-                            }
-                            @if (item.RangedPower > 0)
-                            {
-                                <span class="item-stat" title="Ranged Power - Increases your ranged maximum damage"><i class="fas fa-bow-arrow"></i>@item.RangedPower</span>
-                            }
-                            @if (item.MagicAim > 0)
-                            {
-                                <span class="item-stat" title="Magic Aim - Increases your magic hit rate">
-                                    <i class="fas fa-wand"></i>@item.MagicAim
-                                </span>
-                            }
-                            @if (item.MagicPower > 0)
-                            {
-                                <span class="item-stat" title="Magic Power - Increases your magic maximum damage">
-                                    <i class="fas fa-hand-holding-magic"></i>
-                                    @item.MagicPower
-                                </span>
-                            }
-                            @if (item.ArmorPower > 0)
-                            {
-                                <span class="item-stat" title="Armor Power - Decreases the hit rate of your attacker"><i class="fas fa-shield"></i>@item.ArmorPower</span>
-                            }
-                        </td>
-                        <td class='item level-requirement'>
-                            @if (item.RequiredSlayerLevel > 0)
-                            {
-                                <span class="item-stat" title="Required Slayer Level">
-                                    <i class="fas fa-skull"></i>
-                                    @item.RequiredSlayerLevel
-                                </span>
-                            }
-                            @if (item.RequiredAttackLevel > 0)
-                            {
-                                <span class="item-stat" title="Required Attack Level">
-                                    <i class="fas fa-swords"></i>
-                                    @item.RequiredAttackLevel
-                                </span>
-                            }
-                            @if (item.RequiredDefenseLevel > 0)
-                            {
-                                <span class="item-stat" title="Required Defense Level">
-                                    <i class="fas fa-shield"></i>
-                                    @item.RequiredDefenseLevel
-                                </span>
-                            }
-                            @if (item.RequiredMagicLevel > 0)
-                            {
-                                <span class="item-stat" title="Required Magic or Healing Level">
-                                    <i class="fas fa-hand-holding-magic"></i>
-                                    @item.RequiredMagicLevel
-                                </span>
-                            }
-                            @if (item.RequiredRangedLevel > 0)
-                            {
-                                <span class="item-stat" title="Required Ranged Level">
-                                    <i class="fas fa-bow-arrow"></i>
-                                    @item.RequiredRangedLevel
-                                </span>
-                            }
-                        </td>
-                        <td class='item category'>@item.Category</td>
-                        <td class='item type'>@item.Type</td>
-                        <td class='item material'>@item.Material</td>
-                        <td class='item shop-sell-price'>@item.ShopSellPrice&nbsp;<img class="ravenCoins" src="/favicon.png" /></td>
-                        <td class='item'>
-                            <div class="recipe">
-                            @{
-                                var drop = ItemService.GetResourceItemDrop(item.Id);
-                                if (drop != null)
-                                {
-                                    <div class="drop-details">
-                                        <label class='drop-label'>Dropped from</label>
-                                        <div class="drop-skill-level">
-                                            <label>@drop.RequiredSkill.ToString() Level </label>
-                                            <span class='drop-level-requirement'>@drop.LevelRequirement</span>
-                                        </div>
-                                    </div>
-                                }
+        @*
+            Driven from the shared list rather than nineteen hand written blocks, the same way the
+            stash, the inventory and the marketplace are. This was the fourth copy.
+        *@
+        <div class="rf-filters" role="group" aria-label="Filter items by category">
+            @foreach (var f in RavenNest.Blazor.Services.ItemFilterOptions.All)
+            {
+                <button type="button"
+                        class="rf-filter @(itemFilter == f.Filter ? "is-active" : "")"
+                        aria-pressed="@(itemFilter == f.Filter)"
+                        @onclick="() => SelectItemFilter(f.Filter)">
+                    <i class="@f.Icon" aria-hidden="true"></i>
+                    <span>@f.Label</span>
+                </button>
+            }
+        </div>
 
-                                var itemRecipe = ItemService.GetItemRecipe(item.Id);
-                                if (itemRecipe != null)
-                                {
-                                    <div class="recipe-details">
-                                        <div class="crafting-level">
-                                            <label>@itemRecipe.RequiredSkill.ToString() Level </label>
-                                            <span class='crafting-level-requirement'>@itemRecipe.RequiredLevel</span>
+        @if (items.Count == 0)
+        {
+            <div class="rf-panel">
+                <p class="rf-meta">Nothing matches that. Try a different category or clear the search.</p>
+            </div>
+        }
+        else
+        {
+            <div class="rf-panel">
+                <div class="rf-scroll-x">
+                    <table class="rf-table">
+                        <thead>
+                            <tr>
+                                <th scope="col"><span class="rf-th rf-th--static">Item</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Stats</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Requires</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Vendor</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Use and source</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in items)
+                            {
+                                <tr id="@item.Id">
+                                    <td>
+                                        <div class="rf-item">
+                                            <span class="rf-item__img">
+                                                <img src="@(ItemService.GetItemImage(item.Id.ToString(), item.Name))" alt="" loading="lazy" />
+                                            </span>
+                                            <span class="rf-item__body">
+                                                <span class="rf-item__name @ItemService.GetRarityClass(item)">@item.Name</span>
+                                                <span class="rf-item__meta">
+                                                    @ItemService.GetTypeName(item)
+                                                    <span>@ItemService.GetMaterialName(item)</span>
+                                                    @if (item.Soulbound)
+                                                    {
+                                                        <span class="rf-item__mark" title="Cannot be traded"><i class="fa-solid fa-link" aria-hidden="true"></i> Soulbound</span>
+                                                    }
+                                                </span>
+                                            </span>
                                         </div>
-                                        <div class="crafting-ingredients">
+                                    </td>
+                                    <td>
+                                        <div class="rf-chips">
+                                            @if (item.WeaponAim > 0)
+                                            {
+                                                <span class="rf-chip" title="Weapon aim, increases your hit rate in melee"><i class="fas fa-crosshairs" aria-hidden="true"></i>@item.WeaponAim</span>
+                                            }
+                                            @if (item.WeaponPower > 0)
+                                            {
+                                                <span class="rf-chip" title="Weapon power, increases your maximum damage in melee"><i class="fas fa-swords" aria-hidden="true"></i>@item.WeaponPower</span>
+                                            }
+                                            @if (item.RangedAim > 0)
+                                            {
+                                                <span class="rf-chip" title="Ranged aim, increases your ranged hit rate"><i class="fas fa-crosshairs" aria-hidden="true"></i>@item.RangedAim</span>
+                                            }
+                                            @if (item.RangedPower > 0)
+                                            {
+                                                <span class="rf-chip" title="Ranged power, increases your ranged maximum damage"><i class="fas fa-bow-arrow" aria-hidden="true"></i>@item.RangedPower</span>
+                                            }
+                                            @if (item.MagicAim > 0)
+                                            {
+                                                <span class="rf-chip" title="Magic aim, increases your magic hit rate"><i class="fas fa-wand" aria-hidden="true"></i>@item.MagicAim</span>
+                                            }
+                                            @if (item.MagicPower > 0)
+                                            {
+                                                <span class="rf-chip" title="Magic power, increases your magic maximum damage"><i class="fas fa-hand-holding-magic" aria-hidden="true"></i>@item.MagicPower</span>
+                                            }
+                                            @if (item.ArmorPower > 0)
+                                            {
+                                                <span class="rf-chip" title="Armour power, decreases the hit rate of your attacker"><i class="fas fa-shield" aria-hidden="true"></i>@item.ArmorPower</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="rf-chips">
+                                            @if (item.RequiredSlayerLevel > 0)
+                                            {
+                                                <span class="rf-chip" title="Required slayer level"><i class="fas fa-skull" aria-hidden="true"></i>@item.RequiredSlayerLevel</span>
+                                            }
+                                            @if (item.RequiredAttackLevel > 0)
+                                            {
+                                                <span class="rf-chip" title="Required attack level"><i class="fas fa-swords" aria-hidden="true"></i>@item.RequiredAttackLevel</span>
+                                            }
+                                            @if (item.RequiredDefenseLevel > 0)
+                                            {
+                                                <span class="rf-chip" title="Required defense level"><i class="fas fa-shield" aria-hidden="true"></i>@item.RequiredDefenseLevel</span>
+                                            }
+                                            @if (item.RequiredMagicLevel > 0)
+                                            {
+                                                <span class="rf-chip" title="Required magic or healing level"><i class="fas fa-hand-holding-magic" aria-hidden="true"></i>@item.RequiredMagicLevel</span>
+                                            }
+                                            @if (item.RequiredRangedLevel > 0)
+                                            {
+                                                <span class="rf-chip" title="Required ranged level"><i class="fas fa-bow-arrow" aria-hidden="true"></i>@item.RequiredRangedLevel</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="rf-price__value" title="@item.ShopSellPrice.ToString("N0") coins when vendored">
+                                            <img class="rf-price__coin" src="/favicon.png" alt="coins" />
+                                            @Utility.FormatAmount(item.ShopSellPrice)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="rf-recipe">
                                             @{
-                                                var ingredients = itemRecipe.Ingredients;
-                                                foreach (var req in ingredients)
+                                                var drop = ItemService.GetResourceItemDrop(item.Id);
+                                                if (drop != null)
                                                 {
-                                                    var reqItem = availableItems.First(x => x.Id == req.ItemId);
-                                                    <span><a href="/items/@reqItem.Id">@(reqItem.Name)</a> x@(req.Amount)&nbsp;</span>
+                                                    <span class="rf-recipe__line">
+                                                        <span class="rf-label">Dropped from</span>
+                                                        <span>@drop.RequiredSkill level @drop.LevelRequirement</span>
+                                                    </span>
+                                                }
+
+                                                var itemRecipe = ItemService.GetItemRecipe(item.Id);
+                                                if (itemRecipe != null)
+                                                {
+                                                    <span class="rf-recipe__line">
+                                                        <span class="rf-label">Made with</span>
+                                                        <span>@itemRecipe.RequiredSkill level @itemRecipe.RequiredLevel</span>
+                                                    </span>
+                                                    <span class="rf-chips">
+                                                        @foreach (var req in itemRecipe.Ingredients)
+                                                        {
+                                                            @*
+                                                                Was availableItems.First(...), which throws rather than
+                                                                returning null when a recipe names an ingredient that
+                                                                has since been deleted. One such recipe took the whole
+                                                                item list down.
+                                                            *@
+                                                            var reqItem = availableItems.FirstOrDefault(x => x.Id == req.ItemId);
+                                                            <a class="rf-chip" href="/items/@req.ItemId">
+                                                                @(reqItem?.Name ?? "Deleted item") <b>x@(req.Amount)</b>
+                                                            </a>
+                                                        }
+                                                    </span>
+                                                }
+
+                                                var itemRecipes = ItemService.GetItemRecipesByIngredient(item.Id);
+                                                if (itemRecipes != null && itemRecipes.Count > 0)
+                                                {
+                                                    <span class="rf-recipe__line">
+                                                        <span class="rf-label">Ingredient in</span>
+                                                    </span>
+                                                    <span class="rf-chips">
+                                                        @foreach (var r in itemRecipes)
+                                                        {
+                                                            <a class="rf-chip" href="/items/@r.ItemId">@r.Name</a>
+                                                        }
+                                                    </span>
                                                 }
                                             }
                                         </div>
-                                    </div>
-                                }
-
-                                // check if part of recipes.
-                                // check if this is part of a recipe, if so, show the recipe
-                                <div class="recipe-list">
-                                    @{
-                                        var itemRecipes = ItemService.GetItemRecipesByIngredient(item.Id);
-                                        if (itemRecipes != null && itemRecipes.Count > 0)
-                                        {
-                                            <label class='recipe-list-label'>Ingredient in</label>
-                                            @foreach (var r in itemRecipes)
-                                            {
-                                                <span><a href="/items/@r.ItemId">@(r.Name)</a>&nbsp;</span>
-                                            }
-                                        }
-                                    }
-                                </div>
+                                    </td>
+                                    <td>
+                                        <div class="rf-actions">
+                                            <button type="button" class="rf-btn rf-btn--small" @onclick="(() => EditItem(item))">
+                                                <i class="fas fa-edit" aria-hidden="true"></i> Edit
+                                            </button>
+                                            @*
+                                                Both of these already asked before acting, through the
+                                                browser's own confirm box. They ask in the panel's own
+                                                dialog now, and the delete one names the item and says
+                                                how many are held across the game, which is the
+                                                difference between deleting something nobody has and
+                                                deleting something four hundred players are carrying.
+                                            *@
+                                            <button type="button" class="rf-btn rf-btn--small" title="Clear this item from every inventory, stash, vendor and listing" @onclick="(() => ConfirmClearPossessions(item))">
+                                                Wipe
+                                            </button>
+                                            <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="(() => ConfirmDeleteItem(item))">
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
                             }
-                            </div>
-                        </td>
-                        <td class='item actions'>
-                            <button class="btn" title="remove all possessions" @onclick="(() => RemovePossessions(item))">
-                                <i class="fa-duotone fa-broom-wide"></i>
-                            </button>
-                            <button class="btn" @onclick="(() => EditItem(item))">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn" @onclick="(() => HandleRemoveItem(item.Id))">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        @if (itemToDelete != null)
+        {
+            <div class="rf-modal-backdrop" @onclick="CancelDeleteItem">
+                <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Delete item" @onclick:stopPropagation="true">
+                    <div class="rf-modal__head">
+                        <h2 class="rf-modal__title">Delete @itemToDelete.Name?</h2>
+                        <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CancelDeleteItem">&times;</button>
+                    </div>
+                    <p>
+                        The item definition is removed from the game.
+                        @if (deleteTargetPossessions > 0)
+                        {
+                            <b>@deleteTargetPossessions.ToString("N0") of them are held right now</b>
+                            <text> across inventories, stashes, vendors and marketplace listings.</text>
+                        }
+                        else
+                        {
+                            <text>Nobody is holding one.</text>
+                        }
+                    </p>
+                    <p class="rf-meta">This cannot be undone.</p>
+                    <div class="rf-modal__foot">
+                        <button type="button" class="rf-btn" @onclick="CancelDeleteItem">Keep it</button>
+                        <button type="button" class="rf-btn rf-btn--danger" @onclick="DeleteItemConfirmed">Delete the item</button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (itemToClear != null)
+        {
+            <div class="rf-modal-backdrop" @onclick="CancelClearPossessions">
+                <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Clear possessions" @onclick:stopPropagation="true">
+                    <div class="rf-modal__head">
+                        <h2 class="rf-modal__title">Wipe every @itemToClear.Name?</h2>
+                        <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CancelClearPossessions">&times;</button>
+                    </div>
+                    <p>
+                        <b>@clearTargetPossessions.ToString("N0")</b> of these are removed from every
+                        inventory, stash, vendor and marketplace listing in the game. The item itself
+                        stays.
+                    </p>
+                    <p class="rf-meta">This cannot be undone.</p>
+                    <div class="rf-modal__foot">
+                        <button type="button" class="rf-btn" @onclick="CancelClearPossessions">Cancel</button>
+                        <button type="button" class="rf-btn rf-btn--danger" @onclick="ClearPossessionsConfirmed">Wipe them</button>
+                    </div>
+                </div>
+            </div>
+        }
     }
 }
 
@@ -654,11 +692,115 @@
         await LoadItems();
     }
 
+    private string search = "";
+
+    private RavenNest.Models.Item itemToDelete;
+    private long deleteTargetPossessions;
+
+    private RavenNest.Models.Item itemToClear;
+    private long clearTargetPossessions;
+
     private void SelectItemFilter(ItemFilter newItemFilter)
     {
         itemFilter = newItemFilter;
-        items = new Models.ItemCollection(availableItems.Where(x => Filter(x)).OrderBy(x => x.Name));
+        ApplyFilters();
         InvokeAsync(StateHasChanged);
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        search = e.Value?.ToString() ?? "";
+        ApplyFilters();
+    }
+
+    private void ClearFilters()
+    {
+        search = "";
+        itemFilter = ItemFilter.All;
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        if (availableItems == null)
+        {
+            return;
+        }
+
+        var needle = search?.Trim();
+        items = new Models.ItemCollection(
+            availableItems
+                .Where(x => Filter(x))
+                .Where(x => string.IsNullOrEmpty(needle)
+                            || (x.Name ?? "").Contains(needle, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(x => x.Name));
+    }
+
+    /// <summary>
+    ///     Both destructive actions here already asked before acting, through the browser's own
+    ///     confirm box. They ask in the panel's own dialog now, and deleting names the item and says
+    ///     how many exist across the game: deleting something nobody holds and deleting something
+    ///     four hundred players are carrying are not the same decision, and the old prompt said
+    ///     "Are you sure you want to delete this item?" without even naming which.
+    /// </summary>
+    private void ConfirmDeleteItem(RavenNest.Models.Item item)
+    {
+        itemToDelete = item;
+        deleteTargetPossessions = ItemService.GetPossessionCount(item.Id);
+    }
+
+    private void CancelDeleteItem()
+    {
+        itemToDelete = null;
+    }
+
+    private async Task DeleteItemConfirmed()
+    {
+        var item = itemToDelete;
+        itemToDelete = null;
+        if (item == null) return;
+
+        if (await ItemService.DeleteItemAsync(item.Id))
+        {
+            await LoadItems();
+            updateError = "";
+        }
+        else
+        {
+            updateError = "The server would not delete " + item.Name + ".";
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ConfirmClearPossessions(RavenNest.Models.Item item)
+    {
+        clearTargetPossessions = ItemService.GetPossessionCount(item.Id);
+        if (clearTargetPossessions == 0)
+        {
+            // The old version returned silently here, so pressing the button on an item nobody
+            // holds looked exactly like the button being broken.
+            updateError = "Nobody is holding a " + item.Name + ", so there is nothing to wipe.";
+            return;
+        }
+
+        updateError = "";
+        itemToClear = item;
+    }
+
+    private void CancelClearPossessions()
+    {
+        itemToClear = null;
+    }
+
+    private async Task ClearPossessionsConfirmed()
+    {
+        var item = itemToClear;
+        itemToClear = null;
+        if (item == null) return;
+
+        await ItemService.ClearPossessionsAsync(item.Id);
+        await InvokeAsync(StateHasChanged);
     }
 
     private bool ItemImageExists()
@@ -668,25 +810,6 @@
         var pathId = Path.Combine(Environment.WebRootPath, "imgs", "items", editedItem.IdString + ".png");
         var pathName = Path.Combine(Environment.WebRootPath, "imgs", "items", editedItem.Name.ToLower().Replace(" ", "-").Replace("'", "") + ".png");
         return File.Exists(pathName) || File.Exists(pathId);
-    }
-
-    private async void RemovePossessions(RavenNest.Models.Item item)
-    {
-        var totalPossesionCount = ItemService.GetPossessionCount(item.Id);
-        if (totalPossesionCount == 0)
-        {
-            return;
-        }
-
-        bool confirm = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to clear all " + totalPossesionCount + " possessions (marketplace, vendors, stash, inventories) for " + item.Name + "?");
-        if (!confirm)
-        {
-            return;
-        }
-
-        await ItemService.ClearPossessionsAsync(item.Id);
-
-        StateHasChanged();
     }
 
     private async Task UploadImage(InputFileChangeEventArgs e)
@@ -756,28 +879,6 @@
         return editedItem.Category == ItemCategory.Ring || editedItem.Category == ItemCategory.Cosmetic || editedItem.Category == ItemCategory.Amulet || editedItem.Category == ItemCategory.Weapon || editedItem.Category == ItemCategory.Armor || editedItem.Category == ItemCategory.Skin;
     }
 
-
-    private async Task HandleRemoveItem(Guid itemId)
-    {
-        bool confirm = await JsRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this item?");
-        if (!confirm)
-        {
-            return;
-        }
-
-        var result = await ItemService.DeleteItemAsync(itemId);
-        if (result)
-        {
-            await LoadItems();
-            updateError = "";
-        }
-        else
-        {
-            updateError = "Failed to delete item";
-        }
-
-        StateHasChanged();
-    }
 
     private async void HandleSaveItem()
     {

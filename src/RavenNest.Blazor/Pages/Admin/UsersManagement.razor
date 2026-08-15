@@ -5,149 +5,226 @@
 @inject RavenNest.Blazor.Services.UserService UserService
 @inject RavenNest.Blazor.Services.ClanService ClanService
 
-<div class="pagenation">
-    <div class="page-navigation">
-        <button class="link-button" @onclick="PreviousPage"><i class="fas fa-chevron-left"></i></button>
-        <div class="pages">
-            <div class="current-page">@(pageIndex + 1)</div>&nbsp;/&nbsp;
-            <div class="total-pages">@pageCount</div>
-        </div>
-        <button class="link-button" @onclick="NextPage"><i class="fas fa-chevron-right"></i></button>
+<header class="rf-page-head">
+    <h1 class="rf-page-title">Users</h1>
+    <p class="rf-page-subtitle">
+        Every account, @pageSize at a time. Search matches an id, a username or a character name.
+    </p>
+</header>
+
+<div class="rf-toolbar">
+    <EditForm Model="searchModel" OnSubmit="Filter">
+        <input type="search"
+               class="rf-input rf-search"
+               placeholder="Search for id, username or name"
+               aria-label="Search users"
+               @bind="searchModel.Query" />
+    </EditForm>
+
+    <div class="rf-actions">
+        <button type="button" class="rf-btn rf-btn--small" disabled="@(pageIndex == 0)" @onclick="PreviousPage">
+            <i class="fas fa-chevron-left" aria-hidden="true"></i> Previous
+        </button>
+        <span class="rf-meta">Page @(pageIndex + 1) of @pageCount</span>
+        @* Next used to increment with no upper bound, so you could page off the end of the table. *@
+        <button type="button" class="rf-btn rf-btn--small" disabled="@(pageIndex + 1 >= pageCount)" @onclick="NextPage">
+            Next <i class="fas fa-chevron-right" aria-hidden="true"></i>
+        </button>
     </div>
-    <div class="search-bar">
-        <EditForm Model="searchModel" OnSubmit="Filter">
-            <InputText class="search-input" placeholder="Search for id, username or name" @bind-Value="searchModel.Query" />
-        </EditForm>
-    </div>
-    <div class="total-players"><span>@totalCount</span> users</div>
+
+    <span class="rf-meta">@totalCount.ToString("N0") users</span>
 </div>
 
-
-<table class="player-table">
-    <thead>
-        <tr>
-            <th></th>
-            @*<th>UserId</th>*@
-            <th>UserName</th>
-            <th>Email</th>
-            <th>Patreon</th>
-            <th>Characters</th>
-            <th>Admin</th>
-            <th>Mod</th>
-            <th>No Hiscore</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (users == null || loading)
-        {
-            <LoadIndicator></LoadIndicator>
-        }
-        else
-        {
-            @foreach (var user in users)
-            {
-                <tr class="player-row">
-                    <td><img src="/api/twitch/logo/@(user.Id)" class="profile-picture" /></td>
-                    @*<td>@user.Id</td>*@
-                    <td>
-                        <span>@user.UserName</span>
-                        @if (user.Status >= 1)
-                        {
-                            <span style="color: white; background-color:red;font-size:9pt;">&nbsp;BANNED</span>
-                        }
-                    </td>
-                    <td>
-                        @user.Email
-                    </td>
-                    <td>
-                        @if (editingPatreonUserId == user.Id)
-                        {
-                            <select class="clan-role-selector" @onchange="SelectedPatreonChanged">
-                                @for (var i = 0; i < patreonNames.Length; ++i)
+@if (users == null || loading)
+{
+    @* Was inside the tbody, which is not somewhere a div can go. *@
+    <LoadIndicator></LoadIndicator>
+}
+else if (users.Count == 0)
+{
+    <div class="rf-panel">
+        <p class="rf-meta">No users match that search.</p>
+    </div>
+}
+else
+{
+    <div class="rf-panel">
+        <div class="rf-scroll-x">
+            <table class="rf-table">
+                <thead>
+                    <tr>
+                        <th scope="col"><span class="rf-th rf-th--static">User</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Characters</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Patreon</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Roles</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Highscore</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Actions</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in users)
+                    {
+                        <tr>
+                            <td>
+                                <div class="rf-item">
+                                    <span class="rf-item__img">
+                                        <img src="/api/twitch/logo/@(user.Id)" alt="" loading="lazy" />
+                                    </span>
+                                    <span class="rf-item__body">
+                                        @* The name links to the user page. There was no way in from here. *@
+                                        <a class="rf-item__name" href="/admin/user/@user.Id">@user.UserName</a>
+                                        <span class="rf-item__meta">
+                                            @if (!string.IsNullOrEmpty(user.Email))
+                                            {
+                                                <span>@user.Email</span>
+                                            }
+                                            @if (user.Status >= 1)
+                                            {
+                                                <span class="rf-badge rf-badge--bad">@StatusName(user.Status)</span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(user.Comment))
+                                            {
+                                                <span class="rf-item__mark" title="@user.Comment">
+                                                    <i class="fa-solid fa-comment" aria-hidden="true"></i> Remark
+                                                </span>
+                                            }
+                                        </span>
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="rf-table__quiet">@(user.Characters?.Count ?? 0)</td>
+                            <td>
+                                @if (editingPatreonUserId == user.Id)
                                 {
-                                    if (user.PatreonTier == i)
+                                    <div class="rf-actions">
+                                        <select class="rf-input" @onchange="SelectedPatreonChanged">
+                                            @for (var i = 0; i < patreonNames.Length; ++i)
+                                            {
+                                                <option value="@i" selected="@(user.PatreonTier == i)">@patreonNames[i]</option>
+                                            }
+                                        </select>
+                                        <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="UpdateUserPatreon">Save</button>
+                                        <button type="button" class="rf-btn rf-btn--small" @onclick="CancelEditUserPatreon">Cancel</button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="rf-actions">
+                                        <span class="rf-table__quiet">@PatreonName(user.PatreonTier)</span>
+                                        <button type="button" class="rf-btn rf-btn--small" @onclick="(() => EditPatreon(user))">Edit</button>
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                @if (user.IsAdmin)
+                                {
+                                    <span class="rf-badge rf-badge--gold">Admin</span>
+                                }
+                                @if (user.IsModerator)
+                                {
+                                    <span class="rf-badge rf-badge--gold">Mod</span>
+                                }
+                                @if (!user.IsAdmin && !user.IsModerator)
+                                {
+                                    <span class="rf-meta">Player</span>
+                                }
+                            </td>
+                            <td>
+                                @*
+                                    This was <input type="checkbox" value="@..."/>, which does not
+                                    set a checkbox. Fifty rows of boxes that all rendered unchecked
+                                    whatever the stored value was, on the one column whose entire
+                                    job is to show that value.
+                                *@
+                                <label class="rf-check">
+                                    <input type="checkbox"
+                                           checked="@user.IsHiddenInHighscore"
+                                           @onchange="ev => IsHiddenInHighscoreChanged(user, ev.Value)" />
+                                    <span>Hidden</span>
+                                </label>
+                            </td>
+                            <td>
+                                <div class="rf-actions">
+                                    <button type="button" class="rf-btn rf-btn--small" @onclick="(() => EditRemark(user))">
+                                        @(string.IsNullOrEmpty(user.Comment) ? "Add remark" : "Edit remark")
+                                    </button>
+
+                                    @if (user.HasClan && user.Clan != null && !user.Clan.CanChangeName)
                                     {
-                                        <option id="@i" value="@i" selected>
-                                            @(i >= patreonNames.Length ? patreonNames[patreonNames.Length - 1] : patreonNames[i])
-                                        </option>
+                                        <button type="button" class="rf-btn rf-btn--small" @onclick="(() => ResetClanNameChangeCounter(user))">
+                                            Allow clan rename
+                                        </button>
+                                    }
+
+                                    @*
+                                        Suspending an account happened on the first click of a
+                                        button sitting in a row of five others.
+                                    *@
+                                    @if (user.Status >= 1)
+                                    {
+                                        <button type="button" class="rf-btn rf-btn--small" @onclick="(() => ConfirmStatus(user, true))">Lift suspension</button>
                                     }
                                     else
                                     {
-                                        <option id="@i" value="@i">
-                                            @(i >= patreonNames.Length ? @patreonNames[patreonNames.Length - 1] : patreonNames[i])
-                                        </option>
+                                        <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="(() => ConfirmStatus(user, false))">Suspend</button>
                                     }
-                                }
-                            </select>
-                            <span class="fas fa-check" @onclick="UpdateUserPatreon"></span>
-                            <span class="fas fa-times" @onclick="CancelEditUserPatreon"></span>
-                        }
-                        else
-                        {
-                            var i = user.PatreonTier ?? 0;
-                            if (i >= patreonNames.Length)
-                                @patreonNames[patreonNames.Length - 1]
-                            else
-                                @patreonNames[i]
-                        }
-                    </td>
-                    <td>@user.Characters.Count</td>
-                    <td>@user.IsAdmin</td>
-                    <td>@user.IsModerator</td>
-                    <td>
-                        <input type="checkbox" value="@user.IsHiddenInHighscore" @onchange="ev => IsHiddenInHighscoreChanged(user, ev.Value)"></input>
-                    </td>
-                    <td>
-@*                        <button title="(TEST) Make this user initiate a Raid against our game session" class="inline-button raid" @onclick="(()=> RaidOurSession(user))"><i class="fa-solid fa-people-group"></i>&nbps;Raid</button>
-                        <button title="(TEST) Make this user initiate a Raid War against our game session" class="inline-button raidwar" @onclick="(()=> RaidWarOurSession(user))"><i class="fa-solid fa-swords"></i>&nbps;War</button>
-*@
-                        @if (!string.IsNullOrEmpty(user.Comment))
-                        {
-                            <button class="inline-button edit" @onclick="(()=> EditRemark(user))"><i class="fa-solid fa-comment-pen"></i></button>
-                        }
-                        else
-                        {
-                            <button class="inline-button" @onclick="(()=> EditRemark(user))"><i class="fa-solid fa-comment-plus"></i></button>
-                        }
-                        @if (user.HasClan && !user.Clan.CanChangeName)
-                        {
-                            <button class="inline-button" @onclick="(()=> ResetClanNameChangeCounter(user))">Allow Clan Rename</button>
-                        }
-                        <button class="inline-button" @onclick="(()=> EditPatreon(user))">Patreon</button>
-                        @if (user.Status >= 1)
-                        {
-                            <button class="inline-button" @onclick="(()=> UnbanUser(user))">Unban</button>
-                        }
-                        else
-                        {
-                            <button class="inline-button" @onclick="(()=> BanUser(user))">Ban</button>
-                        }
-                    </td>
-                </tr>
-            }
-        }
-    </tbody>
-</table>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
 
 @if (editUserRemarkUser != null)
 {
-    <div class="modal-background">
-        <div class="modal-window">
-
-            <div class="modal-header">
-                <h2>Edit Comment</h2>
-                <button class="close" @onclick="CancelEditRemark">x</button>
+    <div class="rf-modal-backdrop" @onclick="CancelEditRemark">
+        <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Edit remark" @onclick:stopPropagation="true">
+            <div class="rf-modal__head">
+                <h2 class="rf-modal__title">Remark on @editUserRemarkUser.UserName</h2>
+                <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CancelEditRemark">&times;</button>
             </div>
+            <label class="rf-field">
+                <span class="rf-label">Remark</span>
+                <input type="text" class="rf-input" @bind-value="editUserRemarkComment" />
+            </label>
+            <p class="rf-meta">Only administrators see this.</p>
+            <div class="rf-modal__foot">
+                <button type="button" class="rf-btn" @onclick="CancelEditRemark">Cancel</button>
+                <button type="button" class="rf-btn rf-btn--primary" @onclick="ApplyUserRemark">Save</button>
+            </div>
+        </div>
+    </div>
+}
 
-            <div class="modal-body">
-                <div class="form-row">
-                    <input type="text" class="modal-input" @bind-value="editUserRemarkComment" />
-                </div>
-                <div class="modal-actions">
-                    <button @onclick="ApplyUserRemark" class="btn ok">Save</button>
-                    <button @onclick="CancelEditRemark" class="btn cancel">Cancel</button>
-                </div>
+@if (statusUser != null)
+{
+    <div class="rf-modal-backdrop" @onclick="CancelStatus">
+        <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Change account status" @onclick:stopPropagation="true">
+            <div class="rf-modal__head">
+                <h2 class="rf-modal__title">@(liftingSuspension ? "Lift the suspension?" : "Suspend this account?")</h2>
+                <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CancelStatus">&times;</button>
+            </div>
+            <p>
+                @if (liftingSuspension)
+                {
+                    <span><b>@statusUser.UserName</b> will be able to play again straight away.</span>
+                }
+                else
+                {
+                    <span>
+                        <b>@statusUser.UserName</b> will be permanently suspended and will not be able to
+                        play on any of their @(statusUser.Characters?.Count ?? 0) characters.
+                    </span>
+                }
+            </p>
+            <div class="rf-modal__foot">
+                <button type="button" class="rf-btn" @onclick="CancelStatus">Cancel</button>
+                <button type="button" class="rf-btn @(liftingSuspension ? "rf-btn--primary" : "rf-btn--danger")" @onclick="ApplyStatus">
+                    @(liftingSuspension ? "Lift the suspension" : "Suspend the account")
+                </button>
             </div>
         </div>
     </div>
@@ -168,24 +245,36 @@
     private Guid? editingPatreonUserId;
     private int? targetPatreonTier;
 
+    private WebsiteAdminUser statusUser;
+    private bool liftingSuspension;
+
     private string[] patreonNames = new string[] {
-    "None", "Mithril", "Rune", "Dragon", "Abraxas", "Phantom", "Above Phantom"
+        "None", "Mithril", "Rune", "Dragon", "Abraxas", "Phantom", "Above Phantom"
     };
 
-    protected override void OnInitialized()
+    private string PatreonName(int? tier)
+    {
+        var t = tier ?? 0;
+        if (t < 0) t = 0;
+        return t >= patreonNames.Length ? patreonNames[patreonNames.Length - 1] : patreonNames[t];
+    }
+
+    /// <summary>There are three account statuses and the row could say two.</summary>
+    private static string StatusName(int status)
+    {
+        return ((BusinessLogic.Data.AccountStatus)status) switch
+        {
+            BusinessLogic.Data.AccountStatus.OK => "Active",
+            BusinessLogic.Data.AccountStatus.TemporarilySuspended => "Temporarily suspended",
+            BusinessLogic.Data.AccountStatus.PermanentlySuspended => "Permanently suspended",
+            _ => "Status " + status
+        };
+    }
+
+    protected override async Task OnInitializedAsync()
     {
         session = AuthService.GetSession();
-        LoadUserPageAsync(pageIndex, pageSize);
-    }
-
-    private void RaidOurSession(WebsiteAdminUser user)
-    {
-        UserService.InitiateRaid(user);
-    }
-
-    private void RaidWarOurSession(WebsiteAdminUser user)
-    {
-        UserService.InitiateRaidWar(user);
+        await LoadUserPageAsync(pageIndex, pageSize);
     }
 
     private void IsHiddenInHighscoreChanged(WebsiteAdminUser user, object newValue)
@@ -205,6 +294,8 @@
 
     private void ResetClanNameChangeCounter(WebsiteAdminUser user)
     {
+        if (user.Clan == null) return;
+
         if (ClanService.ResetNameChangeCounter(user.Clan.Id))
         {
             user.Clan.CanChangeName = true;
@@ -224,7 +315,7 @@
         editUserRemarkUser = null;
     }
 
-    private async void ApplyUserRemark()
+    private async Task ApplyUserRemark()
     {
         if (editUserRemarkUser != null)
         {
@@ -246,45 +337,74 @@
         editingPatreonUserId = null;
     }
 
-    private async void UpdateUserPatreon()
+    private async Task UpdateUserPatreon()
     {
         if (targetPatreonTier == null || editingPatreonUserId == null)
         {
             return;
         }
+
         var userId = editingPatreonUserId.Value;
         var patreonTier = targetPatreonTier.Value;
         await UserService.UpdateUserPatreonAsync(userId, patreonTier);
+
         var user = users.FirstOrDefault(x => x.Id == userId);
         if (user != null)
         {
             user.PatreonTier = patreonTier;
         }
+
         CancelEditUserPatreon();
         await InvokeAsync(StateHasChanged);
-
-        //await LoadUserPageAsync(pageIndex, pageSize);
     }
 
-    private void Filter()
+    private void ConfirmStatus(WebsiteAdminUser user, bool lift)
+    {
+        statusUser = user;
+        liftingSuspension = lift;
+    }
+
+    private void CancelStatus()
+    {
+        statusUser = null;
+    }
+
+    private async Task ApplyStatus()
+    {
+        var user = statusUser;
+        statusUser = null;
+        if (user == null) return;
+
+        var target = liftingSuspension
+            ? BusinessLogic.Data.AccountStatus.OK
+            : BusinessLogic.Data.AccountStatus.PermanentlySuspended;
+
+        if (await UserService.SetUserStatusAsync(user.Id, target))
+        {
+            user.Status = (int)target;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task Filter()
     {
         pageIndex = 0;
-        LoadUserPageAsync(pageIndex, pageSize);
+        await LoadUserPageAsync(pageIndex, pageSize);
     }
 
-    private void NextPage()
+    private async Task NextPage()
     {
+        if (pageIndex + 1 >= pageCount) return;
         ++pageIndex;
-        LoadUserPageAsync(pageIndex, pageSize);
+        await LoadUserPageAsync(pageIndex, pageSize);
     }
 
-    private void PreviousPage()
+    private async Task PreviousPage()
     {
-        var oldPage = pageIndex;
-        if (--pageIndex < 0)
-            pageIndex = 0;
-        if (oldPage != pageIndex)
-            LoadUserPageAsync(pageIndex, pageSize);
+        if (pageIndex == 0) return;
+        --pageIndex;
+        await LoadUserPageAsync(pageIndex, pageSize);
     }
 
     private async Task LoadUserPageAsync(int index, int take)
@@ -294,27 +414,10 @@
         var result = await UserService.GetUserPageAsync(filter, index, take);
         users = result.Items;
         totalCount = result.TotalSize;
-        pageCount = (int)Math.Floor((double)this.totalCount / this.pageSize) + 1;
+        // Was floor(total / pageSize) + 1, which claims a page too many whenever it divides evenly.
+        pageCount = Math.Max(1, (int)Math.Ceiling(totalCount / (double)pageSize));
         loading = false;
         await InvokeAsync(StateHasChanged);
-    }
-
-    private async Task BanUser(WebsiteAdminUser user)
-    {
-        if (await UserService.SetUserStatusAsync(user.Id, BusinessLogic.Data.AccountStatus.PermanentlySuspended))
-        {
-            user.Status = 2;
-            await InvokeAsync(StateHasChanged);
-        }
-    }
-
-    private async Task UnbanUser(WebsiteAdminUser user)
-    {
-        if (await UserService.SetUserStatusAsync(user.Id, BusinessLogic.Data.AccountStatus.OK))
-        {
-            user.Status = 0;
-            await InvokeAsync(StateHasChanged);
-        }
     }
 
     public class PlayerSearchModel

@@ -3829,8 +3829,13 @@ namespace RavenNest.BusinessLogic.Data
             username = username?.ToLower()?.Trim();
             if (string.IsNullOrEmpty(username)) return null;
 
-            return users.Entities.FirstOrDefault(x =>
+            var user = users.Entities.FirstOrDefault(x =>
                 x != null && x.UserName != null && x.UserName.Equals(username, StringComparison.OrdinalIgnoreCase));
+
+            // Falls back to the platform name so someone who renamed themselves is still found while
+            // only one of the two copies has caught up. Matching UserName alone meant the Discord
+            // endpoints reported "no such user" for accounts that plainly exist.
+            return user ?? FindUser(username);
         }
 
         //.OrderBy(x => x.Created)
@@ -3926,14 +3931,19 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Resources GetResources(Character character)
         {
-            var user = GetUser(character.UserId);
-            return GetResources(user);
+            if (character == null) return null;
+            return GetResources(GetUser(character.UserId));
         }
 
+        /// <summary>
+        ///     Null when there is nothing to return, which includes the user being null. A character
+        ///     can outlive the user row it points at, and <see cref="GetUser"/> returns null rather
+        ///     than throwing for one that has gone, so this was the throw at the end of that chain.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Resources GetResources(User user)
         {
-            if (user.Resources == null) return null;
+            if (user?.Resources == null) return null;
             if (resources.TryGet(user.Resources.Value, out var rsx))
                 return rsx;
             return null;
@@ -4039,6 +4049,15 @@ namespace RavenNest.BusinessLogic.Data
             return cd;
         }
 
+        /// <summary>
+        ///     The character's enchanting cooldown, or null when there is nothing to be on cooldown
+        ///     for: no clan, no clan skills, or a clan that has never levelled Enchanting.
+        ///
+        ///     Every step here can legitimately come back empty, and the last two used to be
+        ///     dereferenced without checking, so a clan that had not touched enchanting threw a
+        ///     NullReferenceException instead of returning null. Callers have to handle null anyway
+        ///     because the no clan case has always returned it.
+        /// </summary>
         public CharacterClanSkillCooldown GetEnchantmentCooldown(Guid characterId)
         {
             var clanMembership = GetClanMembership(characterId);
@@ -4050,9 +4069,13 @@ namespace RavenNest.BusinessLogic.Data
                 return null;
 
             var enchantingSkill = GetSkills().FirstOrDefault(x => x.Name == "Enchanting");
-            var clanSkill = skills.FirstOrDefault(x => x.SkillId == enchantingSkill.Id);
+            if (enchantingSkill == null)
+                return null;
 
-            //var clanSkill = skills.FirstOrDefault(x => x.SkillId == enchantingSkill.Id);
+            var clanSkill = skills.FirstOrDefault(x => x.SkillId == enchantingSkill.Id);
+            if (clanSkill == null)
+                return null;
+
             return GetClanSkillCooldown(characterId, clanSkill.Id);
         }
 

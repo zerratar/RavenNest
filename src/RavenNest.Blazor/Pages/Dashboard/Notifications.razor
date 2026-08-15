@@ -5,46 +5,99 @@
 @inject RavenNest.Blazor.Services.NotificationService NotificationService
 @inject NavigationManager NavigationManager
 
+<header class="rf-page-head">
+    <h1 class="rf-page-title">Notifications</h1>
+    <p class="rf-page-subtitle">
+        Things that happened while you were away.
+    </p>
+</header>
+
 @if (allNotifications == null)
 {
     <LoadIndicator />
 }
+else if (allNotifications.Count == 0)
+{
+    <div class="rf-panel">
+        <p class="rf-meta">Nothing here. Notifications show up when something happens to your account or your characters.</p>
+    </div>
+}
 else
 {
-    <ul>
-        @if (allNotifications.Count == 0)
+    <div class="rf-toolbar">
+        @if (UnreadCount > 0)
         {
-            <li class="notification-item">
-                <div class="--content">
-                    <div class="notification-title">You do not have any notifications.</div>
-                </div>
-            </li>
+            <button type="button"
+                    class="rf-filter @(unreadOnly ? "is-active" : "")"
+                    aria-pressed="@unreadOnly"
+                    @onclick="() => unreadOnly = !unreadOnly">
+                <i class="fa-solid fa-bell" aria-hidden="true"></i>
+                <span>@UnreadCount unread</span>
+            </button>
         }
+        <span class="rf-meta">Showing @Visible.Count of @allNotifications.Count</span>
+    </div>
 
-        @foreach (var n in allNotifications)
-        {
-            <li class="notification-item">
-                <div class="--icon @(!n.HasRead ? "new" : "")" @onclick="(() => FollowNavigation(n))">
-                    @(GetNotificationIcon(n))
-                </div>
-                <div class="--content" @onclick="(() => FollowNavigation(n))">
-                    <div class="notification-title">@n.Title</div>
-                    <div class="notification-date">@FormatDate(n.Time)</div>
-                </div>
+    @if (Visible.Count == 0)
+    {
+        <p class="rf-meta">Nothing unread.</p>
+    }
+    else
+    {
+        @*
+            Grouped by day. A flat list of forty entries with "3 hours ago" on each one gives no
+            sense of when anything actually happened.
+        *@
+        <div class="rf-panel">
+            @foreach (var day in Visible.GroupBy(x => x.Time.ToLocalTime().Date).OrderByDescending(x => x.Key))
+            {
+                <h3 class="rf-label rf-notes__day">@DayLabel(day.Key)</h3>
+                <ul class="rf-notes">
+                    @foreach (var n in day.OrderByDescending(x => x.Time))
+                    {
+                        <li class="rf-note @(n.HasRead ? "" : "is-unread")">
+                            <span class="rf-note__icon">@(GetNotificationIcon(n))</span>
 
-                <div class="--status">
-                    <button class="remove" @onclick="(async () => await DeleteNotificationAsync(n))"><span class="fas fa-times"></span></button>
-                </div>
-            </li>
-        }
+                            @if (!string.IsNullOrEmpty(n.RedirectUrl))
+                            {
+                                <button type="button" class="rf-note__body" @onclick="(() => FollowNavigation(n))">
+                                    <span class="rf-note__title">@n.Title</span>
+                                    <span class="rf-note__time" title="@n.Time.ToLocalTime().ToString("f")">@FormatDate(n.Time)</span>
+                                </button>
+                            }
+                            else
+                            {
+                                @* Not everything is a link, and a button that goes nowhere is worse
+                                   than plain text. *@
+                                <span class="rf-note__body rf-note__body--static">
+                                    <span class="rf-note__title">@n.Title</span>
+                                    <span class="rf-note__time" title="@n.Time.ToLocalTime().ToString("f")">@FormatDate(n.Time)</span>
+                                </span>
+                            }
 
-    </ul>
-
+                            <button type="button" class="rf-iconbtn" title="Delete this notification" @onclick="(async () => await DeleteNotificationAsync(n))">
+                                <span class="fas fa-times" aria-hidden="true"></span>
+                            </button>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    }
 }
 
 @code {
     private RavenNest.Models.SessionInfo session;
     private IReadOnlyList<RavenNest.DataModels.UserNotification> allNotifications;
+    private bool unreadOnly;
+
+    private int UnreadCount => allNotifications?.Count(x => !x.HasRead) ?? 0;
+
+    private IReadOnlyList<UserNotification> Visible =>
+        allNotifications == null
+            ? Array.Empty<UserNotification>()
+            : (unreadOnly ? allNotifications.Where(x => !x.HasRead).ToList() : allNotifications.ToList());
+
     protected override async Task OnInitializedAsync()
     {
         session = AuthService.GetSession();
@@ -70,20 +123,25 @@ else
         }
     }
 
+    private static string DayLabel(DateTime day)
+    {
+        var today = DateTime.Now.Date;
+        if (day == today) return "Today";
+        if (day == today.AddDays(-1)) return "Yesterday";
+        if ((today - day).TotalDays < 7) return day.DayOfWeek.ToString();
+        return day.ToString("d MMMM yyyy");
+    }
+
     private string FormatDate(DateTime dt)
     {
         var elapsed = DateTime.UtcNow - dt;
         if (elapsed.TotalSeconds < 60)
-            return (int)Math.Floor(elapsed.TotalSeconds) + " seconds ago.";
+            return (int)Math.Floor(elapsed.TotalSeconds) + " seconds ago";
         if (elapsed.TotalMinutes < 60)
-            return (int)Math.Floor(elapsed.TotalMinutes) + " minutes ago.";
+            return (int)Math.Floor(elapsed.TotalMinutes) + " minutes ago";
         if (elapsed.TotalHours < 24)
-            return (int)Math.Floor(elapsed.TotalHours) + " hours ago.";
-        if (elapsed.TotalDays < 2)
-            return $"Yesterday at {dt:t}";
-        if (elapsed.TotalDays < 7)
-            return $"{dt.DayOfWeek} at {dt:t}";
-        return $"{dt:f}";
+            return (int)Math.Floor(elapsed.TotalHours) + " hours ago";
+        return dt.ToLocalTime().ToString("t");
     }
 
     private MarkupString GetNotificationIcon(UserNotification n)
@@ -92,7 +150,7 @@ else
         {
             return new MarkupString("<span class=\"fas fa-bell\"></span>");
         }
-        return new MarkupString($"<img src=\"{n.Icon}\" />");
+        return new MarkupString($"<img src=\"{n.Icon}\" alt=\"\" />");
     }
 
     protected override void OnAfterRender(bool firstRender)

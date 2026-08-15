@@ -2,7 +2,14 @@
 @using RavenNest.Blazor.Components
 @inject NavigationManager NavigationManager
 @inject RavenNest.Blazor.Services.AuthService AuthService
-<div class="page admin">
+@*
+    .rf-dash is the same scope DashboardLayout uses, and the admin panel wants all of it: the
+    sidebar here is literally the same NavMenu component, and the legacy heading rules it switches
+    off - the LineBreakWhite.png separator and the #ff7f00 headings - are as wrong here as they
+    were on the dashboard. One class restyles the chrome of every admin page; each page still has
+    to be converted on its own.
+*@
+<div class="page admin rf-dash">
     @if (IsAdministrator)
     {
         <div class="sidebar">
@@ -10,11 +17,9 @@
         </div>
 
         <div class="main">
-            <div class="top-row px-4">
+            @* Same as the dashboard: the bar duplicated the sidebar's logout link. *@
+            <div class="rf-dash__notify">
                 <NotificationIcon UserId="@session.UserId"></NotificationIcon>
-                <NavLink class="nav-link login" href="/logout" Match="NavLinkMatch.All">
-                    <span class="oi oi-account-logout" aria-hidden="true"></span> logout
-                </NavLink>
             </div>
 
             <div class="content px-4">

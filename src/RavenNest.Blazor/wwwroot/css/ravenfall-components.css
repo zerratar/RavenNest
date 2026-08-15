@@ -1,0 +1,2632 @@
+/*
+  Ravenfall shared components.
+
+  Split out of ravenfall-dashboard.css when PlayerView was converted. The reason is concrete:
+  PlayerView renders on /characters (dashboard) and on /inspect (front page), and PlayerSkills
+  and PlayerClan render in the admin panel as well. A component that appears in three places
+  cannot live behind a .rf-dash ancestor, or it arrives unstyled in two of them.
+
+  The split is:
+
+    ravenfall-components.css   things a page assembles from. Selected only by rf- class names,
+                               which exist nowhere else in the codebase, so no ancestor scope is
+                               needed to keep them off unconverted pages: an unconverted page
+                               never writes those class names.
+
+    ravenfall-dashboard.css    page chrome and the legacy cascade overrides. Those select bare
+                               elements and existing site.css class names, so they stay behind
+                               .rf-dash where they can only reach converted pages.
+
+  No raw colours. Every value comes from ravenfall-tokens.css.
+*/
+
+/* ---- Box model ---------------------------------------------------------
+   Every component here sets a width and a padding together, which only works
+   under border-box. Today that arrives from Bootstrap, loaded before this file.
+   Declaring it on our own components means the design system does not silently
+   depend on a third party stylesheet that could be dropped, and it is scoped
+   rather than global so it still cannot reach an unconverted page. */
+
+.rf-panel, .rf-modal, .rf-modal-backdrop, .rf-input, .rf-btn, .rf-tile, .rf-slot,
+.rf-char, .rf-stat, .rf-reward, .rf-card, .rf-filter, .rf-cmd,
+.rf-chip, .rf-badge, .rf-item__img, .rf-slot__img, .rf-next, .rf-skill,
+.rf-table, .rf-search, .rf-banner, .rf-field, .rf-th {
+    box-sizing: border-box;
+}
+
+/* ---- Page header -------------------------------------------------------
+   A gold rule under the title, fading out to the right. Cheap, and it sets the
+   tone immediately without an image. */
+
+.rf-page-head {
+    margin-bottom: var(--rf-space-5);
+    padding-bottom: var(--rf-space-3);
+    position: relative;
+}
+
+.rf-page-head::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 1px;
+    background: linear-gradient(90deg, var(--rf-line-gold), transparent 65%);
+}
+
+.rf-page-title {
+    font-size: var(--rf-size-display);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    margin: 0;
+    color: var(--rf-ink);
+}
+
+.rf-page-subtitle {
+    margin: var(--rf-space-2) 0 0 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    max-width: 60ch;
+}
+
+/* ---- Panel -------------------------------------------------------------
+   The workhorse. The ::before corner mark is the one piece of ornament in the
+   system; it gives the RPG feel without imagery, and it is a pseudo element so
+   it costs nothing in markup. */
+
+.rf-panel {
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-shadow), var(--rf-bevel);
+    padding: var(--rf-space-5);
+    margin-bottom: var(--rf-space-5);
+    position: relative;
+}
+
+.rf-panel--accent {
+    border-color: var(--rf-line-gold);
+}
+
+.rf-panel--accent::before {
+    content: "";
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    width: 14px;
+    height: 14px;
+    border-top: 2px solid var(--rf-gold);
+    border-left: 2px solid var(--rf-gold);
+    border-top-left-radius: var(--rf-radius);
+}
+
+.rf-panel__title {
+    font-size: var(--rf-size-heading);
+    font-weight: 700;
+    margin: 0 0 var(--rf-space-4) 0;
+}
+
+/* Small uppercase label used above values and inside panels. */
+.rf-label {
+    font-size: var(--rf-size-tiny);
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    color: var(--rf-ink-faint);
+    font-weight: 600;
+}
+
+/* ---- Status banner -----------------------------------------------------
+   Leads a page with a plain language answer. The colour reinforces wording
+   that already says the same thing, so it still works for a colour blind
+   reader or a screenshot in greyscale. */
+
+.rf-banner {
+    border-radius: var(--rf-radius);
+    padding: var(--rf-space-5);
+    margin-bottom: var(--rf-space-5);
+    border: 1px solid var(--rf-line);
+    border-left-width: 3px;
+    background: var(--rf-surface-1);
+    box-shadow: var(--rf-bevel);
+}
+
+.rf-banner__title {
+    margin: 0 0 var(--rf-space-2) 0;
+    font-size: var(--rf-size-title);
+    font-weight: 700;
+}
+
+.rf-banner p {
+    margin: 0;
+    color: var(--rf-ink-muted);
+}
+
+.rf-banner p + p {
+    margin-top: var(--rf-space-3);
+}
+
+.rf-banner--good {
+    border-left-color: var(--rf-good);
+    background: linear-gradient(90deg, var(--rf-good-wash), transparent 40%), var(--rf-surface-1);
+}
+
+.rf-banner--good .rf-banner__title {
+    color: var(--rf-good);
+}
+
+.rf-banner--warn {
+    border-left-color: var(--rf-warn);
+    background: linear-gradient(90deg, var(--rf-warn-wash), transparent 40%), var(--rf-surface-1);
+}
+
+.rf-banner--warn .rf-banner__title {
+    color: var(--rf-warn);
+}
+
+.rf-banner--bad {
+    border-left-color: var(--rf-bad);
+    background: linear-gradient(90deg, var(--rf-bad-wash), transparent 40%), var(--rf-surface-1);
+}
+
+.rf-banner--bad .rf-banner__title {
+    color: var(--rf-bad);
+}
+
+/* ---- Definition rows ---------------------------------------------------
+   Replaces the ad hoc tables scattered across the dashboard. Grid rather than
+   a table so it can collapse to stacked rows on a phone without markup
+   changes. */
+
+/* `fit-content(14rem)` rather than `minmax(9rem, 14rem)`, which was wrong in a
+   way only a narrow container shows. A track with a fixed maximum is grown with
+   the free space before any `fr` track gets a share, so in a panel narrower than
+   about 14rem the label column absorbed everything and the value column resolved
+   to zero: measured at 200px wide, the columns came out 200px and 0px. Since
+   both cells break words anywhere, the value then wrapped one character per
+   line, which is what "2,626" stacked down five rows was.
+
+   fit-content sizes to the content up to the cap and does not go hunting for
+   free space, so the value column keeps what it needs. This is a container
+   problem rather than a viewport one, which is why the media query below never
+   saw it. */
+.rf-facts {
+    display: grid;
+    grid-template-columns: fit-content(14rem) minmax(0, 1fr);
+    gap: 0;
+}
+
+.rf-facts > dt,
+.rf-facts > dd {
+    padding: var(--rf-space-3) 0;
+    border-bottom: 1px solid var(--rf-line);
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.rf-facts > dt {
+    color: var(--rf-ink-muted);
+    font-weight: 500;
+}
+
+.rf-facts > dd {
+    font-weight: 600;
+}
+
+.rf-facts > dt:last-of-type,
+.rf-facts > dd:last-of-type {
+    border-bottom: none;
+}
+
+@media (max-width: 640px) {
+    .rf-facts {
+        grid-template-columns: 1fr;
+    }
+
+    .rf-facts > dt {
+        padding-bottom: 0;
+        border-bottom: none;
+        font-size: var(--rf-size-tiny);
+        text-transform: uppercase;
+        letter-spacing: var(--rf-tracking-label);
+    }
+}
+
+/* ---- Stat list ---------------------------------------------------------
+   A name and a number, for panels too narrow to give a grid two usable columns.
+   Flex rather than grid on purpose: the label takes what is left and wraps, and
+   the number is sized by its own content and never breaks. */
+
+.rf-statlist {
+    display: flex;
+    flex-direction: column;
+}
+
+.rf-statlist__row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-3) 0;
+    border-bottom: 1px solid var(--rf-line);
+}
+
+.rf-statlist__row:last-child {
+    border-bottom: 0;
+}
+
+/* The label takes the slack, so the number is pushed to the right edge rather
+   than relying on space-between to do it. Numbers in a column are read down
+   their last digit, so they line up on the right. */
+.rf-statlist__label {
+    flex: 1 1 auto;
+    color: var(--rf-ink-muted);
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.rf-statlist__value {
+    flex: 0 0 auto;
+    text-align: right;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+/* ---- Buttons -----------------------------------------------------------
+   Every state sets both background and text colour. A hover rule that changes
+   only the background is how the in game buttons ended up unreadable, and the
+   same trap exists here. */
+
+.rf-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    padding: var(--rf-space-3) var(--rf-space-5);
+    border-radius: var(--rf-radius-sm);
+    border: 1px solid var(--rf-line-strong);
+    background: var(--rf-surface-3);
+    color: var(--rf-ink);
+    font-family: inherit;
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background var(--rf-transition), border-color var(--rf-transition), color var(--rf-transition);
+}
+
+.rf-btn:hover,
+.rf-btn:focus-visible {
+    background: var(--rf-surface-raised);
+    border-color: var(--rf-line-gold);
+    color: var(--rf-ink);
+    text-decoration: none;
+}
+
+.rf-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+.rf-btn--primary {
+    background: var(--rf-gold);
+    border-color: var(--rf-gold);
+    color: var(--rf-ink-inverse);
+}
+
+.rf-btn--primary:hover,
+.rf-btn--primary:focus-visible {
+    background: var(--rf-gold-bright);
+    border-color: var(--rf-gold-bright);
+    color: var(--rf-ink-inverse);
+}
+
+/* For rows of secondary actions, where a full size button would outweigh the
+   thing it sits next to. */
+.rf-btn--small {
+    padding: var(--rf-space-2) var(--rf-space-3);
+    font-size: var(--rf-size-tiny);
+}
+
+.rf-btn--danger {
+    border-color: var(--rf-bad);
+    background: var(--rf-bad-wash);
+    color: var(--rf-bad);
+}
+
+.rf-btn--danger:hover,
+.rf-btn--danger:focus-visible {
+    background: var(--rf-bad);
+    border-color: var(--rf-bad);
+    color: var(--rf-ink-inverse);
+}
+
+.rf-btn[disabled],
+.rf-btn--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ---- Input -------------------------------------------------------------- */
+
+.rf-input {
+    background: var(--rf-surface-3);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius-sm);
+    padding: var(--rf-space-2) var(--rf-space-3);
+    color: var(--rf-ink);
+    font-family: inherit;
+    font-size: var(--rf-size-small);
+    max-width: 100%;
+}
+
+.rf-input::placeholder {
+    color: var(--rf-ink-faint);
+}
+
+.rf-input:focus {
+    outline: none;
+    border-color: var(--rf-gold);
+    box-shadow: var(--rf-focus);
+}
+
+/* ---- Command chip ------------------------------------------------------
+   The chat commands are the one place where the site and the game show the
+   same string, so they are set in the same gold the game uses to highlight a
+   command in an announcement. Monospace because a player is going to type it
+   character for character. */
+
+.rf-cmd {
+    display: inline-block;
+    font-family: var(--rf-font-mono);
+    font-size: var(--rf-size-small);
+    color: var(--rf-gold);
+    background: var(--rf-gold-wash);
+    border: 1px solid var(--rf-line-gold);
+    border-radius: var(--rf-radius-sm);
+    padding: 0 var(--rf-space-2);
+    white-space: nowrap;
+}
+
+/* ---- Stat block --------------------------------------------------------
+   Big number, small label. This is the gamified bit: a player checking their
+   dashboard wants numbers that feel like achievements, not table cells. */
+
+.rf-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: var(--rf-space-4);
+    margin-bottom: var(--rf-space-5);
+}
+
+.rf-stat {
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+    padding: var(--rf-space-4);
+}
+
+.rf-stat__value {
+    font-size: var(--rf-size-display);
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--rf-gold);
+    font-variant-numeric: tabular-nums;
+}
+
+.rf-stat__label {
+    margin-top: var(--rf-space-1);
+    font-size: var(--rf-size-tiny);
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    color: var(--rf-ink-faint);
+    font-weight: 600;
+}
+
+/* ---- Badge ------------------------------------------------------------- */
+
+.rf-badge {
+    display: inline-block;
+    padding: var(--rf-space-1) var(--rf-space-3);
+    border-radius: 999px;
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    border: 1px solid currentColor;
+}
+
+.rf-badge--good { color: var(--rf-good); background: var(--rf-good-wash); }
+.rf-badge--warn { color: var(--rf-warn); background: var(--rf-warn-wash); }
+.rf-badge--bad { color: var(--rf-bad); background: var(--rf-bad-wash); }
+.rf-badge--gold { color: var(--rf-gold); background: var(--rf-gold-wash); }
+
+/* A badge carrying a rarity class borrows that colour for its text and, through
+   currentColor, its border. The wash would fight it, so it goes flat. */
+.rf-badge[class*="rf-rarity-"] {
+    background: var(--rf-surface-2);
+}
+
+/* ---- Item rarity -------------------------------------------------------
+   Ready for the inventory, stash and marketplace pages so they can finally
+   agree with each other and with the game about what rare looks like. */
+
+.rf-rarity-common { color: var(--rf-rarity-common); }
+.rf-rarity-uncommon { color: var(--rf-rarity-uncommon); }
+.rf-rarity-rare { color: var(--rf-rarity-rare); }
+.rf-rarity-epic { color: var(--rf-rarity-epic); }
+.rf-rarity-legendary { color: var(--rf-rarity-legendary); }
+.rf-rarity-mythic { color: var(--rf-rarity-mythic); }
+
+/* ---- Meta text ---------------------------------------------------------- */
+
+.rf-meta {
+    font-size: var(--rf-size-small);
+    color: var(--rf-ink-faint);
+}
+
+/* Long content keeps its own scrollbar so the page body never scrolls sideways. */
+.rf-scroll-x {
+    overflow-x: auto;
+}
+
+/* ---- Character picker --------------------------------------------------
+   Replaces a strip of tab buttons. A character is something you own and
+   recognise, so it gets a card with its name and combat level rather than a
+   text label. The selected one is marked with brass, consistent with brass
+   meaning "yours" everywhere else. */
+
+.rf-charpick {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+    gap: var(--rf-space-3);
+    margin-bottom: var(--rf-space-5);
+}
+
+.rf-char {
+    display: grid;
+    /* Name and level share a row, the slot sits under both. Explicit areas so a
+       long character name cannot push the level out of alignment. */
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+        "name level"
+        "slot level";
+    gap: 0 var(--rf-space-3);
+    align-items: center;
+    text-align: left;
+    padding: var(--rf-space-3) var(--rf-space-4);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+    color: var(--rf-ink);
+    font-family: inherit;
+    cursor: pointer;
+    transition: background var(--rf-transition), border-color var(--rf-transition);
+}
+
+.rf-char:hover {
+    background: var(--rf-surface-2);
+    border-color: var(--rf-line-strong);
+}
+
+.rf-char:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+.rf-char.is-active {
+    border-color: var(--rf-line-gold);
+    background: linear-gradient(180deg, var(--rf-gold-wash), transparent 70%), var(--rf-surface-2);
+}
+
+.rf-char__name {
+    grid-area: name;
+    font-weight: 700;
+    font-size: var(--rf-size-body);
+    overflow-wrap: anywhere;
+}
+
+.rf-char.is-active .rf-char__name {
+    color: var(--rf-gold);
+}
+
+/* Denser variant for picking a target inside a dialog, where the cards are a
+   control rather than the content of the page. */
+.rf-charpick--compact {
+    grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+    gap: var(--rf-space-2);
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-char__warn {
+    color: var(--rf-warn);
+}
+
+.rf-char__live {
+    color: var(--rf-good);
+}
+
+/* A cooldown is a wait, not a failure, so it takes the warn colour rather than
+   the bad one. */
+.rf-cooldown {
+    color: var(--rf-warn);
+    font-weight: 700;
+}
+
+.rf-char__slot {
+    grid-area: slot;
+    font-size: var(--rf-size-tiny);
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    color: var(--rf-ink-faint);
+    font-weight: 600;
+}
+
+/* The number is the thing a player actually compares between characters, so it
+   is set large and tabular. */
+.rf-char__level {
+    grid-area: level;
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--rf-ink-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.rf-char.is-active .rf-char__level {
+    color: var(--rf-gold);
+}
+
+/* The character card is a button on /characters and a link on the overview.
+   Both need the same box, so the anchor form is normalised here rather than
+   duplicating the rules. */
+a.rf-char,
+a.rf-char:hover {
+    text-decoration: none;
+}
+
+/* ---- Destination cards -------------------------------------------------
+   A link that says what it is for. Used on the overview, where the problem was
+   never that people could not click, it was that they did not know a page
+   existed or what it held. */
+
+.rf-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: var(--rf-space-3);
+}
+
+.rf-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    padding: var(--rf-space-4);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+    text-decoration: none;
+    transition: background var(--rf-transition), border-color var(--rf-transition);
+}
+
+.rf-card:hover {
+    background: var(--rf-surface-3);
+    border-color: var(--rf-line-gold);
+    text-decoration: none;
+}
+
+.rf-card:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+.rf-card__title {
+    font-weight: 700;
+    color: var(--rf-gold);
+}
+
+.rf-card__body {
+    font-size: var(--rf-size-small);
+    color: var(--rf-ink-muted);
+    line-height: 1.5;
+}
+
+/* ---- Filter rail -------------------------------------------------------
+   Wraps rather than scrolls, because with nineteen categories a horizontal
+   scroller hides most of them and players do not think to drag it. */
+
+.rf-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+    margin-bottom: var(--rf-space-5);
+}
+
+.rf-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    padding: var(--rf-space-2) var(--rf-space-3);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-ink-muted);
+    font-family: inherit;
+    font-size: var(--rf-size-small);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--rf-transition), color var(--rf-transition), border-color var(--rf-transition);
+}
+
+.rf-filter i {
+    font-size: 0.9rem;
+    color: var(--rf-ink-faint);
+    transition: color var(--rf-transition);
+}
+
+.rf-filter:hover {
+    background: var(--rf-surface-3);
+    color: var(--rf-ink);
+    border-color: var(--rf-line-strong);
+}
+
+.rf-filter:hover i {
+    color: var(--rf-ink-muted);
+}
+
+.rf-filter:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+/* Selected state sets background, border, text and icon together. Changing
+   only one of them is what made the old active filter hard to spot. */
+.rf-filter.is-active {
+    background: var(--rf-gold);
+    border-color: var(--rf-gold);
+    color: var(--rf-ink-inverse);
+    font-weight: 700;
+}
+
+.rf-filter.is-active i {
+    color: var(--rf-ink-inverse);
+}
+
+/* ---- Tabs --------------------------------------------------------------
+   The old tab strip was filled black boxes that grew to fill the width, so a
+   two tab character and a four tab character looked like different pages. An
+   underline strip keeps tab width tied to the word, and brass marks the
+   selected one, which is what brass means everywhere else here. */
+
+.rf-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-1);
+    border-bottom: 1px solid var(--rf-line);
+    margin-bottom: var(--rf-space-5);
+}
+
+.rf-tab {
+    appearance: none;
+    background: none;
+    border: 0;
+    /* The marker sits here as transparent so selecting a tab does not shift the
+       row by two pixels. The negative margin lands it on the strip rule. */
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    padding: var(--rf-space-3) var(--rf-space-4);
+    color: var(--rf-ink-muted);
+    font-family: inherit;
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    cursor: pointer;
+    transition: color var(--rf-transition), border-color var(--rf-transition), background var(--rf-transition);
+}
+
+.rf-tab:hover {
+    color: var(--rf-ink);
+    background: var(--rf-surface-2);
+}
+
+.rf-tab:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+.rf-tab.is-active {
+    color: var(--rf-gold);
+    border-bottom-color: var(--rf-gold);
+    background: none;
+}
+
+/* ---- Dialog ------------------------------------------------------------
+   The skill editor was a fixed white box with no backdrop, which on a dark page
+   looked like a rendering fault. */
+
+.rf-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--rf-space-4);
+    background: var(--rf-scrim);
+}
+
+.rf-modal {
+    width: 30rem;
+    max-width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: var(--rf-space-5);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius-lg);
+    box-shadow: var(--rf-shadow-lg), var(--rf-bevel);
+}
+
+.rf-modal--wide {
+    width: 40rem;
+}
+
+.rf-modal__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--rf-space-4);
+    margin-bottom: var(--rf-space-5);
+}
+
+.rf-modal__title {
+    margin: 0;
+    font-size: var(--rf-size-title);
+    font-weight: 700;
+    color: var(--rf-ink);
+}
+
+.rf-modal__title::after {
+    content: none;
+}
+
+.rf-modal__close {
+    background: none;
+    border: 0;
+    border-radius: var(--rf-radius-sm);
+    padding: var(--rf-space-1) var(--rf-space-3);
+    color: var(--rf-ink-muted);
+    font-family: inherit;
+    font-size: var(--rf-size-heading);
+    line-height: 1;
+    cursor: pointer;
+    transition: background var(--rf-transition), color var(--rf-transition);
+}
+
+.rf-modal__close:hover {
+    background: var(--rf-surface-3);
+    color: var(--rf-ink);
+}
+
+.rf-modal__close:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+.rf-modal__foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--rf-space-2);
+    margin-top: var(--rf-space-5);
+}
+
+/* ---- Field -------------------------------------------------------------- */
+
+.rf-field {
+    display: block;
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-field > .rf-label {
+    display: block;
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-field > .rf-input {
+    width: 100%;
+}
+
+/* ---- Toolbar -----------------------------------------------------------
+   Search plus whatever else has to sit above a long list. */
+
+.rf-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-3);
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-search {
+    flex: 1 1 16rem;
+    max-width: 24rem;
+}
+
+/* A search box that has to live inside an EditForm, which the admin pages need
+   so that Enter submits.
+
+   Without this the form is the flex item and the input is not one, so
+   `flex: 1 1 16rem` stops applying to the input's width. Worse, site.css sets
+   `.content form { display: flex; flex-flow: column }`, which makes the input a
+   flex item of a *column*, and the 16rem basis becomes its height: measured at
+   375px the search box rendered 256 pixels tall. `display: contents` drops the
+   form's own box so the input is once again a flex item of the toolbar row, and
+   the form still submits. */
+.rf-toolbar > form {
+    display: contents;
+}
+
+/* ---- Long forms --------------------------------------------------------
+   For the admin editors, which are a few hundred label and input rows each.
+   Rewriting every row as an rf-field would be a large diff for no gain, so
+   .rf-form styles the shape they already have: a label above a control, in
+   sections with a heading.
+
+   Written against the item editor's markup and reusable by the drop editor,
+   which is the same shape. */
+
+.rf-form .edit-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: var(--rf-space-5);
+}
+
+.rf-form .edit-section {
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+    padding: var(--rf-space-4);
+}
+
+.rf-form .edit-section h2 {
+    font-size: var(--rf-size-heading);
+    font-weight: 700;
+    margin: 0 0 var(--rf-space-4) 0;
+    color: var(--rf-ink);
+}
+
+.rf-form .input-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+    margin-bottom: var(--rf-space-4);
+}
+
+/* A checkbox belongs beside its label, not under it. */
+.rf-form .input-row.inline {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--rf-space-3);
+}
+
+.rf-form .input-label {
+    margin: 0;
+    font-size: var(--rf-size-tiny);
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    color: var(--rf-ink-muted);
+    font-weight: 600;
+}
+
+.rf-form input[type="text"],
+.rf-form input[type="number"],
+.rf-form select,
+.rf-form textarea {
+    background: var(--rf-surface-3);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius-sm);
+    padding: var(--rf-space-2) var(--rf-space-3);
+    color: var(--rf-ink);
+    font-family: inherit;
+    font-size: var(--rf-size-small);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.rf-form input:focus-visible,
+.rf-form select:focus-visible,
+.rf-form textarea:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+.rf-form .item-image {
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+    background: var(--rf-surface-3);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+}
+
+/* ---- Recipe cell -------------------------------------------------------
+   Where an item comes from and what it goes into, in one table cell. */
+
+.rf-recipe {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+    min-width: 14rem;
+}
+
+.rf-recipe__line {
+    display: flex;
+    align-items: baseline;
+    gap: var(--rf-space-2);
+    font-size: var(--rf-size-small);
+    color: var(--rf-ink-muted);
+}
+
+/* Several fields side by side, folding to one column when there is no room. */
+.rf-formgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+    gap: var(--rf-space-4);
+    margin-bottom: var(--rf-space-4);
+}
+
+/* A multi line input. Same skin as rf-input, but it has to opt out of the
+   nowrap and single line height that a text input assumes. */
+.rf-textarea {
+    width: 100%;
+    min-height: 8rem;
+    line-height: 1.5;
+    resize: vertical;
+    font-family: inherit;
+}
+
+/* ---- Log lines ---------------------------------------------------------
+   A log is read by scanning for the bad lines, so severity is a badge with the
+   level written in it as well as a tint on the row. The message column is
+   monospaced and keeps its own line breaks, since that is how it was written. */
+
+.rf-log__time {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    color: var(--rf-ink-muted);
+}
+
+.rf-log__message {
+    width: 100%;
+    font-family: var(--rf-font-mono);
+    font-size: var(--rf-size-tiny);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.rf-log__row.is-warning {
+    background: var(--rf-warn-wash);
+}
+
+.rf-log__row.is-error {
+    background: var(--rf-bad-wash);
+}
+
+/* A background job that came back with an error, next to the button that started
+   it. Colour plus the word the status itself carries, per rule 4. */
+.rf-session__failed {
+    color: var(--rf-bad);
+}
+
+/* ---- Pager -------------------------------------------------------------
+   Under a long table. Deliberately generic: the loyalty page needs it first,
+   the admin character list already hand rolls the same three controls, and the
+   marketplace will want it. */
+
+.rf-pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--rf-space-3);
+    margin-top: var(--rf-space-4);
+    padding-top: var(--rf-space-4);
+    border-top: 1px solid var(--rf-line);
+}
+
+/* ---- Table -------------------------------------------------------------
+   site.css sets every th and td right aligned with a black border, from the
+   highscore tables. Both are wrong for a list you read left to right, so this
+   resets them in scope rather than fighting them cell by cell.
+
+   The header cells hold a button rather than a clickable th: sorting is an
+   action, and an action a keyboard cannot reach is not an action. */
+
+.rf-table {
+    width: 100%;
+    min-width: 46rem;
+    border-collapse: collapse;
+    font-size: var(--rf-size-small);
+}
+
+.rf-table th,
+.rf-table td {
+    text-align: left;
+    vertical-align: middle;
+    border: 0;
+    border-bottom: 1px solid var(--rf-line);
+    padding: var(--rf-space-3);
+}
+
+.rf-table thead th {
+    padding: 0 0 var(--rf-space-2) 0;
+    border-bottom: 1px solid var(--rf-line-strong);
+    white-space: nowrap;
+}
+
+.rf-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.rf-table tbody tr:hover {
+    background: var(--rf-surface-2);
+}
+
+.rf-table__quiet {
+    color: var(--rf-ink-muted);
+    white-space: nowrap;
+}
+
+.rf-th {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    padding: var(--rf-space-2) var(--rf-space-3);
+    background: none;
+    border: 0;
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-ink-faint);
+    font-family: inherit;
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    cursor: pointer;
+    transition: color var(--rf-transition), background var(--rf-transition);
+}
+
+.rf-th:hover {
+    color: var(--rf-ink);
+    background: var(--rf-surface-2);
+}
+
+.rf-th:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+/* Not every column is sortable, and a label that looks like a button but is not
+   is worse than a label. */
+.rf-th--static {
+    cursor: default;
+}
+
+th[aria-sort="ascending"] .rf-th,
+th[aria-sort="descending"] .rf-th {
+    color: var(--rf-gold);
+}
+
+/* ---- Item --------------------------------------------------------------
+   The shared item cell. Image, name in its rarity colour, and the details that
+   used to need three more columns.
+
+   The rarity tokens were defined when the design system was built and nothing
+   referenced them until this existed. Colouring the name is the whole point of
+   them: it is how you pick the good thing out of two hundred rows without
+   reading any of them. */
+
+.rf-item {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    min-width: 14rem;
+}
+
+.rf-item__img {
+    position: relative;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+}
+
+.rf-item__img img {
+    max-width: 36px;
+    max-height: 36px;
+}
+
+.rf-item__amount {
+    position: absolute;
+    right: -4px;
+    bottom: -6px;
+    padding: 0 var(--rf-space-1);
+    background: var(--rf-surface-raised);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-ink);
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.rf-item__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    min-width: 0;
+}
+
+.rf-item__name {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+/* An item name that is a link. Deliberately not gold: on the admin tables every
+   row would be, and the accent stops meaning anything when it is everywhere.
+   The underline on hover is the affordance instead. */
+a.rf-item__name {
+    color: inherit;
+    text-decoration: none;
+}
+
+a.rf-item__name:hover,
+a.rf-item__name:focus-visible {
+    color: var(--rf-gold-bright);
+    text-decoration: underline;
+}
+
+a.rf-item__name:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+    border-radius: var(--rf-radius-sm);
+}
+
+.rf-item__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+    font-size: var(--rf-size-tiny);
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    color: var(--rf-ink-faint);
+    font-weight: 600;
+}
+
+/* Enchanted and soulbound were tracked on every stash row and shown on none of
+   them. Both change what you can do with the item, so both say so in words. */
+.rf-item__mark {
+    color: var(--rf-gold);
+}
+
+/* ---- Admin user view ---------------------------------------------------
+   An avatar beside a facts list, which is the shape both the account panel and
+   the clan panel want. Folds to a stack on a phone rather than shrinking the
+   picture to a stamp. */
+
+.rf-adminuser__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--rf-space-5);
+}
+
+.rf-adminuser__head .rf-facts {
+    flex: 1 1 24rem;
+}
+
+.rf-adminuser__avatar {
+    flex: 0 0 auto;
+    width: 96px;
+    height: 96px;
+    object-fit: cover;
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-2);
+}
+
+/* ---- Price -------------------------------------------------------------
+   A price cell that answers "is that a good price" rather than only stating a
+   number. The value reads first, and the comparison sits under it in the small
+   muted type so a column of them stays scannable.
+
+   Built for the marketplace and deliberately not scoped to it: the vendor page
+   and the admin economy tables show the same shape. */
+
+.rf-price {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    align-items: flex-start;
+    min-width: 8rem;
+}
+
+.rf-price__value {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-1);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    color: var(--rf-ink);
+}
+
+.rf-price__coin {
+    width: 16px;
+    height: 16px;
+}
+
+/* Muted rather than faint. This line carries a fact you are meant to read
+   ("3.4x vendor value"), not a label you are meant to skip: --rf-ink-faint on
+   --rf-surface-1 measures about 3.2:1, which is fine for a heading you already
+   know the shape of and not fine for a number you are comparing. */
+.rf-price__meta {
+    font-size: var(--rf-size-tiny);
+    color: var(--rf-ink-muted);
+    white-space: nowrap;
+}
+
+/* ---- Stat chips --------------------------------------------------------- */
+
+.rf-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-1);
+    min-width: 5rem;
+}
+
+.rf-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-1);
+    padding: var(--rf-space-1) var(--rf-space-2);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-tiny);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.rf-chip i {
+    color: var(--rf-ink-faint);
+}
+
+/* A chip carrying a label and a value: the value is what you read. */
+.rf-chip b {
+    color: var(--rf-ink);
+}
+
+/* A chip that is a link. Both colours change on hover, per rule 3. */
+a.rf-chip {
+    text-decoration: none;
+    transition: background var(--rf-transition), border-color var(--rf-transition), color var(--rf-transition);
+}
+
+a.rf-chip:hover,
+a.rf-chip:focus-visible {
+    background: var(--rf-surface-raised);
+    border-color: var(--rf-line-gold);
+    color: var(--rf-ink);
+    text-decoration: none;
+}
+
+a.rf-chip:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+/* The character number. Quiet, because it only matters when two characters
+   share a name. */
+.rf-chip__index {
+    color: var(--rf-ink-faint);
+}
+
+/* ==========================================================================
+   Inventory and equipment
+   ==========================================================================
+   Shares the item vocabulary above with the stash page. The two screens used to
+   be separate implementations of the same thing.
+   ========================================================================== */
+
+.rf-inv__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--rf-space-3);
+}
+
+.rf-inv__head .rf-tabs {
+    flex: 1 1 auto;
+    margin-bottom: 0;
+    border-bottom: 0;
+}
+
+.rf-inv__coins {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    padding: var(--rf-space-2) var(--rf-space-3);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+    color: var(--rf-gold);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.rf-inv__price {
+    color: var(--rf-gold);
+}
+
+.rf-inv__bulk {
+    margin-bottom: var(--rf-space-4);
+}
+
+/* ---- Equipment ---------------------------------------------------------- */
+
+.rf-gear {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: var(--rf-space-4);
+    align-items: start;
+    margin-top: var(--rf-space-5);
+}
+
+@media (max-width: 900px) {
+    .rf-gear {
+        grid-template-columns: 1fr;
+    }
+}
+
+.rf-slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+    gap: var(--rf-space-2);
+}
+
+/* A slot is a button whether or not it holds anything, so the grid does not
+   jump when something is unequipped. The empty ones simply do not respond. */
+.rf-slot {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+        "label label"
+        "img   name";
+    align-items: center;
+    gap: var(--rf-space-1) var(--rf-space-2);
+    padding: var(--rf-space-2);
+    text-align: left;
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+    color: var(--rf-ink);
+    font-family: inherit;
+    cursor: pointer;
+    transition: background var(--rf-transition), border-color var(--rf-transition);
+}
+
+.rf-slot:hover:not(:disabled) {
+    background: var(--rf-surface-3);
+    border-color: var(--rf-line-gold);
+}
+
+.rf-slot:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+.rf-slot:disabled {
+    cursor: default;
+}
+
+.rf-slot.is-empty {
+    border-style: dashed;
+    background: none;
+    box-shadow: none;
+}
+
+.rf-slot__label {
+    grid-area: label;
+    font-size: var(--rf-size-tiny);
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    color: var(--rf-ink-faint);
+    font-weight: 700;
+}
+
+.rf-slot__img {
+    grid-area: img;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+}
+
+.rf-slot__img img {
+    max-width: 30px;
+    max-height: 30px;
+}
+
+.rf-slot__img--empty {
+    color: var(--rf-ink-faint);
+    background: none;
+}
+
+.rf-slot__name {
+    grid-area: name;
+    font-size: var(--rf-size-tiny);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.rf-slot.is-empty .rf-slot__name {
+    color: var(--rf-ink-faint);
+}
+
+.rf-slot__mark {
+    position: absolute;
+    right: -5px;
+    bottom: -5px;
+    font-size: 0.6rem;
+    color: var(--rf-ink-muted);
+}
+
+.rf-slot__mark--enchant {
+    right: auto;
+    left: -5px;
+    color: var(--rf-gold);
+}
+
+.rf-gear__gaps {
+    margin-top: var(--rf-space-4);
+    padding-top: var(--rf-space-3);
+    border-top: 1px solid var(--rf-line);
+}
+
+.rf-gear__gaps i {
+    color: var(--rf-warn);
+}
+
+.rf-gear__gaps b {
+    color: var(--rf-ink-muted);
+    font-weight: 600;
+}
+
+/* ---- Item grid ---------------------------------------------------------
+   The rarity band shows as a bar along the bottom of the tile rather than as a
+   full border. A grid of two hundred outlined squares reads as a grid of
+   outlines; a grid of squares with one coloured edge reads as items. */
+
+.rf-invgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(4.5rem, 1fr));
+    gap: var(--rf-space-2);
+}
+
+.rf-tile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    padding: var(--rf-space-2);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    /* currentColor here is the rarity, set by the rf-rarity- class on the tile. */
+    box-shadow: var(--rf-bevel), inset 0 -3px 0 currentColor;
+    cursor: pointer;
+    transition: background var(--rf-transition), border-color var(--rf-transition), transform var(--rf-transition);
+}
+
+.rf-tile:hover {
+    background: var(--rf-surface-3);
+    border-color: var(--rf-line-gold);
+    transform: translateY(-1px);
+}
+
+.rf-tile:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus), inset 0 -3px 0 currentColor;
+}
+
+.rf-tile__img {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.rf-tile__img img {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.rf-tile__amount {
+    position: absolute;
+    right: var(--rf-space-1);
+    bottom: var(--rf-space-2);
+    padding: 0 var(--rf-space-1);
+    background: var(--rf-surface-raised);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-ink);
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.rf-tile__mark {
+    position: absolute;
+    top: 0;
+    right: 0;
+    font-size: 0.65rem;
+    color: var(--rf-ink-muted);
+}
+
+.rf-tile__mark--enchant {
+    right: auto;
+    left: 0;
+    color: var(--rf-gold);
+}
+
+/* ---- Item detail -------------------------------------------------------- */
+
+.rf-itemview {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--rf-space-5);
+    align-items: start;
+}
+
+@media (max-width: 640px) {
+    .rf-itemview {
+        grid-template-columns: 1fr;
+    }
+}
+
+.rf-itemview__art {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--rf-space-3);
+}
+
+.rf-itemview__img {
+    width: 96px;
+    height: 96px;
+}
+
+.rf-itemview__img img {
+    max-width: 84px;
+    max-height: 84px;
+}
+
+/* The skin is what the item actually looks like in game, so it sits under the
+   real item rather than replacing it. */
+.rf-itemview__skin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 56px;
+    background: var(--rf-surface-2);
+    border: 1px dashed var(--rf-line-strong);
+    border-radius: var(--rf-radius-sm);
+}
+
+.rf-itemview__skin img {
+    max-width: 46px;
+    max-height: 46px;
+}
+
+.rf-itemview__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-3);
+    min-width: 0;
+}
+
+.rf-itemview__bonus {
+    color: var(--rf-good);
+    font-weight: 700;
+}
+
+.rf-itemview__blocked {
+    margin: 0;
+    padding: var(--rf-space-3);
+    background: var(--rf-warn-wash);
+    border: 1px solid var(--rf-warn);
+    border-radius: var(--rf-radius);
+    color: var(--rf-warn);
+    font-size: var(--rf-size-small);
+}
+
+.rf-itemview__transmog {
+    margin-top: var(--rf-space-5);
+    padding-top: var(--rf-space-4);
+    border-top: 1px solid var(--rf-line);
+}
+
+.rf-modal__foot--spread {
+    justify-content: space-between;
+}
+
+/* ---- Icon button -------------------------------------------------------
+   A pencil next to a value. Quiet until you reach for it, because there is one
+   on every row and a row of buttons competes with the data. */
+
+.rf-iconbtn {
+    padding: var(--rf-space-1) var(--rf-space-2);
+    background: none;
+    border: 0;
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-ink-faint);
+    font-family: inherit;
+    font-size: var(--rf-size-small);
+    cursor: pointer;
+    transition: color var(--rf-transition), background var(--rf-transition);
+}
+
+.rf-iconbtn:hover {
+    color: var(--rf-gold);
+    background: var(--rf-surface-3);
+}
+
+.rf-iconbtn:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+/* ---- Form messages ------------------------------------------------------ */
+
+.rf-form__error {
+    margin: 0 0 var(--rf-space-3) 0;
+    color: var(--rf-bad);
+    font-size: var(--rf-size-small);
+}
+
+.rf-form__ok {
+    margin: var(--rf-space-2) 0 0 0;
+    color: var(--rf-good);
+    font-size: var(--rf-size-small);
+}
+
+/* Pushes a toolbar item to the far end, for the one action that is not a filter. */
+.rf-toolbar__end {
+    margin-left: auto;
+}
+
+/* An item name that is also a link stays ink until you point at it. A clan
+   roster is a column of names; painting all of them gold to say "clickable"
+   spends the accent on the whole column. */
+a.rf-item__name {
+    color: var(--rf-ink);
+    text-decoration: none;
+}
+
+a.rf-item__name:hover {
+    color: var(--rf-gold);
+    text-decoration: underline;
+}
+
+a.rf-badge {
+    text-decoration: none;
+}
+
+a.rf-badge:hover {
+    text-decoration: none;
+    filter: brightness(1.15);
+}
+
+/* ---- Loyalty rewards ---------------------------------------------------
+   A reward you cannot afford used to be dimmed with a button that silently did
+   nothing when pressed. Dimming still marks it, but the row says how far off
+   you are, because that is the only useful thing it can say. */
+
+.rf-rewards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+    gap: var(--rf-space-3);
+}
+
+.rf-reward {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-3);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+}
+
+.rf-reward.is-locked {
+    background: none;
+    border-style: dashed;
+    box-shadow: none;
+}
+
+.rf-reward.is-locked .rf-item__img {
+    opacity: 0.5;
+}
+
+.rf-reward__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.rf-reward__buy {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--rf-space-1);
+    text-align: right;
+}
+
+.rf-reward__price {
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+    color: var(--rf-ink-muted);
+    white-space: nowrap;
+}
+
+.rf-reward__short {
+    font-size: var(--rf-size-tiny);
+    color: var(--rf-warn);
+    white-space: nowrap;
+}
+
+.rf-loyalty__points {
+    color: var(--rf-gold);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---- Clan invites ------------------------------------------------------
+   An invite is a decision about one character, so it gets a block rather than a
+   row of cells. */
+
+.rf-invites {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+    gap: var(--rf-space-3);
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-invite {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+        "logo body"
+        "act  act";
+    gap: var(--rf-space-3);
+    align-items: start;
+    padding: var(--rf-space-4);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line-gold);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-shadow), var(--rf-bevel);
+    box-sizing: border-box;
+}
+
+.rf-invite__logo {
+    grid-area: logo;
+    width: 56px;
+    height: 56px;
+}
+
+.rf-invite__logo img {
+    max-width: 48px;
+    max-height: 48px;
+}
+
+.rf-invite__body {
+    grid-area: body;
+    min-width: 0;
+}
+
+.rf-invite__actions {
+    grid-area: act;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-2);
+    padding-top: var(--rf-space-3);
+    border-top: 1px solid var(--rf-line);
+}
+
+/* Inside a card the label column does not need to be as wide as a page level
+   definition list. */
+.rf-facts--tight {
+    grid-template-columns: minmax(5rem, 7rem) 1fr;
+    margin-top: var(--rf-space-2);
+    font-size: var(--rf-size-small);
+}
+
+.rf-facts--tight > dt,
+.rf-facts--tight > dd {
+    padding: var(--rf-space-1) 0;
+}
+
+/* ---- Notifications -----------------------------------------------------
+   Grouped by day. A flat list of forty entries each saying "3 hours ago" gives
+   no sense of when anything happened. */
+
+.rf-notes__day {
+    display: block;
+    margin: var(--rf-space-5) 0 var(--rf-space-2) 0;
+}
+
+.rf-notes__day:first-child {
+    margin-top: 0;
+}
+
+.rf-notes {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    overflow: hidden;
+}
+
+.rf-note {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-2) var(--rf-space-3);
+    border-bottom: 1px solid var(--rf-line);
+}
+
+.rf-note:last-child {
+    border-bottom: 0;
+}
+
+.rf-note:nth-child(even) {
+    background: var(--rf-surface-2);
+}
+
+/* Unread is marked with a brass edge and the icon, not with the whole row, so a
+   page of unread notifications does not read as one solid block. */
+.rf-note.is-unread {
+    box-shadow: inset 2px 0 0 var(--rf-gold);
+}
+
+.rf-note__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: var(--rf-surface-3);
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-ink-faint);
+    font-size: 0.9rem;
+}
+
+.rf-note.is-unread .rf-note__icon {
+    color: var(--rf-gold);
+}
+
+.rf-note__icon img {
+    max-width: 26px;
+    max-height: 26px;
+    border-radius: var(--rf-radius-sm);
+}
+
+.rf-note__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    min-width: 0;
+    padding: var(--rf-space-2) 0;
+    background: none;
+    border: 0;
+    text-align: left;
+    color: inherit;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.rf-note__body--static {
+    cursor: default;
+}
+
+.rf-note__body:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+.rf-note__title {
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    color: var(--rf-ink-muted);
+    overflow-wrap: anywhere;
+}
+
+.rf-note.is-unread .rf-note__title {
+    color: var(--rf-ink);
+}
+
+.rf-note__body:hover .rf-note__title {
+    color: var(--rf-gold);
+}
+
+.rf-note__body--static:hover .rf-note__title {
+    color: var(--rf-ink-muted);
+}
+
+.rf-note.is-unread .rf-note__body--static:hover .rf-note__title {
+    color: var(--rf-ink);
+}
+
+.rf-note__time {
+    font-size: var(--rf-size-tiny);
+    color: var(--rf-ink-faint);
+}
+
+/* ---- Patreon ------------------------------------------------------------ */
+
+.rf-patron {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-4);
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-patron__avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--rf-radius);
+    border: 1px solid var(--rf-line-strong);
+    background: var(--rf-surface-2);
+}
+
+.rf-patron__id {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.rf-patron__name {
+    margin: 0;
+    font-size: var(--rf-size-title);
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.rf-patron__tier {
+    margin: var(--rf-space-1) 0 0 0;
+    font-size: var(--rf-size-tiny);
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    color: var(--rf-gold);
+    font-weight: 700;
+}
+
+.rf-patron__heading {
+    margin-top: var(--rf-space-5);
+}
+
+.rf-patron__unlink {
+    margin-top: var(--rf-space-5);
+    padding-top: var(--rf-space-4);
+    border-top: 1px solid var(--rf-line);
+}
+
+/* Each perk says what it changes rather than carrying a class name that only a
+   stylesheet could read. */
+.rf-perks {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--rf-space-2);
+}
+
+.rf-perk {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--rf-space-3);
+    align-items: baseline;
+    padding: var(--rf-space-2) var(--rf-space-3);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+    font-size: var(--rf-size-small);
+    color: var(--rf-ink-muted);
+}
+
+.rf-perk i {
+    color: var(--rf-good);
+}
+
+.rf-perk b {
+    color: var(--rf-ink);
+}
+
+/* ---- Checkbox row ------------------------------------------------------- */
+
+.rf-check {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--rf-space-3);
+    align-items: start;
+    margin-bottom: var(--rf-space-4);
+    cursor: pointer;
+}
+
+.rf-check input {
+    width: 1rem;
+    height: 1rem;
+    margin-top: 0.2rem;
+    accent-color: var(--rf-gold);
+}
+
+.rf-check > span {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    font-size: var(--rf-size-small);
+}
+
+/* ---- Permission editor -------------------------------------------------- */
+
+.rf-perms {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: var(--rf-space-3);
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-perms .rf-check {
+    margin-bottom: 0;
+    padding: var(--rf-space-3);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+    box-sizing: border-box;
+}
+
+.rf-perms__group {
+    display: block;
+    margin: var(--rf-space-5) 0 var(--rf-space-2) 0;
+}
+
+/* ==========================================================================
+   Player view
+   ==========================================================================
+   Shared by /characters, /inspect and the admin panel, which is why none of
+   this is behind .rf-dash.
+   ========================================================================== */
+
+/* site.css styles bare headings for the front pages: h1/h2/h3 are #ff7f00, and
+   h1::after injects a decorative LineBreakWhite.png block 28px tall. Both are
+   wrong inside a component that has to sit in three different layouts, so they
+   are switched off at the component roots rather than deleted from site.css,
+   which the unconverted pages still depend on. */
+
+.rf-player h1,
+.rf-player h2,
+.rf-player h3,
+.rf-skills h1,
+.rf-skills h2,
+.rf-skills h3,
+.rf-clan h1,
+.rf-clan h2,
+.rf-clan h3 {
+    color: var(--rf-ink);
+}
+
+.rf-player h1::after,
+.rf-player h2::after,
+.rf-player h3::after,
+.rf-skills h1::after,
+.rf-skills h2::after,
+.rf-skills h3::after,
+.rf-clan h1::after,
+.rf-clan h2::after,
+.rf-clan h3::after {
+    content: none;
+    display: none;
+}
+
+/* ---- Identity ----------------------------------------------------------
+   Name on the left, combat level on the right as a number rather than the old
+   "level 148" run of text. The level is the one figure a player quotes about a
+   character, so it gets the stat treatment. */
+
+.rf-player__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--rf-space-3) var(--rf-space-5);
+    margin-bottom: var(--rf-space-5);
+    padding-bottom: var(--rf-space-3);
+    border-bottom: 1px solid var(--rf-line);
+}
+
+.rf-player__name {
+    margin: 0;
+    font-size: var(--rf-size-display);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+}
+
+.rf-player__slot {
+    margin: var(--rf-space-1) 0 0 0;
+    font-size: var(--rf-size-tiny);
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    color: var(--rf-ink-faint);
+    font-weight: 600;
+}
+
+.rf-player__level {
+    text-align: right;
+}
+
+.rf-player__level-value {
+    display: block;
+    font-size: var(--rf-size-display);
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--rf-gold);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---- Join hint ---------------------------------------------------------
+   Was a paragraph of prose with the commands buried in bold inside it. The
+   commands are the only part anyone reads, so they lead. */
+
+.rf-player__join {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--rf-space-3) var(--rf-space-4);
+    padding: var(--rf-space-3) var(--rf-space-4);
+    margin-bottom: var(--rf-space-5);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+}
+
+.rf-player__join-cmds {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-2);
+    margin: var(--rf-space-2) 0 0 0;
+    font-size: var(--rf-size-small);
+    color: var(--rf-ink-muted);
+}
+
+ /* A row of buttons that wraps. Used by the alias editor, the clan actions and
+   the leave confirmation, which are all the same shape. */
+.rf-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-2);
+}
+
+/* ---- Next level --------------------------------------------------------
+   The headline the site could never give. A percentage tells a player how far
+   through a level they are; this says how much is left and roughly how long
+   that takes, which is the question they actually had. Set larger than a list
+   row because it is the one number worth walking across the room for. */
+
+.rf-next {
+    margin-top: var(--rf-space-4);
+    padding: var(--rf-space-4);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+}
+
+.rf-next__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--rf-space-2) var(--rf-space-3);
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-next__skill {
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    color: var(--rf-ink-muted);
+}
+
+.rf-next__skill b {
+    color: var(--rf-gold);
+}
+
+.rf-next__bar {
+    height: 0.75rem;
+}
+
+/* Outside a training row, so it does not inherit the neutral idle fill. */
+.rf-next__bar .rf-skill__fill {
+    background: var(--rf-gold);
+}
+
+.rf-next__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--rf-space-2) var(--rf-space-3);
+    margin-top: var(--rf-space-3);
+    font-size: var(--rf-size-small);
+    color: var(--rf-ink-muted);
+}
+
+.rf-next__eta {
+    color: var(--rf-gold);
+    font-weight: 700;
+}
+
+/* ---- Resources ---------------------------------------------------------
+   Deleted. This was a seven cell grid of wood, ore, fish, wheat, magic, arrows
+   and coins, which presented all seven as live game resources. Only coins are;
+   the rest belong to an older version of the game. Coins moved into the headline
+   stats where the numbers a player checks live, and a character still holding a
+   balance in one of the others gets a chip row instead, under a heading that
+   says the game no longer uses them.
+
+   Nothing writes rf-resource or rf-resources any more, so the rules went with
+   the markup rather than being left behind for someone to find and reuse. */
+
+/* ==========================================================================
+   Skills
+   ========================================================================== */
+
+.rf-skills__admin {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+    margin-bottom: var(--rf-space-4);
+}
+
+/* What the character is doing right now, in one sentence. The gold picks out
+   the nouns a player is scanning for: the skill, the rate, the island. */
+.rf-skills__status {
+    margin: 0 0 var(--rf-space-2) 0;
+    padding: var(--rf-space-3) var(--rf-space-4);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    border-left: 2px solid var(--rf-gold);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+    color: var(--rf-ink-muted);
+    line-height: 1.6;
+}
+
+.rf-skills__status b {
+    color: var(--rf-gold);
+    font-weight: 700;
+}
+
+/* Styled here rather than left to the page, because this sentence renders in
+   three layouts and only one of them styles its anchors. */
+.rf-skills__status a {
+    color: var(--rf-gold);
+    text-decoration: none;
+}
+
+.rf-skills__status a:hover {
+    color: var(--rf-gold-bright);
+    text-decoration: underline;
+}
+
+.rf-skills__updated {
+    margin: var(--rf-space-3) 0 0 0;
+    text-align: right;
+}
+
+/* The summary line above the skill list. This is the one place the stat tiles
+   were worth trading for a line of text: the tiles cost about ninety pixels and
+   pushed the list they summarise below the fold, which is the whole reason the
+   overview moved to its own tab. */
+.rf-skills__summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2) var(--rf-space-5);
+    margin: 0 0 var(--rf-space-4) 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+}
+
+.rf-skills__summary b {
+    color: var(--rf-gold);
+    font-variant-numeric: tabular-nums;
+}
+
+.rf-skills__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    overflow: hidden;
+}
+
+/* Name, bar, percent, level. The admin edit button needs a fifth track declared
+   for it: grid auto placement fills rows, so an undeclared fifth item wraps to
+   a second line rather than sitting at the end of the row. The column is only
+   declared when the button is actually rendered, so everyone else does not
+   carry a dead track and its gap. */
+.rf-skill {
+    display: grid;
+    grid-template-columns: minmax(7rem, 12rem) minmax(0, 1fr) 7rem 6rem;
+    align-items: center;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-2) var(--rf-space-4);
+    border-bottom: 1px solid var(--rf-line);
+}
+
+.rf-skill--editable {
+    grid-template-columns: minmax(7rem, 12rem) minmax(0, 1fr) 7rem 6rem auto;
+}
+
+.rf-skill:last-child {
+    border-bottom: 0;
+}
+
+.rf-skill:nth-child(even) {
+    background: var(--rf-surface-2);
+}
+
+/* Placed after the striping so it wins on source order. The word "Training" is
+   in the row as well, because the highlight alone would say nothing in
+   greyscale or to a colour blind reader. */
+.rf-skill.is-training {
+    background: linear-gradient(90deg, var(--rf-gold-wash), transparent 75%), var(--rf-surface-2);
+}
+
+.rf-skill__name {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    color: var(--rf-ink-muted);
+    min-width: 0;
+}
+
+.rf-skill.is-training .rf-skill__name {
+    color: var(--rf-gold);
+}
+
+.rf-skill__tag {
+    flex-shrink: 0;
+    padding: 0 var(--rf-space-2);
+    border: 1px solid var(--rf-line-gold);
+    border-radius: 999px;
+    background: var(--rf-gold-wash);
+    color: var(--rf-gold);
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+}
+
+.rf-skill__bar {
+    position: relative;
+    height: 0.5rem;
+    min-width: 2rem;
+    border-radius: 999px;
+    background: var(--rf-surface-3);
+    overflow: hidden;
+}
+
+ /* Idle bars are deliberately not gold. Twenty gold bars down the page would
+   spend the accent on the one thing nobody is looking at, and the row that
+   matters would stop standing out. */
+.rf-skill__fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    background: var(--rf-ink-faint);
+    border-radius: inherit;
+}
+
+.rf-skill.is-training .rf-skill__fill {
+    background: var(--rf-gold);
+}
+
+ /* The bar already says how far along the skill is, so this column says how much
+   is left instead of repeating it as a percentage. The exact figures are on the
+   tooltip both carry. */
+.rf-skill__next {
+    text-align: right;
+    white-space: nowrap;
+    font-size: var(--rf-size-tiny);
+    color: var(--rf-ink-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.rf-skill__next-to {
+    color: var(--rf-ink-faint);
+}
+
+/* Rare enough that spending the accent on it is fair: the level cap is 999. */
+.rf-skill__max {
+    color: var(--rf-gold);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+}
+
+/* Wide enough for the Health row, which shows "842 / 1337" rather than a bare
+   level. Sizing the track to its content instead would let each row pick its
+   own width, and the bars would stop lining up down the list. */
+.rf-skill__level {
+    text-align: right;
+    white-space: nowrap;
+    font-weight: 700;
+    color: var(--rf-ink);
+    font-variant-numeric: tabular-nums;
+}
+
+.rf-skill.is-training .rf-skill__level {
+    color: var(--rf-gold);
+}
+
+.rf-skill__level-max {
+    color: var(--rf-ink-faint);
+    font-weight: 500;
+}
+
+/* On a phone four columns leaves the name track at nothing, and a skill list
+   where you cannot read the skill names is not worth showing. The row folds to
+   two lines instead: what it is and what level, then how far through. */
+@media (max-width: 640px) {
+    .rf-skill,
+    .rf-skill--editable {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "name level"
+            "bar  next";
+        gap: var(--rf-space-2) var(--rf-space-3);
+        padding: var(--rf-space-3) var(--rf-space-4);
+    }
+
+    .rf-skill--editable {
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        grid-template-areas:
+            "name level edit"
+            "bar  next  edit";
+    }
+
+    .rf-skill__name {
+        grid-area: name;
+        /* The training tag drops under the name rather than squeezing it. */
+        flex-wrap: wrap;
+    }
+
+    .rf-skill__bar {
+        grid-area: bar;
+        align-self: center;
+    }
+
+    .rf-skill__next {
+        grid-area: next;
+    }
+
+    .rf-skill__level {
+        grid-area: level;
+    }
+
+    .rf-skill > .rf-btn {
+        grid-area: edit;
+    }
+}
+
+/* ==========================================================================
+   Clan
+   ========================================================================== */
+
+.rf-clan {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-4);
+    margin-bottom: var(--rf-space-5);
+}
+
+.rf-clan__id {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* Denser than the character picker: a roster is scanned, not chosen from. */
+.rf-roster {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+    gap: var(--rf-space-2);
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-clan__logo {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--rf-radius);
+    border: 1px solid var(--rf-line-strong);
+    background: var(--rf-surface-2);
+}
+
+.rf-clan__name {
+    margin: 0;
+    font-size: var(--rf-size-title);
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.rf-clan__level {
+    margin: var(--rf-space-1) 0 0 0;
+    font-size: var(--rf-size-tiny);
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    color: var(--rf-ink-faint);
+    font-weight: 600;
+}
+
+.rf-clan__level b {
+    color: var(--rf-gold);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rf-player *,
+    .rf-skills *,
+    .rf-clan *,
+    .rf-roster *,
+    .rf-inv * {
+        transition: none !important;
+    }
+}
