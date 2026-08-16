@@ -496,6 +496,10 @@ namespace RavenNest.Blazor
             services.AddSingleton<RavenNest.BusinessLogic.Settings.IServerSettingsProvider, RavenNest.BusinessLogic.Settings.ServerSettingsProvider>();
             services.AddSingleton<RavenNest.BusinessLogic.AI.IAiService, RavenNest.BusinessLogic.AI.AiService>();
 
+            // Rebuilt from the transaction log on a timer rather than stored, so it can never
+            // disagree with the trades it came from.
+            services.AddSingleton<RavenNest.BusinessLogic.Game.MarketPriceIndex>();
+
             services.AddSingleton<MarketplaceReportAggregator>();
             services.AddSingleton<EconomyReportAggregator>();
 

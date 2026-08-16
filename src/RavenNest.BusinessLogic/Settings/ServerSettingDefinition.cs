@@ -138,6 +138,8 @@ namespace RavenNest.BusinessLogic.Settings
 
         public const string OpenAiModel = "OpenAI:Model";
 
+        public const string VendorFollowMarket = "Vendor:FollowMarketPrices";
+
         public static readonly IReadOnlyList<ServerSettingDefinition> All = new List<ServerSettingDefinition>
         {
             new ServerSettingDefinition(
@@ -157,6 +159,15 @@ namespace RavenNest.BusinessLogic.Settings
                 ServerSettingKind.Secret,
                 placeholder: "sk-...",
                 help: "platform.openai.com, API keys, Create new secret key. It is shown once, so paste it straight in."),
+
+            new ServerSettingDefinition(
+                VendorFollowMarket,
+                "Vendor",
+                "Follow marketplace prices",
+                "Lets the vendor charge what players actually pay each other, when that is more than its own price. It never charges less, and what it pays for an item does not change either way. Off until players have been told.",
+                ServerSettingKind.Toggle,
+                defaultValue: "false",
+                help: "Turning this on raises prices on some items. Announce it first."),
 
             new ServerSettingDefinition(
                 OpenAiModel,

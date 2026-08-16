@@ -39,6 +39,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly GameData gameData;
         private readonly IIntegrityChecker integrityChecker;
         private readonly ITwitchExtensionConnectionProvider extensionWsConnectionProvider;
+        private readonly MarketPriceIndex marketPrices;
 
         private readonly ConcurrentDictionary<Guid, HashSet<Guid>> playerRemoveRequests = new ConcurrentDictionary<Guid, HashSet<Guid>>();
 
@@ -50,7 +51,8 @@ namespace RavenNest.BusinessLogic.Game
             EnchantmentManager enchantmentManager,
             GameData gameData,
             IIntegrityChecker integrityChecker,
-            ITwitchExtensionConnectionProvider extensionWsConnectionProvider)
+            ITwitchExtensionConnectionProvider extensionWsConnectionProvider,
+            MarketPriceIndex marketPrices)
         {
             this.logger = logger;
             this.ravenbotApi = ravenbotApi;
@@ -60,6 +62,7 @@ namespace RavenNest.BusinessLogic.Game
             this.gameData = gameData;
             this.integrityChecker = integrityChecker;
             this.extensionWsConnectionProvider = extensionWsConnectionProvider;
+            this.marketPrices = marketPrices;
         }
 
         public int GetHighscore(SessionToken sessionToken, Guid characterId, string skillName)
@@ -2455,11 +2458,16 @@ namespace RavenNest.BusinessLogic.Game
             if (stock <= 0) return VendorBuyResult.Failed("The vendor has none of those left.");
             if (amount > stock) amount = stock;
 
+            // Read once for the whole order rather than per unit. It does not vary with stock, and
+            // reading it once means a rebuild landing mid loop cannot charge two prices for one
+            // order.
+            var anchor = marketPrices.GetAnchor(itemId);
+
             var totalPrice = 0L;
             var remainingStock = stock;
             for (var i = 0L; i < amount; ++i)
             {
-                totalPrice += GameMath.CalculateVendorBuyPrice(item, remainingStock);
+                totalPrice += GameMath.CalculateVendorBuyPrice(item, remainingStock, anchor);
                 remainingStock--;
             }
 

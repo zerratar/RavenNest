@@ -254,23 +254,25 @@ namespace RavenNest.BusinessLogic
         /// <summary>
         ///     How much will you have to pay to buy an item from the vendor?
         /// </summary>
-        /// <param name="i"></param>
-        /// <param name="inStock"></param>
-        /// <returns></returns>
-        public static long CalculateVendorBuyPrice(DataModels.Item i, long inStock)
+        /// <param name="marketAnchor">
+        ///     What players pay each other for one, from MarketPriceIndex, or zero when there is not
+        ///     enough trading to say. Required rather than optional so that a new caller has to
+        ///     decide: a forgotten anchor would quietly quote a price the vendor does not charge.
+        /// </param>
+        public static long CalculateVendorBuyPrice(DataModels.Item i, long inStock, long marketAnchor)
         {
-            return CalculateVendorBuyPrice(Math.Max(i.ShopSellPrice, i.ShopBuyPrice), i.ShopSellPrice, inStock);
+            return CalculateVendorBuyPrice(Math.Max(i.ShopSellPrice, i.ShopBuyPrice), i.ShopSellPrice, inStock, marketAnchor);
         }
 
         /// <summary>
         ///     How much will you have to pay to buy an item from the vendor?
         /// </summary>
-        /// <param name="i"></param>
-        /// <param name="inStock"></param>
-        /// <returns></returns>
-        public static long CalculateVendorBuyPrice(RavenNest.Models.Item i, long inStock)
+        /// <param name="marketAnchor">
+        ///     What players pay each other for one, or zero when there is not enough trading to say.
+        /// </param>
+        public static long CalculateVendorBuyPrice(RavenNest.Models.Item i, long inStock, long marketAnchor)
         {
-            return CalculateVendorBuyPrice(Math.Max(i.ShopSellPrice, i.ShopBuyPrice), i.ShopSellPrice, inStock);
+            return CalculateVendorBuyPrice(Math.Max(i.ShopSellPrice, i.ShopBuyPrice), i.ShopSellPrice, inStock, marketAnchor);
         }
 
         /// <summary>
@@ -324,20 +326,51 @@ namespace RavenNest.BusinessLogic
 
         /// <param name="minPrice">The greater of the item's two shop prices.</param>
         /// <param name="sellPayout">What the vendor actually pays for one, which is ShopSellPrice.</param>
-        public static long CalculateVendorBuyPrice(long minPrice, long sellPayout, long inStock = 0)
+        /// <param name="marketAnchor">
+        ///     The middle of what players pay each other for one, or zero for no opinion.
+        /// </param>
+        /// <remarks>
+        ///     Whichever is most, of four things, and every one of them is a floor rather than a
+        ///     target.
+        ///
+        ///     <para>
+        ///     The market anchor is the newest of the four and the reason for the others being
+        ///     phrased that way. The formula prices come from crafting ingredient costs, which say
+        ///     how an item is made and nothing about what it is worth, and where the two disagree
+        ///     the vendor undercuts the players. A shop permanently cheaper than the marketplace
+        ///     does not compete with it, it empties it: nobody lists while the vendor still has
+        ///     stock. Taking the larger of the two means the vendor can follow the economy upwards
+        ///     and can never lead it downwards.
+        ///     </para>
+        ///
+        ///     <para>
+        ///     Only this side moves. What the vendor pays stays on the formula, so every price this
+        ///     produces can only widen the gap between buying and selling, never close it. The
+        ///     guarantee that a round trip through the vendor always loses money therefore still
+        ///     holds by construction and does not have to be rechecked against whatever the market
+        ///     does next.
+        ///     </para>
+        ///
+        ///     <para>
+        ///     It also means a manipulated anchor does not pay. Talking a price up only makes the
+        ///     vendor expensive for that one item, which costs nobody anything and sells nothing;
+        ///     talking it down does not reach, because the formula is underneath it.
+        ///     </para>
+        /// </remarks>
+        public static long CalculateVendorBuyPrice(long minPrice, long sellPayout, long inStock = 0, long marketAnchor = 0)
         {
-            // Whichever is more: what it cost before, or three times what the vendor pays.
-            //
-            // Both halves are needed and the "whichever is more" is the point. Some items already
-            // ask far more than three times their payout, because their buy price is set well
-            // above their sell price and the old margin is taken from the greater of the two.
+            // Both formula halves are needed and the "whichever is more" is the point. Some items
+            // already ask far more than three times their payout, because their buy price is set
+            // well above their sell price and the old margin is taken from the greater of the two.
             // Using the multiple alone would have made exactly those items cheaper, and nothing
             // here should ever get cheaper: this is a price rise, and a price rise can be
             // announced afterwards, while a price cut that gets reversed cannot.
             var previous = Math.Truncate(minPrice * 1.25d);
             var multiple = sellPayout * VendorBuyMultiplier;
 
-            return (long)Math.Max(MinimumVendorBuyPrice, Math.Max(previous, multiple));
+            var formula = Math.Max(MinimumVendorBuyPrice, Math.Max(previous, multiple));
+
+            return (long)Math.Max(formula, marketAnchor);
         }
 
         /*  CalculateVendorSellPrice was here.

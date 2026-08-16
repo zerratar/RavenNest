@@ -511,9 +511,14 @@ else
         var left = Math.Clamp(amount, 0, remaining);
         var total = 0L;
 
+        // The anchor already resolved for this row, not a fresh lookup. A rebuild between the row
+        // rendering and this running would otherwise quote a total that is not the unit price times
+        // the amount, on the same screen.
+        var anchor = buying.MarketAnchorUsed;
+
         if (remaining >= FlatPriceStock)
         {
-            var flatPrice = GameMath.CalculateVendorBuyPrice(buying.Item, remaining);
+            var flatPrice = GameMath.CalculateVendorBuyPrice(buying.Item, remaining, anchor);
             var flatUnits = Math.Min(left, remaining - (FlatPriceStock - 1));
             total += flatUnits * flatPrice;
             remaining -= flatUnits;
@@ -522,7 +527,7 @@ else
 
         while (left > 0)
         {
-            total += GameMath.CalculateVendorBuyPrice(buying.Item, remaining);
+            total += GameMath.CalculateVendorBuyPrice(buying.Item, remaining, anchor);
             remaining--;
             left--;
         }

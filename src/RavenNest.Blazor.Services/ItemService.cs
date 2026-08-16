@@ -20,18 +20,21 @@ namespace RavenNest.Blazor.Services
     {
         private readonly GameData gameData;
         private readonly ItemManager itemManager;
+        private readonly MarketPriceIndex marketPrices;
         private readonly IReadOnlyList<DataModels.ItemAttribute> availableAttributes;
 
         public ItemService(
             //Microsoft.AspNetCore.Hosting.IWebHostEnvironment Environment,
             GameData gameData,
             ItemManager itemManager,
+            MarketPriceIndex marketPrices,
             IHttpContextAccessor accessor,
             SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
             this.gameData = gameData;
             this.itemManager = itemManager;
+            this.marketPrices = marketPrices;
             this.availableAttributes = this.gameData.GetItemAttributes();
         }
 
@@ -205,11 +208,22 @@ namespace RavenNest.Blazor.Services
                     // or vendoring one would be a way of handing it to somebody else.
                     if (i == null || i.Soulbound) continue;
 
+                    // The same anchor PlayerManager charges with. If these two ever read different
+                    // numbers the page quotes one price and the purchase takes another, which is
+                    // the sort of thing players notice before we do.
+                    // Two different things on purpose. The reading is shown whether or not the
+                    // vendor is allowed to act on it; the anchor is what it is actually allowed to
+                    // charge, and is zero while the switch is off.
+                    var market = marketPrices.Get(item.ItemId);
+                    var anchor = marketPrices.GetAnchor(item.ItemId);
+
                     records.Add(new VendorItemRecord
                     {
                         VendorItem = item,
                         Item = i,
-                        BuyFromVendorPrice = GameMath.CalculateVendorBuyPrice(i, item.Stock),
+                        MarketPrice = market,
+                        MarketAnchorUsed = anchor,
+                        BuyFromVendorPrice = GameMath.CalculateVendorBuyPrice(i, item.Stock, anchor),
                         // What the game actually pays, which is flat. The stock reduction this
                         // used to show was from a function nothing else called, so the column
                         // read "1" against items worth thousands.
@@ -475,5 +489,17 @@ namespace RavenNest.Blazor.Services
         public DataModels.Item Item { get; set; }
         public long BuyFromVendorPrice { get; set; }
         public long SellToVendorPrice { get; set; }
+
+        /// <summary>
+        ///     What players pay each other for it, when enough of them have. Null means there is not
+        ///     enough trading to say, which is the normal case for most items.
+        /// </summary>
+        public RavenNest.BusinessLogic.Game.MarketPrice MarketPrice { get; set; }
+
+        /// <summary>
+        ///     What of that the price above was actually allowed to use. Zero while the vendor is
+        ///     not following the market, even when <see cref="MarketPrice"/> has a reading.
+        /// </summary>
+        public long MarketAnchorUsed { get; set; }
     }
 }

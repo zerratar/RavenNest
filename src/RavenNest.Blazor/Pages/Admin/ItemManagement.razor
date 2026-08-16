@@ -876,7 +876,11 @@
 
         if (editedItem.ShopBuyPrice <= 0)
         {
-            editedItem.ShopBuyPrice = GameMath.CalculateVendorBuyPrice(item, 0);
+            // The formula price, with no market anchor on purpose. This seeds a value that gets
+            // stored on the item, and a market price is a live reading taken fresh at the till.
+            // Baking one in here would freeze this week's trades into the item's own data, where it
+            // would outlive them and quietly become the floor for everything after.
+            editedItem.ShopBuyPrice = GameMath.CalculateVendorBuyPrice(item, 0, marketAnchor: 0);
         }
 
         CreateContext();
