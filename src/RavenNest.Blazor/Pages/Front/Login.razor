@@ -133,10 +133,16 @@ else
                 </p>
             </div>
 
+            @*
+                Said "there is nothing to sign up for", which is not what happens. Signing in with
+                Twitch is the sign up: TwitchLoginAsync calls CreatePlayerIfNotExists, so a first
+                time visitor who presses the button above comes out the other side with an account.
+            *@
             <p class="rf-auth__foot">
-                No account yet? There is nothing to sign up for. Type
+                New here? Signing in with Twitch creates your account, there is nothing to fill in.
+                You can also start playing without any of this, by typing
                 <span class="rf-cmd">!join</span> in the chat of any
-                <a href="/streams">stream running Ravenfall</a> and you have one.
+                <a href="/streams">stream running Ravenfall</a>.
             </p>
         }
     </div>

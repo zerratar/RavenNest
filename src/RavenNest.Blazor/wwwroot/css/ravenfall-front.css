@@ -607,6 +607,7 @@
    take it. */
 
 .rf-auth {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -615,6 +616,48 @@
     /* Clears the header, which is absolutely positioned over the page. */
     padding: 7rem var(--rf-space-4) var(--rf-space-7);
     text-align: center;
+}
+
+/* The backdrop.
+
+   Dropping the hero took the photograph with it and left the page flat black,
+   which is worse than the hero was. The art comes back as a backdrop rather than
+   a band: fixed to the viewport, behind everything, so it fills the page however
+   short the card is instead of being a strip the content sits under.
+
+   Same treatment and the same tokens as the dashboard scenery, so it is the
+   value already measured and approved rather than a second one invented here.
+   The layers are split for the same reason too: the saturation filter belongs to
+   the image, and the tint has to be one alpha that can be measured against the
+   text on top of it. */
+.rf-auth::before,
+.rf-auth::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.rf-auth::before {
+    background-image: url('/imgs/dashboard/home.jpg');
+    background-size: cover;
+    background-position: center;
+    filter: saturate(var(--rf-art-saturation));
+}
+
+.rf-auth::after {
+    background: linear-gradient(to bottom,
+        rgba(18, 21, 28, var(--rf-art-tint)) 0%,
+        rgba(18, 21, 28, calc(var(--rf-art-tint) * 0.95)) 45%,
+        var(--rf-bg) 100%);
+}
+
+/* The pseudo elements are flex items of this container, so everything real has
+   to be lifted above them. */
+.rf-auth > * {
+    position: relative;
+    z-index: 1;
 }
 
 .rf-auth__brand {
@@ -640,9 +683,13 @@
     display: none;
 }
 
+/* Muted and faint are chosen against a flat known surface. Over art at this tint
+   they do not clear 4.5:1, which is the same trap the dashboard subtitle hit, so
+   the two lines that sit directly on the backdrop are promoted. Everything else
+   on this page is inside the card, which is opaque. */
 .rf-auth__lead {
     margin: var(--rf-space-2) 0 var(--rf-space-5) 0;
-    color: var(--rf-ink-muted);
+    color: var(--rf-ink);
 }
 
 .rf-auth__card {
@@ -658,16 +705,26 @@
     text-align: left;
 }
 
-.rf-front .rf-auth__hint,
-.rf-front .rf-auth__foot {
+/* The hint stays faint: it is inside the card, on an opaque surface. */
+.rf-front .rf-auth__hint {
     margin: 0;
     color: var(--rf-ink-faint);
     font-size: var(--rf-size-small);
     line-height: 1.6;
 }
 
-.rf-auth__foot {
-    margin-top: var(--rf-space-5);
+/* The foot is on the backdrop too, so it is promoted with the lead rather than
+   left muted: over art at this tint muted does not clear 4.5:1. It stays quieter
+   than the card by being smaller, which is hierarchy that does not depend on
+   contrast the backdrop is eating.
+
+   The margin is what separates it from the card, so it reads as a note about the
+   card rather than the last line inside it. */
+.rf-front .rf-auth__foot {
+    margin: var(--rf-space-7) 0 0 0;
+    color: var(--rf-ink);
+    font-size: var(--rf-size-small);
+    line-height: 1.6;
     text-align: center;
 }
 
