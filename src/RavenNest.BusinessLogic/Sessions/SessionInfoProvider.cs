@@ -31,6 +31,7 @@ namespace RavenNest
         private readonly ILogger logger;
         private readonly GameData gameData;
         private readonly IAuthManager authManager;
+        private readonly IRavenBotApiClient ravenbotApi;
         private readonly AppSettings settings;
 
         // work around for blazor... we have to store all session data to memory. Y U LITTLE. Using the
@@ -42,11 +43,13 @@ namespace RavenNest
             ILogger<SessionInfoProvider> logger,
             IOptions<AppSettings> settings,
             GameData gameData,
-            IAuthManager authManager)
+            IAuthManager authManager,
+            IRavenBotApiClient ravenbotApi)
         {
             this.logger = logger;
             this.gameData = gameData;
             this.authManager = authManager;
+            this.ravenbotApi = ravenbotApi;
             this.settings = settings.Value;
         }
 
@@ -177,15 +180,11 @@ namespace RavenNest
 
                 if (user != null)
                 {
-                    if (!string.IsNullOrEmpty(kickUser.Name) && user.UserName == null)
+                    if (BusinessLogic.Game.UserNameSync.Apply(
+                            gameData, user, "kick", kickUser.Id.ToString(), kickUser.Name, kickUser.Name))
                     {
-                        user.UserName = kickUser.Name;
                         si.UserNameChanged = true;
-                    }
-
-                    if (!string.IsNullOrEmpty(kickUser.Name) && string.IsNullOrEmpty(user.DisplayName))
-                    {
-                        user.DisplayName = kickUser.Name;
+                        await NotifyBotOfNameChangeAsync(user.Id);
                     }
 
                     if (string.IsNullOrEmpty(user.Email) && !string.IsNullOrEmpty(kickUser.Email))
@@ -205,15 +204,21 @@ namespace RavenNest
                 }
                 if (user != null)
                 {
-                    if (!string.IsNullOrEmpty(twitchUser.Login) && (user.UserName == null || user.UserName != twitchUser.Login))
+                    // Routed through the shared path so this updates the access row and the
+                    // character names too. On its own it only wrote UserName and DisplayName, so
+                    // whether an account healed fully depended on which login route was taken.
+                    if (BusinessLogic.Game.UserNameSync.Apply(
+                            gameData, user, "twitch", twitchUser.Id, twitchUser.Login, twitchUser.DisplayName))
                     {
-                        user.UserName = twitchUser.Login;
                         si.UserNameChanged = true;
-                    }
 
-                    if (!string.IsNullOrEmpty(twitchUser.DisplayName) && twitchUser.DisplayName != user.DisplayName)
-                    {
-                        user.DisplayName = twitchUser.DisplayName;
+                        // Pushed from here rather than from the login services, because every
+                        // Twitch login route reaches this method first. Detecting the change in one
+                        // place and telling the bot somewhere else meant the caller re-checked a
+                        // rename that had already been applied, saw nothing to do, and never sent
+                        // it on. Logging in on the website is the fix people are told to use, so it
+                        // has to be the one that reliably reaches the bot.
+                        await NotifyBotOfNameChangeAsync(user.Id);
                     }
 
                     if (string.IsNullOrEmpty(user.Email) && !string.IsNullOrEmpty(twitchUser.Email))
@@ -242,6 +247,26 @@ namespace RavenNest
             result.SessionInfo = si;
 
             return result;
+        }
+
+        /// <summary>
+        /// Tells the bot about a name change so it can move a live session to the renamed channel.
+        /// Failure is logged and ignored; the periodic watcher picks the rename up regardless.
+        /// </summary>
+        private async Task NotifyBotOfNameChangeAsync(Guid userId)
+        {
+            try
+            {
+                if (ravenbotApi != null)
+                {
+                    await ravenbotApi.UpdateUserSettingsAsync(userId);
+                    await ravenbotApi.PushUserNamesAsync(userId);
+                }
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Unable to tell the bot about the name change for " + userId + ": " + exc);
+            }
         }
 
         private void UpdateSessionInfoData(SessionInfo si, User user)
