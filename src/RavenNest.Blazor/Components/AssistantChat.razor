@@ -164,7 +164,7 @@
         isAdmin = session.Administrator;
         adminOnly = isAdmin && !Assistant.IsOnForEveryone;
         userId = session.UserId;
-        chat = Assistant.StartFor(userId);
+        chat = Assistant.StartFor(userId, isAdmin);
         Recount();
         visible = true;
     }

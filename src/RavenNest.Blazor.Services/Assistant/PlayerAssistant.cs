@@ -54,6 +54,7 @@ namespace RavenNest.Blazor.Services.Assistant
         private readonly GameData gameData;
         private readonly PlayerManager playerManager;
         private readonly MarketPriceIndex marketPrices;
+        private readonly ServerService serverService;
         private readonly IServerSettingsProvider settings;
 
         public PlayerAssistant(
@@ -61,12 +62,14 @@ namespace RavenNest.Blazor.Services.Assistant
             GameData gameData,
             PlayerManager playerManager,
             MarketPriceIndex marketPrices,
+            ServerService serverService,
             IServerSettingsProvider settings)
         {
             this.ai = ai;
             this.gameData = gameData;
             this.playerManager = playerManager;
             this.marketPrices = marketPrices;
+            this.serverService = serverService;
             this.settings = settings;
         }
 
@@ -121,12 +124,21 @@ namespace RavenNest.Blazor.Services.Assistant
             return true;
         }
 
-        public AiConversation StartFor(Guid userId)
+        /// <param name="isAdministrator">
+        ///     From the signed in session and nowhere else. It decides which tools exist at all, so a
+        ///     conversation that was not given the admin tools has no route to them: they are absent
+        ///     from the request, and a name the model invents resolves to nothing.
+        /// </param>
+        public AiConversation StartFor(Guid userId, bool isAdministrator)
         {
-            return new AiConversation(ai, InstructionsFor(userId), ToolsFor(userId), maxOutputTokens: 2000);
+            return new AiConversation(
+                ai,
+                InstructionsFor(userId, isAdministrator),
+                ToolsFor(userId, isAdministrator),
+                maxOutputTokens: 2000);
         }
 
-        private string InstructionsFor(Guid userId)
+        private string InstructionsFor(Guid userId, bool isAdministrator)
         {
             var user = gameData.GetUser(userId);
 
@@ -142,12 +154,13 @@ How to answer:
 - Never use em dashes or en dashes.
 - Never guess at a number. If you have not looked it up with a tool, look it up or say you do not
   know. A made up coin total or item count is worse than no answer.
-- You cannot see other players. If asked about somebody else, say so.
 - You cannot change anything except by moving items between their own characters, and that always
   has to be agreed to first. Never say you have done something you have only proposed.
 - If they ask for something you have no tool for, say what you cannot do rather than approximating
   it. Guessing which item is best without checking their skills is exactly the kind of answer that
   reads as authoritative and is not.
+
+" + (isAdministrator ? AdminVoice : PlayerVoice) + @"
 
 Some questions arrive with a line saying which page the person is looking at. Use it to work out
 what a vague question means: on the vendor page, ""is this worth it"" is about the vendor, and on a
@@ -157,9 +170,32 @@ the page back to them unless it matters to the answer.
 ";
         }
 
-        private IReadOnlyList<AiTool> ToolsFor(Guid userId)
+        /// <summary>
+        ///     What a player is told about the edges of what it can see.
+        /// </summary>
+        private const string PlayerVoice =
+            "- You cannot see other players, the server, or any characters but theirs. If asked about\n" +
+            "  somebody else, say so plainly rather than guessing.";
+
+        /// <summary>
+        ///     What an administrator is told instead.
+        /// </summary>
+        /// <remarks>
+        ///     The instructions have to match the tools. An administrator with the server tools who
+        ///     is still told they cannot see other players will refuse things it can actually do,
+        ///     which is exactly how the gap got noticed: asked for the live player count while the
+        ///     number was on the screen behind it, and it said it could not see.
+        /// </remarks>
+        private const string AdminVoice =
+            "- This person is an administrator. You can also see how the server is doing right now, which\n" +
+            "  streams are live, and look up any player by name. Reach for those tools rather than saying\n" +
+            "  you cannot see other players, because for this person you can.\n" +
+            "- You still cannot change anything belonging to another player. Looking is all you can do\n" +
+            "  there, and moving items is still only between this person's own characters.";
+
+        private IReadOnlyList<AiTool> ToolsFor(Guid userId, bool isAdministrator)
         {
-            return new List<AiTool>
+            var tools = new List<AiTool>
             {
                 new AiTool(
                     "my_characters",
@@ -193,6 +229,112 @@ the page back to them unless it matters to the answer.
                     requiresConfirmation: true,
                     summarise: args => DescribeMove(userId, args))
             };
+
+            if (!isAdministrator) return tools;
+
+            // Added rather than swapped in. An administrator is still a player with characters of
+            // their own, and asks about them like anybody else.
+            tools.Add(new AiTool(
+                "server_status",
+                "How the server is doing right now: how many characters are in game, how many streams " +
+                "are live, whether the bot is responding, and any active experience multiplier.",
+                AiTool.NoParameters,
+                (args, ct) => Task.FromResult(ServerStatus())));
+
+            tools.Add(new AiTool(
+                "live_streams",
+                "The streams running right now, busiest first, with how many players are in each and " +
+                "how long each has been going.",
+                AiTool.NoParameters,
+                (args, ct) => Task.FromResult(LiveStreams())));
+
+            tools.Add(new AiTool(
+                "find_player",
+                "Look up any player by name and see their characters, levels and coins. " +
+                "Administrators only.",
+                Schema("name", "The player's user name."),
+                (args, ct) => Task.FromResult(FindPlayer(Text(args, "name")))));
+
+            return tools;
+        }
+
+        // ---- administrator tools ---------------------------------------------------------------
+
+        /// <summary>
+        ///     Read through the same ServerService call the admin overview page renders.
+        /// </summary>
+        /// <remarks>
+        ///     Deliberately the same call rather than a second one that counts sessions itself. Two
+        ///     sources for one number is how the assistant ends up contradicting the page it is
+        ///     floating on top of, and the reader has no way to tell which one is wrong.
+        /// </remarks>
+        private string ServerStatus()
+        {
+            var overview = serverService.GetServerOverview();
+            var multiplier = overview.Multiplier;
+
+            return Json(new
+            {
+                playersInGame = overview.PlayersInGame,
+                liveStreams = overview.StreamCount,
+                busiestStream = overview.TopStream == null
+                    ? null
+                    : overview.TopStream.UserName + " with " + overview.TopStream.PlayerCount,
+                botOnline = overview.BotOnline,
+                botChannels = overview.BotChannelCount,
+                botLastHeardFromUtc = overview.BotLastUpdate == default
+                    ? null
+                    : overview.BotLastUpdate.ToString("u"),
+                experienceMultiplier = multiplier == null || multiplier.Multiplier <= 1
+                    ? null
+                    : new
+                    {
+                        multiplier = multiplier.Multiplier,
+                        startedBy = multiplier.StartedByPlayer ? multiplier.StartedBy : "an administrator",
+                        minutesLeft = (int)multiplier.Remaining.TotalMinutes
+                    }
+            });
+        }
+
+        private string LiveStreams()
+        {
+            var overview = serverService.GetServerOverview();
+            if (overview.Streams.Count == 0) return "No streams are running right now.";
+
+            var now = DateTime.UtcNow;
+
+            return Json(overview.Streams.Select(x => new
+            {
+                streamer = x.UserName,
+                players = x.PlayerCount,
+                runningForMinutes = x.Started == default ? (int?)null : (int)(now - x.Started).TotalMinutes
+            }));
+        }
+
+        private string FindPlayer(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return "No name was given.";
+
+            var user = gameData.FindUser(name.Trim());
+            if (user == null) return "There is no player called '" + name + "'.";
+
+            var players = playerManager.GetWebsitePlayers(user.Id);
+            if (players == null || players.Count == 0)
+            {
+                return user.UserName + " exists but has no characters.";
+            }
+
+            return Json(new
+            {
+                player = user.UserName,
+                characters = players.Select(p => new
+                {
+                    number = p.CharacterIndex,
+                    name = p.Name,
+                    combatLevel = p.CombatLevel,
+                    coins = (long)(p.Resources?.Coins ?? 0)
+                })
+            });
         }
 
         // ---- what the tools return -----------------------------------------------------------
