@@ -77,54 +77,41 @@ else
                         <i class="fa-solid fa-check" aria-hidden="true"></i>
                         <span><b>Clans.</b> You can found a clan and invite characters to it.</span>
                     </li>
-                    @if (patreonTierIndex == 1)
-                    {
-                        <li class="rf-perk">
-                            <i class="fa-solid fa-check" aria-hidden="true"></i>
-                            <span><b>2x experience</b> for your characters.</span>
-                        </li>
-                    }
                     @*
-                        House counts are a floor rather than a bonus: the tier guarantees you that
-                        many plots however low your town level, and a town that has levelled past
-                        them keeps what it earned. The wording says "at least" for that reason.
+                        Read from PatreonTiers rather than written out per tier here. The hand
+                        written version had drifted from what the game grants: it listed no
+                        experience perk at all for Rune, which gets 3x, and listed Dragon as 3x
+                        when it gets 5x. Both pages that describe tiers now read the same list.
 
-                        The top tier is not all of them. A town can reach 40 plots, one per ten town
-                        levels up to the maximum of 400, and the Patreon ladder stops at 30. This
-                        said "All village houses" and had done for as long as the page existed.
+                        House counts are a floor rather than a bonus: the tier guarantees that many
+                        plots however low the town level, and a town that has levelled past them
+                        keeps what it earned, which is why it says "at least".
                     *@
-                    @if (patreonTierIndex == 2)
+                    @if (CurrentTier != null)
                     {
                         <li class="rf-perk">
                             <i class="fa-solid fa-check" aria-hidden="true"></i>
-                            <span><b>At least 10 village houses</b>, whatever your town level.</span>
+                            <span><b>@CurrentTier.ExpMultiplier&times; experience</b> for your characters.</span>
                         </li>
-                    }
-                    @if (patreonTierIndex == 3)
-                    {
-                        <li class="rf-perk">
-                            <i class="fa-solid fa-check" aria-hidden="true"></i>
-                            <span><b>At least 20 village houses</b>, whatever your town level.</span>
-                        </li>
-                        <li class="rf-perk">
-                            <i class="fa-solid fa-check" aria-hidden="true"></i>
-                            <span><b>3x experience</b> for your characters.</span>
-                        </li>
-                    }
-                    @if (patreonTierIndex > 3)
-                    {
-                        <li class="rf-perk">
-                            <i class="fa-solid fa-check" aria-hidden="true"></i>
-                            <span>
-                                <b>At least 30 village houses</b>, whatever your town level. The
-                                last @(MaxVillageHouses - 30) are earned by levelling your town,
-                                one every ten levels up to @GameMath.MaxVillageLevel.
-                            </span>
-                        </li>
-                        <li class="rf-perk">
-                            <i class="fa-solid fa-check" aria-hidden="true"></i>
-                            <span><b>5x experience</b> for your characters.</span>
-                        </li>
+
+                        @if (CurrentTier.VillageHouses > 0)
+                        {
+                            <li class="rf-perk">
+                                <i class="fa-solid fa-check" aria-hidden="true"></i>
+                                <span>
+                                    <b>At least @CurrentTier.VillageHouses town plots</b>, whatever
+                                    your town level.
+                                    @if (CurrentTier.VillageHouses < MaxVillageHouses)
+                                    {
+                                        <span>
+                                            The last @(MaxVillageHouses - CurrentTier.VillageHouses)
+                                            are earned by levelling your town, one every ten levels
+                                            up to @GameMath.MaxVillageLevel.
+                                        </span>
+                                    }
+                                </span>
+                            </li>
+                        }
                     }
                     @if (patreonTierIndex >= 1)
                     {
@@ -195,6 +182,12 @@ else
     ///     GetOrCreateVillageHouses works it out the same way.
     /// </summary>
     private static int MaxVillageHouses => GameMath.MaxVillageLevel / 10;
+
+    /// <summary>
+    ///     What this account's tier grants, from the shared list rather than from copy written
+    ///     out per tier on this page, which had drifted from what the game actually gives.
+    /// </summary>
+    private PatreonTierInfo CurrentTier => PatreonTiers.Get(patreonTierIndex);
 
     protected override async Task OnInitializedAsync()
     {

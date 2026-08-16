@@ -1051,3 +1051,80 @@
 .rf-front .rf-calc .rf-check {
     margin-top: var(--rf-space-3);
 }
+
+/* ---- Patreon tiers -----------------------------------------------------
+   auto-fit rather than five fixed columns: five cards at a laptop width give
+   each one about 200px, which is not enough for a perk sentence. */
+
+.rf-front .rf-tiers {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: var(--rf-space-4);
+    align-items: start;
+}
+
+.rf-front .rf-tier {
+    position: relative;
+    padding: var(--rf-space-5) var(--rf-space-4);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-lg);
+    box-shadow: var(--rf-bevel);
+}
+
+.rf-front .rf-tier--pick {
+    border-color: var(--rf-line-gold);
+}
+
+.rf-front .rf-tier__flag {
+    position: absolute;
+    top: calc(var(--rf-space-3) * -1);
+    left: var(--rf-space-4);
+    padding: var(--rf-space-1) var(--rf-space-3);
+    border-radius: 999px;
+    background: var(--rf-gold);
+    color: var(--rf-ink-inverse);
+    font-size: var(--rf-size-tiny);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+}
+
+.rf-front .rf-tier__name {
+    margin: 0 0 var(--rf-space-1);
+    font-size: var(--rf-size-title);
+    font-weight: 800;
+}
+
+/* The front page draws a rule under every heading. Inside a card that reads as
+   a divider through the middle of it. */
+.rf-front .rf-tier__name::after {
+    content: none;
+}
+
+.rf-front .rf-tier__multi {
+    margin: 0 0 var(--rf-space-4);
+    font-size: var(--rf-size-display);
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--rf-gold);
+}
+
+.rf-front .rf-tier__multi span {
+    display: block;
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    letter-spacing: var(--rf-tracking-label);
+    text-transform: uppercase;
+    color: var(--rf-ink-faint);
+}
+
+/* What a tier does not give, said rather than left out, so the cards can be
+   compared down a column instead of by counting what is missing. */
+.rf-front .rf-perk--absent {
+    opacity: 0.75;
+}
+
+.rf-front .rf-perk--absent i {
+    color: var(--rf-ink-faint);
+}

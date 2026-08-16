@@ -1,0 +1,141 @@
+@page "/tiers"
+@using RavenNest.Blazor.Services
+@using RavenNest.BusinessLogic
+
+@*
+    Public on purpose. The landing page invites you to see what the tiers unlock, and the only page
+    that answered was the dashboard one, which needs an account: the people most likely to ask are
+    the ones who have not made one yet.
+
+    Everything here comes from PatreonTiers, which is written from the code that grants these
+    rather than from the copy that advertised them. The two had drifted.
+*@
+
+<div class="top-section">
+    <div class="hero-text">
+        <h1>Patreon tiers</h1>
+    </div>
+</div>
+
+<div class="white-section-break"></div>
+
+<div class="page-content">
+    <div class="section">
+        <p class="rf-lead">
+            Ravenfall is free to play and always will be. Supporting it on Patreon keeps the
+            servers running, and the tiers below are what that gives you and the viewers on your
+            stream.
+        </p>
+
+        <div class="rf-tiers">
+            @foreach (var tier in PatreonTiers.All)
+            {
+                <div class="rf-tier @(tier.Tier == 3 ? "rf-tier--pick" : "")">
+                    @if (tier.Tier == 3)
+                    {
+                        <span class="rf-tier__flag">Most popular</span>
+                    }
+                    <h2 class="rf-tier__name">@tier.Name</h2>
+                    <p class="rf-tier__multi">@tier.ExpMultiplier&times;<span> experience</span></p>
+
+                    <ul class="rf-perks">
+                        <li class="rf-perk">
+                            <i class="fa-solid fa-check" aria-hidden="true"></i>
+                            <span><b>@tier.ExpMultiplier&times; experience</b> for your characters.</span>
+                        </li>
+
+                        @if (tier.VillageHouses > 0)
+                        {
+                            <li class="rf-perk">
+                                <i class="fa-solid fa-check" aria-hidden="true"></i>
+                                <span>
+                                    <b>At least @tier.VillageHouses town plots</b>, whatever your
+                                    town level.
+                                </span>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="rf-perk rf-perk--absent">
+                                <i class="fa-solid fa-minus" aria-hidden="true"></i>
+                                <span>Town plots come from your town level only.</span>
+                            </li>
+                        }
+
+                        @if (tier.Chatbot)
+                        {
+                            <li class="rf-perk">
+                                <i class="fa-solid fa-check" aria-hidden="true"></i>
+                                <span>
+                                    <b>Chatbot features</b>, which translate what the bot says and
+                                    let it phrase replies to each player.
+                                </span>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="rf-perk rf-perk--absent">
+                                <i class="fa-solid fa-minus" aria-hidden="true"></i>
+                                <span>Chatbot features need Dragon or above.</span>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+        </div>
+
+        <div class="rf-actions rf-actions--centred">
+            <RavenLink Href="https://www.patreon.com/ravenfall"><i class="fab fa-patreon"></i>&nbsp;Support Ravenfall</RavenLink>
+        </div>
+    </div>
+
+    <div class="section">
+        <h1>Every tier includes</h1>
+        <div class="rf-calc">
+            <ul class="rf-perks">
+                @foreach (var perk in PatreonTiers.SharedPerks)
+                {
+                    <li class="rf-perk">
+                        <i class="fa-solid fa-check" aria-hidden="true"></i>
+                        <span>@perk</span>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h1>The details</h1>
+        <div class="rf-calc">
+            <dl class="rf-facts">
+                <dt>How the experience multiplier works</dt>
+                <dd>
+                    It applies to your own characters, and you get the higher of your Patreon tier
+                    and your Twitch subscription tier rather than both added together.
+                </dd>
+
+                <dt>What a town plot is</dt>
+                <dd>
+                    A plot in your town that a viewer lives on, boosting one skill for everyone
+                    playing on your stream. A town earns them one per ten town levels up to
+                    @PatreonTiers.MaxVillageHouses, and a tier is a floor rather than an addition:
+                    it guarantees you that many however low your town level is, and a town that has
+                    levelled past them keeps what it earned.
+                </dd>
+
+                <dt>Is anything pay to win</dt>
+                <dd>
+                    The experience multiplier is real and it is the reason the tiers exist. Nothing
+                    a tier gives is unavailable otherwise: town plots are earned by levelling and
+                    the highscores are shared by everyone.
+                </dd>
+
+                <dt>Already a patron</dt>
+                <dd>
+                    Your <a href="/patreon">Patreon page</a> shows the tier you are on now and lets
+                    you link or unlink your account.
+                </dd>
+            </dl>
+        </div>
+    </div>
+</div>
