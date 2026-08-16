@@ -144,11 +144,27 @@
                 }
             </div>
 
-            @if (CanManage)
+            @*
+                Two different permissions, and they were collapsed into one by mistake.
+
+                CanManage is "this is yours to move things around in", and the caller says so.
+                CanModify is "you are an administrator", which is a fact about the viewer rather
+                than the character. Adding an item is the second kind: it is the tool for putting
+                back something a player lost, on somebody else's character, which is exactly when
+                CanManage is false.
+
+                Nesting the add button inside the bulk row made it need both, so it vanished from
+                the inspect page, where an administrator has CanModify and not CanManage. Before
+                the design system conversion it was gated on CanModify alone.
+            *@
+            @if (CanManage || CanModify)
             {
                 <div class="rf-actions rf-inv__bulk">
-                    <button type="button" class="rf-btn rf-btn--small" @onclick="SendAllToStash">Send all to stash</button>
-                    <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="ShowVendorAllDialog">Vendor all (@GetVendorPrice())</button>
+                    @if (CanManage)
+                    {
+                        <button type="button" class="rf-btn rf-btn--small" @onclick="SendAllToStash">Send all to stash</button>
+                        <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="ShowVendorAllDialog">Vendor all (@GetVendorPrice())</button>
+                    }
                     @if (CanModify)
                     {
                         <button type="button" class="rf-btn rf-btn--small" @onclick="ShowAddItem">Add item</button>
@@ -1492,7 +1508,10 @@
 
         HideAddItem();
 
-        Player = PlayerService.AddItem(Player.Id, selectedItem, addItemAmount);
+        // Refused adds come back null, and assigning that would empty the page rather than
+        // leave it as it was.
+        var updated = PlayerService.AddItem(Player.Id, selectedItem, addItemAmount);
+        if (updated != null) Player = updated;
         selectedItem = null;
         addItemAmount = 1;
     }

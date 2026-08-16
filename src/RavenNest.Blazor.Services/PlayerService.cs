@@ -226,8 +226,24 @@ namespace RavenNest.Blazor.Services
         ///     <see cref="PlayerManager"/>.AddItem has always taken an amount. This dropped it and
         ///     always passed one, so granting a hundred of something meant a hundred clicks.
         /// </summary>
+        /// <summary>
+        ///     Puts an item into a character's inventory. Administrators only.
+        /// </summary>
+        /// <remarks>
+        ///     The check is here rather than only on the button that calls it. Both callers are
+        ///     admin pages and the button is drawn only for administrators, so on Blazor Server
+        ///     there is no event to raise without it, but a permission that lives in the markup is
+        ///     one restructure away from being lost: this method exists because the button was
+        ///     moved into the wrong branch and disappeared. The service is where the rule belongs.
+        /// </remarks>
         public WebsitePlayer AddItem(Guid characterId, RavenNest.Models.Item item, int amount = 1)
         {
+            var session = GetSession();
+            if (session == null || !session.Administrator)
+            {
+                return null;
+            }
+
             playerManager.AddItem(characterId, item.Id, Math.Max(1, amount));
             return playerManager.GetWebsitePlayer(characterId);
         }
