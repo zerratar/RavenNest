@@ -81,23 +81,17 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 }
             }
 
-            // A village that is already past the requirement is repaired rather than frozen, and
-            // the excess is dropped rather than spent.
+            // There is no ceiling on accumulated experience here, on purpose.
             //
-            // Spending it would be far too generous: the gain per tick is scaled to the cost of the
-            // next level, so a village stuck at 48 accumulated at level 49 rates while the levels it
-            // would buy cost level 300 prices. One reported village held 2,251,082% of its
-            // requirement, which would have taken it from level 48 to 353 in one tick, and its house
-            // slots from 10 to 35. Nobody earned that; the village was simply stuck while the clock
-            // ran. Clamping puts it one level up and then back to levelling normally.
-            if (village.Experience > expForNextLevel * 2)
-            {
-                logger.LogWarning(
-                    $"Village '{village.Id}' was holding {village.Experience:N0} experience against a " +
-                    $"requirement of {expForNextLevel:N0} at level {village.Level}. Clamped so it can level again.");
-
-                village.Experience = expForNextLevel;
-            }
+            // There used to be: if the total passed twice the next level's requirement the
+            // processor returned, and that return sat above the loop below, so a village that ever
+            // crossed the line could never level again and every later tick pushed it further out.
+            // It was guarding against a village being handed a large amount of experience at once,
+            // which nothing can do: this method is the only thing in the codebase that writes
+            // village.Experience, so there is no path for it to guard.
+            //
+            // A village that is over the line drains through the loop instead and comes out at the
+            // level its experience pays for, which is what the loop was always for.
 
             var levelDelta = 0;
             while (village.Experience >= expForNextLevel && village.Level < GameMath.MaxVillageLevel)
