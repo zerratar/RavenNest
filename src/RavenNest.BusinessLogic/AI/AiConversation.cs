@@ -29,7 +29,10 @@ namespace RavenNest.BusinessLogic.AI
     ///     </para>
     ///
     ///     <para>
-    ///     Not thread safe, and not meant to be. One of these belongs to one chat window.
+    ///     Not thread safe, and not meant to be. One of these belongs to one person, who is
+    ///     assumed to be asking one question at a time. Two tabs open on the same account share it,
+    ///     which is the honest reading of carrying on where you left off, and would be the case on
+    ///     the other side regardless: the real history sits at OpenAI against one response id.
     ///     </para>
     /// </remarks>
     public sealed class AiConversation
@@ -52,6 +55,13 @@ namespace RavenNest.BusinessLogic.AI
             this.tools = tools;
             this.maxOutputTokens = maxOutputTokens;
         }
+
+        /// <summary>
+        ///     How many turns are kept for display. The model's own history is not affected: it
+        ///     lives at OpenAI against the response id, so trimming here only stops a very long
+        ///     exchange growing without limit in memory.
+        /// </summary>
+        private const int MaxRememberedTurns = 200;
 
         public List<AiTurn> Turns { get; } = new List<AiTurn>();
 
@@ -81,7 +91,7 @@ namespace RavenNest.BusinessLogic.AI
 
             // Only the question is kept as a turn. The context is scaffolding for the model and
             // showing it back would read as though the person had typed it.
-            Turns.Add(new AiTurn { FromUser = true, Text = text });
+            Remember(new AiTurn { FromUser = true, Text = text });
 
             var input = string.IsNullOrWhiteSpace(context)
                 ? text
@@ -151,7 +161,17 @@ namespace RavenNest.BusinessLogic.AI
 
             if (!string.IsNullOrWhiteSpace(result.Text))
             {
-                Turns.Add(new AiTurn { FromUser = false, Text = result.Text });
+                Remember(new AiTurn { FromUser = false, Text = result.Text });
+            }
+        }
+
+        private void Remember(AiTurn turn)
+        {
+            Turns.Add(turn);
+
+            if (Turns.Count > MaxRememberedTurns)
+            {
+                Turns.RemoveRange(0, Turns.Count - MaxRememberedTurns);
             }
         }
     }

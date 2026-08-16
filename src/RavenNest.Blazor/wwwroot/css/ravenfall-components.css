@@ -3795,3 +3795,10 @@ a.rf-badge:hover {
         max-height: calc(100vh - 7rem);
     }
 }
+
+/* The count and the Clear button share the right of the panel header. */
+.rf-assistant__headright {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+}

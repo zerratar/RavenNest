@@ -3,6 +3,7 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject PlayerAssistant Assistant
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 
 @*
     A bubble in the bottom right corner that opens a chat about your own characters.
@@ -27,9 +28,23 @@
             <div class="rf-assistant__panel" id="rf-assistant-panel">
                 <div class="rf-assistant__head">
                     <h2 class="rf-assistant__title">Ask about your characters</h2>
-                    <span class="rf-meta">
-                        @(isAdmin ? asked + " asked today" : remaining + " left today")
-                    </span>
+                    <div class="rf-assistant__headright">
+                        <span class="rf-meta">
+                            @(isAdmin ? asked + " asked today" : remaining + " left today")
+                        </span>
+                        @if (chat.Turns.Count > 0)
+                        {
+                            @*
+                                Only once there is something to clear. A button that does nothing
+                                until it does is one you have to press to find out.
+                            *@
+                            <button type="button" class="rf-btn rf-btn--small"
+                                    disabled="@thinking"
+                                    @onclick="Clear">
+                                Clear
+                            </button>
+                        }
+                    </div>
                 </div>
 
                 @if (adminOnly)
@@ -45,7 +60,7 @@
                     </p>
                 }
 
-                <div class="rf-assistant__log" role="log" aria-live="polite">
+                <div class="rf-assistant__log" id="@LogId" role="log" aria-live="polite">
                     @if (chat.Turns.Count == 0)
                     {
                         <p class="rf-meta">
@@ -124,7 +139,7 @@
                 aria-expanded="@(open ? "true" : "false")"
                 aria-controls="rf-assistant-panel"
                 title="@(open ? "Close the assistant" : "Ask about your characters")"
-                @onclick="() => open = !open">
+                @onclick="ToggleOpen">
             <i class="fa-solid @(open ? "fa-xmark" : "fa-comment-dots")" aria-hidden="true"></i>
             <span class="rf-assistant__label">@(open ? "Close the assistant" : "Ask about your characters")</span>
 
@@ -153,6 +168,18 @@
     private int remaining;
     private int asked;
 
+    /// <summary>
+    ///     Unique per widget instance, since the dashboard and admin layouts could in principle both
+    ///     have one on the page.
+    /// </summary>
+    private readonly string LogId = "rf-assistant-log-" + Guid.NewGuid().ToString("N");
+
+    /// <summary>
+    ///     How many turns had been drawn last time. The log is only scrolled when this changes, so
+    ///     it cannot drag somebody back down who has scrolled up to reread something.
+    /// </summary>
+    private int drawnTurns = -1;
+
     /// <summary>Only players run out. See PlayerAssistant.TryUse.</summary>
     private bool OutOfQuestions => !isAdmin && remaining == 0;
 
@@ -173,6 +200,52 @@
     {
         asked = Assistant.AskedToday(userId);
         remaining = Assistant.RemainingToday(userId);
+    }
+
+    /// <summary>
+    ///     Starts again from nothing.
+    /// </summary>
+    /// <remarks>
+    ///     Replaces the conversation rather than emptying the one on screen, so the response id goes
+    ///     with it. Clearing only the display would leave the model still remembering everything,
+    ///     which is the opposite of what anybody pressing this wants.
+    /// </remarks>
+    private void ToggleOpen()
+    {
+        open = !open;
+
+        // The log element is recreated each time the panel opens, so the last known position means
+        // nothing and it has to be pinned to the bottom again.
+        if (open) drawnTurns = -1;
+    }
+
+    private void Clear()
+    {
+        if (thinking) return;
+
+        chat = Assistant.Restart(userId, isAdmin);
+        draft = "";
+        drawnTurns = -1;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!visible || !open) return;
+
+        // Only when a turn has arrived, which is also why the count is tracked rather than the
+        // scroll position being forced on every render.
+        if (chat.Turns.Count == drawnTurns) return;
+
+        drawnTurns = chat.Turns.Count;
+
+        try
+        {
+            await JS.InvokeVoidAsync("rfChat.toBottom", LogId);
+        }
+        catch (JSException)
+        {
+            // The log not scrolling itself is not worth taking the circuit down for.
+        }
     }
 
     private async Task OnKey(KeyboardEventArgs e)

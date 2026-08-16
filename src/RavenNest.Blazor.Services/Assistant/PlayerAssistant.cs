@@ -50,6 +50,29 @@ namespace RavenNest.Blazor.Services.Assistant
 
         private static readonly ConcurrentDictionary<Guid, Usage> usage = new ConcurrentDictionary<Guid, Usage>();
 
+        /// <summary>
+        ///     The conversation each person is in the middle of.
+        /// </summary>
+        /// <remarks>
+        ///     Held here rather than in the chat widget, because the widget dies with the page. A
+        ///     reload used to lose the whole exchange, which is a strange thing for a conversation to
+        ///     do and easy to mistake for the assistant having forgotten.
+        ///
+        ///     <para>
+        ///     One per person rather than one per tab, so two tabs share it. That is the honest
+        ///     reading of "carry on where I left off", and it is the same conversation on the other
+        ///     side regardless: the history lives at OpenAI against a response id, and a second copy
+        ///     would only be a second view of it.
+        ///     </para>
+        ///
+        ///     <para>
+        ///     In memory, so a restart clears them. Losing an exchange to a deploy is a much smaller
+        ///     thing than storing everybody's chat history, which nobody asked for.
+        ///     </para>
+        /// </remarks>
+        private static readonly ConcurrentDictionary<Guid, AiConversation> conversations =
+            new ConcurrentDictionary<Guid, AiConversation>();
+
         private readonly IAiService ai;
         private readonly GameData gameData;
         private readonly PlayerManager playerManager;
@@ -131,6 +154,27 @@ namespace RavenNest.Blazor.Services.Assistant
         /// </param>
         public AiConversation StartFor(Guid userId, bool isAdministrator)
         {
+            return conversations.GetOrAdd(userId, _ => Build(userId, isAdministrator));
+        }
+
+        /// <summary>
+        ///     Throws the exchange away and starts again.
+        /// </summary>
+        /// <remarks>
+        ///     Drops the response id along with the turns, so the next question genuinely starts
+        ///     from nothing rather than looking empty while the model still remembers. A clear that
+        ///     only clears the screen is worse than none, because it is the one thing you reach for
+        ///     when the assistant has got hold of the wrong end of something.
+        /// </remarks>
+        public AiConversation Restart(Guid userId, bool isAdministrator)
+        {
+            var fresh = Build(userId, isAdministrator);
+            conversations[userId] = fresh;
+            return fresh;
+        }
+
+        private AiConversation Build(Guid userId, bool isAdministrator)
+        {
             return new AiConversation(
                 ai,
                 InstructionsFor(userId, isAdministrator),
@@ -210,6 +254,15 @@ the page back to them unless it matters to the answer.
                     "is equipped, and whether it is soulbound.",
                     Schema("character", "The character's name or number, as given by my_characters."),
                     (args, ct) => Task.FromResult(Inventory(userId, Text(args, "character")))),
+
+                // The stash is the user's, not any one character's, which is why it is a tool of
+                // its own rather than a corner of character_items.
+                new AiTool(
+                    "stash_items",
+                    "The player's item stash: everything they own that no character is carrying. " +
+                    "Optionally filtered to names containing a word.",
+                    Schema("search", "A word to filter item names by, or null for everything.", nullable: true),
+                    (args, ct) => Task.FromResult(Stash(userId, Text(args, "search")))),
 
                 new AiTool(
                     "vendor_stock",
@@ -370,6 +423,52 @@ the page back to them unless it matters to the answer.
                 soulbound = i.Soulbound,
                 enchanted = !string.IsNullOrEmpty(i.Enchantment)
             }));
+        }
+
+        /// <summary>
+        ///     Everything in the stash, added up per item.
+        /// </summary>
+        /// <remarks>
+        ///     The stash holds one row per deposit rather than one per item, so twenty eight boots
+        ///     can be twenty eight rows. Handing that over as is invites the model to count rows and
+        ///     answer twenty eight when the question was about something else, or to lose count on a
+        ///     long list. Summed here, where it can be got right once.
+        /// </remarks>
+        private string Stash(Guid userId, string search)
+        {
+            var rows = gameData.GetUserBankItems(userId);
+            if (rows == null || rows.Count == 0) return "The stash is empty.";
+
+            var totals = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var row in rows)
+            {
+                if (row.Amount <= 0) continue;
+
+                var name = string.IsNullOrWhiteSpace(row.Name)
+                    ? gameData.GetItem(row.ItemId)?.Name ?? "unknown item"
+                    : row.Name;
+
+                if (!string.IsNullOrWhiteSpace(search) &&
+                    name.IndexOf(search, StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    continue;
+                }
+
+                totals.TryGetValue(name, out var running);
+                totals[name] = running + row.Amount;
+            }
+
+            if (totals.Count == 0)
+            {
+                return string.IsNullOrWhiteSpace(search)
+                    ? "The stash is empty."
+                    : "There is nothing in the stash matching '" + search + "'.";
+            }
+
+            return Json(totals
+                .OrderByDescending(x => x.Value)
+                .Select(x => new { name = x.Key, amount = x.Value }));
         }
 
         private string Vendor(string search)
