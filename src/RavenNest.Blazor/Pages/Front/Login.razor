@@ -19,7 +19,7 @@
 
 @if (IsHandingOff)
 {
-    <div class="rf-signin rf-signin--handoff">
+    <div class="rf-narrow rf-narrow--pad">
         <div class="rf-panel">
             @if (tokenGenerationComplete)
             {
@@ -57,7 +57,7 @@ else
     <div class="white-section-break"></div>
     <div class="page-content">
         <div class="section">
-            <div class="rf-signin">
+            <div class="rf-narrow">
                 @if (IsAuthenticated)
                 {
                     @*
@@ -142,7 +142,7 @@ else
                         </EditForm>
                     </div>
 
-                    <p class="rf-meta rf-signin__foot">
+                    <p class="rf-meta rf-narrow__foot">
                         No account yet? There is nothing to sign up for. Type
                         <span class="rf-cmd">!join</span> in the chat of any
                         <a href="/streams">stream running Ravenfall</a> and you have one.

@@ -524,18 +524,19 @@
     margin: 0 auto;
 }
 
-/* ---- Sign in ------------------------------------------------------------
-   This replaces a block of alignment repairs. The page used to be built from
-   raven-input and raven-btn, whose widths were set in three places that
-   disagreed: the inputs were 324px, the buttons 325px with a 5px margin, and
-   the heading was left aligned against fields that site.css's
+/* ---- Narrow column ------------------------------------------------------
+   For the account pages: sign in, set a password, your name changed. Each has
+   one job and a form the width of a desktop screen makes it look like it has
+   several.
+
+   This replaces a block of alignment repairs on the sign in page. It was built
+   from raven-input and raven-btn, whose widths were set in three places that
+   disagreed: the inputs were 324px, the buttons 325px with a 5px margin, and the
+   heading was left aligned against fields that site.css's
    `.content form { align-items: center }` had centred. Every one of those rules
-   is gone with the markup that needed them.
+   is gone with the markup that needed them. */
 
-   One narrow column, because a sign in page has one job and a form the width of
-   a desktop screen makes it look like it has several. */
-
-.rf-signin {
+.rf-narrow {
     width: min(30rem, 100%);
     margin: 0 auto;
 }
@@ -543,11 +544,11 @@
 /* The popup the game client and the Twitch redirect land in. It says one line
    and closes itself, and it used to say it inside a hero fixed at 1000px tall,
    so it was a sentence with nine hundred pixels of nothing below it. */
-.rf-signin--handoff {
+.rf-narrow--pad {
     padding: var(--rf-space-7) var(--rf-space-4);
 }
 
-.rf-signin .rf-panel + .rf-panel {
+.rf-narrow .rf-panel + .rf-panel {
     margin-top: var(--rf-space-4);
 }
 
@@ -555,7 +556,7 @@
    align-items: center }`, which is what centred the old login fields. The form
    here is a submit boundary, not a layout box: the fields inside it should fill
    the panel like every other field on the site. */
-.rf-front .rf-signin form {
+.rf-front .rf-narrow form {
     display: flex;
     flex-flow: column;
     align-items: stretch;
@@ -586,7 +587,7 @@
     background: var(--rf-line-strong);
 }
 
-.rf-signin__foot {
+.rf-narrow__foot {
     margin-top: var(--rf-space-5);
     text-align: center;
 }

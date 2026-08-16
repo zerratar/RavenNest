@@ -1,44 +1,73 @@
-﻿@layout MainLayout
+@layout MainLayout
 @page "/inspect/{characterId}"
 @using RavenNest.Models
 @using RavenNest.BusinessLogic.Extended
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 
-  <div class="top-section">
+<div class="top-section">
     <div class="hero-text">
+        @* Was an empty hero with an h3 reading "Inspect" underneath it. *@
+        <h1>@(player?.Name ?? "Inspect a character")</h1>
+        @if (player != null)
+        {
+            <p>Everything this character has, as it stands right now.</p>
+        }
     </div>
-  </div>
+</div>
 
-  <div class="white-section-break"></div>
-  <div class="page-content">
+<div class="white-section-break"></div>
+<div class="page-content">
     <div class="section">
-      <h3>Inspect</h3>
-      @if (CharacterId == null)
-      {
-        <p>Oh no. You don't seem to be inspecting a player at all.</p>
-      }
-      else if (player == null)
-      {
-        <LoadIndicator></LoadIndicator>
-      }
-      else
-      {
-        <PlayerView SelectedPlayer="player" ShowPlayerName="true"></PlayerView>
-      }
+        @if (loading)
+        {
+            <LoadIndicator></LoadIndicator>
+        }
+        else if (player == null)
+        {
+            @*
+                An id that is not a guid, or a guid nobody owns, left `player` null and the page
+                spun on its loading indicator for ever. Both end up here instead.
+            *@
+            <div class="rf-narrow">
+                <div class="rf-panel">
+                    <h2 class="rf-panel__title">No character with that link</h2>
+                    <p class="rf-meta">
+                        The character may have been deleted, or the link may be wrong. Characters
+                        are usually reached from a
+                        <a href="/highscore">highscore</a> entry or from somebody's clan.
+                    </p>
+                    <div class="rf-actions">
+                        <a class="rf-btn rf-btn--primary" href="/highscore">Browse the highscores</a>
+                        <a class="rf-btn" href="/streams">Streams playing now</a>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <PlayerView SelectedPlayer="player" ShowPlayerName="false"></PlayerView>
+        }
     </div>
-  </div>
-  @code {
+</div>
+
+@code {
 
     [Parameter]
     public string CharacterId { get; set; }
 
     private WebsitePlayer player;
+    private bool loading = true;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnParametersSetAsync()
     {
-      if (CharacterId != null && Guid.TryParse(CharacterId, out var guid))
-      {
-        player = await PlayerService.GetPlayerAsync(guid);
-      }
+        loading = true;
+        player = null;
+
+        if (CharacterId != null && Guid.TryParse(CharacterId, out var guid))
+        {
+            player = await PlayerService.GetPlayerAsync(guid);
+        }
+
+        loading = false;
     }
-  }
+}

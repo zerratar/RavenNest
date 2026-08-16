@@ -1,4 +1,4 @@
-﻿@layout MainLayout
+@layout MainLayout
 @page "/username-changed"
 @using RavenNest.Blazor.Services.Models
 @inject RavenNest.Blazor.Services.AccountService AccountService
@@ -6,53 +6,76 @@
 @inject NavigationManager NavigationManager
 
 <div class="top-section">
-	<div class="hero-text">
-	</div>
+    <div class="hero-text">
+        @* Was down in the body under an empty hero. *@
+        <h1>Your username has changed</h1>
+    </div>
 </div>
 
 <div class="white-section-break"></div>
 <div class="page-content">
-	<div class="section">
-		@if (session == null)
-		{
-	  <LoadIndicator></LoadIndicator>
-		}
-		else
-		{
-	  <div class="password">
+    <div class="section">
+        @if (session == null)
+        {
+            <LoadIndicator></LoadIndicator>
+        }
+        else
+        {
+            <div class="rf-narrow">
+                <div class="rf-panel">
+                    <p class="rf-meta">
+                        You have renamed your Twitch account since you last signed in, so we have
+                        renamed your Ravenfall account to match. Nothing you own has moved: the
+                        characters, the items and the clan are all still yours.
+                    </p>
 
-	   <h1>Your username has changed</h1>
-	   <p class="hero-text">
-		It seem like you have changed your Twitch username since you last logged in.
-		We have updated your new username to <b>@session.UserName</b>, this is the username you will have to use
-		when logging in to the Ravenfall client from now on.
+                    <dl class="rf-facts">
+                        <dt>Your username now</dt>
+                        <dd>@session.UserName</dd>
+                    </dl>
 
-		<br />
-		If you're currently running Ravenfall and your username has updated. 
-		You will need to reload the game so the game can connect to the centralized bot again.
-	   </p>
+                    @*
+                        The two things that actually break after a rename, said as two things to do
+                        rather than buried in a paragraph. The second is the one people write in
+                        about: the client keeps running under the old name and the bot no longer
+                        knows who they are.
+                    *@
+                    <h2 class="rf-panel__title">What you need to do</h2>
+                    <ul class="rf-tips">
+                        <li>
+                            <b>Sign in to the game client with the new name.</b> Your password has
+                            not changed, only the username. If you have forgotten it you can
+                            <a href="/password">set a new one</a>.
+                        </li>
+                        <li>
+                            <b>Restart the client if it is running.</b> It stays connected under the
+                            old name until you do, and the bot will not find you.
+                        </li>
+                    </ul>
 
-
-	   <RavenButton CssClass="twitch" NavigateTo="/characters">Continue</RavenButton>
-
-	  </div>
-		}
- </div>
+                    <div class="rf-actions">
+                        <a class="rf-btn rf-btn--primary" href="/dashboard">Go to your dashboard</a>
+                        <a class="rf-btn" href="/characters">Your characters</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
 </div>
 
 @code {
-	private RavenNest.Models.SessionInfo session;
+    private RavenNest.Models.SessionInfo session;
 
-	protected override void OnInitialized()
-	{
-		session = AuthService.GetSession();
-	}
+    protected override void OnInitialized()
+    {
+        session = AuthService.GetSession();
+    }
 
-	protected override void OnAfterRender(bool firstRender)
-	{
-		if (session == null || !session.Authenticated)
-		{
-			NavigationManager.NavigateTo("/login");
-		}
-	}
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (session == null || !session.Authenticated)
+        {
+            NavigationManager.NavigateTo("/login");
+        }
+    }
 }
