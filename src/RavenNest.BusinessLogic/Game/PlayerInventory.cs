@@ -1525,13 +1525,10 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
-        public InventoryItem GetUnequipped(Guid itemId)
-        {
-            lock (mutex)
-            {
-                return items.FirstOrDefault(x => CanBeStacked(x) && x.ItemId == itemId && !x.Equipped);
-            }
-        }
+        /*  GetUnequipped(Guid itemId) was here. It matched on the item id alone, which is the bug
+            that lost tags and enchantments when TryAddItem used it to find a stack to merge into.
+            TryAddItem asks GetUnequipped(StackKey) now, and nothing else ever called this, so it is
+            deleted rather than left lying around as the easy wrong answer to reach for. */
 
         public InventoryItem Get(Guid itemId, bool equipped, string tag)
         {

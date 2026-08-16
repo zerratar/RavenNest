@@ -380,7 +380,16 @@ namespace RavenNest.BusinessLogic.Game
                 boughtTotalCost);
         }
 
-        private int BuyMarketItem(
+        /// <summary>
+        ///     How many were actually bought, which is zero when the purchase was refused.
+        /// </summary>
+        /// <remarks>
+        ///     Returned an int while every amount around it is a long, so the value was narrowed
+        ///     on the way out with an unchecked cast. Amounts that large are not realistic for one
+        ///     listing, but a silent wrap on the number of items a player just paid for is not a
+        ///     thing to leave in place on the grounds that it probably will not happen.
+        /// </remarks>
+        private long BuyMarketItem(
             SessionToken token,
             Guid itemId,
             Character character,
@@ -481,7 +490,7 @@ namespace RavenNest.BusinessLogic.Game
 
             AddGameEvent(token.SessionId, GameEventType.ItemBuy, model);
 
-            return (int)buyAmount;
+            return buyAmount;
         }
 
         private Character GetCharacter(SessionToken token, string userId, string platform)

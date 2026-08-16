@@ -1697,7 +1697,20 @@ namespace RavenNest.BusinessLogic.Game
 
             void AddItem(Guid itemId, bool success)
             {
-                var stack = inventory.AddItem(itemId)[0];
+                // Indexed [0] straight off the returned list. AddItem delegates to TryAddItem,
+                // which returns an empty list when it refuses the add, and it does refuse: it will
+                // not merge into a stack that has gone from the data layer. So the one path where
+                // crafting fails to deliver threw an index out of range instead of saying so, and
+                // the ingredients were already consumed by then.
+                var stacks = inventory.AddItem(itemId);
+                var stack = stacks.Count > 0 ? stacks[0] : null;
+                if (stack == null)
+                {
+                    logger.LogError($"Crafting delivered nothing for recipe '{recipe.Id}': item '{itemId}' could not be added after the ingredients were taken.");
+                    result.Success = false;
+                    return;
+                }
+
                 result.InventoryItemId = stack.Id;
                 result.ItemId = stack.ItemId;
                 result.StackAmount = stack.Amount ?? 1;
