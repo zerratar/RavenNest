@@ -1068,7 +1068,20 @@ namespace RavenNest.BusinessLogic.Game
                     return insufficient;
                 }
 
-                DataModels.InventoryItem added = null;
+                // Delivered before the currency is taken.
+                //
+                // It ran the other way round and the add was never checked, so a redeem that could
+                // not deliver still charged for it: the tokens were gone and nothing arrived. The
+                // currency has already been counted above, so the only thing that can still fail
+                // here is the delivery, and failing before anything is spent costs the player
+                // nothing.
+                var added = inventory.AddItem(redeemable.ItemId, Math.Max(1, redeemable.Amount)).FirstOrDefault();
+                if (added == null)
+                {
+                    logger.LogError("Redeem aborted for character '" + character.Id + "': unable to deliver " + Math.Max(1, redeemable.Amount) + "x item '" + redeemable.ItemId + "'. Nothing was charged.");
+                    return RedeemItemResult.Error("The item could not be delivered, so nothing was charged.");
+                }
+
                 // if we don't have any in inventory, we should only remove from the stash
                 if (currencyInvItem.Amount > 0)
                 {
@@ -1085,8 +1098,6 @@ namespace RavenNest.BusinessLogic.Game
                                 logger.LogError("Redeem Bug: Unable to remove items from stash (Res Id: " + redeemable.CurrencyItemId + ", Char Id: " + character.UserId + ", Amount: " + toRemove + ")");
                             }
                         }
-
-                        added = inventory.AddItem(redeemable.ItemId, Math.Max(1, redeemable.Amount)).FirstOrDefault();
                     }
 
                     SendItemRemoveEvent(new DataModels.InventoryItem
@@ -1096,10 +1107,7 @@ namespace RavenNest.BusinessLogic.Game
                 }
                 else
                 {
-                    if (gameData.RemoveFromStash(stashCurrencyItem, redeemable.Cost))
-                    {
-                        added = inventory.AddItem(redeemable.ItemId, Math.Max(1, redeemable.Amount)).FirstOrDefault();
-                    }
+                    gameData.RemoveFromStash(stashCurrencyItem, redeemable.Cost);
                 }
 
                 SendItemAddEvent(new DataModels.InventoryItem
@@ -2518,6 +2526,21 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var inventory = inventoryProvider.Get(character.Id);
+
+            // Delivered before it leaves the stash.
+            //
+            // This ran the other way round: the stash row was decremented or removed outright, and
+            // only then was the item added, using a call whose result was never looked at. A failed
+            // add destroyed the items, since they were already gone from the stash and never
+            // arrived anywhere. Delivering first turns the worst case into a withdrawal that simply
+            // did not happen.
+            var newStack = inventory.AddItem(bankItem, amount);
+            if (newStack == null)
+            {
+                logger.LogError($"Stash withdrawal aborted for character '{character.Id}': unable to deliver {amount}x of stash item '{item.Id}'. The stash is untouched.");
+                return false;
+            }
+
             var left = bankItem.Amount - amount;
             if (left == 0)
             {
@@ -2528,7 +2551,6 @@ namespace RavenNest.BusinessLogic.Game
                 bankItem.Amount -= amount;
             }
 
-            var newStack = inventory.AddItem(bankItem, amount);
             SendItemAddEvent(newStack, (int)amount, character);
             return true;
         }
@@ -2546,15 +2568,36 @@ namespace RavenNest.BusinessLogic.Game
             var targetInventory = inventoryProvider.Get(otherCharacter.Id);
             var stack = gameData.GetInventoryItem(item.Id);
 
-            if (sourceInventory.RemoveItem(stack, amount))
+            if (!sourceInventory.RemoveItem(stack, amount))
             {
-                var newItemStack = targetInventory.AddItem(stack, amount);
-                SendItemRemoveEvent(stack, (int)amount, character, true);
-                SendItemAddEvent(newItemStack, (int)amount, otherCharacter);
-                return true;
+                return false;
             }
 
-            return false;
+            // The add was not checked, so a failed one lost the items outright: taken off the
+            // sending character and never given to the receiving one. Both are the same person's
+            // characters, which makes it worse rather than better, because nobody can be blamed and
+            // nobody can be told what went missing.
+            //
+            // Removing first and putting it back on failure means the worst case is that nothing
+            // moved. Items are only lost now if the restore fails too, which is logged.
+            var newItemStack = targetInventory.AddItem(stack, amount);
+            if (newItemStack == null)
+            {
+                if (sourceInventory.AddItem(stack, amount) == null)
+                {
+                    logger.LogError($"Item lost sending {amount}x '{item.Id}' from character '{character.Id}' to '{otherCharacter.Id}': the delivery failed and so did putting it back.");
+                }
+                else
+                {
+                    logger.LogError($"Send aborted for {amount}x '{item.Id}' from character '{character.Id}' to '{otherCharacter.Id}': the delivery failed, so it was returned to the sender.");
+                }
+
+                return false;
+            }
+
+            SendItemRemoveEvent(stack, (int)amount, character, true);
+            SendItemAddEvent(newItemStack, (int)amount, otherCharacter);
+            return true;
         }
 
         public GiftItemResult SendInventoryItem(SessionToken sessionToken, Guid gifterCharacterId, string alias, Guid inventoryItemId, long amount)
@@ -2586,12 +2629,27 @@ namespace RavenNest.BusinessLogic.Game
             if (inventory.IsLocked(gift.Id)) return GiftItemResult.InventoryError;
             var recvInventory = inventoryProvider.Get(receiver.Id);
             var amountToGift = gift.Amount >= amount ? amount : (int)gift.Amount;
-            if (recvInventory.TryAddItem(gift, amountToGift, out var result) &&
-                inventory.TryRemoveItem(gift, amountToGift, out var old))
+            // Was `TryAddItem(...) && TryRemoveItem(...)`, which duplicates on the middle case.
+            // && stops at the first false, so an add that succeeded followed by a remove that
+            // failed left the receiver holding the gift and the gifter still holding it too, and
+            // the caller was told NoItem, which is the one thing that had not happened.
+            if (!recvInventory.TryAddItem(gift, amountToGift, out var result))
             {
-                return GiftItemResult.OK(amountToGift, ModelMapper.Map(result), ModelMapper.Map(old));
+                return GiftItemResult.NoItem;
             }
-            return GiftItemResult.NoItem;
+
+            if (!inventory.TryRemoveItem(gift, amountToGift, out var old))
+            {
+                // Take it back off the receiver rather than leave two copies in the world.
+                if (!recvInventory.RemoveItem(result, amountToGift))
+                {
+                    logger.LogError($"Item duplicated gifting {amountToGift}x '{gift.Id}' from character '{gifter.Id}' to '{receiver.Id}': the gift arrived, could not be taken from the gifter, and could not be taken back off the receiver.");
+                }
+
+                return GiftItemResult.NoItem;
+            }
+
+            return GiftItemResult.OK(amountToGift, ModelMapper.Map(result), ModelMapper.Map(old));
         }
 
         public long SendCoins(SessionToken sessionToken, Guid senderCharacterId, Guid receiverCharacterId, long amount)
