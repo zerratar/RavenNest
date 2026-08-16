@@ -1,0 +1,163 @@
+@using RavenNest.BusinessLogic.AI
+@using RavenNest.Blazor.Services.Assistant
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject PlayerAssistant Assistant
+
+@*
+    A chat box for asking about your own characters.
+
+    The part that matters is the confirmation. The assistant can propose moving items, and a
+    proposal is all it is: nothing runs until the button below it is pressed, and the sentence on
+    the card is written from the arguments of the call that will actually run rather than from
+    anything the assistant said about it. So what is agreed to is what happens.
+
+    Everything it can see belongs to the person signed in. It has no way to name anybody else.
+*@
+
+@if (visible)
+{
+    <div class="rf-panel rf-chat">
+        <div class="rf-chat__head">
+            <h2 class="rf-panel__title">Ask about your characters</h2>
+            <span class="rf-meta">@remaining left today</span>
+        </div>
+
+        <div class="rf-chat__log" role="log" aria-live="polite">
+            @if (chat.Turns.Count == 0)
+            {
+                <p class="rf-meta">
+                    Try "what is my second character carrying", "how many coins does each of mine
+                    have", or "move my coal to my alt". It can only see your own characters.
+                </p>
+            }
+
+            @foreach (var turn in chat.Turns)
+            {
+                <div class="rf-chat__turn @(turn.FromUser ? "rf-chat__turn--mine" : "")">
+                    <span class="rf-chat__who">@(turn.FromUser ? "You" : "Assistant")</span>
+                    <p class="rf-chat__text">@turn.Text</p>
+                </div>
+            }
+
+            @if (thinking)
+            {
+                <p class="rf-meta">Thinking.</p>
+            }
+
+            @if (chat.Error != null)
+            {
+                <div class="rf-banner rf-banner--bad" role="status">
+                    <p>@chat.Error</p>
+                </div>
+            }
+        </div>
+
+        @if (chat.Pending != null)
+        {
+            @*
+                Nothing has happened yet. Both buttons continue the conversation; only one of them
+                runs anything.
+            *@
+            <div class="rf-chat__confirm">
+                <p class="rf-chat__confirmtitle">This would change your items</p>
+                <p class="rf-chat__confirmwhat">@chat.Pending.Summary</p>
+                <div class="rf-actions">
+                    <button type="button" class="rf-btn rf-btn--primary" disabled="@thinking" @onclick="() => Resolve(true)">
+                        Do it
+                    </button>
+                    <button type="button" class="rf-btn" disabled="@thinking" @onclick="() => Resolve(false)">
+                        No
+                    </button>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="rf-chat__ask">
+                <input class="rf-input"
+                       placeholder="Ask something"
+                       disabled="@(thinking || remaining == 0)"
+                       @bind="draft"
+                       @bind:event="oninput"
+                       @onkeydown="OnKey" />
+                <button type="button" class="rf-btn rf-btn--primary"
+                        disabled="@(thinking || remaining == 0 || string.IsNullOrWhiteSpace(draft))"
+                        @onclick="Send">
+                    Ask
+                </button>
+            </div>
+
+            @if (remaining == 0)
+            {
+                <p class="rf-meta">That is all the questions for today. It resets at midnight UTC.</p>
+            }
+        }
+    </div>
+}
+
+@code {
+    private bool visible;
+    private Guid userId;
+    private AiConversation chat;
+    private string draft;
+    private bool thinking;
+    private int remaining;
+
+    protected override void OnInitialized()
+    {
+        var session = AuthService.GetSession();
+        if (session == null || !Assistant.IsAvailable) return;
+
+        userId = session.UserId;
+        chat = Assistant.StartFor(userId);
+        remaining = Assistant.RemainingToday(userId);
+        visible = true;
+    }
+
+    private async Task OnKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await Send();
+    }
+
+    private async Task Send()
+    {
+        if (thinking || string.IsNullOrWhiteSpace(draft)) return;
+
+        // Counted before the call, not after. A question that fails still cost a request, and
+        // counting only successes would make failures free to repeat.
+        if (!Assistant.TryUse(userId))
+        {
+            remaining = 0;
+            return;
+        }
+
+        var text = draft;
+        draft = "";
+        thinking = true;
+
+        try
+        {
+            await chat.AskAsync(text);
+        }
+        finally
+        {
+            thinking = false;
+            remaining = Assistant.RemainingToday(userId);
+        }
+    }
+
+    private async Task Resolve(bool approved)
+    {
+        if (thinking) return;
+
+        thinking = true;
+        try
+        {
+            await chat.ResolveAsync(approved);
+        }
+        finally
+        {
+            thinking = false;
+        }
+    }
+}

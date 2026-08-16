@@ -140,6 +140,10 @@ namespace RavenNest.BusinessLogic.Settings
 
         public const string VendorFollowMarket = "Vendor:FollowMarketPrices";
 
+        public const string AssistantEnabled = "Assistant:Enabled";
+
+        public const string AssistantDailyLimit = "Assistant:DailyQuestionsPerPlayer";
+
         public static readonly IReadOnlyList<ServerSettingDefinition> All = new List<ServerSettingDefinition>
         {
             new ServerSettingDefinition(
@@ -168,6 +172,22 @@ namespace RavenNest.BusinessLogic.Settings
                 ServerSettingKind.Toggle,
                 defaultValue: "false",
                 help: "Turning this on raises prices on some items. Announce it first."),
+
+            new ServerSettingDefinition(
+                AssistantEnabled,
+                "Assistant",
+                "Let players use the assistant",
+                "Adds a chat box to the dashboard where a player can ask about their own characters. Needs an OpenAI key. Off until you want to pay for it.",
+                ServerSettingKind.Toggle,
+                defaultValue: "false"),
+
+            new ServerSettingDefinition(
+                AssistantDailyLimit,
+                "Assistant",
+                "Questions per player per day",
+                "How many questions one person can ask in a day. Counted in memory, so a restart clears it.",
+                ServerSettingKind.Number,
+                defaultValue: "30"),
 
             new ServerSettingDefinition(
                 OpenAiModel,
