@@ -400,6 +400,192 @@ namespace RavenNest.Blazor.Services
             });
         }
 
+        /// <summary>
+        ///     Changes what is built on one plot.
+        ///
+        ///     The occupant is kept, the way the in game BuildHouse does, because a plot is
+        ///     normally retyped to suit whoever is already in it. Their bonus is recalculated from
+        ///     the skill the new type reads. Demolishing is the exception: an empty plot cannot
+        ///     have somebody living on it, so that clears the occupant as RemoveHouse does.
+        /// </summary>
+        public async Task<TownActionResult> SetHouseTypeAsync(Guid userId, int slot, TownHouseSlotType type)
+        {
+            return await Task.Run(() =>
+            {
+                if (type != TownHouseSlotType.Undefined && TownHouseTypes.Get(type) == null)
+                {
+                    return TownActionResult.Failed("That is not a house type.");
+                }
+
+                var village = gameData.GetVillageByUserId(userId);
+                if (village == null) return TownActionResult.Failed("You do not have a town.");
+
+                var house = FindHouse(village, slot);
+                if (house == null) return TownActionResult.Failed("That plot does not exist.");
+
+                house.Type = (int)type;
+
+                if (type == TownHouseSlotType.Undefined)
+                {
+                    house.UserId = null;
+                    house.CharacterId = null;
+                    PushVillageInfo(village);
+                    return TownActionResult.Ok("Plot " + (slot + 1) + " has been cleared.");
+                }
+
+                PushVillageInfo(village);
+                return TownActionResult.Ok("Plot " + (slot + 1) + " is now a " + TownHouseTypes.LabelOf(type) + " house.");
+            });
+        }
+
+        /// <summary>
+        ///     What "set every plot" would do, without doing it.
+        ///
+        ///     A bulk write over up to forty plots that replaces every assignment is worth showing
+        ///     before it happens, which is the one thing the in game command cannot do: it picks
+        ///     and commits in the same keystroke.
+        /// </summary>
+        public async Task<TownBulkPlan> PlanSetAllHousesAsync(Guid userId, TownHouseSlotType type)
+        {
+            return await Task.Run(() =>
+            {
+                var village = gameData.GetVillageByUserId(userId);
+                if (village == null) return null;
+
+                var houses = gameData.GetOrCreateVillageHouses(village);
+                if (houses == null) return null;
+
+                var plan = new TownBulkPlan
+                {
+                    Type = type,
+                    PlotCount = houses.Count,
+                    IsStreamLive = gameData.GetOwnedSessionByUserId(village.UserId) != null
+                };
+
+                foreach (var pick in BuildAssignmentPlan(village, type, houses))
+                {
+                    plan.Picks.Add(new TownCandidate
+                    {
+                        CharacterId = pick.Character.Id,
+                        Name = pick.Character.Name,
+                        UserName = gameData.GetUser(pick.Character.UserId)?.UserName,
+                        SkillLevel = pick.Skill.Level,
+                        Bonus = CalculateHouseExpBonus(pick.Skill),
+                        CurrentSlot = pick.Slot
+                    });
+                }
+
+                return plan;
+            });
+        }
+
+        /// <summary>
+        ///     Sets every plot to one type and fills them with the best people for it, which is
+        ///     what the in game quick command does.
+        ///
+        ///     One difference, and it is deliberate. The game can only run this while the stream is
+        ///     live, so it always has players to assign and wiping the old assignments costs
+        ///     nothing. Off stream there is nobody to assign, and clearing every plot to replace
+        ///     them with nothing is destruction rather than a rearrangement, so with the game off
+        ///     this retypes the plots and leaves the occupants alone.
+        /// </summary>
+        public async Task<TownActionResult> SetAllHousesAsync(Guid userId, TownHouseSlotType type)
+        {
+            return await Task.Run(() =>
+            {
+                if (TownHouseTypes.Get(type) == null)
+                {
+                    return TownActionResult.Failed("That is not a house type.");
+                }
+
+                var village = gameData.GetVillageByUserId(userId);
+                if (village == null) return TownActionResult.Failed("You do not have a town.");
+
+                var houses = gameData.GetOrCreateVillageHouses(village);
+                if (houses == null || houses.Count == 0)
+                {
+                    return TownActionResult.Failed("Your town has no plots yet.");
+                }
+
+                foreach (var house in houses)
+                {
+                    house.Type = (int)type;
+                }
+
+                var label = TownHouseTypes.LabelOf(type);
+                if (gameData.GetOwnedSessionByUserId(village.UserId) == null)
+                {
+                    PushVillageInfo(village);
+                    return TownActionResult.Ok(
+                        "All " + houses.Count + " plots are now " + label + " houses. Nobody was moved, " +
+                        "because with your game off there is nobody playing to move in.");
+                }
+
+                var plan = BuildAssignmentPlan(village, type, houses);
+                var taken = new HashSet<int>();
+                foreach (var pick in plan)
+                {
+                    var house = houses.FirstOrDefault(x => x.Slot == pick.Slot);
+                    if (house == null) continue;
+
+                    house.UserId = pick.Character.UserId;
+                    house.CharacterId = pick.Character.Id;
+                    taken.Add(pick.Slot);
+                }
+
+                // Plots the plan did not reach are emptied, so the result is exactly the plan
+                // rather than the plan sitting on top of whoever happened to be there.
+                foreach (var house in houses)
+                {
+                    if (taken.Contains(house.Slot)) continue;
+                    house.UserId = null;
+                    house.CharacterId = null;
+                }
+
+                PushVillageInfo(village);
+                return TownActionResult.Ok(
+                    "All " + houses.Count + " plots are now " + label + " houses, with the best " +
+                    plan.Count + " " + (plan.Count == 1 ? "player" : "players") + " on your stream living in them.");
+            });
+        }
+
+        /// <summary>
+        ///     Best people for a type against the plots, in slot order.
+        ///
+        ///     Mirrors the in game SetVillageBoostTarget: everyone currently playing, ordered by
+        ///     the skill the type reads, as many as there are plots, filling the plots from the
+        ///     first. Shared by the preview and the write so the two cannot disagree.
+        /// </summary>
+        private List<(int Slot, Character Character, SkillStat Skill)> BuildAssignmentPlan(
+            Village village, TownHouseSlotType type, IReadOnlyList<VillageHouse> houses)
+        {
+            var result = new List<(int, Character, SkillStat)>();
+            if (TownHouseTypes.Get(type) == null) return result;
+
+            var session = gameData.GetOwnedSessionByUserId(village.UserId);
+            var playing = gameData.GetActiveSessionCharacters(session);
+            if (playing == null || playing.Count == 0) return result;
+
+            var ranked = playing
+                .Select(c => new { Character = c, Skills = gameData.GetCharacterSkills(c.SkillsId) })
+                .Where(x => x.Skills != null)
+                .Select(x => new { x.Character, Skill = GetSkillByHouseType(x.Skills, type) })
+                // One plot per person, the same rule the single assignment keeps.
+                .GroupBy(x => x.Character.UserId)
+                .Select(g => g.OrderByDescending(x => x.Skill.Level).First())
+                .OrderByDescending(x => x.Skill.Level)
+                .ThenBy(x => x.Character.Name)
+                .ToList();
+
+            var slots = houses.Select(x => x.Slot).OrderBy(x => x).ToList();
+            for (var i = 0; i < slots.Count && i < ranked.Count; ++i)
+            {
+                result.Add((slots[i], ranked[i].Character, ranked[i].Skill));
+            }
+
+            return result;
+        }
+
         private VillageHouse FindHouse(Village village, int slot)
         {
             var houses = gameData.GetOrCreateVillageHouses(village);
@@ -614,6 +800,29 @@ namespace RavenNest.Blazor.Services
         public int? CurrentSlot { get; set; }
 
         public bool IsCurrentOccupant { get; set; }
+    }
+
+    /// <summary>What setting every plot to one type would do, before it is done.</summary>
+    public class TownBulkPlan
+    {
+        public TownHouseSlotType Type { get; set; }
+        public int PlotCount { get; set; }
+        public bool IsStreamLive { get; set; }
+
+        /// <summary>Who would move in, in the plot order they would fill.</summary>
+        public List<TownCandidate> Picks { get; set; } = new List<TownCandidate>();
+
+        public int EmptyPlotCount => Math.Max(0, PlotCount - Picks.Count);
+
+        public float TotalBonus
+        {
+            get
+            {
+                var total = 0f;
+                for (var i = 0; i < Picks.Count; i++) total += Picks[i].Bonus;
+                return total;
+            }
+        }
     }
 
     public sealed class TownActionResult

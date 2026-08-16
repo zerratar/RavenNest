@@ -112,7 +112,7 @@ else
         </div>
 
         <dl class="rf-facts">
-            <dt>Time to that level</dt>
+            <dt>Time to that level&nbsp;</dt>
             <dd>
                 @if (town.Level >= GameMath.MaxVillageLevel)
                 {
@@ -172,7 +172,20 @@ else
     }
 
     <section class="rf-panel">
-        <h2 class="rf-panel__title">Plots</h2>
+        @*
+            The bulk control sits with the thing it acts on rather than with the page, because it
+            rewrites every tile below it.
+        *@
+        <div class="rf-panel__head">
+            <h2 class="rf-panel__title">Plots</h2>
+            @if (town.TotalSlotCount > 0)
+            {
+                <button type="button" class="rf-btn" @onclick="OpenBulk">
+                    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                    Set every plot
+                </button>
+            }
+        </div>
 
         @if (town.TotalSlotCount == 0)
         {
@@ -345,13 +358,64 @@ else
             <button type="button" class="rf-modal__close" @onclick="ClosePicker" aria-label="Close">&times;</button>
         </div>
 
+        @*
+            What is built decides which skill is boosted, so it comes before who lives here. The
+            occupant is kept when the type changes: a plot is usually retyped to suit whoever is
+            already in it, and their bonus simply starts reading a different skill.
+        *@
+        <p class="rf-label">What is built here</p>
+        <div class="rf-filters">
+            @foreach (var option in TownHouseTypes.All)
+            {
+                <button type="button"
+                        class="rf-filter @(pickerPlot.Type == option.Type ? "is-active" : "")"
+                        disabled="@busy"
+                        @onclick="() => SetTypeAsync(option.Type)">
+                    <i class="@option.Icon" aria-hidden="true"></i>
+                    <span>@option.Label</span>
+                </button>
+            }
+            @*
+                Demolishing is part of the same question, and without it a plot can never go back
+                to empty from here. It clears the occupant too: nobody lives on a bare plot.
+            *@
+            <button type="button"
+                    class="rf-filter @(pickerPlot.IsBuilt ? "" : "is-active")"
+                    disabled="@busy"
+                    @onclick="() => SetTypeAsync(TownHouseSlotType.Undefined)">
+                <i class="fa-regular fa-square-dashed" aria-hidden="true"></i>
+                <span>Nothing</span>
+            </button>
+        </div>
         <p class="rf-meta">
-            Whoever lives here boosts @PickerSkillName for everyone on your stream, by their
-            @PickerSkillName level out of @GameMath.MaxLevel of the @Percent(MaxBonusPerPlot) a
-            plot can give.
+            @if (pickerPlot.IsBuilt)
+            {
+                <span>
+                    A @TownHouseTypes.LabelOf(pickerPlot.Type) house boosts @PickerSkillName, by its
+                    occupant's @PickerSkillName level out of @GameMath.MaxLevel of the
+                    @Percent(MaxBonusPerPlot) a plot can give. Changing the type keeps whoever lives
+                    here.
+                </span>
+            }
+            else
+            {
+                <span>Nothing is built on this plot, so it boosts nothing and nobody can live on it.</span>
+            }
         </p>
 
-        @if (busy)
+        @if (pickerPlot.IsBuilt)
+        {
+            <p class="rf-label">Who lives here</p>
+        }
+
+        @if (!pickerPlot.IsBuilt)
+        {
+            <div class="rf-banner rf-banner--warn">
+                <h3 class="rf-banner__title">Build something first</h3>
+                <p>Choose a house type above and this plot can be lived in.</p>
+            </div>
+        }
+        else if (busy)
         {
             <LoadIndicator></LoadIndicator>
         }
@@ -384,7 +448,7 @@ else
         }
         else
         {
-            <p class="rf-label">Playing on your stream, best for this plot first</p>
+            <p class="rf-meta">Best for this plot first.</p>
             <div class="rf-charpick rf-charpick--compact">
                 @foreach (var c in candidates)
                 {
@@ -428,6 +492,130 @@ else
     </div>
 }
 
+@*
+    Setting every plot at once, which is what the in game quick command does. Unlike that command
+    this shows the result before committing it: it rewrites every plot's type and every assignment,
+    and forty plots is too much to undo by hand if it was not what you meant.
+*@
+@if (bulkOpen)
+{
+    <div class="rf-modal-backdrop" @onclick="CloseBulk">
+    <div class="rf-modal rf-modal--wide" role="dialog" aria-modal="true" aria-label="Set every plot"
+         @onclick:stopPropagation="true">
+        <div class="rf-modal__head">
+            <h2 class="rf-modal__title">Set every plot</h2>
+            <button type="button" class="rf-modal__close" @onclick="CloseBulk" aria-label="Close">&times;</button>
+        </div>
+
+        <p class="rf-meta">
+            Builds the same house on all @town.TotalSlotCount of your plots and moves the best
+            people for it in, the way <span class="rf-cmd">!village</span> does in game.
+        </p>
+
+        <p class="rf-label">Build every plot as</p>
+        <div class="rf-filters">
+            @foreach (var option in TownHouseTypes.All)
+            {
+                <button type="button"
+                        class="rf-filter @(bulkType == option.Type ? "is-active" : "")"
+                        disabled="@busy"
+                        @onclick="() => PreviewBulkAsync(option.Type)">
+                    <i class="@option.Icon" aria-hidden="true"></i>
+                    <span>@option.Label</span>
+                </button>
+            }
+        </div>
+
+        @if (busy)
+        {
+            <LoadIndicator></LoadIndicator>
+        }
+        else if (bulkPlan == null)
+        {
+            <p class="rf-meta">Pick a house type to see what would happen.</p>
+        }
+        else
+        {
+            @*
+                The two cases differ enough to be worth saying outright. Live, this is the in game
+                behaviour and it replaces every assignment. Off stream there is nobody to move in,
+                so it retypes the plots and leaves the occupants where they are rather than
+                clearing the town to replace it with nothing.
+            *@
+            @if (!bulkPlan.IsStreamLive)
+            {
+                <div class="rf-banner rf-banner--warn">
+                    <h3 class="rf-banner__title">Your game is not running</h3>
+                    <p>
+                        All @bulkPlan.PlotCount plots will become
+                        @TownHouseTypes.LabelOf(bulkPlan.Type) houses. Nobody will be moved, because
+                        there is nobody playing to move in, so whoever is on a plot now stays on it.
+                    </p>
+                </div>
+            }
+            else if (bulkPlan.Picks.Count == 0)
+            {
+                <div class="rf-banner rf-banner--warn">
+                    <h3 class="rf-banner__title">Nobody is playing right now</h3>
+                    <p>
+                        All @bulkPlan.PlotCount plots will become
+                        @TownHouseTypes.LabelOf(bulkPlan.Type) houses, and every plot will be
+                        emptied, because there is nobody on your stream to fill them with.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="rf-banner rf-banner--good">
+                    <h3 class="rf-banner__title">
+                        @bulkPlan.Picks.Count of @bulkPlan.PlotCount plots filled, worth
+                        @Percent(bulkPlan.TotalBonus)
+                    </h3>
+                    <p>
+                        Every plot becomes a @TownHouseTypes.LabelOf(bulkPlan.Type) house.
+                        @if (bulkPlan.EmptyPlotCount > 0)
+                        {
+                            <span>
+                                The remaining @bulkPlan.EmptyPlotCount will be emptied, since there
+                                are only @bulkPlan.Picks.Count people playing.
+                            </span>
+                        }
+                        Anyone on a plot now who is not in the list below will lose it.
+                    </p>
+                </div>
+
+                <div class="rf-charpick rf-charpick--compact">
+                    @foreach (var pick in bulkPlan.Picks)
+                    {
+                        <div class="rf-char">
+                            <span class="rf-char__name">@(string.IsNullOrEmpty(pick.Name) ? pick.UserName : pick.Name)</span>
+                            <span class="rf-char__level">@Percent(pick.Bonus)</span>
+                            <span class="rf-char__slot">
+                                Plot @(pick.CurrentSlot + 1) &middot; @BulkSkillName @pick.SkillLevel
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
+        }
+
+        <div class="rf-modal__foot rf-modal__foot--spread">
+            @if (bulkPlan != null && !busy)
+            {
+                <button type="button" class="rf-btn rf-btn--primary" @onclick="ApplyBulkAsync">
+                    Set all @bulkPlan.PlotCount plots
+                </button>
+            }
+            else
+            {
+                <span></span>
+            }
+            <button type="button" class="rf-btn" @onclick="CloseBulk">Cancel</button>
+        </div>
+    </div>
+    </div>
+}
+
 @code {
     /// <summary>Matches MaxExpBonusPerSlot in TownService.</summary>
     private const float MaxBonusPerPlot = 200f;
@@ -441,8 +629,15 @@ else
     private TownActionResult actionResult;
     private bool busy;
 
+    private bool bulkOpen;
+    private TownHouseSlotType bulkType = TownHouseSlotType.Undefined;
+    private TownBulkPlan bulkPlan;
+
     private string PickerSkillName =>
         pickerPlot == null ? "" : (TownHouseTypes.Get(pickerPlot.Type)?.SkillName ?? "the skill");
+
+    private string BulkSkillName =>
+        bulkPlan == null ? "" : (TownHouseTypes.Get(bulkPlan.Type)?.SkillName ?? "the skill");
 
     private List<MyTownHouseData> IdlePlots =>
         town == null
@@ -551,6 +746,63 @@ else
     private Task ChooseAsync(TownCandidate candidate)
     {
         return ApplyAsync(candidate.CharacterId);
+    }
+
+    /// <summary>
+    ///     Changes what is built on the open plot. The dialog stays open, because the type and the
+    ///     occupant are usually decided together and the candidate bonuses have just changed.
+    /// </summary>
+    private async Task SetTypeAsync(TownHouseSlotType type)
+    {
+        if (pickerPlot == null || pickerPlot.Type == type) return;
+
+        var slot = pickerPlot.Slot;
+        busy = true;
+        actionResult = await TownService.SetHouseTypeAsync(session.UserId, slot, type);
+        town = await TownService.GetMyTownAsync(session.UserId);
+
+        pickerPlot = town?.Houses.FirstOrDefault(x => x.Slot == slot);
+        candidates = pickerPlot != null && pickerPlot.IsBuilt && town.IsStreamLive
+            ? await TownService.GetHouseCandidatesAsync(session.UserId, slot)
+            : null;
+        busy = false;
+
+        if (pickerPlot == null) ClosePicker();
+    }
+
+    private void OpenBulk()
+    {
+        bulkOpen = true;
+        bulkType = TownHouseSlotType.Undefined;
+        bulkPlan = null;
+        actionResult = null;
+    }
+
+    private void CloseBulk()
+    {
+        bulkOpen = false;
+        bulkPlan = null;
+        busy = false;
+    }
+
+    private async Task PreviewBulkAsync(TownHouseSlotType type)
+    {
+        bulkType = type;
+        busy = true;
+        bulkPlan = await TownService.PlanSetAllHousesAsync(session.UserId, type);
+        busy = false;
+    }
+
+    private async Task ApplyBulkAsync()
+    {
+        if (bulkPlan == null) return;
+
+        busy = true;
+        actionResult = await TownService.SetAllHousesAsync(session.UserId, bulkPlan.Type);
+        town = await TownService.GetMyTownAsync(session.UserId);
+        busy = false;
+
+        CloseBulk();
     }
 
     private Task ClearAsync()
