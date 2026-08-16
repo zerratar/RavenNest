@@ -1,10 +1,8 @@
-﻿using Blazorise.Charts;
-using RavenNest.BusinessLogic.Extended;
+using Blazorise.Charts;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-
 
 namespace RavenNest.Blazor.Pages.Admin
 {
@@ -13,13 +11,63 @@ namespace RavenNest.Blazor.Pages.Admin
         private Models.SessionInfo session;
         private bool isAdmin;
 
+        /// <summary>How many streams the table lists before it says how many it left out.</summary>
+        private const int VisibleStreams = 10;
+
+        private RavenNest.Blazor.Services.ServerOverview overview;
+        private System.Threading.Timer refreshTimer;
+
+        private sealed record Alert(string Title, string Detail, bool Severe);
+
+        /// <summary>
+        ///     Things an administrator would want to be interrupted by. Deliberately only produced
+        ///     when true: a panel that always says everything is fine is a panel you stop reading,
+        ///     and then it is not a warning any more.
+        /// </summary>
+        private List<Alert> Alerts
+        {
+            get
+            {
+                var alerts = new List<Alert>();
+                if (overview == null) return alerts;
+
+                if (!overview.BotOnline)
+                {
+                    var last = overview.BotLastUpdate == default
+                        ? "It has not reported in at all."
+                        : "Last heard from " + FormatSpan(DateTime.UtcNow - overview.BotLastUpdate) + " ago.";
+                    alerts.Add(new Alert(
+                        "The bot is not responding",
+                        "It posts its details every few seconds, so a minute of silence counts as gone. " +
+                        last + " Chat commands are not reaching the game.",
+                        true));
+                }
+                else if (overview.BotChannelCount == 0 && overview.StreamCount > 0)
+                {
+                    alerts.Add(new Alert(
+                        "The bot is online but in no channels",
+                        overview.StreamCount + " stream(s) are running, so it should be in at least that many. " +
+                        "Commands will not be reaching any of them.",
+                        true));
+                }
+
+                if (overview.StreamCount > 0 && overview.PlayersInGame == 0)
+                {
+                    alerts.Add(new Alert(
+                        "Streams are running with nobody playing",
+                        overview.StreamCount + " session(s) are active and no characters are joined to any of them. " +
+                        "Normal just after a stream starts, odd if it lasts.",
+                        false));
+                }
+
+                return alerts;
+            }
+        }
+
         private ChartTimeFrame newUserTimeframe = ChartTimeFrame.ThisMonth;
 
         private ChartData<double> newUserChartData;
         private LineChartOptions newUserChartOptions;
-
-        private ChartData<double> commonHoursNewUsersChartData;
-        private LineChartOptions commonHoursNewUsersChartOptions;
 
         public ChartTimeFrame[] TimeFrames => Enum.GetValues<ChartTimeFrame>();
 
@@ -29,13 +77,7 @@ namespace RavenNest.Blazor.Pages.Admin
 
         private int[] newUserSeries = Array.Empty<int>();
         private List<string> newUserLabels = new();
-        private int[] hourSeries = Array.Empty<int>();
 
-        /// <summary>
-        ///     The page drew two charts and stated no numbers, so the answer to "how many signed up
-        ///     this month" had to be read off an axis. These three are sums over the series the
-        ///     chart is already plotting, so they cost nothing.
-        /// </summary>
         private int NewUserTotal => newUserSeries.Length == 0 ? 0 : newUserSeries.Sum();
 
         private int BestPeriodValue => newUserSeries.Length == 0 ? 0 : newUserSeries.Max();
@@ -44,18 +86,9 @@ namespace RavenNest.Blazor.Pages.Admin
         {
             get
             {
-                if (newUserSeries.Length == 0) return null;
+                if (newUserSeries.Length == 0 || newUserSeries.Max() == 0) return null;
                 var index = Array.IndexOf(newUserSeries, newUserSeries.Max());
                 return index >= 0 && index < newUserLabels.Count ? newUserLabels[index] : null;
-            }
-        }
-
-        private string BusiestHour
-        {
-            get
-            {
-                if (hourSeries.Length == 0 || hourSeries.Max() == 0) return "n/a";
-                return Array.IndexOf(hourSeries, hourSeries.Max()).ToString("00") + ":00";
             }
         }
 
@@ -64,102 +97,71 @@ namespace RavenNest.Blazor.Pages.Admin
             session = AuthService.GetSession();
             isAdmin = session != null && session.Administrator;
 
+            if (!isAdmin) return;
+
+            overview = ServerService.GetServerOverview();
             await SelectTimeFrameAsync(ChartTimeFrame.ThisMonth);
+
+            // Only the live half is polled. The signup chart walks every account, so re-running it
+            // every ten seconds would cost far more than the number it produces is worth.
+            refreshTimer = new System.Threading.Timer(_ =>
+            {
+                InvokeAsync(() =>
+                {
+                    overview = ServerService.GetServerOverview();
+                    StateHasChanged();
+                });
+            }, null, 10000, 10000);
+        }
+
+        public void Dispose()
+        {
+            refreshTimer?.Dispose();
+        }
+
+        /// <summary>
+        ///     Invariant culture, or a width written "43,2%" under a Swedish locale renders empty.
+        /// </summary>
+        private static string Bar(double progress)
+        {
+            var clamped = Math.Clamp(progress * 100d, 0d, 100d);
+            return "width: " + clamped.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%";
+        }
+
+        private static string FormatSpan(TimeSpan span)
+        {
+            if (span <= TimeSpan.Zero) return "0m";
+            if (span.TotalDays >= 1) return (int)span.TotalDays + "d " + span.Hours + "h";
+            if (span.TotalHours >= 1) return (int)span.TotalHours + "h " + span.Minutes + "m";
+            return Math.Max(1, (int)span.TotalMinutes) + "m";
         }
 
         private async Task SelectTimeFrameAsync(ChartTimeFrame tf)
         {
             newUserTimeframe = tf;
-            await CreateNewUserConfig(tf);
-            await CreateNewUserConfig(tf, true);
-            await InvokeAsync(StateHasChanged);
-        }
 
-        private async Task CreateNewUserConfig(
-           ChartTimeFrame tf,
-           bool avgUserPerHour = false)
-        {
-            ChartData<double> chartData;
-            LineChartOptions chartOptions;
-
-            if (!avgUserPerHour)
-            {
-                if (newUserChartData == null)
-                    newUserChartData = new ChartData<double>();
-
-                chartData = newUserChartData;
-            }
-            else
-            {
-                if (commonHoursNewUsersChartData == null)
-                    commonHoursNewUsersChartData = new ChartData<double>();
-
-                chartData = commonHoursNewUsersChartData;
-            }
-
-            chartOptions = new LineChartOptions()
-            {
-                Responsive = true,
-                Scales = new ChartScales
-                {
-                    X = new ChartAxis
-                    {
-                        Title = new ChartScaleTitle { Text = new IndexableOption<string>(GetLabel(tf)) }
-                    },
-                    Y = new ChartAxis
-                    {
-                        Title = new ChartScaleTitle { Text = new IndexableOption<string>("Value") }
-                    }
-                }
-            };
-
-            if (avgUserPerHour)
-                commonHoursNewUsersChartOptions = chartOptions;
-            else
-                newUserChartOptions = chartOptions;
-
-            await UpdateDatasetAsync(chartData, chartOptions, tf, avgUserPerHour);
-        }
-
-
-        private async Task UpdateDatasetAsync(
-         ChartData<double> chartData,
-         LineChartOptions chartOptions,
-         ChartTimeFrame tf,
-         bool avgUserPerHour)
-        {
+            var start = GetStartTime(tf);
             var now = DateTime.UtcNow;
-            var start = GetStartTime(tf, avgUserPerHour);
-            var labels = GetChartLabels(tf, avgUserPerHour);
-            if (chartData.Labels == null)
-                chartData.Labels = new List<object>();
+            var labels = GetChartLabels(tf);
 
-            chartData.Labels.Clear();
-            foreach (var lb in labels)
+            // Counted from accounts rather than characters. UserService.GetSignupDatesAsync records
+            // what the old source could not see.
+            var signups = await UserService.GetSignupDatesAsync(start, now);
+            newUserSeries = GetChartData(signups, start, labels.Count, tf);
+            newUserLabels = labels;
+
+            newUserChartData ??= new ChartData<double>();
+            newUserChartData.Labels ??= new List<object>();
+            newUserChartData.Labels.Clear();
+            foreach (var label in labels)
             {
-                chartData.Labels.Add(lb);
+                newUserChartData.Labels.Add(label);
             }
 
-            var userData = await UserService.GetUsersByCreatedAsync(start, now);
-            var outputData = GetChartData(userData, start, labels.Count, tf, avgUserPerHour);
-            var total = outputData.Length > 0 ? outputData.Sum() : 0;
-
-            // Kept so the panel above the chart can state the numbers rather than leaving them to
-            // be read off an axis.
-            if (avgUserPerHour)
+            var dataset = new LineChartDataset<double>
             {
-                hourSeries = outputData;
-            }
-            else
-            {
-                newUserSeries = outputData;
-                newUserLabels = labels;
-            }
-
-            var lineDataSet = new LineChartDataset<double>
-            {
-                Label = "New users (" + total + ")",
-                Data = new List<double>(),
+                Label = "New accounts",
+                Data = newUserSeries.Select(x => (double)x).ToList(),
                 Fill = false,
                 BorderColor = ChartGold,
                 PointBorderColor = ChartGold,
@@ -173,113 +175,85 @@ namespace RavenNest.Blazor.Pages.Admin
                 PointHitRadius = 10
             };
 
-            foreach (var value in outputData)
-            {
-                lineDataSet.Data.Add(value);
-            }
+            newUserChartData.Datasets ??= new List<ChartDataset<double>>();
+            newUserChartData.Datasets.Clear();
+            newUserChartData.Datasets.Add(dataset);
 
-            if (chartData.Datasets == null)
-                chartData.Datasets = new();
-            chartData.Datasets.Clear();
-            chartData.Datasets.Add(lineDataSet);
-            chartOptions.Plugins = new()
+            // MaintainAspectRatio off so the fixed height on .rf-chart--short decides how tall this
+            // is. Left on, the chart claims most of a screen to draw one line.
+            newUserChartOptions = new LineChartOptions
             {
-                Title = new() { Display = true, Text = avgUserPerHour ? "Users per hour" : "New users of " + GetName(tf) }
+                Responsive = true,
+                MaintainAspectRatio = false,
+                Scales = new ChartScales
+                {
+                    X = new ChartAxis
+                    {
+                        Title = new ChartScaleTitle { Text = new IndexableOption<string>(GetLabel(tf)) }
+                    },
+                    Y = new ChartAxis
+                    {
+                        Title = new ChartScaleTitle { Text = new IndexableOption<string>("Accounts") }
+                    }
+                }
             };
 
-            if (outputData != null && outputData.Length > 0)
-            {
-                chartOptions.Plugins.Title.Text += " - Total " + total;
-            }
+            await InvokeAsync(StateHasChanged);
         }
 
-        private List<string> GetChartLabels(ChartTimeFrame tf, bool avgUserPerHour)
+        private List<string> GetChartLabels(ChartTimeFrame tf)
         {
-            var now = DateTime.UtcNow;
-            var start = GetStartTime(tf, avgUserPerHour);
-            var steps = GetStepCount(start, tf, avgUserPerHour);
+            var start = GetStartTime(tf);
+            var steps = GetStepCount(start, tf);
 
-            List<string> output = new List<string>();
+            var output = new List<string>();
             for (var i = 0; i < steps; ++i)
             {
-                output.Add(GetChartLabel(i, steps, start, tf, avgUserPerHour));
+                output.Add(GetChartLabel(i, start, tf));
             }
             return output;
         }
 
-        public int[] GetChartData(
-          IReadOnlyList<WebsiteAdminUser> source,
-          DateTime start,
-          int steps,
-          ChartTimeFrame tf,
-          bool avgUserPerHour)
+        /// <summary>
+        ///     Buckets creation dates into the steps a timeframe defines.
+        /// </summary>
+        /// <remarks>
+        ///     The day cases offset from the window start rather than matching on the day number.
+        ///     Matching on the number was wrong for Last month, whose window spans two calendar
+        ///     months, so the fifth of either answered to the same bucket and whichever the group
+        ///     happened to yield first won.
+        /// </remarks>
+        private static int[] GetChartData(
+            IReadOnlyList<DateTime> source, DateTime start, int steps, ChartTimeFrame tf)
         {
-            var outputData = new int[steps];
+            var output = new int[Math.Max(0, steps)];
+            if (output.Length == 0) return output;
 
-            IEnumerable<IGrouping<DateTime, WebsiteAdminUser>> grouped = null;
-
-            if (avgUserPerHour)
+            foreach (var created in source)
             {
-                var data = source
-                     .GroupBy(x => x.Created.Hour)
-                     .OrderBy(x => x.Key)
-                     .ToArray();
-
-                for (var i = 0; i < outputData.Length; ++i)
+                int index;
+                switch (tf)
                 {
-                    // Was outputData[record.Key], which dereferences the grouping before the null
-                    // check on the very next expression: any hour of the day with no signups in it
-                    // threw rather than plotting a zero.
-                    var record = data.FirstOrDefault(x => x.Key == i);
-                    outputData[i] = record?.Count() ?? 0;
+                    case ChartTimeFrame.LastSixMonths:
+                    case ChartTimeFrame.LastThreeMonths:
+                        index = ((created.Year - start.Year) * 12) + created.Month - start.Month;
+                        break;
+                    case ChartTimeFrame.LastMonth:
+                    case ChartTimeFrame.ThisMonth:
+                        index = (int)(created.Date - start.Date).TotalDays;
+                        break;
+                    default:
+                        index = (int)(created - start).TotalHours;
+                        break;
                 }
-                return outputData;
+
+                if (index >= 0 && index < output.Length)
+                {
+                    output[index]++;
+                }
             }
 
-            switch (tf)
-            {
-
-                case ChartTimeFrame.LastSixMonths:
-                case ChartTimeFrame.LastThreeMonths:
-                {
-                    var records = source
-                        .GroupBy(x => new DateTime(x.Created.Date.Year, x.Created.Date.Month, 1))
-                        .OrderBy(x => x.Key)
-                        .ToArray();
-                    for (var i = 0; i < outputData.Length; ++i)
-                    {
-                        var t = start.AddMonths(i);
-                        outputData[i] = records.FirstOrDefault(x => x.Key == t)?.Count() ?? 0;
-                    }
-                }
-                break;
-                case ChartTimeFrame.LastMonth:
-                case ChartTimeFrame.ThisMonth:
-                {
-                    var records = source.GroupBy(x => x.Created.Date).ToArray();
-                    for (var i = 0; i < outputData.Length; ++i)
-                    {
-                        outputData[i] = records.FirstOrDefault(x => x.Key.Day == i + 1)?.Count() ?? 0;
-                    }
-                }
-                break;
-                case ChartTimeFrame.Today:
-                {
-                    var records = source.GroupBy(x =>
-                    {
-                        var d = x.Created.Date;
-                        var h = x.Created.TimeOfDay.Hours;
-                        return d.AddHours(h);
-                    });
-                    for (var i = 0; i < outputData.Length; ++i)
-                    {
-                        outputData[i] = records.FirstOrDefault(x => x.Key.Hour == i)?.Count() ?? 0;
-                    }
-                }
-                break;
-            }
-
-            return outputData;
+            return output;
         }
 
         public string GetLabel(ChartTimeFrame frame)
@@ -288,12 +262,12 @@ namespace RavenNest.Blazor.Pages.Admin
             {
                 case ChartTimeFrame.LastMonth:
                 case ChartTimeFrame.ThisMonth:
-                    //case ChartTimeFrame.ThisWeek:
                     return "Day";
                 case ChartTimeFrame.Today: return "Hour";
                 default: return "Month";
             }
         }
+
         public string GetName(ChartTimeFrame frame)
         {
             var n = frame.ToString();
@@ -306,79 +280,61 @@ namespace RavenNest.Blazor.Pages.Admin
             return s;
         }
 
-        private DateTime GetStartTime(ChartTimeFrame tf, bool avgUserPerHour)
+        private static DateTime GetStartTime(ChartTimeFrame tf)
         {
             var now = DateTime.UtcNow;
-            if (avgUserPerHour)
-            {
-                return DateTime.UnixEpoch;
-            }
             switch (tf)
             {
-                //case ChartTimeFrame.AllTime: return DateTime.MinValue;
-                case ChartTimeFrame.LastSixMonths: return new DateTime(now.Date.Year, now.Date.Month, 1).AddMonths(-6);
-                case ChartTimeFrame.LastThreeMonths: return new DateTime(now.Date.Year, now.Date.Month, 1).AddMonths(-3);
-                case ChartTimeFrame.LastMonth: return new DateTime(now.Date.Year, now.Date.Month, 1).AddMonths(-1);
+                case ChartTimeFrame.LastSixMonths: return new DateTime(now.Year, now.Month, 1).AddMonths(-6);
+                case ChartTimeFrame.LastThreeMonths: return new DateTime(now.Year, now.Month, 1).AddMonths(-3);
+                case ChartTimeFrame.LastMonth: return new DateTime(now.Year, now.Month, 1).AddMonths(-1);
                 case ChartTimeFrame.ThisMonth: return new DateTime(now.Year, now.Month, 1);
-                //case ChartTimeFrame.ThisWeek: return now.Date.AddDays(-7);
                 default: return now.Date;
             }
         }
 
-        private int GetStepCount(DateTime start, ChartTimeFrame tf, bool avgUserPerHour)
+        /// <summary>
+        ///     Steps include the period in progress, so accounts created today have a bucket to go
+        ///     in. Truncating the span left the current day or month off the end of the chart.
+        /// </summary>
+        private static int GetStepCount(DateTime start, ChartTimeFrame tf)
         {
-            if (avgUserPerHour)
-            {
-                return 24;
-            }
-
             var now = DateTime.UtcNow;
-            var range = now - start;
-
             switch (tf)
             {
-                //case ChartTimeFrame.AllTime: return MonthDifference(start, now);
-                case ChartTimeFrame.LastSixMonths: return MonthDifference(start, now);
-                case ChartTimeFrame.LastThreeMonths: return MonthDifference(start, now);
-                case ChartTimeFrame.LastMonth: return (int)(new DateTime(now.Year, now.Month, 1) - start).TotalDays;
-                case ChartTimeFrame.ThisMonth: return (int)range.TotalDays;
-                //case ChartTimeFrame.ThisWeek: return (int)range.TotalDays;
-                default: return (int)range.TotalHours;
+                case ChartTimeFrame.LastSixMonths:
+                case ChartTimeFrame.LastThreeMonths:
+                    return ((now.Year - start.Year) * 12) + now.Month - start.Month + 1;
+                case ChartTimeFrame.LastMonth:
+                    return DateTime.DaysInMonth(start.Year, start.Month);
+                case ChartTimeFrame.ThisMonth:
+                    return (int)(now.Date - start.Date).TotalDays + 1;
+                default:
+                    return (int)(now - start).TotalHours + 1;
             }
         }
 
-        private string GetChartLabel(int step, int steps, DateTime start, ChartTimeFrame tf, bool avgUserPerHour)
+        private static string GetChartLabel(int step, DateTime start, ChartTimeFrame tf)
         {
-            if (avgUserPerHour)
-            {
-                return step.ToString("00");
-            }
-
             switch (tf)
             {
-                //case ChartTimeFrame.AllTime: return start.Date.AddMonths(step).ToString("Y");
-                case ChartTimeFrame.LastSixMonths: return start.Date.AddMonths(step).ToString("Y");
-                case ChartTimeFrame.LastThreeMonths: return start.Date.AddMonths(step).ToString("Y");
-                case ChartTimeFrame.LastMonth: return start.AddDays(step).ToString("d");
-                case ChartTimeFrame.ThisMonth: return start.AddDays(step).ToString("d");
-                //case ChartTimeFrame.ThisWeek: return start.AddDays(step).ToString("d");
-                default: return start.AddHours(step).ToString("HH:mm");
+                case ChartTimeFrame.LastSixMonths:
+                case ChartTimeFrame.LastThreeMonths:
+                    return start.Date.AddMonths(step).ToString("Y");
+                case ChartTimeFrame.LastMonth:
+                case ChartTimeFrame.ThisMonth:
+                    return start.AddDays(step).ToString("d");
+                default:
+                    return start.AddHours(step).ToString("HH:mm");
             }
-        }
-
-        public int MonthDifference(DateTime lValue, DateTime rValue)
-        {
-            return Math.Abs((lValue.Month - rValue.Month) + 12 * (lValue.Year - rValue.Year));
         }
 
         public enum ChartTimeFrame
         {
-            //AllTime,
             LastSixMonths,
             LastThreeMonths,
             LastMonth,
             ThisMonth,
-            //ThisWeek,
             Today
         }
     }

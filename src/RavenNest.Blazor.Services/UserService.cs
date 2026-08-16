@@ -96,6 +96,35 @@ namespace RavenNest.Blazor.Services
             });
         }
 
+        /// <summary>
+        ///     Creation dates of accounts made in a window, for counting signups.
+        /// </summary>
+        /// <remarks>
+        ///     Deliberately not <see cref="GetUsersByCreatedAsync"/>, which the admin overview used
+        ///     to chart. That builds its list from playerManager.GetWebsiteAdminPlayers(), which
+        ///     projects out of every character in the game, so an account with no character cannot
+        ///     appear in it at all: anyone who had signed up and not yet started playing was
+        ///     invisible to the chart, which is why it read low or empty. It also walked every
+        ///     character and every user to produce a handful of counts.
+        ///
+        ///     Signups are a property of accounts, so this counts accounts.
+        /// </remarks>
+        public async Task<IReadOnlyList<DateTime>> GetSignupDatesAsync(DateTime start, DateTime end)
+        {
+            return await Task.Run(() =>
+            {
+                var result = new List<DateTime>();
+                foreach (var user in gameData.GetUsers())
+                {
+                    if (user.Created >= start && user.Created <= end)
+                    {
+                        result.Add(user.Created);
+                    }
+                }
+                return (IReadOnlyList<DateTime>)result;
+            });
+        }
+
         public WebsiteAdminUser GetCurrentUser()
         {
             var session = GetSession();

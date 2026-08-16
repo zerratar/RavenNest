@@ -1,76 +1,197 @@
-﻿@layout AdminLayout
+@layout AdminLayout
 @page "/admin"
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.UserService UserService
+@inject RavenNest.Blazor.Services.ServerService ServerService
+@implements IDisposable
 
 @using System.Linq;
 @using Blazorise.Charts
+
+@*
+    This page used to be two signup charts and nothing else, which answers a question nobody opens
+    the admin panel to ask. What is the server doing right now comes first; the history is at the
+    bottom and small.
+*@
 
 @if (isAdmin)
 {
     <header class="rf-page-head">
         <h1 class="rf-page-title">Overview</h1>
         <p class="rf-page-subtitle">
-            New accounts over time, and the hours of the day they arrive in.
+            What the server is doing at this moment, and how many accounts are arriving.
         </p>
     </header>
 
-    <div class="rf-filters" role="group" aria-label="Time frame">
-        @foreach (var tf in TimeFrames)
-        {
-            <button type="button"
-                    class="rf-filter @(newUserTimeframe == tf ? "is-active" : "")"
-                    aria-pressed="@(newUserTimeframe == tf)"
-                    @onclick="(() => SelectTimeFrameAsync(tf))">
-                @GetName(tf)
-            </button>
-        }
-    </div>
-
     @*
-        The page drew two charts and stated no numbers, so answering "how many signed up this
-        month" meant reading a line off an axis. All three of these come from the same rows the
-        chart is already plotting.
+        Alerts first and only when there are any. A permanent "everything is fine" panel trains you
+        to skip the place the warnings appear.
     *@
-    <div class="rf-stats">
-        <div class="rf-stat">
-            <div class="rf-stat__value">@NewUserTotal.ToString("N0")</div>
-            <div class="rf-stat__label">New users, @GetName(newUserTimeframe).ToLowerInvariant()</div>
-        </div>
-        <div class="rf-stat">
-            <div class="rf-stat__value">@BestPeriodValue.ToString("N0")</div>
-            <div class="rf-stat__label">Best @GetLabel(newUserTimeframe).ToLowerInvariant()@(BestPeriodLabel == null ? "" : ", " + BestPeriodLabel)</div>
-        </div>
-        <div class="rf-stat">
-            <div class="rf-stat__value">@BusiestHour</div>
-            <div class="rf-stat__label">Busiest hour, all time</div>
-        </div>
-    </div>
+    @if (overview != null && Alerts.Count > 0)
+    {
+        @foreach (var alert in Alerts)
+        {
+            <div class="rf-banner @(alert.Severe ? "rf-banner--bad" : "rf-banner--warn")">
+                <h2 class="rf-banner__title">@alert.Title</h2>
+                <p>@alert.Detail</p>
+            </div>
+        }
+    }
 
-    <section class="rf-panel">
-        <h2 class="rf-panel__title">New users of @GetName(newUserTimeframe)</h2>
-        @if (newUserChartData != null && newUserChartOptions != null)
-        {
-            <LineChart TItem="double" Data="@newUserChartData" Options="@newUserChartOptions"></LineChart>
-        }
-        else
-        {
-            <LoadIndicator></LoadIndicator>
-        }
-    </section>
+    @if (overview == null)
+    {
+        <LoadIndicator></LoadIndicator>
+    }
+    else
+    {
+        <div class="rf-stats">
+            <div class="rf-stat">
+                <div class="rf-stat__value">@overview.PlayersInGame.ToString("N0")</div>
+                <div class="rf-stat__label">Players in game</div>
+            </div>
+            <div class="rf-stat">
+                <div class="rf-stat__value">@overview.StreamCount.ToString("N0")</div>
+                <div class="rf-stat__label">Streams running</div>
+            </div>
+            <div class="rf-stat">
+                <div class="rf-stat__value">@(overview.TopStream?.PlayerCount.ToString("N0") ?? "0")</div>
+                <div class="rf-stat__label">
+                    Biggest stream@(overview.TopStream?.UserName == null ? "" : ", " + overview.TopStream.UserName)
+                </div>
+            </div>
+            <div class="rf-stat">
+                <div class="rf-stat__value">@(overview.Multiplier == null ? "1x" : overview.Multiplier.Multiplier + "x")</div>
+                <div class="rf-stat__label">Experience rate</div>
+            </div>
+        </div>
 
-    <section class="rf-panel">
-        <h2 class="rf-panel__title">When people sign up</h2>
-        <p class="rf-meta">
-            Every account ever created, grouped by the hour of day it was created, in UTC.
-        </p>
-        @if (commonHoursNewUsersChartData != null && commonHoursNewUsersChartOptions != null)
+        @if (overview.Multiplier != null)
         {
-            <LineChart TItem="double" Data="@commonHoursNewUsersChartData" Options="@commonHoursNewUsersChartOptions"></LineChart>
+            <section class="rf-panel rf-panel--accent">
+                <div class="rf-panel__head">
+                    <h2 class="rf-panel__title">
+                        @overview.Multiplier.Multiplier&times; experience is running
+                    </h2>
+                    <a class="rf-btn rf-btn--small" href="/admin/server">Server page</a>
+                </div>
+                <div class="rf-next">
+                    <div class="rf-next__head">
+                        <span class="rf-label">
+                            @if (overview.Multiplier.StartedByPlayer)
+                            {
+                                <span>Started by @(string.IsNullOrEmpty(overview.Multiplier.StartedBy) ? "a player" : overview.Multiplier.StartedBy)</span>
+                            }
+                            else
+                            {
+                                <span>Started from the server</span>
+                            }
+                        </span>
+                        <span class="rf-next__skill">@FormatSpan(overview.Multiplier.Duration) total</span>
+                    </div>
+                    <div class="rf-skill__bar rf-next__bar">
+                        <span class="rf-skill__fill" style="@Bar(overview.Multiplier.Progress)"></span>
+                    </div>
+                    <div class="rf-next__foot">
+                        <span>@FormatSpan(overview.Multiplier.Remaining) to go</span>
+                        <span class="rf-meta">ends @overview.Multiplier.EndTime.ToLocalTime().ToString("HH:mm")</span>
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(overview.Multiplier.Message))
+                {
+                    <p class="rf-meta">Message: @overview.Multiplier.Message</p>
+                }
+            </section>
         }
-        else
-        {
-            <LoadIndicator></LoadIndicator>
-        }
-    </section>
+
+        <section class="rf-panel">
+            <div class="rf-panel__head">
+                <h2 class="rf-panel__title">Streams running</h2>
+                <a class="rf-btn rf-btn--small" href="/admin/sessions">All sessions</a>
+            </div>
+
+            @if (overview.StreamCount == 0)
+            {
+                <p class="rf-meta">
+                    Nobody is streaming right now, so there are no players in game either.
+                </p>
+            }
+            else
+            {
+                <div class="rf-scroll-x">
+                    <table class="rf-table">
+                        <thead>
+                            <tr>
+                                <th scope="col"><span class="rf-th rf-th--static">Streamer</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Players</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Running for</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var stream in overview.Streams.Take(VisibleStreams))
+                            {
+                                <tr>
+                                    <td>
+                                        <a class="rf-item__name" href="/admin/user/@stream.UserId">
+                                            @(string.IsNullOrEmpty(stream.UserName) ? "Unknown" : stream.UserName)
+                                        </a>
+                                    </td>
+                                    <td><b class="rf-loyalty__points">@stream.PlayerCount.ToString("N0")</b></td>
+                                    <td class="rf-table__quiet">@FormatSpan(DateTime.UtcNow - stream.Started)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (overview.StreamCount > VisibleStreams)
+                {
+                    <p class="rf-meta">
+                        Showing the @VisibleStreams biggest of @overview.StreamCount.
+                    </p>
+                }
+            }
+        </section>
+
+        <section class="rf-panel">
+            <div class="rf-panel__head">
+                <h2 class="rf-panel__title">New accounts</h2>
+                <span class="rf-meta">@NewUserTotal.ToString("N0") in @GetName(newUserTimeframe).ToLowerInvariant()</span>
+            </div>
+
+            <div class="rf-filters" role="group" aria-label="Time frame">
+                @foreach (var tf in TimeFrames)
+                {
+                    <button type="button"
+                            class="rf-filter @(newUserTimeframe == tf ? "is-active" : "")"
+                            aria-pressed="@(newUserTimeframe == tf)"
+                            @onclick="(() => SelectTimeFrameAsync(tf))">
+                        @GetName(tf)
+                    </button>
+                }
+            </div>
+
+            @*
+                Fixed height rather than the chart's own aspect ratio. It was taking a screen of its
+                own for a line that is read in a glance, and the live state above it is what the
+                page is for.
+            *@
+            @if (newUserChartData != null && newUserChartOptions != null)
+            {
+                <div class="rf-chart rf-chart--short">
+                    <LineChart TItem="double" Data="@newUserChartData" Options="@newUserChartOptions"></LineChart>
+                </div>
+            }
+            else
+            {
+                <LoadIndicator></LoadIndicator>
+            }
+
+            @if (BestPeriodLabel != null)
+            {
+                <p class="rf-meta">
+                    Busiest @GetLabel(newUserTimeframe).ToLowerInvariant() was @BestPeriodLabel with
+                    @BestPeriodValue.ToString("N0").
+                </p>
+            }
+        </section>
+    }
 }

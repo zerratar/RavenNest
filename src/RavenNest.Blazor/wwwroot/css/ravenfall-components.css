@@ -2939,3 +2939,23 @@ a.rf-badge:hover {
             "bar   bar";
     }
 }
+
+/* ---- Charts ------------------------------------------------------------
+   A chart library sizes its canvas by aspect ratio, which on a wide panel
+   means a line graph claiming most of a screen. These give the canvas a height
+   to fill instead; the chart's own MaintainAspectRatio has to be off for it to
+   take any notice. */
+
+.rf-chart {
+    position: relative;
+    width: 100%;
+    height: 320px;
+}
+
+.rf-chart--short {
+    height: 180px;
+}
+
+.rf-chart canvas {
+    max-width: 100%;
+}
