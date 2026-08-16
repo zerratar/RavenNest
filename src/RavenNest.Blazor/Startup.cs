@@ -490,6 +490,12 @@ namespace RavenNest.Blazor
             services.AddHostedService<RavenNest.BusinessLogic.Game.PlatformNameWatcher>();
             services.AddHostedService<RavenNest.BusinessLogic.Game.MarketplaceExpiryWatcher>();
 
+            // Server settings and the AI service on top of them. Both are singletons and both read
+            // their values fresh on every call, so changing a key in the admin panel takes effect on
+            // the next request rather than on the next restart.
+            services.AddSingleton<RavenNest.BusinessLogic.Settings.IServerSettingsProvider, RavenNest.BusinessLogic.Settings.ServerSettingsProvider>();
+            services.AddSingleton<RavenNest.BusinessLogic.AI.IAiService, RavenNest.BusinessLogic.AI.AiService>();
+
             services.AddSingleton<MarketplaceReportAggregator>();
             services.AddSingleton<EconomyReportAggregator>();
 
@@ -506,6 +512,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<TwitchService>();
             services.AddSingleton<RavenNest.Blazor.Services.Announcements.AnnouncementService>();
             services.AddSingleton<RavenNest.Blazor.Services.Announcements.DiscordAnnouncer>();
+            services.AddSingleton<RavenNest.Blazor.Services.Announcements.NewsAssistant>();
             services.AddSingleton<MarketplaceService>();
             services.AddSingleton<AccountService>();
             services.AddSingleton<UserService>();

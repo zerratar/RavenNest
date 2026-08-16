@@ -2,8 +2,8 @@ using System;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using RavenNest.BusinessLogic.Settings;
 
 namespace RavenNest.Blazor.Services.Announcements
 {
@@ -23,14 +23,13 @@ namespace RavenNest.Blazor.Services.Announcements
     ///     </para>
     ///
     ///     <para>
-    ///     Configured with Discord:AnnouncementWebhook. With no URL set this does nothing and says
-    ///     so, so the feature is off until somebody turns it on rather than half working.
+    ///     The webhook comes from server settings, which means the admin panel or, failing that,
+    ///     appsettings.json. With no URL set this does nothing and says so, so the feature is off
+    ///     until somebody turns it on rather than half working.
     ///     </para>
     /// </remarks>
     public class DiscordAnnouncer
     {
-        private const string WebhookSetting = "Discord:AnnouncementWebhook";
-
         /// <summary>
         ///     One client for the lifetime of the process. IHttpClientFactory would be the usual
         ///     answer, but it lives in a package this project does not reference, and the pooling
@@ -43,26 +42,26 @@ namespace RavenNest.Blazor.Services.Announcements
         };
 
         private readonly ILogger<DiscordAnnouncer> logger;
-        private readonly IConfiguration configuration;
+        private readonly IServerSettingsProvider settings;
 
         public DiscordAnnouncer(
             ILogger<DiscordAnnouncer> logger,
-            IConfiguration configuration)
+            IServerSettingsProvider settings)
         {
             this.logger = logger;
-            this.configuration = configuration;
+            this.settings = settings;
         }
 
-        public bool IsConfigured => !string.IsNullOrWhiteSpace(configuration[WebhookSetting]);
+        public bool IsConfigured => settings.IsSet(ServerSettingsRegistry.DiscordAnnouncementWebhook);
 
         public async Task<bool> PostAsync(Announcement post)
         {
             if (post == null) return false;
 
-            var webhook = configuration[WebhookSetting];
+            var webhook = settings.GetString(ServerSettingsRegistry.DiscordAnnouncementWebhook);
             if (string.IsNullOrWhiteSpace(webhook))
             {
-                logger.LogWarning("Discord announcement not sent: " + WebhookSetting + " is not set.");
+                logger.LogWarning("Discord announcement not sent: no webhook is set in server settings.");
                 return false;
             }
 

@@ -2,6 +2,10 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <LangVersion>10</LangVersion>
+    <!-- OPENAI001: the Responses API in the official SDK is still marked experimental. It is the
+         API OpenAI now points everything at, and the chat completions one it replaces is the
+         thing we are moving off, so the warning is acknowledged rather than avoided. -->
+    <NoWarn>$(NoWarn);OPENAI001</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="DotNetZip" Version="1.16.0" />
@@ -11,7 +15,11 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.1" />
 	<PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="8.0.1" />
 	<PackageReference Include="Microsoft.EntityFrameworkCore.Analyzers" Version="8.0.1" />
-	<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="8.0.1" />
+	<!-- Raised from 8.0.1 for the OpenAI SDK, whose System.ClientModel wants 10.x. Checked on a
+	     net9 web app: the package assembly loads over the shared framework's copy and both the
+	     hosting types and the SDK work. -->
+	<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.3" />
+	<PackageReference Include="OpenAI" Version="2.13.0" />
 	<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 	<PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
 	<PackageReference Include="TwitchLib.Api" Version="3.10.0-preview-e47ba7f" />

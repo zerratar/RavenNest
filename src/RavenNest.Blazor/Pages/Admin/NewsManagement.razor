@@ -4,6 +4,7 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject AnnouncementService Announcements
 @inject DiscordAnnouncer Discord
+@inject NewsAssistant Assistant
 
 @*
     Writing and publishing announcements.
@@ -33,9 +34,8 @@
         <div class="rf-banner rf-banner--warn">
             <p class="rf-banner__title">Discord is not connected</p>
             <p>
-                Posts publish to the site as normal, but cannot be sent to Discord until
-                <span class="rf-cmd">Discord:AnnouncementWebhook</span> is set in the server
-                configuration to a channel webhook URL.
+                Posts publish to the site as normal, but cannot be sent to Discord until a channel
+                webhook is set under <a href="/admin/settings">Server settings</a>.
             </p>
         </div>
     }
@@ -119,6 +119,99 @@
                         }
                         @((MarkupString)AnnouncementMarkdown.ToHtml(editing.Body))
                     </article>
+                }
+            </div>
+
+            @*
+                Writing help. It never touches the fields on its own: whatever comes back sits in
+                the box underneath until somebody presses Use it, and Use it puts the text where it
+                belongs and nowhere else. An assistant that edits the post while you are writing it
+                is an assistant you have to fight.
+            *@
+            <div class="rf-assist">
+                <div class="rf-assist__head">
+                    <span class="rf-label">Writing help</span>
+                    @if (Assistant.IsAvailable)
+                    {
+                        <span class="rf-meta rf-cmd">@Assistant.ModelInUse</span>
+                    }
+                    else
+                    {
+                        <span class="rf-badge rf-badge--warn">Off</span>
+                    }
+                </div>
+
+                @if (!Assistant.IsAvailable)
+                {
+                    <p class="rf-meta">
+                        Add an OpenAI API key under <a href="/admin/settings">Server settings</a> to turn this on.
+                    </p>
+                }
+                else
+                {
+                    <label class="rf-field">
+                        <span class="rf-label">Notes</span>
+                        <textarea class="rf-input rf-textarea" rows="3" placeholder="What changed, what it means for players, when it starts. Rough notes are fine."
+                                  @bind="assistNotes" @bind:event="oninput"></textarea>
+                    </label>
+
+                    <div class="rf-actions rf-assist__actions">
+                        <button type="button" class="rf-btn rf-btn--small" disabled="@thinking" @onclick="() => Assist(NewsAssistTask.Draft)">
+                            Draft the body
+                        </button>
+                        <button type="button" class="rf-btn rf-btn--small" disabled="@(thinking || string.IsNullOrWhiteSpace(editing.Body))" @onclick="() => Assist(NewsAssistTask.Rewrite)">
+                            Tighten what is there
+                        </button>
+                        <button type="button" class="rf-btn rf-btn--small" disabled="@(thinking || string.IsNullOrWhiteSpace(editing.Body))" @onclick="() => Assist(NewsAssistTask.Summarise)">
+                            Write the summary
+                        </button>
+                        <button type="button" class="rf-btn rf-btn--small" disabled="@thinking" @onclick="() => Assist(NewsAssistTask.Title)">
+                            Suggest titles
+                        </button>
+                    </div>
+
+                    @if (thinking)
+                    {
+                        <p class="rf-meta">Thinking. This takes a few seconds.</p>
+                    }
+
+                    @if (assistError != null)
+                    {
+                        <div class="rf-banner rf-banner--bad" role="status">
+                            <p>@assistError</p>
+                        </div>
+                    }
+
+                    @if (assistText != null)
+                    {
+                        <div class="rf-assist__out">
+                            <pre class="rf-assist__text">@assistText</pre>
+                            <div class="rf-actions">
+                                @*
+                                    Titles are a list of five to pick from by hand, so there is
+                                    nothing sensible to drop into a single field.
+                                *@
+                                @if (assistTask != NewsAssistTask.Title)
+                                {
+                                    <button type="button" class="rf-btn rf-btn--primary rf-btn--small" @onclick="UseAssistText">
+                                        @(assistTask == NewsAssistTask.Summarise ? "Use as the summary" : "Use as the body")
+                                    </button>
+                                }
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="() => assistText = null">Discard</button>
+                            </div>
+                            @if (replaced != null)
+                            {
+                                @*
+                                    What was in the field before, kept for one press. Overwriting a
+                                    paragraph you spent ten minutes on and having no way back is the
+                                    thing that makes people stop using the button.
+                                *@
+                                <div class="rf-actions">
+                                    <button type="button" class="rf-btn rf-btn--small" @onclick="UndoAssist">Put back what was there</button>
+                                </div>
+                            }
+                        </div>
+                    }
                 }
             </div>
 
@@ -213,6 +306,18 @@
     private bool sending;
     private bool showPreview = true;
 
+    private string assistNotes;
+    private string assistText;
+    private string assistError;
+    private NewsAssistTask assistTask;
+    private bool thinking;
+
+    /// <summary>
+    ///     What was in the field before the last Use it, so it can be put back. One step, which is
+    ///     the one that matters.
+    /// </summary>
+    private string replaced;
+
     private bool CanSave => !string.IsNullOrWhiteSpace(editing.Title);
 
     protected override void OnInitialized()
@@ -233,6 +338,7 @@
         editing = new Announcement { Author = session?.UserName };
         effectiveDate = null;
         message = null;
+        ForgetAssist();
     }
 
     private void Edit(Announcement post)
@@ -257,6 +363,19 @@
 
         effectiveDate = post.EffectiveUtc?.ToLocalTime().Date;
         message = null;
+        ForgetAssist();
+    }
+
+    /// <summary>
+    ///     Suggestions belong to the post they were written for. Carrying them across to the next
+    ///     one is how the wrong paragraph ends up in the wrong announcement.
+    /// </summary>
+    private void ForgetAssist()
+    {
+        assistText = null;
+        assistError = null;
+        assistNotes = null;
+        replaced = null;
     }
 
     private void Save(bool publish)
@@ -288,6 +407,63 @@
         Reload();
         messageIsBad = false;
         message = "Deleted.";
+    }
+
+    private async Task Assist(NewsAssistTask task)
+    {
+        thinking = true;
+        assistError = null;
+        assistText = null;
+        assistTask = task;
+        replaced = null;
+
+        try
+        {
+            var result = await Assistant.AssistAsync(task, editing, assistNotes);
+
+            if (result.Ok)
+            {
+                assistText = result.Text;
+            }
+            else
+            {
+                assistError = result.Error ?? "That did not work. Try again.";
+            }
+        }
+        finally
+        {
+            thinking = false;
+        }
+    }
+
+    private void UseAssistText()
+    {
+        if (string.IsNullOrWhiteSpace(assistText)) return;
+
+        if (assistTask == NewsAssistTask.Summarise)
+        {
+            replaced = editing.Summary;
+            editing.Summary = assistText;
+        }
+        else
+        {
+            replaced = editing.Body;
+            editing.Body = assistText;
+        }
+    }
+
+    private void UndoAssist()
+    {
+        if (assistTask == NewsAssistTask.Summarise)
+        {
+            editing.Summary = replaced;
+        }
+        else
+        {
+            editing.Body = replaced;
+        }
+
+        replaced = null;
     }
 
     private async Task SendToDiscord(Announcement post)

@@ -1,0 +1,227 @@
+@layout AdminLayout
+@page "/admin/settings"
+@using RavenNest.BusinessLogic.Settings
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject IServerSettingsProvider Settings
+
+@*
+    The knobs that used to mean editing appsettings.json on the host and restarting.
+
+    Values set here are stored in the database and win over the configuration file, so an existing
+    appsettings.json keeps working untouched and can be overridden one line at a time. Clearing a
+    field here does not blank the setting: it drops back to whatever the file says.
+
+    Secrets are write only. What is stored is never sent back to the page, so nothing here can leak
+    a key into a screenshot, a screen share, or a browser's saved form data.
+*@
+
+@if (isAdmin)
+{
+    <header class="rf-page-head">
+        <h1 class="rf-page-title">Server settings</h1>
+        <p class="rf-page-subtitle">
+            Keys and options that used to live in configuration files. Changes take effect on the
+            next request; nothing here needs a restart.
+        </p>
+    </header>
+
+    @if (message != null)
+    {
+        <div class="rf-banner @(messageIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status">
+            <p>@message</p>
+        </div>
+    }
+
+    @foreach (var group in Settings.Definitions.GroupBy(x => x.Group))
+    {
+        <div class="rf-panel rf-settings">
+            <h2 class="rf-panel__title">@group.Key</h2>
+
+            @foreach (var setting in group)
+            {
+                <div class="rf-settings__item">
+                    <div class="rf-settings__head">
+                        <span class="rf-label">@setting.Label</span>
+                        @switch (Settings.GetSource(setting.Key))
+                        {
+                            case ServerSettingSource.Database:
+                                <span class="rf-badge rf-badge--good">Set here</span>
+                                break;
+                            case ServerSettingSource.Configuration:
+                                @* Worth saying out loud: it works, but changing it here is what
+                                   makes it changeable without a deploy. *@
+                                <span class="rf-badge">From the config file</span>
+                                break;
+                            default:
+                                <span class="rf-badge @(setting.IsSecret ? "rf-badge--warn" : "")">
+                                    @(setting.IsSecret ? "Not set" : "Default")
+                                </span>
+                                break;
+                        }
+                    </div>
+
+                    <p class="rf-meta rf-settings__what">@setting.Description</p>
+
+                    @if (setting.IsSecret)
+                    {
+                        @*
+                            Never the value, only enough of it to tell one key from another. The
+                            box is always empty: typing into it replaces what is stored, and
+                            leaving it alone changes nothing.
+                        *@
+                        <p class="rf-meta rf-settings__current">
+                            @(Settings.IsSet(setting.Key) ? "Currently " + Settings.Describe(setting.Key) : "Nothing stored")
+                        </p>
+
+                        <div class="rf-settings__row">
+                            <input class="rf-input"
+                                   type="password"
+                                   autocomplete="new-password"
+                                   placeholder="@(Settings.IsSet(setting.Key) ? "Paste a new one to replace it" : setting.Placeholder)"
+                                   value="@Draft(setting.Key)"
+                                   @oninput="e => drafts[setting.Key] = e.Value?.ToString()" />
+
+                            <button type="button" class="rf-btn rf-btn--primary"
+                                    disabled="@(string.IsNullOrWhiteSpace(Draft(setting.Key)))"
+                                    @onclick="() => Save(setting)">
+                                Save
+                            </button>
+
+                            @if (Settings.GetSource(setting.Key) == ServerSettingSource.Database)
+                            {
+                                <button type="button" class="rf-btn rf-btn--danger" @onclick="() => Clear(setting)">
+                                    Remove
+                                </button>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="rf-settings__row">
+                            <input class="rf-input"
+                                   list="@(setting.HasChoices ? ListId(setting) : null)"
+                                   placeholder="@setting.Placeholder"
+                                   value="@Draft(setting.Key)"
+                                   @oninput="e => drafts[setting.Key] = e.Value?.ToString()" />
+
+                            <button type="button" class="rf-btn rf-btn--primary"
+                                    disabled="@(!Changed(setting))"
+                                    @onclick="() => Save(setting)">
+                                Save
+                            </button>
+
+                            @if (Settings.GetSource(setting.Key) == ServerSettingSource.Database)
+                            {
+                                <button type="button" class="rf-btn" @onclick="() => Clear(setting)">
+                                    Reset
+                                </button>
+                            }
+                        </div>
+
+                        @if (setting.HasChoices)
+                        {
+                            @*
+                                A datalist rather than a select. The suggestions are the models that
+                                exist today, and OpenAI names a new one more often than this site is
+                                deployed, so anything can still be typed in.
+                            *@
+                            <datalist id="@ListId(setting)">
+                                @foreach (var choice in setting.Choices)
+                                {
+                                    <option value="@choice.Value">@choice.Label</option>
+                                }
+                            </datalist>
+
+                            <ul class="rf-settings__choices">
+                                @foreach (var choice in setting.Choices)
+                                {
+                                    <li>
+                                        <button type="button"
+                                                class="rf-settings__choice @(Draft(setting.Key) == choice.Value ? "is-picked" : "")"
+                                                @onclick="() => drafts[setting.Key] = choice.Value">
+                                            <b>@choice.Label</b>
+                                            <span class="rf-cmd">@choice.Value</span>
+                                        </button>
+                                        <span class="rf-meta">@choice.Note</span>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(setting.Help))
+                    {
+                        <p class="rf-meta rf-settings__help">@setting.Help</p>
+                    }
+                </div>
+            }
+        </div>
+    }
+}
+
+@code {
+    private bool isAdmin;
+    private string userName;
+    private string message;
+    private bool messageIsBad;
+
+    /// <summary>
+    ///     What is typed but not yet saved. Secrets start empty and stay empty after saving, so the
+    ///     stored value never travels back to the browser.
+    /// </summary>
+    private readonly Dictionary<string, string> drafts = new Dictionary<string, string>();
+
+    protected override void OnInitialized()
+    {
+        var session = AuthService.GetSession();
+        isAdmin = session != null && session.Administrator;
+        if (!isAdmin) return;
+
+        userName = session.UserName;
+        Reset();
+    }
+
+    private void Reset()
+    {
+        drafts.Clear();
+        foreach (var setting in Settings.Definitions)
+        {
+            drafts[setting.Key] = setting.IsSecret ? "" : Settings.GetString(setting.Key);
+        }
+    }
+
+    private string Draft(string key) => drafts.TryGetValue(key, out var value) ? value : "";
+
+    private static string ListId(ServerSettingDefinition setting) =>
+        "rf-choices-" + setting.Key.Replace(":", "-").ToLowerInvariant();
+
+    private bool Changed(ServerSettingDefinition setting) =>
+        (Draft(setting.Key) ?? "") != (Settings.GetString(setting.Key) ?? "");
+
+    private void Save(ServerSettingDefinition setting)
+    {
+        var value = Draft(setting.Key);
+        if (setting.IsSecret && string.IsNullOrWhiteSpace(value)) return;
+
+        Settings.Set(setting.Key, value, userName);
+
+        if (setting.IsSecret)
+        {
+            drafts[setting.Key] = "";
+        }
+
+        messageIsBad = false;
+        message = setting.Label + " saved.";
+    }
+
+    private void Clear(ServerSettingDefinition setting)
+    {
+        Settings.Set(setting.Key, null, userName);
+        drafts[setting.Key] = setting.IsSecret ? "" : Settings.GetString(setting.Key);
+
+        messageIsBad = false;
+        message = Settings.IsSet(setting.Key)
+            ? setting.Label + " removed. It has fallen back to the configuration file."
+            : setting.Label + " removed.";
+    }
+}

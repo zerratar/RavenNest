@@ -3359,3 +3359,159 @@ a.rf-badge:hover {
 .rf-md > :last-child {
     margin-bottom: 0;
 }
+
+/* ---- Server settings ---------------------------------------------------
+   One panel per group, one block per setting, each with the value, where it
+   came from, and what it does. A settings page that is only a column of
+   labelled boxes makes you go and read the code to find out what any of them
+   change. */
+
+.rf-settings__item {
+    padding: var(--rf-space-5) 0;
+    border-bottom: 1px solid var(--rf-line);
+}
+
+.rf-settings__item:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+}
+
+.rf-settings__head {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-settings__what {
+    margin: 0 0 var(--rf-space-3) 0;
+    max-width: 60ch;
+}
+
+.rf-settings__current {
+    margin: 0 0 var(--rf-space-2) 0;
+    font-family: var(--rf-font-mono);
+}
+
+.rf-settings__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-3);
+}
+
+/* The field takes what is left, down to a width where a key is still readable,
+   then the buttons wrap under it rather than squeezing it away. */
+.rf-settings__row .rf-input {
+    flex: 1 1 22rem;
+    min-width: 0;
+}
+
+.rf-settings__help {
+    margin: var(--rf-space-3) 0 0 0;
+    max-width: 60ch;
+}
+
+.rf-settings__choices {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-3);
+    margin: var(--rf-space-3) 0 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.rf-settings__choices li {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    flex: 1 1 14rem;
+    min-width: 0;
+}
+
+.rf-settings__choices .rf-meta {
+    margin: 0;
+}
+
+/* Clickable, because reading a model name and then typing it back in by hand is
+   how you end up with gpt-5.6-tera. */
+.rf-settings__choice {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--rf-space-1);
+    width: 100%;
+    padding: var(--rf-space-3);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+    background: var(--rf-surface-2);
+    color: var(--rf-ink);
+    text-align: left;
+    cursor: pointer;
+    transition: border-color var(--rf-transition), background var(--rf-transition);
+}
+
+.rf-settings__choice:hover,
+.rf-settings__choice:focus-visible {
+    border-color: var(--rf-line-gold);
+}
+
+/* The border carries it, and so does the tick, because a border alone is a
+   colour difference and that is not enough on its own. */
+.rf-settings__choice.is-picked {
+    border-color: var(--rf-gold);
+    background: var(--rf-surface-3);
+}
+
+.rf-settings__choice.is-picked b::after {
+    content: " \2713";
+    color: var(--rf-gold);
+}
+
+/* ---- Writing help ------------------------------------------------------
+   Set apart from the fields it writes for, so it reads as something offering
+   text rather than as another part of the form. */
+
+.rf-assist {
+    margin-top: var(--rf-space-5);
+    padding: var(--rf-space-4);
+    border: 1px dashed var(--rf-line);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-2);
+}
+
+.rf-assist__head {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-assist__actions {
+    margin-top: var(--rf-space-3);
+}
+
+.rf-assist__out {
+    margin-top: var(--rf-space-4);
+    padding-top: var(--rf-space-4);
+    border-top: 1px solid var(--rf-line);
+}
+
+/* Preformatted, because markdown read as markdown is what is about to go in the
+   box, and the line breaks are part of it. It scrolls sideways in its own
+   container rather than stretching the panel. */
+.rf-assist__text {
+    max-height: 22rem;
+    margin: 0 0 var(--rf-space-3) 0;
+    padding: var(--rf-space-3);
+    overflow: auto;
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-ink);
+    font-family: var(--rf-font-mono);
+    font-size: var(--rf-size-small);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
