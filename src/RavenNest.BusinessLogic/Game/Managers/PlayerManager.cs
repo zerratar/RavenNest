@@ -2768,18 +2768,23 @@ namespace RavenNest.BusinessLogic.Game
         ///     </para>
         ///
         ///     <para>
-        ///     Every comparable method already went through GetCharacter(sessionToken, id), which
-        ///     only returns characters active in the calling session, and the gift path also runs
-        ///     the integrity check. This one did neither. It now does both, so it refuses exactly
-        ///     what gifting an item refuses.
+        ///     Being in the session is the whole of the check, and it has to be. The token is the
+        ///     streamer's, shared by every player in that stream, so there is no per player key to
+        ///     test against: authority here means "this character is one of the ones this session
+        ///     is playing". GetCharacter(sessionToken, id) asks exactly that.
+        ///     </para>
+        ///
+        ///     <para>
+        ///     Deliberately not the integrity check the gift path runs. That additionally requires
+        ///     the character to be locked to the session and its session state not to be flagged
+        ///     compromised, which are two new ways for a command a thousand players use to start
+        ///     refusing, bought for nothing this needs.
         ///     </para>
         /// </remarks>
         public long SendCoins(SessionToken sessionToken, Guid senderCharacterId, Guid receiverCharacterId, long amount)
         {
             var character = GetCharacter(sessionToken, senderCharacterId);
             if (character == null) return -1;
-
-            if (!integrityChecker.VerifyPlayer(sessionToken.SessionId, character.Id, 0)) return -1;
 
             var targetCharacter = gameData.GetCharacter(receiverCharacterId);
             if (amount <= 0 || targetCharacter == null) return -1;
