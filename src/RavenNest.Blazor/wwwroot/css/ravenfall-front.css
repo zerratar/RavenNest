@@ -1711,3 +1711,136 @@
 .rf-front .rf-vendor__cta {
     margin-bottom: var(--rf-space-5);
 }
+
+/* ---- News ---------------------------------------------------------------
+   A post, on the list and on the front page. The body of a single post is an
+   rf-prose panel like any other long text, so only the card chrome is here. */
+
+.rf-front .rf-post {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-5);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+}
+
+.rf-front .rf-post__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-3);
+    color: var(--rf-ink-faint);
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+}
+
+/* When a change lands is the part a reader is looking for on anything that has
+   not happened yet, so upcoming dates are lifted out of the muted row. */
+.rf-front .rf-post__when {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+}
+
+.rf-front .rf-post__when.is-upcoming {
+    color: var(--rf-gold);
+}
+
+.rf-front .rf-post__title {
+    margin: 0;
+    font-size: var(--rf-size-title);
+    font-weight: 700;
+}
+
+.rf-front .rf-post__title::after {
+    content: none;
+    display: none;
+}
+
+.rf-front .rf-post__title a {
+    color: var(--rf-ink);
+    text-decoration: none;
+}
+
+.rf-front .rf-post__title a:hover,
+.rf-front .rf-post__title a:focus-visible {
+    color: var(--rf-gold-bright);
+    text-decoration: underline;
+}
+
+.rf-front .rf-post__summary {
+    margin: 0;
+    color: var(--rf-ink-muted);
+    line-height: 1.6;
+}
+
+.rf-front .rf-post__more {
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+}
+
+.rf-front .rf-post__by {
+    margin: var(--rf-space-5) 0 0 0;
+    padding-top: var(--rf-space-4);
+    border-top: 1px solid var(--rf-line);
+}
+
+/* The post body is markdown, so it arrives as plain tags with no classes on
+   them. site.css leaves them looking like 2019. */
+.rf-front .rf-prose h2,
+.rf-front .rf-prose h3 {
+    margin: var(--rf-space-5) 0 var(--rf-space-3) 0;
+    font-size: var(--rf-size-title);
+    font-weight: 700;
+}
+
+.rf-front .rf-prose h3 {
+    font-size: var(--rf-size-heading);
+}
+
+.rf-front .rf-prose h2::after,
+.rf-front .rf-prose h3::after {
+    content: none;
+    display: none;
+}
+
+.rf-front .rf-prose ul,
+.rf-front .rf-prose ol {
+    margin: 0 0 var(--rf-space-4) 0;
+    padding-left: var(--rf-space-5);
+}
+
+.rf-front .rf-prose li {
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-front .rf-prose code {
+    padding: 0 var(--rf-space-1);
+    background: var(--rf-surface-2);
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-gold);
+    font-family: var(--rf-font-mono);
+    font-size: var(--rf-size-small);
+}
+
+.rf-front .rf-prose blockquote {
+    margin: 0 0 var(--rf-space-4) 0;
+    padding-left: var(--rf-space-4);
+    border-left: 2px solid var(--rf-line-gold);
+    color: var(--rf-ink-muted);
+}
+
+/* Three across on the landing page, one column on a phone. */
+.rf-front .rf-newsgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+    gap: var(--rf-space-4);
+    margin-bottom: var(--rf-space-5);
+    align-items: start;
+}

@@ -3201,3 +3201,70 @@ a.rf-badge:hover {
 .rf-bad {
     color: var(--rf-bad);
 }
+
+/* ---- News admin --------------------------------------------------------
+   The editor beside the list, so a post can be checked against the others
+   while it is being written. Stacks under 64rem, editor first. */
+
+.rf-newsadmin {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: var(--rf-space-5);
+    align-items: start;
+}
+
+@media (max-width: 64rem) {
+    .rf-newsadmin {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.rf-newsadmin__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-4);
+}
+
+.rf-newsadmin__head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-newsadmin__title {
+    margin: 0 0 var(--rf-space-2) 0;
+    font-size: var(--rf-size-heading);
+    font-weight: 700;
+}
+
+.rf-newsadmin__row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(12rem, 100%), 1fr));
+    gap: var(--rf-space-4);
+}
+
+/* A textarea has to opt out of the input's nowrap sizing, and the tall one is
+   for the body, where a post is written rather than a line typed. */
+.rf-textarea {
+    width: 100%;
+    min-height: 4rem;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.5;
+}
+
+.rf-textarea--tall {
+    min-height: 18rem;
+    font-family: var(--rf-font-mono);
+    font-size: var(--rf-size-small);
+}
+
+.rf-check {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    cursor: pointer;
+}

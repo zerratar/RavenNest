@@ -1,0 +1,92 @@
+﻿@page "/news/{Slug}"
+@using RavenNest.Blazor.Services.Announcements
+@using Markdig
+@inject AnnouncementService Announcements
+
+<div class="top-section">
+    <div class="hero-text">
+        <h1>@(post?.Title ?? "News")</h1>
+    </div>
+</div>
+
+<div class="page-content">
+    <div class="section">
+        <div class="rf-stack">
+            @if (post == null)
+            {
+                @*
+                    A slug that names nothing. Reachable by an old link or a typo, and a page that
+                    sits blank is indistinguishable from one that failed to load.
+                *@
+                <div class="rf-prose">
+                    <h2 class="rf-panel__title">There is no post at that address</h2>
+                    <p>
+                        It may have been renamed, since the address comes from the title, or it may
+                        never have been published.
+                    </p>
+                    <div class="rf-actions">
+                        <a class="rf-btn rf-btn--primary" href="/news">All news</a>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <article class="rf-prose">
+                    <AnnouncementMeta Post="post"></AnnouncementMeta>
+
+                    @if (!string.IsNullOrWhiteSpace(post.Summary))
+                    {
+                        <p class="rf-lead">@post.Summary</p>
+                    }
+
+                    @Body
+
+                    <p class="rf-meta rf-post__by">
+                        @(string.IsNullOrWhiteSpace(post.Author) ? "Ravenfall" : post.Author)@(post.UpdatedUtc == null ? "" : ", updated " + post.UpdatedUtc.Value.ToLocalTime().ToString("d MMMM yyyy"))
+                    </p>
+                </article>
+
+                <div class="rf-actions">
+                    <a class="rf-btn" href="/news">All news</a>
+                    <a class="rf-btn" href="https://discord.gg/gtfDts7" target="_blank" rel="noopener">Ask about it on Discord</a>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Slug { get; set; }
+
+    private Announcement post;
+
+    protected override void OnParametersSet()
+    {
+        var found = Announcements.GetBySlug(Slug);
+
+        // A draft is not reachable by guessing its address either.
+        post = found != null && found.IsPublished ? found : null;
+    }
+
+    /// <summary>
+    ///     The body is markdown written in the admin panel. Raw HTML in it is dropped rather than
+    ///     passed through: only administrators can write these, but "only an administrator can
+    ///     inject script into every visitor's page" is not a security model worth relying on, and
+    ///     nothing about a post needs raw HTML.
+    /// </summary>
+    private MarkupString Body
+    {
+        get
+        {
+            if (post == null || string.IsNullOrWhiteSpace(post.Body)) return (MarkupString)"";
+
+            var pipeline = new MarkdownPipelineBuilder()
+                .DisableHtml()
+                .UseAutoLinks()
+                .UsePipeTables()
+                .Build();
+
+            return (MarkupString)Markdown.ToHtml(post.Body, pipeline);
+        }
+    }
+}

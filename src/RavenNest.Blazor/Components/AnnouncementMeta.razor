@@ -1,0 +1,52 @@
+@using RavenNest.Blazor.Services.Announcements
+
+@*
+    The line above a post: what kind it is, when it was published, and, for anything upcoming, when
+    it actually takes effect.
+
+    That last one is the reason this is a component rather than a line of markup. A post saying the
+    marketplace will start taking a cut is useless unless it says when, and "when" has to be
+    impossible to miss on the card as well as on the post itself.
+*@
+
+<div class="rf-post__meta">
+    <span class="rf-badge @KindClass">@KindLabel</span>
+
+    @if (Post.PublishedUtc != null)
+    {
+        <span>@Post.PublishedUtc.Value.ToLocalTime().ToString("d MMMM yyyy")</span>
+    }
+
+    @if (Post.EffectiveUtc != null)
+    {
+        <span class="rf-post__when @(Post.IsUpcoming ? "is-upcoming" : null)">
+            <i class="fa-solid fa-calendar-day" aria-hidden="true"></i>
+            @(Post.IsUpcoming ? "Takes effect " : "Took effect ")
+            @Post.EffectiveUtc.Value.ToLocalTime().ToString("d MMMM yyyy")
+        </span>
+    }
+</div>
+
+@code {
+    [Parameter] public Announcement Post { get; set; }
+
+    private string KindLabel => Post.Kind switch
+    {
+        AnnouncementKind.Update => "Update",
+        AnnouncementKind.Notice => "Heads up",
+        AnnouncementKind.Alert => "Problem",
+        _ => "News"
+    };
+
+    /// <summary>
+    ///     Colour follows meaning rather than decoration, and the wording above carries the same
+    ///     meaning on its own, so nothing here depends on telling gold from red.
+    /// </summary>
+    private string KindClass => Post.Kind switch
+    {
+        AnnouncementKind.Update => "rf-badge--good",
+        AnnouncementKind.Notice => "rf-badge--warn",
+        AnnouncementKind.Alert => "rf-badge--bad",
+        _ => "rf-badge--gold"
+    };
+}

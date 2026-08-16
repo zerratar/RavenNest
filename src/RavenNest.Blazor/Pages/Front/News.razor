@@ -1,0 +1,61 @@
+@page "/news"
+@using RavenNest.Blazor.Services.Announcements
+@inject AnnouncementService Announcements
+
+@*
+    Everything that has been announced, newest first.
+
+    The site had no way of telling players anything. There was a NewsService reading an RSS feed
+    from a Medium blog, injected into the landing page and never called, so in practice a change to
+    the game reached players through Discord or not at all. That is fine for a patch note and not
+    fine for anything that changes what a player earns.
+*@
+
+<div class="top-section">
+    <div class="hero-text">
+        <h1>News</h1>
+        <p>Changes to the game, and what is coming.</p>
+    </div>
+</div>
+
+<div class="page-content">
+    <div class="section">
+        <div class="rf-stack">
+            @if (posts.Count == 0)
+            {
+                <div class="rf-prose">
+                    <h2 class="rf-panel__title">Nothing announced yet</h2>
+                    <p>
+                        When something changes in the game, it will be written up here first.
+                        <a href="https://discord.gg/gtfDts7" target="_blank" rel="noopener">Discord</a>
+                        is the other place to hear about it.
+                    </p>
+                </div>
+            }
+
+            @foreach (var post in posts)
+            {
+                <article class="rf-post">
+                    <AnnouncementMeta Post="post"></AnnouncementMeta>
+                    <h2 class="rf-post__title">
+                        <a href="/news/@post.Slug">@post.Title</a>
+                    </h2>
+                    @if (!string.IsNullOrWhiteSpace(post.Summary))
+                    {
+                        <p class="rf-post__summary">@post.Summary</p>
+                    }
+                    <a class="rf-post__more" href="/news/@post.Slug">Read it</a>
+                </article>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private IReadOnlyList<Announcement> posts = Array.Empty<Announcement>();
+
+    protected override void OnInitialized()
+    {
+        posts = Announcements.GetPublished();
+    }
+}

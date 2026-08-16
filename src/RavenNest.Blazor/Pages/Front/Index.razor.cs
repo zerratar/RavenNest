@@ -1,5 +1,4 @@
 ﻿using RavenNest.Blazor.Services;
-using RavenNest.Blazor.Services.RSS;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,12 +9,15 @@ namespace RavenNest.Blazor.Pages.Front
     public partial class Index
     {
         private IReadOnlyList<TwitchStream> twitchStreams;
-        //private IReadOnlyList<NewsItem> news;
+
+        /// <summary>The latest few, so the landing page shows what changed without being a blog.</summary>
+        private IReadOnlyList<RavenNest.Blazor.Services.Announcements.Announcement> announcements =
+            Array.Empty<RavenNest.Blazor.Services.Announcements.Announcement>();
 
         protected override async Task OnInitializedAsync()
         {
+            announcements = Announcements.GetPublished(3);
             twitchStreams = await GetTwitchStreamsAsync(6);
-            //news = await NewsService.GetNewsFeedAsync(6);
         }
 
         public async Task<IReadOnlyList<TwitchStream>> GetTwitchStreamsAsync(int take)

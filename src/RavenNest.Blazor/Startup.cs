@@ -504,7 +504,8 @@ namespace RavenNest.Blazor
             services.AddSingleton<PlayerService>();
             services.AddSingleton<NotificationService>();
             services.AddSingleton<TwitchService>();
-            services.AddSingleton<NewsService>();
+            services.AddSingleton<RavenNest.Blazor.Services.Announcements.AnnouncementService>();
+            services.AddSingleton<RavenNest.Blazor.Services.Announcements.DiscordAnnouncer>();
             services.AddSingleton<MarketplaceService>();
             services.AddSingleton<AccountService>();
             services.AddSingleton<UserService>();

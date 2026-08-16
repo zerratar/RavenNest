@@ -1,0 +1,268 @@
+@layout AdminLayout
+@page "/admin/news"
+@using RavenNest.Blazor.Services.Announcements
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject AnnouncementService Announcements
+@inject DiscordAnnouncer Discord
+
+@*
+    Writing and publishing announcements.
+
+    Nothing here posts anywhere on its own. A post is a draft until it is published, and sending it
+    to Discord is a second, separate press. Both of those are deliberate: an announcement is the one
+    thing on this site that reaches everybody at once, and it should never be able to leave by
+    accident while half written.
+*@
+
+@if (isAdmin)
+{
+    <header class="rf-page-head">
+        <h1 class="rf-page-title">News</h1>
+        <p class="rf-page-subtitle">
+            What players are told, and when. Anything that changes what a player earns or pays
+            belongs here before it happens.
+        </p>
+    </header>
+
+    @if (message != null)
+    {
+        <div class="rf-banner @(messageIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status">
+            <p>@message</p>
+        </div>
+    }
+
+    <div class="rf-newsadmin">
+        <div class="rf-panel rf-newsadmin__editor">
+            <h2 class="rf-panel__title">@(editing.Id == Guid.Empty ? "New post" : "Editing")</h2>
+
+            <label class="rf-field">
+                <span class="rf-label">Title</span>
+                <input class="rf-input" @bind="editing.Title" @bind:event="oninput" />
+            </label>
+
+            <label class="rf-field">
+                <span class="rf-label">Summary</span>
+                <textarea class="rf-input rf-textarea" rows="2" @bind="editing.Summary" @bind:event="oninput"></textarea>
+                @*
+                    This is what a reader sees on the front page card and what Discord gets, so it
+                    has to make sense with nothing else around it.
+                *@
+                <span class="rf-meta">Shown on the card and sent to Discord. Make it stand alone.</span>
+            </label>
+
+            <label class="rf-field">
+                <span class="rf-label">Body</span>
+                <textarea class="rf-input rf-textarea rf-textarea--tall" rows="14" @bind="editing.Body" @bind:event="oninput"></textarea>
+                <span class="rf-meta">Markdown. Raw HTML is stripped when it renders.</span>
+            </label>
+
+            <div class="rf-newsadmin__row">
+                <label class="rf-field">
+                    <span class="rf-label">Kind</span>
+                    <select class="rf-input" @bind="editing.Kind">
+                        <option value="@AnnouncementKind.News">News</option>
+                        <option value="@AnnouncementKind.Update">Update</option>
+                        <option value="@AnnouncementKind.Notice">Heads up, something is changing</option>
+                        <option value="@AnnouncementKind.Alert">Problem</option>
+                    </select>
+                </label>
+
+                <label class="rf-field">
+                    <span class="rf-label">Takes effect</span>
+                    <input type="date" class="rf-input" @bind="effectiveDate" />
+                    <span class="rf-meta">Optional. Set it for anything that has not happened yet.</span>
+                </label>
+            </div>
+
+            <label class="rf-check">
+                <input type="checkbox" @bind="editing.Pinned" />
+                <span>Keep at the top</span>
+            </label>
+
+            <div class="rf-modal__foot">
+                @if (editing.Id != Guid.Empty)
+                {
+                    <button type="button" class="rf-btn" @onclick="StartNew">Cancel</button>
+                }
+                <button type="button" class="rf-btn" disabled="@(!CanSave)" @onclick="() => Save(publish: false)">
+                    Save as draft
+                </button>
+                <button type="button" class="rf-btn rf-btn--primary" disabled="@(!CanSave)" @onclick="() => Save(publish: true)">
+                    @(editing.PublishedUtc == null ? "Publish" : "Save")
+                </button>
+            </div>
+        </div>
+
+        <div class="rf-newsadmin__list">
+            @if (posts.Count == 0)
+            {
+                <div class="rf-panel">
+                    <p class="rf-meta">Nothing written yet.</p>
+                </div>
+            }
+
+            @foreach (var post in posts)
+            {
+                <div class="rf-panel rf-newsadmin__item">
+                    <div class="rf-newsadmin__head">
+                        <span class="rf-badge @(post.IsPublished ? "rf-badge--good" : "rf-badge--warn")">
+                            @(post.IsPublished ? "Live" : "Draft")
+                        </span>
+                        @if (post.Pinned)
+                        {
+                            <span class="rf-badge rf-badge--gold">Pinned</span>
+                        }
+                        @if (post.IsPublished && post.DiscordPostedUtc == null)
+                        {
+                            <span class="rf-badge">Not on Discord</span>
+                        }
+                    </div>
+
+                    <h3 class="rf-newsadmin__title">@post.Title</h3>
+                    @if (!string.IsNullOrWhiteSpace(post.Summary))
+                    {
+                        <p class="rf-meta">@post.Summary</p>
+                    }
+
+                    <div class="rf-actions">
+                        <button type="button" class="rf-btn rf-btn--small" @onclick="() => Edit(post)">Edit</button>
+
+                        @if (post.IsPublished)
+                        {
+                            <a class="rf-btn rf-btn--small" href="/news/@post.Slug" target="_blank">View</a>
+
+                            @if (post.DiscordPostedUtc == null)
+                            {
+                                <button type="button" class="rf-btn rf-btn--small" disabled="@sending" @onclick="() => SendToDiscord(post)">
+                                    <i class="fab fa-discord" aria-hidden="true"></i> Send to Discord
+                                </button>
+                            }
+                            else
+                            {
+                                <span class="rf-meta">Sent @post.DiscordPostedUtc.Value.ToLocalTime().ToString("d MMM yyyy")</span>
+                            }
+                        }
+
+                        @if (confirmingDelete == post.Id)
+                        {
+                            <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="() => Delete(post)">Really delete</button>
+                            <button type="button" class="rf-btn rf-btn--small" @onclick="() => confirmingDelete = Guid.Empty">Keep</button>
+                        }
+                        else
+                        {
+                            <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="() => confirmingDelete = post.Id">Delete</button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private bool isAdmin;
+    private IReadOnlyList<Announcement> posts = Array.Empty<Announcement>();
+    private Announcement editing = new Announcement();
+    private DateTime? effectiveDate;
+    private Guid confirmingDelete;
+    private string message;
+    private bool messageIsBad;
+    private bool sending;
+
+    private bool CanSave => !string.IsNullOrWhiteSpace(editing.Title);
+
+    protected override void OnInitialized()
+    {
+        var session = AuthService.GetSession();
+        isAdmin = session != null && session.Administrator;
+        if (!isAdmin) return;
+
+        editing.Author = session.UserName;
+        Reload();
+    }
+
+    private void Reload() => posts = Announcements.GetAll();
+
+    private void StartNew()
+    {
+        var session = AuthService.GetSession();
+        editing = new Announcement { Author = session?.UserName };
+        effectiveDate = null;
+        message = null;
+    }
+
+    private void Edit(Announcement post)
+    {
+        // A copy, so abandoning an edit leaves the stored post alone.
+        editing = new Announcement
+        {
+            Id = post.Id,
+            Slug = post.Slug,
+            Title = post.Title,
+            Summary = post.Summary,
+            Body = post.Body,
+            Author = post.Author,
+            Kind = post.Kind,
+            CreatedUtc = post.CreatedUtc,
+            UpdatedUtc = post.UpdatedUtc,
+            PublishedUtc = post.PublishedUtc,
+            EffectiveUtc = post.EffectiveUtc,
+            Pinned = post.Pinned,
+            DiscordPostedUtc = post.DiscordPostedUtc
+        };
+
+        effectiveDate = post.EffectiveUtc?.ToLocalTime().Date;
+        message = null;
+    }
+
+    private void Save(bool publish)
+    {
+        if (!CanSave) return;
+
+        editing.EffectiveUtc = effectiveDate?.ToUniversalTime();
+
+        if (publish && editing.PublishedUtc == null)
+        {
+            editing.PublishedUtc = DateTime.UtcNow;
+        }
+
+        var saved = Announcements.Save(editing);
+        Reload();
+        Edit(saved);
+
+        messageIsBad = false;
+        message = publish
+            ? "Published. It is on the site now, and can be sent to Discord from the list."
+            : "Saved as a draft. Nobody can see it yet.";
+    }
+
+    private void Delete(Announcement post)
+    {
+        Announcements.Delete(post.Id);
+        confirmingDelete = Guid.Empty;
+        if (editing.Id == post.Id) StartNew();
+        Reload();
+        messageIsBad = false;
+        message = "Deleted.";
+    }
+
+    private async Task SendToDiscord(Announcement post)
+    {
+        sending = true;
+        try
+        {
+            var sent = await Discord.PostAsync(post);
+            messageIsBad = !sent;
+            message = sent
+                ? "Sent to Discord."
+                : "Could not send it to Discord. Check that the webhook is configured, then try again.";
+
+            if (sent) Announcements.MarkDiscordPosted(post.Id);
+            Reload();
+        }
+        finally
+        {
+            sending = false;
+        }
+    }
+}
