@@ -198,6 +198,8 @@ How to answer:
 - Never use em dashes or en dashes.
 - Never guess at a number. If you have not looked it up with a tool, look it up or say you do not
   know. A made up coin total or item count is worse than no answer.
+- Coins and resources belong to the account, not to a character. There is one figure for the whole
+  account. Never add them up per character and never say a character has its own coins.
 - You cannot change anything except by moving items between their own characters, and that always
   has to be agreed to first. Never say you have done something you have only proposed.
 - If they ask for something you have no tool for, say what you cannot do rather than approximating
@@ -243,10 +245,27 @@ the page back to them unless it matters to the answer.
             {
                 new AiTool(
                     "my_characters",
-                    "The player's characters, with their number, name, combat level and coins. " +
-                    "Call this before anything that names a character.",
+                    "The player's characters: number, name, combat level, which one is the main, and " +
+                    "what each is doing right now. Call this before anything that names a character. " +
+                    "Coins are not here because they are not per character, see my_account.",
                     AiTool.NoParameters,
                     (args, ct) => Task.FromResult(Characters(userId))),
+
+                // Coins and resources belong to the account, not to a character. Their own tool, so
+                // there is no per character number lying around to be added up.
+                new AiTool(
+                    "my_account",
+                    "The player's coins and gathered resources. These belong to the account and are " +
+                    "shared by every character, so there is one figure, never one per character.",
+                    AiTool.NoParameters,
+                    (args, ct) => Task.FromResult(Account(userId))),
+
+                new AiTool(
+                    "character_skills",
+                    "Every skill level for one of the player's characters, with how far through the " +
+                    "current level each one is. Use this for any question about a level.",
+                    Schema("character", "The character's name or number, as given by my_characters."),
+                    (args, ct) => Task.FromResult(Skills(userId, Text(args, "character")))),
 
                 new AiTool(
                     "character_items",
@@ -377,25 +396,44 @@ the page back to them unless it matters to the answer.
                 return user.UserName + " exists but has no characters.";
             }
 
+            // Coins once, for the account. Same reason as my_account: every character carries a copy
+            // of the user's resources, so a figure per character is an invitation to add them up.
+            var resources = gameData.GetResources(user);
+
             return Json(new
             {
                 player = user.UserName,
+                accountCoins = resources == null ? 0L : (long)resources.Coins,
+                accountCoinsNote = "Shared by every character listed. Not one purse each.",
                 characters = players.Select(p => new
                 {
                     number = p.CharacterIndex,
                     name = p.Name,
                     combatLevel = p.CombatLevel,
-                    coins = (long)(p.Resources?.Coins ?? 0)
+                    doingNow = Doing(p)
                 })
             });
         }
 
         // ---- what the tools return -----------------------------------------------------------
 
+        /// <summary>
+        ///     The characters, deliberately without coins.
+        /// </summary>
+        /// <remarks>
+        ///     Coins used to be on each character here, which is how they are reached in code:
+        ///     GetResources(character) looks up the character's user and returns the account's
+        ///     resources. So all three characters reported the same figure, and asked how many coins
+        ///     the player had, the model added them up and reported three times the real number.
+        ///     It was right to trust the field; the field was lying about what it was. Coins live in
+        ///     my_account now, once, where there is nothing to sum.
+        /// </remarks>
         private string Characters(Guid userId)
         {
             var players = playerManager.GetWebsitePlayers(userId);
             if (players == null || players.Count == 0) return "This player has no characters.";
+
+            var main = players.OrderBy(x => x.CharacterIndex).FirstOrDefault();
 
             return Json(players.Select(p => new
             {
@@ -403,8 +441,87 @@ the page back to them unless it matters to the answer.
                 name = p.Name,
                 alias = p.Alias,
                 combatLevel = p.CombatLevel,
-                coins = (long)(p.Resources?.Coins ?? 0)
+                isMain = main != null && p.Id == main.Id,
+                doingNow = Doing(p)
             }));
+        }
+
+        /// <summary>
+        ///     What the character is up to, in a few words, or null when nothing is known. A
+        ///     character that is not in a running stream has no state to report.
+        /// </summary>
+        private static string Doing(WebsitePlayer player)
+        {
+            var state = player.State;
+            if (state == null) return null;
+
+            if (state.InDungeon) return "in a dungeon";
+            if (state.InRaid) return "in a raid";
+            if (state.InArena) return "in the arena";
+            if (state.InOnsen) return "resting in the onsen";
+
+            if (string.IsNullOrWhiteSpace(state.Task)) return null;
+
+            var task = state.Task;
+            if (!string.IsNullOrWhiteSpace(state.TaskArgument) &&
+                !state.TaskArgument.Equals(task, StringComparison.OrdinalIgnoreCase))
+            {
+                task += " (" + state.TaskArgument + ")";
+            }
+
+            return string.IsNullOrWhiteSpace(state.Island) ? task : task + " on " + state.Island;
+        }
+
+        /// <summary>
+        ///     Coins and resources, once, for the account.
+        /// </summary>
+        private string Account(Guid userId)
+        {
+            var user = gameData.GetUser(userId);
+            var resources = gameData.GetResources(user);
+
+            if (resources == null) return "This account has no coin purse yet.";
+
+            return Json(new
+            {
+                note = "These are shared by every character on the account. Do not add them up per character.",
+                coins = (long)resources.Coins,
+                wood = (long)resources.Wood,
+                ore = (long)resources.Ore,
+                fish = (long)resources.Fish,
+                wheat = (long)resources.Wheat,
+                magicResource = (long)resources.Magic,
+                arrows = (long)resources.Arrows
+            });
+        }
+
+        /// <summary>
+        ///     Every skill, from the same reflection driven list the character pages use, so a skill
+        ///     added to the game turns up here without anybody remembering to add it.
+        /// </summary>
+        private string Skills(Guid userId, string which)
+        {
+            var character = Resolve(userId, which);
+            if (character == null) return NoSuchCharacter(userId, which);
+
+            if (character.Skills == null) return character.Name + " has no skills recorded.";
+
+            var skills = character.Skills.AsList();
+            if (skills.Count == 0) return character.Name + " has no skills recorded.";
+
+            return Json(new
+            {
+                character = character.Name,
+                combatLevel = character.CombatLevel,
+                skills = skills
+                    .OrderByDescending(x => x.Level)
+                    .Select(x => new
+                    {
+                        name = x.Name,
+                        level = x.Level,
+                        percentIntoNextLevel = (int)Math.Round(x.Percent * 100)
+                    })
+            });
         }
 
         private string Inventory(Guid userId, string which)
