@@ -137,7 +137,10 @@ else
                     {
                         <li class="rf-perk">
                             <i class="fa-solid fa-check" aria-hidden="true"></i>
-                            <span><b>AI chatbot</b> features on the official bot, configurable below.</span>
+                            <span>
+                                <b>AI chatbot</b> features on the official bot, set up on your
+                                <a href="/bot">Bot page</a>.
+                            </span>
                         </li>
                     }
                 </ul>
@@ -165,44 +168,10 @@ else
         </section>
     }
 
-    @if (patreonTierIndex >= 3)
-    {
-        <section class="rf-panel">
-            <h3 class="rf-panel__title">Chatbot settings</h3>
-            <p class="rf-meta">
-                Beta features on the RavenfallOfficial bot. These do not apply to the local bot. If
-                anything misbehaves, say so on Discord.
-            </p>
-
-            <label class="rf-field">
-                <span class="rf-label">Translate messages into</span>
-                <select name="translation" class="rf-input" value="@targetLanguage" @oninput="evt => OnLanguageSelectionChanged(evt)">
-                    <option value="None">Do not translate</option>
-                    @for (var i = 0; i < PatreonService.AvailableLanguages.Length; ++i)
-                    {
-                        var language = PatreonService.AvailableLanguages[i];
-                        <option value="@language">@language</option>
-                    }
-                </select>
-            </label>
-
-            <label class="rf-check">
-                <input type="checkbox" name="personlize" checked="@personalizeMessage" @onchange="OnPersonalizeMessageChanged" />
-                <span>
-                    <b>Personalise messages</b>
-                    <span class="rf-meta">Lets the bot phrase replies to each player rather than reading from a template.</span>
-                </span>
-            </label>
-
-            <div class="rf-actions">
-                <button type="button" class="rf-btn rf-btn--primary" @onclick="SaveUserSettingsAsync">Save settings</button>
-                @if (changesSaved)
-                {
-                    <span class="rf-form__ok">Settings saved.</span>
-                }
-            </div>
-        </section>
-    }
+    @*
+        The chatbot controls used to sit here. They configure the official bot, so they moved to the
+        Bot page: this page is for seeing what you are paying for, not for operating it.
+    *@
 }
 
 @code {
@@ -217,11 +186,7 @@ else
     private string patreonProfilePicture;
     private int patreonTierIndex;
     private bool reloadAfterRender;
-    private bool changesSaved;
     private bool confirmingUnlink;
-
-    private bool personalizeMessage;
-    private string targetLanguage = "None";
 
     /// <summary>
     ///     The most plots a town can hold: one per ten town levels, up to the maximum town level.
@@ -235,14 +200,13 @@ else
     {
         session = AuthService.GetSession();
 
-        (targetLanguage, personalizeMessage) = PatreonService.GetChatbotSettings();
-
-        patreonTierIndex = session.Tier;
+        // Shared with the Bot page, which gates the chatbot controls on it, so the tier this page
+        // lists perks against and the tier that grants them cannot disagree.
+        patreonTierIndex = PatreonService.GetEffectiveTier();
         patreonFullName = session.UserName;
         patreonProfilePicture = "/api/twitch/logo/" + session.TwitchUserId;
         if (session.Patreon != null)
         {
-            patreonTierIndex = System.Math.Max(session.Tier, session.Patreon.Tier.GetValueOrDefault());
             patreonTitle = session.Patreon.PledgeTitle;
             patreonProfilePicture = session.Patreon.ProfilePicture;
             patreonFullName = session.Patreon.FullName;
@@ -255,29 +219,6 @@ else
         }
 
         await HandlePatreonToken();
-    }
-
-    private Task OnPersonalizeMessageChanged(ChangeEventArgs e)
-    {
-        var value = e.Value;
-        personalizeMessage = (bool)value;
-        changesSaved = false;
-        return InvokeAsync(StateHasChanged);
-    }
-
-    private Task OnLanguageSelectionChanged(ChangeEventArgs evt)
-    {
-        targetLanguage = (string)evt.Value;
-        changesSaved = false;
-        return InvokeAsync(StateHasChanged);
-    }
-
-    private async Task SaveUserSettingsAsync()
-    {
-        //AuthService.SetUserSettings(SendUserSettingAsync);
-        await PatreonService.SaveChatbotSettingsAsync(targetLanguage, personalizeMessage);
-        changesSaved = true;
-        await InvokeAsync(StateHasChanged);
     }
 
     private async Task HandlePatreonToken()

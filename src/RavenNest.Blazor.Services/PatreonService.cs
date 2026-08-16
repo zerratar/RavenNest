@@ -84,6 +84,35 @@ namespace RavenNest.Blazor.Services
             return patreonManager.GetTierByLevelAsync(tierLevel);
         }
 
+        /// <summary>
+        ///     The tier the chatbot features need.
+        /// </summary>
+        public const Patreon ChatbotMinimumTier = Patreon.Dragon;
+
+        /// <summary>
+        ///     What tier this account actually counts as.
+        ///
+        ///     Two numbers can disagree: the tier stored on the session and the one read back from
+        ///     Patreon after linking. The higher wins, which is what the perk list has always done
+        ///     inline. It is here so a page that grants a feature and a page that lists it cannot
+        ///     answer this differently.
+        /// </summary>
+        public int GetEffectiveTier()
+        {
+            var session = GetSession();
+            if (session == null) return 0;
+
+            var tier = session.Tier;
+            if (session.Patreon != null)
+            {
+                tier = Math.Max(tier, session.Patreon.Tier.GetValueOrDefault());
+            }
+
+            return tier;
+        }
+
+        public bool CanUseChatbotFeatures() => GetEffectiveTier() >= (int)ChatbotMinimumTier;
+
         public (string, bool) GetChatbotSettings()
         {
             var session = GetSession();
@@ -99,12 +128,27 @@ namespace RavenNest.Blazor.Services
             return (language, personalized);
         }
 
-        public async Task SaveChatbotSettingsAsync(string language, bool usePersonalizedMessages)
+        /// <summary>
+        ///     Stores the chatbot settings. Returns false when the account is not entitled to
+        ///     them.
+        /// </summary>
+        /// <remarks>
+        ///     The tier was checked only by the page choosing not to draw the controls. That was
+        ///     enough while the section was hidden outright, and it stops being enough the moment
+        ///     the panel is drawn for everyone with the controls locked, so the rule lives here
+        ///     rather than in whichever page happens to render it.
+        /// </remarks>
+        public async Task<bool> SaveChatbotSettingsAsync(string language, bool usePersonalizedMessages)
         {
+            if (!CanUseChatbotFeatures())
+            {
+                return false;
+            }
+
             // set the values in the user settings
             var session = GetSession();
             var uid = session.UserId;
-            // IRavenBotApiClient    
+            // IRavenBotApiClient
 
             var transformation = ChatMessageTransformation.Standard;
             var useTranslation = AvailableLanguages.IndexOf(language) != -1;
@@ -125,6 +169,7 @@ namespace RavenNest.Blazor.Services
             gameData.SetUserProperty(uid, UserProperties.ChatBotLanguage, language);
             gameData.SetUserProperty(uid, UserProperties.ChatMessageTransformation, transformationString);
             await ravenbotApi.UpdateUserSettingsAsync(session.UserId);
+            return true;
         }
 
         public string GetPatreonLoginUrl()

@@ -2,6 +2,7 @@
 @page "/bot"
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.BotService BotService
+@inject RavenNest.Blazor.Services.PatreonService PatreonService
 @inject NavigationManager NavigationManager
 @implements IDisposable
 
@@ -125,6 +126,73 @@ else
         </dl>
         <p class="rf-meta">Updates every 10 seconds. Last checked @lastChecked.ToString("HH:mm:ss").</p>
     </div>
+
+    @*
+        These settings were on the Patreon page, which is where you go to see what you are paying
+        for rather than to operate anything. They configure the official bot, so they belong with
+        the bot. Drawn for everyone rather than hidden below the tier: a control that is simply
+        absent reads as a feature that does not exist, which is the same fault as the Equip button
+        that was not rendered when an item could not be equipped.
+    *@
+    <div class="rf-panel">
+        <h2 class="rf-panel__title">Chatbot</h2>
+        <p class="rf-meta">
+            Beta features on the RavenfallOfficial bot. These do not apply to the local bot. If
+            anything misbehaves, say so on Discord.
+        </p>
+
+        @if (!canUseChatbot)
+        {
+            <div class="rf-banner rf-banner--warn">
+                <h3 class="rf-banner__title">Chatbot features need the @ChatbotTierName tier</h3>
+                <p>
+                    They let the bot <strong>translate its messages</strong> into a language you
+                    pick, and <strong>phrase replies to each player</strong> rather than reading
+                    from a template.
+                </p>
+                <p>
+                    Pledging at @ChatbotTierName or above on
+                    <a href="https://www.patreon.com/ravenfall" target="_blank">Patreon</a> turns
+                    them on. Your <a href="/patreon">Patreon page</a> shows the tier you are on now
+                    and what each one unlocks.
+                </p>
+            </div>
+        }
+        else
+        {
+            <label class="rf-field">
+                <span class="rf-label">Translate messages into</span>
+                <select name="translation" class="rf-input" value="@targetLanguage" @oninput="OnLanguageSelectionChanged">
+                    <option value="None">Do not translate</option>
+                    @for (var i = 0; i < PatreonService.AvailableLanguages.Length; ++i)
+                    {
+                        var language = PatreonService.AvailableLanguages[i];
+                        <option value="@language">@language</option>
+                    }
+                </select>
+            </label>
+
+            <label class="rf-check">
+                <input type="checkbox" name="personalize" checked="@personalizeMessage" @onchange="OnPersonalizeMessageChanged" />
+                <span>
+                    <b>Personalise messages</b>
+                    <span class="rf-meta">Lets the bot phrase replies to each player rather than reading from a template.</span>
+                </span>
+            </label>
+
+            <div class="rf-actions">
+                <button type="button" class="rf-btn rf-btn--primary" @onclick="SaveChatbotSettingsAsync">Save settings</button>
+                @if (chatbotSaved)
+                {
+                    <span class="rf-form__ok">Settings saved.</span>
+                }
+                @if (chatbotSaveFailed)
+                {
+                    <span class="rf-form__error">Your tier no longer covers these, so nothing was saved.</span>
+                }
+            </div>
+        }
+    </div>
 }
 
 @code {
@@ -132,6 +200,14 @@ else
     private RavenNest.Blazor.Services.BotStatus status;
     private System.Threading.Timer refreshTimer;
     private DateTime lastChecked;
+
+    private bool canUseChatbot;
+    private string targetLanguage = "None";
+    private bool personalizeMessage;
+    private bool chatbotSaved;
+    private bool chatbotSaveFailed;
+
+    private static string ChatbotTierName => PatreonService.ChatbotMinimumTier.ToString();
 
     private string BannerModifier
     {
@@ -152,6 +228,14 @@ else
         }
 
         Refresh();
+
+        // Read once. The refresh timer below deliberately does not touch these: it fires every ten
+        // seconds and re-reading them would throw away edits made between saves.
+        canUseChatbot = PatreonService.CanUseChatbotFeatures();
+        if (canUseChatbot)
+        {
+            (targetLanguage, personalizeMessage) = PatreonService.GetChatbotSettings();
+        }
 
         // Polled rather than pushed. The underlying stats only change when the bot reports in, so
         // there is nothing to subscribe to, and a streamer who is mid problem will sit on this page
@@ -178,6 +262,27 @@ else
     {
         status = BotService.GetBotStatus();
         lastChecked = DateTime.Now;
+    }
+
+    private void OnLanguageSelectionChanged(ChangeEventArgs e)
+    {
+        targetLanguage = e.Value?.ToString() ?? "None";
+        chatbotSaved = false;
+        chatbotSaveFailed = false;
+    }
+
+    private void OnPersonalizeMessageChanged(ChangeEventArgs e)
+    {
+        personalizeMessage = e.Value is bool value && value;
+        chatbotSaved = false;
+        chatbotSaveFailed = false;
+    }
+
+    private async Task SaveChatbotSettingsAsync()
+    {
+        var saved = await PatreonService.SaveChatbotSettingsAsync(targetLanguage, personalizeMessage);
+        chatbotSaved = saved;
+        chatbotSaveFailed = !saved;
     }
 
     public void Dispose()
