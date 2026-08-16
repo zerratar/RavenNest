@@ -11,6 +11,12 @@
     about three hundred and fifty pixels to the left of the requirements. Each heading is inside its
     own panel now, which is how the dashboard has always done it, and the two cannot come apart.
 
+    One section holding one column, rather than five sections. Five was what let site.css's
+    `.front-page .section:nth-child(even) { background-color: black }` paint every other block, which
+    only ever read as a stripe while sections spanned the whole window. And one column means the
+    blocks are all the same width instead of each choosing its own and leaving the rest of the page
+    empty next to it.
+
     The page is also ordered the way somebody actually does this: get the thing, set it up, then the
     details. Requirements were second, above the steps, which is a specification sheet standing
     between a person and the four things they have to do.
@@ -25,8 +31,9 @@
 
 <div class="white-section-break"></div>
 <div class="page-content">
-
     <div class="section">
+        <div class="rf-stack">
+
         <div class="rf-getstart">
             @*
                 Windows is the supported build and Linux is a best effort, so they are not two equal
@@ -62,9 +69,7 @@
                 </a>
             </div>
         </div>
-    </div>
 
-    <div class="section">
         <div class="rf-prose">
             <h2 class="rf-panel__title">Setting it up</h2>
             <ol class="rf-steps">
@@ -92,9 +97,7 @@
                 <a href="https://help.twitch.tv/s/article/two-factor-authentication?language=en_US" target="_blank" rel="noopener">Twitch explains that here</a>.
             </p>
         </div>
-    </div>
 
-    <div class="section">
         <div class="rf-prose">
             <h2 class="rf-panel__title">What it needs to run</h2>
             @*
@@ -120,9 +123,7 @@
                 we will sharpen these numbers.
             </p>
         </div>
-    </div>
 
-    <div class="section">
         <div class="rf-prose">
             <h2 class="rf-panel__title">Worth knowing</h2>
             <ul class="rf-tips">
@@ -136,9 +137,7 @@
                 <li><b>If the player list size resets</b> after a restart, open the UI settings and it comes back.</li>
             </ul>
         </div>
-    </div>
 
-    <div class="section">
         <div class="rf-prose">
             <h2 class="rf-panel__title">If you get stuck</h2>
             <p>
@@ -152,6 +151,7 @@
                 <a class="rf-btn" href="/commands">The full command list</a>
             </div>
         </div>
-    </div>
 
+        </div>
+    </div>
 </div>

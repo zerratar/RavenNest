@@ -218,6 +218,54 @@
     margin-right: auto;
 }
 
+/* The legacy zebra stripe, which is what made the capped sections look like
+   floating bands.
+
+   site.css has `.front-page .section:nth-child(even) { background-color: black }`,
+   left over from when the front page alternated light and dark full bleed
+   sections. A stripe only reads as a stripe when it spans the window, so once
+   the section became a column the black band stopped partway across the page
+   and every other block looked like a mistake.
+
+   The page is one ground now. Separation between sections comes from spacing and
+   from the panels having their own surface, which is how the dashboard has
+   always done it. */
+.rf-front .page-content,
+.rf-front .page-content .section:not(.patreon),
+.rf-front.front-page .page-content .section:nth-child(even):not(.patreon) {
+    background-color: transparent;
+}
+
+/* Which leaves one ground, and it should be the token rather than the raw black
+   site.css paints here. Taking the legacy per section colours away is what made
+   that visible: until now the near black #0c0b07 sections covered it. */
+.rf-front .main {
+    background-color: var(--rf-bg);
+}
+
+/* ---- One shared column --------------------------------------------------
+   For pages built entirely of panels, where every block should be the same
+   width as every other one.
+
+   Left to themselves the blocks each pick a width for their own content, so a
+   prose panel capped at 70ch sat in a section twice that wide and left half the
+   page empty next to it. Reported as the page not using the space it had. One
+   column, every block filling it, and the column is what is centred. */
+.rf-front .rf-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-5);
+    width: min(60rem, 100%);
+    margin: 0 auto;
+}
+
+/* One class more specific than the blocks' own max-widths, which are declared
+   further down this file and would otherwise win on document order. */
+.rf-front .page-content .rf-stack > * {
+    width: 100%;
+    max-width: none;
+}
+
 /* ==========================================================================
    Site header
    ==========================================================================
