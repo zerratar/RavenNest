@@ -17,11 +17,59 @@
     </p>
 </header>
 
-@if (!session.Authenticated)
+@* OnInitialized returns early without a session, so this has to cope with null rather than
+   trusting it and white screening the page. *@
+@if (session?.Authenticated != true)
 {
     <p class="rf-meta">You don't seem to be logged in.</p>
 }
-else if (clan == null)
+else
+{
+    @*
+        One tab per membership, because a clan rank belongs to a character rather than to the
+        account. Two characters in two clans are two different sets of permissions, and before this
+        the page picked whichever clan it found first and used whichever character it found first to
+        decide what you could do in it.
+
+        Your own clan is always first. Creating one is last, and is only what you land on when you
+        have nothing else.
+    *@
+    @if (memberships.Count > 0)
+    {
+        <div class="rf-tabs rf-clantabs" role="tablist">
+            @for (var i = 0; i < memberships.Count; i++)
+            {
+                var index = i;
+                var membership = memberships[index];
+
+                <button type="button" role="tab"
+                        aria-selected="@(!creating && index == selected)"
+                        class="rf-tab rf-clantab @(!creating && index == selected ? "is-active" : "")"
+                        @onclick="() => Select(index)">
+                    <span class="rf-clantab__name">@membership.Clan.Name</span>
+                    <span class="rf-clantab__who">@TabDetail(membership)</span>
+                </button>
+            }
+
+            @if (canCreateClan)
+            {
+                <button type="button" role="tab"
+                        aria-selected="@creating"
+                        class="rf-tab rf-clantab @(creating ? "is-active" : "")"
+                        @onclick="StartCreate">
+                    <span class="rf-clantab__name">Create a clan</span>
+                    <span class="rf-clantab__who">Found your own</span>
+                </button>
+            }
+        </div>
+    }
+}
+
+@if (session?.Authenticated != true)
+{
+    @* The sign in message is above, with the tab strip. *@
+}
+else if (clan == null || creating)
 {
     @if (session.Tier == 0 && !session.Administrator && !session.Moderator)
     {
@@ -72,6 +120,23 @@ else
         }
 
         <div class="rf-clan__id">
+            @if (Acting != null)
+            {
+                @*
+                    Named, because the answer to "why can I not kick anybody here" is usually that
+                    the character acting is not the one with the rank.
+                *@
+                <p class="rf-meta rf-clan__acting">
+                    Acting as <b>@Acting.CharacterName</b>@(string.IsNullOrEmpty(Acting.RoleName) ? "" : ", " + Acting.RoleName)
+                </p>
+            }
+            else if (Selected != null && Selected.IsOwner)
+            {
+                <p class="rf-meta rf-clan__acting">
+                    You own this clan. None of your characters have joined it.
+                </p>
+            }
+
             @if (editingClanName)
             {
                 <div class="rf-actions">
@@ -180,11 +245,11 @@ else
 
         @if (showRanks)
         {
-            <ClanRoleList ClanId="@clan.Id" CanManage="@canEditRanks"></ClanRoleList>
+            <ClanRoleList ClanId="@clan.Id" ActingCharacterId="@ActingCharacterId" CanManage="@canEditRanks"></ClanRoleList>
         }
         else
         {
-            <ClanMemberList ClanId="@clan.Id" CanManage="@canManageMembers"></ClanMemberList>
+            <ClanMemberList ClanId="@clan.Id" ActingCharacterId="@ActingCharacterId" CanManage="@canManageMembers"></ClanMemberList>
         }
     </section>
 
@@ -227,6 +292,27 @@ else
     private string changeNameSuccess;
 
     private CreateClanModel createClan = new CreateClanModel();
+
+    private IReadOnlyList<ClanMembership> memberships = Array.Empty<ClanMembership>();
+    private int selected;
+    private bool creating;
+    private bool canCreateClan;
+
+    private ClanMembership Selected =>
+        selected >= 0 && selected < memberships.Count ? memberships[selected] : null;
+
+    /// <summary>The membership when a character is actually acting, rather than a clan you merely own.</summary>
+    private ClanMembership Acting => Selected?.CharacterId == null ? null : Selected;
+
+    private Guid? ActingCharacterId => Selected?.CharacterId;
+
+    private static string TabDetail(ClanMembership membership)
+    {
+        if (membership.CharacterId == null) return "Yours, not joined";
+
+        var role = string.IsNullOrEmpty(membership.RoleName) ? "Member" : membership.RoleName;
+        return membership.CharacterName + ", " + role;
+    }
 
     private IReadOnlyList<RavenNest.Models.ClanSkill> ClanSkills =>
         clan?.ClanSkills?.Where(x => x != null).ToList()
@@ -361,33 +447,77 @@ else
 
         canChangeClanName = session.CanChangeClanName;
 
-        // Members who did not found their clan used to be shown the create a clan form.
-        clan = ClanService.GetMyClan();
-        if (clan != null)
+        memberships = ClanService.GetMyClanMemberships();
+
+        // Only offered to somebody who does not already own one, since a user founds at most one.
+        canCreateClan = !memberships.Any(x => x.IsOwner);
+
+        creating = memberships.Count == 0;
+        Select(0);
+    }
+
+    /// <summary>
+    ///     Switches to one of the tabs and recomputes what may be done there.
+    /// </summary>
+    /// <remarks>
+    ///     Every permission is read again for the clan and the character of the tab being opened.
+    ///     Carrying any of it across would mean a rank held in one clan quietly deciding what the
+    ///     buttons do in another.
+    /// </remarks>
+    private void Select(int index)
+    {
+        creating = false;
+        clanError = null;
+        changeNameSuccess = null;
+        editingClanName = false;
+
+        if (memberships.Count == 0)
         {
-            // Was "are you the founder". The clan role permissions have existed in ClanManager all
-            // along and the site simply never read them, so every rank below owner was decoration.
-            myPermissions = ClanService.GetMyPermissions(clan.Id);
-            canManageMembers = myPermissions != null && (myPermissions.CanCreateInvite || myPermissions.CanKickMembers || myPermissions.CanAssignRoles);
-            canEditRanks = myPermissions != null && myPermissions.CanRenameClanRole;
-            canRenameClan = myPermissions != null && myPermissions.CanRenameClan;
-            nameChangeCount = ClanService.GetNameChangeCount(clan.Id);
-            oldClanName = clan.Name;
+            selected = 0;
+            clan = null;
+            myPermissions = null;
+            canManageMembers = canEditRanks = canRenameClan = false;
+            creating = true;
+            return;
         }
+
+        selected = Math.Clamp(index, 0, memberships.Count - 1);
+
+        var membership = memberships[selected];
+        clan = membership.Clan;
+
+        myPermissions = ClanService.GetMyPermissions(clan.Id, membership.CharacterId);
+        canManageMembers = myPermissions != null && (myPermissions.CanCreateInvite || myPermissions.CanKickMembers || myPermissions.CanAssignRoles);
+        canEditRanks = myPermissions != null && myPermissions.CanRenameClanRole;
+
+        // Renaming is owner only in ClanService, so the pencil was shown to anybody holding the
+        // permission and then did nothing when pressed. It now matches what the service allows.
+        canRenameClan = membership.IsOwner && myPermissions != null && myPermissions.CanRenameClan;
+
+        nameChangeCount = ClanService.GetNameChangeCount(clan.Id);
+        oldClanName = clan.Name;
+    }
+
+    private void StartCreate()
+    {
+        creating = true;
+        clanError = null;
     }
 
     private void HandleCreateClan()
     {
-        clan = ClanService.CreateClan(createClan);
-        if (clan == null)
+        var created = ClanService.CreateClan(createClan);
+        if (created == null)
         {
             clanError = ClanAlreadyExists;
             return;
         }
-        myPermissions = ClanService.GetMyPermissions(clan.Id);
-        canManageMembers = true;
-        canEditRanks = true;
-        canRenameClan = true;
+
+        // Rebuilt rather than patched, so the new clan takes its place as the first tab and the
+        // create tab goes away, the same as it would on a fresh load.
+        memberships = ClanService.GetMyClanMemberships();
+        canCreateClan = false;
+        Select(0);
     }
 
     protected override void OnAfterRender(bool firstRender)

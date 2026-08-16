@@ -126,6 +126,14 @@ else
     [Parameter]
     public Guid ClanId { get; set; }
 
+    /// <summary>
+    ///     Which of the signed in user's characters is acting in this clan. The rank belongs to the
+    ///     character, so this is what decides what the buttons are allowed to do. Null only when the
+    ///     user owns the clan without having joined it.
+    /// </summary>
+    [Parameter]
+    public Guid? ActingCharacterId { get; set; }
+
     /// <summary>True when the signed in user's rank may edit ranks.</summary>
     [Parameter]
     public bool CanManage { get; set; }
@@ -220,7 +228,7 @@ else
         if (editing == null || draft == null)
             return;
 
-        if (!ClanService.UpdateRolePermissions(ClanId, editing.Id, draft))
+        if (!ClanService.UpdateRolePermissions(ClanId, editing.Id, draft, ActingCharacterId))
         {
             error = "That could not be saved. Your rank may no longer be allowed to edit ranks.";
             return;

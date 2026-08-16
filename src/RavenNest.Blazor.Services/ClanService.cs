@@ -39,37 +39,84 @@ namespace RavenNest.Blazor.Services
         }
 
         /// <summary>
-        ///     The clan this user belongs to, whether they founded it or merely joined it.
-        ///
-        ///     <see cref="GetClan"/> only ever looked a clan up by its owner, so every member who
-        ///     did not create their clan was told on /clan that they did not have one and offered
-        ///     the form to create another.
+        ///     Every clan this user has a foot in, owned clan first.
         /// </summary>
-        public Clan GetMyClan()
+        /// <remarks>
+        ///     One entry per character in a clan, not one per clan, because a clan rank belongs to a
+        ///     character rather than to the person behind it. Two characters in the same clan at
+        ///     different ranks are two different sets of permissions, and which one applies is a
+        ///     question with an answer only if somebody says which character is acting.
+        ///
+        ///     <para>
+        ///     This replaces GetMyClan, which returned the owned clan or else the first clan found
+        ///     while walking the characters in whatever order they came back. A user with characters
+        ///     in two clans got whichever happened to be first, which is how somebody ended up
+        ///     managing a clan that was not the one they were looking at.
+        ///     </para>
+        ///
+        ///     <para>
+        ///     A clan you own but have no character in still appears, with no acting character. You
+        ///     are its owner either way, and losing the ability to manage your own clan by not
+        ///     having joined it would be a strange thing to discover.
+        ///     </para>
+        /// </remarks>
+        public IReadOnlyList<ClanMembership> GetMyClanMemberships()
         {
             var session = GetSession();
             if (!session.Authenticated)
-                return null;
+                return Array.Empty<ClanMembership>();
 
             var owned = this.clanManager.GetClanByOwnerUserId(session.UserId);
-            if (owned != null)
-                return owned;
+            var found = new List<ClanMembership>();
 
             foreach (var character in gameData.GetCharactersByUserId(session.UserId))
             {
                 var clan = this.clanManager.GetClanByCharacter(character.Id);
-                if (clan != null)
-                    return clan;
+                if (clan == null) continue;
+
+                var membership = gameData.GetClanMembership(character.Id);
+                var role = membership == null ? null : gameData.GetClanRole(membership.ClanRoleId);
+
+                found.Add(new ClanMembership
+                {
+                    Clan = clan,
+                    CharacterId = character.Id,
+                    CharacterName = character.Name,
+                    CharacterIndex = character.CharacterIndex,
+                    IsOwner = owned != null && owned.Id == clan.Id,
+                    RoleName = role?.Name
+                });
             }
 
-            return null;
+            // Your own clan is always first, and within a clan the characters keep their usual order.
+            var ordered = found
+                .OrderByDescending(x => x.IsOwner)
+                .ThenBy(x => x.CharacterIndex)
+                .ToList();
+
+            if (owned != null && !ordered.Any(x => x.Clan.Id == owned.Id))
+            {
+                ordered.Insert(0, new ClanMembership
+                {
+                    Clan = owned,
+                    IsOwner = true,
+                    RoleName = "Owner"
+                });
+            }
+
+            return ordered;
         }
 
         /// <summary>
-        ///     The rank level the signed in user holds in a clan, or null when they are not in it.
+        ///     The rank level the acting character holds in a clan, or null when it is not in it.
         ///     The owner sits above every rank.
         /// </summary>
-        private int? MyRoleLevel(Guid clanId, IReadOnlyList<ClanMember> members)
+        /// <remarks>
+        ///     This used to match on the user rather than the character, taking the first character
+        ///     of theirs it found in the roster. With two characters in one clan at different ranks
+        ///     that picked one arbitrarily, and the arbitrary choice decided who they could kick.
+        /// </remarks>
+        private int? MyRoleLevel(Guid clanId, Guid? actingCharacterId, IReadOnlyList<ClanMember> members)
         {
             var session = GetSession();
             if (!session.Authenticated)
@@ -79,7 +126,10 @@ namespace RavenNest.Blazor.Services
             if (owned != null && owned.Id == clanId)
                 return int.MaxValue;
 
-            var mine = members?.FirstOrDefault(x => !x.InvitationPending && x.Player.UserId == session.UserId);
+            if (actingCharacterId == null)
+                return null;
+
+            var mine = members?.FirstOrDefault(x => !x.InvitationPending && x.Player.Id == actingCharacterId.Value);
             return mine?.Player.ClanRole?.Level;
         }
 
@@ -95,7 +145,7 @@ namespace RavenNest.Blazor.Services
         ///     else needs the permission, and the plain kick permission only reaches ranks below
         ///     your own so an Officer cannot remove the Leader.
         /// </summary>
-        public IReadOnlyList<ClanMember> RemoveMember(Guid clanId, Guid characterId)
+        public IReadOnlyList<ClanMember> RemoveMember(Guid clanId, Guid characterId, Guid? actingCharacterId)
         {
             var session = GetSession();
             if (!session.Authenticated)
@@ -112,8 +162,8 @@ namespace RavenNest.Blazor.Services
 
             if (!leaving)
             {
-                var mine = GetMyPermissions(clanId);
-                var myLevel = MyRoleLevel(clanId, members) ?? -1;
+                var mine = GetMyPermissions(clanId, actingCharacterId);
+                var myLevel = MyRoleLevel(clanId, actingCharacterId, members) ?? -1;
                 var targetLevel = RoleLevelOf(members, characterId);
 
                 var allowed = mine != null &&
@@ -129,14 +179,14 @@ namespace RavenNest.Blazor.Services
             return GetMembers(clanId);
         }
 
-        public IReadOnlyList<ClanMember> RemoveInvite(Guid clanId, Guid characterId)
+        public IReadOnlyList<ClanMember> RemoveInvite(Guid clanId, Guid characterId, Guid? actingCharacterId)
         {
             var session = GetSession();
             if (!session.Authenticated)
                 return null;
 
             var members = GetMembers(clanId);
-            var mine = GetMyPermissions(clanId);
+            var mine = GetMyPermissions(clanId, actingCharacterId);
             if (mine == null || !mine.CanDeleteInvite)
                 return members;
 
@@ -150,7 +200,7 @@ namespace RavenNest.Blazor.Services
         ///     ranks below your own, in both directions: you cannot demote someone at or above
         ///     you, and you cannot promote anyone into a rank at or above your own.
         /// </summary>
-        public async Task<IReadOnlyList<ClanMember>> UpdateMemberRoleAsync(Guid clanId, Guid characterId, Guid roleId)
+        public async Task<IReadOnlyList<ClanMember>> UpdateMemberRoleAsync(Guid clanId, Guid characterId, Guid roleId, Guid? actingCharacterId)
         {
             var session = GetSession();
             if (!session.Authenticated)
@@ -159,13 +209,13 @@ namespace RavenNest.Blazor.Services
             return await Task.Run(() =>
             {
                 var members = GetMembers(clanId);
-                var mine = GetMyPermissions(clanId);
+                var mine = GetMyPermissions(clanId, actingCharacterId);
                 if (mine == null)
                     return members;
 
                 if (!mine.CanAssignAllRoles)
                 {
-                    var myLevel = MyRoleLevel(clanId, members) ?? -1;
+                    var myLevel = MyRoleLevel(clanId, actingCharacterId, members) ?? -1;
                     var targetLevel = RoleLevelOf(members, characterId);
                     var newRole = gameData.GetClanRole(roleId);
 
@@ -181,14 +231,14 @@ namespace RavenNest.Blazor.Services
             });
         }
 
-        public IReadOnlyList<ClanMember> InvitePlayer(Guid clanId, Guid characterId)
+        public IReadOnlyList<ClanMember> InvitePlayer(Guid clanId, Guid characterId, Guid? actingCharacterId)
         {
             var session = GetSession();
             if (!session.Authenticated)
                 return null;
 
             var members = GetMembers(clanId);
-            var mine = GetMyPermissions(clanId);
+            var mine = GetMyPermissions(clanId, actingCharacterId);
             if (mine == null || !mine.CanCreateInvite)
                 return members;
 
@@ -231,22 +281,42 @@ namespace RavenNest.Blazor.Services
         ///     The permissions the signed in user holds in this clan, resolved from whichever of
         ///     their characters is a member. The founder gets everything.
         /// </summary>
-        public TypedClanRolePermissions GetMyPermissions(Guid clanId)
+        /// <summary>
+        ///     What the acting character may do in this clan.
+        /// </summary>
+        /// <remarks>
+        ///     Ownership is checked first now. It used to be the fallback after walking the
+        ///     characters, so an owner who also had a low ranked character in their own clan was
+        ///     handed that character's permissions and locked out of their own clan.
+        ///
+        ///     <para>
+        ///     The character has to belong to the signed in user and has to be in this clan. Both are
+        ///     checked here rather than trusted from the page, because the character id arrives from
+        ///     the browser and a tab is not an authorisation.
+        ///     </para>
+        /// </remarks>
+        public TypedClanRolePermissions GetMyPermissions(Guid clanId, Guid? actingCharacterId)
         {
             var session = GetSession();
             if (!session.Authenticated)
                 return null;
 
-            foreach (var character in gameData.GetCharactersByUserId(session.UserId))
-            {
-                var clan = clanManager.GetClanByCharacter(character.Id);
-                if (clan != null && clan.Id == clanId)
-                    return clanManager.GetClanRolePermissionsByCharacterId(character.Id);
-            }
-
-            // Owning a clan you have no character in still makes you its owner.
             var owned = clanManager.GetClanByOwnerUserId(session.UserId);
-            return owned != null && owned.Id == clanId ? clanManager.GetOwnerPermissions() : null;
+            if (owned != null && owned.Id == clanId)
+                return clanManager.GetOwnerPermissions();
+
+            if (actingCharacterId == null)
+                return null;
+
+            var character = gameData.GetCharacter(actingCharacterId.Value);
+            if (character == null || character.UserId != session.UserId)
+                return null;
+
+            var clan = clanManager.GetClanByCharacter(character.Id);
+            if (clan == null || clan.Id != clanId)
+                return null;
+
+            return clanManager.GetClanRolePermissionsByCharacterId(character.Id);
         }
 
         /// <summary>
@@ -254,13 +324,13 @@ namespace RavenNest.Blazor.Services
         ///     clan's own owner is never editable, since a clan that can lock its founder out is a
         ///     support ticket waiting to happen.
         /// </summary>
-        public bool UpdateRolePermissions(Guid clanId, Guid roleId, TypedClanRolePermissions values)
+        public bool UpdateRolePermissions(Guid clanId, Guid roleId, TypedClanRolePermissions values, Guid? actingCharacterId)
         {
             var session = GetSession();
             if (!session.Authenticated || values == null)
                 return false;
 
-            var mine = GetMyPermissions(clanId);
+            var mine = GetMyPermissions(clanId, actingCharacterId);
             if (mine == null || !mine.CanRenameClanRole)
                 return false;
 
@@ -454,6 +524,33 @@ namespace RavenNest.Blazor.Services
 
             return this.clanManager.CreateClan(session.TwitchUserId, model.Name, model.Logo);
         }
+    }
+
+    /// <summary>
+    ///     One character's place in one clan, or a clan you own with nobody of yours in it.
+    /// </summary>
+    public class ClanMembership
+    {
+        public Clan Clan { get; set; }
+
+        /// <summary>
+        ///     The character acting in this clan. Null only for a clan you own but have not joined
+        ///     with any character.
+        /// </summary>
+        public Guid? CharacterId { get; set; }
+
+        public string CharacterName { get; set; }
+
+        public int CharacterIndex { get; set; }
+
+        /// <summary>Whether the signed in user founded this clan.</summary>
+        public bool IsOwner { get; set; }
+
+        /// <summary>The rank that character holds, for showing on the tab.</summary>
+        public string RoleName { get; set; }
+
+        /// <summary>What to call this tab when the same clan appears more than once.</summary>
+        public string ActingAs => CharacterName ?? "you";
     }
 
     public class ClanInvite

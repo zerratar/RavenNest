@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using RavenNest.Blazor.Services;
 using RavenNest.BusinessLogic;
 using RavenNest.BusinessLogic.Extended;
@@ -160,7 +160,9 @@ namespace RavenNest.Blazor.Components
 
             return Task.Run(() =>
             {
-                ClanService.RemoveMember(clan.Id, Player.Id);
+                // The character leaving is the one acting, which is also the case RemoveMember
+                // treats as leaving rather than kicking, so no permission is needed either way.
+                ClanService.RemoveMember(clan.Id, Player.Id, Player.Id);
                 InvokeAsync(() => NavigationManager.NavigateTo("/characters", true));
             });
         }

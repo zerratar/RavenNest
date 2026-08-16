@@ -208,6 +208,14 @@ else
     [Parameter]
     public Guid ClanId { get; set; }
 
+    /// <summary>
+    ///     Which of the signed in user's characters is acting in this clan. The rank belongs to the
+    ///     character, so this is what decides what the buttons are allowed to do. Null only when the
+    ///     user owns the clan without having joined it.
+    /// </summary>
+    [Parameter]
+    public Guid? ActingCharacterId { get; set; }
+
     [Parameter]
     public bool CanManage { get; set; }
 
@@ -291,7 +299,7 @@ else
     {
         members = ClanService.GetMembers(ClanId);
         roles = ClanService.GetRoles(ClanId);
-        perms = ClanService.GetMyPermissions(ClanId);
+        perms = ClanService.GetMyPermissions(ClanId, ActingCharacterId);
 
         var session = AuthService.GetSession();
         var me = members?.FirstOrDefault(x => !x.InvitationPending && x.Player.UserId == session.UserId);
@@ -359,7 +367,7 @@ else
         {
             if (targetRoleId != null && rankEditPlayerId != null)
             {
-                members = await ClanService.UpdateMemberRoleAsync(ClanId, rankEditPlayerId.Value, targetRoleId.Value);
+                members = await ClanService.UpdateMemberRoleAsync(ClanId, rankEditPlayerId.Value, targetRoleId.Value, ActingCharacterId);
             }
         }
         finally
@@ -384,7 +392,7 @@ else
             return;
 
         invitePlayerVisible = false;
-        members = ClanService.InvitePlayer(ClanId, selectedPlayer.Id);
+        members = ClanService.InvitePlayer(ClanId, selectedPlayer.Id, ActingCharacterId);
         selectedPlayer = null;
     }
 
@@ -398,8 +406,8 @@ else
         confirmingRemoval = null;
 
         members = member.InvitationPending
-            ? ClanService.RemoveInvite(ClanId, member.Player.Id)
-            : ClanService.RemoveMember(ClanId, member.Player.Id);
+            ? ClanService.RemoveInvite(ClanId, member.Player.Id, ActingCharacterId)
+            : ClanService.RemoveMember(ClanId, member.Player.Id, ActingCharacterId);
     }
 
     private async Task<IEnumerable<Player>> SearchPlayer(string searchText)
