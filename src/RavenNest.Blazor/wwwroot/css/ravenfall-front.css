@@ -110,15 +110,13 @@
    until then the value is wrong on screen and correcting it here is one rule
    rather than nine edits.
 
-   .skill-selector is the highscore and towns skill rail, .usage-example is the
-   command list, and .page-title still carried the orange. */
+   .skill-selector is the highscore skill rail, and .page-title still carried the
+   orange. The four that named the command list are gone with it: .usage-example,
+   .command .alias, .command .category and summary .header-description had no
+   markup left to match once that page was converted. */
 .rf-front .skill-selector a,
-.rf-front .usage-example,
 .rf-front .twitch-content p,
-.rf-front .hero-text .note,
-.rf-front .command .alias,
-.rf-front .command .category,
-.rf-front summary .header-description {
+.rf-front .hero-text .note {
     color: var(--rf-ink-muted);
 }
 
@@ -1245,4 +1243,74 @@
 .rf-front .rf-filter.is-active b {
     background: rgba(20, 22, 28, 0.22);
     color: var(--rf-ink-inverse);
+}
+
+/* ---- Commands -----------------------------------------------------------
+   Ninety six commands, and the page listed all of them with no search and no
+   way to narrow by category. It was also a details element per command whose
+   summary held the name, the arguments, the alias and the description, and
+   whose body opened to show the description a second time.
+
+   Everything is open now. With a search over names, aliases, descriptions and
+   argument names there is nothing to be gained by hiding the half of the list
+   somebody is looking for, and a collapsed card cannot be found by the
+   browser's own find either. */
+
+.rf-cmdlist {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(22rem, 100%), 1fr));
+    gap: var(--rf-space-4);
+    align-items: start;
+}
+
+.rf-cmdcard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-4);
+    background: var(--rf-surface-raised);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+}
+
+.rf-cmdcard__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-2);
+}
+
+.rf-cmdcard__desc,
+.rf-cmdcard__alias,
+.rf-cmdcard__example {
+    margin: 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+}
+
+.rf-cmdcard__alias,
+.rf-cmdcard__example {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-2);
+}
+
+/* Whether an argument has to be given is the thing you most want to know about
+   it, and it was only ever visible in the bracket shape of the signature. */
+.rf-cmdcard__req {
+    color: var(--rf-ink-faint);
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+}
+
+.rf-cmdcard__choices {
+    margin-top: var(--rf-space-2);
+}
+
+/* The cards are inside .section, which site.css styles for prose. */
+.rf-front .rf-cmdcard p {
+    margin: 0;
 }

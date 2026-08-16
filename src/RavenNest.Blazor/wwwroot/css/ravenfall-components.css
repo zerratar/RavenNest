@@ -469,6 +469,17 @@
     white-space: nowrap;
 }
 
+/* The command itself, where it is the heading of the thing rather than a
+   mention inside a sentence. Allowed to wrap, because a signature with three
+   arguments is longer than a phone is wide. */
+.rf-cmd--lg {
+    font-size: var(--rf-size-body);
+    font-weight: 700;
+    padding: var(--rf-space-1) var(--rf-space-3);
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
 /* ---- Stat block --------------------------------------------------------
    Big number, small label. This is the gamified bit: a player checking their
    dashboard wants numbers that feel like achievements, not table cells. */

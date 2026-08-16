@@ -1,110 +1,175 @@
-﻿@page "/commands"
+@page "/commands"
 @using RavenNest.Blazor.Services.Models
 @using Microsoft.AspNetCore.WebUtilities
 @using RavenNest.Blazor.Services
 @inject NavigationManager NavigationManager
 @inject AuthService AuthService
 
-
 <div class="top-section">
     <div class="hero-text">
-        <h1>Ravenfall Command List</h1>
-        <p>Discover all the commands you can use to control your character in Ravenfall.</p>
+        <h1>Commands</h1>
+        <p>Everything you can type in a stream running Ravenfall.</p>
     </div>
 </div>
 
 <div class="white-section-break"></div>
 
 <div class="page-content">
-    @if (commands == null)
-    {
-        <LoadIndicator></LoadIndicator>
-    }
-    else
-    {
-        <div class="section">
-            <h2>All Game Commands (Unsorted)</h2>
-            <p>Not all commands have been docummented yet, and some commands are not available yet, this page is a work in progress.</p>
-            <div class="command-list">
-                @foreach (var group in commands.GroupBy(x => x.Category))
+    <div class="section">
+        @if (loadFailed)
+        {
+            @*
+                The command list is read off disk at startup and the failure was swallowed, so a
+                missing or unreadable file left the page on its loading spinner for ever. It says
+                so now, and points at the pages that still work.
+            *@
+            <div class="rf-panel">
+                <h2 class="rf-panel__title">The command list could not be loaded</h2>
+                <p class="rf-meta">
+                    This is a fault on our side rather than anything you did. The
+                    <a href="/how-to-play">how to play page</a> covers the commands worth knowing,
+                    and the <a href="https://wiki.ravenfall.stream/" target="_blank" rel="noopener">community wiki</a>
+                    has the rest.
+                </p>
+            </div>
+        }
+        else if (commands == null)
+        {
+            <LoadIndicator></LoadIndicator>
+        }
+        else
+        {
+            <p class="rf-lead">
+                Type these in the chat of any stream running the game. A streamer can rename or
+                switch off individual commands, so if one does nothing, ask in chat.
+            </p>
+
+            @*
+                Search, over the name, the aliases, the description and the argument names. Ninety
+                six commands were listed with no way to look one up.
+            *@
+            <div class="rf-toolbar">
+                <input type="search"
+                       class="rf-input rf-search"
+                       placeholder="Search commands"
+                       aria-label="Search commands"
+                       value="@search"
+                       @oninput="OnSearchChanged" />
+                @if (!string.IsNullOrWhiteSpace(search) || category != null)
                 {
-                    <div class="category-title">@group.Key</div>
-                    foreach (var cmd in group)
-                    {
-                        <details class="command">
-                            <summary>
-                                <h3 class="name">!@cmd.Name</h3>
-                                <div class="format">@GetCommandArgumentsMarkup(cmd)</div>
-                                @if (!string.IsNullOrEmpty(cmd.Alias))
-                                {
-                                    <p class="alias"><strong>Alias:</strong> @cmd.Alias</p>
-                                }
+                    <button type="button" class="rf-btn rf-btn--small" @onclick="ClearFilters">Clear filters</button>
+                }
+                <span class="rf-meta">Showing @filtered.Count of @commands.Count</span>
+            </div>
 
-                                @if (!string.IsNullOrEmpty(cmd.Description))
-                                {
-                                    <div class="header-description"><strong>Description:</strong>  @cmd.Description</div>
-                                }
-                            </summary>
-
-                            <div class="command-details">
-                                @*                                @if (!string.IsNullOrEmpty(cmd.Category))
-                    {
-                    <p class="Category"><strong>Category:</strong> @cmd.Category</p>
-                    }*@
-                                <p class="description">@cmd.Description</p>
-                                
-                                @if (cmd.RequiresBroadcaster)
-                                {
-                                    <p class="requires-broadcaster">Note: This command requires you to be a broadcaster</p>
-                                }
-                                
-                                @if (cmd.Options != null)
-                                {
-                                    <div class="options">
-                                        <h4>Arguments</h4>
-                                        @foreach (var option in cmd.Options)
-                                        {
-                                            <div class="option">
-                                                <h5 class="name">@option.Name</h5>
-                                                <p class="description">@option.Description</p>
-                                                @if (option.Choices != null)
-                                                {
-                                                    <div class="choice-list">
-                                                        <h6>Available choices</h6>
-                                                        <ul class="choices">
-                                                            @foreach (var choice in option.Choices)
-                                                            {
-                                                                <li class="choice">@choice</li>
-                                                            }
-                                                        </ul>
-                                                    </div>
-                                                }
-                                            </div>
-                                        }
-
-
-                                    </div>
-                                }
-
-                                @if (!string.IsNullOrEmpty(cmd.UsageExample) || cmd.Options != null)
-                                {
-                                    <div class="usage-example">
-                                        <h4>Usage Example</h4>
-                                        @if (!string.IsNullOrEmpty(cmd.UsageExample))
-                                        {
-                                            <div class="usage">@GetUsageExampleMarkup(cmd)</div>
-                                        }
-                                        @if (cmd.Options != null)
-                                        {
-                                            <div class="format">@GetCommandFormatMarkup(cmd)</div>
-                                        }
-                                    </div>
-                                }
-                            </div>
-                        </details>
-                    }
+            <div class="rf-filters" role="group" aria-label="Filter commands by category">
+                <button type="button"
+                        class="rf-filter @(category == null ? "is-active" : "")"
+                        aria-pressed="@(category == null)"
+                        @onclick="() => SelectCategory(null)">
+                    <span>All</span>
+                    <b>@commands.Count</b>
+                </button>
+                @foreach (var group in categories)
+                {
+                    <button type="button"
+                            class="rf-filter @(category == group.Key ? "is-active" : "")"
+                            aria-pressed="@(category == group.Key)"
+                            @onclick="() => SelectCategory(group.Key)">
+                        <span>@group.Key</span>
+                        <b>@group.Value</b>
+                    </button>
                 }
             </div>
-        </div>
-    }
+
+            @if (filtered.Count == 0)
+            {
+                <div class="rf-panel">
+                    <p class="rf-meta">Nothing matches that. Try a different category or clear the search.</p>
+                </div>
+            }
+            else
+            {
+                @*
+                    Was a details element per command whose summary held the name, the arguments,
+                    the alias and the description, and whose body then repeated the description
+                    underneath. Everything is open: with a search over the whole list there is
+                    nothing to be gained by hiding the half of it you were looking for.
+                *@
+                <div class="rf-cmdlist">
+                    @foreach (var cmd in filtered)
+                    {
+                        <article class="rf-cmdcard">
+                            <header class="rf-cmdcard__head">
+                                <code class="rf-cmd rf-cmd--lg">@Signature(cmd)</code>
+                                @if (cmd.RequiresBroadcaster)
+                                {
+                                    <span class="rf-badge rf-badge--warn">Streamer only</span>
+                                }
+                            </header>
+
+                            <p class="rf-cmdcard__desc">@cmd.Description</p>
+
+                            @*
+                                The file lists every alias as a command of its own, so !use, !eat,
+                                !drink and !consume were four cards carrying the same sentence. They
+                                are one card, and the other names are on it.
+                            *@
+                            @if (cmd.AlsoKnownAs.Count > 0)
+                            {
+                                <p class="rf-cmdcard__alias">
+                                    <span class="rf-label">Also</span>
+                                    @foreach (var alias in cmd.AlsoKnownAs)
+                                    {
+                                        <code class="rf-cmd">!@alias</code>
+                                    }
+                                </p>
+                            }
+
+                            @if (!string.IsNullOrEmpty(cmd.SeeAlso))
+                            {
+                                <p class="rf-cmdcard__alias">
+                                    <span class="rf-label">See also</span>
+                                    <code class="rf-cmd">!@cmd.SeeAlso</code>
+                                </p>
+                            }
+
+                            @if (cmd.Options != null && cmd.Options.Count > 0)
+                            {
+                                <dl class="rf-facts rf-facts--tight">
+                                    @foreach (var option in cmd.Options)
+                                    {
+                                        <dt>
+                                            @option.Name
+                                            <span class="rf-cmdcard__req">@(option.IsRequired ? "required" : "optional")</span>
+                                        </dt>
+                                        <dd>
+                                            @option.Description
+                                            @if (option.Choices != null && option.Choices.Count > 0)
+                                            {
+                                                <span class="rf-chips rf-cmdcard__choices">
+                                                    @foreach (var choice in option.Choices)
+                                                    {
+                                                        <span class="rf-chip">@choice</span>
+                                                    }
+                                                </span>
+                                            }
+                                        </dd>
+                                    }
+                                </dl>
+                            }
+
+                            @if (!string.IsNullOrEmpty(cmd.UsageExample))
+                            {
+                                <p class="rf-cmdcard__example">
+                                    <span class="rf-label">For example</span>
+                                    <code class="rf-cmd">@cmd.UsageExample</code>
+                                </p>
+                            }
+                        </article>
+                    }
+                </div>
+            }
+        }
+    </div>
 </div>
