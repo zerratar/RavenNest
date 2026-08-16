@@ -221,7 +221,17 @@
     overflow-wrap: anywhere;
 }
 
+/* Separation is padding on the label rather than a column-gap on the grid,
+   because the row rule is a border-bottom on each cell and a gap would cut it in
+   two. Padding sits inside the border box, so the underline stays continuous.
+
+   It has to be here rather than in the markup. `fit-content(14rem)` sizes the
+   label track to the widest label, so the widest one is the only label that ends
+   flush against its value and every shorter one looks correctly spaced by
+   accident. That is why this read as a problem with particular labels and was
+   being fixed with a trailing &nbsp; on those labels one page at a time. */
 .rf-facts > dt {
+    padding-right: var(--rf-space-4);
     color: var(--rf-ink-muted);
     font-weight: 500;
 }
@@ -241,6 +251,8 @@
     }
 
     .rf-facts > dt {
+        /* Stacked above the value now, so the separation it needs is vertical. */
+        padding-right: 0;
         padding-bottom: 0;
         border-bottom: none;
         font-size: var(--rf-size-tiny);
