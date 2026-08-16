@@ -160,6 +160,31 @@ namespace RavenNest.Blazor.Services
             return null;
         }
 
+        /// <summary>
+        ///     Buys from the vendor's stock for one of the signed in user's own characters.
+        /// </summary>
+        /// <remarks>
+        ///     Ownership is checked here rather than trusted from the page. The character id
+        ///     arrives from the browser, and without this check anyone could spend another
+        ///     player's coins by sending a different one.
+        /// </remarks>
+        public RavenNest.BusinessLogic.Game.VendorBuyResult BuyFromVendor(Guid characterId, Guid itemId, long amount)
+        {
+            var session = GetSession();
+            if (session == null || !session.Authenticated)
+            {
+                return RavenNest.BusinessLogic.Game.VendorBuyResult.Failed("You need to be signed in to buy anything.");
+            }
+
+            var character = gameData.GetCharacter(characterId);
+            if (character == null || character.UserId != session.UserId)
+            {
+                return RavenNest.BusinessLogic.Game.VendorBuyResult.Failed("That character does not belong to you.");
+            }
+
+            return playerManager.BuyFromVendor(characterId, itemId, amount);
+        }
+
         public WebsitePlayer SendToStash(Guid characterId, ItemFilter filter)
         {
             playerManager.SendToStash(characterId, filter);

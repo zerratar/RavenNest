@@ -2323,6 +2323,69 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         /// <summary>
+        ///     Buys from the vendor's stock of what other players have sold it.
+        /// </summary>
+        /// <remarks>
+        ///     Priced unit by unit rather than amount times the current price, because
+        ///     CalculateVendorBuyPrice depends on the stock level and stock falls as the order is
+        ///     filled. Quoting the first unit's price for the whole order would undercharge, and
+        ///     this is the half of the round trip that has to stay expensive: for any quantity and
+        ///     any stock level, buying must cost more than selling the same items back at the stock
+        ///     level the purchase leaves behind. Both curves were checked exhaustively against that
+        ///     before this was written, and the only cases that are not a strict loss are ties at
+        ///     the one coin floor, which net zero.
+        ///
+        ///     <para>
+        ///     The items are delivered before the coins are taken, and a delivery that fails aborts
+        ///     without charging. That ordering is the marketplace lesson: taking payment first and
+        ///     adding after leaves a buyer charged for nothing when the add is refused.
+        ///     </para>
+        /// </remarks>
+        public VendorBuyResult BuyFromVendor(Guid characterId, Guid itemId, long amount)
+        {
+            if (amount <= 0) return VendorBuyResult.Failed("Pick an amount above zero.");
+
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return VendorBuyResult.Failed("That character no longer exists.");
+
+            var item = gameData.GetItem(itemId);
+            if (item == null) return VendorBuyResult.Failed("That item no longer exists.");
+
+            var vendorItem = gameData.GetVendorItemByItemId(itemId);
+            var stock = vendorItem?.Stock ?? 0;
+            if (stock <= 0) return VendorBuyResult.Failed("The vendor has none of those left.");
+            if (amount > stock) amount = stock;
+
+            var totalPrice = 0L;
+            var remainingStock = stock;
+            for (var i = 0L; i < amount; ++i)
+            {
+                totalPrice += GameMath.CalculateVendorBuyPrice(item, remainingStock);
+                remainingStock--;
+            }
+
+            var resources = gameData.GetResources(character);
+            if (resources == null) return VendorBuyResult.Failed("That character has no coin purse.");
+            if (resources.Coins < totalPrice)
+            {
+                return VendorBuyResult.Failed(
+                    "That costs " + totalPrice.ToString("N0") + " coins and this character has " +
+                    ((long)resources.Coins).ToString("N0") + ".");
+            }
+
+            var inventory = inventoryProvider.Get(characterId);
+            if (!inventory.TryAddItem(itemId, amount, out _))
+            {
+                return VendorBuyResult.Failed("The items could not be delivered, so nothing was charged.");
+            }
+
+            resources.Coins -= totalPrice;
+            UpdateStockAndLogTransaction(characterId, itemId, amount, totalPrice, true);
+
+            return VendorBuyResult.Ok(amount, totalPrice);
+        }
+
+        /// <summary>
         /// Logs a vendor transaction to the database. This is used for reporting.
         /// wasItemBought is either false (sold) or true (bought).
         /// </summary>
