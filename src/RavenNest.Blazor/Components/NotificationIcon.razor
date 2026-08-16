@@ -5,9 +5,13 @@
 @inject RavenNest.Blazor.Services.NotificationService NotificationService
 @inject RavenNest.BusinessLogic.IKernel Kernel
 
+@* A red badge reading zero is not a notification. Only shown when there is something in it. *@
 <div class="notification-icon" @onclick="ToggleVisibility">
     <i class="fas fa-bell"></i>
-    <span class="notification-count">@UnreadMessageCount</span>
+    @if (UnreadMessageCount > 0)
+    {
+        <span class="notification-count">@UnreadMessageCount</span>
+    }
 </div>
 
 @if (ListVisible)

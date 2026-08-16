@@ -213,8 +213,17 @@
 
 /* The band reaches past the hero and behind the start of the content, so the
    content has to sit on nothing of its own for the picture to show through. The
-   page ground is on .main. */
+   page ground is on .main.
+
+   The stacking matters and caught me out. Both band layers are positioned, and
+   positioned elements paint above the in-flow content of later siblings however
+   far down the document those siblings are. So the fade was drawn over the top
+   of the page content: on the marketplace the paragraph under the stats came out
+   dimmed and looked cut off. Giving the content a layer of its own puts it back
+   on top. */
 .rf-front .page-content {
+    position: relative;
+    z-index: 1;
     margin-top: 0;
 }
 
@@ -709,10 +718,24 @@
 }
 
 /* The popup the game client and the Twitch redirect land in. It says one line
-   and closes itself, and it used to say it inside a hero fixed at 1000px tall,
-   so it was a sentence with nine hundred pixels of nothing below it. */
+   and closes itself.
+
+   Centred in what is left of the window rather than sitting against the header.
+   It was pinned to the top with the whole page empty underneath, which reads as
+   the page having failed to load rather than as one line of status. */
 .rf-narrow--pad {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
     padding: var(--rf-space-7) var(--rf-space-4);
+}
+
+/* The panel carries a bottom margin from the component, which pulls it a dozen
+   pixels above the centre of a container that is centring it. */
+.rf-narrow--pad > * {
+    width: 100%;
+    margin-bottom: 0;
 }
 
 .rf-narrow .rf-panel + .rf-panel {

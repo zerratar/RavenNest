@@ -1,171 +1,215 @@
-﻿.notification-icon {
+/*
+    The bell and its dropdown.
+
+    Was a white panel with a black header bar, 12pt text and a grey circle per row, from when the
+    site was light. Against the dark header it read as a hole cut in the page. Everything here is a
+    design system token now, so it belongs to whichever chrome it opens over, and the dashboard's
+    own rules only have to say where it sits rather than what it looks like.
+
+    Scoped to this component, so none of these names can reach anything else.
+*/
+
+.notification-icon {
+    position: relative;
     cursor: pointer;
 }
 
-.front-page .notification-icon {
-    color: white;
+/* The count was pulled back over the bell with a negative margin and a relative
+   offset, which put it wherever the bell glyph happened to end and left it
+   sitting off the corner in the front page header. Anchored to the bell instead,
+   so it lands in the same place whatever is around it. The component only
+   renders it when there is something to count, so it no longer says zero. */
+.notification-count {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.45rem;
+    min-width: 1.05rem;
+    height: 1.05rem;
+    padding: 0 0.2rem;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: var(--rf-bad);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 1.05rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
 }
 
 .notification-list {
     position: absolute;
-    top: 64px;
-    right: 25px;
-    background-color: #ffffff;
-    white-space: pre-wrap;
-    z-index: 11;
-    box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
+    top: 2.75rem;
+    right: 0;
+    z-index: 60;
+    width: min(24rem, calc(100vw - 2rem));
     display: flex;
     flex-flow: column;
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-shadow-lg), var(--rf-bevel);
+    overflow: hidden;
 }
 
 .notification-header {
-    background-color: black;
-    color: white;
-    text-transform: uppercase;
-    font-size: 13pt;
-    font-weight: 500;
-    line-height: 17pt;
     display: flex;
-    align-content: baseline;
+    align-items: center;
     justify-content: space-between;
-    padding: 20px;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-3) var(--rf-space-4);
+    background: var(--rf-surface-2);
+    border-bottom: 1px solid var(--rf-line);
+    color: var(--rf-ink-faint);
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
 }
 
 .notification-header .close {
-    outline:0;
-    border:0;
-    background-color:transparent;
-    color: white;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--rf-ink-muted);
+    cursor: pointer;
+    line-height: 1;
+    transition: color var(--rf-transition);
 }
 
-.notification-header span.fas.fa-times {
-    font-weight: 500;
-    color: white;
+.notification-header .close:hover {
+    color: var(--rf-gold);
 }
 
 .notification-list ul {
+    margin: 0;
     padding: 0;
-    margin: 0;
-}
-
-.list-item {
     list-style: none;
-    padding: 10px 20px;
-    box-sizing: border-box;
-    display: flex;
+    max-height: min(26rem, 60vh);
+    overflow-y: auto;
 }
 
-.top-row a, .top-row .btn-link {
-    margin: 0;
-    padding: 0px;
+.notification-item {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-3) var(--rf-space-4);
+    border-bottom: 1px solid var(--rf-line);
+    cursor: pointer;
+    transition: background var(--rf-transition);
+}
+
+.notification-item:last-child {
+    border-bottom: 0;
+}
+
+.notification-item:hover {
+    background: var(--rf-surface-2);
 }
 
 .--icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 24px;
-    background-color: #ececec;
-    color: white;
-    line-height: 48px;
-    text-align: center;
-    margin-right: 15px;
+    flex: 0 0 auto;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--rf-radius-sm);
+    background: var(--rf-surface-3);
+    border: 1px solid var(--rf-line);
+    color: var(--rf-ink-muted);
+}
+
+/* Unread was a green gradient pill reading NEW, absolutely positioned with a
+   negative margin, which floated it away from the row it belonged to. A gold
+   edge and a dot say the same thing without leaving the tile. */
+.--icon.new {
+    border-color: var(--rf-line-gold);
+    color: var(--rf-gold);
 }
 
 .--icon.new::before {
-    content: "NEW";
+    content: "";
     position: absolute;
-    color: white;
-    background: #56ab2f;
-    background: -webkit-linear-gradient(to right, #a8e063, #56ab2f);
-    background: linear-gradient(to right, #a8e063, #56ab2f);
-    font-size: 7pt;
-    font-weight: 500;
-    border-radius: 5px;
-    margin-top: -8px;
-    height: 20px;
-    line-height: 20px;
-    width: 37px;
-}
-
-.--icon.new {
-    /*background: #56ab2f;*/
+    top: -3px;
+    right: -3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--rf-gold);
 }
 
 .--content {
     display: flex;
     flex-flow: column;
-    flex-grow: 1;
-    width: 350px;
-    max-width: 100%;
-}
-
-li.notification-item:hover {
-    background-color: rgba(0,0,0,0.05);
-}
-
-.notification-item {
-    display: flex;
-    flex-flow: row;
-    max-width: 100%;
-    align-content: baseline;
-    justify-content: space-between;
-    padding: 10px 20px;
-    cursor: pointer;
-}
-
-.--icon span.fas.fa-bell {
-    font-size: 15pt;
-    text-align: center;
-    width: 100%;
-    line-height: 48px;
-    margin-right: 15px;
-    color: #ffffff;
-    text-shadow: 3px 3px 10px rgba(0,0,0,0.1);
+    gap: 2px;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .notification-title {
-    font-size: 12pt;
-    color:#333;
+    color: var(--rf-ink);
+    font-size: var(--rf-size-small);
+    line-height: 1.4;
+    overflow-wrap: anywhere;
 }
 
 .notification-date {
-    font-size: 10pt;
-    color: #808080;
-}
-
-.--status .fa-circle {
-    color: forestgreen;
+    color: var(--rf-ink-faint);
+    font-size: var(--rf-size-tiny);
 }
 
 .--status {
-    color: #333;
-    width: 48px;
-    text-align: center;
-    font-size: 6pt;
-    line-height: 22pt;
+    flex: 0 0 auto;
 }
 
 .--status button.remove {
-    background-color: transparent;
+    padding: var(--rf-space-1);
     border: 0;
-    font-size: 12pt;
-    color: #333;
-    outline: none;
-    line-height: 64px;
+    background: none;
+    color: var(--rf-ink-faint);
+    font-size: var(--rf-size-small);
+    line-height: 1;
+    cursor: pointer;
+    transition: color var(--rf-transition);
 }
 
+.--status button.remove:hover {
+    color: var(--rf-bad);
+}
+
+.notification-item.more {
+    justify-content: center;
+    cursor: default;
+    background: var(--rf-surface-2);
+}
+
+.read-all {
+    width: 100%;
+    padding: var(--rf-space-2);
+    border: 0;
+    background: none;
+    color: var(--rf-gold);
+    font-family: inherit;
+    font-size: var(--rf-size-small);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.read-all:hover {
+    color: var(--rf-gold-bright);
+}
+
+/* On a phone it spans the screen rather than hanging off the bell, which would
+   otherwise put most of it past the right edge. */
 @media screen and (max-width: 641px) {
     .notification-list {
         position: fixed;
-        top: 55px;
-        right: 0;
-        left: 0;
-        background-color: #ffffff;
-        white-space: pre-wrap;
-        z-index: 11;
-        box-shadow: 3px 3px 10px rgba(0,0,0,0.1);
-        display: flex;
-        flex-flow: column;
-        width: 100%;
+        top: 3.5rem;
+        right: var(--rf-space-3);
+        left: var(--rf-space-3);
+        width: auto;
     }
 }

@@ -1,4 +1,4 @@
-/*
+﻿/*
   Ravenfall dashboard chrome.
 
   Everything here is scoped under .rf-dash, which DashboardLayout puts on its root element, and
@@ -369,15 +369,14 @@
     color: var(--rf-gold);
 }
 
+/* Only where it sits. What it looks like belongs to the component, which is now
+   drawn from the same tokens as everything else rather than being a white panel
+   this had to paper over. */
 .rf-dash .notification-list {
     position: fixed;
     top: 3.25rem;
     right: var(--rf-space-5);
     left: auto;
-    max-width: min(24rem, calc(100vw - 2rem));
-    border-radius: var(--rf-radius);
-    box-shadow: var(--rf-shadow-lg);
-    overflow: hidden;
 }
 
 /* ---- Forms are not centred columns --------------------------------------
