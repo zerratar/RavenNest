@@ -1,4 +1,4 @@
-@layout AdminLayout
+﻿@layout AdminLayout
 @page "/admin/news"
 @using RavenNest.Blazor.Services.Announcements
 @inject RavenNest.Blazor.Services.AuthService AuthService
@@ -23,6 +23,22 @@
             belongs here before it happens.
         </p>
     </header>
+
+    @if (!Discord.IsConfigured)
+    {
+        @*
+            Said here rather than left to be discovered by pressing Send and getting a failure.
+            The rest of the page works either way; only the Discord button is inert.
+        *@
+        <div class="rf-banner rf-banner--warn">
+            <p class="rf-banner__title">Discord is not connected</p>
+            <p>
+                Posts publish to the site as normal, but cannot be sent to Discord until
+                <span class="rf-cmd">Discord:AnnouncementWebhook</span> is set in the server
+                configuration to a channel webhook URL.
+            </p>
+        </div>
+    }
 
     @if (message != null)
     {
@@ -78,6 +94,33 @@
                 <input type="checkbox" @bind="editing.Pinned" />
                 <span>Keep at the top</span>
             </label>
+
+            @*
+                Rendered with the pipeline the post page uses, so this is what will actually
+                appear rather than an approximation of it. Markdown that reads fine as text can
+                land badly as headings and lists, and finding that out after publishing is how an
+                announcement ends up being edited in front of everybody.
+            *@
+            <div class="rf-newsadmin__preview">
+                <div class="rf-newsadmin__previewhead">
+                    <span class="rf-label">Preview</span>
+                    <button type="button" class="rf-btn rf-btn--small" @onclick="() => showPreview = !showPreview">
+                        @(showPreview ? "Hide" : "Show")
+                    </button>
+                </div>
+
+                @if (showPreview)
+                {
+                    <article class="rf-prose rf-md rf-newsadmin__previewbody">
+                        <h2 class="rf-panel__title">@(string.IsNullOrWhiteSpace(editing.Title) ? "Untitled" : editing.Title)</h2>
+                        @if (!string.IsNullOrWhiteSpace(editing.Summary))
+                        {
+                            <p class="rf-lead">@editing.Summary</p>
+                        }
+                        @((MarkupString)AnnouncementMarkdown.ToHtml(editing.Body))
+                    </article>
+                }
+            </div>
 
             <div class="rf-modal__foot">
                 @if (editing.Id != Guid.Empty)
@@ -168,6 +211,7 @@
     private string message;
     private bool messageIsBad;
     private bool sending;
+    private bool showPreview = true;
 
     private bool CanSave => !string.IsNullOrWhiteSpace(editing.Title);
 

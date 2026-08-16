@@ -14,9 +14,20 @@ namespace RavenNest.Blazor.Pages.Front
         private IReadOnlyList<RavenNest.Blazor.Services.Announcements.Announcement> announcements =
             Array.Empty<RavenNest.Blazor.Services.Announcements.Announcement>();
 
+        /// <summary>
+        ///     The soonest change that has not happened yet, if there is one. Only ever one: a row
+        ///     of warnings is a wall, and the next thing to happen is the one that matters.
+        /// </summary>
+        private RavenNest.Blazor.Services.Announcements.Announcement upcoming;
+
         protected override async Task OnInitializedAsync()
         {
             announcements = Announcements.GetPublished(3);
+
+            upcoming = Announcements.GetPublished()
+                .Where(x => x.IsUpcoming)
+                .OrderBy(x => x.EffectiveUtc)
+                .FirstOrDefault();
             twitchStreams = await GetTwitchStreamsAsync(6);
         }
 

@@ -3268,3 +3268,94 @@ a.rf-badge:hover {
     font-size: var(--rf-size-small);
     cursor: pointer;
 }
+
+/* The preview sits inside the editor panel, so it needs a boundary of its own or
+   it reads as more form. */
+.rf-newsadmin__preview {
+    margin-top: var(--rf-space-4);
+    padding-top: var(--rf-space-4);
+    border-top: 1px solid var(--rf-line);
+}
+
+.rf-newsadmin__previewhead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--rf-space-3);
+    margin-bottom: var(--rf-space-3);
+}
+
+/* rf-prose is a front page class; inside the admin panel it has no surface of its
+   own, so the preview supplies one. */
+.rf-newsadmin__previewbody {
+    max-width: none;
+    padding: var(--rf-space-4);
+    background: var(--rf-bg);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    line-height: 1.7;
+}
+
+.rf-newsadmin__previewbody > :last-child {
+    margin-bottom: 0;
+}
+
+/* ---- Rendered markdown -------------------------------------------------
+   A post body arrives as plain tags with no classes on them, so these are
+   element rules. Unscoped on purpose: the same markup is rendered on the front
+   page and in the admin preview, and the whole value of a preview is that it
+   matches. The first version of these rules was scoped to .rf-front, so the
+   preview rendered the same HTML through the same pipeline and still looked
+   different: headings came out at 32px and code came out Bootstrap pink. */
+
+.rf-md h2,
+.rf-md h3 {
+    margin: var(--rf-space-5) 0 var(--rf-space-3) 0;
+    color: var(--rf-ink);
+    font-size: var(--rf-size-title);
+    font-weight: 700;
+}
+
+.rf-md h3 {
+    font-size: var(--rf-size-heading);
+}
+
+.rf-md h2::after,
+.rf-md h3::after {
+    content: none;
+    display: none;
+}
+
+.rf-md p {
+    margin: 0 0 var(--rf-space-4) 0;
+}
+
+.rf-md ul,
+.rf-md ol {
+    margin: 0 0 var(--rf-space-4) 0;
+    padding-left: var(--rf-space-5);
+}
+
+.rf-md li {
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-md code {
+    padding: 0 var(--rf-space-1);
+    background: var(--rf-surface-2);
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-gold);
+    font-family: var(--rf-font-mono);
+    font-size: var(--rf-size-small);
+}
+
+.rf-md blockquote {
+    margin: 0 0 var(--rf-space-4) 0;
+    padding-left: var(--rf-space-4);
+    border-left: 2px solid var(--rf-line-gold);
+    color: var(--rf-ink-muted);
+}
+
+.rf-md > :last-child {
+    margin-bottom: 0;
+}

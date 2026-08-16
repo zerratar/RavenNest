@@ -1791,56 +1791,57 @@
     border-top: 1px solid var(--rf-line);
 }
 
-/* The post body is markdown, so it arrives as plain tags with no classes on
-   them. site.css leaves them looking like 2019. */
-.rf-front .rf-prose h2,
-.rf-front .rf-prose h3 {
-    margin: var(--rf-space-5) 0 var(--rf-space-3) 0;
-    font-size: var(--rf-size-title);
-    font-weight: 700;
+/* ---- The upcoming change line -------------------------------------------
+   One row, at the top of the landing page, for something that has not happened
+   yet. Deliberately not a card among the news cards: those are read if somebody
+   is browsing, and this has to be read by somebody who is not. */
+
+.rf-front .rf-upcoming {
+    padding-top: var(--rf-space-5);
+    padding-bottom: 0;
 }
 
-.rf-front .rf-prose h3 {
-    font-size: var(--rf-size-heading);
+.rf-front .rf-upcoming__link {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-3) var(--rf-space-4);
+    background: var(--rf-warn-wash);
+    border: 1px solid var(--rf-warn);
+    border-radius: var(--rf-radius);
+    color: var(--rf-ink);
+    text-decoration: none;
+    transition: background var(--rf-transition);
 }
 
-.rf-front .rf-prose h2::after,
-.rf-front .rf-prose h3::after {
-    content: none;
-    display: none;
-}
-
-.rf-front .rf-prose ul,
-.rf-front .rf-prose ol {
-    margin: 0 0 var(--rf-space-4) 0;
-    padding-left: var(--rf-space-5);
-}
-
-.rf-front .rf-prose li {
-    margin-bottom: var(--rf-space-2);
-}
-
-.rf-front .rf-prose code {
-    padding: 0 var(--rf-space-1);
+.rf-front .rf-upcoming__link:hover,
+.rf-front .rf-upcoming__link:focus-visible {
     background: var(--rf-surface-2);
-    border-radius: var(--rf-radius-sm);
-    color: var(--rf-gold);
-    font-family: var(--rf-font-mono);
-    font-size: var(--rf-size-small);
+    text-decoration: none;
 }
 
-.rf-front .rf-prose blockquote {
-    margin: 0 0 var(--rf-space-4) 0;
-    padding-left: var(--rf-space-4);
-    border-left: 2px solid var(--rf-line-gold);
+.rf-front .rf-upcoming__text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    flex: 1 1 18rem;
+    min-width: 0;
+}
+
+.rf-front .rf-upcoming__summary {
     color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    line-height: 1.5;
 }
 
-/* Three across on the landing page, one column on a phone. */
-.rf-front .rf-newsgrid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
-    gap: var(--rf-space-4);
-    margin-bottom: var(--rf-space-5);
-    align-items: start;
+/* The date is the point of the whole row, so it does not get to be the quiet
+   part of it. */
+.rf-front .rf-upcoming__when {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    color: var(--rf-warn);
+    font-weight: 700;
+    white-space: nowrap;
 }

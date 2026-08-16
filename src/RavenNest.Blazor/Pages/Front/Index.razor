@@ -75,6 +75,35 @@
     </div>
 
     @*
+        A change that has not happened yet gets its own line at the top, above everything else on
+        the page.
+
+        A card among three others is enough for "here is what we did" and not enough for "this is
+        going to cost you something on Tuesday". The whole reason the announcements exist is that a
+        change to what a player earns must not be able to arrive unannounced, and that only holds
+        if the warning is somewhere nobody can miss it.
+    *@
+    @if (upcoming != null)
+    {
+        <div class="section rf-upcoming">
+            <a class="rf-upcoming__link" href="/news/@upcoming.Slug">
+                <span class="rf-badge rf-badge--warn">Heads up</span>
+                <span class="rf-upcoming__text">
+                    <b>@upcoming.Title</b>
+                    @if (!string.IsNullOrWhiteSpace(upcoming.Summary))
+                    {
+                        <span class="rf-upcoming__summary">@upcoming.Summary</span>
+                    }
+                </span>
+                <span class="rf-upcoming__when">
+                    <i class="fa-solid fa-calendar-day" aria-hidden="true"></i>
+                    @upcoming.EffectiveUtc.Value.ToLocalTime().ToString("d MMMM")
+                </span>
+            </a>
+        </div>
+    }
+
+    @*
         Announcements, on the page every visitor lands on. Nothing on this site could tell players
         anything before this: the old NewsService read an RSS feed from a Medium blog, was injected
         here and never called, so a change to the game reached people through Discord or not at all.
