@@ -563,7 +563,7 @@
 .rf-front .login .raven-input,
 .rf-front .login button.raven-btn,
 .rf-front .login .input-fields {
-    width: min(22rem, 100%);
+    width: min(19rem, 100%);
     max-width: 100%;
 }
 
