@@ -52,14 +52,37 @@
     /// <summary>
     ///     Scenery per page, by first path segment.
     ///
-    ///     Only the two that mean something are mapped. The rest of the set
-    ///     (atria, away, eldara, ironhill, kyo) are island scenes rather than
-    ///     page subjects, and guessing which page each belongs to would be
-    ///     inventing meaning the art does not carry.
+    ///     Each scene is matched to what its page is about, and pages in the
+    ///     same nav group share one, so the art reinforces the grouping the
+    ///     sidebar already has rather than cutting across it. A page you have
+    ///     not seen before should feel like somewhere, and two pages you switch
+    ///     between should not look like the same place.
     /// </summary>
     private static readonly Dictionary<string, string> ArtByPage =
         new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
+            // Overview: the front door, so the everyday village with the road in.
+            ["dashboard"] = "home",
+
+            // You: a field crowded with characters, and a port full of stored goods.
+            ["characters"] = "ironhill",
+            ["character"] = "ironhill",
+            ["stash"] = "away",
+            ["inventory"] = "away",
+
+            // Together: banners, a fortress and a company; then the civic plaza
+            // where things are recorded and rewarded.
+            ["clan"] = "eldara",
+            ["clan-invites"] = "eldara",
+            ["loyalty"] = "atria",
+            ["patreon"] = "atria",
+
+            // Your stream: a crowded plaza for the thing that talks to chat, and
+            // the settlement for the one about your settlement.
+            ["bot"] = "kyo",
+            // /session only redirects to /bot, but it renders once on the way.
+            ["session"] = "kyo",
+            ["notifications"] = "kyo",
             ["town"] = "town",
         };
 
