@@ -59,21 +59,44 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     elapsed *= 2;
                 }
 
-                village.Experience += GameMath.GetVillageExperience(village.Level, playerCount, elapsed);
+                var gained = GameMath.GetVillageExperience(village.Level, playerCount, elapsed);
 
-                // check if this village gone mad.
-                var percentage = village.Experience / (double)expForNextLevel;
-                if (percentage > 2)
+                // The gain is checked, not the total. Checking the total was the bug: a village
+                // whose experience had drifted past the requirement could never come back, because
+                // the check sat above the level up loop and returned before reaching it. Every
+                // later tick then added more and returned again, so the gap grew for ever and the
+                // village stayed at whatever level it was stuck on. Reported as "it needs
+                // -374,203,328 xp to level up", getting further negative by the day.
+                if (double.IsNaN(gained) || double.IsInfinity(gained) || gained < 0)
                 {
-                    // this should not happen.
-                    return;
+                    gained = 0;
                 }
+
+                village.Experience += gained;
 
                 if (double.IsNaN(village.Experience) || double.IsInfinity(village.Experience))
                 {
+                    logger.LogError($"Village '{village.Id}' had an unusable experience value and was reset to zero.");
                     village.Experience = 0;
-                    return;
                 }
+            }
+
+            // A village that is already past the requirement is repaired rather than frozen, and
+            // the excess is dropped rather than spent.
+            //
+            // Spending it would be far too generous: the gain per tick is scaled to the cost of the
+            // next level, so a village stuck at 48 accumulated at level 49 rates while the levels it
+            // would buy cost level 300 prices. One reported village held 2,251,082% of its
+            // requirement, which would have taken it from level 48 to 353 in one tick, and its house
+            // slots from 10 to 35. Nobody earned that; the village was simply stuck while the clock
+            // ran. Clamping puts it one level up and then back to levelling normally.
+            if (village.Experience > expForNextLevel * 2)
+            {
+                logger.LogWarning(
+                    $"Village '{village.Id}' was holding {village.Experience:N0} experience against a " +
+                    $"requirement of {expForNextLevel:N0} at level {village.Level}. Clamped so it can level again.");
+
+                village.Experience = expForNextLevel;
             }
 
             var levelDelta = 0;

@@ -259,8 +259,7 @@ namespace RavenNest.BusinessLogic
         /// <returns></returns>
         public static long CalculateVendorBuyPrice(DataModels.Item i, long inStock)
         {
-            var minPrice = Math.Max(i.ShopSellPrice, i.ShopBuyPrice);
-            return CalculateVendorBuyPrice(minPrice, inStock);
+            return CalculateVendorBuyPrice(Math.Max(i.ShopSellPrice, i.ShopBuyPrice), i.ShopSellPrice, inStock);
         }
 
         /// <summary>
@@ -271,8 +270,7 @@ namespace RavenNest.BusinessLogic
         /// <returns></returns>
         public static long CalculateVendorBuyPrice(RavenNest.Models.Item i, long inStock)
         {
-            var minPrice = Math.Max(i.ShopSellPrice, i.ShopBuyPrice);
-            return CalculateVendorBuyPrice(minPrice, inStock);
+            return CalculateVendorBuyPrice(Math.Max(i.ShopSellPrice, i.ShopBuyPrice), i.ShopSellPrice, inStock);
         }
 
         /// <summary>
@@ -304,9 +302,42 @@ namespace RavenNest.BusinessLogic
         ///     because a payout that quietly drops reads as a bug.
         ///     </para>
         /// </remarks>
-        public static long CalculateVendorBuyPrice(long minPrice, long inStock = 0)
+        /// <summary>
+        ///     The least the vendor will ever ask for anything.
+        /// </summary>
+        /// <remarks>
+        ///     Below this a purchase is not worth the click, and a one coin item makes the whole
+        ///     shop look like a rounding error.
+        /// </remarks>
+        public const long MinimumVendorBuyPrice = 10;
+
+        /// <summary>
+        ///     How many times what the vendor pays for an item it will ask to sell one back.
+        /// </summary>
+        /// <remarks>
+        ///     Buying from the vendor is a coin sink, and the only one that scales with how much
+        ///     people trade. Opening it up at a small margin would have moved a lot of items and
+        ///     drained very little, so it starts high and can come down later; going the other way
+        ///     would be putting prices up on people, which is the thing that needs announcing.
+        /// </remarks>
+        public const double VendorBuyMultiplier = 3d;
+
+        /// <param name="minPrice">The greater of the item's two shop prices.</param>
+        /// <param name="sellPayout">What the vendor actually pays for one, which is ShopSellPrice.</param>
+        public static long CalculateVendorBuyPrice(long minPrice, long sellPayout, long inStock = 0)
         {
-            return (long)Math.Truncate(minPrice * 1.25d);
+            // Whichever is more: what it cost before, or three times what the vendor pays.
+            //
+            // Both halves are needed and the "whichever is more" is the point. Some items already
+            // ask far more than three times their payout, because their buy price is set well
+            // above their sell price and the old margin is taken from the greater of the two.
+            // Using the multiple alone would have made exactly those items cheaper, and nothing
+            // here should ever get cheaper: this is a price rise, and a price rise can be
+            // announced afterwards, while a price cut that gets reversed cannot.
+            var previous = Math.Truncate(minPrice * 1.25d);
+            var multiple = sellPayout * VendorBuyMultiplier;
+
+            return (long)Math.Max(MinimumVendorBuyPrice, Math.Max(previous, multiple));
         }
 
         /*  CalculateVendorSellPrice was here.
