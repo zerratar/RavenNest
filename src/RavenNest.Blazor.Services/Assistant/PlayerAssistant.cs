@@ -103,13 +103,19 @@ namespace RavenNest.Blazor.Services.Assistant
         public int RemainingToday(Guid userId) => Math.Max(0, DailyLimit - AskedToday(userId));
 
         /// <summary>
-        ///     Counts one question against the day's allowance. Returns false when there is none
-        ///     left, and counts nothing in that case.
+        ///     Counts one question against the day, and says whether it is allowed.
         /// </summary>
-        public bool TryUse(Guid userId)
+        /// <remarks>
+        ///     Administrators are counted but never stopped. The limit exists to keep the bill from
+        ///     running away, and the person who owns the key is the one paying that bill and the one
+        ///     who can change the number; stopping them at thirty is friction with nothing on the
+        ///     other side of it. They still get counted, because what they have spent today is worth
+        ///     showing to the person spending it.
+        /// </remarks>
+        public bool TryUse(Guid userId, bool isAdministrator)
         {
             var today = Today(userId);
-            if (today.Count >= DailyLimit) return false;
+            if (!isAdministrator && today.Count >= DailyLimit) return false;
 
             today.Count++;
             return true;

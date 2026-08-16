@@ -27,7 +27,9 @@
             <div class="rf-assistant__panel" id="rf-assistant-panel">
                 <div class="rf-assistant__head">
                     <h2 class="rf-assistant__title">Ask about your characters</h2>
-                    <span class="rf-meta">@remaining left today</span>
+                    <span class="rf-meta">
+                        @(isAdmin ? asked + " asked today" : remaining + " left today")
+                    </span>
                 </div>
 
                 @if (adminOnly)
@@ -98,18 +100,18 @@
                     <div class="rf-chat__ask">
                         <input class="rf-input"
                                placeholder="Ask something"
-                               disabled="@(thinking || remaining == 0)"
+                               disabled="@(thinking || OutOfQuestions)"
                                @bind="draft"
                                @bind:event="oninput"
                                @onkeydown="OnKey" />
                         <button type="button" class="rf-btn rf-btn--primary rf-btn--small"
-                                disabled="@(thinking || remaining == 0 || string.IsNullOrWhiteSpace(draft))"
+                                disabled="@(thinking || OutOfQuestions || string.IsNullOrWhiteSpace(draft))"
                                 @onclick="Send">
                             Ask
                         </button>
                     </div>
 
-                    @if (remaining == 0)
+                    @if (OutOfQuestions)
                     {
                         <p class="rf-meta">That is all the questions for today. It resets at midnight UTC.</p>
                     }
@@ -141,6 +143,7 @@
 
 @code {
     private bool visible;
+    private bool isAdmin;
     private bool adminOnly;
     private bool open;
     private Guid userId;
@@ -148,17 +151,28 @@
     private string draft;
     private bool thinking;
     private int remaining;
+    private int asked;
+
+    /// <summary>Only players run out. See PlayerAssistant.TryUse.</summary>
+    private bool OutOfQuestions => !isAdmin && remaining == 0;
 
     protected override void OnInitialized()
     {
         var session = AuthService.GetSession();
         if (session == null || !Assistant.IsAvailableTo(session.Administrator)) return;
 
-        adminOnly = session.Administrator && !Assistant.IsOnForEveryone;
+        isAdmin = session.Administrator;
+        adminOnly = isAdmin && !Assistant.IsOnForEveryone;
         userId = session.UserId;
         chat = Assistant.StartFor(userId);
-        remaining = Assistant.RemainingToday(userId);
+        Recount();
         visible = true;
+    }
+
+    private void Recount()
+    {
+        asked = Assistant.AskedToday(userId);
+        remaining = Assistant.RemainingToday(userId);
     }
 
     private async Task OnKey(KeyboardEventArgs e)
@@ -172,9 +186,9 @@
 
         // Counted before the call, not after. A question that fails still cost a request, and
         // counting only successes would make failures free to repeat.
-        if (!Assistant.TryUse(userId))
+        if (!Assistant.TryUse(userId, isAdmin))
         {
-            remaining = 0;
+            Recount();
             return;
         }
 
@@ -189,7 +203,7 @@
         finally
         {
             thinking = false;
-            remaining = Assistant.RemainingToday(userId);
+            Recount();
         }
     }
 

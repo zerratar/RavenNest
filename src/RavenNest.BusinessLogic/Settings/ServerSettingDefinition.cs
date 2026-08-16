@@ -185,7 +185,7 @@ namespace RavenNest.BusinessLogic.Settings
                 AssistantDailyLimit,
                 "Assistant",
                 "Questions per player per day",
-                "How many questions one person can ask in a day. Counted in memory, so a restart clears it.",
+                "How many questions one player can ask in a day. Administrators are not limited, since they are the ones paying for the key. Counted in memory, so a restart clears it.",
                 ServerSettingKind.Number,
                 defaultValue: "30"),
 
