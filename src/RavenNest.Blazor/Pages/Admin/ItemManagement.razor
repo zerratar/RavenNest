@@ -803,13 +803,31 @@
         await InvokeAsync(StateHasChanged);
     }
 
+    /// <summary>
+    ///     Whether an image has already been uploaded for the item being edited.
+    /// </summary>
+    /// <remarks>
+    ///     A new item has no name: CreateNewItem sets only the id. This called
+    ///     editedItem.Name.ToLower() unguarded, so opening the editor with New item threw a
+    ///     NullReferenceException during render. In Blazor Server that is not a missing image, it
+    ///     is an unhandled exception in a render tree, which takes the whole circuit down.
+    /// </remarks>
     private bool ItemImageExists()
     {
-        //var fileName = ItemService.GetItemImage(editedItem.IdString, editedItem.Name);
-        //return File.Exists(fileName);
-        var pathId = Path.Combine(Environment.WebRootPath, "imgs", "items", editedItem.IdString + ".png");
-        var pathName = Path.Combine(Environment.WebRootPath, "imgs", "items", editedItem.Name.ToLower().Replace(" ", "-").Replace("'", "") + ".png");
-        return File.Exists(pathName) || File.Exists(pathId);
+        if (editedItem == null) return false;
+
+        var itemsFolder = Path.Combine(Environment.WebRootPath, "imgs", "items");
+
+        if (!string.IsNullOrEmpty(editedItem.IdString) &&
+            File.Exists(Path.Combine(itemsFolder, editedItem.IdString + ".png")))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrEmpty(editedItem.Name)) return false;
+
+        var byName = editedItem.Name.ToLower().Replace(" ", "-").Replace("'", "") + ".png";
+        return File.Exists(Path.Combine(itemsFolder, byName));
     }
 
     private async Task UploadImage(InputFileChangeEventArgs e)
