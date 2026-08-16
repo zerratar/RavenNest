@@ -24,7 +24,27 @@ namespace RavenNest.BusinessLogic.Data
         private const int BackupInterval = 60 * 60 * 1000; // once per hour
         private const int SaveInterval = 2000; // 10_000
         private const int SaveMaxBatchSize = 50;
-        public const float SessionTimeoutSeconds = 1f;
+        /// <summary>
+        ///     How stale a session's last update may be before GetActiveSessions stops counting it
+        ///     as active.
+        /// </summary>
+        /// <remarks>
+        ///     This was 1 second, which is not a timeout so much as a sampling window: a session
+        ///     only counted if its heartbeat happened to land inside the last second of whenever
+        ///     the question was asked. Player and stream counts therefore changed on every refresh
+        ///     with no disconnections behind it, on the admin overview, on /admin/sessions and on
+        ///     the public towns page alike.
+        ///
+        ///     GameProcessorManager runs the game loop on a 100ms sleep and UpdateSessionTasks
+        ///     writes session.Updated unthrottled on every pass, so a connected session refreshes
+        ///     about ten times a second. Five seconds is fifty passes of headroom, which a garbage
+        ///     collection pause or a slow tick cannot eat through.
+        ///
+        ///     Raising it costs little in the other direction: a session that has genuinely gone
+        ///     lingers for a few seconds longer, and one that stopped cleanly is excluded by its
+        ///     Stopped timestamp regardless of this.
+        /// </remarks>
+        public const float SessionTimeoutSeconds = 5f;
         #endregion
 
         #region Private members
