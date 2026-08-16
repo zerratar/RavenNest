@@ -5,9 +5,21 @@
 @inject NavigationManager NavigationManager
 @inject AuthService AuthService
 
+@*
+    Every heading on this page used to sit outside the block it introduced. The panels centre
+    themselves at a readable width and a bare h1 fills the section, so "System requirements" started
+    about three hundred and fifty pixels to the left of the requirements. Each heading is inside its
+    own panel now, which is how the dashboard has always done it, and the two cannot come apart.
+
+    The page is also ordered the way somebody actually does this: get the thing, set it up, then the
+    details. Requirements were second, above the steps, which is a specification sheet standing
+    between a person and the four things they have to do.
+*@
+
 <div class="top-section">
     <div class="hero-text">
-        <h1>Get started with Ravenfall</h1>
+        <h1>Run Ravenfall on your stream</h1>
+        <p>Your viewers play from chat. There is nothing for them to install.</p>
     </div>
 </div>
 
@@ -15,30 +27,37 @@
 <div class="page-content">
 
     <div class="section">
-        <p class="rf-lead">
-            Ravenfall runs on your machine and your viewers play it from chat. Download the client,
-            set a password, and type !join in your own channel.
-        </p>
-
-        <div class="rf-downloads">
-            <div class="rf-download">
-                <h3 class="rf-download__title"><i class="fa-brands fa-windows" aria-hidden="true"></i> Windows x64</h3>
-                <p class="rf-download__body">The supported build, with automatic updates.</p>
-                <a href="/download/latest" class="rf-btn rf-btn--primary">
-                    <i class="fa-solid fa-download" aria-hidden="true"></i> Download for Windows
+        <div class="rf-getstart">
+            @*
+                Windows is the supported build and Linux is a best effort, so they are not two equal
+                cards. They were, which made an experimental build with no auto update look like an
+                equally good choice.
+            *@
+            <div class="rf-getstart__main">
+                <h2 class="rf-getstart__title">
+                    <i class="fa-brands fa-windows" aria-hidden="true"></i> Download for Windows
+                </h2>
+                <p class="rf-getstart__body">
+                    The supported build, 64 bit, with automatic updates. This is the one you want.
+                </p>
+                <a href="/download/latest" class="rf-btn rf-btn--primary rf-btn--tall">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i> Download the client
                 </a>
+                <p class="rf-getstart__note">
+                    Free, and it stays free. Setting it up takes about five minutes.
+                </p>
             </div>
 
-            <div class="rf-download">
-                <h3 class="rf-download__title">
+            <div class="rf-getstart__alt">
+                <h3 class="rf-getstart__subtitle">
                     <i class="fa-brands fa-linux" aria-hidden="true"></i> Linux x86/x64
                     <span class="rf-badge rf-badge--warn">Experimental</span>
                 </h3>
-                <p class="rf-download__body">
-                    Not officially supported and it has no working auto update. The link may not
-                    work if the current version has no successful Linux build.
+                <p class="rf-getstart__body">
+                    Not officially supported, and it has no working auto update. The link fails
+                    outright if the current version had no successful Linux build.
                 </p>
-                <a href="/download/linux" class="rf-btn">
+                <a href="/download/linux" class="rf-btn rf-btn--small">
                     <i class="fa-solid fa-download" aria-hidden="true"></i> Download for Linux
                 </a>
             </div>
@@ -46,13 +65,43 @@
     </div>
 
     <div class="section">
-        <h1>System requirements</h1>
-        @*
-            Was a bullet list of three lines that each had to carry their own label. A facts list
-            is the shape of a label and a value, and it puts the three where they can be compared
-            against what you have.
-        *@
         <div class="rf-prose">
+            <h2 class="rf-panel__title">Setting it up</h2>
+            <ol class="rf-steps">
+                <li>
+                    <b>Unzip the client.</b> Use <a href="https://www.7-zip.org/" target="_blank" rel="noopener">7-Zip</a>
+                    or similar and extract it into a folder of its own.
+                </li>
+                <li>
+                    <b>Set a password.</b> The client cannot sign in with Twitch, so it needs one of
+                    its own: set it on the <a href="/password">password page</a>.
+                </li>
+                <li>
+                    <b>Log in.</b> Open the client and sign in with your Twitch username and that
+                    password. You should arrive in the village on Home island.
+                </li>
+                <li>
+                    <b>Join from chat.</b> Type <span class="rf-cmd">!join</span> in your own
+                    channel. RavenfallOfficial replies and your character appears in the client.
+                </li>
+            </ol>
+            <p class="rf-meta">
+                Alt and Enter leaves fullscreen if you would rather it ran in a window. Two factor
+                authentication on your Twitch account is only needed if you intend to run your own
+                bot rather than the official one, and
+                <a href="https://help.twitch.tv/s/article/two-factor-authentication?language=en_US" target="_blank" rel="noopener">Twitch explains that here</a>.
+            </p>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="rf-prose">
+            <h2 class="rf-panel__title">What it needs to run</h2>
+            @*
+                Was a bullet list of three lines that each had to carry their own label. A facts
+                list is the shape of a label and a value, and it puts the three where they can be
+                compared against what you have.
+            *@
             <dl class="rf-facts">
                 <dt>Operating system</dt>
                 <dd>64 bit Windows 10 or later. Linux is untested.</dd>
@@ -65,8 +114,8 @@
             </dl>
 
             <p class="rf-meta">
-                These are estimates for about 25 players. More players than that wants more
-                machine. Tell us what you are running on
+                These are estimates for about 25 players. More players than that wants more machine.
+                Tell us what you are running on
                 <a href="https://discord.gg/gtfDts7" target="_blank" rel="noopener">Discord</a> and
                 we will sharpen these numbers.
             </p>
@@ -74,42 +123,8 @@
     </div>
 
     <div class="section">
-        <h1>Setting it up</h1>
         <div class="rf-prose">
-            <ol class="rf-steps">
-                <li>
-                    <b>Unzip the client.</b> Use <a href="https://www.7-zip.org/" target="_blank" rel="noopener">7-Zip</a>
-                    or similar and extract it into a folder of its own.
-                </li>
-                <li>
-                    <b>Set a password.</b> The client cannot sign in with Twitch, so it needs one:
-                    set it on the <a href="/password">password page</a>.
-                </li>
-                <li>
-                    <b>Log in.</b> Open the client and sign in with your Twitch username and that
-                    password. You should arrive in the village on Home island.
-                </li>
-                <li>
-                    <b>Join from chat.</b> Type <span class="rf-cmd">!join</span> in your own
-                    channel. RavenfallOfficial replies and your character appears in the client.
-                </li>
-                <li>
-                    <b>Leave fullscreen</b> with Alt and Enter if you would rather it ran in a
-                    window.
-                </li>
-            </ol>
-
-            <p class="rf-meta">
-                Two factor authentication on your Twitch account is only needed if you intend to
-                run your own bot rather than the official one.
-                <a href="https://help.twitch.tv/s/article/two-factor-authentication?language=en_US" target="_blank" rel="noopener">How to set it up</a>.
-            </p>
-        </div>
-    </div>
-
-    <div class="section">
-        <h1>Worth knowing</h1>
-        <div class="rf-prose">
+            <h2 class="rf-panel__title">Worth knowing</h2>
             <ul class="rf-tips">
                 <li><b>The client has to be running</b> for characters to earn experience, even when your stream is offline.</li>
                 <li><b>It does not have to be on screen.</b> Plenty of streamers run it offscreen and bring it up for raids and dungeons.</li>
@@ -124,10 +139,19 @@
     </div>
 
     <div class="section">
-        <p class="rf-meta">
-            The <a href="https://wiki.ravenfall.stream/index.php/Streamer_Setup_Guide" target="_blank" rel="noopener">community wiki setup guide</a>
-            goes further than this page and is kept up to date by players.
-        </p>
+        <div class="rf-prose">
+            <h2 class="rf-panel__title">If you get stuck</h2>
+            <p>
+                The <a href="https://wiki.ravenfall.stream/index.php/Streamer_Setup_Guide" target="_blank" rel="noopener">community wiki setup guide</a>
+                goes further than this page and is kept up to date by players, and
+                <a href="https://discord.gg/gtfDts7" target="_blank" rel="noopener">Discord</a> is
+                the fastest way to get an answer from someone who has hit the same thing.
+            </p>
+            <div class="rf-actions">
+                <a class="rf-btn" href="/how-to-play">What your viewers type</a>
+                <a class="rf-btn" href="/commands">The full command list</a>
+            </div>
+        </div>
     </div>
 
 </div>

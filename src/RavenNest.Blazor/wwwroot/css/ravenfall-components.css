@@ -393,6 +393,14 @@
     justify-content: center;
 }
 
+/* The one action a page is really asking for, where the others are alternatives
+   to it rather than peers. */
+.rf-btn--tall {
+    padding-top: var(--rf-space-3);
+    padding-bottom: var(--rf-space-3);
+    font-size: var(--rf-size-body);
+}
+
 .rf-btn[disabled],
 .rf-btn--disabled {
     opacity: 0.5;

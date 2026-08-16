@@ -12,9 +12,15 @@
     Two quite different pages share this route.
 
     One is the popup the game client and the Twitch redirect land in, which exists only to say what
-    is happening and then close itself. The other is the sign in page a person navigates to. They
-    used to be the same stack of paragraphs inside a hero fixed at 1000px tall, so the popup was a
-    line of text with nine hundred pixels of nothing under it.
+    is happening and then close itself.
+
+    The other is the sign in page a person navigates to, and it has no hero. Every other front page
+    opens with a photograph and a torn edge under it, which is right for a page you browse and
+    wrong for one with a single job: it pushed the only thing on the page most of a screen down and
+    put a lot of noise behind a form. One column, centred, nothing else on it.
+
+    Kick is not offered. The route and the token exchange stay because the server side works, but
+    nothing on the site points at it until it is a thing we support.
 *@
 
 @if (IsHandingOff)
@@ -37,10 +43,7 @@
             else
             {
                 <h1 class="rf-panel__title">Signing you in</h1>
-                <p class="rf-meta">
-                    @(IsKickLogin ? "Waiting for Kick." : "Waiting for Twitch.") This window closes itself
-                    when it is done.
-                </p>
+                <p class="rf-meta">This window closes itself when it is done.</p>
                 <LoadIndicator></LoadIndicator>
             }
         </div>
@@ -48,108 +51,94 @@
 }
 else
 {
-    <div class="top-section">
-        <div class="hero-text">
-            <h1>Sign in</h1>
-        </div>
-    </div>
+    <div class="rf-auth">
+        <a class="rf-auth__brand" href="/" aria-label="Ravenfall home">
+            <img src="/imgs/logo.png" alt="Ravenfall" />
+        </a>
 
-    <div class="white-section-break"></div>
-    <div class="page-content">
-        <div class="section">
-            <div class="rf-narrow">
-                @if (IsAuthenticated)
-                {
-                    @*
-                        Was a bare "Welcome back, name" with nothing to click, on the one page a
-                        signed in person reaches only by mistake.
-                    *@
-                    <div class="rf-panel">
-                        <h2 class="rf-panel__title">You are signed in as @session.UserName</h2>
-                        <div class="rf-actions">
-                            <a class="rf-btn rf-btn--primary" href="/dashboard">Go to your dashboard</a>
-                            <a class="rf-btn" href="/characters">Your characters</a>
-                        </div>
-                    </div>
-                }
-                else
-                {
-                    @*
-                        Twitch first. Almost nobody has a Ravenfall password until they want to run
-                        the client, and the page used to put the password form at the top and the
-                        Twitch button underneath it as if it were the fallback.
-                    *@
-                    <div class="rf-panel">
-                        <h2 class="rf-panel__title">Sign in with Twitch</h2>
-                        <p class="rf-meta">
-                            The usual way in. Your characters belong to your Twitch account, so this
-                            works whether or not you have ever set a Ravenfall password.
-                        </p>
-                        <button type="button" class="rf-btn rf-btn--twitch rf-btn--block" @onclick="LoginWithTwitch">
-                            <i class="fab fa-twitch" aria-hidden="true"></i> Continue with Twitch
-                        </button>
-                    </div>
+        @if (IsAuthenticated)
+        {
+            @*
+                Was a bare "Welcome back, name" with nothing to click, on the one page a signed in
+                person only reaches by mistake.
+            *@
+            <h1 class="rf-auth__title">You are signed in</h1>
+            <p class="rf-auth__lead">as <b>@session.UserName</b></p>
 
-                    <div class="rf-or"><span>or</span></div>
-
-                    <div class="rf-panel">
-                        <h2 class="rf-panel__title">Sign in with a Ravenfall password</h2>
-                        <p class="rf-meta">
-                            The password you set for the game client. If you have never set one, or
-                            cannot remember it, sign in with Twitch above and
-                            <a href="/password">set a new one</a>.
-                        </p>
-
-                        @if (loginFailed)
-                        {
-                            @*
-                                Was "Whops. Wrong username or password.", which is both a typo and
-                                unhelpful: the most common reason for landing here is having no
-                                Ravenfall password at all.
-                            *@
-                            <div class="rf-banner rf-banner--bad" role="alert">
-                                <p class="rf-banner__title">That username and password did not match</p>
-                                <p>
-                                    This is the password you set for the game client, not your Twitch
-                                    password. If you have never set one, use Twitch above.
-                                </p>
-                            </div>
-                        }
-
-                        <EditForm Model="@loginModel" OnValidSubmit="@HandleValidSubmit">
-                            <DataAnnotationsValidator />
-
-                            @*
-                                Placeholders were doing the job of labels, so the fields were unnamed
-                                once you had typed in them, and the browser had nothing to tell a
-                                password manager what it was filling.
-                            *@
-                            <label class="rf-field">
-                                <span class="rf-label">Username</span>
-                                <InputText class="rf-input" id="username" autocomplete="username" @bind-Value="loginModel.Username" />
-                            </label>
-
-                            <label class="rf-field">
-                                <span class="rf-label">Password</span>
-                                <InputText class="rf-input" type="password" id="password" autocomplete="current-password" @bind-Value="loginModel.Password" />
-                            </label>
-
-                            <ValidationSummary />
-
-                            <button type="submit" class="rf-btn rf-btn--primary rf-btn--block">
-                                <i class="fas fa-key" aria-hidden="true"></i> Sign in
-                            </button>
-                        </EditForm>
-                    </div>
-
-                    <p class="rf-meta rf-narrow__foot">
-                        No account yet? There is nothing to sign up for. Type
-                        <span class="rf-cmd">!join</span> in the chat of any
-                        <a href="/streams">stream running Ravenfall</a> and you have one.
-                    </p>
-                }
+            <div class="rf-auth__card">
+                <a class="rf-btn rf-btn--primary rf-btn--block" href="/dashboard">Go to your dashboard</a>
+                <a class="rf-btn rf-btn--block" href="/characters">Your characters</a>
             </div>
-        </div>
+        }
+        else
+        {
+            <h1 class="rf-auth__title">Sign in</h1>
+            <p class="rf-auth__lead">Your characters belong to your Twitch account.</p>
+
+            <div class="rf-auth__card">
+                @*
+                    Twitch first, and in Twitch's own colour. Almost nobody has a Ravenfall password
+                    until they want to run the client, and this page used to put the password form
+                    at the top with the Twitch button underneath it as though it were the fallback.
+                *@
+                <button type="button" class="rf-btn rf-btn--twitch rf-btn--block rf-btn--tall" @onclick="LoginWithTwitch">
+                    <i class="fab fa-twitch" aria-hidden="true"></i> Continue with Twitch
+                </button>
+
+                <div class="rf-or"><span>or use a Ravenfall password</span></div>
+
+                @if (loginFailed)
+                {
+                    @*
+                        Was "Whops. Wrong username or password.", which manages to be both a typo
+                        and unhelpful about the likeliest cause: most people who fail here never had
+                        a Ravenfall password in the first place.
+                    *@
+                    <div class="rf-banner rf-banner--bad" role="alert">
+                        <p class="rf-banner__title">That did not match</p>
+                        <p>
+                            This is the password you set for the game client, not your Twitch
+                            password. If you have never set one, use Twitch above.
+                        </p>
+                    </div>
+                }
+
+                <EditForm Model="@loginModel" OnValidSubmit="@HandleValidSubmit">
+                    <DataAnnotationsValidator />
+
+                    @*
+                        Placeholders were doing the work of labels, so the fields were unnamed once
+                        you had typed in them and no password manager had anything to go on.
+                    *@
+                    <label class="rf-field">
+                        <span class="rf-label">Username</span>
+                        <InputText class="rf-input" id="username" autocomplete="username" @bind-Value="loginModel.Username" />
+                    </label>
+
+                    <label class="rf-field">
+                        <span class="rf-label">Password</span>
+                        <InputText class="rf-input" type="password" id="password" autocomplete="current-password" @bind-Value="loginModel.Password" />
+                    </label>
+
+                    <ValidationSummary />
+
+                    <button type="submit" class="rf-btn rf-btn--block">
+                        <i class="fas fa-key" aria-hidden="true"></i> Sign in
+                    </button>
+                </EditForm>
+
+                <p class="rf-auth__hint">
+                    The password the game client signs in with, not your Twitch one. Forgotten it?
+                    Use Twitch above, then <a href="/password">set a new one</a>.
+                </p>
+            </div>
+
+            <p class="rf-auth__foot">
+                No account yet? There is nothing to sign up for. Type
+                <span class="rf-cmd">!join</span> in the chat of any
+                <a href="/streams">stream running Ravenfall</a> and you have one.
+            </p>
+        }
     </div>
 }
 
@@ -164,11 +153,11 @@ else
     private string loginFailedError = "";
     private bool userInitiatedLogin = false;
     private bool twitchLoginInitiated = false;
-    private bool kickLoginInitiated = false;
     private bool IsAuthenticated => session != null && session.UserName != null;
     private bool IsLoggingIn => !IsAuthenticated && (userInitiatedLogin || HasQueryParams());
 
-    private bool IsKickLogin => kickLoginInitiated || NavigationManager.Uri.Contains("login/kick", StringComparison.OrdinalIgnoreCase);
+    // The route still exists and the token exchange below still handles it, but nothing offers it.
+    private bool IsKickLogin => NavigationManager.Uri.Contains("login/kick", StringComparison.OrdinalIgnoreCase);
     private bool IsTwitchLogin => twitchLoginInitiated || NavigationManager.Uri.Contains("login/twitch", StringComparison.OrdinalIgnoreCase);
     private bool tokenGenerationComplete = false;
 
@@ -362,17 +351,6 @@ else
 
         loginFailed = false;
         await NavigateToLastPageOrHomeIfAuthenticated();
-    }
-
-    private async Task LoginWithKick()
-    {
-        userInitiatedLogin = true;
-        kickLoginInitiated = true;
-        var url = AuthService.GetKickLoginUrl(RedirectUrl ?? "", NavigationManager.BaseUri);
-        if (!string.IsNullOrEmpty(url))
-        {
-            await JS.InvokeVoidAsync("window.navigateTo", url);
-        }
     }
 
     private async Task LoginWithTwitch()

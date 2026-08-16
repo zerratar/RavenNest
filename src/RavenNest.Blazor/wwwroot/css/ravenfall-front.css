@@ -188,6 +188,36 @@
     padding-bottom: var(--rf-space-7);
 }
 
+/* ---- One column per page -----------------------------------------------
+   Reported as the download page looking wrong, and it was the same fault on
+   several pages.
+
+   Every block that wanted a readable width centred itself to get one: 70ch for
+   prose, 52rem for the calculator panel, 60rem for the download cards. The
+   heading above each of them is a bare h1 that fills the section, so a heading
+   could begin three hundred and fifty pixels to the left of the thing it
+   introduced. "System requirements" and the requirements were nowhere near each
+   other.
+
+   The section is the column now. Blocks keep their own maximum widths, because a
+   line of prose still should not run to twelve hundred pixels, but they align to
+   the left edge of that column instead of to its centre, and so does every
+   heading. It also stops the wide tables stretching to the full width of a large
+   monitor, where a five column table became five columns of whitespace.
+
+   The landing page's patreon section is excluded: its background image is meant
+   to run edge to edge.
+
+   The blocks that used to centre themselves now say `margin: 0` at their own
+   definitions rather than being overridden from here, because they are all
+   defined further down this file and an override up here would lose on document
+   order. */
+.rf-front .page-content .section:not(.patreon) {
+    max-width: 78rem;
+    margin-left: auto;
+    margin-right: auto;
+}
+
 /* ==========================================================================
    Site header
    ==========================================================================
@@ -556,12 +586,89 @@
    align-items: center }`, which is what centred the old login fields. The form
    here is a submit boundary, not a layout box: the fields inside it should fill
    the panel like every other field on the site. */
-.rf-front .rf-narrow form {
+.rf-front .rf-narrow form,
+.rf-front .rf-auth form {
     display: flex;
     flex-flow: column;
     align-items: stretch;
     gap: var(--rf-space-4);
     width: 100%;
+}
+
+/* ---- Sign in ------------------------------------------------------------
+   The one front page with no hero. Every other page opens with a photograph and
+   a torn edge under it, which is right for a page you browse and wrong for one
+   with a single job: it pushed the only thing on the page most of a screen down
+   and put a lot of noise behind a form.
+
+   One narrow column, and one card rather than two stacked panels. Two panels
+   with a full width primary button in each read as two competing offers; a
+   single card with the rule inside it reads as one decision with two ways to
+   take it. */
+
+.rf-auth {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: min(24rem, 100%);
+    margin: 0 auto;
+    /* Clears the header, which is absolutely positioned over the page. */
+    padding: 7rem var(--rf-space-4) var(--rf-space-7);
+    text-align: center;
+}
+
+.rf-auth__brand {
+    line-height: 0;
+    margin-bottom: var(--rf-space-5);
+}
+
+.rf-auth__brand img {
+    width: 190px;
+    max-width: 100%;
+}
+
+.rf-front .rf-auth__title {
+    margin: 0;
+    font-size: var(--rf-size-display);
+    font-weight: 800;
+}
+
+/* The heading rule that every other front page heading carries. Under a title
+   this short and this centred it is a line pointing at nothing. */
+.rf-front .rf-auth__title::after {
+    content: none;
+    display: none;
+}
+
+.rf-auth__lead {
+    margin: var(--rf-space-2) 0 var(--rf-space-5) 0;
+    color: var(--rf-ink-muted);
+}
+
+.rf-auth__card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-4);
+    width: 100%;
+    padding: var(--rf-space-5);
+    background: var(--rf-surface-raised);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+    text-align: left;
+}
+
+.rf-front .rf-auth__hint,
+.rf-front .rf-auth__foot {
+    margin: 0;
+    color: var(--rf-ink-faint);
+    font-size: var(--rf-size-small);
+    line-height: 1.6;
+}
+
+.rf-auth__foot {
+    margin-top: var(--rf-space-5);
+    text-align: center;
 }
 
 /* Two ways in, and the separator is what says they are alternatives rather than
@@ -590,6 +697,13 @@
 .rf-narrow__foot {
     margin-top: var(--rf-space-5);
     text-align: center;
+}
+
+/* The separator inside the sign in card carries a phrase rather than the word
+   "or", so it needs to sit closer to the button above it than a full section
+   break would. */
+.rf-auth__card .rf-or {
+    margin: 0;
 }
 
 /* ---- Highscore ----------------------------------------------------------
@@ -1046,7 +1160,7 @@
 
 .rf-front .rf-calc {
     max-width: 52rem;
-    margin: 0 auto;
+    margin: 0;
     padding: var(--rf-space-6);
     background: var(--rf-surface-1);
     border: 1px solid var(--rf-line);
@@ -1146,7 +1260,7 @@
 
 .rf-front .rf-prose {
     max-width: 70ch;
-    margin: 0 auto;
+    margin: 0;
     padding: var(--rf-space-5) var(--rf-space-6);
     background: var(--rf-surface-1);
     border: 1px solid var(--rf-line);
@@ -1181,47 +1295,102 @@
     color: var(--rf-ink);
 }
 
-/* ---- Downloads --------------------------------------------------------- */
+/* ---- Downloads ---------------------------------------------------------
+   Two equally sized cards side by side said that Windows and Linux were equally
+   good choices. One is the supported build with automatic updates; the other is
+   experimental, has no auto update, and its link fails outright when the current
+   version had no successful Linux build. The layout says which is which: the
+   Windows card is the wide one on the left, the Linux one is a narrow aside.
 
-.rf-front .rf-downloads {
+   Under 52rem they stack, with Windows still first. */
+
+.rf-front .rf-getstart {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
     gap: var(--rf-space-4);
-    max-width: 56rem;
-    margin: 0 auto;
+    align-items: start;
+    max-width: 60rem;
+    margin: 0;
 }
 
-.rf-front .rf-download {
+@media (max-width: 52rem) {
+    .rf-front .rf-getstart {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.rf-front .rf-getstart__main,
+.rf-front .rf-getstart__alt {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: var(--rf-space-3);
     padding: var(--rf-space-5);
-    background: var(--rf-surface-1);
-    border: 1px solid var(--rf-line);
     border-radius: var(--rf-radius);
     box-shadow: var(--rf-bevel);
 }
 
-.rf-front .rf-download__title {
+/* The one the page is actually offering, so it carries the gold edge the rest
+   of the site uses for the thing it wants you to press. */
+.rf-front .rf-getstart__main {
+    background: var(--rf-surface-raised);
+    border: 1px solid var(--rf-line-gold);
+}
+
+.rf-front .rf-getstart__alt {
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+}
+
+.rf-front .rf-getstart__title,
+.rf-front .rf-getstart__subtitle {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
     gap: var(--rf-space-2);
     margin: 0;
-    font-size: var(--rf-size-heading);
     font-weight: 700;
 }
 
-.rf-front .rf-download__title::after {
-    content: none;
+.rf-front .rf-getstart__title {
+    font-size: var(--rf-size-heading);
 }
 
-.rf-front .rf-download__body {
+.rf-front .rf-getstart__subtitle {
+    font-size: var(--rf-size-body);
+    color: var(--rf-ink-muted);
+}
+
+.rf-front .rf-getstart__title::after,
+.rf-front .rf-getstart__subtitle::after {
+    content: none;
+    display: none;
+}
+
+.rf-front .rf-getstart__body {
     margin: 0;
     flex: 1 1 auto;
     color: var(--rf-ink-muted);
     font-size: var(--rf-size-small);
+}
+
+.rf-front .rf-getstart__note {
+    margin: 0;
+    color: var(--rf-ink-faint);
+    font-size: var(--rf-size-tiny);
+}
+
+/* A heading inside a prose panel rather than floating above it. rf-panel__title
+   is a dashboard component and carries no top margin of its own, which it needs
+   here because the panel is the whole section. */
+.rf-front .rf-prose > .rf-panel__title {
+    margin: 0 0 var(--rf-space-4) 0;
+    font-size: var(--rf-size-heading);
+}
+
+.rf-front .rf-prose > .rf-panel__title::after {
+    content: none;
+    display: none;
 }
 
 /* A prose panel that holds a table rather than paragraphs, so the 70ch cap
