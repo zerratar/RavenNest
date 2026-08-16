@@ -205,6 +205,79 @@ namespace RavenNest.Blazor.Services
             return gameData.Bot;
         }
 
+        /// <summary>
+        ///     The experience multiplier running right now, described rather than merely stated.
+        /// </summary>
+        /// <remarks>
+        ///     ExpMultiplierEvent.EventName carries two different things depending on
+        ///     StartedByPlayer: the name of the player who set it off, or the message an
+        ///     administrator attached to it. Nothing in the data distinguishes them, so anything
+        ///     reading that field has to branch on StartedByPlayer, and this is the one place that
+        ///     does it.
+        /// </remarks>
+        public ActiveMultiplier GetActiveMultiplier()
+        {
+            var ev = gameData.GetActiveExpMultiplierEvent();
+            if (ev == null) return null;
+
+            var now = DateTime.UtcNow;
+            var duration = ev.EndTime - ev.StartTime;
+
+            return new ActiveMultiplier
+            {
+                Multiplier = ev.Multiplier,
+                StartedByPlayer = ev.StartedByPlayer,
+                StartedBy = ev.StartedByPlayer ? ev.EventName : null,
+                Message = ev.StartedByPlayer ? null : ev.EventName,
+                StartTime = ev.StartTime,
+                EndTime = ev.EndTime,
+                Remaining = ev.EndTime > now ? ev.EndTime - now : TimeSpan.Zero,
+                Duration = duration > TimeSpan.Zero ? duration : TimeSpan.Zero
+            };
+        }
+
+        /// <summary>
+        ///     What the server is doing at this moment, for the admin overview.
+        /// </summary>
+        /// <remarks>
+        ///     Walks the active sessions once and derives everything from that single pass.
+        ///     GetActiveSessionCharacters scans the whole character set per call, so it is asked
+        ///     once per session here rather than once per question the page wants answered.
+        /// </remarks>
+        public ServerOverview GetServerOverview()
+        {
+            var overview = new ServerOverview();
+
+            foreach (var session in gameData.GetActiveSessions())
+            {
+                var characters = gameData.GetActiveSessionCharacters(session);
+                var count = characters?.Count ?? 0;
+                overview.PlayersInGame += count;
+
+                overview.Streams.Add(new StreamSummary
+                {
+                    UserId = session.UserId,
+                    UserName = gameData.GetUser(session.UserId)?.UserName,
+                    PlayerCount = count,
+                    Started = session.Started
+                });
+            }
+
+            overview.Streams = overview.Streams
+                .OrderByDescending(x => x.PlayerCount)
+                .ThenBy(x => x.UserName)
+                .ToList();
+
+            overview.Multiplier = GetActiveMultiplier();
+
+            var bot = GetBotStats();
+            overview.BotOnline = bot != null && bot.IsOnline;
+            overview.BotLastUpdate = bot?.LastUpdated ?? default;
+            overview.BotChannelCount = bot?.ListOfCurrentlyJoinedChannel?.Count ?? 0;
+
+            return overview;
+        }
+
         public void SendServerAnnouncement(string message, int milliSeconds)
         {
             serverManager.BroadcastMessageAsync(message, milliSeconds);
@@ -278,6 +351,52 @@ namespace RavenNest.Blazor.Services
                 return agreements.FirstOrDefault(x => x.Type.ToLower() == "coc");
             });
         }
+    }
+
+    /// <summary>An experience multiplier that is running, with the time already worked out.</summary>
+    public class ActiveMultiplier
+    {
+        public int Multiplier { get; set; }
+        public bool StartedByPlayer { get; set; }
+
+        /// <summary>The player who set it off. Null when an administrator sent it.</summary>
+        public string StartedBy { get; set; }
+
+        /// <summary>The message attached to it. Null when a player set it off.</summary>
+        public string Message { get; set; }
+
+        public DateTime StartTime { get; set; }
+        public DateTime EndTime { get; set; }
+        public TimeSpan Remaining { get; set; }
+        public TimeSpan Duration { get; set; }
+
+        /// <summary>How far through it is, for a bar. Zero length events read as finished.</summary>
+        public double Progress =>
+            Duration <= TimeSpan.Zero
+                ? 1d
+                : Math.Clamp(1d - (Remaining.TotalSeconds / Duration.TotalSeconds), 0d, 1d);
+    }
+
+    public class StreamSummary
+    {
+        public Guid UserId { get; set; }
+        public string UserName { get; set; }
+        public int PlayerCount { get; set; }
+        public DateTime Started { get; set; }
+    }
+
+    public class ServerOverview
+    {
+        public int PlayersInGame { get; set; }
+        public List<StreamSummary> Streams { get; set; } = new List<StreamSummary>();
+        public ActiveMultiplier Multiplier { get; set; }
+
+        public bool BotOnline { get; set; }
+        public DateTime BotLastUpdate { get; set; }
+        public int BotChannelCount { get; set; }
+
+        public int StreamCount => Streams.Count;
+        public StreamSummary TopStream => Streams.Count > 0 ? Streams[0] : null;
     }
 
     public class UpdateCodeOfConduct

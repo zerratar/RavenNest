@@ -1,4 +1,4 @@
-﻿@layout AdminLayout
+@layout AdminLayout
 @page "/admin/server"
 @using System.ComponentModel.DataAnnotations
 @using RavenNest.BusinessLogic.Data
@@ -6,6 +6,7 @@
 
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.ServerService ServerService
+@implements IDisposable
 
 @if (isAdmin)
 {
@@ -46,8 +47,99 @@
         </EditForm>
     </section>
 
+    @*
+        What is running right now, above the form that starts one. The page could set a multiplier
+        and could not tell you whether one was already going, which is the first thing you want to
+        know before starting another: SendExpMultiplierEventAsync behaves differently when an event
+        is already active, and a player-started one gets pushed out rather than replaced.
+    *@
+    <section class="rf-panel @(multiplier != null ? "rf-panel--accent" : "")">
+        <h2 class="rf-panel__title">Experience multiplier right now</h2>
+
+        @if (multiplier == null)
+        {
+            <p class="rf-meta">
+                Nothing running. Experience is at the normal rate everywhere.
+            </p>
+        }
+        else
+        {
+            <div class="rf-stats">
+                <div class="rf-stat">
+                    <div class="rf-stat__value">@multiplier.Multiplier&times;</div>
+                    <div class="rf-stat__label">Multiplier</div>
+                </div>
+                <div class="rf-stat">
+                    <div class="rf-stat__value">@FormatSpan(multiplier.Remaining)</div>
+                    <div class="rf-stat__label">Time left</div>
+                </div>
+                <div class="rf-stat">
+                    <div class="rf-stat__value">@(multiplier.StartedByPlayer ? "Player" : "Server")</div>
+                    <div class="rf-stat__label">Started by</div>
+                </div>
+            </div>
+
+            <div class="rf-next">
+                <div class="rf-next__head">
+                    <span class="rf-label">Elapsed</span>
+                    <span class="rf-next__skill">@FormatSpan(multiplier.Duration) total</span>
+                </div>
+                <div class="rf-skill__bar rf-next__bar">
+                    <span class="rf-skill__fill" style="@Bar(multiplier.Progress)"></span>
+                </div>
+                <div class="rf-next__foot">
+                    <span>@FormatSpan(multiplier.Remaining) to go</span>
+                    <span class="rf-meta">@Math.Round(multiplier.Progress * 100, 1)% through</span>
+                </div>
+            </div>
+
+            <dl class="rf-facts">
+                @*
+                    EventName is the player's name or the admin's message depending on
+                    StartedByPlayer, so it is labelled as whichever it actually is.
+                *@
+                @if (multiplier.StartedByPlayer)
+                {
+                    <dt>Started by</dt>
+                    <dd>
+                        @(string.IsNullOrEmpty(multiplier.StartedBy) ? "A player" : multiplier.StartedBy)
+                        <span class="rf-meta">&middot; from exp scrolls used in game</span>
+                    </dd>
+                }
+                else
+                {
+                    <dt>Message</dt>
+                    <dd>
+                        @if (string.IsNullOrEmpty(multiplier.Message))
+                        {
+                            <span class="rf-meta">No message was attached.</span>
+                        }
+                        else
+                        {
+                            <span>@multiplier.Message</span>
+                        }
+                    </dd>
+                }
+
+                <dt>Started</dt>
+                <dd>@multiplier.StartTime.ToLocalTime().ToString("HH:mm") <span class="rf-meta">&middot; @multiplier.StartTime.ToLocalTime().ToString("d")</span></dd>
+
+                <dt>Ends</dt>
+                <dd>@multiplier.EndTime.ToLocalTime().ToString("HH:mm") <span class="rf-meta">&middot; @multiplier.EndTime.ToLocalTime().ToString("d")</span></dd>
+            </dl>
+
+            @if (multiplier.StartedByPlayer)
+            {
+                <p class="rf-meta">
+                    Starting a server event now will push this one back rather than cancel it: it
+                    resumes with its remaining time once yours finishes.
+                </p>
+            }
+        }
+    </section>
+
     <section class="rf-panel">
-        <h2 class="rf-panel__title">Global experience multiplier</h2>
+        <h2 class="rf-panel__title">Start a multiplier event</h2>
         <EditForm Model="@expMultiplierEventModel" OnValidSubmit="@SetExpMultiplierEvent">
             <DataAnnotationsValidator />
 
@@ -160,6 +252,8 @@
 @code {
     private TextModel serverNotificationModel = new TextModel();
     private BotStats botStats;
+    private RavenNest.Blazor.Services.ActiveMultiplier multiplier;
+    private System.Threading.Timer refreshTimer;
     private ExpMultiplierModel expMultiplierEventModel = new ExpMultiplierModel
         {
             StartTime = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm"),
@@ -250,12 +344,52 @@
         session = AuthService.GetSession();
         isAdmin = session != null && session.Administrator;
         botStats = ServerService.GetBotStats();
+        multiplier = ServerService.GetActiveMultiplier();
+
+        if (!isAdmin) return;
+
+        // The panel shows a countdown and a bar, and a countdown that does not count is worse than
+        // no countdown at all. Ten seconds is enough for a clock in minutes and matches the rate
+        // the bot stats above it change at.
+        refreshTimer = new System.Threading.Timer(_ =>
+        {
+            InvokeAsync(() =>
+            {
+                multiplier = ServerService.GetActiveMultiplier();
+                botStats = ServerService.GetBotStats();
+                StateHasChanged();
+            });
+        }, null, 10000, 10000);
+    }
+
+    public void Dispose()
+    {
+        refreshTimer?.Dispose();
     }
 
     private void ReloadStats()
     {
         botStats = ServerService.GetBotStats();
+        multiplier = ServerService.GetActiveMultiplier();
         InvokeAsync(StateHasChanged);
+    }
+
+    /// <summary>
+    ///     Invariant culture: a width written as "43,2%" under a Swedish locale is ignored by the
+    ///     browser and the bar renders empty.
+    /// </summary>
+    private static string Bar(double progress)
+    {
+        var clamped = Math.Clamp(progress * 100d, 0d, 100d);
+        return "width: " + clamped.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%";
+    }
+
+    private static string FormatSpan(TimeSpan span)
+    {
+        if (span <= TimeSpan.Zero) return "0m";
+        if (span.TotalDays >= 1) return (int)span.TotalDays + "d " + span.Hours + "h";
+        if (span.TotalHours >= 1) return (int)span.TotalHours + "h " + span.Minutes + "m";
+        return Math.Max(1, (int)span.TotalMinutes) + "m";
     }
 
     private void ConfirmAnnouncement()
