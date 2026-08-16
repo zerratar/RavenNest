@@ -1,4 +1,4 @@
-@using RavenNest.BusinessLogic.Game
+﻿@using RavenNest.BusinessLogic.Game
 @using RavenNest.Blazor.Services
 @using RavenNest.BusinessLogic.Extended
 @using ItemFilter = RavenNest.Models.ItemFilter
@@ -34,10 +34,19 @@ else
     @if (CanBuy)
     {
         <div class="rf-vendor__bar">
-            <span class="rf-inv__coins" title="@coins.ToString("N0") coins">
-                <i class="fa-solid fa-coins" aria-hidden="true"></i>
-                <span>@Utility.FormatAmount(coins)</span>
-            </span>
+            @*
+                The whole figure, not 25.9M. This is the one number on the page a buyer needs
+                exactly: it is what decides whether the thing they are looking at is affordable.
+                It also gets a label, because a coin badge tucked against a character picker read
+                as part of the picker rather than as the balance.
+            *@
+            <div class="rf-vendor__purse">
+                <span class="rf-label">Your coins</span>
+                <span class="rf-vendor__coins">
+                    <i class="fa-solid fa-coins" aria-hidden="true"></i>
+                    <span>@coins.ToString("N0")</span>
+                </span>
+            </div>
             @*
                 Coins are held by the account rather than the character, so the only thing this
                 picker decides is whose bag the items land in. Saying so stops it looking like a
@@ -50,10 +59,15 @@ else
                     <div class="rf-charpick rf-charpick--compact">
                         @foreach (var plr in characters)
                         {
+                            @*
+                                Every character on an account shares the account name, so a picker
+                                showing only that is three buttons reading the same word. The alias
+                                is what tells them apart, and it is what the chat commands take.
+                            *@
                             <button type="button"
                                     class="rf-char @(target?.Id == plr.Id ? "is-active" : "")"
                                     @onclick="() => target = plr">
-                                <span class="rf-char__name">@plr.Name</span>
+                                <span class="rf-char__name">@Describe(plr)</span>
                                 <span class="rf-char__level">@PlayerService.GetCombatLevel(plr)</span>
                             </button>
                         }
@@ -258,7 +272,7 @@ else
                     <dd>@buying.BuyFromVendorPrice.ToString("N0") coins</dd>
 
                     <dt>Goes to</dt>
-                    <dd>@(target?.Name ?? "no character")</dd>
+                    <dd>@(target == null ? "no character" : Describe(target))</dd>
                 </dl>
 
                 <label class="rf-field">
@@ -434,6 +448,18 @@ else
         return sortDirection == BusinessLogic.Game.SortDirection.Ascending ? "ascending" : "descending";
     }
 
+    /// <summary>
+    ///     A character as a person would name it. Every character on an account carries the
+    ///     account name, so the name on its own tells three of them apart not at all; the alias
+    ///     is the part that does, and it is what the in game commands use.
+    /// </summary>
+    private static string Describe(WebsitePlayer player)
+    {
+        if (player == null) return null;
+        var alias = player.Alias;
+        return string.IsNullOrEmpty(alias) ? player.Name : player.Name + " " + alias;
+    }
+
     private static int Stats(RavenNest.DataModels.Item item)
     {
         return item.ArmorPower + item.MagicPower + item.RangedPower + item.WeaponPower
@@ -567,7 +593,7 @@ else
             resultSuccess = outcome.Success;
             resultMessage = outcome.Success
                 ? outcome.Amount.ToString("N0") + " x " + record.Item.Name + " for " +
-                  outcome.TotalPrice.ToString("N0") + " coins, delivered to " + target.Name + "."
+                  outcome.TotalPrice.ToString("N0") + " coins, delivered to " + Describe(target) + "."
                 : outcome.Message;
 
             buying = null;

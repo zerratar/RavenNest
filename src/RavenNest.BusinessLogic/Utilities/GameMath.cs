@@ -291,44 +291,39 @@ namespace RavenNest.BusinessLogic
                 return (long)price;
             }
 
-            // reduce 1% price every 10 items in stock
-            // until we reach 75% off
-
-            var min = Math.Max(1, (long)Math.Truncate(price * 0.25d));
+            // Reduce 1% per 10 in stock, but never to a price the vendor would beat by
+            // buying it straight back.
+            //
+            // The floor used to be 25% of the asking price, which is about a third of what
+            // the vendor pays for the same item, and selling to the vendor pays a flat
+            // ShopSellPrice with no stock reduction at all. So from about 200 in stock a
+            // player could buy an item and immediately sell it back for more than they paid,
+            // and at the floor the round trip returned nearly 70% of the item's value, every
+            // time, for ever. Stock levels in the thousands are normal, so this was open.
+            //
+            // The floor is now just above minPrice, which is at least what selling pays, so
+            // the round trip is always a loss. Ties are possible at a price of one coin,
+            // where there is nothing left to round down to.
+            var min = Math.Max(1, (long)Math.Truncate(minPrice * 1.05d));
             var reductionCount = Math.Truncate(inStock / 10.0);
             price -= reductionCount * price * 0.01d;
             if ((long)price <= min) return min;
             return (long)price;
         }
 
-        /// <summary>
-        ///     How much will you get for selling an item to the vendor?
-        /// </summary>
-        /// <param name="i"></param>
-        /// <param name="inStock"></param>
-        /// <returns></returns>
-        public static long CalculateVendorSellPrice(DataModels.Item i, long inStock)
-        {
-            var minPrice = i.ShopSellPrice;
-            // if there are more than 5 items in stock, we will start selling for less.
-            if (inStock - 5 <= 0)
-            {
-                return minPrice;
-            }
+        /*  CalculateVendorSellPrice was here.
 
-            inStock = inStock - 5;
+            It reduced the payout by 5% of the base price for every 5 in stock, which reaches
+            zero at 105 in stock and returns 1 from there on. Nothing in the game ever called
+            it: selling to the vendor pays a flat ShopSellPrice in all three sell paths. Its
+            only caller was the website, which is why the vendor page showed "vendor pays 1"
+            against items the game pays thousands for.
 
-            // reduce 5% price every 5 items in stock
-            var reductionCount = Math.Truncate(inStock / 5.0d);
-            double price = minPrice;
-            for (var j = 0; j < reductionCount; ++j)
-            {
-                if (price <= 1) return 1;
-                price -= (minPrice * 0.05d);
-            }
+            Deleted rather than left in place, because a plausible looking function that
+            nothing uses is exactly how it ended up on the page. If the decay is wanted, it
+            belongs in PlayerManager where the payout is decided, and the buy price floor above
+            has to be revisited with it.  */
 
-            return Math.Max(1, (long)price);
-        }
 
         public static class Exp
         {

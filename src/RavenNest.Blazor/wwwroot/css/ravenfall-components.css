@@ -3154,6 +3154,33 @@ a.rf-badge:hover {
     margin-bottom: var(--rf-space-4);
 }
 
+/* The purse. It was a bare coin badge sitting against the character picker with
+   no label, so it read as part of the picker rather than as the balance, and it
+   was abbreviated when this is the one number on the page that decides whether
+   what you are looking at is affordable. */
+.rf-vendor__purse {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+    flex: 0 0 auto;
+}
+
+.rf-vendor__coins {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    padding: var(--rf-space-2) var(--rf-space-4);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line-gold);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+    color: var(--rf-gold);
+    font-size: var(--rf-size-title);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
 /* Takes the rest of the row. Without a basis the picker is sized by its own
    content, which is one 12rem column, so three characters stacked into three
    rows next to a coin badge and most of a screen of nothing. */

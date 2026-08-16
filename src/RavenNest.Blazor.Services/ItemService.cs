@@ -210,7 +210,10 @@ namespace RavenNest.Blazor.Services
                         VendorItem = item,
                         Item = i,
                         BuyFromVendorPrice = GameMath.CalculateVendorBuyPrice(i, item.Stock),
-                        SellToVendorPrice = GameMath.CalculateVendorSellPrice(i, item.Stock)
+                        // What the game actually pays, which is flat. The stock reduction this
+                        // used to show was from a function nothing else called, so the column
+                        // read "1" against items worth thousands.
+                        SellToVendorPrice = i.ShopSellPrice
                     });
                 }
 
