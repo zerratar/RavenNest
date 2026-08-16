@@ -26,15 +26,15 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
         private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, ClanSkillUpdate> skillUpdate
             = new System.Collections.Concurrent.ConcurrentDictionary<string, ClanSkillUpdate>();
 
-        private readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(20);
+        private static readonly TimeSpan UpdateInterval = TimeSpan.FromSeconds(20);
 
-        private readonly TimeSpan SkillExpUpdateInterval = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan SkillExpUpdateInterval = TimeSpan.FromSeconds(10);
         //private static readonly Version ClientVersion_ClanLevel = new Version(0, 7, 1);
         public override void Process(
             ILogger logger,
              GameData gameData,
              PlayerInventory inventory,
-             GameSession session, 
+             GameSession session,
              User user,
              Character character,
              CharacterState state)
@@ -52,7 +52,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
             UpdateClanSkillsExperience(gameData, session, character, state, clan);
         }
 
-        private void UpdateClanSkillsExperience(
+        public static void UpdateClanSkillsExperience(
             GameData gameData,
             GameSession session,
             Character character,
@@ -146,7 +146,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 clanExpAnnouncement[announcementKey] = now;
             }
         }
-        private static void EnsureClanSkills(GameData gameData, Clan clan, IReadOnlyList<ClanSkill> clanSkills)
+        public static void EnsureClanSkills(GameData gameData, Clan clan, IReadOnlyList<ClanSkill> clanSkills)
         {
             foreach (var s in gameData
                 .GetSkills()

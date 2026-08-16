@@ -239,6 +239,70 @@ namespace RavenNest.Blazor
             Console.WriteLine("Debug mode");
 #endif
 
+            // Serve AI model file downloads BEFORE response compression so that
+            // the gzip middleware never wraps the response stream for these large
+            // binary files. This is the only reliable way to get full line-speed
+            // throughput for multi-GB downloads.
+            app.Map("/ai/download", aiApp =>
+            {
+                aiApp.Run(async context =>
+                {
+                    const int BufferSize = 256 * 1024;
+                    var expirationDate = new DateTime(2026, 3, 30, 23, 59, 59, DateTimeKind.Utc);
+                    var basePath = @"C:\ai";
+
+                    if (DateTime.UtcNow > expirationDate)
+                    {
+                        context.Response.StatusCode = 404;
+                        await context.Response.WriteAsync("These files are no longer available.");
+                        return;
+                    }
+
+                    var folder = context.Request.Query["folder"].ToString();
+                    var file = context.Request.Query["file"].ToString();
+
+                    if (string.IsNullOrWhiteSpace(folder) || string.IsNullOrWhiteSpace(file))
+                    {
+                        context.Response.StatusCode = 400;
+                        await context.Response.WriteAsync("Missing folder or file parameter.");
+                        return;
+                    }
+
+                    var safeFolder = System.IO.Path.GetFileName(folder);
+                    var safeFile = System.IO.Path.GetFileName(file);
+                    var filePath = System.IO.Path.Combine(basePath, safeFolder, safeFile);
+
+                    if (!System.IO.File.Exists(filePath) ||
+                        !filePath.EndsWith(".safetensors", StringComparison.OrdinalIgnoreCase))
+                    {
+                        context.Response.StatusCode = 404;
+                        await context.Response.WriteAsync("File not found.");
+                        return;
+                    }
+
+                    var fileInfo = new System.IO.FileInfo(filePath);
+                    context.Response.StatusCode = 200;
+                    context.Response.ContentType = "application/octet-stream";
+                    context.Response.ContentLength = fileInfo.Length;
+                    context.Response.Headers["Content-Disposition"] = $"attachment; filename=\"{safeFile}\"";
+                    context.Response.Headers["Cache-Control"] = "no-store";
+
+                    // Disable any response buffering
+                    var bodyFeature = context.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpResponseBodyFeature>();
+                    bodyFeature?.DisableBuffering();
+
+                    await using var fs = new System.IO.FileStream(
+                        filePath,
+                        System.IO.FileMode.Open,
+                        System.IO.FileAccess.Read,
+                        System.IO.FileShare.Read,
+                        BufferSize,
+                        System.IO.FileOptions.Asynchronous | System.IO.FileOptions.SequentialScan);
+
+                    await fs.CopyToAsync(context.Response.Body, BufferSize, context.RequestAborted);
+                });
+            });
+
             app.UseResponseCompression();
             app.UseSession();
 

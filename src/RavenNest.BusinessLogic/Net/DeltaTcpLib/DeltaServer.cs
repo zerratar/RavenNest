@@ -368,7 +368,7 @@ namespace RavenNest.BusinessLogic.Net.DeltaTcpLib
                 d.Platform = "twitch";
             }
 
-            if (characterId.ToString().StartsWith("000") || (!string.IsNullOrEmpty(d.TaskArgument) && d.TaskArgument.Contains('\0')))
+            if (characterId.ToString().StartsWith("000000") || (!string.IsNullOrEmpty(d.TaskArgument) && d.TaskArgument.Contains('\0')))
             {
                 return false; // broken
             }
