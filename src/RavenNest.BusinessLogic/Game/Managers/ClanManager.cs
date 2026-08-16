@@ -1132,23 +1132,32 @@ namespace RavenNest.BusinessLogic.Game
     public class ClanRolePermissionsBuilder
     {
         public readonly TypedClanRolePermissions Values = new TypedClanRolePermissions();
+        /// <summary>
+        ///     Reads a stored permission string.
+        ///
+        ///     The format is positional, and every row already in the database was written against
+        ///     whatever the list was at the time. Indexing it directly means appending a
+        ///     permission throws on every existing row, which takes out every clan at once rather
+        ///     than degrading. A position that is not in the string is a permission that did not
+        ///     exist when the row was written, and "not granted" is the correct reading of that.
+        /// </summary>
         public static TypedClanRolePermissions Parse(string permissions)
         {
             var values = new TypedClanRolePermissions();
             var index = 0;
-            values.CanRenameClan = Bool(permissions[index++]);
-            values.CanAddClanRole = Bool(permissions[index++]);
-            values.CanRemoveClanRole = Bool(permissions[index++]);
-            values.CanRenameClanRole = Bool(permissions[index++]);
-            values.CanAssignAllRoles = Bool(permissions[index++]);
-            values.CanAssignRoles = Bool(permissions[index++]);
-            values.CanKickMembers = Bool(permissions[index++]);
-            values.CanKickAllMembers = Bool(permissions[index++]);
-            values.CanMakePublic = Bool(permissions[index++]);
-            values.CanCreateInvite = Bool(permissions[index++]);
-            values.CanDeleteInvite = Bool(permissions[index++]);
-            values.CanUseClanSkills = Bool(permissions[index++]);
-            values.CanSeeClanDetails = Bool(permissions[index++]);
+            values.CanRenameClan = Bool(permissions, index++);
+            values.CanAddClanRole = Bool(permissions, index++);
+            values.CanRemoveClanRole = Bool(permissions, index++);
+            values.CanRenameClanRole = Bool(permissions, index++);
+            values.CanAssignAllRoles = Bool(permissions, index++);
+            values.CanAssignRoles = Bool(permissions, index++);
+            values.CanKickMembers = Bool(permissions, index++);
+            values.CanKickAllMembers = Bool(permissions, index++);
+            values.CanMakePublic = Bool(permissions, index++);
+            values.CanCreateInvite = Bool(permissions, index++);
+            values.CanDeleteInvite = Bool(permissions, index++);
+            values.CanUseClanSkills = Bool(permissions, index++);
+            values.CanSeeClanDetails = Bool(permissions, index++);
             return values;
         }
 
@@ -1187,7 +1196,9 @@ namespace RavenNest.BusinessLogic.Game
         {
             return Generate(Values);
         }
-        private static bool Bool(char b) => b == '1';
+        // Bounds checked on purpose. See the note on Parse: a short or null row is old, not broken.
+        private static bool Bool(string permissions, int index) =>
+            permissions != null && index < permissions.Length && permissions[index] == '1';
         private static string Bin(bool b)
         {
             return b ? "1" : "0";
