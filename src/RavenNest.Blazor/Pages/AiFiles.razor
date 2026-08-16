@@ -1,0 +1,395 @@
+@page "/ai/folders"
+@page "/ai/folders/{FolderName}"
+@using System.IO
+
+<PageTitle>AI Model Files</PageTitle>
+
+<style>
+    .ai-container {
+        max-width: 960px;
+        margin: 80px auto 60px auto;
+        padding: 0 20px;
+        color: #e0e0e0;
+    }
+
+    .ai-header h2 {
+        color: #ff7f00;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+
+    .ai-header .ai-subtitle {
+        color: #888;
+        font-size: 10pt;
+        margin-bottom: 20px;
+    }
+
+    .ai-breadcrumb {
+        list-style: none;
+        display: flex;
+        gap: 6px;
+        padding: 0;
+        margin-bottom: 20px;
+        font-size: 10pt;
+    }
+
+    .ai-breadcrumb li + li::before {
+        content: "›";
+        margin-right: 6px;
+        color: #555;
+    }
+
+    .ai-breadcrumb a {
+        color: #ff7f00;
+        text-decoration: none;
+    }
+
+    .ai-breadcrumb a:hover {
+        text-decoration: underline;
+    }
+
+    .ai-breadcrumb .active {
+        color: #aaa;
+    }
+
+    .ai-alert {
+        background-color: #1e2125;
+        border-left: 4px solid #ff7f00;
+        padding: 20px 25px;
+        border-radius: 6px;
+        margin-top: 20px;
+    }
+
+    .ai-alert h4 {
+        color: #ff7f00;
+        margin-bottom: 6px;
+    }
+
+    .ai-alert p {
+        margin: 0;
+        color: #aaa;
+    }
+
+    .ai-folder-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .ai-folder-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: #1a1c1f;
+        border: 1px solid #2a2d31;
+        border-radius: 8px;
+        padding: 16px 20px;
+        text-decoration: none;
+        color: #e0e0e0;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .ai-folder-item:hover {
+        background-color: #23272e;
+        border-color: #ff7f00;
+        color: #fff;
+        text-decoration: none;
+    }
+
+    .ai-folder-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .ai-folder-left i {
+        color: #f0ad4e;
+        font-size: 18pt;
+    }
+
+    .ai-folder-name {
+        font-weight: 600;
+        font-size: 12pt;
+    }
+
+    .ai-folder-meta {
+        color: #777;
+        font-size: 9pt;
+        white-space: nowrap;
+    }
+
+    .ai-file-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: #1a1c1f;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .ai-file-table thead th {
+        background-color: #13161b;
+        color: #aaa;
+        font-weight: 600;
+        font-size: 9pt;
+        text-transform: uppercase;
+        padding: 12px 16px;
+        border-bottom: 1px solid #2a2d31;
+        text-align: left;
+        cursor: default;
+    }
+
+    .ai-file-table thead th:last-child {
+        text-align: right;
+    }
+
+    .ai-file-table thead th:nth-child(2) {
+        text-align: right;
+        width: 120px;
+    }
+
+    .ai-file-table tbody td {
+        padding: 12px 16px;
+        border-bottom: 1px solid #222;
+        border: none;
+        text-align: left;
+    }
+
+    .ai-file-table tbody td:nth-child(2) {
+        text-align: right;
+        color: #999;
+        font-size: 10pt;
+        white-space: nowrap;
+    }
+
+    .ai-file-table tbody td:last-child {
+        text-align: right;
+    }
+
+    .ai-file-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .ai-file-table tbody tr:hover {
+        background-color: #23272e;
+    }
+
+    .ai-file-name {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .ai-file-name i {
+        color: #5e8ecc;
+    }
+
+    .ai-btn-download {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border: none;
+        border-radius: 6px;
+        background: linear-gradient(90deg, rgba(255, 88, 131, 1) 0%, rgba(139, 24, 255, 1) 100%);
+        color: white;
+        font-size: 9pt;
+        text-decoration: none;
+        transition: opacity 0.15s ease;
+        white-space: nowrap;
+    }
+
+    .ai-btn-download:hover {
+        opacity: 0.85;
+        color: white;
+        text-decoration: none;
+    }
+
+    .ai-empty {
+        color: #666;
+        padding: 30px 0;
+        text-align: center;
+    }
+</style>
+
+@if (IsExpired)
+{
+    <div class="ai-container">
+        <div class="ai-header">
+            <h2>AI Model Files</h2>
+        </div>
+        <div class="ai-alert">
+            <h4>No Longer Available</h4>
+            <p>These files are no longer available for download. The sharing period has ended.</p>
+        </div>
+    </div>
+}
+else if (!DirectoryExists)
+{
+    <div class="ai-container">
+        <div class="ai-header">
+            <h2>AI Model Files</h2>
+        </div>
+        <div class="ai-alert">
+            <h4>Not Found</h4>
+            <p>The requested folder could not be found.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="ai-container">
+        <div class="ai-header">
+            <h2>AI Model Files</h2>
+            <div class="ai-subtitle">Available until March 30, 2026</div>
+        </div>
+
+        @if (string.IsNullOrEmpty(FolderName))
+        {
+            <ul class="ai-breadcrumb">
+                <li class="active">Folders</li>
+            </ul>
+
+            @if (FolderInfos != null && FolderInfos.Length > 0)
+            {
+                <div class="ai-folder-list">
+                    @foreach (var folder in FolderInfos)
+                    {
+                        <a class="ai-folder-item" href="/ai/folders/@folder.Name">
+                            <div class="ai-folder-left">
+                                <i class="fa fa-folder"></i>
+                                <span class="ai-folder-name">@folder.Name</span>
+                            </div>
+                            <span class="ai-folder-meta">@folder.FileCount file@(folder.FileCount != 1 ? "s" : "") &middot; @folder.TotalSize</span>
+                        </a>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="ai-empty">No folders found.</div>
+            }
+        }
+        else
+        {
+            <ul class="ai-breadcrumb">
+                <li><a href="/ai/folders">Folders</a></li>
+                <li class="active">@FolderName</li>
+            </ul>
+
+            @if (Files != null && Files.Length > 0)
+            {
+                <table class="ai-file-table">
+                    <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>Size</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var file in Files)
+                        {
+                            var fileInfo = new FileInfo(file);
+                            var fileName = fileInfo.Name;
+                            var fileSize = FormatFileSize(fileInfo.Length);
+                            <tr>
+                                <td>
+                                    <div class="ai-file-name">
+                                        <i class="fa fa-file"></i>
+                                        <span>@fileName</span>
+                                    </div>
+                                </td>
+                                <td>@fileSize</td>
+                                <td>
+                                    <a class="ai-btn-download"
+                                       href="/ai/download?folder=@Uri.EscapeDataString(FolderName)&file=@Uri.EscapeDataString(fileName)">
+                                        <i class="fa fa-download"></i> Download
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="ai-empty">No .safetensors files found in this folder.</div>
+            }
+        }
+    </div>
+}
+
+@code {
+    private static readonly string BasePath = @"C:\ai";
+    private static readonly DateTime ExpirationDate = new DateTime(2026, 3, 30, 23, 59, 59, DateTimeKind.Utc);
+
+    [Parameter]
+    public string FolderName { get; set; }
+
+    private FolderInfo[] FolderInfos { get; set; }
+    private string[] Files { get; set; }
+    private bool IsExpired { get; set; }
+    private bool DirectoryExists { get; set; } = true;
+
+    protected override void OnParametersSet()
+    {
+        IsExpired = DateTime.UtcNow > ExpirationDate;
+        if (IsExpired)
+            return;
+
+        if (!Directory.Exists(BasePath))
+        {
+            DirectoryExists = false;
+            return;
+        }
+
+        if (string.IsNullOrEmpty(FolderName))
+        {
+            var dirs = Directory.GetDirectories(BasePath);
+            FolderInfos = dirs.Select(d =>
+            {
+                var di = new DirectoryInfo(d);
+                var files = di.GetFiles("*.safetensors");
+                return new FolderInfo
+                {
+                    Name = di.Name,
+                    FileCount = files.Length,
+                    TotalSize = FormatFileSize(files.Sum(f => f.Length))
+                };
+            }).ToArray();
+        }
+        else
+        {
+            var safeFolder = Path.GetFileName(FolderName);
+            var folderPath = Path.Combine(BasePath, safeFolder);
+
+            if (!Directory.Exists(folderPath))
+            {
+                DirectoryExists = false;
+                return;
+            }
+
+            Files = Directory.GetFiles(folderPath, "*.safetensors");
+        }
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+        int order = 0;
+        double size = bytes;
+        while (size >= 1024 && order < suffixes.Length - 1)
+        {
+            order++;
+            size /= 1024;
+        }
+        return $"{size:0.##} {suffixes[order]}";
+    }
+
+    private class FolderInfo
+    {
+        public string Name { get; set; }
+        public int FileCount { get; set; }
+        public string TotalSize { get; set; }
+    }
+}

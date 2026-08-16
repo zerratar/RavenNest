@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.BusinessLogic.Models;
 using RavenNest.DataModels;
 using RavenNest.Models;
@@ -172,17 +173,23 @@ namespace RavenNest.BusinessLogic.Extensions
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static RavenNest.Models.Clan Map(GameData gameData, DataModels.Clan data)
+        public static RavenNest.Models.Clan Map(GameData gameData, DataModels.Clan clan)
         {
-            if (data == null) return null;
-            var user = gameData.GetUser(data.UserId);
+            if (clan == null) return null;
+            var user = gameData.GetUser(clan.UserId);
             if (user == null) return null;
 
-            var s = gameData.GetClanSkills(data.Id);
-            var skills = new RavenNest.Models.ClanSkill[s.Count];
-            for (var i = 0; i < s.Count; ++i)
+            var clanSkills = gameData.GetClanSkills(clan.Id);
+            if (clanSkills.Count == 0) // we only have 1 clan skill.
             {
-                var s0 = s[i];
+                // check which skills the clan is eligble for and add those in.
+                ClanProcessor.EnsureClanSkills(gameData, clan, clanSkills);
+                clanSkills = gameData.GetClanSkills(clan.Id);
+            }
+            var skills = new RavenNest.Models.ClanSkill[clanSkills.Count];
+            for (var i = 0; i < clanSkills.Count; ++i)
+            {
+                var s0 = clanSkills[i];
                 var s1 = gameData.GetSkill(s0.SkillId);
                 if (s1 == null)
                 {
@@ -191,7 +198,7 @@ namespace RavenNest.BusinessLogic.Extensions
                         Name = "Err",
                         MaxLevel = 999,
                     };
-                    Console.Error.WriteLine("gameData.GetSkill(s0.SkillId) returns null");
+                    Console.Error.WriteLine($"gameData.GetSkill({s0.SkillId}) returns null");
                 }
                 skills[i] = new RavenNest.Models.ClanSkill
                 {
@@ -213,13 +220,13 @@ namespace RavenNest.BusinessLogic.Extensions
 
             return new RavenNest.Models.Clan()
             {
-                Id = data.Id,
-                Logo = data.Logo,
-                Name = data.Name,
+                Id = clan.Id,
+                Logo = clan.Logo,
+                Name = clan.Name,
                 Owner = twitchUserId,
                 OwnerUserId = user.Id,
-                Experience = data.Experience,
-                Level = data.Level,
+                Experience = clan.Experience,
+                Level = clan.Level,
                 ClanSkills = skills
             };
         }
