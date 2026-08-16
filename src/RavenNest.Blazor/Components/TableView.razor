@@ -1,0 +1,115 @@
+@inject IJSRuntime JS
+
+@*
+    A wide table that can be read as rows or as cards.
+
+    Sideways scrolling keeps a table honest on a narrow screen but it is a poor way to read one:
+    the first column scrolls out of view, which is the column that says what the row is about, so
+    every other cell loses its subject. Cards keep each row whole and label every value.
+
+    The card layout is CSS over the same markup. Nothing is rendered twice and nothing switches on
+    a breakpoint in C#, so there is one table to keep correct rather than two views to keep in step.
+    Cells need a data-label for it to work, which is what the card reads out beside each value.
+
+    With no preference stored, the width decides. Choosing one keeps it, everywhere, until it is
+    set back to Auto.
+*@
+
+<div class="rf-tw @ModeClass">
+    <div class="rf-tw__bar">
+        @if (!string.IsNullOrEmpty(Caption))
+        {
+            <span class="rf-meta">@Caption</span>
+        }
+
+        <div class="rf-tw__modes" role="group" aria-label="How to show this table">
+            <button type="button"
+                    class="rf-tw__mode @(mode == null ? "is-active" : "")"
+                    aria-pressed="@(mode == null)"
+                    @onclick='() => SetMode(null)'>
+                Auto
+            </button>
+            <button type="button"
+                    class="rf-tw__mode @(mode == "table" ? "is-active" : "")"
+                    aria-pressed="@(mode == "table")"
+                    @onclick='() => SetMode("table")'>
+                Table
+            </button>
+            <button type="button"
+                    class="rf-tw__mode @(mode == "cards" ? "is-active" : "")"
+                    aria-pressed="@(mode == "cards")"
+                    @onclick='() => SetMode("cards")'>
+                Cards
+            </button>
+        </div>
+    </div>
+
+    @*
+        The scroll container stays. In table mode it is what stops the page itself scrolling
+        sideways; in card mode there is nothing wider than the panel and it never engages.
+    *@
+    <div class="rf-scroll-x">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    /// <summary>Optional line to the left of the buttons, usually a count.</summary>
+    [Parameter]
+    public string Caption { get; set; }
+
+    /// <summary>"cards", "table", or null to let the width decide.</summary>
+    private string mode;
+
+    private string ModeClass => mode switch
+    {
+        "cards" => "is-cards",
+        "table" => "is-table",
+        _ => ""
+    };
+
+    /// <summary>
+    ///     Read after the first render rather than before it.
+    /// </summary>
+    /// <remarks>
+    ///     There is no localStorage to read on the server, so the first paint is always Auto. That
+    ///     is the right thing to be wrong with: Auto already gives a phone cards and a desktop a
+    ///     table, so somebody whose stored preference matches their screen sees no change at all,
+    ///     and the rest see one reflow instead of an empty box while it is fetched.
+    /// </remarks>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        try
+        {
+            var stored = await JS.InvokeAsync<string>("rfTableView.get");
+            if (stored != mode)
+            {
+                mode = stored;
+                StateHasChanged();
+            }
+        }
+        catch (JSException)
+        {
+            // Auto, then. A table that cannot remember a preference is still a readable table.
+        }
+    }
+
+    private async Task SetMode(string value)
+    {
+        mode = value;
+
+        try
+        {
+            await JS.InvokeVoidAsync("rfTableView.set", value);
+        }
+        catch (JSException)
+        {
+            // It applies to this page either way.
+        }
+    }
+}

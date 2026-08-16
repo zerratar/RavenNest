@@ -103,7 +103,7 @@ else
     else
     {
         <div class="rf-panel">
-            <div class="rf-scroll-x">
+            <TableView>
                 <table class="rf-table">
                     <thead>
                         <tr>
@@ -130,7 +130,7 @@ else
                         {
                             var item = itemLookup[entry.ItemId];
                             <tr>
-                                <td>
+                                <td data-label="">
                                     <div class="rf-item">
                                         <span class="rf-item__img">
                                             <img src="@(ItemService.GetItemImage(item.Id.ToString(), item.Name))" alt="" loading="lazy" />
@@ -160,7 +160,7 @@ else
                                         </span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Stats">
                                     <div class="rf-chips">
                                         @if (item.WeaponAim > 0)
                                         {
@@ -192,7 +192,7 @@ else
                                         }
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Requires">
                                     <div class="rf-chips">
                                         @if (item.RequiredSlayerLevel > 0)
                                         {
@@ -216,9 +216,9 @@ else
                                         }
                                     </div>
                                 </td>
-                                <td class="rf-table__quiet">@item.Category</td>
-                                <td class="rf-table__quiet">@ItemService.GetMaterialName(item)</td>
-                                <td>
+                                <td data-label="Category" class="rf-table__quiet">@item.Category</td>
+                                <td data-label="Material" class="rf-table__quiet">@ItemService.GetMaterialName(item)</td>
+                                <td data-label="">
                                     @*
                                         One button rather than one per character. With five characters the old row
                                         ended in five buttons, which is most of the width of the table spent on the
@@ -232,7 +232,7 @@ else
                         }
                     </tbody>
                 </table>
-            </div>
+            </TableView>
         </div>
     }
 

@@ -3841,3 +3841,216 @@ a.rf-badge:hover {
 .rf-clan__acting {
     margin: 0 0 var(--rf-space-1) 0;
 }
+
+/* ---- Table as cards ----------------------------------------------------
+   The same table markup read two ways. Sideways scrolling keeps a wide table
+   honest on a phone but it is a poor way to read one: the first column is the
+   one that says what the row is about, and it is the first to scroll away, so
+   every other cell loses its subject.
+
+   Card mode turns each row into a block and puts the column name beside each
+   value, taken from the cell's data-label. A cell with no data-label shows its
+   value alone, which is right for an actions cell where the buttons say what
+   they are. */
+
+.rf-tw__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--rf-space-3);
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-tw__modes {
+    display: inline-flex;
+    /* One control rather than three buttons: the border is shared and the
+       segments sit against each other. */
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+    overflow: hidden;
+    margin-left: auto;
+}
+
+.rf-tw__mode {
+    appearance: none;
+    border: 0;
+    border-left: 1px solid var(--rf-line);
+    padding: var(--rf-space-2) var(--rf-space-3);
+    background: none;
+    color: var(--rf-ink-muted);
+    font: inherit;
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    letter-spacing: var(--rf-tracking-label);
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background var(--rf-transition), color var(--rf-transition);
+}
+
+.rf-tw__mode:first-child {
+    border-left: 0;
+}
+
+.rf-tw__mode:hover,
+.rf-tw__mode:focus-visible {
+    color: var(--rf-ink);
+}
+
+/* Filled rather than merely tinted, so the chosen segment is a shape as well as
+   a colour. aria-pressed carries it for anybody not looking. */
+.rf-tw__mode.is-active {
+    background: var(--rf-gold);
+    color: var(--rf-bg);
+}
+
+/* ---- the card layout itself ---------------------------------------------
+   Applied when the wrapper says cards, or when the screen is narrow and nobody
+   has said otherwise. The two selectors are written out rather than shared,
+   because a media query cannot be combined with a class in one rule. */
+
+@media (max-width: 48rem) {
+    .rf-tw:not(.is-table) .rf-table thead {
+        /* Not display:none, which would drop the header out of the
+           accessibility tree along with the layout. */
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+
+    .rf-tw:not(.is-table) .rf-table,
+    .rf-tw:not(.is-table) .rf-table tbody,
+    .rf-tw:not(.is-table) .rf-table tr,
+    .rf-tw:not(.is-table) .rf-table td {
+        display: block;
+        width: auto;
+        min-width: 0;
+    }
+
+    .rf-tw:not(.is-table) .rf-table tr {
+        margin-bottom: var(--rf-space-3);
+        padding: var(--rf-space-3);
+        border: 1px solid var(--rf-line);
+        border-radius: var(--rf-radius);
+        background: var(--rf-surface-2);
+    }
+
+    .rf-tw:not(.is-table) .rf-table td {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--rf-space-3);
+        padding: var(--rf-space-2) 0;
+        border: 0;
+        border-bottom: 1px solid var(--rf-line);
+        text-align: left;
+    }
+
+    .rf-tw:not(.is-table) .rf-table td:last-child {
+        padding-bottom: 0;
+        border-bottom: 0;
+    }
+
+    .rf-tw:not(.is-table) .rf-table td::before {
+        content: attr(data-label);
+        flex: 0 0 auto;
+        color: var(--rf-ink-muted);
+        font-size: var(--rf-size-tiny);
+        font-weight: 700;
+        letter-spacing: var(--rf-tracking-label);
+        text-transform: uppercase;
+    }
+
+    /* The cell that names the row gets the width to itself, with no label: the
+       item is the heading of its own card. */
+    .rf-tw:not(.is-table) .rf-table td[data-label=""]::before,
+    .rf-tw:not(.is-table) .rf-table td:not([data-label])::before {
+        content: none;
+    }
+
+    .rf-tw:not(.is-table) .rf-table td[data-label=""],
+    .rf-tw:not(.is-table) .rf-table td:not([data-label]) {
+        display: block;
+    }
+}
+
+/* Cards asked for explicitly, at any width. Same rules, no media query. */
+.rf-tw.is-cards .rf-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+/* min-width: 46rem on .rf-table is what makes a wide table scroll. It survives
+   display:block, so without clearing it the cards are 46rem wide and scroll
+   exactly as before, which was the whole thing being fixed. */
+.rf-tw.is-cards .rf-table,
+.rf-tw.is-cards .rf-table tbody,
+.rf-tw.is-cards .rf-table tr,
+.rf-tw.is-cards .rf-table td {
+    display: block;
+    width: auto;
+    min-width: 0;
+}
+
+/* Wider than a phone, cards go side by side rather than stretching a two word
+   value across a desktop. */
+.rf-tw.is-cards .rf-table tbody {
+    display: grid;
+    /* min(20rem, 100%) rather than 20rem. A bare 20rem track cannot shrink below
+       320px, so asking for cards on a narrow screen produced 320px cards in a
+       277px column and put the sideways scroll straight back. */
+    grid-template-columns: repeat(auto-fill, minmax(min(20rem, 100%), 1fr));
+    gap: var(--rf-space-3);
+}
+
+.rf-tw.is-cards .rf-table tr {
+    padding: var(--rf-space-3);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-2);
+}
+
+.rf-tw.is-cards .rf-table td {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-2) 0;
+    border: 0;
+    border-bottom: 1px solid var(--rf-line);
+    text-align: left;
+}
+
+.rf-tw.is-cards .rf-table td:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+}
+
+.rf-tw.is-cards .rf-table td::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    letter-spacing: var(--rf-tracking-label);
+    text-transform: uppercase;
+}
+
+.rf-tw.is-cards .rf-table td[data-label=""]::before,
+.rf-tw.is-cards .rf-table td:not([data-label])::before {
+    content: none;
+}
+
+.rf-tw.is-cards .rf-table td[data-label=""],
+.rf-tw.is-cards .rf-table td:not([data-label]) {
+    display: block;
+}

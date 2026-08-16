@@ -126,7 +126,7 @@ else
     else
     {
         <div class="rf-panel">
-            <div class="rf-scroll-x">
+            <TableView>
                 <table class="rf-table">
                     <thead>
                         <tr>
@@ -164,7 +164,7 @@ else
                         {
                             var item = record.Item;
                             <tr>
-                                <td>
+                                <td data-label="">
                                     <div class="rf-item">
                                         <span class="rf-item__img">
                                             <img src="@(ItemService.GetItemImage(item.Id, item.Name))" alt="" loading="lazy" />
@@ -175,7 +175,7 @@ else
                                         </span>
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Stats">
                                     <div class="rf-chips">
                                         @if (item.WeaponAim > 0)
                                         {
@@ -207,7 +207,7 @@ else
                                         }
                                     </div>
                                 </td>
-                                <td>
+                                <td data-label="Requires">
                                     <div class="rf-chips">
                                         @if (item.RequiredSlayerLevel > 0)
                                         {
@@ -231,12 +231,12 @@ else
                                         }
                                     </div>
                                 </td>
-                                <td class="rf-table__num">@record.VendorItem.Stock.ToString("N0")</td>
-                                <td class="rf-table__num">@record.BuyFromVendorPrice.ToString("N0")</td>
-                                <td class="rf-table__num rf-table__quiet">@record.SellToVendorPrice.ToString("N0")</td>
+                                <td data-label="In stock" class="rf-table__num">@record.VendorItem.Stock.ToString("N0")</td>
+                                <td data-label="You pay" class="rf-table__num">@record.BuyFromVendorPrice.ToString("N0")</td>
+                                <td data-label="Vendor pays" class="rf-table__num rf-table__quiet">@record.SellToVendorPrice.ToString("N0")</td>
                                 @if (CanBuy)
                                 {
-                                    <td>
+                                    <td data-label="">
                                         <button type="button" class="rf-btn rf-btn--small" @onclick="() => OpenBuy(record)">
                                             Buy
                                         </button>
@@ -246,7 +246,7 @@ else
                         }
                     </tbody>
                 </table>
-            </div>
+            </TableView>
         </div>
     }
 
