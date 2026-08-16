@@ -312,14 +312,27 @@
     z-index: 30;
 }
 
-/* Below 641px the top right corner belongs to the menu button, which lives in
-   the sidebar and so cannot simply be laid out next to this. The bell steps far
-   enough left to clear it: the button measures 83px at its widest with the
-   "Menu" label, and it sits on the same 24px of right padding, so 7.5rem leaves
-   about 13px between the two. */
+/* Below 641px the sidebar stacks above the content instead of sitting beside
+   it, so the bell can be anchored to the top of the content column rather than
+   to the window. Fixed, it tracked the viewport the whole way down and sat on
+   top of whatever had been scrolled to, which reads as a rendering fault rather
+   than as a control.
+
+   Anchoring to .main also clears the menu button, which is up in the stacked
+   sidebar at this width, so the bell no longer has to step sideways to avoid it
+   and goes back to the same right margin it uses on a wide screen. */
 @media (max-width: 640.98px) {
+    /* The anchor. Scoped to this breakpoint rather than set globally so the only
+       thing it can affect is the bell. Safe for the modals, which are fixed:
+       .main carries no transform or filter of its own, so it does not become
+       their containing block. The art band's filter is on ::before. */
+    .rf-dash .main {
+        position: relative;
+    }
+
     .rf-dash__notify {
-        right: 7.5rem;
+        position: absolute;
+        right: var(--rf-space-5);
     }
 }
 
