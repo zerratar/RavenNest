@@ -350,6 +350,22 @@
     color: var(--rf-ink-inverse);
 }
 
+/* Sign in with Twitch. In Twitch's colour rather than the site's, because this
+   is the one button on the site where a player needs to recognise at a glance
+   whose account they are about to hand over. */
+.rf-btn--twitch {
+    background: var(--rf-twitch);
+    border-color: var(--rf-twitch);
+    color: #fff;
+}
+
+.rf-btn--twitch:hover,
+.rf-btn--twitch:focus-visible {
+    background: var(--rf-twitch-deep);
+    border-color: var(--rf-twitch-deep);
+    color: #fff;
+}
+
 /* For rows of secondary actions, where a full size button would outweigh the
    thing it sits next to. */
 .rf-btn--small {
@@ -370,10 +386,46 @@
     color: var(--rf-ink-inverse);
 }
 
+/* A button that is the only action in its block and should own the width, so
+   that a stack of them reads as one column rather than as ragged fragments. */
+.rf-btn--block {
+    width: 100%;
+    justify-content: center;
+}
+
 .rf-btn[disabled],
 .rf-btn--disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* ---- Validation ---------------------------------------------------------
+   What Blazor's own DataAnnotationsValidator emits. The class names are fixed
+   by the framework, so these are the framework's names rather than rf- ones,
+   scoped to a panel so nothing changes on the pages not yet converted.
+
+   site.css gives .validation-message `font-size: 16pt`, which is larger than
+   the heading it appears under, and ValidationSummary is a bulleted list with
+   no styling at all. */
+
+.rf-panel .validation-errors {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.rf-panel .validation-message {
+    color: var(--rf-bad);
+    font-size: var(--rf-size-small);
+    font-weight: 600;
+}
+
+/* Blazor marks a field that failed validation with .invalid, which site.css
+   turns into a bare red outline. Same signal, in the palette, and paired with
+   the message above so colour is not carrying it alone. */
+.rf-panel .rf-input.invalid {
+    outline: none;
+    border-color: var(--rf-bad);
 }
 
 /* ---- Input -------------------------------------------------------------- */

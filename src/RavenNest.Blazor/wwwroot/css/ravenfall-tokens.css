@@ -53,6 +53,16 @@
     --rf-bad: #e05a52;
     --rf-bad-wash: rgba(224, 90, 82, 0.12);
 
+    /* ---- Brands ---------------------------------------------------------
+       Twitch's own purple. A sign in button that is not the platform's colour
+       reads as a lookalike, which is the one place on the site where guessing
+       wrong costs somebody their account. Fixed values, not themeable. */
+    --rf-twitch: #9146ff;
+    /* Twitch's own hover, which is darker rather than brighter. Going brighter
+       took white text on it from 4.6:1 down to 3.3:1, under the 4.5 floor; this
+       one measures 6.3:1. */
+    --rf-twitch-deep: #772ce8;
+
     /* ---- Item rarity ----------------------------------------------------
        An RPG convention players already know from the game itself. Having it
        as tokens means inventory, stash, marketplace and clan views can finally

@@ -526,60 +526,71 @@
     margin: 0 auto;
 }
 
-/* ---- Login --------------------------------------------------------------
-   Three things were misaligned and each had its own cause.
+/* ---- Sign in ------------------------------------------------------------
+   This replaces a block of alignment repairs. The page used to be built from
+   raven-input and raven-btn, whose widths were set in three places that
+   disagreed: the inputs were 324px, the buttons 325px with a 5px margin, and
+   the heading was left aligned against fields that site.css's
+   `.content form { align-items: center }` had centred. Every one of those rules
+   is gone with the markup that needed them.
 
-   The heading and the slogan sit outside the form, and the thing that centres
-   anything on this page is site.css's `.content form { align-items: center }`,
-   so they were left aligned against centred fields.
+   One narrow column, because a sign in page has one job and a form the width of
+   a desktop screen makes it look like it has several. */
 
-   The Login button is inside that form and the Twitch button is outside it, so
-   the two were centred by different things and lined up with neither each other
-   nor the inputs.
+.rf-signin {
+    width: min(30rem, 100%);
+    margin: 0 auto;
+}
 
-   And the buttons take their width from a fixed 325px that becomes 90vw under
-   450px, while the inputs are 324px, so no two controls on the page agreed.
+/* The popup the game client and the Twitch redirect land in. It says one line
+   and closes itself, and it used to say it inside a hero fixed at 1000px tall,
+   so it was a sentence with nine hundred pixels of nothing below it. */
+.rf-signin--handoff {
+    padding: var(--rf-space-7) var(--rf-space-4);
+}
 
-   Centring the whole block once, and giving every control the same width, is
-   less code than the rules it replaces. */
+.rf-signin .rf-panel + .rf-panel {
+    margin-top: var(--rf-space-4);
+}
 
-.rf-front .login {
+/* site.css sets `.content form { display: flex; flex-flow: column;
+   align-items: center }`, which is what centred the old login fields. The form
+   here is a submit boundary, not a layout box: the fields inside it should fill
+   the panel like every other field on the site. */
+.rf-front .rf-signin form {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-}
-
-.rf-front .login-header,
-.rf-front .login-slogan {
+    flex-flow: column;
+    align-items: stretch;
+    gap: var(--rf-space-4);
     width: 100%;
-    text-align: center;
 }
 
-/* One width for the inputs and both buttons, so they form a single column. */
-/* The button selector names the element as well, to match the specificity of
-   site.css's `button.raven-btn.blue.login-btn { width: 325px }` rather than lose
-   to it and leave the buttons 16px narrower than the fields above them. */
-.rf-front .login .raven-input,
-.rf-front .login button.raven-btn,
-.rf-front .login .input-fields {
-    width: min(19rem, 100%);
-    max-width: 100%;
-}
-
-/* raven-btn carries a 5px margin all round, which left the buttons 10px narrower
-   than the inputs above them and just off the same edges. */
-.rf-front .login .raven-btn {
-    justify-content: center;
-    margin-left: 0;
-    margin-right: 0;
-}
-
-/* The form is only there to submit; it should not also be a layout box of a
-   different width from the block it sits in. */
-.rf-front .login form {
-    width: min(22rem, 100%);
+/* Two ways in, and the separator is what says they are alternatives rather than
+   steps. The rules are drawn either side of the word rather than behind it, so
+   nothing sits on top of the text at any width. */
+.rf-or {
+    display: flex;
     align-items: center;
+    gap: var(--rf-space-3);
+    margin: var(--rf-space-4) 0;
+    color: var(--rf-ink-faint);
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+}
+
+.rf-or::before,
+.rf-or::after {
+    content: "";
+    flex: 1 1 auto;
+    height: 1px;
+    background: var(--rf-line-strong);
+}
+
+.rf-signin__foot {
+    margin-top: var(--rf-space-5);
+    text-align: center;
 }
 
 /* ---- Highscore ----------------------------------------------------------
