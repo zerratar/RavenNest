@@ -1,0 +1,50 @@
+@layout DashboardLayout
+@page "/shop"
+@using RavenNest.Blazor.Services
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+
+@*
+    The vendor, from inside the dashboard. It was reachable only as a front page that listed prices
+    and had no way to buy anything, and the nav left it out rather than throwing you out of the
+    dashboard to reach it.
+
+    Same component as /vendor, with buying switched on, so the prices on the two pages are the same
+    prices by construction.
+*@
+
+<header class="rf-page-head">
+    <h1 class="rf-page-title">Vendor</h1>
+    <p class="rf-page-subtitle">
+        Buy back what other players have sold. Coins come from your account, and the items go to
+        whichever character you pick.
+    </p>
+</header>
+
+@if (!IsAuthenticated)
+{
+    <p class="rf-meta">You don't seem to be logged in.</p>
+}
+else
+{
+    <VendorList CanBuy="true"></VendorList>
+}
+
+@code {
+    private RavenNest.Models.SessionInfo session;
+
+    private bool IsAuthenticated => session != null && session.Authenticated;
+
+    protected override void OnInitialized()
+    {
+        session = AuthService.GetSession();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("/login/redirect/shop");
+        }
+    }
+}

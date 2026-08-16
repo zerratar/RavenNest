@@ -1,0 +1,581 @@
+@using RavenNest.BusinessLogic.Game
+@using RavenNest.Blazor.Services
+@using RavenNest.BusinessLogic.Extended
+@using ItemFilter = RavenNest.Models.ItemFilter
+@inject ItemService ItemService
+@inject PlayerService PlayerService
+
+@*
+    The vendor's stock, shared by the public catalogue at /vendor and the shop at /shop. The only
+    difference between the two is CanBuy, so they cannot drift into disagreeing about what a thing
+    costs.
+
+    The page this replaces had a category rail whose click handler set a field and did nothing with
+    it: every button was live, none of them filtered anything. Its heading said "All Items", copied
+    from the item list, on a page showing the handful the vendor actually has.
+*@
+
+@if (records == null)
+{
+    <LoadIndicator></LoadIndicator>
+}
+else if (records.Count == 0)
+{
+    <div class="rf-panel">
+        <h2 class="rf-panel__title">The vendor has nothing in stock</h2>
+        <p class="rf-meta">
+            Everything here is something a player sold. Nobody has sold anything the vendor kept,
+            so there is nothing to buy right now. It fills up again as people vendor their loot.
+        </p>
+    </div>
+}
+else
+{
+    @if (CanBuy)
+    {
+        <div class="rf-vendor__bar">
+            <span class="rf-inv__coins" title="@coins.ToString("N0") coins">
+                <i class="fa-solid fa-coins" aria-hidden="true"></i>
+                <span>@Utility.FormatAmount(coins)</span>
+            </span>
+            @*
+                Coins are held by the account rather than the character, so the only thing this
+                picker decides is whose bag the items land in. Saying so stops it looking like a
+                choice about which purse is being spent.
+            *@
+            @if (characters != null && characters.Count > 1)
+            {
+                <div class="rf-vendor__to">
+                    <span class="rf-label">Items go to</span>
+                    <div class="rf-charpick rf-charpick--compact">
+                        @foreach (var plr in characters)
+                        {
+                            <button type="button"
+                                    class="rf-char @(target?.Id == plr.Id ? "is-active" : "")"
+                                    @onclick="() => target = plr">
+                                <span class="rf-char__name">@plr.Name</span>
+                                <span class="rf-char__level">@PlayerService.GetCombatLevel(plr)</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (resultMessage != null)
+        {
+            <div class="rf-banner @(resultSuccess ? "rf-banner--good" : "rf-banner--bad")" role="status">
+                <p class="rf-banner__title">@(resultSuccess ? "Bought" : "Nothing was bought")</p>
+                <p>@resultMessage</p>
+            </div>
+        }
+    }
+
+    <div class="rf-toolbar">
+        <input type="search"
+               class="rf-input rf-search"
+               placeholder="Search by name"
+               aria-label="Search the vendor by item name"
+               value="@search"
+               @oninput="OnSearchChanged" />
+        @if (!string.IsNullOrWhiteSpace(search) || itemFilter != ItemFilter.All)
+        {
+            <button type="button" class="rf-btn rf-btn--small" @onclick="ClearFilters">Clear filters</button>
+        }
+        <span class="rf-meta">Showing @filtered.Count of @records.Count</span>
+    </div>
+
+    @*
+        Only the categories the vendor has something in. Nineteen buttons over a list of forty
+        items means most of them lead to an empty table.
+    *@
+    <div class="rf-filters" role="group" aria-label="Filter the vendor by category">
+        @foreach (var f in ItemFilterOptions.All.Where(x => x.Filter == ItemFilter.All || counts.ContainsKey(x.Filter)))
+        {
+            <button type="button"
+                    class="rf-filter @(itemFilter == f.Filter ? "is-active" : "")"
+                    aria-pressed="@(itemFilter == f.Filter)"
+                    @onclick="() => SelectItemFilter(f.Filter)">
+                <i class="@f.Icon" aria-hidden="true"></i>
+                <span>@f.Label</span>
+                <b>@(f.Filter == ItemFilter.All ? records.Count : counts[f.Filter])</b>
+            </button>
+        }
+    </div>
+
+    @if (filtered.Count == 0)
+    {
+        <div class="rf-panel">
+            <p class="rf-meta">Nothing matches that. Try a different category or clear the search.</p>
+        </div>
+    }
+    else
+    {
+        <div class="rf-panel">
+            <div class="rf-scroll-x">
+                <table class="rf-table">
+                    <thead>
+                        <tr>
+                            <th scope="col" aria-sort="@AriaSort("name")">
+                                <button type="button" class="rf-th" @onclick='() => SortBy("name", x => x.Item.Name)'>Item @(Indicator("name"))</button>
+                            </th>
+                            <th scope="col" aria-sort="@AriaSort("stats")">
+                                <button type="button" class="rf-th" @onclick='() => SortBy("stats", x => Stats(x.Item))'>Stats @(Indicator("stats"))</button>
+                            </th>
+                            <th scope="col" aria-sort="@AriaSort("lev-req")">
+                                <button type="button" class="rf-th" @onclick='() => SortBy("lev-req", x => GameMath.GetItemLevel(x.Item))'>Requires @(Indicator("lev-req"))</button>
+                            </th>
+                            <th scope="col" aria-sort="@AriaSort("stock")">
+                                <button type="button" class="rf-th" @onclick='() => SortBy("stock", x => x.VendorItem.Stock)'>In stock @(Indicator("stock"))</button>
+                            </th>
+                            @*
+                                Both columns used to be headed "Price" with an arrow that both of
+                                them lit up, because the two sort handlers shared one indicator key.
+                                They are two different directions of trade and now say which.
+                            *@
+                            <th scope="col" aria-sort="@AriaSort("buy")">
+                                <button type="button" class="rf-th" @onclick='() => SortBy("buy", x => x.BuyFromVendorPrice)'>You pay @(Indicator("buy"))</button>
+                            </th>
+                            <th scope="col" aria-sort="@AriaSort("sell")">
+                                <button type="button" class="rf-th" @onclick='() => SortBy("sell", x => x.SellToVendorPrice)'>Vendor pays @(Indicator("sell"))</button>
+                            </th>
+                            @if (CanBuy)
+                            {
+                                <th scope="col"><span class="rf-th rf-th--static">Buy</span></th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var record in filtered)
+                        {
+                            var item = record.Item;
+                            <tr>
+                                <td>
+                                    <div class="rf-item">
+                                        <span class="rf-item__img">
+                                            <img src="@(ItemService.GetItemImage(item.Id, item.Name))" alt="" loading="lazy" />
+                                        </span>
+                                        <span class="rf-item__body">
+                                            <a class="rf-item__name" href="/items/@item.Id">@item.Name</a>
+                                            <span class="rf-item__meta">@TypeOf(item)</span>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="rf-chips">
+                                        @if (item.WeaponAim > 0)
+                                        {
+                                            <span class="rf-chip" title="Weapon aim, increases your hit rate in melee"><i class="fas fa-crosshairs" aria-hidden="true"></i>@item.WeaponAim</span>
+                                        }
+                                        @if (item.WeaponPower > 0)
+                                        {
+                                            <span class="rf-chip" title="Weapon power, increases your maximum damage in melee"><i class="fas fa-swords" aria-hidden="true"></i>@item.WeaponPower</span>
+                                        }
+                                        @if (item.RangedAim > 0)
+                                        {
+                                            <span class="rf-chip" title="Ranged aim, increases your ranged hit rate"><i class="fas fa-crosshairs" aria-hidden="true"></i>@item.RangedAim</span>
+                                        }
+                                        @if (item.RangedPower > 0)
+                                        {
+                                            <span class="rf-chip" title="Ranged power, increases your ranged maximum damage"><i class="fas fa-bow-arrow" aria-hidden="true"></i>@item.RangedPower</span>
+                                        }
+                                        @if (item.MagicAim > 0)
+                                        {
+                                            <span class="rf-chip" title="Magic aim, increases your magic hit rate"><i class="fas fa-wand" aria-hidden="true"></i>@item.MagicAim</span>
+                                        }
+                                        @if (item.MagicPower > 0)
+                                        {
+                                            <span class="rf-chip" title="Magic power, increases your magic maximum damage"><i class="fas fa-hand-holding-magic" aria-hidden="true"></i>@item.MagicPower</span>
+                                        }
+                                        @if (item.ArmorPower > 0)
+                                        {
+                                            <span class="rf-chip" title="Armour power, decreases the hit rate of your attacker"><i class="fas fa-shield" aria-hidden="true"></i>@item.ArmorPower</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="rf-chips">
+                                        @if (item.RequiredSlayerLevel > 0)
+                                        {
+                                            <span class="rf-chip" title="Required slayer level"><i class="fas fa-skull" aria-hidden="true"></i>@item.RequiredSlayerLevel</span>
+                                        }
+                                        @if (item.RequiredAttackLevel > 0)
+                                        {
+                                            <span class="rf-chip" title="Required attack level"><i class="fas fa-swords" aria-hidden="true"></i>@item.RequiredAttackLevel</span>
+                                        }
+                                        @if (item.RequiredDefenseLevel > 0)
+                                        {
+                                            <span class="rf-chip" title="Required defense level"><i class="fas fa-shield" aria-hidden="true"></i>@item.RequiredDefenseLevel</span>
+                                        }
+                                        @if (item.RequiredMagicLevel > 0)
+                                        {
+                                            <span class="rf-chip" title="Required magic or healing level"><i class="fas fa-hand-holding-magic" aria-hidden="true"></i>@item.RequiredMagicLevel</span>
+                                        }
+                                        @if (item.RequiredRangedLevel > 0)
+                                        {
+                                            <span class="rf-chip" title="Required ranged level"><i class="fas fa-bow-arrow" aria-hidden="true"></i>@item.RequiredRangedLevel</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="rf-table__num">@record.VendorItem.Stock.ToString("N0")</td>
+                                <td class="rf-table__num">@record.BuyFromVendorPrice.ToString("N0")</td>
+                                <td class="rf-table__num rf-table__quiet">@record.SellToVendorPrice.ToString("N0")</td>
+                                @if (CanBuy)
+                                {
+                                    <td>
+                                        <button type="button" class="rf-btn rf-btn--small" @onclick="() => OpenBuy(record)">
+                                            Buy
+                                        </button>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    @if (buying != null)
+    {
+        <div class="rf-modal-backdrop" @onclick="CloseBuy">
+            <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Buy @buying.Item.Name" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">Buy @buying.Item.Name</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CloseBuy">&times;</button>
+                </div>
+
+                @*
+                    The unit price rises as the shelf empties, so a total is not the amount times
+                    the price on the row. This walks the stock down exactly the way BuyFromVendor
+                    does, which is the only way the number here and the number charged can agree.
+                *@
+                <dl class="rf-facts">
+                    <dt>In stock</dt>
+                    <dd>@buying.VendorItem.Stock.ToString("N0")</dd>
+
+                    <dt>Price for one</dt>
+                    <dd>@buying.BuyFromVendorPrice.ToString("N0") coins</dd>
+
+                    <dt>Goes to</dt>
+                    <dd>@(target?.Name ?? "no character")</dd>
+                </dl>
+
+                <label class="rf-field">
+                    <span class="rf-label">How many</span>
+                    <input type="number" class="rf-input" min="1" max="@buying.VendorItem.Stock" @bind="buyAmount" @bind:event="oninput" />
+                </label>
+
+                <div class="rf-actions">
+                    @foreach (var quick in QuickAmounts())
+                    {
+                        <button type="button" class="rf-btn rf-btn--small" @onclick="() => buyAmount = quick.Value">@quick.Key</button>
+                    }
+                </div>
+
+                <dl class="rf-facts">
+                    <dt>Total</dt>
+                    <dd>@BuyTotal.ToString("N0") coins</dd>
+
+                    <dt>You have</dt>
+                    <dd>@coins.ToString("N0") coins</dd>
+
+                    <dt>Left after</dt>
+                    <dd class="@(coins - BuyTotal < 0 ? "rf-bad" : null)">@((coins - BuyTotal).ToString("N0")) coins</dd>
+                </dl>
+
+                @if (!CanAfford)
+                {
+                    <p class="rf-meta rf-bad">That is more than you have.</p>
+                }
+
+                <div class="rf-modal__foot">
+                    <button type="button" class="rf-btn" @onclick="CloseBuy">Cancel</button>
+                    <button type="button" class="rf-btn rf-btn--primary"
+                            disabled="@(!CanConfirm)"
+                            @onclick="ConfirmBuy">
+                        @(purchasing ? "Buying" : "Buy " + buyAmount.ToString("N0"))
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    /// <summary>False on the public catalogue, true on the dashboard shop.</summary>
+    [Parameter] public bool CanBuy { get; set; }
+
+    private IReadOnlyList<VendorItemRecord> records;
+    private List<VendorItemRecord> filtered = new();
+    private Dictionary<ItemFilter, int> counts = new();
+
+    private IReadOnlyList<WebsitePlayer> characters;
+    private WebsitePlayer target;
+    private long coins;
+
+    private VendorItemRecord buying;
+    private long buyAmount = 1;
+    private bool purchasing;
+
+    // The result's own message is "Bought 3 for 1,200 coins", which does not name the item or say
+    // where it went. Both matter when you have several characters, so the page writes its own.
+    private bool resultSuccess;
+    private string resultMessage;
+
+    private string search = "";
+    private ItemFilter itemFilter = ItemFilter.All;
+
+    private string sort = "name";
+    private Func<VendorItemRecord, IComparable> sortSelector = x => x.Item.Name;
+    private BusinessLogic.Game.SortDirection sortDirection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (CanBuy)
+        {
+            characters = await PlayerService.GetMyPlayersAsync();
+            target = characters?.FirstOrDefault();
+        }
+
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        // A vendor row survives the item it points at being deleted, and GetVendorItemsAsync
+        // hands those back with a null Item. Every cell in the table would throw on one, which
+        // on the public page means a single deleted item takes the whole list down for
+        // everybody. The item list had the same fault in its recipe ingredients.
+        records = (await ItemService.GetVendorItemsAsync())
+            .Where(x => x?.Item != null && x.VendorItem != null)
+            .ToList();
+
+        counts = records
+            .GroupBy(x => ItemService.GetItemFilter(x.Item.Id))
+            .ToDictionary(x => x.Key, x => x.Count());
+
+        if (CanBuy)
+        {
+            coins = PlayerService.GetMyCoins();
+        }
+
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        var matching = records.Where(Matches);
+        filtered = (sortDirection == BusinessLogic.Game.SortDirection.Descending
+            ? matching.OrderByDescending(sortSelector)
+            : matching.OrderBy(sortSelector)).ToList();
+    }
+
+    private bool Matches(VendorItemRecord record)
+    {
+        if (itemFilter != ItemFilter.All && ItemService.GetItemFilter(record.Item.Id) != itemFilter)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            return true;
+        }
+
+        return record.Item.Name != null
+            && record.Item.Name.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        search = e.Value?.ToString() ?? "";
+        ApplyFilters();
+    }
+
+    private void SelectItemFilter(ItemFilter newFilter)
+    {
+        itemFilter = newFilter;
+        ApplyFilters();
+    }
+
+    private void ClearFilters()
+    {
+        search = "";
+        itemFilter = ItemFilter.All;
+        ApplyFilters();
+    }
+
+    private void SortBy(string key, Func<VendorItemRecord, IComparable> selector)
+    {
+        if (sort != key)
+        {
+            sortDirection = BusinessLogic.Game.SortDirection.Ascending;
+        }
+        else
+        {
+            sortDirection = (BusinessLogic.Game.SortDirection)(((int)sortDirection + 1) % Enum.GetValues(typeof(BusinessLogic.Game.SortDirection)).Length);
+        }
+
+        sort = key;
+        sortSelector = selector;
+        ApplyFilters();
+    }
+
+    private MarkupString Indicator(string value)
+    {
+        if (value != sort) return (MarkupString)"";
+        return (MarkupString)(sortDirection == BusinessLogic.Game.SortDirection.Ascending ? "&uarr;" : "&darr;");
+    }
+
+    private string AriaSort(string value)
+    {
+        if (value != sort) return "none";
+        return sortDirection == BusinessLogic.Game.SortDirection.Ascending ? "ascending" : "descending";
+    }
+
+    private static int Stats(RavenNest.DataModels.Item item)
+    {
+        return item.ArmorPower + item.MagicPower + item.RangedPower + item.WeaponPower
+             + item.MagicAim + item.RangedAim + item.WeaponAim;
+    }
+
+    private string TypeOf(RavenNest.DataModels.Item item)
+    {
+        var mapped = ItemService.GetItem(item.Id);
+        return mapped == null ? null : ItemService.GetTypeName(mapped);
+    }
+
+    private void OpenBuy(VendorItemRecord record)
+    {
+        resultMessage = null;
+        buying = record;
+        buyAmount = 1;
+    }
+
+    private void CloseBuy()
+    {
+        buying = null;
+    }
+
+    /// <summary>
+    ///     From this much stock down, the unit price has stopped moving.
+    ///     CalculateVendorBuyPrice takes one percent off per ten in stock and stops at
+    ///     twenty five percent, so the reduction is at its floor once the stock is 750
+    ///     or more and every unit above that costs the same.
+    /// </summary>
+    private const long FlatPriceStock = 750;
+
+    private long BuyTotal => CostOf(buyAmount);
+
+    /// <summary>
+    ///     What buying this many actually costs. Each unit is priced against the stock left at
+    ///     the moment it is taken, which is what PlayerManager.BuyFromVendor does, so the total
+    ///     shown here is the total charged.
+    ///
+    ///     The units in the flat region are counted rather than walked. This runs on every
+    ///     keystroke in the amount box, and a deep stack of arrows would otherwise mean tens of
+    ///     thousands of identical multiplications for a number already known.
+    /// </summary>
+    private long CostOf(long amount)
+    {
+        if (buying == null) return 0;
+
+        var remaining = buying.VendorItem.Stock;
+        var left = Math.Clamp(amount, 0, remaining);
+        var total = 0L;
+
+        if (remaining >= FlatPriceStock)
+        {
+            var flatPrice = GameMath.CalculateVendorBuyPrice(buying.Item, remaining);
+            var flatUnits = Math.Min(left, remaining - (FlatPriceStock - 1));
+            total += flatUnits * flatPrice;
+            remaining -= flatUnits;
+            left -= flatUnits;
+        }
+
+        while (left > 0)
+        {
+            total += GameMath.CalculateVendorBuyPrice(buying.Item, remaining);
+            remaining--;
+            left--;
+        }
+
+        return total;
+    }
+
+    private bool CanAfford => BuyTotal <= coins;
+
+    private bool CanConfirm =>
+        !purchasing && target != null && buying != null && buyAmount >= 1 &&
+        buyAmount <= buying.VendorItem.Stock && CanAfford;
+
+    /// <summary>
+    ///     One, a handful, everything you can pay for, and the whole shelf. The affordable one is
+    ///     the useful one and it is the only one that cannot be worked out in your head, because
+    ///     the unit price moves as the shelf empties.
+    /// </summary>
+    private IEnumerable<KeyValuePair<string, long>> QuickAmounts()
+    {
+        if (buying == null) yield break;
+
+        var stock = buying.VendorItem.Stock;
+        if (stock > 1) yield return new("1", 1);
+        if (stock > 5) yield return new("5", 5);
+        if (stock > 10) yield return new("10", 10);
+
+        var affordable = MaxAffordable();
+        if (affordable > 0 && affordable < stock)
+        {
+            yield return new("All you can afford (" + affordable.ToString("N0") + ")", affordable);
+        }
+
+        yield return new("All " + stock.ToString("N0"), stock);
+    }
+
+    /// <summary>
+    ///     The largest amount whose cost is still within the coins on hand. Binary search rather
+    ///     than a walk, because the cost only ever rises with the amount and the walk would be
+    ///     the length of the stock.
+    /// </summary>
+    private long MaxAffordable()
+    {
+        if (buying == null) return 0;
+
+        var low = 0L;
+        var high = buying.VendorItem.Stock;
+
+        while (low < high)
+        {
+            var mid = low + ((high - low + 1) / 2);
+            if (CostOf(mid) <= coins) low = mid; else high = mid - 1;
+        }
+
+        return low;
+    }
+
+    private async Task ConfirmBuy()
+    {
+        if (!CanConfirm) return;
+
+        purchasing = true;
+        try
+        {
+            var record = buying;
+            var outcome = PlayerService.BuyFromVendor(target.Id, record.Item.Id, buyAmount);
+
+            resultSuccess = outcome.Success;
+            resultMessage = outcome.Success
+                ? outcome.Amount.ToString("N0") + " x " + record.Item.Name + " for " +
+                  outcome.TotalPrice.ToString("N0") + " coins, delivered to " + target.Name + "."
+                : outcome.Message;
+
+            buying = null;
+            await ReloadAsync();
+        }
+        finally
+        {
+            purchasing = false;
+        }
+    }
+}

@@ -3095,3 +3095,38 @@ a.rf-badge:hover {
 .rf-table tbody tr.is-selected .rf-item__name {
     color: var(--rf-gold);
 }
+
+/* ---- Vendor ------------------------------------------------------------
+   The bar above the vendor's stock: what you have to spend, and which
+   character the items land on. Coins belong to the account rather than the
+   character, so the picker is only about delivery and the two are set apart
+   rather than read as one control. */
+
+.rf-vendor__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--rf-space-5);
+    margin-bottom: var(--rf-space-4);
+}
+
+/* Takes the rest of the row. Without a basis the picker is sized by its own
+   content, which is one 12rem column, so three characters stacked into three
+   rows next to a coin badge and most of a screen of nothing. */
+.rf-vendor__to {
+    flex: 1 1 20rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-2);
+    min-width: 0;
+}
+
+.rf-vendor__to .rf-charpick {
+    margin-bottom: 0;
+}
+
+/* The number you would be left with, when it has gone negative. Paired with a
+   sentence saying so, so the colour is not carrying it alone. */
+.rf-bad {
+    color: var(--rf-bad);
+}

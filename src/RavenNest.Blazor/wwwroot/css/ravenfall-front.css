@@ -1315,3 +1315,9 @@
 .rf-front .rf-cmdcard p {
     margin: 0;
 }
+
+/* The catalogue's two ways onward sit between the lead and the table, so they
+   need the same separation from the table that the toolbar below them has. */
+.rf-front .rf-vendor__cta {
+    margin-bottom: var(--rf-space-5);
+}
