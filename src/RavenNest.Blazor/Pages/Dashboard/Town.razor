@@ -1,0 +1,892 @@
+@layout DashboardLayout
+@page "/town"
+@using RavenNest.Blazor.Services
+@using RavenNest.BusinessLogic
+@using RavenNest.BusinessLogic.Game
+@using RavenNest.BusinessLogic.Net
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.Blazor.Services.TownService TownService
+@inject NavigationManager NavigationManager
+
+@*
+    Mostly a reading page. The one write it makes is who lives on a plot, which is state a running
+    game is reading, so the service pushes a VillageInfo event after every change rather than
+    leaving the client on stale data. See docs/town-page-design.md.
+*@
+
+<header class="rf-page-head">
+    <h1 class="rf-page-title">Town</h1>
+    <p class="rf-page-subtitle">
+        Your plots, who is in them, and the experience bonus your viewers are getting from them.
+    </p>
+</header>
+
+@if (loading)
+{
+    <LoadIndicator></LoadIndicator>
+}
+else if (town == null)
+{
+    <div class="rf-panel rf-panel--accent">
+        <h2 class="rf-panel__title">You do not have a town yet</h2>
+        <p>
+            A town is created for your channel the first time you start Ravenfall on it. Once it
+            exists it keeps levelling whenever you stream, and this page fills in.
+        </p>
+        <div class="rf-actions">
+            <a class="rf-btn rf-btn--primary" href="/download">Download Ravenfall</a>
+            <a class="rf-btn" href="/bot">Check your bot</a>
+        </div>
+    </div>
+}
+else
+{
+    @*
+        The one thing worth interrupting for: plots assigned to people who have stopped playing
+        here. That bonus is not being applied and nothing in the game says so. Wording carries it,
+        colour only reinforces.
+    *@
+    @if (IdlePlots.Count > 0)
+    {
+        <div class="rf-banner rf-banner--warn">
+            <h2 class="rf-banner__title">
+                @IdlePlots.Count of your @town.UsedSlotCount filled @Plural(town.UsedSlotCount, "plot", "plots")
+                @(IdlePlots.Count == 1 ? "is" : "are") not counting
+            </h2>
+            <p>
+                They are assigned to people who are not playing on your stream at the moment, so the
+                <strong>@Percent(IdleBonusTotal)</strong> they would add is not being applied.
+                Reassigning a plot is done in game with <span class="rf-cmd">!village</span>.
+            </p>
+        </div>
+    }
+    else if (town.TotalSlotCount > 0 && town.UsedSlotCount == 0)
+    {
+        <div class="rf-banner rf-banner--warn">
+            <h2 class="rf-banner__title">Nobody is assigned to a plot</h2>
+            <p>
+                Your town has @town.TotalSlotCount @Plural(town.TotalSlotCount, "plot", "plots") and
+                none of them is helping anyone yet. Viewers claim one in chat with
+                <span class="rf-cmd">!village</span>.
+            </p>
+        </div>
+    }
+
+    <div class="rf-stats">
+        <div class="rf-stat">
+            <div class="rf-stat__value">@town.Level</div>
+            <div class="rf-stat__label">Town level</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value">@town.ActiveSlotCount / @town.TotalSlotCount</div>
+            <div class="rf-stat__label">Plots counting</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value">@Percent(ActiveBonusTotal)</div>
+            <div class="rf-stat__label">Bonus in play</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value">@Utility.FormatAmount(town.Coins)</div>
+            <div class="rf-stat__label">Town coins</div>
+        </div>
+    </div>
+
+    @*
+        Progress, and the answer to "why do I only have three plots". Slots are earned ten town
+        levels apiece and the game never says when the next one lands.
+    *@
+    <section class="rf-panel">
+        <h2 class="rf-panel__title">Town progress</h2>
+        <div class="rf-next">
+            <div class="rf-next__head">
+                <span class="rf-label">Next town level</span>
+                <span class="rf-next__skill">Level <b>@(town.Level + 1)</b></span>
+            </div>
+            <div class="rf-skill__bar rf-next__bar">
+                <span class="rf-skill__fill" style="@Bar(town.LevelProgress)"></span>
+            </div>
+            <div class="rf-next__foot">
+                <span>@Utility.FormatExp(town.ExperienceToNextLevel) exp to go</span>
+                <span class="rf-meta">@Math.Round(town.LevelProgress * 100, 1)% of the way</span>
+            </div>
+        </div>
+
+        <dl class="rf-facts">
+            <dt>Time to that level</dt>
+            <dd>
+                @if (town.Level >= GameMath.MaxVillageLevel)
+                {
+                    <span>Your town is at the maximum level.</span>
+                }
+                else
+                {
+                    <span>@FormatDuration(town.TimeToNextLevel) with the game running</span>
+                    <span class="rf-meta">
+                        &middot; town experience does not depend on how many viewers are playing
+                    </span>
+                }
+            </dd>
+
+            <dt>Next plot</dt>
+            <dd>
+                @if (town.NextSlotAtTownLevel == null)
+                {
+                    <span>You have all @town.MaxSlotCount plots.</span>
+                }
+                else
+                {
+                    <span>
+                        Plot @(town.TotalSlotCount + 1) is built at town level
+                        <strong>@town.NextSlotAtTownLevel</strong>
+                    </span>
+                    <span class="rf-meta">&middot; @(town.NextSlotAtTownLevel - town.Level) levels away</span>
+                }
+            </dd>
+
+            <dt>Plots</dt>
+            <dd>
+                @town.TotalSlotCount in total
+                <span class="rf-meta">
+                    &middot; @town.BuiltSlotCount built
+                    &middot; @town.UsedSlotCount filled
+                    &middot; @town.ActiveSlotCount counting
+                </span>
+                @if (town.SlotsFromPatreon > 0)
+                {
+                    <div class="rf-meta">
+                        @town.SlotsFromLevel earned by your town level and @town.SlotsFromPatreon
+                        granted by your Patreon tier. Levelling adds the next one at town level
+                        @town.NextSlotAtTownLevel rather than at the next multiple of ten.
+                    </div>
+                }
+            </dd>
+        </dl>
+    </section>
+
+    @if (actionResult != null)
+    {
+        <div class="rf-banner @(actionResult.Success ? "rf-banner--good" : "rf-banner--bad")">
+            <h2 class="rf-banner__title">@(actionResult.Success ? "Done" : "That did not work")</h2>
+            <p>@actionResult.Message</p>
+        </div>
+    }
+
+    <section class="rf-panel">
+        @*
+            The bulk control sits with the thing it acts on rather than with the page, because it
+            rewrites every tile below it.
+        *@
+        <div class="rf-panel__head">
+            <h2 class="rf-panel__title">Plots</h2>
+            @if (town.TotalSlotCount > 0)
+            {
+                <button type="button" class="rf-btn" @onclick="OpenBulk">
+                    <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                    Set every plot
+                </button>
+            }
+        </div>
+
+        @if (town.TotalSlotCount == 0)
+        {
+            <p>
+                Your town has no plots yet. The first one is built at town level
+                <strong>@town.NextSlotAtTownLevel</strong>, and your town is level @town.Level.
+            </p>
+        }
+        else
+        {
+            <div class="rf-plots">
+                @foreach (var plot in town.Houses)
+                {
+                    var type = TownHouseTypes.Get(plot.Type);
+                    <div class="rf-plot @PlotModifier(plot)">
+                        <div class="rf-plot__head">
+                            <span class="rf-plot__slot">Plot @(plot.Slot + 1)</span>
+                            @if (plot.IsActive)
+                            {
+                                <span class="rf-badge rf-badge--good">Counting</span>
+                            }
+                            else if (plot.IsAssigned)
+                            {
+                                <span class="rf-badge rf-badge--warn">Away</span>
+                            }
+                            else if (plot.IsBuilt)
+                            {
+                                <span class="rf-badge rf-badge--quiet">Free</span>
+                            }
+                            else
+                            {
+                                <span class="rf-badge rf-badge--quiet">Nothing built</span>
+                            }
+                        </div>
+
+                        <div class="rf-plot__body">
+                            <i class="rf-plot__icon @TownHouseTypes.IconOf(plot.Type)" aria-hidden="true"></i>
+                            <div class="rf-plot__id">
+                                <div class="rf-plot__type">@TownHouseTypes.LabelOf(plot.Type)</div>
+                                <div class="rf-plot__who">
+                                    @if (plot.IsAssigned)
+                                    {
+                                        <a class="rf-item__name" href="/inspect/@plot.AssignedCharacterId">@NameOf(plot)</a>
+                                    }
+                                    else if (plot.IsBuilt)
+                                    {
+                                        <span>No one assigned</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Build one in game</span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rf-plot__foot">
+                            @if (plot.IsAssigned)
+                            {
+                                <span class="rf-plot__bonus">@Percent(plot.Bonus)</span>
+                                <span class="rf-plot__skill">@type?.SkillName @plot.SkillLevel</span>
+                            }
+                            else if (plot.IsBuilt)
+                            {
+                                <span class="rf-plot__bonus">@Percent(0)</span>
+                                <span class="rf-plot__skill">needs @type?.SkillName</span>
+                            }
+                            else
+                            {
+                                <span class="rf-plot__bonus">@Percent(0)</span>
+                                <span class="rf-plot__skill">empty plot</span>
+                            }
+                        </div>
+
+                        @*
+                            Nothing is offered on a plot with no house on it. There is nothing to
+                            assign to, and the fix is building one in game.
+                        *@
+                        @if (plot.IsBuilt)
+                        {
+                            <div class="rf-plot__action">
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="() => OpenPicker(plot)">
+                                    @(plot.IsAssigned ? "Change who lives here" : "Choose who lives here")
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <p class="rf-meta">
+                A plot gives up to @Percent(MaxBonusPerPlot) at skill level @GameMath.MaxLevel, scaling
+                straight from the assignee's level. A Melee plot reads their Health level, which is the
+                one house type not named after the skill behind it.
+            </p>
+        }
+    </section>
+
+    @if (BonusRows.Count > 0)
+    {
+        <section class="rf-panel">
+            <h2 class="rf-panel__title">What your town is giving</h2>
+            <div class="rf-bonus">
+                @foreach (var row in BonusRows)
+                {
+                    <div class="rf-bonus__row">
+                        <div class="rf-bonus__name">
+                            <i class="@TownHouseTypes.IconOf(row.Type)" aria-hidden="true"></i>
+                            <span>@TownHouseTypes.LabelOf(row.Type)</span>
+                        </div>
+                        <div class="rf-bonus__bar">
+                            <span class="rf-bonus__track">
+                                <span class="rf-bonus__fill" style="@Bar(row.Active / BonusScale)"></span>
+                                <span class="rf-bonus__fill rf-bonus__fill--idle" style="@Bar(row.Idle / BonusScale)"></span>
+                            </span>
+                        </div>
+                        <div class="rf-bonus__value @(row.Active > 0 ? "" : "is-zero")">
+                            @Percent(row.Active)
+                            @if (row.Idle > 0)
+                            {
+                                <small>@Percent(row.Idle) away</small>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+            <p class="rf-meta">
+                Every skill listed is boosted for everyone playing on your stream. Bars are drawn
+                against your own largest bonus, so they compare your skills with each other rather
+                than against a ceiling.
+            </p>
+        </section>
+    }
+
+    @if (OtherResources.Count > 0)
+    {
+        <section class="rf-panel">
+            <h2 class="rf-panel__title">Other town resources</h2>
+            <p class="rf-meta">
+                These belong to an older version of the game and nothing spends them now. They are
+                listed because your town still holds a balance, not because it can be used.
+            </p>
+            <div class="rf-chips">
+                @foreach (var res in OtherResources)
+                {
+                    <span class="rf-chip">@res.Key <b>@Utility.FormatAmount(res.Value)</b></span>
+                }
+            </div>
+        </section>
+    }
+}
+
+@*
+    Choosing an occupant. Applied on the click rather than behind a confirm: it is the streamer's
+    own town, the change is undone by choosing again, and the game applies !village the same way.
+*@
+@if (pickerPlot != null)
+{
+    @*
+        The modal nests inside the backdrop, which is the flex box that centres it. As siblings it
+        is not centred by anything and lands below the fold.
+    *@
+    <div class="rf-modal-backdrop" @onclick="ClosePicker">
+    <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Choose who lives on this plot"
+         @onclick:stopPropagation="true">
+        <div class="rf-modal__head">
+            <h2 class="rf-modal__title">
+                Plot @(pickerPlot.Slot + 1) &middot; @TownHouseTypes.LabelOf(pickerPlot.Type)
+            </h2>
+            <button type="button" class="rf-modal__close" @onclick="ClosePicker" aria-label="Close">&times;</button>
+        </div>
+
+        @*
+            What is built decides which skill is boosted, so it comes before who lives here. The
+            occupant is kept when the type changes: a plot is usually retyped to suit whoever is
+            already in it, and their bonus simply starts reading a different skill.
+        *@
+        <p class="rf-label">What is built here</p>
+        <div class="rf-filters">
+            @foreach (var option in TownHouseTypes.All)
+            {
+                <button type="button"
+                        class="rf-filter @(pickerPlot.Type == option.Type ? "is-active" : "")"
+                        disabled="@busy"
+                        @onclick="() => SetTypeAsync(option.Type)">
+                    <i class="@option.Icon" aria-hidden="true"></i>
+                    <span>@option.Label</span>
+                </button>
+            }
+            @*
+                Demolishing is part of the same question, and without it a plot can never go back
+                to empty from here. It clears the occupant too: nobody lives on a bare plot.
+            *@
+            <button type="button"
+                    class="rf-filter @(pickerPlot.IsBuilt ? "" : "is-active")"
+                    disabled="@busy"
+                    @onclick="() => SetTypeAsync(TownHouseSlotType.Undefined)">
+                <i class="fa-regular fa-square-dashed" aria-hidden="true"></i>
+                <span>Nothing</span>
+            </button>
+        </div>
+        <p class="rf-meta">
+            @if (pickerPlot.IsBuilt)
+            {
+                <span>
+                    A @TownHouseTypes.LabelOf(pickerPlot.Type) house boosts @PickerSkillName, by its
+                    occupant's @PickerSkillName level out of @GameMath.MaxLevel of the
+                    @Percent(MaxBonusPerPlot) a plot can give. Changing the type keeps whoever lives
+                    here.
+                </span>
+            }
+            else
+            {
+                <span>Nothing is built on this plot, so it boosts nothing and nobody can live on it.</span>
+            }
+        </p>
+
+        @if (pickerPlot.IsBuilt)
+        {
+            <p class="rf-label">Who lives here</p>
+        }
+
+        @if (!pickerPlot.IsBuilt)
+        {
+            <div class="rf-banner rf-banner--warn">
+                <h3 class="rf-banner__title">Build something first</h3>
+                <p>Choose a house type above and this plot can be lived in.</p>
+            </div>
+        }
+        else if (busy)
+        {
+            <LoadIndicator></LoadIndicator>
+        }
+        else if (!town.IsStreamLive)
+        {
+            @*
+                A plot can only be given to somebody locked to this stream, and nobody is while the
+                game is off. Emptying it still works, and is the useful half: it frees a plot held
+                by someone who has stopped playing.
+            *@
+            <div class="rf-banner rf-banner--warn">
+                <h3 class="rf-banner__title">Your game is not running</h3>
+                <p>
+                    A plot can only be given to somebody playing on your stream, so there is nobody
+                    to choose from right now. You can still empty it, and the next person to type
+                    <span class="rf-cmd">!village</span> can take it.
+                </p>
+            </div>
+        }
+        else if (candidates == null || candidates.Count == 0)
+        {
+            <div class="rf-banner rf-banner--warn">
+                <h3 class="rf-banner__title">Nobody is playing right now</h3>
+                <p>
+                    Your game is running but no characters have joined it yet. Anyone who does can
+                    be put in this plot, or can claim it themselves with
+                    <span class="rf-cmd">!village</span>.
+                </p>
+            </div>
+        }
+        else
+        {
+            <p class="rf-meta">Best for this plot first.</p>
+            <div class="rf-charpick rf-charpick--compact">
+                @foreach (var c in candidates)
+                {
+                    <button type="button"
+                            class="rf-char @(c.IsCurrentOccupant ? "is-active" : "")"
+                            disabled="@c.IsCurrentOccupant"
+                            @onclick="() => ChooseAsync(c)">
+                        <span class="rf-char__name">@(string.IsNullOrEmpty(c.Name) ? c.UserName : c.Name)</span>
+                        <span class="rf-char__level">@Percent(c.Bonus)</span>
+                        <span class="rf-char__slot">
+                            @if (c.IsCurrentOccupant)
+                            {
+                                <span>Lives here already</span>
+                            }
+                            else if (c.CurrentSlot != null)
+                            {
+                                <span class="rf-char__warn">Moves off plot @(c.CurrentSlot + 1)</span>
+                            }
+                            else
+                            {
+                                <span>@PickerSkillName @c.SkillLevel</span>
+                            }
+                        </span>
+                    </button>
+                }
+            </div>
+        }
+
+        <div class="rf-modal__foot rf-modal__foot--spread">
+            @if (pickerPlot.IsAssigned && !busy)
+            {
+                <button type="button" class="rf-btn rf-btn--danger" @onclick="ClearAsync">Leave it empty</button>
+            }
+            else
+            {
+                <span></span>
+            }
+            <button type="button" class="rf-btn" @onclick="ClosePicker">Cancel</button>
+        </div>
+    </div>
+    </div>
+}
+
+@*
+    Setting every plot at once, which is what the in game quick command does. Unlike that command
+    this shows the result before committing it: it rewrites every plot's type and every assignment,
+    and forty plots is too much to undo by hand if it was not what you meant.
+*@
+@if (bulkOpen)
+{
+    <div class="rf-modal-backdrop" @onclick="CloseBulk">
+    <div class="rf-modal rf-modal--wide" role="dialog" aria-modal="true" aria-label="Set every plot"
+         @onclick:stopPropagation="true">
+        <div class="rf-modal__head">
+            <h2 class="rf-modal__title">Set every plot</h2>
+            <button type="button" class="rf-modal__close" @onclick="CloseBulk" aria-label="Close">&times;</button>
+        </div>
+
+        <p class="rf-meta">
+            Builds the same house on all @town.TotalSlotCount of your plots and moves the best
+            people for it in, the way <span class="rf-cmd">!village</span> does in game.
+        </p>
+
+        <p class="rf-label">Build every plot as</p>
+        <div class="rf-filters">
+            @foreach (var option in TownHouseTypes.All)
+            {
+                <button type="button"
+                        class="rf-filter @(bulkType == option.Type ? "is-active" : "")"
+                        disabled="@busy"
+                        @onclick="() => PreviewBulkAsync(option.Type)">
+                    <i class="@option.Icon" aria-hidden="true"></i>
+                    <span>@option.Label</span>
+                </button>
+            }
+        </div>
+
+        @if (busy)
+        {
+            <LoadIndicator></LoadIndicator>
+        }
+        else if (bulkPlan == null)
+        {
+            <p class="rf-meta">Pick a house type to see what would happen.</p>
+        }
+        else
+        {
+            @*
+                The two cases differ enough to be worth saying outright. Live, this is the in game
+                behaviour and it replaces every assignment. Off stream there is nobody to move in,
+                so it retypes the plots and leaves the occupants where they are rather than
+                clearing the town to replace it with nothing.
+            *@
+            @if (!bulkPlan.IsStreamLive)
+            {
+                <div class="rf-banner rf-banner--warn">
+                    <h3 class="rf-banner__title">Your game is not running</h3>
+                    <p>
+                        All @bulkPlan.PlotCount plots will become
+                        @TownHouseTypes.LabelOf(bulkPlan.Type) houses. Nobody will be moved, because
+                        there is nobody playing to move in, so whoever is on a plot now stays on it.
+                    </p>
+                </div>
+            }
+            else if (bulkPlan.Picks.Count == 0)
+            {
+                <div class="rf-banner rf-banner--warn">
+                    <h3 class="rf-banner__title">Nobody is playing right now</h3>
+                    <p>
+                        All @bulkPlan.PlotCount plots will become
+                        @TownHouseTypes.LabelOf(bulkPlan.Type) houses, and every plot will be
+                        emptied, because there is nobody on your stream to fill them with.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="rf-banner rf-banner--good">
+                    <h3 class="rf-banner__title">
+                        @bulkPlan.Picks.Count of @bulkPlan.PlotCount plots filled, worth
+                        @Percent(bulkPlan.TotalBonus)
+                    </h3>
+                    <p>
+                        Every plot becomes a @TownHouseTypes.LabelOf(bulkPlan.Type) house.
+                        @if (bulkPlan.EmptyPlotCount > 0)
+                        {
+                            <span>
+                                The remaining @bulkPlan.EmptyPlotCount will be emptied, since there
+                                are only @bulkPlan.Picks.Count people playing.
+                            </span>
+                        }
+                        Anyone on a plot now who is not in the list below will lose it.
+                    </p>
+                </div>
+
+                <div class="rf-charpick rf-charpick--compact">
+                    @foreach (var pick in bulkPlan.Picks)
+                    {
+                        <div class="rf-char">
+                            <span class="rf-char__name">@(string.IsNullOrEmpty(pick.Name) ? pick.UserName : pick.Name)</span>
+                            <span class="rf-char__level">@Percent(pick.Bonus)</span>
+                            <span class="rf-char__slot">
+                                Plot @(pick.CurrentSlot + 1) &middot; @BulkSkillName @pick.SkillLevel
+                            </span>
+                        </div>
+                    }
+                </div>
+            }
+        }
+
+        <div class="rf-modal__foot rf-modal__foot--spread">
+            @if (bulkPlan != null && !busy)
+            {
+                <button type="button" class="rf-btn rf-btn--primary" @onclick="ApplyBulkAsync">
+                    Set all @bulkPlan.PlotCount plots
+                </button>
+            }
+            else
+            {
+                <span></span>
+            }
+            <button type="button" class="rf-btn" @onclick="CloseBulk">Cancel</button>
+        </div>
+    </div>
+    </div>
+}
+
+@code {
+    /// <summary>Matches MaxExpBonusPerSlot in TownService.</summary>
+    private const float MaxBonusPerPlot = 200f;
+
+    private RavenNest.Models.SessionInfo session;
+    private MyTownData town;
+    private bool loading = true;
+
+    private MyTownHouseData pickerPlot;
+    private IReadOnlyList<TownCandidate> candidates;
+    private TownActionResult actionResult;
+    private bool busy;
+
+    private bool bulkOpen;
+    private TownHouseSlotType bulkType = TownHouseSlotType.Undefined;
+    private TownBulkPlan bulkPlan;
+
+    private string PickerSkillName =>
+        pickerPlot == null ? "" : (TownHouseTypes.Get(pickerPlot.Type)?.SkillName ?? "the skill");
+
+    private string BulkSkillName =>
+        bulkPlan == null ? "" : (TownHouseTypes.Get(bulkPlan.Type)?.SkillName ?? "the skill");
+
+    private List<MyTownHouseData> IdlePlots =>
+        town == null
+            ? new List<MyTownHouseData>()
+            : town.Houses.Where(x => x.IsAssigned && !x.IsActive).ToList();
+
+    private float IdleBonusTotal => IdlePlots.Sum(x => x.Bonus);
+
+    private float ActiveBonusTotal =>
+        town == null ? 0 : town.Houses.Where(x => x.IsActive).Sum(x => x.Bonus);
+
+    private record BonusRow(TownHouseSlotType Type, float Active, float Idle);
+
+    /// <summary>
+    ///     One row per house type that contributes anything, biggest first. Types nobody has
+    ///     built are left out: fourteen rows of zero says nothing.
+    /// </summary>
+    private List<BonusRow> BonusRows
+    {
+        get
+        {
+            if (town == null) return new List<BonusRow>();
+
+            return TownHouseTypes.All
+                .Select(x => new BonusRow(x.Type, town.GetActiveBonus(x.Type), town.GetIdleBonus(x.Type)))
+                .Where(x => x.Active > 0 || x.Idle > 0)
+                .OrderByDescending(x => x.Active + x.Idle)
+                .ToList();
+        }
+    }
+
+    private float BonusScale
+    {
+        get
+        {
+            var rows = BonusRows;
+            var max = rows.Count == 0 ? 0 : rows.Max(x => x.Active + x.Idle);
+            return max <= 0 ? 1 : max;
+        }
+    }
+
+    /// <summary>
+    ///     Same treatment the character overview gives them: shown only when there is a balance to
+    ///     explain, so a stockpile is accounted for rather than silently dropped.
+    /// </summary>
+    private List<KeyValuePair<string, double>> OtherResources
+    {
+        get
+        {
+            if (town == null) return new List<KeyValuePair<string, double>>();
+
+            return new[]
+            {
+                new KeyValuePair<string, double>("Wood", town.Wood),
+                new KeyValuePair<string, double>("Ore", town.Ore),
+                new KeyValuePair<string, double>("Fish", town.Fish),
+                new KeyValuePair<string, double>("Wheat", town.Wheat),
+                new KeyValuePair<string, double>("Magic", town.Magic),
+                new KeyValuePair<string, double>("Arrows", town.Arrows),
+            }.Where(x => x.Value > 0).ToList();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        session = AuthService.GetSession();
+        if (session == null || !session.Authenticated)
+        {
+            return;
+        }
+
+        town = await TownService.GetMyTownAsync(session.UserId);
+        loading = false;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (session == null || !session.Authenticated)
+        {
+            NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
+        }
+    }
+
+    private async Task OpenPicker(MyTownHouseData plot)
+    {
+        pickerPlot = plot;
+        candidates = null;
+        actionResult = null;
+
+        // Only worth asking when there is a stream for anyone to be playing on.
+        if (town.IsStreamLive)
+        {
+            busy = true;
+            candidates = await TownService.GetHouseCandidatesAsync(session.UserId, plot.Slot);
+            busy = false;
+        }
+    }
+
+    private void ClosePicker()
+    {
+        pickerPlot = null;
+        candidates = null;
+        busy = false;
+    }
+
+    private Task ChooseAsync(TownCandidate candidate)
+    {
+        return ApplyAsync(candidate.CharacterId);
+    }
+
+    /// <summary>
+    ///     Changes what is built on the open plot. The dialog stays open, because the type and the
+    ///     occupant are usually decided together and the candidate bonuses have just changed.
+    /// </summary>
+    private async Task SetTypeAsync(TownHouseSlotType type)
+    {
+        if (pickerPlot == null || pickerPlot.Type == type) return;
+
+        var slot = pickerPlot.Slot;
+        busy = true;
+        actionResult = await TownService.SetHouseTypeAsync(session.UserId, slot, type);
+        town = await TownService.GetMyTownAsync(session.UserId);
+
+        pickerPlot = town?.Houses.FirstOrDefault(x => x.Slot == slot);
+        candidates = pickerPlot != null && pickerPlot.IsBuilt && town.IsStreamLive
+            ? await TownService.GetHouseCandidatesAsync(session.UserId, slot)
+            : null;
+        busy = false;
+
+        if (pickerPlot == null) ClosePicker();
+    }
+
+    private void OpenBulk()
+    {
+        bulkOpen = true;
+        bulkType = TownHouseSlotType.Undefined;
+        bulkPlan = null;
+        actionResult = null;
+    }
+
+    private void CloseBulk()
+    {
+        bulkOpen = false;
+        bulkPlan = null;
+        busy = false;
+    }
+
+    private async Task PreviewBulkAsync(TownHouseSlotType type)
+    {
+        bulkType = type;
+        busy = true;
+        bulkPlan = await TownService.PlanSetAllHousesAsync(session.UserId, type);
+        busy = false;
+    }
+
+    private async Task ApplyBulkAsync()
+    {
+        if (bulkPlan == null) return;
+
+        busy = true;
+        actionResult = await TownService.SetAllHousesAsync(session.UserId, bulkPlan.Type);
+        town = await TownService.GetMyTownAsync(session.UserId);
+        busy = false;
+
+        CloseBulk();
+    }
+
+    private Task ClearAsync()
+    {
+        return ApplyAsync(null);
+    }
+
+    /// <summary>
+    ///     The town is reloaded rather than patched in place, because the write moves whoever was
+    ///     chosen off whichever plot they were on and that second plot is on screen too.
+    /// </summary>
+    private async Task ApplyAsync(Guid? characterId)
+    {
+        if (pickerPlot == null) return;
+
+        busy = true;
+        actionResult = await TownService.SetHouseOccupantAsync(session.UserId, pickerPlot.Slot, characterId);
+        town = await TownService.GetMyTownAsync(session.UserId);
+        busy = false;
+
+        if (actionResult.Success)
+        {
+            ClosePicker();
+            return;
+        }
+
+        // Kept open on failure so the reason sits next to the thing that failed. The plot has to
+        // be looked up again in the reloaded town: the one the dialog was opened with belongs to
+        // the object that has just been replaced.
+        var slot = pickerPlot.Slot;
+        pickerPlot = town?.Houses.FirstOrDefault(x => x.Slot == slot);
+        if (pickerPlot == null)
+        {
+            ClosePicker();
+            return;
+        }
+
+        candidates = town.IsStreamLive
+            ? await TownService.GetHouseCandidatesAsync(session.UserId, slot)
+            : null;
+    }
+
+    private static string PlotModifier(MyTownHouseData plot)
+    {
+        if (plot.IsActive) return "rf-plot--active";
+        if (plot.IsAssigned) return "rf-plot--idle";
+        return plot.IsBuilt ? "rf-plot--vacant" : "rf-plot--empty";
+    }
+
+    private static string NameOf(MyTownHouseData plot)
+    {
+        if (!string.IsNullOrEmpty(plot.AssignedCharacterName)) return plot.AssignedCharacterName;
+        if (!string.IsNullOrEmpty(plot.AssignedUserName)) return plot.AssignedUserName;
+        return "Unknown player";
+    }
+
+    private static string Percent(double value)
+    {
+        return Math.Round(value, 1).ToString("0.#", System.Globalization.CultureInfo.CurrentCulture) + "%";
+    }
+
+    private static string Plural(int count, string one, string many)
+    {
+        return count == 1 ? one : many;
+    }
+
+    /// <summary>
+    ///     Invariant culture on purpose. A width written as "43,2%" under a Swedish locale is
+    ///     ignored by the browser and the bar renders empty.
+    /// </summary>
+    private static string Bar(double progress)
+    {
+        var clamped = Math.Clamp(progress * 100d, 0d, 100d);
+        return "width: " + clamped.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%";
+    }
+
+    private static string FormatDuration(TimeSpan? value)
+    {
+        if (value == null) return "unknown";
+
+        var span = value.Value;
+        if (span.TotalMinutes < 1) return "under a minute";
+        if (span.TotalHours < 1) return "about " + (int)span.TotalMinutes + " minutes";
+        if (span.TotalHours < 48) return "about " + Math.Round(span.TotalHours, 1) + " hours";
+        return "about " + Math.Round(span.TotalDays, 1) + " days";
+    }
+}

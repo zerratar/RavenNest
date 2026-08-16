@@ -16,6 +16,7 @@
 @using Microsoft.AspNetCore.WebUtilities
 @using RavenNest.Blazor.Services
 @using RavenNest.BusinessLogic
+@using RavenNest.BusinessLogic.Game
 @inject NavigationManager NavigationManager
 @inject HighscoreService HighscoreService
 @inject AuthService AuthService
@@ -37,50 +38,70 @@
     <div class="section">
 
 
-        <div class="skill-selector">
-            @for (var i = 0; i < characterIndexNames.Length; ++i)
-            {
-                var name = characterIndexNames[i];
-                var index = characterIndices[i];
-                {
-                    <button @onclick="(() => SelectIndex(index))" class="btn @(CharacterIndex == index ? "active" : "")">@name</button>
-                }
-            }
-        </div>
+        <div class="rf-highscore">
 
-        <div class="skill-selector">
-            @foreach (var skill in Skills)
-            {
-                <button @onclick="(() => SelectSkill(skill))" class="btn @(skill.Active ? "active" : "")">@skill.Name</button>
-            }
-        </div>
-        <table class="highscore-list">
-            <thead>
-                <tr>
-                    <th class='player-rank'>Rank</th>
-                    <th class='player-name'>Character</th>
-                    <th class='player-level'>Level</th>
-                    <th class='player-experience'>Experience</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if (highscores == null)
+            <div class="rf-filters" role="group" aria-label="Character slot">
+                @for (var i = 0; i < characterIndexNames.Length; ++i)
                 {
-                    <LoadIndicator></LoadIndicator>
-                    <tr class="highscore-item">
-                        <td class='player-rank'>**</td>
-                        <td class='player-name'>Loading</td>
-                        <td class='player-level'>**</td>
-                        <td class='player-experience'>**</td>
-                    </tr>
+                    var name = characterIndexNames[i];
+                    var index = characterIndices[i];
+                    <button type="button"
+                            class="rf-filter @(CharacterIndex == index ? "is-active" : "")"
+                            aria-pressed="@(CharacterIndex == index)"
+                            @onclick="(() => SelectIndex(index))">@name</button>
                 }
-                else
+            </div>
+
+            <div class="rf-filters" role="group" aria-label="Skill">
+                @foreach (var skill in Skills)
                 {
+                    <button type="button"
+                            class="rf-filter @(skill.Active ? "is-active" : "")"
+                            aria-pressed="@skill.Active"
+                            @onclick="(() => SelectSkill(skill))">@skill.Name</button>
+                }
+            </div>
+
+            @*
+                The route has always accepted a size of up to 1000 and there was no way to ask for
+                one from the page, so everybody saw a hundred rows whether or not they wanted more.
+            *@
+            <div class="rf-toolbar">
+                <span class="rf-label">Show top</span>
+                @foreach (var size in new[] { 100, 250, 500, 1000 })
+                {
+                    <button type="button"
+                            class="rf-filter @(Top == size ? "is-active" : "")"
+                            aria-pressed="@(Top == size)"
+                            @onclick="(() => SelectTop(size))">@size</button>
+                }
+            </div>
+
+            @if (highscores == null)
+            {
+                <LoadIndicator></LoadIndicator>
+            }
+            else
+            {
+            <div class="rf-panel">
+            <div class="rf-scroll-x">
+                <table class="rf-table">
+                    <thead>
+                        <tr>
+                            <th scope="col"><span class="rf-th rf-th--static">Rank</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Character</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Level</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Experience</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
                     @foreach (var item in highscores.Players)
                     {
-                        <tr class="highscore-item" @onclick="(() => DisplayPlayer(item))">
-                            <td class='player-rank'>@item.Rank</td>
-                            <td class='player-name'>@item.PlayerName<span class='player-character-index' alt='Character Number'>#@item.CharacterIndex</span></td>
+                        <tr class="rf-highscore__row" @onclick="(() => DisplayPlayer(item))">
+                            <td class="rf-highscore__rank">@item.Rank</td>
+                            <td>
+                                <span class="rf-highscore__name">@item.PlayerName</span><span class="rf-highscore__slot" title="Character number">#@item.CharacterIndex</span>
+                            </td>
                             <td class='player-level'>
 
                                 @if (item.Level == GameMath.MaxLevel)
@@ -120,12 +141,17 @@
                                     </div>
                                 }
                             </td>
-                            <td class='player-experience'>@((long)item.Experience)</td>
+                            <td class="rf-highscore__exp" title="@(((long)item.Experience).ToString("N0")) experience">
+                                @Utility.FormatExp(item.Experience)
+                            </td>
                         </tr>
                     }
-                }
-            </tbody>
-        </table>
+                    </tbody>
+                </table>
+            </div>
+            </div>
+            }
+        </div>
     </div>
 </div>
 
@@ -172,6 +198,17 @@
     private void SelectSkill(Skill skill)
     {
         NavigationManager.NavigateTo(string.Format(skill.Link, CharacterIndex, Top), true);
+    }
+
+    private void SelectTop(int top)
+    {
+        if (activeSkill != null)
+        {
+            NavigationManager.NavigateTo(string.Format(activeSkill.Link, CharacterIndex, top), true);
+            return;
+        }
+
+        NavigationManager.NavigateTo("/leaderboard/All/" + CharacterIndex + "/" + top, true);
     }
     private void DisplayPlayer(Models.HighScoreItem player)
     {

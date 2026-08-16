@@ -20,10 +20,38 @@ namespace RavenNest.Blazor.Pages.Admin
         private Models.SessionInfo session { get; set; }
         private IReadOnlyList<WebsiteAdminUser> users { get; set; }
         private int pageSize { get; set; } = 25;
-        private long totalCount { get; set; } = 0;
         private string[] patreonNames { get; set; } = new string[] {
             "None", "Mithril", "Rune", "Dragon", "Abraxas", "Phantom", "Above Phantom"
         };
+
+        private string PatreonName(int? tier)
+        {
+            var t = tier ?? 0;
+            if (t < 0) t = 0;
+            return t >= patreonNames.Length ? patreonNames[patreonNames.Length - 1] : patreonNames[t];
+        }
+
+        private static string StatusName(int status)
+        {
+            return ((BusinessLogic.Data.AccountStatus)status) switch
+            {
+                BusinessLogic.Data.AccountStatus.OK => "Active",
+                BusinessLogic.Data.AccountStatus.TemporarilySuspended => "Temporarily suspended",
+                BusinessLogic.Data.AccountStatus.PermanentlySuspended => "Permanently suspended",
+                _ => "Status " + status
+            };
+        }
+
+        /// <summary>
+        ///     Which stream the character is locked to, which is what most support questions turn
+        ///     out to be about. It was already on the row, rendered as bare text with no label.
+        /// </summary>
+        private static string SessionNote(WebsiteAdminPlayer character)
+        {
+            return string.IsNullOrEmpty(character.SessionName)
+                ? "Not on a stream"
+                : "Playing on " + character.SessionName;
+        }
 
         protected override void OnInitialized()
         {
@@ -39,7 +67,6 @@ namespace RavenNest.Blazor.Pages.Admin
             var filter = searchModel.Query;
             var result = await UserService.SearchForUserByUserOrPlayersLimitedAsync(filter, take);
             users = result;
-            totalCount = result.Count;
             loading = false;
             await InvokeAsync(StateHasChanged);
         }

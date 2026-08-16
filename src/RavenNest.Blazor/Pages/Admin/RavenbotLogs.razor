@@ -6,50 +6,111 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.ServerService ServerService
 
-
 @if (isAdmin)
 {
-    if (logFiles == null)
+    <header class="rf-page-head">
+        <h1 class="rf-page-title">Ravenbot logs</h1>
+        <p class="rf-page-subtitle">Newest first. Open one to read it here, or download the file.</p>
+    </header>
+
+    @if (logFiles == null)
     {
-        <p>Loading logs.. Hold on to your horses.</p>
+        <LoadIndicator></LoadIndicator>
+    }
+    else if (logFiles.Count == 0)
+    {
+        <div class="rf-panel">
+            <p class="rf-meta">There are no log files on the server.</p>
+        </div>
     }
     else
     {
-        <h1>Available Ravenbot Logs</h1>
-        <table class="items-list">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Name</th>
-                    <th>Size</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var item in logFiles)
-                {
-                    <tr class="item-row">
-                        <td class='item'>@(FormatDate(item.Date))</td>
-                        <td class='item'>
-                            <a href="/admin/display-ravenbot-log/@item.FileName">@item.FileName</a>
-                        </td>
-                        <td class='item'>@(FormatSize(item.FileSize))</td>
-                        <td class='item'>
-                            <a href="@(item.DownloadUrl)" target="_blank"><i class="fa-solid fa-download"></i></a>
-                            <a @onclick="()=>DeleteLog(item)" target="_blank"><i class="fa-solid fa-trash"></i></a>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+        <div class="rf-stats">
+            <div class="rf-stat">
+                <div class="rf-stat__value">@logFiles.Count</div>
+                <div class="rf-stat__label">Log files</div>
+            </div>
+            <div class="rf-stat">
+                <div class="rf-stat__value">@FormatSize(TotalSize)</div>
+                <div class="rf-stat__label">Total on disk</div>
+            </div>
+        </div>
+
+        <div class="rf-panel">
+            <div class="rf-scroll-x">
+                <table class="rf-table">
+                    <thead>
+                        <tr>
+                            <th scope="col"><span class="rf-th rf-th--static">Date</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">File</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Size</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @* Newest first. The order used to be whatever the file system returned. *@
+                        @foreach (var item in SortedLogs)
+                        {
+                            <tr>
+                                <td class="rf-table__quiet">@FormatDate(item.Date)</td>
+                                <td>
+                                    <a class="rf-item__name" href="/admin/display-ravenbot-log/@item.FileName">@item.FileName</a>
+                                </td>
+                                <td class="rf-table__quiet">@FormatSize(item.FileSize)</td>
+                                <td>
+                                    <div class="rf-actions">
+                                        <a class="rf-btn rf-btn--small" href="@item.DownloadUrl" target="_blank" rel="noopener">
+                                            <i class="fa-solid fa-download" aria-hidden="true"></i> Download
+                                        </a>
+                                        @*
+                                            Delete was an anchor with a click handler, so it could
+                                            not be reached from a keyboard, and it deleted the file
+                                            on the first click with nothing asked.
+                                        *@
+                                        <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="() => ConfirmDelete(item)">
+                                            Delete
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    @if (logToDelete != null)
+    {
+        <div class="rf-modal-backdrop" @onclick="CancelDelete">
+            <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Delete log file" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">Delete this log?</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CancelDelete">&times;</button>
+                </div>
+                <p>
+                    <b>@logToDelete.FileName</b> (@FormatSize(logToDelete.FileSize)) is removed from
+                    the server. There is no copy.
+                </p>
+                <div class="rf-modal__foot">
+                    <button type="button" class="rf-btn" @onclick="CancelDelete">Keep it</button>
+                    <button type="button" class="rf-btn rf-btn--danger" @onclick="DeleteLog">Delete the file</button>
+                </div>
+            </div>
+        </div>
     }
 }
 
 @code {
-
     private RavenNest.Models.SessionInfo session;
     private IReadOnlyList<RavenNest.Blazor.Services.RavenbotLogFile> logFiles;
+    private RavenNest.Blazor.Services.RavenbotLogFile logToDelete;
     private bool isAdmin;
+
+    private long TotalSize => logFiles?.Sum(x => x.FileSize) ?? 0;
+
+    private IEnumerable<RavenNest.Blazor.Services.RavenbotLogFile> SortedLogs =>
+        logFiles.OrderByDescending(x => x.Date);
 
     protected override async Task OnInitializedAsync()
     {
@@ -62,17 +123,35 @@
     {
         return input.ToString("yyyy-MM-dd");
     }
-    
-    private async Task DeleteLog(RavenNest.Blazor.Services.RavenbotLogFile file)
+
+    private void ConfirmDelete(RavenNest.Blazor.Services.RavenbotLogFile file)
     {
+        logToDelete = file;
+    }
+
+    private void CancelDelete()
+    {
+        logToDelete = null;
+    }
+
+    private async Task DeleteLog()
+    {
+        var file = logToDelete;
+        logToDelete = null;
+        if (file == null) return;
+
         logFiles = await ServerService.DeleteLogFileAsync(file);
     }
 
+    /// <summary>
+    ///     Anything over a gigabyte used to render as the string "very big", which is charming and
+    ///     is also the one size where you actually want the number.
+    /// </summary>
     private string FormatSize(long bytes)
     {
         if (bytes < 1000) return bytes + " bytes";
-        if (bytes / 1000 < 1000) return (bytes / 1000) + " kb";
-        if (bytes / 1000_000 < 1000) return (bytes / 1000_000) + " mb";
-        return "very big";
+        if (bytes < 1000_000) return (bytes / 1000) + " kb";
+        if (bytes < 1000_000_000) return (bytes / 1000_000) + " mb";
+        return Math.Round(bytes / 1000_000_000d, 1) + " gb";
     }
 }

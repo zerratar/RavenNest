@@ -60,6 +60,11 @@ namespace RavenNest.Blazor.Components
             InvokeAsync(StateHasChanged);
         }
 
+        private void ShowOverview()
+        {
+            viewState = CharacterViewState.Overview;
+        }
+
         private void ShowInventory()
         {
             viewState = CharacterViewState.Inventory;
@@ -87,6 +92,7 @@ namespace RavenNest.Blazor.Components
 
         private enum CharacterViewState
         {
+            Overview,
             Skills,
             Inventory,
             Clan,

@@ -1,0 +1,317 @@
+﻿@layout DashboardLayout
+@page "/bot"
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject RavenNest.Blazor.Services.BotService BotService
+@inject RavenNest.Blazor.Services.PatreonService PatreonService
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+@*
+    First page built on the Ravenfall design system. Everything visual here comes from
+    ravenfall-dashboard.css; this file contains no styling of its own, which is the point.
+    See docs/dashboard-design-system.md.
+*@
+
+<header class="rf-page-head">
+    <h1 class="rf-page-title">Bot</h1>
+    <p class="rf-page-subtitle">
+        Whether the Ravenfall bot is in your channel and able to take commands from your viewers.
+    </p>
+</header>
+
+@if (status == null)
+{
+    <LoadIndicator></LoadIndicator>
+}
+else
+{
+    @*
+        The headline answers the only question a streamer opens this page with: is the bot working
+        for me right now. Wording carries the meaning, colour only reinforces it.
+    *@
+    <div class="rf-banner @BannerModifier">
+        @if (!status.HasTwitchAccount)
+        {
+            <h2 class="rf-banner__title">No Twitch account linked</h2>
+            <p>Link your Twitch account so the bot knows which channel to join.</p>
+        }
+        else if (!status.BotOnline)
+        {
+            <h2 class="rf-banner__title">The bot is offline</h2>
+            <p>
+                This affects everyone, not just you, and is not something you need to fix.
+                It should come back on its own.
+            </p>
+        }
+        else if (status.BotInChannel)
+        {
+            <h2 class="rf-banner__title">The bot is in your channel</h2>
+            <p>Viewers can use commands in <strong>@status.ExpectedChannel</strong> right now.</p>
+        }
+        else
+        {
+            <h2 class="rf-banner__title">The bot is not in your channel</h2>
+            <p>
+                The bot is running, but it has not joined <strong>@status.ExpectedChannel</strong>.
+                Starting the game will make it join.
+            </p>
+        }
+    </div>
+
+    @*
+        A rename is the one problem a streamer can fix themselves, and until now there was no way
+        for them to even see it. Placed above the details because it explains them.
+    *@
+    @if (status.NameMismatch)
+    {
+        <div class="rf-panel rf-panel--accent">
+            <h2 class="rf-panel__title">Your Twitch name has changed</h2>
+            <p>
+                Ravenfall knows you as <strong>@status.AccountName</strong> but Twitch says you are
+                now <strong>@status.TwitchLogin</strong>. The bot joins the channel it has on file,
+                so it is currently in the wrong place.
+            </p>
+            <p>
+                Signing out and back in with Twitch updates this everywhere and moves the bot to
+                your renamed channel.
+            </p>
+            <NavLink class="rf-btn rf-btn--primary" href="/logout">Sign out and back in</NavLink>
+        </div>
+    }
+
+    <div class="rf-stats">
+        <div class="rf-stat">
+            <div class="rf-stat__value">@(status.BotInChannel ? "Yes" : "No")</div>
+            <div class="rf-stat__label">In your channel</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value">@(status.HasActiveGameSession ? "Live" : "Idle")</div>
+            <div class="rf-stat__label">Game session</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value">@(status.BotOnline ? FormatUptime(status.BotUptime) : "-")</div>
+            <div class="rf-stat__label">Bot uptime</div>
+        </div>
+    </div>
+
+    <div class="rf-panel">
+        <h2 class="rf-panel__title">Details</h2>
+        <dl class="rf-facts">
+            <dt>Channel the bot uses</dt>
+            <dd>@Display(status.ExpectedChannel)</dd>
+
+            <dt>Twitch login</dt>
+            <dd>
+                @Display(status.TwitchLogin)
+                @if (status.NameMismatch)
+                {
+                    <span class="rf-badge rf-badge--warn">changed</span>
+                }
+            </dd>
+
+            <dt>Display name</dt>
+            <dd>@Display(status.DisplayName)</dd>
+
+            <dt>Game session</dt>
+            <dd>
+                @if (status.HasActiveGameSession)
+                {
+                    <span>Active since @FormatTime(status.GameSessionStarted)</span>
+                }
+                else
+                {
+                    <span>Not running</span>
+                }
+            </dd>
+        </dl>
+        <p class="rf-meta">Updates every 10 seconds. Last checked @lastChecked.ToString("HH:mm:ss").</p>
+    </div>
+
+    @*
+        These settings were on the Patreon page, which is where you go to see what you are paying
+        for rather than to operate anything. They configure the official bot, so they belong with
+        the bot. Drawn for everyone rather than hidden below the tier: a control that is simply
+        absent reads as a feature that does not exist, which is the same fault as the Equip button
+        that was not rendered when an item could not be equipped.
+    *@
+    <div class="rf-panel">
+        <h2 class="rf-panel__title">Chatbot</h2>
+        <p class="rf-meta">
+            Beta features on the RavenfallOfficial bot. These do not apply to the local bot. If
+            anything misbehaves, say so on Discord.
+        </p>
+
+        @if (!canUseChatbot)
+        {
+            <div class="rf-banner rf-banner--warn">
+                <h3 class="rf-banner__title">Chatbot features need the @ChatbotTierName tier</h3>
+                <p>
+                    They let the bot <strong>translate its messages</strong> into a language you
+                    pick, and <strong>phrase replies to each player</strong> rather than reading
+                    from a template.
+                </p>
+                <p>
+                    Pledging at @ChatbotTierName or above on
+                    <a href="https://www.patreon.com/ravenfall" target="_blank">Patreon</a> turns
+                    them on. Your <a href="/patreon">Patreon page</a> shows the tier you are on now
+                    and what each one unlocks.
+                </p>
+            </div>
+        }
+        else
+        {
+            <label class="rf-field">
+                <span class="rf-label">Translate messages into</span>
+                <select name="translation" class="rf-input" value="@targetLanguage" @oninput="OnLanguageSelectionChanged">
+                    <option value="None">Do not translate</option>
+                    @for (var i = 0; i < PatreonService.AvailableLanguages.Length; ++i)
+                    {
+                        var language = PatreonService.AvailableLanguages[i];
+                        <option value="@language">@language</option>
+                    }
+                </select>
+            </label>
+
+            <label class="rf-check">
+                <input type="checkbox" name="personalize" checked="@personalizeMessage" @onchange="OnPersonalizeMessageChanged" />
+                <span>
+                    <b>Personalise messages</b>
+                    <span class="rf-meta">Lets the bot phrase replies to each player rather than reading from a template.</span>
+                </span>
+            </label>
+
+            <div class="rf-actions">
+                <button type="button" class="rf-btn rf-btn--primary" @onclick="SaveChatbotSettingsAsync">Save settings</button>
+                @if (chatbotSaved)
+                {
+                    <span class="rf-form__ok">Settings saved.</span>
+                }
+                @if (chatbotSaveFailed)
+                {
+                    <span class="rf-form__error">Your tier no longer covers these, so nothing was saved.</span>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private RavenNest.Models.SessionInfo session;
+    private RavenNest.Blazor.Services.BotStatus status;
+    private System.Threading.Timer refreshTimer;
+    private DateTime lastChecked;
+
+    private bool canUseChatbot;
+    private string targetLanguage = "None";
+    private bool personalizeMessage;
+    private bool chatbotSaved;
+    private bool chatbotSaveFailed;
+
+    private static string ChatbotTierName => PatreonService.ChatbotMinimumTier.ToString();
+
+    private string BannerModifier
+    {
+        get
+        {
+            if (status == null || !status.HasTwitchAccount) return "rf-banner--warn";
+            if (!status.BotOnline) return "rf-banner--bad";
+            return status.BotInChannel ? "rf-banner--good" : "rf-banner--warn";
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        session = AuthService.GetSession();
+        if (session == null || !session.Authenticated)
+        {
+            return;
+        }
+
+        Refresh();
+
+        // Read once. The refresh timer below deliberately does not touch these: it fires every ten
+        // seconds and re-reading them would throw away edits made between saves.
+        canUseChatbot = PatreonService.CanUseChatbotFeatures();
+        if (canUseChatbot)
+        {
+            (targetLanguage, personalizeMessage) = PatreonService.GetChatbotSettings();
+        }
+
+        // Polled rather than pushed. The underlying stats only change when the bot reports in, so
+        // there is nothing to subscribe to, and a streamer who is mid problem will sit on this page
+        // waiting for it to come right.
+        refreshTimer = new System.Threading.Timer(_ =>
+        {
+            InvokeAsync(() =>
+            {
+                Refresh();
+                StateHasChanged();
+            });
+        }, null, 10000, 10000);
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (session == null || !session.Authenticated)
+        {
+            NavigationManager.NavigateTo("/login/redirect/" + NavigationManager.ToBaseRelativePath(NavigationManager.Uri));
+        }
+    }
+
+    private void Refresh()
+    {
+        status = BotService.GetBotStatus();
+        lastChecked = DateTime.Now;
+    }
+
+    private void OnLanguageSelectionChanged(ChangeEventArgs e)
+    {
+        targetLanguage = e.Value?.ToString() ?? "None";
+        chatbotSaved = false;
+        chatbotSaveFailed = false;
+    }
+
+    private void OnPersonalizeMessageChanged(ChangeEventArgs e)
+    {
+        personalizeMessage = e.Value is bool value && value;
+        chatbotSaved = false;
+        chatbotSaveFailed = false;
+    }
+
+    private async Task SaveChatbotSettingsAsync()
+    {
+        var saved = await PatreonService.SaveChatbotSettingsAsync(targetLanguage, personalizeMessage);
+        chatbotSaved = saved;
+        chatbotSaveFailed = !saved;
+    }
+
+    public void Dispose()
+    {
+        refreshTimer?.Dispose();
+    }
+
+    private static string Display(string value)
+    {
+        return string.IsNullOrEmpty(value) ? "Not set" : value;
+    }
+
+    private static string FormatTime(DateTime? value)
+    {
+        return value.HasValue ? value.Value.ToLocalTime().ToString("HH:mm") : "unknown";
+    }
+
+    private static string FormatUptime(TimeSpan uptime)
+    {
+        if (uptime.TotalDays >= 1)
+        {
+            return (int)uptime.TotalDays + "d " + uptime.Hours + "h";
+        }
+
+        if (uptime.TotalHours >= 1)
+        {
+            return (int)uptime.TotalHours + "h " + uptime.Minutes + "m";
+        }
+
+        return Math.Max(1, (int)uptime.TotalMinutes) + "m";
+    }
+}

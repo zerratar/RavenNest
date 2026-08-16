@@ -61,6 +61,53 @@ namespace RavenNest.BusinessLogic.Game
             this.tcpConnectionProvider = tcpConnectionProvider;
         }
 
+        /// <summary>
+        /// Asks Twitch what this account is currently called and, if it has changed, updates every
+        /// stored copy of the name.
+        /// </summary>
+        /// <remarks>
+        /// Keyed on the Twitch account id, which a rename does not change, so no action is needed
+        /// from the streamer beyond starting the game. Runs before the session token and the session
+        /// settings are built, since both carry the name onwards to the bot.
+        ///
+        /// <para>
+        /// Failures are swallowed. A name we cannot confirm is left alone, which is no worse than
+        /// the behaviour before this existed.
+        /// </para>
+        /// </remarks>
+        private async Task RefreshPlatformUserNameAsync(User user)
+        {
+            if (user == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var access = gameData.GetUserAccess(user.Id, "twitch");
+                if (access == null || string.IsNullOrEmpty(access.PlatformId))
+                {
+                    return;
+                }
+
+                var twitchUser = await twitchClient.GetUserByIdAsync(access.PlatformId);
+                if (twitchUser == null || string.IsNullOrEmpty(twitchUser.Login))
+                {
+                    return;
+                }
+
+                if (UserNameSync.Apply(gameData, user, "twitch", twitchUser.Id, twitchUser.Login, twitchUser.DisplayName))
+                {
+                    logger.LogWarning("Twitch name change picked up for " + user.Id
+                        + ". Now known as '" + twitchUser.Login + "'. All stored names updated.");
+                }
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Unable to refresh the Twitch name for " + user.Id + ": " + exc);
+            }
+        }
+
         public bool IsExpectedVersion(string clientVersion, bool skipVersion = false)
         {
             var game = gameData.Client;
@@ -222,6 +269,15 @@ namespace RavenNest.BusinessLogic.Game
                     return null; // new SessionToken();
                 }
             }
+
+            // Pick up a Twitch rename before anything downstream reads the name.
+            //
+            // This is the step that stops a rename needing manual repair. The bot decides which
+            // channel to join from the name in the session settings, so if that name is stale the
+            // bot sits in the old channel, never sees the streamer's chat, and the join path that
+            // would otherwise correct the name is never reached. Nothing else breaks that loop,
+            // which is why logging in on the website was the only thing that ever helped.
+            await RefreshPlatformUserNameAsync(user);
 
             var userId = token.UserId;
             var now = DateTime.UtcNow;

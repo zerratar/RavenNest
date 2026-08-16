@@ -8,22 +8,69 @@
 
 @if (isAdmin)
 {
-    <h1>Overview</h1>
-    <div class="skill-selector">
-        @for (var i = 0; i < TimeFrames.Length; ++i)
+    <header class="rf-page-head">
+        <h1 class="rf-page-title">Overview</h1>
+        <p class="rf-page-subtitle">
+            New accounts over time, and the hours of the day they arrive in.
+        </p>
+    </header>
+
+    <div class="rf-filters" role="group" aria-label="Time frame">
+        @foreach (var tf in TimeFrames)
         {
-            var tf = TimeFrames[i];
-            var name = GetName(tf);
-            <button @onclick="(() => SelectTimeFrameAsync(tf))" class="btn @(newUserTimeframe == tf ? "active" : "")">@name</button>
+            <button type="button"
+                    class="rf-filter @(newUserTimeframe == tf ? "is-active" : "")"
+                    aria-pressed="@(newUserTimeframe == tf)"
+                    @onclick="(() => SelectTimeFrameAsync(tf))">
+                @GetName(tf)
+            </button>
         }
     </div>
-    if (newUserChartData != null && newUserChartOptions != null)
-    {
-        <LineChart TItem="double" Data="@newUserChartData" Options="@newUserChartOptions"></LineChart>
-    }
 
-    if (commonHoursNewUsersChartData != null && commonHoursNewUsersChartOptions != null)
-    {
-        <LineChart TItem="double" Data="@commonHoursNewUsersChartData" Options="@commonHoursNewUsersChartOptions"></LineChart>
-    }
+    @*
+        The page drew two charts and stated no numbers, so answering "how many signed up this
+        month" meant reading a line off an axis. All three of these come from the same rows the
+        chart is already plotting.
+    *@
+    <div class="rf-stats">
+        <div class="rf-stat">
+            <div class="rf-stat__value">@NewUserTotal.ToString("N0")</div>
+            <div class="rf-stat__label">New users, @GetName(newUserTimeframe).ToLowerInvariant()</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value">@BestPeriodValue.ToString("N0")</div>
+            <div class="rf-stat__label">Best @GetLabel(newUserTimeframe).ToLowerInvariant()@(BestPeriodLabel == null ? "" : ", " + BestPeriodLabel)</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value">@BusiestHour</div>
+            <div class="rf-stat__label">Busiest hour, all time</div>
+        </div>
+    </div>
+
+    <section class="rf-panel">
+        <h2 class="rf-panel__title">New users of @GetName(newUserTimeframe)</h2>
+        @if (newUserChartData != null && newUserChartOptions != null)
+        {
+            <LineChart TItem="double" Data="@newUserChartData" Options="@newUserChartOptions"></LineChart>
+        }
+        else
+        {
+            <LoadIndicator></LoadIndicator>
+        }
+    </section>
+
+    <section class="rf-panel">
+        <h2 class="rf-panel__title">When people sign up</h2>
+        <p class="rf-meta">
+            Every account ever created, grouped by the hour of day it was created, in UTC.
+        </p>
+        @if (commonHoursNewUsersChartData != null && commonHoursNewUsersChartOptions != null)
+        {
+            <LineChart TItem="double" Data="@commonHoursNewUsersChartData" Options="@commonHoursNewUsersChartOptions"></LineChart>
+        }
+        else
+        {
+            <LoadIndicator></LoadIndicator>
+        }
+    </section>
 }

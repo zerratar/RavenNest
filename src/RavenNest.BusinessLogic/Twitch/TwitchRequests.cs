@@ -51,6 +51,73 @@ namespace RavenNest.Twitch
             return await TwitchRequestAsync("https://api.twitch.tv/helix/users");
         }
 
+        /// <summary>
+        /// Looks a Twitch account up by its numeric id, which is the one thing that does not change
+        /// when someone renames themselves.
+        /// </summary>
+        /// <remarks>
+        /// This uses the app access token from <see cref="EnsureAuth"/> rather than the user token
+        /// handed to the constructor, so it works for any account without that person signing in.
+        /// That is what lets a rename be picked up when a streamer just starts the game.
+        /// </remarks>
+        public async Task<TwitchUser> GetUserByIdAsync(string twitchUserId)
+        {
+            if (string.IsNullOrEmpty(twitchUserId))
+            {
+                return null;
+            }
+
+            var users = await GetUsersByIdAsync(new[] { twitchUserId });
+            return users.Count > 0 ? users[0] : null;
+        }
+
+        /// <summary>
+        /// Maximum number of ids Twitch accepts in one helix/users call.
+        /// </summary>
+        public const int MaxUserLookupBatchSize = 100;
+
+        /// <summary>
+        /// Looks up to <see cref="MaxUserLookupBatchSize"/> accounts up in a single call. Ids beyond
+        /// that are ignored, so callers watching many accounts should chunk their input.
+        /// </summary>
+        /// <remarks>
+        /// Batching matters for the periodic rename check: every live streamer can be covered by a
+        /// couple of requests instead of one each, which keeps it well inside the rate limit no
+        /// matter how many people are streaming.
+        /// </remarks>
+        public async Task<IReadOnlyList<TwitchUser>> GetUsersByIdAsync(IReadOnlyList<string> twitchUserIds)
+        {
+            if (twitchUserIds == null || twitchUserIds.Count == 0)
+            {
+                return Array.Empty<TwitchUser>();
+            }
+
+            await EnsureAuth();
+
+            // Built by hand rather than through the parameter dictionary, because helix expects the
+            // id key to be repeated once per account and a dictionary cannot hold duplicate keys.
+            var query = string.Join("&", twitchUserIds
+                .Where(x => !string.IsNullOrEmpty(x))
+                .Take(MaxUserLookupBatchSize)
+                .Select(x => "id=" + Uri.EscapeDataString(x)));
+
+            if (query.Length == 0)
+            {
+                return Array.Empty<TwitchUser>();
+            }
+
+            var json = await TwitchRequestAsync(
+                "https://api.twitch.tv/helix/users?" + query,
+                this.auth?.access_token);
+
+            if (string.IsNullOrEmpty(json))
+            {
+                return Array.Empty<TwitchUser>();
+            }
+
+            return JsonConvert.DeserializeObject<TwitchUserData>(json)?.Data ?? Array.Empty<TwitchUser>();
+        }
+
         public Task<TwitchAuth> AuthenticateAsync()
         {
             return AuthenticateAsync(false);

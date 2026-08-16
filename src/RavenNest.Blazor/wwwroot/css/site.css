@@ -3160,9 +3160,10 @@ td.town-owner {
         flex-wrap: wrap;
     }
 
-    .top-section {
-        margin-top: -140px;
-    }
+    /* .top-section { margin-top: -140px } removed. It pulled the hero up under the
+       old two row header, which was 140px tall and in the flow. The header is now
+       a 62px bar positioned over the hero, so this only moved the page off the top
+       of the screen. Hero geometry lives in ravenfall-front.css. */
 
     .patreon-content {
         margin-bottom: 150px;
@@ -3237,9 +3238,10 @@ td.town-owner {
 
 */
 @media (max-width: 640.98px) {
-    .front-page .content {
-        margin-top: 140px;
-    }
+    /* .front-page .content { margin-top: 140px } removed. It was the other half of
+       the .top-section { margin-top: -140px } pair: the hero was pulled up 140px
+       and the content it lived in was pushed down 140px to put it back. With the
+       hero rule gone this was 140px of empty screen above the hero on every phone. */
 
     .main .top-row,
     .top-row .nav-link.login,
@@ -3262,12 +3264,8 @@ td.town-owner {
 
 
 @media screen and (max-width: 450px) {
-    .top-row.corner {
-        margin-top: 50px;
-        display: flex;
-        align-content: center;
-        justify-content: center;
-    }
+    /* .top-row.corner and .top-social no longer exist. Both were part of the two
+       row header that the single row site header replaced. */
 
     button.raven-btn.twitch.twitch-login-btn {
         margin-top: 10px;
@@ -3299,11 +3297,12 @@ td.town-owner {
         text-align: center;
     }
 
-    .top-section {
-        margin-top: -180px !important;
-        height: 685px;
-        padding: 140px 20px;
-    }
+    /* Removed: .top-section { margin-top: -180px !important; height: 685px;
+       padding: 140px 20px }, together with the .front-page .content { margin-top:
+       180px } and .hero-text { margin-top: 50px !important } further down that
+       existed to cancel it again. Three rules that added up to nothing except a
+       50px shove of the hero text down into the torn edge graphic, all of it
+       tuned for a header that no longer exists. */
 
     .wds-icon {
         width: 24px;
@@ -3312,18 +3311,6 @@ td.town-owner {
 
     .top-social {
         display: none;
-    }
-
-    .main-nav {
-        margin-top: -30px;
-    }
-
-    .front-page .content {
-        margin-top: 180px;
-    }
-
-    .hero-text {
-        margin-top: 50px !important;
     }
 
     footer:before {
@@ -3355,14 +3342,11 @@ td.town-owner {
 */
 
 
-form.item-editor-form {
-    position: absolute;
-    left: 25px;
-    right: 25px;
-    top: 50px;
-    bottom: 70px;
-    display: flex;
-}
+/* Removed: form.item-editor-form { position: absolute; left/right/top/bottom }.
+   It pinned the item editor's form inside the old bespoke modal box. That box is
+   gone, replaced by rf-modal, which is not a positioned ancestor, so the form
+   escaped to the page and laid itself out 1390px wide over the top of
+   everything. The sections scattered across the screen were this one rule. */
 
 .input-row input,
 .input-row select {

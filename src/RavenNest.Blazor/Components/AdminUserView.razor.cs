@@ -28,6 +28,55 @@ namespace RavenNest.Blazor.Components
             "None", "Mithril", "Rune", "Dragon", "Abraxas", "Phantom", "Above Phantom"
         };
 
+        private int CharacterCount => SelectedUser?.Characters?.Count ?? 0;
+
+        private int ConnectionCount => SelectedUser?.Connections?.Count ?? 0;
+
+        private long StashCount => SelectedUser?.Stash?.Sum(x => x.Amount) ?? 0;
+
+        private string PatreonName
+        {
+            get
+            {
+                var tier = SelectedUser?.PatreonTier ?? 0;
+                if (tier < 0) tier = 0;
+                return tier >= patreonNames.Length ? patreonNames[patreonNames.Length - 1] : patreonNames[tier];
+            }
+        }
+
+        /// <summary>
+        ///     There are three account statuses and the view could only ever say two things, one of
+        ///     them by leaving the word out.
+        /// </summary>
+        private string StatusName => SelectedUser == null
+            ? "Unknown"
+            : ((BusinessLogic.Data.AccountStatus)SelectedUser.Status) switch
+            {
+                BusinessLogic.Data.AccountStatus.OK => "Active",
+                BusinessLogic.Data.AccountStatus.TemporarilySuspended => "Temporarily suspended",
+                BusinessLogic.Data.AccountStatus.PermanentlySuspended => "Permanently suspended",
+                _ => "Status " + SelectedUser.Status
+            };
+
+        /// <summary>
+        ///     Nobody counts back from a timestamp, which is the same reason the clan pages stopped
+        ///     printing raw dates for a join date.
+        /// </summary>
+        private string AccountAge
+        {
+            get
+            {
+                if (SelectedUser == null) return null;
+
+                var days = (int)(DateTime.UtcNow - SelectedUser.Created).TotalDays;
+                if (days < 1) return "today";
+                if (days == 1) return "1 day old";
+                if (days < 60) return days + " days old";
+                if (days < 730) return (days / 30) + " months old";
+                return (days / 365) + " years old";
+            }
+        }
+
         private void IsHiddenInHighscoreChanged(object newValue)
         {
             var boolValue = newValue != null && newValue is bool b ? b : false;

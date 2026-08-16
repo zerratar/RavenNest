@@ -1054,7 +1054,41 @@ namespace RavenNest.BusinessLogic.Game
             Guid? transmogrificationId = null,
             int? flags = null)
         {
+            TryAddItem(itemId, amount, out var output, equipped, tag, soulbound, enchantment, name, transmogrificationId, flags);
+            return output;
+        }
+
+        /// <summary>
+        /// Adds an item and reports whether it actually reached the data layer.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="AddItem(Guid, long, bool, string, bool, string, string, Guid?, int?)"/> cannot
+        /// fail as far as a caller is concerned. A rejected add still lands in the in-memory list, so
+        /// the rest of the session behaves as though the player owns the item and it is gone the next
+        /// time the inventory is read. Anything that takes payment first has to know, so it calls
+        /// this instead.
+        ///
+        /// <para>
+        /// Merging into an existing stack is also verified, because the stack could have been
+        /// removed from the data layer while this inventory still holds a reference to it. Adding to
+        /// an orphan would be lost the same way.
+        /// </para>
+        /// </remarks>
+        public bool TryAddItem(
+            Guid itemId,
+            long amount,
+            out List<InventoryItem> added,
+            bool equipped = false,
+            string tag = null,
+            bool soulbound = false,
+            string enchantment = null,
+            string name = null,
+            Guid? transmogrificationId = null,
+            int? flags = null)
+        {
             var output = new List<InventoryItem>();
+            added = output;
+
             lock (mutex)
             {
                 var item = gameData.GetItem(itemId);
@@ -1074,28 +1108,46 @@ namespace RavenNest.BusinessLogic.Game
                     var invItem = CreateInventoryItem(itemId, amount, true, tag, soulbound, enchantment, name, transmogrificationId, flags);
                     output.Add(invItem);
                     items.Add(invItem);
+                    return VerifyLastAdd(invItem);
                 }
-                else
+
+                // if it is not going to be equipped, check if we already have a stack
+                // fill it += the amount or create a new stack.
+
+                var stack = GetUnequipped(itemId);//Get(itemId, false, tag);
+                if (stack != null)
                 {
-                    // if it is not going to be equipped, check if we already have a stack
-                    // fill it += the amount or create a new stack.
+                    if (gameData.GetInventoryItem(stack.Id) == null)
+                    {
+                        logger.LogError($"[{characterId}] Refusing to merge {amount}x '{gameData.GetItem(itemId)?.Name}' into stack '{stack.Id}', which is no longer in the data layer.");
+                        return false;
+                    }
 
-                    var stack = GetUnequipped(itemId);//Get(itemId, false, tag);
-                    if (stack != null)
-                    {
-                        stack.Amount += amount;
-                        output.Add(stack);
-                    }
-                    else
-                    {
-                        var invItem = CreateInventoryItem(itemId, amount, false, tag, soulbound, enchantment, name, transmogrificationId, flags);
-                        output.Add(invItem);
-                        items.Add(invItem);
-                    }
+                    stack.Amount += amount;
+                    output.Add(stack);
+                    return true;
                 }
 
-                return output;
+                var newStack = CreateInventoryItem(itemId, amount, false, tag, soulbound, enchantment, name, transmogrificationId, flags);
+                output.Add(newStack);
+                items.Add(newStack);
+                return VerifyLastAdd(newStack);
             }
+        }
+
+        /// <summary>
+        /// Checks the result the data layer gave for the stack just handed to <c>items.Add</c>.
+        /// Anything other than success means the row was rejected and will never be persisted.
+        /// </summary>
+        private bool VerifyLastAdd(InventoryItem stack)
+        {
+            if (items.LastAddResult == AddEntityResult.Success)
+            {
+                return true;
+            }
+
+            logger.LogError($"[{characterId}] Failed to add {stack.Amount}x '{gameData.GetItem(stack.ItemId)?.Name}' (stack '{stack.Id}'). Data layer said: {items.LastAddResult}.");
+            return false;
         }
 
         public List<MagicItemAttribute> CreateRandomAttributes(DataModels.InventoryItem targetItem, int attributeCount)

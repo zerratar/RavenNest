@@ -8,59 +8,90 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.ServerService ServerService
 
-
 @if (isAdmin)
 {
-    if (entries == null)
+    <header class="rf-page-head">
+        <h1 class="rf-page-title">@Filename</h1>
+        <p class="rf-page-subtitle">
+            <a href="/admin/ravenbot-logs">Back to the log list</a>
+        </p>
+    </header>
+
+    @if (entries == null)
     {
-        <p>Loading log</p>
         <LoadIndicator></LoadIndicator>
     }
     else if (entries.Count == 0)
     {
-        <p>No logs found</p>
+        <div class="rf-panel">
+            <p class="rf-meta">This log file has no entries in it.</p>
+        </div>
     }
     else
     {
-        <h1>Ravenbot Log: @Filename</h1>
-        <table class=loglines-list>
-            <thead>
-                <tr>
-                    <th>Timestamp</th>
-                    <th>Log Level</th>
-                    <th>Message</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var entry in entries)
-                {
-                    <RavenbotLogDisplayLine DataContext="entry"></RavenbotLogDisplayLine>
-                }
-                <tr>
-                    <td colspan="3" class="full-row">
+        @*
+            How much of the file you are looking at was never stated, only implied by two buttons
+            with counts on them.
+        *@
+        <div class="rf-toolbar">
+            <span class="rf-meta">Showing @entries.Count of @totalCount lines</span>
+            @if (WarningCount > 0)
+            {
+                <span class="rf-badge rf-badge--warn">@WarningCount warnings</span>
+            }
+            @if (ErrorCount > 0)
+            {
+                <span class="rf-badge rf-badge--bad">@ErrorCount errors</span>
+            }
+        </div>
 
-                        @if (!hasReadAll)
+        <div class="rf-panel">
+            <div class="rf-scroll-x">
+                <table class="rf-table rf-log">
+                    <thead>
+                        <tr>
+                            <th scope="col"><span class="rf-th rf-th--static">Time</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Level</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Message</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in entries)
                         {
-                            @if (loadingEntries)
-                            {
-                                <p>Loading... Please wait</p>
-                            }
-                            else
-                            {
-                                <button class="btn btn-load-more" @onclick="() => LoadMoreAsync()">Load More (@LoadMoreCount)</button>
-                                <button class="btn btn-load-more" @onclick="() => LoadAllAsync()">Load Rest (@LoadAllCount)</button>
-                            }
+                            <RavenbotLogDisplayLine DataContext="entry"></RavenbotLogDisplayLine>
                         }
-                        else
-                        {
-                            <button class="btn btn-refresh" @onclick="() => LoadMoreAsync()">Refresh</button>
-                        }
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+                    </tbody>
+                </table>
+            </div>
+
+            @*
+                Was a row spanning the table with buttons in it, which is a table cell doing a
+                toolbar's job. It sits under the table now.
+            *@
+            <div class="rf-pager">
+                @if (loadingEntries)
+                {
+                    <span class="rf-meta">Loading, please wait</span>
+                }
+                else if (!hasReadAll)
+                {
+                    <button type="button" class="rf-btn rf-btn--small" @onclick="() => LoadMoreAsync()">
+                        Load @LoadMoreCount more
+                    </button>
+                    <button type="button" class="rf-btn rf-btn--small" @onclick="() => LoadAllAsync()">
+                        Load the remaining @LoadAllCount
+                    </button>
+                }
+                else
+                {
+                    <span class="rf-meta">That is the whole file.</span>
+                    <button type="button" class="rf-btn rf-btn--small" @onclick="() => LoadMoreAsync()">Refresh</button>
+                }
+            </div>
+        </div>
     }
 }
+
 
 @code {
     private RavenNest.Models.SessionInfo session;
@@ -81,6 +112,17 @@
 
     private int totalCount = 0;
     private bool hasReadAll = false;
+
+    /// <summary>
+    ///     What is actually wrong in the part of the file loaded so far. A log viewer that makes
+    ///     you scroll to find the red lines is not doing very much for you.
+    /// </summary>
+    private int WarningCount =>
+        entries?.Count(x => x.LogLevel == Microsoft.Extensions.Logging.LogLevel.Warning) ?? 0;
+
+    private int ErrorCount =>
+        entries?.Count(x => x.LogLevel == Microsoft.Extensions.Logging.LogLevel.Error
+                         || x.LogLevel == Microsoft.Extensions.Logging.LogLevel.Critical) ?? 0;
 
     private int LoadAllCount
     {

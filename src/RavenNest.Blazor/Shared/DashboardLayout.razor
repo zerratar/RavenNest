@@ -1,30 +1,32 @@
 ﻿@inherits LayoutComponentBase
 @using RavenNest.Blazor.Components
 @inject RavenNest.Blazor.Services.AuthService AuthService
-<div class="page dashboard">
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+@*
+    rf-dash--art turns on the scenery band. Deliberately not on .rf-dash itself:
+    AdminLayout and DarkAdminDashboardLayout carry that class too and have no
+    business growing a landscape.
+*@
+<div class="page dashboard rf-dash rf-dash--art" style="--rf-art-img: url('@ArtImage')">
     <div class="sidebar">
         <NavMenu Dashboard="true" />
     </div>
 
+    @*
+        The top bar is gone. It was 3.5rem tall on every dashboard page and held two things: a
+        logout link the sidebar already carries under Account, and the notification bell. The bell
+        floats at the top right, which is where it already appeared to be, and the page title now
+        starts at the top of the page rather than under an empty strip.
+    *@
     <div class="main">
-        <div class="top-row px-4">
-
-
-
-            @if (IsAuthenticated)
-            {
+        @if (IsAuthenticated)
+        {
+            <div class="rf-dash__notify">
                 <NotificationIcon UserId="@session.UserId"></NotificationIcon>
-                <NavLink class="nav-link login" href="/logout" Match="NavLinkMatch.All">
-                    <span class="oi oi-account-logout" aria-hidden="true"></span> logout
-                </NavLink>
-            }
-            else
-            {
-                <NavLink class="nav-link" href="/login" Match="NavLinkMatch.All">
-                    <span class="oi oi-account-login" aria-hidden="true"></span> login
-                </NavLink>
-            }
-        </div>
+            </div>
+        }
 
         <div class="content px-4">
             @Body
@@ -46,10 +48,78 @@
 @code {
     public static DashboardLayout Instance { get; private set; }
     private RavenNest.Models.SessionInfo session;
+
+    /// <summary>
+    ///     Scenery per page, by first path segment.
+    ///
+    ///     Each scene is matched to what its page is about, and pages in the
+    ///     same nav group share one, so the art reinforces the grouping the
+    ///     sidebar already has rather than cutting across it. A page you have
+    ///     not seen before should feel like somewhere, and two pages you switch
+    ///     between should not look like the same place.
+    /// </summary>
+    private static readonly Dictionary<string, string> ArtByPage =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            // Overview: the front door, so the everyday village with the road in.
+            ["dashboard"] = "home",
+
+            // You: a field crowded with characters, and a port full of stored goods.
+            ["characters"] = "ironhill",
+            ["character"] = "ironhill",
+            ["stash"] = "away",
+            ["inventory"] = "away",
+
+            // Together: banners, a fortress and a company; then the civic plaza
+            // where things are recorded and rewarded.
+            ["clan"] = "eldara",
+            ["clan-invites"] = "eldara",
+            ["loyalty"] = "atria",
+            ["patreon"] = "atria",
+
+            // Your stream: a crowded plaza for the thing that talks to chat, and
+            // the settlement for the one about your settlement.
+            ["bot"] = "kyo",
+            // /session only redirects to /bot, but it renders once on the way.
+            ["session"] = "kyo",
+            ["notifications"] = "kyo",
+            ["town"] = "town",
+        };
+
+    private const string DefaultArt = "home";
+
+    private string ArtImage
+    {
+        get
+        {
+            var path = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+
+            var cut = path.IndexOfAny(new[] { '/', '?', '#' });
+            if (cut >= 0) path = path.Substring(0, cut);
+
+            var name = ArtByPage.TryGetValue(path, out var art) ? art : DefaultArt;
+            return "/imgs/dashboard/" + name + ".jpg";
+        }
+    }
+
     protected override void OnInitialized()
     {
         Instance = this;
         session = AuthService.GetSession();
+
+        // The layout survives a route change, so the band would otherwise keep
+        // whichever scene was showing when the dashboard was first opened.
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
     }
 
     public void UpdateSession()
@@ -58,4 +128,4 @@
     }
 
     private bool IsAuthenticated => session != null && session.Authenticated;
-    }
+}

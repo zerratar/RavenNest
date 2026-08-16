@@ -1,110 +1,205 @@
 ﻿@layout AdminLayout
 @page "/admin/economy/marketplace"
+@using RavenNest.BusinessLogic.Game
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.EconomyService EconomyService
 @inject RavenNest.BusinessLogic.Data.GameData GameData;
 
 @if (isAdmin)
 {
-    <ul>
-        <li><a href="/admin/economy">Overview</a></li>
-        <li><a href="/admin/economy/marketplace/avg-price">Average Item Price</a></li>
-        @*<li><a href="/admin/economy/marketplace/item-amounts-sellers">Item Amounts and Number of Sellers</a></li>*@
-    </ul>
+    <header class="rf-page-head">
+        <h1 class="rf-page-title">Marketplace</h1>
+        <p class="rf-page-subtitle">Aggregated listings and every completed sale, over the last 30 days.</p>
+    </header>
 
-    <h3>Marketplace Economy Detail</h3>
+    <EconomyNav Current="marketplace"></EconomyNav>
+
+    @if (loadFailed)
+    {
+        <div class="rf-banner rf-banner--bad">
+            <div class="rf-banner__title">This did not load</div>
+            <p>Reading the marketplace history failed. Nothing below is reliable.</p>
+        </div>
+    }
 
     @if (marketplaceReports == null || marketItemTransactions == null)
     {
-        <p>Loading data...</p>
+        <LoadIndicator></LoadIndicator>
     }
     else
     {
-        <h4>Marketplace Reports</h4>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Item</th>
-                    <th>Avg Price</th>
-                    <th>Amount</th>
-                    <th>Sellers</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var report in marketplaceReports)
-                {
-                    <tr>
-                        <td>@report.Date.ToShortDateString()</td>
-                        <td title="@report.ItemId">@GameData.GetItem(report.ItemId).Name</td>
-                        <td>@report.AvgPrice</td>
-                        <td>@report.Amount</td>
-                        <td>@report.Sellers</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+        @*
+            The page listed rows and never added any of them up, so the questions it exists to
+            answer, how much is being traded and by how many people, had to be worked out by eye.
+        *@
+        <div class="rf-stats">
+            <div class="rf-stat">
+                <div class="rf-stat__value">@marketItemTransactions.Count.ToString("N0")</div>
+                <div class="rf-stat__label">Sales in 30 days</div>
+            </div>
+            <div class="rf-stat">
+                <div class="rf-stat__value" title="@TotalTraded.ToString("N0") coins">@Utility.FormatAmount(TotalTraded)</div>
+                <div class="rf-stat__label">Coins traded</div>
+            </div>
+            <div class="rf-stat">
+                <div class="rf-stat__value">@DistinctItemsTraded.ToString("N0")</div>
+                <div class="rf-stat__label">Distinct items sold</div>
+            </div>
+            <div class="rf-stat">
+                <div class="rf-stat__value">@DistinctBuyers.ToString("N0")</div>
+                <div class="rf-stat__label">Buyers</div>
+            </div>
+        </div>
 
-        <h4>Market Item Transactions</h4>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Item</th>
-                    <th>Amount</th>
-                    <th>Price Per Item</th>
-                    <th>Total Price</th>
-                    <th>Buyer Character</th>
-                    <th>Seller Character</th>
-                    <th>Created</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var transaction in marketItemTransactions)
-                {
-                    <tr>
-                        <td title="@transaction.ItemId">@GameData.GetItem(transaction.ItemId).Name</td>
-                        <td>@transaction.Amount</td>
-                        <td>@transaction.PricePerItem</td>
-                        <td>@transaction.TotalPrice</td>
-                        <td title="@transaction.BuyerCharacterId">@GameData.GetCharacter(transaction.BuyerCharacterId).Name</td>
-                        <td title="@transaction.SellerCharacterId">@GameData.GetCharacter(transaction.SellerCharacterId).Name</td>
-                        <td>@transaction.Created</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+        <section class="rf-panel">
+            <h2 class="rf-panel__title">Daily listing summary</h2>
+            @if (marketplaceReports.Count == 0)
+            {
+                <p class="rf-meta">Nothing was aggregated for this period.</p>
+            }
+            else
+            {
+                <div class="rf-scroll-x">
+                    <table class="rf-table">
+                        <thead>
+                            <tr>
+                                <th scope="col"><span class="rf-th rf-th--static">Date</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Item</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Average price</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Amount</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Sellers</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var report in Page(marketplaceReports, reportsPage))
+                            {
+                                <tr>
+                                    <td class="rf-table__quiet">@report.Date.ToString("yyyy-MM-dd")</td>
+                                    <td title="@report.ItemId">@ItemName(report.ItemId)</td>
+                                    <td class="rf-price__value" title="@report.AvgPrice.ToString("N0")">@Utility.FormatAmount(report.AvgPrice)</td>
+                                    <td class="rf-table__quiet">@report.Amount.ToString("N0")</td>
+                                    <td class="rf-table__quiet">@report.Sellers.ToString("N0")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <nav class="rf-pager" aria-label="Summary pages">
+                    <button type="button" class="rf-btn rf-btn--small" disabled="@(reportsPage == 0)" @onclick="() => reportsPage--">Previous</button>
+                    <span class="rf-meta">Page @(reportsPage + 1) of @PageCount(marketplaceReports.Count)</span>
+                    <button type="button" class="rf-btn rf-btn--small" disabled="@(reportsPage + 1 >= PageCount(marketplaceReports.Count))" @onclick="() => reportsPage++">Next</button>
+                </nav>
+            }
+        </section>
+
+        <section class="rf-panel">
+            <h2 class="rf-panel__title">Sales</h2>
+            @if (marketItemTransactions.Count == 0)
+            {
+                <p class="rf-meta">Nothing sold in this period.</p>
+            }
+            else
+            {
+                @*
+                    Thirty days of every completed sale went into the page in one go. Paged, newest
+                    first, which is the order anyone reading a transaction log wants.
+                *@
+                <div class="rf-scroll-x">
+                    <table class="rf-table">
+                        <thead>
+                            <tr>
+                                <th scope="col"><span class="rf-th rf-th--static">When</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Item</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Amount</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Each</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Total</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Buyer</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Seller</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var transaction in Page(SortedTransactions, salesPage))
+                            {
+                                <tr>
+                                    <td class="rf-table__quiet" title="@transaction.Created.ToString("u")">@transaction.Created.ToString("yyyy-MM-dd HH:mm")</td>
+                                    <td title="@transaction.ItemId">@ItemName(transaction.ItemId)</td>
+                                    <td class="rf-table__quiet">@transaction.Amount.ToString("N0")</td>
+                                    <td class="rf-price__value">@Utility.FormatAmount(transaction.PricePerItem)</td>
+                                    <td class="rf-price__value" title="@transaction.TotalPrice.ToString("N0")">@Utility.FormatAmount(transaction.TotalPrice)</td>
+                                    <td class="rf-table__quiet" title="@transaction.BuyerCharacterId">@CharacterName(transaction.BuyerCharacterId)</td>
+                                    <td class="rf-table__quiet" title="@transaction.SellerCharacterId">@CharacterName(transaction.SellerCharacterId)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <nav class="rf-pager" aria-label="Sales pages">
+                    <button type="button" class="rf-btn rf-btn--small" disabled="@(salesPage == 0)" @onclick="() => salesPage--">Previous</button>
+                    <span class="rf-meta">Page @(salesPage + 1) of @PageCount(marketItemTransactions.Count)</span>
+                    <button type="button" class="rf-btn rf-btn--small" disabled="@(salesPage + 1 >= PageCount(marketItemTransactions.Count))" @onclick="() => salesPage++">Next</button>
+                </nav>
+            }
+        </section>
     }
 }
 
 @code {
-
     private IReadOnlyList<RavenNest.DataModels.DailyAggregatedMarketplaceData> marketplaceReports;
     private IReadOnlyList<RavenNest.DataModels.MarketItemTransaction> marketItemTransactions;
 
     private bool isAdmin;
-    private string updateError = "";
+    private bool loadFailed;
+
+    private const int PageSize = 25;
+    private int reportsPage;
+    private int salesPage;
 
     private RavenNest.Models.SessionInfo session;
 
+    private double TotalTraded => marketItemTransactions?.Sum(x => x.TotalPrice) ?? 0;
+    private int DistinctItemsTraded => marketItemTransactions?.Select(x => x.ItemId).Distinct().Count() ?? 0;
+    private int DistinctBuyers => marketItemTransactions?.Select(x => x.BuyerCharacterId).Distinct().Count() ?? 0;
+
+    private IReadOnlyList<RavenNest.DataModels.MarketItemTransaction> SortedTransactions =>
+        marketItemTransactions == null
+            ? Array.Empty<RavenNest.DataModels.MarketItemTransaction>()
+            : marketItemTransactions.OrderByDescending(x => x.Created).ToList();
+
+    private static int PageCount(int total) => Math.Max(1, (int)Math.Ceiling(total / (double)PageSize));
+
+    private static IEnumerable<T> Page<T>(IReadOnlyList<T> source, int page) =>
+        source.Skip(page * PageSize).Take(PageSize);
+
+    /// <summary>
+    ///     These three lookups were `GameData.GetItem(id).Name` and `GetCharacter(id).Name` with no
+    ///     check, so one deleted character or item anywhere in thirty days of history took the
+    ///     whole page down. A transaction log is exactly where deleted things turn up.
+    /// </summary>
+    private string ItemName(Guid itemId) => GameData.GetItem(itemId)?.Name ?? "Unknown item";
+
+    private string CharacterName(Guid characterId) => GameData.GetCharacter(characterId)?.Name ?? "Deleted character";
 
     protected override async Task OnInitializedAsync()
     {
+        session = AuthService.GetSession();
+        isAdmin = session != null && session.Administrator;
+
         try
         {
-            session = AuthService.GetSession();
-            isAdmin = session != null && session.Administrator;
-
-            // Adjust the date range according to your needs
             var startDate = DateTime.UtcNow.Date.AddDays(-30);
             var endDate = DateTime.UtcNow.Date;
 
             marketplaceReports = await Task.Run(() => EconomyService.GetMarketplaceReports(startDate, endDate));
             marketItemTransactions = await Task.Run(() => EconomyService.GetMarketItemTransactions(startDate, endDate));
         }
-        catch (System.Exception exc)
+        catch
         {
-
+            // Was an empty catch that let the page render as though the data were simply empty.
+            loadFailed = true;
+            marketplaceReports ??= Array.Empty<RavenNest.DataModels.DailyAggregatedMarketplaceData>();
+            marketItemTransactions ??= Array.Empty<RavenNest.DataModels.MarketItemTransaction>();
         }
     }
-
 }

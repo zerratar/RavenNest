@@ -3,12 +3,21 @@
 
 <div class="pl-4 navbar navbar-dark">
     <a class="navbar-brand" href=""><img src="/imgs/logo.png" /></a>
-    <button class="navbar-toggler" @onclick="ToggleNavMenu">
-        <span class="navbar-toggler-icon"></span>
+    @*
+        The icon was <span class="navbar-toggler-icon">, which Bootstrap draws with a background
+        image. This build does not ship that image, so the button rendered as an empty transparent
+        box and the dashboard looked on a phone as though it had no menu control at all.
+    *@
+    <button class="navbar-toggler"
+            aria-expanded="@((!collapseNavMenu).ToString().ToLowerInvariant())"
+            aria-controls="rf-dash-nav"
+            @onclick="ToggleNavMenu">
+        <i class="fa-solid @(collapseNavMenu ? "fa-bars" : "fa-xmark")" aria-hidden="true"></i>
+        Menu
     </button>
 </div>
 
-<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
+<div id="rf-dash-nav" class="@NavMenuCssClass" @onclick="ToggleNavMenu">
     <ul class="nav flex-column">
         @if (Dashboard)
         {
@@ -82,13 +91,21 @@
             }
             else
             {
+                @*
+                    Grouped by what the person is doing, not by which controller serves it.
+                    A player opens this to look after their own characters, to do something with
+                    other people, or to check their stream. A flat list of ten links made every
+                    one of those feel equally likely, which is why nothing was findable.
+                *@
                 <li class="nav-item">
-                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                        <span class="oi oi-arrow-left" aria-hidden="true"></span> Frontpage
+                    <NavLink class="nav-link" href="/dashboard" Match="NavLinkMatch.All">
+                        <span class="fas fa-home" aria-hidden="true"></span>&nbsp;Overview
                     </NavLink>
                 </li>
+
+                <li class="rf-nav-group">You</li>
                 <li class="nav-item">
-                    <NavLink class="nav-link" href="/characters" Match="NavLinkMatch.All">
+                    <NavLink class="nav-link" href="/characters">
                         <span class="fas fa-users" aria-hidden="true"></span>&nbsp;Characters
                     </NavLink>
                 </li>
@@ -98,35 +115,43 @@
                     </NavLink>
                 </li>
 
+                <li class="rf-nav-group">Together</li>
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/clan" Match="NavLinkMatch.All">
                         <span class="fas fa-shield-alt" aria-hidden="true"></span>&nbsp;Clan
                     </NavLink>
                 </li>
-
-                @if (activeGame)
-                {
-                    <li class="nav-item">
-                        <NavLink class="nav-link" href="/session" Match="NavLinkMatch.All">
-                            <span class="fas fa-users" aria-hidden="true"></span>&nbsp;My Game Session
-                        </NavLink>
-                    </li>
-                }
-
+                @*
+                    Marketplace and Vendor belong here, but as dashboard pages. Linking the front
+                    page version threw you out of the dashboard entirely, so it is left out until
+                    the dashboard version exists. The front page nav still carries it meanwhile.
+                *@
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/loyalty" Match="NavLinkMatch.All">
-                        <span class="fas fa-users" aria-hidden="true"></span>&nbsp;Loyalty
+                        <span class="fas fa-heart" aria-hidden="true"></span>&nbsp;Loyalty
+                    </NavLink>
+                </li>
+
+                @*
+                    Streaming tools are only relevant if you actually stream, so they are grouped
+                    rather than mixed in with the pages every viewer uses. Bot stays visible even
+                    with no active session: the reason to open it is usually that nothing is
+                    running.
+                *@
+                <li class="rf-nav-group">Your stream</li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/bot" Match="NavLinkMatch.All">
+                        <span class="fas fa-robot" aria-hidden="true"></span>&nbsp;Bot
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/town" Match="NavLinkMatch.All">
+                        <span class="fas fa-house-chimney" aria-hidden="true"></span>&nbsp;Town
                     </NavLink>
                 </li>
 
                 @if (IsAdministrator)
                 {
-                    <li class="nav-item">
-                        <NavLink class="nav-link" href="/tv" Match="NavLinkMatch.All">
-                            <span class="fa-sharp fa-solid fa-tv-retro" aria-hidden="true"></span>&nbsp;TV
-                        </NavLink>
-                    </li>
-
                     <li class="nav-item">
                         <NavLink class="nav-link" href="/admin" Match="NavLinkMatch.All">
                             <span class="fas fa-key" aria-hidden="true"></span>&nbsp;Admin
@@ -137,6 +162,12 @@
 
             @if (session != null && session.Authenticated)
             {
+                <li class="rf-nav-group">Account</li>
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                        <span class="oi oi-arrow-left" aria-hidden="true"></span>&nbsp;Back to site
+                    </NavLink>
+                </li>
                 <li class="nav-item">
                     <NavLink class="nav-link" href="/patreon" Match="NavLinkMatch.All">
                         <span class="fa-brands fa-patreon" aria-hidden="true"></span>&nbsp;Patreon
@@ -261,7 +292,18 @@
 
     private string MenuTitle => Dashboard ? "Dashboard" : "Ravenfall";
 
-    private bool collapseNavMenu = false;
+    /// <summary>
+    ///     Starts collapsed, which only affects a phone.
+    ///
+    ///     It started expanded, from when this sidebar was a desktop only concern. Below 641px the
+    ///     sidebar stacks above the page rather than beside it, so an expanded menu meant a screen
+    ///     of navigation to scroll past before reaching the page you had opened.
+    ///
+    ///     Safe to default this way because site.css forces `.collapse { display: flex !important }`
+    ///     above 641px, so the desktop sidebar ignores the class entirely and only the phone acts
+    ///     on it.
+    /// </summary>
+    private bool collapseNavMenu = true;
     private string NavMenuCssClass => collapseNavMenu ? "nav-list collapse" : "nav-list";
 
     protected override void OnInitialized()

@@ -245,7 +245,7 @@
             if (uri.AbsolutePath.Contains("kick", StringComparison.OrdinalIgnoreCase))
             {
                 var code = parsedQuery.Get("code");
-                session = await AuthService.KickLoginAsync(code, scope, code_verifier, code_challenge);
+                session = await AuthService.KickLoginAsync(code, scope, code_verifier, code_challenge, NavigationManager.BaseUri);
             }
             else
             {
@@ -282,7 +282,7 @@
     {
         userInitiatedLogin = true;
         kickLoginInitiated = true;
-        var url = AuthService.GetKickLoginUrl(RedirectUrl ?? "");
+        var url = AuthService.GetKickLoginUrl(RedirectUrl ?? "", NavigationManager.BaseUri);
         if (!string.IsNullOrEmpty(url))
         {
             await JS.InvokeVoidAsync("window.navigateTo", url);
@@ -294,7 +294,7 @@
     {
         userInitiatedLogin = true;
         twitchLoginInitiated = true;
-        var url = AuthService.GetTwitchLoginUrl(RedirectUrl ?? "");
+        var url = AuthService.GetTwitchLoginUrl(RedirectUrl ?? "", NavigationManager.BaseUri);
         if (!string.IsNullOrEmpty(url))
         {
             await JS.InvokeVoidAsync("window.navigateTo", url);

@@ -8,7 +8,12 @@
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject NavigationManager NavigationManager
 
-<h1 class="page-title">My Characters</h1>
+<header class="rf-page-head">
+    <h1 class="rf-page-title">My characters</h1>
+    <p class="rf-page-subtitle">
+        Every character on your account. Pick one to see its skills, equipment and inventory.
+    </p>
+</header>
 
 @if (players == null || selectedPlayer == null)
 {
@@ -16,31 +21,30 @@
 }
 else
 {
-    <div class="characters-container">
-        <div class="tab-view character-selection">
-            @foreach (var p in players)
-            {
-                <button class="tab-link @(p.Id == selectedPlayer?.Id ? "active" : "")" @onclick="(()=> SelectPlayer(p))">
-                    <div class="character-name">
-                        @p.Name
-                    </div>
-                    <div class="character-index">
-                        @p.CharacterIndex @(p.Identifier != null ? $"({p.Identifier})" : "")
-                    </div>
-                    <div class="character-level">
-                        @PlayerService.GetCombatLevel(p)
-                    </div>
-                </button>
-            }
-        </div>
-
-        @if (selectedPlayer != null)
+    @*
+        Cards rather than tab buttons. A character is a thing you own and recognise, so it gets
+        its name, its combat level and its slot, not a text label in a strip.
+    *@
+    <div class="rf-charpick">
+        @foreach (var p in players)
         {
-            <div class="player-view-container">
-                <PlayerView SelectedPlayer="selectedPlayer" CanManage="true" ShowPlayerName="false"></PlayerView>
-            </div>
+            <button type="button"
+                    class="rf-char @(p.Id == selectedPlayer?.Id ? "is-active" : "")"
+                    @onclick="(() => SelectPlayer(p))">
+                <span class="rf-char__name">@p.Name</span>
+                <span class="rf-char__level">@PlayerService.GetCombatLevel(p)</span>
+                <span class="rf-char__slot">
+                    Slot @p.CharacterIndex@(p.Identifier != null ? $" · {p.Identifier}" : "")
+                </span>
+            </button>
         }
     </div>
+
+    @if (selectedPlayer != null)
+    {
+        @* No wrapping panel: the tab bodies are several sections each and bring their own. *@
+        <PlayerView SelectedPlayer="selectedPlayer" CanManage="true" ShowPlayerName="false"></PlayerView>
+    }
 }
 
 @code {

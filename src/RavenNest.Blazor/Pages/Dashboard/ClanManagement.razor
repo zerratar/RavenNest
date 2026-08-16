@@ -3,161 +3,210 @@
 @page "/clan/ranks"
 @using RavenNest.Blazor.Components
 @using RavenNest.Blazor.Services
+@using RavenNest.BusinessLogic
+@using RavenNest.BusinessLogic.Game
 @inject RavenNest.Blazor.Services.ClanService ClanService
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.LogoService LogoService
 @inject NavigationManager NavigationManager
 
-<div class="clan-management-container">
-    <h1 class="page-title">Clan</h1>
+<header class="rf-page-head">
+    <h1 class="rf-page-title">Clan</h1>
+    <p class="rf-page-subtitle">
+        Your clan's level, its skills, and everyone in it.
+    </p>
+</header>
 
-    @if (!session.Authenticated)
+@if (!session.Authenticated)
+{
+    <p class="rf-meta">You don't seem to be logged in.</p>
+}
+else if (clan == null)
+{
+    @if (session.Tier == 0 && !session.Administrator && !session.Moderator)
     {
-        <div class="alert alert-warning text-center">
-            You don't seem to be logged in.
+        <div class="rf-banner rf-banner--warn">
+            <h2 class="rf-banner__title">You cannot create a clan yet</h2>
+            <p>
+                Founding a clan needs at least the Mithril tier on
+                <a href="https://www.patreon.com/ravenfall" target="_blank">Patreon</a>.
+                You can still join one: ask a clan owner to invite your character, and the invite
+                will show up on your <a href="/clan-invites">invites page</a>.
+            </p>
         </div>
     }
     else
     {
-        if (clan == null)
+        <div class="rf-panel rf-panel--accent">
+            <h2 class="rf-panel__title">Create a clan</h2>
+            <p class="rf-meta">
+                Clan members share clan skills and a clan level that everyone's play contributes to.
+                Names can be changed twice for free afterwards.
+            </p>
+            <EditForm Model="@createClan" OnValidSubmit="@HandleCreateClan">
+                <DataAnnotationsValidator />
+                <label class="rf-field">
+                    <span class="rf-label">Clan name</span>
+                    <InputText id="name" class="rf-input" placeholder="Clan name" @bind-Value="createClan.Name" />
+                </label>
+                <ValidationSummary />
+                @if (!string.IsNullOrEmpty(clanError))
+                {
+                    <p class="rf-form__error">@clanError</p>
+                }
+                <button type="submit" class="rf-btn rf-btn--primary">Create clan</button>
+            </EditForm>
+        </div>
+    }
+}
+else
+{
+    <div class="rf-clan">
+        @if (!string.IsNullOrEmpty(clan.Logo))
         {
-            if (session.Tier == 0 && !session.Administrator && !session.Moderator)
-            {
-                <div class="alert alert-info text-center">
-                    You cannot create a clan. You need to have at least the <a href="https://www.patreon.com/ravenfall" target="_blank">Mithril Tier on Patreon</a>.
-                </div>
-            }
-            else
-            {
-                <div class="card clan-create-card">
-                    <div class="card-header">
-                        <h2>Create a Clan</h2>
-                    </div>
-                    <div class="card-body">
-                        <p>You do not have a clan. You may create one if you like.</p>
-                        <EditForm Model="@createClan" OnValidSubmit="@HandleCreateClan">
-                            <DataAnnotationsValidator />
-                            <ValidationSummary />
-                            <div class="form-group">
-                                <InputText id="name" class="form-control" placeholder="Clan Name" @bind-Value="createClan.Name" />
-                            </div>
-                            <button type="submit" class="btn btn-primary mt-2">Submit</button>
-                        </EditForm>
-                        @if (!string.IsNullOrEmpty(clanError))
-                        {
-                            <div class="text-danger mt-2">@clanError</div>
-                        }
-                    </div>
-                </div>
-            }
+            <img src="@clan.Logo" class="rf-clan__logo" alt="@clan.Name" />
         }
         else
         {
-            <div class="card clan-card">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <div class="d-flex align-items-center">
-                        @if (!string.IsNullOrEmpty(clan.Logo))
-                        {
-                            <img src="@clan.Logo" class="clan-logo rounded" alt="Clan Logo" />
-                        }
-                        else
-                        {
-                            <img src="/api/twitch/logo/@session.TwitchUserId" class="clan-logo rounded" alt="Default Clan Logo" />
-                        }
-                        <div class="clan-info ms-3">
-                            @if (!editingClanName)
+            <img src="/api/twitch/logo/@clan.OwnerUserId" class="rf-clan__logo" alt="@clan.Name" />
+        }
+
+        <div class="rf-clan__id">
+            @if (editingClanName)
+            {
+                <div class="rf-actions">
+                    <input type="text" class="rf-input" placeholder="Enter a new clan name" aria-label="Clan name" @bind-value="clan.Name" />
+                    <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="UpdateAlias">Save</button>
+                    <button type="button" class="rf-btn rf-btn--small" @onclick="CancelEditAlias">Cancel</button>
+                </div>
+                @if (nameChangeCount < 2)
+                {
+                    <p class="rf-meta"><b>@(2 - nameChangeCount)</b> free name changes left.</p>
+                }
+                @if (!string.IsNullOrEmpty(clanError))
+                {
+                    <p class="rf-form__error">@clanError</p>
+                }
+            }
+            else
+            {
+                <h2 class="rf-clan__name">
+                    @clan.Name
+                    @if (canRenameClan)
+                    {
+                        <button type="button" class="rf-iconbtn" title="Change clan name" @onclick="EditClanName">
+                            <i class="fas fa-pen" aria-hidden="true"></i>
+                        </button>
+                    }
+                </h2>
+                <p class="rf-clan__level">Clan level <b>@clan.Level</b></p>
+                @if (!string.IsNullOrEmpty(changeNameSuccess))
+                {
+                    <p class="rf-form__ok">@changeNameSuccess</p>
+                }
+            }
+        </div>
+
+        @if (canManageMembers)
+        {
+            <button type="button" class="rf-btn rf-btn--small" title="Refresh the clan logo from Twitch" disabled="@reloadingClanLogo" @onclick="ReloadClanLogo">
+                <i class="fas fa-sync" aria-hidden="true"></i> @(reloadingClanLogo ? "Refreshing" : "Refresh logo")
+            </button>
+        }
+    </div>
+
+    @*
+        Clan progress and clan skills were both on the wire and rendered nowhere on this page. The
+        character's clan tab already shows them, which made the management page the less informative
+        of the two views of the same clan.
+    *@
+    <section class="rf-panel">
+        <h3 class="rf-panel__title">Clan progress</h3>
+        <div class="rf-next">
+            <div class="rf-next__head">
+                <span class="rf-label">Next clan level</span>
+                <span class="rf-next__skill">Level <b>@(clan.Level + 1)</b></span>
+            </div>
+            <div class="rf-skill__bar rf-next__bar">
+                <span class="rf-skill__fill" style="@Bar(ClanLevelProgress)"></span>
+            </div>
+            <div class="rf-next__foot">
+                <span>@Utility.FormatExp(ClanExpToNextLevel) exp to go</span>
+                <span class="rf-meta">@Math.Round(ClanLevelProgress * 100, 1)% of the way</span>
+            </div>
+        </div>
+    </section>
+
+    @if (ClanSkills.Count > 0)
+    {
+        <section class="rf-panel">
+            <h3 class="rf-panel__title">Clan skills</h3>
+            <ul class="rf-skills__list">
+                @foreach (var skill in ClanSkills)
+                {
+                    <li class="rf-skill">
+                        <span class="rf-skill__name">@skill.Name</span>
+                        <span class="rf-skill__bar" title="@ClanSkillTitle(skill)">
+                            <span class="rf-skill__fill" style="@Bar(SkillProgressOf(skill))"></span>
+                        </span>
+                        <span class="rf-skill__next" title="@ClanSkillTitle(skill)">
+                            @if (skill.MaxLevel > 0 && skill.Level >= skill.MaxLevel)
                             {
-                                <h2 class="mb-0 d-flex align-items-center">
-                                    @clan.Name
-                                    <a class="change-identifier ms-2" title="Edit Clan Name" @onclick="EditClanName">
-                                        <i class="fas fa-pen"></i>
-                                    </a>
-                                </h2>
-                                @if (!string.IsNullOrEmpty(changeNameSuccess))
-                                {
-                                    <small class="text-success d-block">@changeNameSuccess</small>
-                                }
+                                <span class="rf-skill__max">Max</span>
                             }
                             else
                             {
-                                <div class="input-group">
-                                    <input type="text" placeholder="Enter a new clan name" class="form-control" @bind-value="clan.Name" />
-                                    <button class="btn btn-success" @onclick="UpdateAlias" title="Confirm">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                    <button class="btn btn-danger" @onclick="CancelEditAlias" title="Cancel">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                                @if (nameChangeCount < 2)
-                                {
-                                    <small class="change-left d-block mt-1">You have <b>@(2 - nameChangeCount)</b> free name changes left.</small>
-                                }
-                                @if (!string.IsNullOrEmpty(clanError))
-                                {
-                                    <small class="text-danger d-block">@clanError</small>
-                                }
+                                @Utility.FormatExp(Math.Max(0, GameMath.ExperienceForLevel(skill.Level + 1) - skill.Experience))
+                                <span class="rf-skill__next-to">to @(skill.Level + 1)</span>
                             }
-                            <p class="clan-level mb-0">Level <span>@clan.Level</span></p>
-                        </div>
-                    </div>
-                    @if (!reloadingClanLogo)
-                    {
-                        <a class="refresh-logo btn btn-light" title="Refresh Logo" @onclick="ReloadClanLogo">
-                            <i class="fas fa-sync"></i>
-                        </a>
-                    }
+                        </span>
+                        <span class="rf-skill__level">
+                            @skill.Level@if (skill.MaxLevel > 0)
+                            {
+                                <span class="rf-skill__level-max"> / @skill.MaxLevel</span>
+                            }
+                        </span>
+                    </li>
+                }
+            </ul>
+        </section>
+    }
+
+    <section class="rf-panel">
+        <div class="rf-tabs" role="tablist">
+            <button type="button" role="tab" aria-selected="@(!showRanks)" class="rf-tab @(!showRanks ? "is-active" : "")" @onclick="ShowMembers">Members</button>
+            <button type="button" role="tab" aria-selected="@showRanks" class="rf-tab @(showRanks ? "is-active" : "")" @onclick="ShowRanks">Ranks</button>
+        </div>
+
+        @if (showRanks)
+        {
+            <ClanRoleList ClanId="@clan.Id" CanManage="@canEditRanks"></ClanRoleList>
+        }
+        else
+        {
+            <ClanMemberList ClanId="@clan.Id" CanManage="@canManageMembers"></ClanMemberList>
+        }
+    </section>
+
+    @if (showGetMoreNameChanges)
+    {
+        <div class="rf-modal-backdrop" @onclick="CloseNameChangeInfo">
+            <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Name change unavailable" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">No free name changes left</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CloseNameChangeInfo">&times;</button>
                 </div>
-                <div class="card-body">
-                    <ul class="nav nav-tabs">
-                        <li class="nav-item">
-                            <a class="nav-link tab-link @( !showRanks ? "active" : "")" @onclick="ShowMembers">Members</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link tab-link @( showRanks ? "active" : "")" @onclick="ShowRanks">Ranks</a>
-                        </li>
-                    </ul>
-                    <div class="tab-content mt-3">
-                        @if (showRanks)
-                        {
-                            <div class="tab-pane active">
-                                <ClanRoleList ClanId="@clan.Id" CanManage="@canManageMembers"></ClanRoleList>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="tab-pane active">
-                                <ClanMemberList ClanId="@clan.Id" CanManage="@canManageMembers"></ClanMemberList>
-                            </div>
-                        }
-                    </div>
+                <p class="rf-meta">
+                    You have used both free clan name changes. Contact Ravenfall staff on Discord if
+                    you need another.
+                </p>
+                <div class="rf-modal__foot">
+                    <button type="button" class="rf-btn" @onclick="CloseNameChangeInfo">Close</button>
                 </div>
             </div>
-
-            @if (showGetMoreNameChanges)
-            {
-                <!-- Modal for name change limit info -->
-                <div class="modal-backdrop fade show"></div>
-                <div class="modal d-block" tabindex="-1">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Name Change Unavailable</h5>
-                                <button type="button" class="btn-close" aria-label="Close" @onclick="CloseNameChangeInfo"></button>
-                            </div>
-                            <div class="modal-body">
-                                <p>You have reached your clan name change limit. Please contact a Ravenfall Staff on Discord for further assistance.</p>
-                            </div>
-                            <div class="modal-footer">
-                                <RavenButton OnClick="CloseNameChangeInfo">Close</RavenButton>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
-        }
+        </div>
     }
-</div>
+}
 
 @code {
     private const string ClanAlreadyExists = "A clan with the same name already exists.";
@@ -168,6 +217,9 @@
     private int nameChangeCount;
     private bool reloadingClanLogo;
     private bool canManageMembers;
+    private bool canEditRanks;
+    private bool canRenameClan;
+    private RavenNest.BusinessLogic.Game.TypedClanRolePermissions myPermissions;
     private bool editingClanName;
     private bool showRanks;
     private bool showGetMoreNameChanges;
@@ -175,6 +227,45 @@
     private string changeNameSuccess;
 
     private CreateClanModel createClan = new CreateClanModel();
+
+    private IReadOnlyList<RavenNest.Models.ClanSkill> ClanSkills =>
+        clan?.ClanSkills?.Where(x => x != null).ToList()
+        ?? (IReadOnlyList<RavenNest.Models.ClanSkill>)Array.Empty<RavenNest.Models.ClanSkill>();
+
+    // Clan experience counts progress within the current clan level, the same way a character
+    // skill does, so the next level is what it is measured against.
+    private double ClanLevelProgress
+    {
+        get
+        {
+            if (clan == null) return 0;
+            var forNext = GameMath.ExperienceForLevel(clan.Level + 1);
+            if (forNext <= 0) return 0;
+            return Math.Clamp(clan.Experience / forNext, 0d, 1d);
+        }
+    }
+
+    private double ClanExpToNextLevel =>
+        clan == null ? 0 : Math.Max(0, GameMath.ExperienceForLevel(clan.Level + 1) - clan.Experience);
+
+    private static double SkillProgressOf(RavenNest.Models.ClanSkill skill)
+    {
+        var forNext = GameMath.ExperienceForLevel(skill.Level + 1);
+        if (forNext <= 0) return 0;
+        return Math.Clamp(skill.Experience / forNext, 0d, 1d);
+    }
+
+    private string Bar(double progress)
+    {
+        var clamped = Math.Clamp(progress * 100d, 0d, 100d);
+        return "width: " + clamped.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%";
+    }
+
+    private string ClanSkillTitle(RavenNest.Models.ClanSkill skill)
+    {
+        var forNext = GameMath.ExperienceForLevel(skill.Level + 1);
+        return $"{Math.Round(skill.Experience).ToString("N0")} of {Math.Round(forNext).ToString("N0")} exp toward level {skill.Level + 1}";
+    }
 
     private void CloseNameChangeInfo()
     {
@@ -239,7 +330,7 @@
         if (ClanService.UpdateClanName(clan.Id, clan.Name))
         {
             editingClanName = false;
-            changeNameSuccess = "Name updated. You may need to !leave !join ingame for it to take effect.";
+            changeNameSuccess = "Name updated. You may need to !leave and !join in game for it to take effect.";
             canChangeClanName = ClanService.CanChangeClanName(clan.Id);
             nameChangeCount = ClanService.GetNameChangeCount(clan.Id);
         }
@@ -269,10 +360,17 @@
         }
 
         canChangeClanName = session.CanChangeClanName;
-        clan = ClanService.GetClan();
+
+        // Members who did not found their clan used to be shown the create a clan form.
+        clan = ClanService.GetMyClan();
         if (clan != null)
         {
-            canManageMembers = clan.OwnerUserId == session.UserId;
+            // Was "are you the founder". The clan role permissions have existed in ClanManager all
+            // along and the site simply never read them, so every rank below owner was decoration.
+            myPermissions = ClanService.GetMyPermissions(clan.Id);
+            canManageMembers = myPermissions != null && (myPermissions.CanCreateInvite || myPermissions.CanKickMembers || myPermissions.CanAssignRoles);
+            canEditRanks = myPermissions != null && myPermissions.CanRenameClanRole;
+            canRenameClan = myPermissions != null && myPermissions.CanRenameClan;
             nameChangeCount = ClanService.GetNameChangeCount(clan.Id);
             oldClanName = clan.Name;
         }
@@ -286,7 +384,10 @@
             clanError = ClanAlreadyExists;
             return;
         }
+        myPermissions = ClanService.GetMyPermissions(clan.Id);
         canManageMembers = true;
+        canEditRanks = true;
+        canRenameClan = true;
     }
 
     protected override void OnAfterRender(bool firstRender)

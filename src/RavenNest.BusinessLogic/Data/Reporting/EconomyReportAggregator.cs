@@ -49,16 +49,18 @@ namespace RavenNest.BusinessLogic.Data.Aggregators
                     newPlayers++;
                 }
 
+                // The guard for this used to sit inside the character loop below, one line after the
+                // coin sum had already dereferenced it, so a user with no resources row took the
+                // whole report down rather than being skipped. A user can legitimately have none:
+                // GetResources returns null when the row is missing or the user has gone.
                 var resources = gameData.GetResources(user);
-
-                totalCoins += (long)resources.Coins;
+                if (resources != null)
+                {
+                    totalCoins += (long)resources.Coins;
+                }
 
                 foreach (var c in characters)
                 {
-                    // this should not happen, but if it does I don't want it to cause the report to crash.
-                    if (resources == null)
-                        continue;
-
                     if (c.LastUsed >= oneDayAgo || c.UserIdLock != null)
                     {
                         isActivePlayer = true;
@@ -88,7 +90,9 @@ namespace RavenNest.BusinessLogic.Data.Aggregators
                 {
                     // something was sold
                     itemsSold += transaction.Amount;
-                    itemsVendored += itemsVendored;
+                    // Was `itemsVendored += itemsVendored`, which starts at zero and adds itself to
+                    // itself, so the vendored count reported zero no matter what was sold.
+                    itemsVendored += transaction.Amount;
                     coinsGainedFromTrading += transaction.TotalPrice;
                     uniqueVendorItemsSold.Add(transaction.ItemId);
                 }

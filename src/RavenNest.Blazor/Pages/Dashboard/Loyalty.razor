@@ -1,5 +1,6 @@
 ﻿@layout DashboardLayout
 @page "/loyalty"
+@using RavenNest.BusinessLogic.Game
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.LoyaltyService LoyaltyService
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
@@ -7,11 +8,16 @@
 
 @inject NavigationManager NavigationManager
 
-<h1 class="page-title">Loyalty</h1>
+<header class="rf-page-head">
+    <h1 class="rf-page-title">Loyalty</h1>
+    <p class="rf-page-subtitle">
+        Points you have earned playing on other people's streams, and what you can spend them on.
+    </p>
+</header>
 
-<div class="tab-view">
-    <button @onclick="ViewStreamers" class="tab-link @(viewState == LoyaltyViewState.LoyaltyRewards ? "active":"")">Loyalty Rewards</button>
-    <button @onclick="ViewMyStream" class="tab-link @(viewState == LoyaltyViewState.Streaming ? "active":"")">Streaming</button>
+<div class="rf-tabs" role="tablist">
+    <button type="button" role="tab" aria-selected="@(viewState == LoyaltyViewState.LoyaltyRewards)" class="rf-tab @(viewState == LoyaltyViewState.LoyaltyRewards ? "is-active" : "")" @onclick="ViewStreamers">My loyalty</button>
+    <button type="button" role="tab" aria-selected="@(viewState == LoyaltyViewState.Streaming)" class="rf-tab @(viewState == LoyaltyViewState.Streaming ? "is-active" : "")" @onclick="ViewMyStream">My stream</button>
 </div>
 
 @if (session == null)
@@ -26,232 +32,307 @@ else
             {
                 if (!isStreamer)
                 {
-                    <h1>No data recorded</h1>
-                    <p>Once you start streaming Ravenfall, you will be able to track user/viewer loyalty towards you in here.</p>
+                    <div class="rf-panel rf-panel--accent">
+                        <h2 class="rf-panel__title">No stream data yet</h2>
+                        <p class="rf-meta">
+                            Once you start streaming Ravenfall this tab tracks who has played on your
+                            stream, for how long, and what they have contributed.
+                        </p>
+                    </div>
+                }
+                else if (loyaltyData == null)
+                {
+                    <LoadIndicator></LoadIndicator>
                 }
                 else
                 {
-                    @*<h1>Viewer Loyalty</h1>*@
-                    <h4>Here you can keep track on your viewers to see who has been playing on your stream and for how long.</h4>
-                    if (loyaltyData == null)
-                    {
-                        <LoadIndicator></LoadIndicator>
-                    }
-                    else
-                    {
-                        <div class="loyalty-stats">
-                            <h3>Stats</h3>
+                    <div class="rf-stats">
+                        <div class="rf-stat">
+                            <div class="rf-stat__value">@loyaltyData.UserLoyalties.Count.ToString("N0")</div>
+                            <div class="rf-stat__label">Players</div>
+                        </div>
+                        <div class="rf-stat">
+                            <div class="rf-stat__value">@FormatTime(loyaltyData.TotalStreamTime)</div>
+                            <div class="rf-stat__label">Time streamed</div>
+                        </div>
+                        <div class="rf-stat">
+                            <div class="rf-stat__value">@FormatTime(loyaltyData.TotalPlayerTime)</div>
+                            <div class="rf-stat__label">Time played by others</div>
+                        </div>
+                        <div class="rf-stat">
+                            <div class="rf-stat__value">@loyaltyData.TotalSubscribers.ToString("N0")</div>
+                            <div class="rf-stat__label">Subscribers playing</div>
+                        </div>
+                    </div>
 
-                            <div class="loyalty-stats-rows">
-                                <div class="stats-row">
-                                    <label class="stats-label">Earliest known Stream</label>
-                                    <span class="stats-value">@loyaltyData.FirstStream</span>
-                                </div>
-                                <div class="stats-row">
-                                    <label class="stats-label">New game sessions&nbsp;<span class="fas fa-help" alt="Not all your game sessions as some sessions are re-used."></span></label>
-                                    <span class="stats-value">@loyaltyData.SessionCount</span>
-                                </div>
-                                <div class="stats-row">
-                                    <label class="stats-label">Total bits cheered</label>
-                                    <span class="stats-value">@loyaltyData.TotalBitsCheered</span>
-                                </div>
-                                <div class="stats-row">
-                                    <label class="stats-label">Total subs gifted</label>
-                                    <span class="stats-value">@loyaltyData.TotalSubsGifted</span>
-                                </div>
-                                <div class="stats-row">
-                                    <label class="stats-label">Subscribers playing</label>
-                                    <span class="stats-value">@loyaltyData.TotalSubscribers</span>
-                                </div>
-                                <div class="stats-row">
-                                    <label class="stats-label">Total time with active game session</label>
-                                    <span class="stats-value">@FormatTime(loyaltyData.TotalStreamTime)</span>
-                                </div>
-                                <div class="stats-row">
-                                    <label class="stats-label">Total time players been playing</label>
-                                    <span class="stats-value">@FormatTime(loyaltyData.TotalPlayerTime)</span>
-                                </div>
-                            </div>
+                    <section class="rf-panel">
+                        <h3 class="rf-panel__title">Your stream</h3>
+                        <dl class="rf-facts">
+                            <dt>Earliest known stream</dt>
+                            <dd>@loyaltyData.FirstStream</dd>
+                            <dt title="Not all of your game sessions, since some sessions are reused">New game sessions</dt>
+                            <dd>@loyaltyData.SessionCount.ToString("N0")</dd>
+                            <dt>Total bits cheered</dt>
+                            <dd>@loyaltyData.TotalBitsCheered.ToString("N0")</dd>
+                            <dt>Total subs gifted</dt>
+                            <dd>@loyaltyData.TotalSubsGifted.ToString("N0")</dd>
+                        </dl>
+                    </section>
+
+                    <section class="rf-panel">
+                        <h3 class="rf-panel__title">Players</h3>
+                        <div class="rf-toolbar">
+                            <input type="search"
+                                   class="rf-input rf-search"
+                                   placeholder="Search players"
+                                   aria-label="Search players by name"
+                                   value="@search"
+                                   @oninput="OnSearchChanged" />
+                            <span class="rf-meta">@RangeLabel(playersPage, VisiblePlayers.Count) of @loyaltyData.UserLoyalties.Count</span>
                         </div>
 
-                        <div class="loyalty-users">
-                            <h3>Players</h3>
-                            <table class="items-list">
-                                <thead>
-                                    <tr>
-                                        <th></th>
-                                        <th>Name</th>
-                                        <th>Level</th>
-                                        <th>Gifted subs</th>
-                                        <th>Cheered bits</th>
-                                        <th>Play time</th>
-                                        <th>Points</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var item in loyaltyData.UserLoyalties)
-                                    {
-                                        <tr id="@item.TwitchUserId" class="item-row">
-                                            <td><img src="/api/twitch/logo/@(item.TwitchUserId)" style="width: 40px" /></td>
-                                            <td class='item'>
-                                                @if (!string.IsNullOrEmpty(item.DisplayName))
-                                                {
-                                                    @item.DisplayName
-                                                }
-                                                else
-                                                {
-                                                    @(item.UserName)
-                                                }
-                                            </td>
-                                            <td class='item'>@item.Level</td>
-                                            <td class='item'>@item.GiftedSubs</td>
-                                            <td class='item'>@item.CheeredBits</td>
-                                            <td class='item'>@FormatTime(item.TotalPlayTime)</td>
-                                            <td class='item'>@item.Points</td>
+                        @if (VisiblePlayers.Count == 0)
+                        {
+                            <p class="rf-meta">Nobody matches that.</p>
+                        }
+                        else
+                        {
+                            <div class="rf-scroll-x">
+                                <table class="rf-table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col"><span class="rf-th rf-th--static">Player</span></th>
+                                            <th scope="col"><span class="rf-th rf-th--static">Play time</span></th>
+                                            <th scope="col"><span class="rf-th rf-th--static">Gifted subs</span></th>
+                                            <th scope="col"><span class="rf-th rf-th--static">Cheered bits</span></th>
+                                            <th scope="col"><span class="rf-th rf-th--static">Points</span></th>
                                         </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
+                                    </thead>
+                                    <tbody>
+                                        @*
+                                            Paged. A streamer with a few years of stream behind them
+                                            has a couple of thousand rows here, and the page was
+                                            rendering every one of them.
+                                        *@
+                                        @foreach (var item in Page(VisiblePlayers, playersPage))
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <div class="rf-item">
+                                                        <span class="rf-item__img">
+                                                            <img src="/api/twitch/logo/@(item.TwitchUserId)" alt="" loading="lazy" />
+                                                        </span>
+                                                        <span class="rf-item__body">
+                                                            <span class="rf-item__name">@(!string.IsNullOrEmpty(item.DisplayName) ? item.DisplayName : item.UserName)</span>
+                                                            <span class="rf-item__meta">Loyalty level @item.Level</span>
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td class="rf-table__quiet">@FormatTime(item.TotalPlayTime)</td>
+                                                <td class="rf-table__quiet">@item.GiftedSubs.ToString("N0")</td>
+                                                <td class="rf-table__quiet">@item.CheeredBits.ToString("N0")</td>
+                                                <td><b class="rf-loyalty__points">@item.Points.ToString("N0")</b></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </section>
                 }
             }
             break;
+
         case LoyaltyViewState.LoyaltyRewards:
             {
-                @*<h1>Streamer Loyalty</h1>*@
                 if (userLoyaltyData == null)
                 {
                     <LoadIndicator></LoadIndicator>
                 }
                 else
                 {
-                    <div class="loyalty-streamer-details">
-                        <h2>Earned Loyalty</h2>
-                        <div class="loyalty-stats-rows">
-                            <div class="stats-row points">
-                                <div class="stats-label">Loyalty Points</div>
-                                <div class="stats-value">@totalAvailablePoints</div>
-                            </div>
-                            <div class="stats-row level">
-                                <div class="stats-label">Playtime</div>
-                                <div class="stats-value">@FormatTime(totalPlayTime)</div>
-                            </div>
-                            <div class="stats-row level">
-                                <div class="stats-label">Gifted Subs</div>
-                                <div class="stats-value">@totalGiftedSubs</div>
-                            </div>
-                            <div class="stats-row level">
-                                <div class="stats-label">Cheered Bits</div>
-                                <div class="stats-value">@totalCheeredBits</div>
-                            </div>
+                    <div class="rf-stats">
+                        <div class="rf-stat">
+                            <div class="rf-stat__value">@totalAvailablePoints.ToString("N0")</div>
+                            <div class="rf-stat__label">Loyalty points</div>
                         </div>
+                        <div class="rf-stat">
+                            <div class="rf-stat__value">@FormatTime(totalPlayTime)</div>
+                            <div class="rf-stat__label">Play time</div>
+                        </div>
+                        <div class="rf-stat">
+                            <div class="rf-stat__value">@totalGiftedSubs.ToString("N0")</div>
+                            <div class="rf-stat__label">Gifted subs</div>
+                        </div>
+                        <div class="rf-stat">
+                            <div class="rf-stat__value">@totalCheeredBits.ToString("N0")</div>
+                            <div class="rf-stat__label">Cheered bits</div>
+                        </div>
+                    </div>
 
-                        @if (pointRewards != null && pointRewards.Count > 0)
-                        {
-                            <h3>Items you can redeem using points</h3>
-                            <div class="loyalty-reward-list">
-                                @foreach (var reward in pointRewards.OrderBy(x => x.Points))
+                    @if (pointRewards != null && pointRewards.Count > 0)
+                    {
+                        <section class="rf-panel">
+                            <h3 class="rf-panel__title">Rewards</h3>
+                            <p class="rf-meta">
+                                Points are pooled across every stream you play on. Redeeming sends the item
+                                straight to the character you pick.
+                            </p>
+
+                            @*
+                                A reward you cannot afford used to be dimmed with a button that silently
+                                did nothing. It now says how far off you are, which is the only useful
+                                thing it could say.
+                            *@
+                            <div class="rf-rewards">
+                                @foreach (var reward in pointRewards.OrderBy(RewardPoints))
                                 {
                                     var item = GetRewardItem(reward);
-                                    <div class="reward-item @(reward.Points > totalAvailablePoints ? "locked" : "")">
-                                        <div class="reward-item-icon"><img src="@ItemService.GetItemImage(item.Id, item.Name)" /></div>
-                                        <div class="reward-item-details">
-                                            <div class="reward-item-name">@item.Name</div>
-                                            <div class="reward-item-type">@item.Type</div>
-                                        </div>
+                                    if (item == null) { continue; }
+                                    var cost = RewardPoints(reward);
+                                    var affordable = cost <= totalAvailablePoints;
 
-                                        <button class="btn-reward-redeem" @onclick="(()=>ConfirmRewardRedeem(reward, item))">
-                                            <span>
-                                                Redeem for
-                                            </span>
-                                            <span class="reward-item-price">
-                                                @reward.Points Pts
-                                            </span>
-                                        </button>
+                                    <div class="rf-reward @(affordable ? "" : "is-locked")">
+                                        <span class="rf-item__img">
+                                            <img src="@ItemService.GetItemImage(item.Id, item.Name)" alt="" loading="lazy" />
+                                        </span>
+                                        <div class="rf-reward__body">
+                                            <span class="rf-item__name @ItemService.GetRarityClass(item)">@item.Name</span>
+                                            <span class="rf-item__meta">@ItemService.GetTypeName(item)</span>
+                                        </div>
+                                        <div class="rf-reward__buy">
+                                            @if (affordable)
+                                            {
+                                                <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="(()=>ConfirmRewardRedeem(reward, item))">
+                                                    Redeem for @cost.ToString("N0")
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <span class="rf-reward__price">@cost.ToString("N0") points</span>
+                                                <span class="rf-reward__short">@((cost - totalAvailablePoints).ToString("N0")) more needed</span>
+                                            }
+                                        </div>
                                     </div>
                                 }
                             </div>
+                        </section>
+                    }
+
+                    <section class="rf-panel">
+                        <h3 class="rf-panel__title">Streams you have played on</h3>
+                        @if (userLoyaltyData.Loyalties == null || userLoyaltyData.Loyalties.Count == 0)
+                        {
+                            <p class="rf-meta">Nothing recorded yet. Points start accruing the first time you play on a stream.</p>
                         }
-                    </div>
-
-
-                    @if (!loyaltyListVisible)
-                    {
-                        <div class="btn-toggle-loyalty-list" @onclick="()=>ToggleLoyaltyList()">Click here to show streams I've played in</div>
-                    }
-                    else
-                    {
-                        <div class="btn-toggle-loyalty-list" @onclick="()=>ToggleLoyaltyList()">Click here to hide list</div>
-
-                        <div class="loyalty-users">
-                            <h3>Streamers</h3>
-                            <table class="items-list">
-                                <thead>
-                                    <tr>
-                                        <th></th>
-                                        <th>Name</th>
-                                        <th>Level</th>
-                                        <th>Gifted subs</th>
-                                        <th>Cheered bits</th>
-                                        <th>Play time</th>
-                                        <th>Points</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var item in userLoyaltyData.Loyalties)
-                                    {
-                                        <tr id="@item.StreamerTwitchUserId" class="item-row streamer">
-                                            <td><img src="/api/twitch/logo/@(item.StreamerTwitchUserId)" style="width: 40px" /></td>
-                                            <td class='item'>
-                                                @item.Name
-                                            </td>
-                                            <td class='item'>@item.Level</td>
-                                            <td class='item'>@item.GiftedSubs</td>
-                                            <td class='item'>@item.CheeredBits</td>
-                                            <td class='item'>@FormatTime(item.TotalPlayTime)</td>
-                                            <td class='item'>@item.Points</td>
+                        else
+                        {
+                            @*
+                                This list used to be hidden behind a "click here to show" line, which is
+                                where all the points on the page actually come from.
+                            *@
+                            <div class="rf-scroll-x">
+                                <table class="rf-table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col"><span class="rf-th rf-th--static">Streamer</span></th>
+                                            <th scope="col"><span class="rf-th rf-th--static">Play time</span></th>
+                                            <th scope="col"><span class="rf-th rf-th--static">Gifted subs</span></th>
+                                            <th scope="col"><span class="rf-th rf-th--static">Cheered bits</span></th>
+                                            <th scope="col"><span class="rf-th rf-th--static">Points</span></th>
                                         </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var item in Page(SortedStreamers, streamersPage))
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <div class="rf-item">
+                                                        <span class="rf-item__img">
+                                                            <img src="/api/twitch/logo/@(item.StreamerTwitchUserId)" alt="" loading="lazy" />
+                                                        </span>
+                                                        <span class="rf-item__body">
+                                                            <a class="rf-item__name" href="https://www.twitch.tv/@item.Name" target="_blank">@item.Name</a>
+                                                            <span class="rf-item__meta">Loyalty level @item.Level</span>
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                                <td class="rf-table__quiet">@FormatTime(item.TotalPlayTime)</td>
+                                                <td class="rf-table__quiet">@item.GiftedSubs.ToString("N0")</td>
+                                                <td class="rf-table__quiet">@item.CheeredBits.ToString("N0")</td>
+                                                <td><b class="rf-loyalty__points">@item.Points.ToString("N0")</b></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <nav class="rf-pager" aria-label="Streamer list pages">
+                                <button type="button" class="rf-btn rf-btn--small" disabled="@(streamersPage == 0)" @onclick="() => streamersPage--">
+                                    <i class="fas fa-chevron-left" aria-hidden="true"></i> Previous
+                                </button>
+                                <span class="rf-meta">Page @(streamersPage + 1) of @PageCount(SortedStreamers.Count)</span>
+                                <button type="button" class="rf-btn rf-btn--small" disabled="@(streamersPage + 1 >= PageCount(SortedStreamers.Count))" @onclick="() => streamersPage++">
+                                    Next <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                                </button>
+                            </nav>
+                        }
+                    </section>
                 }
 
-                @if (rewardConfirmationDialogVisible)
+                @if (rewardConfirmationDialogVisible && selectedItem != null)
                 {
-                    <div class="reward-redeem-confirmation">
-                        <div class="confirm-header">
-                            <h3>Use @(selectedReward.Points * redeemAmount) to redeem @(redeemAmount > 1 ? (redeemAmount + "x ") : "") @selectedItem.Name?</h3>
-                            <button class="close" @onclick="CancelRedeem">&times;</button>
-                        </div>
-                        <div class="confirm-body">
-                            <h3>Select character to add the item to</h3>
-                            <select @onchange="SelectedPlayerChanged">
-                                @foreach (var c in myPlayers)
+                    <div class="rf-modal-backdrop" @onclick="CancelRedeem">
+                        <div class="rf-modal rf-modal--wide" role="dialog" aria-modal="true" aria-label="Redeem @selectedItem.Name" @onclick:stopPropagation="true">
+                            <div class="rf-modal__head">
+                                <h2 class="rf-modal__title @ItemService.GetRarityClass(selectedItem)">Redeem @selectedItem.Name</h2>
+                                <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CancelRedeem">&times;</button>
+                            </div>
+
+                            @* A dropdown of characters told you their names and nothing else. *@
+                            <span class="rf-label">Send it to</span>
+                            <div class="rf-charpick rf-charpick--compact">
+                                @foreach (var c in myPlayers ?? Enumerable.Empty<RavenNest.BusinessLogic.Extended.WebsitePlayer>())
                                 {
-                                    if (c.Id == selectedPlayerId)
+                                    <button type="button"
+                                            class="rf-char @(selectedPlayerId == c.Id ? "is-active" : "")"
+                                            @onclick="(() => selectedPlayerId = c.Id)">
+                                        <span class="rf-char__name">@c.Name</span>
+                                        <span class="rf-char__level">@PlayerService.GetCombatLevel(c)</span>
+                                        <span class="rf-char__slot">Slot @c.CharacterIndex</span>
+                                    </button>
+                                }
+                            </div>
+
+                            <label class="rf-field">
+                                <span class="rf-label">How many</span>
+                                <input type="number" class="rf-input" min="1" @bind-value="redeemAmount" />
+                            </label>
+
+                            @* The total and what is left afterwards, rather than a Redeem button that
+                               quietly refuses when the sum does not work out. *@
+                            <dl class="rf-facts">
+                                <dt>Cost</dt>
+                                <dd><b class="rf-loyalty__points">@TotalRedeemCost.ToString("N0") points</b></dd>
+                                <dt>You have</dt>
+                                <dd>@totalAvailablePoints.ToString("N0") points</dd>
+                                <dt>Left afterwards</dt>
+                                <dd>
+                                    @if (CanBuyRewards)
                                     {
-                                        <option value="@c.Id" selected>@c.Name @(c.Identifier != null ? "(" + c.Identifier + ")" : "") #@c.CharacterIndex</option>
+                                        <span>@((totalAvailablePoints - TotalRedeemCost).ToString("N0")) points</span>
                                     }
                                     else
                                     {
-                                        <option value="@c.Id">@c.Name @(c.Identifier != null ? "(" + c.Identifier + ")" : "") #@c.CharacterIndex</option>
+                                        <span class="rf-reward__short">@((TotalRedeemCost - totalAvailablePoints).ToString("N0")) points short</span>
                                     }
-                                }
-                            </select>
+                                </dd>
+                            </dl>
 
-                            <h3>Select Amount to redeem</h3>
-                            <input @bind-value="redeemAmount" type="number" min="1" />
-
-                            <br />
-
-                            @if (CanBuyRewards)
-                            {
-                                <button class="btn btn-primary" @onclick="RedeemReward">Redeem</button>
-                            }
-                            <button class="btn btn-danger" @onclick="CancelRedeem">Cancel</button>
+                            <div class="rf-modal__foot">
+                                <button type="button" class="rf-btn" @onclick="CancelRedeem">Cancel</button>
+                                <button type="button" class="rf-btn rf-btn--primary" disabled="@(!CanBuyRewards || selectedPlayerId == null)" @onclick="RedeemReward">Redeem</button>
+                            </div>
                         </div>
                     </div>
                 }
@@ -265,24 +346,89 @@ else
     private LoyaltyViewState viewState = LoyaltyViewState.LoyaltyRewards;
     private Services.StreamerLoyaltyData loyaltyData;
     private Services.UserLoyaltyData userLoyaltyData;
-    @*private Services.StreamerLoyalty selectedStreamer;*@
     private IReadOnlyList<RavenNest.DataModels.UserLoyaltyReward> pointRewards;
     private IReadOnlyList<RavenNest.BusinessLogic.Extended.WebsitePlayer> myPlayers;
 
     private RavenNest.DataModels.UserLoyaltyReward selectedReward;
     private Models.Item selectedItem;
     private int redeemAmount = 1;
+    private string search = "";
 
     private Guid? selectedPlayerId;
     private bool rewardConfirmationDialogVisible;
     private bool isStreamer;
 
-    private bool loyaltyListVisible;
-
     private long totalAvailablePoints;
     private long totalGiftedSubs;
     private long totalCheeredBits;
     private TimeSpan totalPlayTime;
+
+    private long TotalRedeemCost => RewardPoints(selectedReward) * Math.Max(1, redeemAmount);
+
+    // Reward points are stored nullable, so a reward with no price set is free rather than a crash.
+    private static long RewardPoints(RavenNest.DataModels.UserLoyaltyReward reward) => reward?.Points ?? 0;
+
+    // Biggest contributors first. The old order was whatever the query returned.
+    private IReadOnlyList<Services.PlayerLoyalty> VisiblePlayers
+    {
+        get
+        {
+            if (loyaltyData?.UserLoyalties == null)
+                return Array.Empty<Services.PlayerLoyalty>();
+
+            IEnumerable<Services.PlayerLoyalty> q = loyaltyData.UserLoyalties;
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var needle = search.Trim();
+                q = q.Where(x =>
+                    (x.DisplayName ?? "").Contains(needle, StringComparison.OrdinalIgnoreCase) ||
+                    (x.UserName ?? "").Contains(needle, StringComparison.OrdinalIgnoreCase));
+            }
+
+            return q.OrderByDescending(x => x.Points).ToList();
+        }
+    }
+
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        search = e.Value?.ToString() ?? "";
+        // A search that lands on page seven of the old results shows an empty table.
+        playersPage = 0;
+    }
+
+    private IReadOnlyList<Services.StreamerLoyalty> SortedStreamers =>
+        userLoyaltyData?.Loyalties == null
+            ? Array.Empty<Services.StreamerLoyalty>()
+            : userLoyaltyData.Loyalties.OrderByDescending(x => x.Points).ToList();
+
+    /// <summary>
+    ///     Both tables on this page are unbounded: a streamer with a few years behind them has a
+    ///     couple of thousand loyalty rows, and the page was rendering every one of them into the
+    ///     DOM. Paged at 25, which is what fits on a screen.
+    /// </summary>
+    private const int LoyaltyPageSize = 25;
+
+    private int playersPage;
+    private int streamersPage;
+
+    private static int PageCount(int total)
+    {
+        return Math.Max(1, (int)Math.Ceiling(total / (double)LoyaltyPageSize));
+    }
+
+    private static IEnumerable<T> Page<T>(IReadOnlyList<T> source, int page)
+    {
+        return source.Skip(page * LoyaltyPageSize).Take(LoyaltyPageSize);
+    }
+
+    private static string RangeLabel(int page, int total)
+    {
+        if (total == 0) return "Showing none";
+        var from = (page * LoyaltyPageSize) + 1;
+        var to = Math.Min(total, from + LoyaltyPageSize - 1);
+        return $"Showing {from} to {to}";
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -298,22 +444,7 @@ else
         await ViewStreamers();
     }
 
-
-    private void ToggleLoyaltyList()
-    {
-        loyaltyListVisible = !loyaltyListVisible;
-        InvokeAsync(StateHasChanged);
-
-    }
-
-    private void SelectedPlayerChanged(ChangeEventArgs e)
-    {
-        var id = e.Value?.ToString();
-        if (Guid.TryParse(id, out var playerId))
-            selectedPlayerId = playerId;
-    }
-
-    public bool CanBuyRewards => selectedReward?.Points * redeemAmount <= totalAvailablePoints;
+    public bool CanBuyRewards => selectedReward != null && TotalRedeemCost <= totalAvailablePoints;
 
     public async void RedeemReward()
     {
@@ -340,7 +471,7 @@ else
         if (myPlayers == null)
             return;
 
-        if (reward.Points > totalAvailablePoints)
+        if (RewardPoints(reward) > totalAvailablePoints)
             return;
 
         if (selectedPlayerId == null)
@@ -348,6 +479,7 @@ else
             selectedPlayerId = myPlayers.First().Id;
         }
 
+        redeemAmount = 1;
         rewardConfirmationDialogVisible = true;
         selectedReward = reward;
         selectedItem = item;
@@ -362,17 +494,16 @@ else
 
     private string FormatTime(TimeSpan time)
     {
-        if (time.TotalSeconds < 60) return "<1 minute";
-        if (time.TotalMinutes < 60)
-            return (int)Math.Floor(time.TotalMinutes) + " minutes";
-        if (time.TotalHours < 24)
-            return Math.Round(time.TotalHours, 2) + " hours";
-        return $"{time.Days} days, {time.Hours} hours, {time.Minutes} minutes";
+        if (time.TotalSeconds < 60) return "under a minute";
+        if (time.TotalMinutes < 60) return (int)Math.Floor(time.TotalMinutes) + "m";
+        if (time.TotalHours < 24) return (int)Math.Floor(time.TotalHours) + "h " + time.Minutes + "m";
+        return time.Days + "d " + time.Hours + "h";
     }
 
     private async Task ViewMyStream()
     {
         viewState = LoyaltyViewState.Streaming;
+        search = "";
         loyaltyData = await LoyaltyService.GetStreamerLoyaltyDataAsync(session.UserId);
         pointRewards = await LoyaltyService.GetLoyaltyRewardsAsync();
         await InvokeAsync(StateHasChanged);
@@ -381,6 +512,7 @@ else
     private async Task ViewStreamers()
     {
         viewState = LoyaltyViewState.LoyaltyRewards;
+        search = "";
         userLoyaltyData = await LoyaltyService.GetUserLoyaltyDataAsync(session.UserId);
         if (userLoyaltyData.Loyalties != null)
         {

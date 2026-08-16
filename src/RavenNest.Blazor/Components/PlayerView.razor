@@ -1,90 +1,125 @@
-﻿@using RavenNest.Models
+@using RavenNest.Models
 @using RavenNest.BusinessLogic.Extended
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject RavenNest.Blazor.Services.AuthService AuthService
 
-<div class="character-details">
+@*
+    Rendered in three places: /characters on the dashboard, /inspect on the front page and the
+    admin panel. Its styling therefore lives in ravenfall-components.css rather than behind
+    .rf-dash, and it carries no per component stylesheet of its own.
+*@
+<div class="rf-player">
 
     @if (ShowPlayerName)
     {
-        <h1>
-            <span>@SelectedPlayer.Name</span>
-            <span class="character-index">
-                @SelectedPlayer.CharacterIndex @(SelectedPlayer.Identifier != null ? $"({SelectedPlayer.Identifier})" : "")
-            </span>
-            <span class="character-level">
-                @PlayerService.GetCombatLevel(SelectedPlayer)
-            </span>
-        </h1>
+        <header class="rf-player__head">
+            <div>
+                <h1 class="rf-player__name">@SelectedPlayer.Name</h1>
+                <p class="rf-player__slot">
+                    Slot @SelectedPlayer.CharacterIndex@(SelectedPlayer.Identifier != null ? $" · {SelectedPlayer.Identifier}" : "")
+                </p>
+            </div>
+            <div class="rf-player__level">
+                <span class="rf-player__level-value">@PlayerService.GetCombatLevel(SelectedPlayer)</span>
+                <span class="rf-label">Combat level</span>
+            </div>
+        </header>
     }
 
     @if (CanManage)
     {
-        <p>
-            You can use
-            <b>
-                !join
-                @if (SelectedPlayer.CharacterIndex > 0)
-                {
-                    @(SelectedPlayer.CharacterIndex+1)
-                }
-            </b>
+        @*
+            The commands are the only part of this anyone reads, so they lead rather than sitting
+            in bold inside a sentence.
+        *@
+        <div class="rf-player__join">
+            <div>
+                <span class="rf-label">Play as this character</span>
+                <p class="rf-player__join-cmds">
+                    <code class="rf-cmd">@JoinCommand</code>
+                    @if (AliasCommand != null)
+                    {
+                        <span>or</span>
+                        <code class="rf-cmd">@AliasCommand</code>
+                    }
+                    <span>in the streamer's chat</span>
+                </p>
+            </div>
 
-            @if (SelectedPlayer.Identifier != null && (SelectedPlayer.CharacterIndex + 1).ToString() != SelectedPlayer.Identifier)
+            @if (editingAlias)
             {
-                <span> or <b>!join @SelectedPlayer.Identifier</b></span>
+                <div class="rf-actions">
+                    <input type="text"
+                           class="rf-input"
+                           placeholder="Alias to use for !join"
+                           aria-label="Alias to use for !join"
+                           @bind-value="SelectedPlayer.Identifier" />
+                    <button type="button" class="rf-btn rf-btn--primary rf-btn--small" @onclick="UpdateAlias">Save</button>
+                    <button type="button" class="rf-btn rf-btn--small" @onclick="CancelEditAlias">Cancel</button>
+                </div>
             }
-
-            <span> to play with this character on stream.</span>
-            @if (!editingAlias)
+            else
             {
-                <a class="change-identifier" @onclick="EditAlias">Change Alias</a>
+                <button type="button" class="rf-btn rf-btn--small" @onclick="EditAlias">Change alias</button>
             }
-        </p>
+        </div>
+    }
 
-        @if (editingAlias)
+    <div class="rf-tabs" role="tablist">
+        @*
+            Overview leads and is the default. Everything on it used to sit on top of the Skills
+            tab, where it had grown to about half a screen, so the skill list started below the
+            fold on the tab named after it.
+        *@
+        <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.Overview)" class="rf-tab @SelectedClass(CharacterViewState.Overview)" @onclick="ShowOverview">Overview</button>
+        <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.Skills)" class="rf-tab @SelectedClass(CharacterViewState.Skills)" @onclick="ShowSkills">Skills</button>
+        <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.Inventory)" class="rf-tab @SelectedClass(CharacterViewState.Inventory)" @onclick="ShowInventory">Inventory</button>
+
+        @if (CanManage)
         {
-            <input type="text" placeholder="Enter an alias to use for !join" class="input edit-identifier" @bind-value="SelectedPlayer.Identifier" />
-            <a @onclick="UpdateAlias"><i class="fas fa-check"></i></a>
-            <a @onclick="CancelEditAlias"><i class="fas fa-times"></i></a>
+            <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.Customization)" class="rf-tab @SelectedClass(CharacterViewState.Customization)" @onclick="ShowCustomization">Customise</button>
         }
+
+        @if (SelectedPlayer.Clan != null)
+        {
+            <button type="button" role="tab" aria-selected="@IsSelected(CharacterViewState.Clan)" class="rf-tab @SelectedClass(CharacterViewState.Clan)" @onclick="ShowClan">Clan</button>
+        }
+        @*<button type="button" class="rf-tab @SelectedClass(CharacterViewState.Map)" @onclick="ShowMap">Map</button>*@
+    </div>
+
+    @*
+        Converted tabs bring their own panels, because they are several sections rather than one
+        block. The tabs that have not been converted yet are wrapped in a panel here so they still
+        sit on a surface; those wrappers come out as each one is done.
+    *@
+    @switch (viewState)
+    {
+        case CharacterViewState.Overview:
+            <PlayerOverview Player="@SelectedPlayer" CanManage="CanManage"></PlayerOverview>
+            break;
+        case CharacterViewState.Inventory:
+            <div class="rf-panel">
+                <PlayerInventory Player="@SelectedPlayer" CanManage="CanManage"></PlayerInventory>
+            </div>
+            break;
+        case CharacterViewState.Skills:
+            <PlayerSkills Player="@SelectedPlayer" CanManage="CanManage"></PlayerSkills>
+            break;
+        case CharacterViewState.Clan:
+            <PlayerClan Player="@SelectedPlayer" CanManage="CanManage"></PlayerClan>
+            break;
+        case CharacterViewState.Customization:
+            <div class="rf-panel">
+                <PlayerCustomization Player="@SelectedPlayer" CanManage="CanManage"></PlayerCustomization>
+            </div>
+            break;
+        case CharacterViewState.Map:
+            <div class="rf-panel">
+                <PlayerMap Player="@SelectedPlayer" CanManage="CanManage"></PlayerMap>
+            </div>
+            break;
     }
 </div>
-
-<div class="character-details-tabs">
-    <button class="tab-link @SelectedClass(CharacterViewState.Skills)" @onclick="ShowSkills">Skills</button>
-    <button class="tab-link @SelectedClass(CharacterViewState.Inventory)" @onclick="ShowInventory">Inventory</button>
-
-    @if (CanManage)
-    {
-        <button class="tab-link @SelectedClass(CharacterViewState.Customization)" @onclick="ShowCustomization">Customise</button>
-    }
-
-    @if (SelectedPlayer.Clan != null)
-    {
-        <button class="tab-link @SelectedClass(CharacterViewState.Clan)" @onclick="ShowClan">Clan</button>
-    }
-    @*<button class="tab-link @SelectedClass(CharacterViewState.Map)" @onclick="ShowMap">Map</button>*@
-</div>
-
-@switch (viewState)
-{
-    case CharacterViewState.Inventory:
-        <PlayerInventory Player="@SelectedPlayer" CanManage="CanManage"></PlayerInventory>
-        break;
-    case CharacterViewState.Skills:
-        <PlayerSkills Player="@SelectedPlayer" CanManage="CanManage"></PlayerSkills>
-        break;
-    case CharacterViewState.Clan:
-        <PlayerClan Player="@SelectedPlayer" CanManage="CanManage"></PlayerClan>
-        break;
-    case CharacterViewState.Customization:
-        <PlayerCustomization Player="@SelectedPlayer" CanManage="CanManage"></PlayerCustomization>
-        break;
-    case CharacterViewState.Map:
-        <PlayerMap Player="@SelectedPlayer" CanManage="CanManage"></PlayerMap>
-        break;
-}
 
 @code {
     [Parameter]
@@ -100,6 +135,19 @@
     private bool editingAlias;
     private string oldIdentifier;
     private CharacterViewState viewState;
+
+    // The first character is joined with a bare !join; the rest carry their slot number.
+    private string JoinCommand =>
+        SelectedPlayer.CharacterIndex > 0
+            ? $"!join {SelectedPlayer.CharacterIndex + 1}"
+            : "!join";
+
+    // Only worth showing when the alias is something other than the slot number, which the
+    // command above already covers.
+    private string AliasCommand =>
+        SelectedPlayer.Identifier != null && SelectedPlayer.Identifier != (SelectedPlayer.CharacterIndex + 1).ToString()
+            ? $"!join {SelectedPlayer.Identifier}"
+            : null;
 
     protected override void OnInitialized()
     {
@@ -120,7 +168,12 @@
 
     private string SelectedClass(CharacterViewState state)
     {
-        return viewState == state ? "active" : "";
+        return viewState == state ? "is-active" : "";
+    }
+
+    private bool IsSelected(CharacterViewState state)
+    {
+        return viewState == state;
     }
 
     private void EditAlias()
@@ -139,6 +192,11 @@
         PlayerService.UpdatePlayerIdentifier(SelectedPlayer.Id, SelectedPlayer.Identifier);
         editingAlias = false;
         InvokeAsync(StateHasChanged);
+    }
+
+    private void ShowOverview()
+    {
+        viewState = CharacterViewState.Overview;
     }
 
     private void ShowInventory()
@@ -166,8 +224,11 @@
         viewState = CharacterViewState.Customization;
     }
 
+    // Overview is first, so it is also the default: the enum's zero value is what viewState starts
+    // on and what the character page therefore opens with.
     private enum CharacterViewState
     {
+        Overview,
         Skills,
         Inventory,
         Clan,

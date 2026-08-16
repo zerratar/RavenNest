@@ -6,88 +6,160 @@
 
 @if (isAdmin)
 {
+    <header class="rf-page-head">
+        <h1 class="rf-page-title">Code of conduct</h1>
+        <p class="rf-page-subtitle">
+            Shown in the game client when it is set to visible. There is one, and saving replaces it.
+        </p>
+    </header>
+
     @if (isLoading)
     {
         <LoadIndicator></LoadIndicator>
     }
     else
     {
-        <div class="item-create">
-            <h3>Update / Create a Code of Conduct</h3>
-            <a class="formatting-link" target="_blank" href="https://docs.unity3d.com/Packages/com.unity.ugui@1.0/manual/StyledText.html">See supported formatting</a>
-            <EditForm Model="@updateCodeOfConduct" OnValidSubmit="@HandleUpdateItem">
+        @*
+            Status used to be one string called updateError, rendered in the error colour whether it
+            said "Message cannot be null" or "Last modified: ..., revision: 4". A save that worked
+            looked like a save that failed.
+        *@
+        @if (!string.IsNullOrEmpty(status))
+        {
+            <div class="rf-banner @(statusIsError ? "rf-banner--bad" : "rf-banner--good")">
+                <div class="rf-banner__title">@(statusIsError ? "Not saved" : "Saved")</div>
+                <p>@status</p>
+            </div>
+        }
+
+        <section class="rf-panel">
+            <EditForm Model="@updateCodeOfConduct" OnValidSubmit="@HandleUpdate">
                 <DataAnnotationsValidator />
                 <ValidationSummary />
 
-                <p class="input-label">Title</p>
-                <InputText id="header" class="--coc-header" @bind-Value="updateCodeOfConduct.Title" />
+                <label class="rf-field">
+                    <span class="rf-label">Title</span>
+                    <InputText id="header" class="rf-input" @bind-Value="updateCodeOfConduct.Title" />
+                </label>
 
-                <p class="input-label">Message</p>
-                <InputTextArea rows="10" class="--coc-message" id="name" @bind-Value="updateCodeOfConduct.Message" />
-
-                <p class="input-label"><span>Visible in Client</span>
-                   <InputCheckbox @bind-Value="updateCodeOfConduct.VisibleInClient" class="--coc-visible"/>
+                <label class="rf-field">
+                    <span class="rf-label">Message</span>
+                    <InputTextArea rows="12" class="rf-input rf-textarea" id="name" @bind-Value="updateCodeOfConduct.Message" />
+                </label>
+                <p class="rf-meta">
+                    The client renders Unity rich text.
+                    <a href="https://docs.unity3d.com/Packages/com.unity.ugui@1.0/manual/StyledText.html" target="_blank" rel="noopener">See supported formatting</a>.
                 </p>
 
-                <button class="raven-btn " type="submit">
-                    <div class="inner">
-                        Update
-                    </div>
-                </button>
+                <label class="rf-check">
+                    <InputCheckbox @bind-Value="updateCodeOfConduct.VisibleInClient" />
+                    <span>Show it in the game client</span>
+                </label>
 
+                <div class="rf-actions rf-coc__actions">
+                    <button class="rf-btn rf-btn--primary" type="submit">Save</button>
+                    @*
+                        Clearing the message and saving deletes the code of conduct. That was true
+                        before and nothing said so; it was mentioned only in the text of the error
+                        you got when it had already happened.
+                    *@
+                    @if (string.IsNullOrWhiteSpace(updateCodeOfConduct.Message))
+                    {
+                        <span class="rf-meta">Saving with an empty message deletes the code of conduct.</span>
+                    }
+                </div>
             </EditForm>
-            <p class="item-name-error">@updateError</p>
+        </section>
+    }
+
+    @if (confirmingDelete)
+    {
+        <div class="rf-modal-backdrop" @onclick="CancelDelete">
+            <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Delete the code of conduct" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">Delete the code of conduct?</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CancelDelete">&times;</button>
+                </div>
+                <p>
+                    The message is empty, and saving it that way removes the code of conduct from the
+                    game entirely. Players will stop seeing it.
+                </p>
+                <div class="rf-modal__foot">
+                    <button type="button" class="rf-btn" @onclick="CancelDelete">Cancel</button>
+                    <button type="button" class="rf-btn rf-btn--danger" @onclick="DeleteCoc">Delete it</button>
+                </div>
+            </div>
         </div>
     }
 }
 
 @code {
-
     private UpdateCodeOfConduct updateCodeOfConduct = new UpdateCodeOfConduct();
     private RavenNest.Models.SessionInfo session;
-    private string updateError = "";
+
+    private string status = "";
+    private bool statusIsError;
+    private bool confirmingDelete;
+
     private bool isAdmin;
     private bool isLoading = true;
 
-    //private void IsVisibleInClientChanged(object? newValue)
-    //{
-    //    var boolValue = newValue != null && newValue is bool b ? b : false;        
-    //    updateCodeOfConduct.VisibleInClient = boolValue;
-    //    InvokeAsync(StateHasChanged);
-    //}
-
-    private async void HandleUpdateItem()
+    private async Task HandleUpdate()
     {
-        if (string.IsNullOrEmpty(updateCodeOfConduct.Message))
+        if (string.IsNullOrWhiteSpace(updateCodeOfConduct.Message))
         {
-            if (await ServerService.DeleteCodeOfConduct())
-            {
-                updateError = "Code of conduct deleted.";
-            }
-            else
-            {
-                updateError = "Message cannot be null. (We don't have one saved. Leaving it empty later will delete it)";
-            }
-            StateHasChanged();
+            // Deleting is a real outcome of pressing Save, so it asks rather than telling you
+            // afterwards.
+            confirmingDelete = true;
             return;
         }
 
         var result = await ServerService.UpdateCodeOfConduct(updateCodeOfConduct);
         if (result != null)
         {
-            updateError = "Last modified: " + result.LastModified + ", revision: " + result.Revision;
-            StateHasChanged();
+            statusIsError = false;
+            status = "Last modified " + result.LastModified + ", revision " + result.Revision + ".";
         }
+        else
+        {
+            statusIsError = true;
+            status = "The server did not accept the change.";
+        }
+
+        await InvokeAsync(StateHasChanged);
     }
 
-    protected override void OnInitialized()
+    private void CancelDelete()
+    {
+        confirmingDelete = false;
+    }
+
+    private async Task DeleteCoc()
+    {
+        confirmingDelete = false;
+
+        if (await ServerService.DeleteCodeOfConduct())
+        {
+            statusIsError = false;
+            status = "The code of conduct was deleted. Players no longer see one.";
+        }
+        else
+        {
+            statusIsError = true;
+            status = "There was nothing saved to delete.";
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnInitializedAsync()
     {
         session = AuthService.GetSession();
         isAdmin = session != null && session.Administrator;
-        LoadCoc();
+        await LoadCoc();
     }
 
-    private async void LoadCoc()
+    private async Task LoadCoc()
     {
         var coc = await ServerService.GetCodeOfConductAsync();
         if (coc != null)
@@ -96,7 +168,8 @@
             updateCodeOfConduct.Message = coc.Message;
             updateCodeOfConduct.VisibleInClient = coc.VisibleInClient;
         }
+
         isLoading = false;
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 }

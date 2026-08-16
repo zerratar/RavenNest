@@ -195,11 +195,40 @@ namespace RavenNest.Blazor.Services
             return playerManager.GetWebsitePlayer(characterId);
         }
 
-        public WebsitePlayer AddItem(Guid characterId, RavenNest.Models.Item item)
+        /// <summary>
+        ///     Adds an item to a character's inventory.
+        ///
+        ///     <see cref="PlayerManager"/>.AddItem has always taken an amount. This dropped it and
+        ///     always passed one, so granting a hundred of something meant a hundred clicks.
+        /// </summary>
+        public WebsitePlayer AddItem(Guid characterId, RavenNest.Models.Item item, int amount = 1)
         {
-            playerManager.AddItem(characterId, item.Id);
+            playerManager.AddItem(characterId, item.Id, Math.Max(1, amount));
             return playerManager.GetWebsitePlayer(characterId);
         }
+        /// <summary>
+        ///     When this character's enchanting cooldown ends, or null when it is not on one.
+        ///
+        ///     Enchanting is gated by the clan's Enchanting skill and by a per character cooldown,
+        ///     and neither has ever appeared on the website: the only way to find out whether you
+        ///     could enchant again was to try it in game.
+        ///
+        ///     This used to be wrapped in a try/catch because
+        ///     <see cref="GameData.GetEnchantmentCooldown"/> dereferenced both the Enchanting skill
+        ///     definition and the clan's row for it without checking either, so a clan that had not
+        ///     touched enchanting threw rather than returning null. That is fixed at the source, and
+        ///     with it the two game facing callers in PlayerManager that had the same crash for a
+        ///     character with no clan, so the catch is gone: it would only hide a real fault now.
+        /// </summary>
+        public DateTime? GetEnchantmentCooldownEnd(Guid characterId)
+        {
+            var cooldown = gameData.GetEnchantmentCooldown(characterId);
+            if (cooldown == null || cooldown.CooldownEnd <= DateTime.UtcNow)
+                return null;
+
+            return cooldown.CooldownEnd;
+        }
+
         public Task DeletePlayerAsync(Guid characterId)
         {
             return playerManager.DeletePlayer(characterId);

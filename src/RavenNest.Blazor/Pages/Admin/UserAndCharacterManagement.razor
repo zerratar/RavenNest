@@ -2,28 +2,105 @@
 @page "/admin/user/{id}"
 @using static RavenNest.Blazor.Components.AdminCharactersView
 
+@*
+    The floating control block that used to sit at the top right of this page was rendered outside
+    the null check above it, so it read SelectedUser.Status whether or not a user had loaded: any
+    id that did not resolve threw a NullReferenceException instead of showing the not found case.
+
+    It was also a fixed panel held at 40% opacity until hovered, which is where Ban lived. A
+    destructive, account level action that only appears when the pointer happens to pass over it is
+    not a control, and it had no confirmation either.
+*@
+
 @if (SelectedUser == null)
 {
-    <LoadIndicator></LoadIndicator>
+    @if (loading)
+    {
+        <LoadIndicator></LoadIndicator>
+    }
+    else
+    {
+        <div class="rf-panel">
+            <h1 class="rf-panel__title">No such user</h1>
+            <p class="rf-meta">
+                Nothing is stored under that id. Try the
+                <a href="/admin/search">user search</a>.
+            </p>
+        </div>
+    }
 }
 else
 {
     <AdminUserView SelectedUser="SelectedUser"></AdminUserView>
 
-    <AdminCharactersView Characters="SelectedUser.Characters" ViewState="ViewState"></AdminCharactersView>
-}
-<div class="control-floating">
-    <div class="control-tabs">
-        @if (SelectedUser.Status >= 1)
-        {
-            <button class="tab-link banned" @onclick="(()=> UnbanUser())">Unban</button>
-        }
-        else
-        {
-            <button class="tab-link" @onclick="(()=> BanUser())">Ban</button>
-        }
-        <button class="tab-link @SelectedClass(CharacterViewState.Skills)" @onclick="ShowSkills">Skills</button>
-        <button class="tab-link @SelectedClass(CharacterViewState.Inventory)" @onclick="ShowInventory">Inventory</button>
-        <button class="tab-link @SelectedClass(CharacterViewState.Clan)" @onclick="ShowClan">Clan</button>
+    <div class="rf-panel">
+        <h2 class="rf-panel__title">Account actions</h2>
+        <div class="rf-actions">
+            @if (SelectedUser.Status >= 1)
+            {
+                <button type="button" class="rf-btn" @onclick="() => Confirm(true)">Lift the suspension</button>
+                <span class="rf-meta">The player can play again immediately.</span>
+            }
+            else
+            {
+                <button type="button" class="rf-btn rf-btn--danger" @onclick="() => Confirm(false)">Suspend this account</button>
+                <span class="rf-meta">Permanent until an administrator lifts it.</span>
+            }
+        </div>
     </div>
-</div>
+
+    <div class="rf-tabs" role="tablist" aria-label="Character view">
+        <button type="button"
+                class="rf-tab @SelectedClass(CharacterViewState.Skills)"
+                role="tab"
+                aria-selected="@(ViewState == CharacterViewState.Skills)"
+                @onclick="ShowSkills">Skills</button>
+        <button type="button"
+                class="rf-tab @SelectedClass(CharacterViewState.Inventory)"
+                role="tab"
+                aria-selected="@(ViewState == CharacterViewState.Inventory)"
+                @onclick="ShowInventory">Inventory</button>
+        <button type="button"
+                class="rf-tab @SelectedClass(CharacterViewState.Clan)"
+                role="tab"
+                aria-selected="@(ViewState == CharacterViewState.Clan)"
+                @onclick="ShowClan">Clan</button>
+    </div>
+
+    <AdminCharactersView Characters="SelectedUser.Characters" ViewState="ViewState"></AdminCharactersView>
+
+    @if (confirmingStatusChange)
+    {
+        <div class="rf-modal-backdrop" @onclick="CancelStatusChange">
+            <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Change account status" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">
+                        @(liftingSuspension ? "Lift the suspension?" : "Suspend this account?")
+                    </h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CancelStatusChange">&times;</button>
+                </div>
+                <p>
+                    @if (liftingSuspension)
+                    {
+                        <span><b>@SelectedUser.UserName</b> will be able to play again straight away.</span>
+                    }
+                    else
+                    {
+                        <span>
+                            <b>@SelectedUser.UserName</b> will be permanently suspended and will not be able
+                            to play on any of their @(SelectedUser.Characters?.Count ?? 0) characters.
+                        </span>
+                    }
+                </p>
+                <div class="rf-modal__foot">
+                    <button type="button" class="rf-btn" @onclick="CancelStatusChange">Cancel</button>
+                    <button type="button"
+                            class="rf-btn @(liftingSuspension ? "rf-btn--primary" : "rf-btn--danger")"
+                            @onclick="ApplyStatusChange">
+                        @(liftingSuspension ? "Lift the suspension" : "Suspend the account")
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+}

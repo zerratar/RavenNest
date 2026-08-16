@@ -1,0 +1,524 @@
+/*
+  Ravenfall dashboard chrome.
+
+  Everything here is scoped under .rf-dash, which DashboardLayout puts on its root element, and
+  everything here needs that scope: these rules select bare elements and class names that already
+  exist in site.css, so without the ancestor they would reach the front pages and the admin panel.
+
+  The reusable pieces a page is assembled from - panels, buttons, stats, tabs, the player view -
+  moved to ravenfall-components.css when PlayerView was converted. Those are selected by rf- class
+  names alone, which no unconverted page writes, so they need no scope and can therefore be used by
+  components that render outside the dashboard.
+
+  No raw colours. Every value comes from ravenfall-tokens.css.
+
+  The intent is that this reads as part of the game rather than as an admin panel: warm ink on
+  cool stone, gold reserved for things that matter, panels that look lit rather than outlined.
+*/
+
+.rf-dash {
+    font-family: var(--rf-font);
+    font-size: var(--rf-size-body);
+    color: var(--rf-ink);
+    background: var(--rf-bg);
+}
+
+/* ---- Neutralising the legacy cascade ------------------------------------
+   site.css styles bare headings globally, from an era when the dashboard was
+   the same visual world as the front page. Two of those rules were visibly
+   wrong here and are switched off rather than worked around:
+
+     h1:after   injects a decorative LineBreakWhite.png block, 28px tall with
+                30px of margin below it. That was the large unexplained gap
+                under a page title. The gold rule on .rf-page-head replaces it.
+     h1/h2/h3   are coloured #ff7f00, a legacy orange that is not in the
+                palette and which was tinting every panel heading.
+
+   Scoped to .rf-dash so the front pages and the admin panel keep the styling
+   they were designed against. */
+
+.rf-dash h1::after,
+.rf-dash h2::after,
+.rf-dash h3::after {
+    content: none;
+    display: none;
+}
+
+.rf-dash h1,
+.rf-dash h2,
+.rf-dash h3,
+.rf-dash h4 {
+    color: var(--rf-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rf-dash * {
+        transition: none !important;
+    }
+}
+
+/* ==========================================================================
+   Sidebar
+   ==========================================================================
+   The blue to purple gradient was the loudest remaining thing on screen and
+   belonged to a different design entirely. It is replaced with the same iron
+   the content sits on, so the page reads as one surface rather than two
+   applications bolted together.
+
+   Depth comes from a single brass hairline at the right edge, and a very faint
+   warm glow at the top behind the logo, rather than from a colour change.
+   ========================================================================== */
+
+.rf-dash .sidebar {
+    background-image: none;
+    background-color: var(--rf-surface-1);
+    border-right: 1px solid var(--rf-line);
+    position: relative;
+}
+
+/* Forge light behind the logo. Subtle enough to read as lighting, not as a
+   coloured panel. */
+.rf-dash .sidebar::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 220px;
+    background: radial-gradient(120% 80% at 50% 0%, var(--rf-gold-wash), transparent 70%);
+    pointer-events: none;
+}
+
+.rf-dash .sidebar > * {
+    position: relative;
+    z-index: 1;
+}
+
+.rf-dash .nav-item {
+    font-size: var(--rf-size-small);
+    padding-bottom: 0;
+}
+
+.rf-dash .nav-link {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    padding: var(--rf-space-3) var(--rf-space-4);
+    margin: 1px var(--rf-space-2);
+    border-radius: var(--rf-radius-sm);
+    color: var(--rf-ink-muted);
+    font-weight: 500;
+    text-decoration: none;
+    /* The active marker sits here as transparent so switching pages does not
+       shift text sideways by three pixels. */
+    border-left: 2px solid transparent;
+    transition: background var(--rf-transition), color var(--rf-transition);
+}
+
+.rf-dash .nav-link:hover {
+    background: var(--rf-surface-2);
+    color: var(--rf-ink);
+    text-decoration: none;
+}
+
+.rf-dash .nav-link:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+/* Brass for the page you are on, matching "this is yours" elsewhere. The wash
+   fades to the right so it reads as a highlight rather than a filled block. */
+.rf-dash .nav-link.active {
+    background: linear-gradient(90deg, var(--rf-gold-wash), transparent 75%);
+    border-left-color: var(--rf-gold);
+    color: var(--rf-gold);
+    font-weight: 600;
+}
+
+/* Icons are dimmer than their label until the row is active, so a column of
+   them does not compete with the text for attention. */
+.rf-dash .nav-link .oi,
+.rf-dash .nav-link .fas,
+.rf-dash .nav-link .fa-solid,
+.rf-dash .nav-link .fa-brands {
+    width: 1.35rem;
+    font-size: 0.95rem;
+    color: var(--rf-ink-faint);
+    transition: color var(--rf-transition);
+}
+
+.rf-dash .nav-link:hover .oi,
+.rf-dash .nav-link:hover .fas,
+.rf-dash .nav-link:hover .fa-solid,
+.rf-dash .nav-link:hover .fa-brands {
+    color: var(--rf-ink-muted);
+}
+
+.rf-dash .nav-link.active .oi,
+.rf-dash .nav-link.active .fas,
+.rf-dash .nav-link.active .fa-solid,
+.rf-dash .nav-link.active .fa-brands {
+    color: var(--rf-gold);
+}
+
+/* ---- The menu button on a phone ----------------------------------------
+   Below 641px the sidebar stacks above the content and this button is the only
+   way to fold it away, so it has to look like a button. site.css strips its
+   border and Bootstrap's icon image is not in this build, so it was an invisible
+   transparent box. */
+
+.rf-dash .navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-right: var(--rf-space-4);
+}
+
+.rf-dash .navbar-toggler {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    padding: var(--rf-space-2) var(--rf-space-3);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius-sm);
+    background: var(--rf-surface-3);
+    color: var(--rf-ink);
+    font-family: inherit;
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    cursor: pointer;
+}
+
+.rf-dash .navbar-toggler:hover {
+    background: var(--rf-surface-raised);
+    color: var(--rf-gold);
+}
+
+.rf-dash .navbar-toggler:focus-visible {
+    outline: none;
+    box-shadow: var(--rf-focus);
+}
+
+/* site.css sizes the sidebar logo at 40px tall and nudges it 25px to the right,
+   which was tuned for the wider sidebar. Smaller, and centred by its own padding
+   rather than by an offset that has to be kept in step with the width. */
+.rf-dash .navbar-brand img {
+    height: 30px;
+    left: 0;
+}
+
+/* The navbar already carries Bootstrap's pl-4, so the brand adds nothing of its
+   own and the logo lines up with the nav labels below it. */
+.rf-dash .navbar-brand {
+    padding-left: 0;
+}
+
+.rf-dash .navbar-brand img,
+.rf-dash img.logo {
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.5));
+}
+
+/* ---- Nav grouping ------------------------------------------------------
+   Headings that split the sidebar by what someone is doing. Quiet enough to
+   scan past when you already know where you are going. */
+
+.rf-dash .rf-nav-group {
+    list-style: none;
+    margin: var(--rf-space-5) var(--rf-space-4) var(--rf-space-2);
+    font-size: var(--rf-size-tiny);
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    color: var(--rf-ink-faint);
+    font-weight: 700;
+}
+
+.rf-dash .rf-nav-group:first-of-type {
+    margin-top: var(--rf-space-4);
+}
+
+/* ---- Shape of the page, and a sidebar that stays put --------------------
+   These four rules were in DashboardLayout.razor.css and again in
+   AdminLayout.razor.css, and not at all in DarkAdminDashboardLayout, which is
+   why that one layout stacked its sidebar on top of the page instead of beside
+   it. They are layout, they are identical in all three, and there is nothing
+   page specific about them, so they live here and the two scoped stylesheets are
+   deleted.
+
+   `position: sticky` was in both copies and had never worked. A flex item
+   stretches to the height of its container by default, and a box that already
+   spans the whole container has nowhere to stick to. `align-self: flex-start`
+   keeps the sidebar at its own 100vh so there is room for it to move. */
+
+@media (min-width: 641px) {
+    .rf-dash.page {
+        flex-direction: row;
+    }
+
+    /* `flex: 0 0 250px` rather than `width: 250px`, because a flex item shrinks
+       below its width by default. On any page with a wide table the sidebar was
+       being squeezed narrower to make room, which is why the nav changed width
+       from page to page. */
+    /* 216px rather than 250. The longest label in either nav is "Other Admin
+       Tools", which needs about 180px with its icon and padding, so the old
+       width was carrying 70px of nothing down the whole height of the page. */
+    .rf-dash .sidebar {
+        flex: 0 0 13.5rem;
+        width: 13.5rem;
+        height: 100vh;
+        position: sticky;
+        top: 0;
+        align-self: flex-start;
+        overflow-y: auto;
+    }
+
+    /* And this is why the page scrolled sideways. A flex item's min-width is
+       `auto`, which means it refuses to shrink below the intrinsic width of its
+       contents, so one wide table pushed the whole row wider than the window and
+       took the sidebar with it. Every rf-scroll-x on the page was powerless
+       against it: the scroller cannot be narrower than its own parent, and the
+       parent was refusing to be narrower than the table. `min-width: 0` lets the
+       column shrink again, at which point the scrollers do their job. */
+    .rf-dash .main {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    /* The sidebar is always on screen at this width, so there is nothing for the
+       menu button to do. site.css hides it here too, but with one class less
+       specificity than the rule that styles it above, so it has to be said again
+       rather than relied on. */
+    .rf-dash .navbar-toggler {
+        display: none;
+    }
+
+    /* Beats Bootstrap's px-4 on specificity rather than with !important, which
+       is what the scoped copies needed. */
+    .rf-dash .content {
+        padding-left: var(--rf-space-6);
+        padding-right: var(--rf-space-5);
+    }
+}
+
+/* ---- The notification bell ---------------------------------------------
+   Floats rather than sitting in a bar of its own. The list it opens is
+   positioned by NotificationIcon's own stylesheet against whatever the nearest
+   positioned ancestor happens to be, which used to be the page; now that the
+   bell is in a fixed box it has to be told where to go again. */
+
+.rf-dash__notify {
+    position: fixed;
+    top: var(--rf-space-4);
+    right: var(--rf-space-5);
+    z-index: 30;
+}
+
+/* Below 641px the top right corner belongs to the menu button, which lives in
+   the sidebar and so cannot simply be laid out next to this. The bell steps far
+   enough left to clear it: the button measures 83px at its widest with the
+   "Menu" label, and it sits on the same 24px of right padding, so 7.5rem leaves
+   about 13px between the two. */
+@media (max-width: 640.98px) {
+    .rf-dash__notify {
+        right: 7.5rem;
+    }
+}
+
+.rf-dash .notification-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--rf-radius-sm);
+    background: var(--rf-surface-2);
+    border: 1px solid var(--rf-line);
+    color: var(--rf-ink-muted);
+    transition: background var(--rf-transition), color var(--rf-transition);
+}
+
+.rf-dash .notification-icon:hover {
+    background: var(--rf-surface-raised);
+    color: var(--rf-gold);
+}
+
+.rf-dash .notification-list {
+    position: fixed;
+    top: 3.25rem;
+    right: var(--rf-space-5);
+    left: auto;
+    max-width: min(24rem, calc(100vw - 2rem));
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-shadow-lg);
+    overflow: hidden;
+}
+
+/* ---- Forms are not centred columns --------------------------------------
+   site.css says `.content form { display: flex; flex-flow: column;
+   justify-content: center; align-items: center }`. That is for the login form on
+   the front page, and it reaches every form on the dashboard and in the admin
+   panel, where it does two visible kinds of damage:
+
+     - a field set to width 100% shrinks to its own content and sits centred in
+       the middle of a wide panel, which is what the code of conduct editor was
+       doing with all of its space;
+     - a form taller than its box has its children overflow both ends, because
+       that is what centring does when there is not enough room. In the item
+       editor that threw the sections out of the modal and left them scattered
+       across the page.
+
+   Both of those looked like the panels were broken. Neither was.
+
+   Scoped to .rf-dash, so the login form keeps the centring it was written for.
+   The toolbar rule follows this one and is more specific, so a search box inside
+   an EditForm keeps `display: contents`. */
+
+.rf-dash .content form {
+    display: block;
+}
+
+.rf-dash .content .rf-toolbar > form {
+    display: contents;
+}
+
+/* The item editor is the one form with enough in it to want several columns. */
+.rf-dash .rf-modal.rf-itemedit {
+    width: 64rem;
+    max-height: calc(100vh - 4rem);
+}
+
+/* The json tab is one big text area and should fill the space the form gets. */
+.rf-dash .rf-itemedit__json {
+    min-height: 24rem;
+}
+
+/* ---- Content ground -----------------------------------------------------
+   The top padding replaces the 3.5rem bar that used to sit above every page, so
+   a page title is not jammed against the top of the window. The bottom padding
+   is there because there was none at all: the last control on a page, the Leave
+   clan button for instance, ended flush with the bottom edge. */
+
+.rf-dash .content {
+    background: var(--rf-bg);
+    padding-top: var(--rf-space-6);
+    padding-bottom: var(--rf-space-7);
+    min-height: 100vh;
+}
+
+/* The bell sits at the top right of the window, so a page title needs to stop
+   short of it rather than run underneath. */
+.rf-dash .content > .rf-page-head:first-child,
+.rf-dash .content > header:first-child {
+    padding-right: 3.5rem;
+}
+
+/* Links inside dashboard content use brass rather than the browser default,
+   which was showing through on pages that never styled anchors.
+
+   Components that happen to be anchors are excluded. A character card, a badge
+   or an item name is a thing you click, not a word in a sentence, and letting
+   this rule reach inside them turned every name in a clan roster gold, which
+   is most of the accent budget spent on the least important thing there.
+
+   The exclusions are wrapped in :is() so the list can grow without the
+   selector's specificity growing with it. */
+.rf-dash .content a:not(:is(.rf-btn, .nav-link, .rf-char, .rf-card, .rf-badge, .rf-chip, .rf-item__name)) {
+    color: var(--rf-gold);
+    text-decoration: none;
+}
+
+.rf-dash .content a:not(:is(.rf-btn, .nav-link, .rf-char, .rf-card, .rf-badge, .rf-chip, .rf-item__name)):hover {
+    color: var(--rf-gold-bright);
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   Dashboard art band
+   ==========================================================================
+   Painted scenery behind the top of a page, fading into the page ground before
+   the content proper begins. Everything here is scoped to `.rf-dash--art`,
+   which only DashboardLayout adds, so the admin layouts carry `.rf-dash`
+   without ever picking this up.
+
+   Three things this was measured into rather than styled into:
+
+   1. `.rf-dash .content` paints `--rf-bg` at `min-height: 100vh`. It is the
+      page ground and it is opaque, so anything behind it is invisible. In art
+      mode the ground moves to `.main` and the content goes transparent. This
+      was the whole reason the first attempt at this rendered nothing at all.
+
+   2. The page subtitle is `--rf-ink-muted`, a token chosen against a flat known
+      surface. Over art it needs 84% tint to reach 4.5:1 where `--rf-ink` needs
+      65%, so in art mode the subtitle is promoted. Without that the tint has to
+      go so dark the art may as well not be there. Same trap as `--rf-ink-faint`
+      being wrong for facts, one step up.
+
+   3. Blur does almost nothing for contrast: across 0 to 2.5px the worst pixel
+      moved 2.27 to 2.31. The tint does all of it. The images are therefore
+      pre-blurred at 1.2px for compression and softness rather than for
+      legibility, and there is no runtime filter, which keeps a large element
+      off the compositor during scroll. */
+
+.rf-dash--art .main {
+    position: relative;
+    background: var(--rf-bg);
+}
+
+.rf-dash--art .content {
+    position: relative;
+    z-index: 1;
+    background: transparent;
+}
+
+/* The art itself. Masked out before it reaches the content so there is no hard
+   edge to line anything up against. */
+.rf-dash--art .main::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: var(--rf-art-height);
+    background-image: var(--rf-art-img, none);
+    background-size: cover;
+    background-position: center 30%;
+    filter: saturate(var(--rf-art-saturation));
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* The tint, on its own layer so the saturation filter above does not touch it
+   and so the alpha is a single value that can be measured. */
+.rf-dash--art .main::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: var(--rf-art-height);
+    background: linear-gradient(to bottom,
+        rgba(18, 21, 28, var(--rf-art-tint)) 0%,
+        rgba(18, 21, 28, calc(var(--rf-art-tint) * 0.9)) 40%,
+        var(--rf-bg) 100%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* See note 2 above. This is what buys back the lighter tint. */
+.rf-dash--art .rf-page-subtitle {
+    color: var(--rf-ink);
+}
+
+/* Nothing to paint, so no reason to build the layers. */
+.rf-dash--art:not([style*="--rf-art-img"]) .main::before,
+.rf-dash--art:not([style*="--rf-art-img"]) .main::after {
+    display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .rf-dash--art .main::before {
+        animation: rf-art-in 400ms ease-out both;
+    }
+}
+
+@keyframes rf-art-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}

@@ -1,0 +1,35 @@
+@*
+    The four economy pages each carried their own hand written <ul> of links to the other three,
+    which is why they never agreed on which pages existed: the overview listed one that the others
+    left commented out, and none of them marked the page you were already on.
+
+    They are four views of one subject, so they get a tab strip.
+*@
+<nav class="rf-tabs" aria-label="Economy views">
+    @foreach (var view in Views)
+    {
+        <a class="rf-tab @(Current == view.Key ? "is-active" : "")"
+           href="@view.Href"
+           aria-current="@(Current == view.Key ? "page" : null)">@view.Label</a>
+    }
+</nav>
+
+@code {
+    /// <summary>Which of the four is being shown, so it can mark itself.</summary>
+    [Parameter]
+    public string Current { get; set; }
+
+    private sealed record View(string Key, string Label, string Href);
+
+    private static readonly View[] Views = new[]
+    {
+        new View("overview", "Overview", "/admin/economy"),
+        new View("marketplace", "Marketplace", "/admin/economy/marketplace"),
+        new View("avg-price", "Average prices", "/admin/economy/marketplace/avg-price"),
+        // There was a fourth, "Item amounts and sellers". Its entire file was commented out and it
+        // was written against ChartJs.Blazor, which no project references, so it could not have
+        // compiled had anyone uncommented it. Deleted rather than carried. What it would have shown
+        // is the amount and seller count per item, which the Marketplace tab's daily summary
+        // already lists.
+    };
+}

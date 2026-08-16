@@ -3,72 +3,55 @@
 @using RavenNest.BusinessLogic.Data
 @using RavenNest.DataModels
 @using Microsoft.Extensions.Logging
-@inject RavenNest.Blazor.Services.AuthService AuthService
-@inject RavenNest.Blazor.Services.ServerService ServerService
 
-
-<tr class="loglines-list-row @cssRowTag">
-    <td class="logline @cssRowTag">
-        @*Timestamp*@
-        @DataContext.LogDateTime.ToString("yyyy-MM-dd HH:mm:ss K")
-    </td>
-    <td class="logline @cssRowTag">
-        @*Log Level*@
-        <div class="item-highlight @cssLogLevelClass">@str</div>
-    </td>
-    <td class="logline @cssRowTag">
-        @*Message*@
-        @DataContext.Message
-    </td>
+@*
+    One line of a log. The severity is a badge with the level written in it rather than only a row
+    colour, so a warning is still a warning in a screenshot, in greyscale, and to a reader who
+    cannot pick the shade of brown out from the shade of red.
+*@
+<tr class="rf-log__row @RowClass">
+    <td class="rf-log__time">@DataContext.LogDateTime.ToString("yyyy-MM-dd HH:mm:ss")</td>
+    <td><span class="rf-badge @BadgeClass">@Label</span></td>
+    <td class="rf-log__message">@DataContext.Message</td>
 </tr>
 
 @code {
-    private string cssRowTag = "";
-    private string cssLogLevelClass = "";
-    private string str = "";
-
-    private RavenNest.Models.SessionInfo session;
-    private bool isAdmin;
-
     [Parameter]
     public LogEntry DataContext { get; set; }
 
+    private string RowClass { get; set; } = "";
+    private string BadgeClass { get; set; } = "";
+    private string Label { get; set; } = "";
 
-    protected override void OnInitialized()
+    protected override void OnParametersSet()
     {
-        session = AuthService.GetSession();
-        isAdmin = session != null && session.Administrator;
-        FormatLogLevel(DataContext.LogLevel);
+        // Was OnInitialized, so a row reused for a different entry as the list grew kept the first
+        // entry's severity styling.
+        FormatLogLevel(DataContext?.LogLevel ?? LogLevel.Information);
     }
 
     private void FormatLogLevel(LogLevel level)
     {
-        // default values for Error, Warning
-        cssLogLevelClass = level.ToString().ToLower();
-        str = level.ToString().ToUpper();
+        Label = level.ToString().ToUpperInvariant();
+        RowClass = "";
+        BadgeClass = "";
 
-        switch (DataContext.LogLevel)
+        switch (level)
         {
             case LogLevel.Warning:
-                cssRowTag = "highlight";
+                RowClass = "is-warning";
+                BadgeClass = "rf-badge--warn";
                 break;
 
             case LogLevel.Error:
-                str = "ERROR";
-                cssRowTag = "err";
+                RowClass = "is-error";
+                BadgeClass = "rf-badge--bad";
                 break;
 
             case LogLevel.Critical:
-                str = "!!CRITICAL!!";
-                cssRowTag = "err";
-                break;
-
-            //case LogLevel.Trace:
-            //case LogLevel.Debug:
-            //case LogLevel.Information:
-            default:
-                cssLogLevelClass = "none";
-                str = level.ToString();
+                Label = "CRITICAL";
+                RowClass = "is-error";
+                BadgeClass = "rf-badge--bad";
                 break;
         }
     }

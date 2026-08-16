@@ -2,17 +2,12 @@
 @using RavenNest.Blazor.Components
 @inject NavigationManager NavigationManager
 @inject RavenNest.Blazor.Services.AuthService AuthService
-<style>
-    a.nav-link.login {
-        color: #3ba4eb;
-    }
-
-    span.notification-count {
-        /*background-color: #dc3545;*/
-        background-color: #69C33B;
-    }
-</style>
-<div class="page">
+@*
+    The inline <style> block that used to sit here set a blue logout link and a green notification
+    count, two more one off colours in a project that had 253 of them. Both are now whatever
+    .rf-dash says they are, which is the point of having tokens.
+*@
+<div class="page rf-dash">
     @if (IsAdministrator)
     {
         <div class="sidebar">
@@ -20,11 +15,8 @@
         </div>
 
         <div class="main">
-            <div class="top-row px-4">
+            <div class="rf-dash__notify">
                 <NotificationIcon UserId="@session.UserId"></NotificationIcon>
-                <NavLink class="nav-link login" href="/logout" Match="NavLinkMatch.All">
-                    <span class="oi oi-account-logout" aria-hidden="true"></span> logout
-                </NavLink>
             </div>
 
             <div class="content px-4">

@@ -35,6 +35,17 @@
     <link href="/RavenNest.styles.css" rel="stylesheet" />
     <link href="/css/site.css?@(System.Random.Shared.Next())" rel="stylesheet" />
 
+    @* Ravenfall design system, loaded after site.css so it can set its own baseline.
+         tokens      values only, affect nothing until referenced
+         components  selected by rf- class names alone, which no unconverted page writes, so
+                     these are safe unscoped and usable by components outside the dashboard
+         dashboard   page chrome, scoped under .rf-dash so front and admin pages are untouched
+         front       front page chrome, scoped under .rf-front, which MainLayout puts on its root *@
+    <link href="/css/ravenfall-tokens.css?@(System.Random.Shared.Next())" rel="stylesheet" />
+    <link href="/css/ravenfall-components.css?@(System.Random.Shared.Next())" rel="stylesheet" />
+    <link href="/css/ravenfall-dashboard.css?@(System.Random.Shared.Next())" rel="stylesheet" />
+    <link href="/css/ravenfall-front.css?@(System.Random.Shared.Next())" rel="stylesheet" />
+
     <!-- This is the glue between Blazor and Chart.js -->
     <script src="js/moment.min.js"></script>
 
@@ -69,6 +80,22 @@
             }
             return null;
         }
+
+        // The site header's Game menu is a <details> element, which is what makes it reachable from
+        // a keyboard and from a touch screen without any script. What <details> does not do is
+        // close itself: it stayed open after choosing a link and after clicking away, because
+        // nothing had told it otherwise. One listener on the document handles both, and it is
+        // registered once rather than per render because Blazor replaces the markup, not the page.
+        document.addEventListener('click', (e) => {
+            document.querySelectorAll('details.rf-dd[open]').forEach((dd) => {
+                const insideSummary = e.target.closest('summary') && dd.contains(e.target);
+                // Clicking the summary is what toggles it, so leave that alone. Anything else,
+                // inside the menu or outside it, closes it.
+                if (!insideSummary) {
+                    dd.open = false;
+                }
+            });
+        }, true);
 
         window.disableMap = () => {
             window.map = undefined;

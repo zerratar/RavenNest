@@ -1,141 +1,250 @@
-﻿<div class="user-header">
-<h1>
+﻿@using RavenNest.BusinessLogic.Game
 
-        @if (SelectedUser.Status >= 1)
-        {
-            <span style="color: white; background-color:red;">BANNED</span>
-        }
-        <span> User: </span>
-        <span>@SelectedUser.UserName</span> 
+@*
+    The admin view of one user account.
 
-    </h1>
-</div>
-<div class="user-row">
-    <div class="user-col">
-        <h2>Details</h2>
-        <div class="user-detail-row"><span><img src="/api/twitch/logo/@(SelectedUser.UserId)" class="profile-picture" /></span></div>
-        <div class="user-detail-row">
-            <span>Twitch User Id: </span><span>@SelectedUser.UserId</span>
+    What changed beyond colour, all of it from fields that were already on WebsiteAdminUser and
+    rendered nowhere:
+
+      Connections    which platforms the account can sign in with. The page showed only the
+                     obsolete UserId property, which is the Twitch id, so an account connected
+                     through anything else looked like it had no identity at all. This is also the
+                     first thing you want when a username change is being investigated.
+      Created        how old the account is. An account made this morning and one made in 2020 are
+                     not the same account to look at, and nothing said which this was.
+      Stash          what the user is holding, summarised. Investigating duplication starts here.
+      Status         said "BANNED" in a red span or said nothing. It now names the actual status,
+                     of which there are three, and says it in words as well as colour.
+*@
+<div class="rf-adminuser">
+    <header class="rf-page-head">
+        <h1 class="rf-page-title">@SelectedUser.UserName</h1>
+        <p class="rf-page-subtitle">
+            Account created @SelectedUser.Created.ToString("yyyy-MM-dd") (@AccountAge).
+            @CharacterCount characters.
+        </p>
+    </header>
+
+    @if (SelectedUser.Status >= 1)
+    {
+        <div class="rf-banner rf-banner--bad">
+            <div class="rf-banner__title">Account suspended</div>
+            <p>
+                This account is @StatusName.ToLowerInvariant(). The player cannot play until it is
+                lifted.
+            </p>
         </div>
-        <div class="user-detail-row">
-            <span>Email:</span> <span>@SelectedUser.Email</span>
+    }
+
+    <div class="rf-stats">
+        <div class="rf-stat">
+            <div class="rf-stat__value">@CharacterCount</div>
+            <div class="rf-stat__label">Characters</div>
         </div>
-        <div class="user-detail-row">
-            <span>Patreon:</span>
-            @if (EditingUserPatreon)
-            {
-                <select class="clan-role-selector" @onchange="SelectedPatreonChanged">
-                    @for (var i = 0; i < patreonNames.Length; ++i)
-                    {
-                        if (SelectedUser.PatreonTier == i)
-                        {
-                            <option id="@i" value="@i" selected>
-                                @(i >= patreonNames.Length ? patreonNames[patreonNames.Length - 1] : patreonNames[i])
-                            </option>
-                        }
-                        else
-                        {
-                            <option id="@i" value="@i">
-                                @(i >= patreonNames.Length?@patreonNames[patreonNames.Length - 1]:patreonNames[i])
-                            </option>
-                        }
-                    }
-                </select>
-                <span class="fas fa-check" @onclick="UpdateUserPatreon"></span>
-                <span class="fas fa-times" @onclick="CancelEditUserPatreon"></span>
-            }
-            else
-            {
-                var i = SelectedUser.PatreonTier ?? 0;
-                if (i >= patreonNames.Length)
-                {
-                    <span>@patreonNames[patreonNames.Length - 1]</span>
-                }
-                else
-                {
-                    <span>@patreonNames[i]</span>
-                    <button class="link-button" @onclick="(()=> EditPatreon())">Edit</button>
-                }
-            }
+        <div class="rf-stat">
+            <div class="rf-stat__value">@StashCount.ToString("N0")</div>
+            <div class="rf-stat__label">Stash items</div>
         </div>
-        <div class="user-detail-row">
-            <span>Admin: </span><span>@SelectedUser.IsAdmin</span>
-        </div>
-        <div class="user-detail-row">
-            <span>Moderator: </span><span>@SelectedUser.IsModerator</span>
-        </div>
-        <div class="user-detail-row">
-            <span>Hidden In HighScore:</span> <input type="checkbox" value="@SelectedUser.IsHiddenInHighscore" @onchange="ev => IsHiddenInHighscoreChanged(ev.Value)"></input>
-        </div>
-        <div class="user-detail-row">
-            <span>Remarks/Comments: </span>
-            @if (EditingUserRemark)
-            {
-                <input type="text" class="form-inline" @bind-value="editUserRemarkComment" />
-                <button @onclick="ApplyUserRemark" class="btn ok">Save</button>
-                <button @onclick="CancelEditRemark" class="btn cancel">Cancel</button>
-            }
-            else
-            {
-                @if (!string.IsNullOrEmpty(SelectedUser.Comment))
-                {
-                    <span>@SelectedUser.Comment</span>
-                    <button class="link-button edit" @onclick="(()=> EditRemark())"><i class="fa-solid fa-comment-pen"></i></button>
-                }
-                else
-                {
-                    <button class="link-button" @onclick="(()=> EditRemark())"><i class="fa-solid fa-comment-plus"></i></button>
-                }
-            }
+        <div class="rf-stat">
+            <div class="rf-stat__value">@ConnectionCount</div>
+            <div class="rf-stat__label">Connections</div>
         </div>
     </div>
-    <div class="user-col">
-        <h2>Clan</h2>
 
+    <div class="rf-panel">
+        <h2 class="rf-panel__title">Details</h2>
+
+        <div class="rf-adminuser__head">
+            <img src="/api/twitch/logo/@(SelectedUser.UserId)" class="rf-adminuser__avatar" alt="" />
+            <dl class="rf-facts">
+                <dt>Status</dt>
+                <dd>
+                    @if (SelectedUser.Status >= 1)
+                    {
+                        <span class="rf-badge rf-badge--bad">@StatusName</span>
+                    }
+                    else
+                    {
+                        <span class="rf-badge rf-badge--good">@StatusName</span>
+                    }
+                </dd>
+
+                <dt>Created</dt>
+                <dd>@SelectedUser.Created.ToString("yyyy-MM-dd HH:mm") <span class="rf-meta">@AccountAge</span></dd>
+
+                <dt>Email</dt>
+                <dd>@(string.IsNullOrEmpty(SelectedUser.Email) ? "None on file" : SelectedUser.Email)</dd>
+
+                <dt>Patreon</dt>
+                <dd>
+                    @if (EditingUserPatreon)
+                    {
+                        <div class="rf-actions">
+                            <select class="rf-input" @onchange="SelectedPatreonChanged">
+                                @for (var i = 0; i < patreonNames.Length; ++i)
+                                {
+                                    <option value="@i" selected="@(SelectedUser.PatreonTier == i)">@patreonNames[i]</option>
+                                }
+                            </select>
+                            <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="UpdateUserPatreon">Save</button>
+                            <button type="button" class="rf-btn rf-btn--small" @onclick="CancelEditUserPatreon">Cancel</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="rf-actions">
+                            <span>@PatreonName</span>
+                            <button type="button" class="rf-btn rf-btn--small" @onclick="EditPatreon">Edit</button>
+                        </div>
+                    }
+                </dd>
+
+                <dt>Roles</dt>
+                <dd>
+                    @if (SelectedUser.IsAdmin)
+                    {
+                        <span class="rf-badge rf-badge--gold">Administrator</span>
+                    }
+                    @if (SelectedUser.IsModerator)
+                    {
+                        <span class="rf-badge rf-badge--gold">Moderator</span>
+                    }
+                    @if (!SelectedUser.IsAdmin && !SelectedUser.IsModerator)
+                    {
+                        <span class="rf-meta">Player</span>
+                    }
+                </dd>
+
+                <dt>Highscore</dt>
+                <dd>
+                    @*
+                        This was <input type="checkbox" value="@..."/>, which does not set a
+                        checkbox: it renders unchecked whatever the stored value is, so the one
+                        thing the control existed to show was the one thing it could not show.
+                    *@
+                    <label class="rf-check">
+                        <input type="checkbox"
+                               checked="@SelectedUser.IsHiddenInHighscore"
+                               @onchange="ev => IsHiddenInHighscoreChanged(ev.Value)" />
+                        <span>Hidden from the highscore</span>
+                    </label>
+                </dd>
+
+                <dt>Remarks</dt>
+                <dd>
+                    @if (EditingUserRemark)
+                    {
+                        <div class="rf-actions">
+                            <input type="text" class="rf-input" @bind-value="editUserRemarkComment" />
+                            <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="ApplyUserRemark">Save</button>
+                            <button type="button" class="rf-btn rf-btn--small" @onclick="CancelEditRemark">Cancel</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="rf-actions">
+                            @if (!string.IsNullOrEmpty(SelectedUser.Comment))
+                            {
+                                <span>@SelectedUser.Comment</span>
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="EditRemark">
+                                    <i class="fa-solid fa-comment-pen" aria-hidden="true"></i> Edit
+                                </button>
+                            }
+                            else
+                            {
+                                <span class="rf-meta">None</span>
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="EditRemark">
+                                    <i class="fa-solid fa-comment-plus" aria-hidden="true"></i> Add a remark
+                                </button>
+                            }
+                        </div>
+                    }
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    @*
+        Which platforms this account can sign in with. The old view showed one line, "Twitch User
+        Id", taken from the property the model marks obsolete, so a Youtube or Kick connection was
+        invisible and a changed username had nothing to check against.
+    *@
+    <div class="rf-panel">
+        <h2 class="rf-panel__title">Connections</h2>
+        @if (SelectedUser.Connections == null || SelectedUser.Connections.Count == 0)
+        {
+            <p class="rf-meta">
+                No connections recorded. The account's legacy Twitch id is
+                <span class="rf-cmd">@SelectedUser.UserId</span>.
+            </p>
+        }
+        else
+        {
+            <div class="rf-scroll-x">
+                <table class="rf-table">
+                    <thead>
+                        <tr>
+                            <th scope="col"><span class="rf-th rf-th--static">Platform</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Username</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Platform id</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in SelectedUser.Connections)
+                        {
+                            <tr>
+                                <td>@c.Platform</td>
+                                <td>@c.PlatformUserName</td>
+                                <td class="rf-table__quiet">@c.PlatformId</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="rf-panel">
+        <h2 class="rf-panel__title">Clan</h2>
         @if (SelectedUser.HasClan)
         {
-            <div class="clan-detail-row">
+            <div class="rf-adminuser__head">
                 @if (!string.IsNullOrEmpty(SelectedUser.Clan.Logo))
                 {
-                    <img src="@SelectedUser.Clan.Logo" class="clan-logo" />
+                    <img src="@SelectedUser.Clan.Logo" class="rf-adminuser__avatar" alt="" />
                 }
                 else
                 {
-                    <img src="/api/twitch/logo/@SelectedUser.UserId" class="clan-logo" />
+                    <img src="/api/twitch/logo/@SelectedUser.UserId" class="rf-adminuser__avatar" alt="" />
                 }
-            </div>
-            <div class="clan-detail-row">
-                <div class="clan-created">
-                    <span>Created on:</span> @SelectedUser.Clan.Created
-                </div>
-            </div>
-            <div class="clan-detail-row">
-                <div class="clan-name">
-                    <span>Name:</span>
-                    <span>@SelectedUser.Clan.Name</span>
-                </div>
-            </div>
-            <div class="clan-detail-row">
-                <div class="clan-exp">
-                    <span>Exp:</span> @SelectedUser.Clan.Experience
-
-                </div>
-            </div>
-            <div class="clan-detail-row">
-                <p class="clan-level">Level <span>@SelectedUser.Clan.Level</span></p>
+                <dl class="rf-facts">
+                    <dt>Name</dt>
+                    <dd>@SelectedUser.Clan.Name</dd>
+                    <dt>Level</dt>
+                    <dd>@SelectedUser.Clan.Level</dd>
+                    <dt>Experience</dt>
+                    <dd title="@SelectedUser.Clan.Experience.ToString("N0")">@Utility.FormatAmount(SelectedUser.Clan.Experience)</dd>
+                    <dt>Created</dt>
+                    <dd>@SelectedUser.Clan.Created.ToString("yyyy-MM-dd")</dd>
+                    <dt>Name changes</dt>
+                    <dd>
+                        <div class="rf-actions">
+                            <span>@SelectedUser.Clan.NameChangeCount used</span>
+                            @if (!SelectedUser.Clan.CanChangeName)
+                            {
+                                <span class="rf-badge rf-badge--warn">Cannot rename</span>
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="ResetClanNameChangeCounter">
+                                    Allow a rename
+                                </button>
+                            }
+                        </div>
+                    </dd>
+                </dl>
             </div>
         }
         else
         {
-            <div class="clan-detail-row">
-                <span>Does not own a clan</span>
-            </div>
+            <p class="rf-meta">This user does not own a clan.</p>
         }
-
     </div>
-    @if (SelectedUser.HasClan && !SelectedUser.Clan.CanChangeName)
-    {
-        <button class="link-button" @onclick="(()=> ResetClanNameChangeCounter())">Allow Clan Rename</button>
-    }
 </div>
-

@@ -13,278 +13,302 @@
 @inject RavenNest.Blazor.Services.ItemService ItemService
 @inject NavigationManager NavigationManager
 
-<h1 class="page-title">Item Stash</h1>
+<header class="rf-page-head">
+    <h1 class="rf-page-title">Item stash</h1>
+    <p class="rf-page-subtitle">
+        Shared storage. Anything in here can be sent to any of your characters.
+    </p>
+</header>
 
 @if (!session.Authenticated)
 {
-                <p>You don't seem to be logged in.</p>
+    <p class="rf-meta">You don't seem to be logged in.</p>
+}
+else if (stash == null)
+{
+    <LoadIndicator></LoadIndicator>
 }
 else
 {
-                <h3>The items in here are accessible between all your characters.</h3>
+    @*
+        A stash is worth something and nobody could see how much. The count and the vendor value
+        are both sums of data the page already had loaded.
+    *@
+    <div class="rf-stats">
+        <div class="rf-stat">
+            <div class="rf-stat__value">@Utility.FormatAmount(TotalItemCount)</div>
+            <div class="rf-stat__label">Items stored</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value">@stash.Count.ToString("N0")</div>
+            <div class="rf-stat__label">Distinct items</div>
+        </div>
+        <div class="rf-stat">
+            <div class="rf-stat__value" title="@TotalVendorValue.ToString("N0") coins">@Utility.FormatAmount(TotalVendorValue)</div>
+            <div class="rf-stat__label">Vendor value</div>
+        </div>
+    </div>
 
-    @if (stash == null)
+    @*
+        Search. A stash with a few hundred distinct items had no way to find one short of reading
+        the whole table, which is the single most common thing anyone comes to this page to do.
+    *@
+    <div class="rf-toolbar">
+        <input type="search"
+               class="rf-input rf-search"
+               placeholder="Search by name"
+               aria-label="Search stash by item name"
+               value="@search"
+               @oninput="OnSearchChanged" />
+        @if (!string.IsNullOrWhiteSpace(search) || itemFilter != ItemFilter.All)
+        {
+            <button type="button" class="rf-btn rf-btn--small" @onclick="ClearFilters">Clear filters</button>
+        }
+        <span class="rf-meta">Showing @stashFiltered.Count of @stash.Count</span>
+    </div>
+
+    @*
+        Driven from a shared list rather than nineteen hand written blocks. Adding a category used
+        to mean copying eight lines of markup here and eight more in PlayerInventory; it is now one
+        entry in ItemFilterOptions.
+    *@
+    <div class="rf-filters" role="group" aria-label="Filter items by category">
+        @foreach (var f in ItemFilterOptions.All)
+        {
+            <button type="button"
+                    class="rf-filter @(itemFilter == f.Filter ? "is-active" : "")"
+                    aria-pressed="@(itemFilter == f.Filter)"
+                    @onclick="() => SelectItemFilter(f.Filter)">
+                <i class="@f.Icon" aria-hidden="true"></i>
+                <span>@f.Label</span>
+            </button>
+        }
+    </div>
+
+    @if (stashFiltered.Count == 0)
     {
-        <LoadIndicator></LoadIndicator>
+        <div class="rf-panel">
+            <p class="rf-meta">
+                @if (stash.Count == 0)
+                {
+                    <span>Looks quite empty in here. Items you send from a character will show up on this page.</span>
+                }
+                else
+                {
+                    <span>Nothing matches that. Try a different category or clear the search.</span>
+                }
+            </p>
+        </div>
     }
     else
     {
-        <div class="stash item-filters">
-            <button class="item-filter @(itemFilter == ItemFilter.All ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.All)">
-                <span class="item-filter-text">All</span>
-                <i class="fa-sharp fa-solid fa-rectangles-mixed"></i>
-            </button>
-            <button class="item-filter @(itemFilter == ItemFilter.Swords ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Swords)">
-                <span class="item-filter-text">Swords</span>
-                <i class="fa-sharp fa-solid fa-sword"></i>
-            </button>
-            <button class="item-filter @(itemFilter == ItemFilter.Axes ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Axes)">
-                <span class="item-filter-text">Axes</span>
-                <i class="fa-sharp fa-solid fa-axe"></i>
-            </button>
-            <button class="item-filter @(itemFilter == ItemFilter.Spears ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Spears)">
-                <span class="item-filter-text">Spears</span>
-                <i class="fa-solid fa-scythe"></i>
-            </button>
-            <button class="item-filter @(itemFilter == ItemFilter.Bows ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Bows)">
-                <span class="item-filter-text">Bows</span>
-                <i class="fa-sharp fa-solid fa-bow-arrow"></i>
-            </button>
-        
-            <button class="item-filter @(itemFilter == ItemFilter.Staves ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Staves)">
-                <span class="item-filter-text">Staves</span>
-                <i class="fa-sharp fa-solid fa-staff"></i>
-            </button>
-        
-            <button class="item-filter @(itemFilter == ItemFilter.Shields ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Shields)">
-                <span class="item-filter-text">Shields</span>
-                <i class="fa-sharp fa-solid fa-shield"></i>
-            </button>
-        
-            <button class="item-filter @(itemFilter == ItemFilter.Armors ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Armors)">
-                <span class="item-filter-text">Armors</span>
-                <i class="fa-sharp fa-solid fa-helmet-battle"></i>
-            </button>
-        
-            <button class="item-filter @(itemFilter == ItemFilter.Accessories ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Accessories)">
-                <span class="item-filter-text">Accessories</span>
-                <i class="fa-sharp fa-solid fa-gem"></i>
-            </button>
-        
-            <button class="item-filter @(itemFilter == ItemFilter.Pets ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Pets)">
-                <span class="item-filter-text">Pets</span>
-                <i class="fa-sharp fa-solid fa-dog"></i>
-            </button>
-        
-        
-            <button class="item-filter @(itemFilter == ItemFilter.Scrolls ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Scrolls)">
-                <span class="item-filter-text">Scrolls</span>
-                <i class="fa-sharp fa-solid fa-scroll"></i>
-            </button>
-        
-            <button class="item-filter @(itemFilter == ItemFilter.Woodcutting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Woodcutting)">
-                <span class="item-filter-text">Woodcutting</span>
-                <i class="fa-solid fa-tree"></i>
-            </button>
-        
-            <button class="item-filter @(itemFilter == ItemFilter.Mining ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Mining)">
-                <span class="item-filter-text">Mining</span>
-                <i class="fa-solid fa-pickaxe"></i>
-            </button>
-        
-            <button class="item-filter @(itemFilter == ItemFilter.Fishing ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Fishing)">
-                <span class="item-filter-text">Fishing</span>
-                <i class="fa-sharp fa-solid fa-fishing-rod"></i>
-            </button>
-        
-            <button class="item-filter @(itemFilter == ItemFilter.Farming ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Farming)">
-                <span class="item-filter-text">Farming</span>
-                <i class="fa-solid fa-wheat"></i>
-            </button>
-        
-            <button class="item-filter @(itemFilter == ItemFilter.Gathering ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Gathering)">
-                <span class="item-filter-text">Gathering</span>
-                <i class="fa-solid fa-mushroom"></i>
-            </button>
-            <button class="item-filter @(itemFilter == ItemFilter.Crafting ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Crafting)">
-                <span class="item-filter-text">Crafting</span>
-                <i class="fa-sharp fa-solid fa-hammer"></i>
-            </button>
-        
-            <button class="item-filter @(itemFilter == ItemFilter.Cooking ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Cooking)">
-                <span class="item-filter-text">Cooking</span>
-                <i class="fa-sharp fa-solid fa-user-chef"></i>
-            </button>
-        
-            <button class="item-filter @(itemFilter == ItemFilter.Alchemy ? "active-filter" : "")" @onclick="() => SelectItemFilter(ItemFilter.Alchemy)">
-                <span class="item-filter-text">Alchemy</span>
-                <i class="fa-sharp fa-solid fa-flask-round-potion"></i>
-            </button>
-        </div>
-
-        if (stashFiltered.Count == 0)
-        {
-                                                <p>Looks quite empty in here.</p>
-        }
-        else
-        {
-                                                <table class="items-list stash">
-                                                    <thead>
-                                                        <tr>
-                                                            <th></th>
-
-                                                            <th @onclick="SortByName">Name <span>@GetIndicator("name")</span></th>
-                                                            <th @onclick="SortByStats">Stats <span>@GetIndicator("stats")</span></th>
-                                                            <th @onclick="SortByLevelReq">Level Req <span>@GetIndicator("lev-req")</span></th>
-                                                            <th class="stash-item-category" @onclick="SortByCategory">Category <span>@GetIndicator("category")</span></th>
-                                                            <th class="stash-item-type" @onclick="SortByType">Item Type <span>@GetIndicator("type")</span></th>
-                                                            <th class="stash-item-material" @onclick="SortByMaterial">Material Type <span>@GetIndicator("material")</span></th>
-
-                                                            <th>Transfer to</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                    @foreach (var entry in stashFiltered)
-                    {
-                        var item = itemLookup[entry.ItemId];
-
-                                                                        <tr id="@item.Id" class="item-row">
-                                                                            <td class='item image'>
-                                                                                <img src="@(ItemService.GetItemImage(item.Id.ToString(), item.Name))" style="width: 40px" />
-                                                                                <div class="stash-item-amount">@entry.Amount</div>
-                                                                            </td>
-                                                                            <td class='item name'>@((entry.Name ?? item.Name))</td>
-                                                                            <td class='item stats'>
-                                @if (item.WeaponAim > 0)
-                                {
-                                                                                                <span class="item-stat" title="Weapon Aim - Increases your hit rate in melee"><i class="fas fa-crosshairs"></i>@item.WeaponAim</span>
-                                }
-                                @if (item.WeaponPower > 0)
-                                {
-                                                                                                <span class="item-stat" title="Weapon Power - Increases your maximum damage in melee"><i class="fas fa-swords"></i>@item.WeaponPower</span>
-                                }
-                                @if (item.RangedAim > 0)
-                                {
-                                                                                                <span class="item-stat" title="Ranged Aim - Increases your ranged hit rate"><i class="fas fa-crosshairs"></i>@item.RangedAim</span>
-                                }
-                                @if (item.RangedPower > 0)
-                                {
-                                                                                                <span class="item-stat" title="Ranged Power - Increases your ranged maximum damage"><i class="fas fa-bow-arrow"></i>@item.RangedPower</span>
-                                }
-                                @if (item.MagicAim > 0)
-                                {
-                                                                                                <span class="item-stat" title="Magic Aim - Increases your magic hit rate">
-                                                                                                    <i class="fas fa-wand"></i>@item.MagicAim
-                                                                                                </span>
-                                }
-                                @if (item.MagicPower > 0)
-                                {
-                                                                                                <span class="item-stat" title="Magic Power - Increases your magic maximum damage">
-                                                                                                    <i class="fas fa-hand-holding-magic"></i>
-                                        @item.MagicPower
-                                                                                                </span>
-                                }
-                                @if (item.ArmorPower > 0)
-                                {
-                                                                                                <span class="item-stat" title="Armor Power - Decreases the hit rate of your attacker"><i class="fas fa-shield"></i>@item.ArmorPower</span>
-                                }
-                                                                            </td>
-                                                                            <td class='item requirement'>
-                                @if (item.RequiredSlayerLevel > 0)
-                                {
-                                                                                                <span class="item-stat" title="Required Slayer Level">
-                                                                                                    <i class="fas fa-skull"></i>
-                                        @item.RequiredSlayerLevel
-                                                                                                </span>
-                                }
-                                @if (item.RequiredAttackLevel > 0)
-                                {
-                                                                                                <span class="item-stat" title="Required Attack Level">
-                                                                                                    <i class="fas fa-swords"></i>
-                                        @item.RequiredAttackLevel
-                                                                                                </span>
-                                }
-                                @if (item.RequiredDefenseLevel > 0)
-                                {
-                                                                                                <span class="item-stat" title="Required Defense Level">
-                                                                                                    <i class="fas fa-shield"></i>
-                                        @item.RequiredDefenseLevel
-                                                                                                </span>
-                                }
-                                @if (item.RequiredMagicLevel > 0)
-                                {
-                                                                                                <span class="item-stat" title="Required Magic or Healing Level">
-                                                                                                    <i class="fas fa-hand-holding-magic"></i>
-                                        @item.RequiredMagicLevel
-                                                                                                </span>
-                                }
-                                @if (item.RequiredRangedLevel > 0)
-                                {
-                                                                                                <span class="item-stat" title="Required Ranged Level">
-                                                                                                    <i class="fas fa-bow-arrow"></i>
-                                        @item.RequiredRangedLevel
-                                                                                                </span>
-                                }
-                                                                            </td>
-                                                                            <td class='item stash-item-category'>@item.Category</td>
-                                                                            <td class='item stash-item-type'>@ItemService.GetTypeName(item)</td>
-                                                                            <td class='item stash-item-material'>@ItemService.GetMaterialName(item)</td>
-                                                                            <td class='item item-actions'>
-                                @if (characters != null)
-                                {
-                                    foreach (var plr in characters)
-                                    {
-                                                              <button @onclick="()=>ShowSendToCharacter(entry, plr)" class="btn btn-action">@plr.Alias</button>
-                                    }
-                                }
-                                                                            </td>
-      
-                                                                        </tr>
-                    }
-                                                    </tbody>
-                                                </table>
-        }
-
-
-        @if (sendToCharacterDialogVisible)
-        {
-                                            <div class="item-details-dialog-container send-to-character">
-                                          <div class="item-details-dialog-background" @onclick="HideSendToCharacter"></div>
-                                          <div class="item-details-dialog vendor">
-                                              <div class="dialog-header">
-                                                  <h3>Transfer @GetItemName(itemToSend)</h3>
-                                              </div>
-                                              <div class="item-details-content vendor">
-                        @if (canSendMany)
+        <div class="rf-panel">
+            <div class="rf-scroll-x">
+                <table class="rf-table">
+                    <thead>
+                        <tr>
+                            <th scope="col" aria-sort="@AriaSort("name")">
+                                <button type="button" class="rf-th" @onclick="SortByName">Item @(Indicator("name"))</button>
+                            </th>
+                            <th scope="col" aria-sort="@AriaSort("stats")">
+                                <button type="button" class="rf-th" @onclick="SortByStats">Stats @(Indicator("stats"))</button>
+                            </th>
+                            <th scope="col" aria-sort="@AriaSort("lev-req")">
+                                <button type="button" class="rf-th" @onclick="SortByLevelReq">Requires @(Indicator("lev-req"))</button>
+                            </th>
+                            <th scope="col" aria-sort="@AriaSort("category")">
+                                <button type="button" class="rf-th" @onclick="SortByCategory">Category @(Indicator("category"))</button>
+                            </th>
+                            <th scope="col" aria-sort="@AriaSort("material")">
+                                <button type="button" class="rf-th" @onclick="SortByMaterial">Material @(Indicator("material"))</button>
+                            </th>
+                            <th scope="col"><span class="rf-th rf-th--static">Send</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var entry in stashFiltered)
                         {
-                                                    <div class="amount-inputs">
-                                                        <label>Amount:</label>
-                                                        <input @bind="amountToSend" type="number" min="1" max="@itemToSend.Amount" />
-                                                        <div class="quick-buttons">
-                                    @foreach (var amount in quickButtons)
-                                    {
-                                                                      <button @onclick="() => SetSendAmount(amount)" class="btn btn-action btn-quick">
-                                            @(amount == itemToSend.Amount ? $"{amount} (All)" : $"{amount}")
-                                                                       </button>
-                                    }
-                                                          </div>
-                                                      </div>
+                            var item = itemLookup[entry.ItemId];
+                            <tr>
+                                <td>
+                                    <div class="rf-item">
+                                        <span class="rf-item__img">
+                                            <img src="@(ItemService.GetItemImage(item.Id.ToString(), item.Name))" alt="" loading="lazy" />
+                                            @if (entry.Amount > 1)
+                                            {
+                                                <span class="rf-item__amount">@Utility.FormatAmount(entry.Amount)</span>
+                                            }
+                                        </span>
+                                        <span class="rf-item__body">
+                                            @*
+                                                The rarity tokens have existed since the design system was built and
+                                                had nothing using them. This is what they were for: picking the good
+                                                thing out of a long list without reading it.
+                                            *@
+                                            <span class="rf-item__name @ItemService.GetRarityClass(item)">@(entry.Name ?? item.Name)</span>
+                                            <span class="rf-item__meta">
+                                                @ItemService.GetTypeName(item)
+                                                @if (!string.IsNullOrEmpty(entry.Enchantment))
+                                                {
+                                                    <span class="rf-item__mark" title="@entry.Enchantment"><i class="fa-solid fa-sparkles" aria-hidden="true"></i> Enchanted</span>
+                                                }
+                                                @if (entry.Soulbound)
+                                                {
+                                                    <span class="rf-item__mark" title="Cannot be traded"><i class="fa-solid fa-link" aria-hidden="true"></i> Soulbound</span>
+                                                }
+                                            </span>
+                                        </span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="rf-chips">
+                                        @if (item.WeaponAim > 0)
+                                        {
+                                            <span class="rf-chip" title="Weapon aim, increases your hit rate in melee"><i class="fas fa-crosshairs" aria-hidden="true"></i>@item.WeaponAim</span>
+                                        }
+                                        @if (item.WeaponPower > 0)
+                                        {
+                                            <span class="rf-chip" title="Weapon power, increases your maximum damage in melee"><i class="fas fa-swords" aria-hidden="true"></i>@item.WeaponPower</span>
+                                        }
+                                        @if (item.RangedAim > 0)
+                                        {
+                                            <span class="rf-chip" title="Ranged aim, increases your ranged hit rate"><i class="fas fa-crosshairs" aria-hidden="true"></i>@item.RangedAim</span>
+                                        }
+                                        @if (item.RangedPower > 0)
+                                        {
+                                            <span class="rf-chip" title="Ranged power, increases your ranged maximum damage"><i class="fas fa-bow-arrow" aria-hidden="true"></i>@item.RangedPower</span>
+                                        }
+                                        @if (item.MagicAim > 0)
+                                        {
+                                            <span class="rf-chip" title="Magic aim, increases your magic hit rate"><i class="fas fa-wand" aria-hidden="true"></i>@item.MagicAim</span>
+                                        }
+                                        @if (item.MagicPower > 0)
+                                        {
+                                            <span class="rf-chip" title="Magic power, increases your magic maximum damage"><i class="fas fa-hand-holding-magic" aria-hidden="true"></i>@item.MagicPower</span>
+                                        }
+                                        @if (item.ArmorPower > 0)
+                                        {
+                                            <span class="rf-chip" title="Armour power, decreases the hit rate of your attacker"><i class="fas fa-shield" aria-hidden="true"></i>@item.ArmorPower</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="rf-chips">
+                                        @if (item.RequiredSlayerLevel > 0)
+                                        {
+                                            <span class="rf-chip" title="Required slayer level"><i class="fas fa-skull" aria-hidden="true"></i>@item.RequiredSlayerLevel</span>
+                                        }
+                                        @if (item.RequiredAttackLevel > 0)
+                                        {
+                                            <span class="rf-chip" title="Required attack level"><i class="fas fa-swords" aria-hidden="true"></i>@item.RequiredAttackLevel</span>
+                                        }
+                                        @if (item.RequiredDefenseLevel > 0)
+                                        {
+                                            <span class="rf-chip" title="Required defense level"><i class="fas fa-shield" aria-hidden="true"></i>@item.RequiredDefenseLevel</span>
+                                        }
+                                        @if (item.RequiredMagicLevel > 0)
+                                        {
+                                            <span class="rf-chip" title="Required magic or healing level"><i class="fas fa-hand-holding-magic" aria-hidden="true"></i>@item.RequiredMagicLevel</span>
+                                        }
+                                        @if (item.RequiredRangedLevel > 0)
+                                        {
+                                            <span class="rf-chip" title="Required ranged level"><i class="fas fa-bow-arrow" aria-hidden="true"></i>@item.RequiredRangedLevel</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="rf-table__quiet">@item.Category</td>
+                                <td class="rf-table__quiet">@ItemService.GetMaterialName(item)</td>
+                                <td>
+                                    @*
+                                        One button rather than one per character. With five characters the old row
+                                        ended in five buttons, which is most of the width of the table spent on the
+                                        same word repeated.
+                                    *@
+                                    <button type="button" class="rf-btn rf-btn--small" @onclick="() => ShowSendToCharacter(entry)">
+                                        Send <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                                    </button>
+                                </td>
+                            </tr>
                         }
-                                                  <div class="summary-block">
-                                                      <p>You are about to send <strong>@amountToSend</strong> @GetItemName(itemToSend) to <strong>@targetCharacter.Alias</strong>.</p>
-                                                  </div>
-                                                  <div class="warning-row">Are you sure you want to continue?</div>
-                                              </div>
-                                              <div class="item-actions">
-                                                  <button @onclick="HideSendToCharacter" class="btn btn-action">Cancel</button>
-                                                  <button @onclick="SendItems" class="btn btn-action vendor">Confirm</button>
-                                              </div>
-                                          </div>
-                                      </div>
-        }
-
+                    </tbody>
+                </table>
+            </div>
+        </div>
     }
 
+    @if (sendToCharacterDialogVisible && itemToSend != null)
+    {
+        <div class="rf-modal-backdrop" @onclick="HideSendToCharacter">
+            <div class="rf-modal rf-modal--wide" role="dialog" aria-modal="true" aria-label="Send @GetItemName(itemToSend)" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">Send @GetItemName(itemToSend)</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="HideSendToCharacter">&times;</button>
+                </div>
+
+                @*
+                    Picking the character is the decision, so it happens here with the information
+                    needed to make it. Whether a character can actually use the thing you are
+                    sending was never shown anywhere, and it is a comparison of two numbers the
+                    page already holds.
+                *@
+                <span class="rf-label">Send to</span>
+                <div class="rf-charpick rf-charpick--compact">
+                    @foreach (var plr in characters ?? Enumerable.Empty<WebsitePlayer>())
+                    {
+                        var note = RequirementNote(plr, ItemService.GetItem(itemToSend.ItemId));
+                        <button type="button"
+                                class="rf-char @(targetCharacter?.Id == plr.Id ? "is-active" : "")"
+                                @onclick="() => SelectTarget(plr)">
+                            <span class="rf-char__name">@plr.Name</span>
+                            <span class="rf-char__level">@PlayerService.GetCombatLevel(plr)</span>
+                            <span class="rf-char__slot">
+                                @if (note == null)
+                                {
+                                    <span>Can use this</span>
+                                }
+                                else
+                                {
+                                    <span class="rf-char__warn">@note</span>
+                                }
+                            </span>
+                        </button>
+                    }
+                </div>
+
+                @if (canSendMany)
+                {
+                    <label class="rf-field">
+                        <span class="rf-label">Amount</span>
+                        <input type="number" class="rf-input" min="1" max="@itemToSend.Amount" @bind="amountToSend" />
+                    </label>
+                    <div class="rf-actions">
+                        @foreach (var amount in quickButtons)
+                        {
+                            <button type="button" class="rf-btn rf-btn--small" @onclick="() => SetSendAmount(amount)">
+                                @(amount == itemToSend.Amount ? $"All ({Utility.FormatAmount(amount)})" : Utility.FormatAmount(amount))
+                            </button>
+                        }
+                    </div>
+                }
+
+                <p class="rf-meta">
+                    @if (targetCharacter == null)
+                    {
+                        <span>Pick a character to send to.</span>
+                    }
+                    else
+                    {
+                        <span>Sending <b>@Utility.FormatAmount(amountToSend)</b> @GetItemName(itemToSend) to <b>@targetCharacter.Name</b>.</span>
+                    }
+                </p>
+
+                <div class="rf-modal__foot">
+                    <button type="button" class="rf-btn" @onclick="HideSendToCharacter">Cancel</button>
+                    <button type="button" class="rf-btn rf-btn--primary" disabled="@(targetCharacter == null)" @onclick="SendItems">Send</button>
+                </div>
+            </div>
+        </div>
+    }
 }
 
 @code {
@@ -296,10 +320,10 @@ else
 
     private IReadOnlyList<WebsitePlayer> characters { get; set; }
 
-    private bool sorting;
     private string sort = "name";
     private BusinessLogic.Game.SortDirection sortDirection;
     private ItemFilter itemFilter = ItemFilter.All;
+    private string search = "";
 
     private RavenNest.Models.UserBankItem itemToSend;
     private WebsitePlayer targetCharacter;
@@ -309,6 +333,35 @@ else
     private long amountToSend;
 
     private List<long> quickButtons = new();
+
+    private long TotalItemCount => stash?.Sum(x => x.Amount) ?? 0;
+
+    private long TotalVendorValue =>
+        stash == null || itemLookup == null
+            ? 0
+            : stash.Sum(x => itemLookup.TryGetValue(x.ItemId, out var i) ? i.ShopSellPrice * x.Amount : 0);
+
+    /// <summary>
+    ///     Null when the character meets every requirement, otherwise what is missing. The magic
+    ///     requirement is satisfied by either magic or healing, which is what the in game tooltip
+    ///     has always said.
+    /// </summary>
+    private string RequirementNote(WebsitePlayer player, RavenNest.Models.Item item)
+    {
+        if (player?.Skills == null || item == null)
+            return null;
+
+        var missing = new List<string>();
+        if (item.RequiredAttackLevel > player.Skills.AttackLevel) missing.Add("Attack " + item.RequiredAttackLevel);
+        if (item.RequiredDefenseLevel > player.Skills.DefenseLevel) missing.Add("Defense " + item.RequiredDefenseLevel);
+        if (item.RequiredRangedLevel > player.Skills.RangedLevel) missing.Add("Ranged " + item.RequiredRangedLevel);
+        if (item.RequiredSlayerLevel > player.Skills.SlayerLevel) missing.Add("Slayer " + item.RequiredSlayerLevel);
+
+        var magic = Math.Max(player.Skills.MagicLevel, player.Skills.HealingLevel);
+        if (item.RequiredMagicLevel > magic) missing.Add("Magic " + item.RequiredMagicLevel);
+
+        return missing.Count == 0 ? null : "Needs " + string.Join(", ", missing);
+    }
 
     private void UpdateQuickButtons()
     {
@@ -361,40 +414,58 @@ else
     private void SelectItemFilter(ItemFilter newItemFilter)
     {
         itemFilter = newItemFilter;
-        stashFiltered = stash.Where(Filter).ToList();
+        ApplyFilters();
         InvokeAsync(StateHasChanged);
     }
 
-    private bool Filter(UserBankItem item)
+    private void OnSearchChanged(ChangeEventArgs e)
     {
-        if (itemFilter == ItemFilter.All)
+        search = e.Value?.ToString() ?? "";
+        ApplyFilters();
+    }
+
+    private void ClearFilters()
+    {
+        search = "";
+        itemFilter = ItemFilter.All;
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        stashFiltered = stash.Where(Filter).ToList();
+    }
+
+    private bool Filter(UserBankItem entry)
+    {
+        if (itemFilter != ItemFilter.All && ItemService.GetItemFilter(entry.ItemId) != itemFilter)
+            return false;
+
+        if (string.IsNullOrWhiteSpace(search))
             return true;
 
-        return ItemService.GetItemFilter(item.ItemId) == itemFilter;
+        var name = entry.Name ?? (itemLookup != null && itemLookup.TryGetValue(entry.ItemId, out var i) ? i.Name : null);
+        return name != null && name.Contains(search.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
-    public void Vendor(RavenNest.Models.UserBankItem item)
+    public void ShowSendToCharacter(RavenNest.Models.UserBankItem item)
     {
-        // unfortunately we need a character to put the coins in, vendor has to wait.
-        //PlayerService.Vendor(targetCharacter.Id, item, item.Amount);
-        //UpdateStashItems();
-        //InvokeAsync(StateHasChanged);
-    }
-
-
-    public void ShowSendToCharacter(RavenNest.Models.UserBankItem item, WebsitePlayer targetCharacter)
-    {
-        this.targetCharacter = targetCharacter;
         sendToCharacterDialogVisible = true;
         canSendMany = item.Amount > 1;
         itemToSend = item;
         amountToSend = item.Amount;
+        // Preselect when there is only one character, because then there is no decision to make.
+        targetCharacter = characters != null && characters.Count == 1 ? characters[0] : null;
         UpdateQuickButtons();
+    }
+
+    private void SelectTarget(WebsitePlayer player)
+    {
+        targetCharacter = player;
     }
 
     public string GetItemName(RavenNest.Models.UserBankItem i)
     {
-
         if (i == null) return null;
         return i.Name ?? ItemService.GetItem(i.ItemId)?.Name;
     }
@@ -406,6 +477,11 @@ else
 
     public void SendItems()
     {
+        if (targetCharacter == null)
+        {
+            return;
+        }
+
         if (!PlayerService.SendToCharacter(targetCharacter.Id, itemToSend, amountToSend))
         {
             return;
@@ -421,13 +497,6 @@ else
     {
         sendToCharacterDialogVisible = false;
     }
-
-    // public void SendToCharacter(RavenNest.Models.UserBankItem item, WebsitePlayer targetCharacter)
-    // {
-    //     PlayerService.SendToCharacter(targetCharacter.Id, item);
-    //     UpdateStashItems();
-    //     InvokeAsync(StateHasChanged);
-    // }
 
     protected override void OnAfterRender(bool firstRender)
     {
@@ -458,12 +527,10 @@ else
             stash = new List<RavenNest.Models.UserBankItem>();
         }
 
-        stashFiltered = stash.Where(Filter).ToList();
+        ApplyFilters();
     }
 
-
-
-    private MarkupString GetIndicator(string value)
+    private MarkupString Indicator(string value)
     {
         if (value != sort)
         {
@@ -471,6 +538,12 @@ else
         }
 
         return (MarkupString)(sortDirection == BusinessLogic.Game.SortDirection.Ascending ? "&uarr;" : "&darr;");
+    }
+
+    private string AriaSort(string value)
+    {
+        if (value != sort) return "none";
+        return sortDirection == BusinessLogic.Game.SortDirection.Ascending ? "ascending" : "descending";
     }
 
     private async void SortByName()
@@ -491,11 +564,6 @@ else
         await SortBy((b, x) => (int)x.Category);
     }
 
-    private async void SortByType()
-    {
-        SetSorting("type");
-        await SortBy((b, x) => (int)x.Type);
-    }
     private async void SortByMaterial()
     {
         SetSorting("material");
@@ -514,7 +582,6 @@ else
     {
         try
         {
-            sorting = true;
             await Task.Run(() =>
             {
                 if (sortDirection == BusinessLogic.Game.SortDirection.Descending)
@@ -527,7 +594,6 @@ else
         }
         finally
         {
-            sorting = false;
             StateHasChanged();
         }
     }
@@ -544,6 +610,4 @@ else
         }
         sort = value;
     }
-
-
 }

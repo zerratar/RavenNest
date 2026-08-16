@@ -25,6 +25,43 @@ namespace RavenNest.BusinessLogic.Game
             this.logger = logger;
         }
 
+        public async Task<RavenNest.Twitch.TwitchRequests.TwitchUser> GetUserByIdAsync(string twitchUserId)
+        {
+            if (string.IsNullOrEmpty(twitchUserId))
+            {
+                return null;
+            }
+
+            var users = await GetUsersByIdAsync(new[] { twitchUserId });
+            return users.Count > 0 ? users[0] : null;
+        }
+
+        public async Task<IReadOnlyList<RavenNest.Twitch.TwitchRequests.TwitchUser>> GetUsersByIdAsync(
+            IReadOnlyList<string> twitchUserIds)
+        {
+            if (twitchUserIds == null || twitchUserIds.Count == 0)
+            {
+                return Array.Empty<RavenNest.Twitch.TwitchRequests.TwitchUser>();
+            }
+
+            try
+            {
+                // Built per call rather than held. It caches an app token internally, and the two
+                // callers are session start and the periodic rename check, neither of which is hot.
+                var requests = new RavenNest.Twitch.TwitchRequests(
+                    null, appSettings.TwitchClientId, appSettings.TwitchClientSecret);
+
+                return await requests.GetUsersByIdAsync(twitchUserIds);
+            }
+            catch (Exception exc)
+            {
+                // A rename check is a nice to have. Twitch being unreachable must never stop someone
+                // from starting their stream, so this is logged and swallowed.
+                logger.LogError("Unable to resolve Twitch users: " + exc);
+                return Array.Empty<RavenNest.Twitch.TwitchRequests.TwitchUser>();
+            }
+        }
+
         public async Task<Subscription> GetSubscriberAsync(string userId)
         {
             try

@@ -82,6 +82,51 @@ namespace RavenNest.BusinessLogic
             {
                 logger.LogError(exc.ToString());
             }
+
+            // Deliberately no network push here. This runs on every successful player join, so at a
+            // thousand players a stream that would be a couple of thousand extra requests to the bot
+            // for names that did not change. PushUserNamesAsync is called instead by the paths that
+            // actually detect a rename.
+        }
+
+        /// <summary>
+        /// Sends the name fields to the bot.
+        /// </summary>
+        /// <remarks>
+        /// Call only when a name has actually changed. The file written by
+        /// <see cref="UpdateUserSettingsAsync"/> only reaches a bot on the same machine, which is
+        /// not the normal deployment, so without this a rename never reached the bot at all.
+        ///
+        /// <para>
+        /// Only the names are sent rather than the whole settings object, because these are the
+        /// values the bot uses to decide which channel a session belongs to and each setting costs
+        /// one request.
+        /// </para>
+        /// </remarks>
+        public async Task PushUserNamesAsync(Guid userId)
+        {
+            try
+            {
+                var settings = gameData.GetUserSettings(userId);
+                if (settings == null)
+                {
+                    return;
+                }
+
+                if (settings.TryGetValue("ravenfall_name", out var ravenfallName) && ravenfallName != null)
+                {
+                    await SendUserSettingAsync(userId, "ravenfall_name", ravenfallName.ToString());
+                }
+
+                if (settings.TryGetValue("twitch_name", out var twitchName) && twitchName != null)
+                {
+                    await SendUserSettingAsync(userId, "twitch_name", twitchName.ToString());
+                }
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+            }
         }
 
         public void UpdateUserSettings(Guid userId)
@@ -99,7 +144,9 @@ namespace RavenNest.BusinessLogic
                     return; // we don't have anything to save.
                 }
 
-                if (System.IO.Directory.Exists(dir))
+                // The check was inverted here: the directory was only created when it already
+                // existed, so the write below threw on a fresh install and the settings were lost.
+                if (!System.IO.Directory.Exists(dir))
                     System.IO.Directory.CreateDirectory(dir);
                 var json = Newtonsoft.Json.JsonConvert.SerializeObject(settings);
                 System.IO.File.WriteAllText(targetFile, json);
@@ -108,6 +155,20 @@ namespace RavenNest.BusinessLogic
             {
                 logger.LogError(exc.ToString());
             }
+        }
+
+        public async Task SendUserSettingAsync(Guid userId, string key, string value)
+        {
+            if (userId == Guid.Empty || string.IsNullOrEmpty(key))
+            {
+                return;
+            }
+
+            // "usersettings" resolves to UserSettingsPacketHandler on the bot, which has always been
+            // there but was never called: settings were only ever written to a file. That works when
+            // both run on the same machine and silently does nothing otherwise, which is the normal
+            // deployment.
+            await SendAsync(currentHostIndex, "usersettings", userId.ToString(), key, value ?? string.Empty);
         }
 
         public async Task SendTwitchPubSubAccessTokenAsync(string id, string login, string accessToken)

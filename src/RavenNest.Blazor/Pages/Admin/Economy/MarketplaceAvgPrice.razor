@@ -1,6 +1,8 @@
 ﻿@layout AdminLayout
 @page "/admin/economy/marketplace/avg-price"
 @using RavenNest.BusinessLogic.Game;
+@using Blazorise
+@using Blazorise.Charts
 
 @inject RavenNest.BusinessLogic.Data.GameData GameData;
 @inject RavenNest.Blazor.Services.AuthService AuthService
@@ -9,82 +11,128 @@
 
 @if (isAdmin)
 {
-    <ul>
-        <li><a href="/admin/economy">Overview</a></li>
-        <li><a href="/admin/economy/marketplace">Marketplace</a></li>
-    </ul>
+    <header class="rf-page-head">
+        <h1 class="rf-page-title">Average prices</h1>
+        <p class="rf-page-subtitle">
+            What each item actually sold for, per day, over the last 30 days. Busiest items first.
+        </p>
+    </header>
 
-    <h3>Average Item Price Over Time</h3>
+    <EconomyNav Current="avg-price"></EconomyNav>
 
-    if (chartData == null || chartData.Count == 0)
+    @if (loadFailed)
     {
+        <div class="rf-banner rf-banner--bad">
+            <div class="rf-banner__title">This did not load</div>
+            <p>Reading the sale history failed, so the charts below are incomplete or missing.</p>
+        </div>
+    }
 
+    @if (chartData == null)
+    {
         <LoadIndicator></LoadIndicator>
+    }
+    else if (chartData.Count == 0)
+    {
+        <div class="rf-panel">
+            <p class="rf-meta">Nothing has sold on the marketplace in the last 30 days.</p>
+        </div>
     }
     else
     {
+        @*
+            This drew one chart per item with no limit. Thirty days of a busy marketplace is
+            hundreds of distinct items, so the page was building hundreds of charts into the DOM
+            at once. Ordered by how much was actually traded and paged ten at a time, so the items
+            that matter are on the first page rather than whichever the query happened to return
+            first.
+        *@
+        <div class="rf-toolbar">
+            <span class="rf-meta">@chartData.Count items sold in the period</span>
+        </div>
 
-        <h4>Average sale price per item past 30 days</h4>
-        foreach (var lcd in chartData)
+        @foreach (var lcd in Page(chartData, page))
         {
-            <div class="item-sales-row">
-                <div class="details-wrapper">
-                    <img class="item-image" src="@(ItemService.GetItemImage(lcd.ItemId))" />
-                    <div class="details">
-                        <h4>@lcd.ItemName</h4>
-                        <p>Sold a total of <b>@lcd.TotalSoldCount</b>, for <b>@Utility.FormatAmount(lcd.TotalAvgAmount)</b></p>
-                    </div>
+            <section class="rf-panel">
+                <div class="rf-item rf-avgprice__head">
+                    <span class="rf-item__img">
+                        <img src="@(ItemService.GetItemImage(lcd.ItemId))" alt="" loading="lazy" />
+                    </span>
+                    <span class="rf-item__body">
+                        <span class="rf-item__name">@lcd.ItemName</span>
+                        <span class="rf-item__meta">
+                            <span>@lcd.TotalSoldCount.ToString("N0") sold</span>
+                            <span>@Utility.FormatAmount(lcd.TotalTraded) coins traded</span>
+                            <span>@Utility.FormatAmount(lcd.AveragePrice) average each</span>
+                        </span>
+                    </span>
                 </div>
 
                 <LineChart TItem="double" Data="@lcd.ChartData" Options="@lineChartOptions"></LineChart>
-            </div>
+            </section>
         }
+
+        <nav class="rf-pager" aria-label="Item pages">
+            <button type="button" class="rf-btn rf-btn--small" disabled="@(page == 0)" @onclick="() => page--">Previous</button>
+            <span class="rf-meta">Page @(page + 1) of @PageCount(chartData.Count)</span>
+            <button type="button" class="rf-btn rf-btn--small" disabled="@(page + 1 >= PageCount(chartData.Count))" @onclick="() => page++">Next</button>
+        </nav>
     }
 }
 
 @code {
     private bool isAdmin;
+    private bool loadFailed;
     private RavenNest.Models.SessionInfo session;
 
-    private List<ChartData<double>> lineChartData = new();
-    private List<ChartDataContainer> chartData = new();
+    private List<ChartDataContainer> chartData;
+
+    private const int PageSize = 10;
+    private int page;
+
+    // The chart library takes colour strings rather than CSS, so this repeats --rf-gold by hand.
+    private const string ChartGold = "#e8a33d";
 
     private LineChartOptions lineChartOptions = new LineChartOptions
         {
+            Responsive = true,
             Scales = new ChartScales
             {
                 X = new ChartAxis
                 {
-                    Title = new ChartScaleTitle
-                    {
-                        Text = new IndexableOption<string>("Date")
-                    }
+                    Title = new ChartScaleTitle { Text = new IndexableOption<string>("Date") }
                 },
                 Y = new ChartAxis
                 {
-                    Title = new ChartScaleTitle
-                    {
-                        Text = new IndexableOption<string>("Average Price")
-                    }
+                    Title = new ChartScaleTitle { Text = new IndexableOption<string>("Average price") }
                 }
             }
         };
 
+    private static int PageCount(int total) => Math.Max(1, (int)Math.Ceiling(total / (double)PageSize));
+
+    private static IEnumerable<T> Page<T>(IReadOnlyList<T> source, int p) =>
+        source.Skip(p * PageSize).Take(PageSize);
 
     protected override async Task OnInitializedAsync()
     {
         session = AuthService.GetSession();
         isAdmin = session != null && session.Administrator;
+
         try
         {
             var startDate = DateTime.UtcNow.Date.AddDays(-30);
             var endDate = DateTime.UtcNow.Date;
 
-            // .GetMarketplaceReports
             var transactions = await Task.Run(() => EconomyService.GetMarketItemTransactions(startDate, endDate));
+            var built = new List<ChartDataContainer>();
 
             foreach (var itemGroup in transactions.GroupBy(x => x.ItemId))
             {
+                // Was `GameData.GetItem(id).Name`, so one item deleted since it last sold took the
+                // whole page down, silently, because the catch below discarded the exception.
+                var item = GameData.GetItem(itemGroup.Key);
+                var itemName = item?.Name ?? "Unknown item";
 
                 var lcd = new ChartData<double>
                     {
@@ -92,67 +140,63 @@
                         Labels = new List<object>()
                     };
 
-                var item = GameData.GetItem(itemGroup.First().ItemId);
-                var itemName = item.Name;
-
                 var lineDataSet = new LineChartDataset<double>
                     {
-                        Label = "Average Price for " + itemName,
-                        BackgroundColor = "rgba(75, 192, 192, 0.2)",
-                        BorderColor = "rgba(75, 192, 192, 1)",
+                        Label = "Average price for " + itemName,
+                        BorderColor = ChartGold,
+                        PointBackgroundColor = ChartGold,
+                        PointBorderColor = ChartGold,
+                        PointRadius = 1,
                         Fill = false,
                         Data = new List<double>()
                     };
 
-                foreach (var day in itemGroup.GroupBy(x => x.Created.Date))
+                foreach (var day in itemGroup.GroupBy(x => x.Created.Date).OrderBy(x => x.Key))
                 {
-                    var date = day.Key;
                     var soldCount = day.Sum(x => x.Amount);
                     var totalPrice = day.Sum(x => x.TotalPrice);
-                    var avgPrice = totalPrice / soldCount;
-
-                    lineDataSet.Data.Add(avgPrice);
-                    lcd.Labels.Add(date.ToShortDateString());
+                    // A day can record a sale of zero units. Dividing by it produced infinity and
+                    // an unplottable point.
+                    lineDataSet.Data.Add(soldCount == 0 ? 0 : totalPrice / soldCount);
+                    lcd.Labels.Add(day.Key.ToString("yyyy-MM-dd"));
                 }
 
                 lcd.Datasets.Add(lineDataSet);
-                this.chartData.Add(new ChartDataContainer
+
+                var totalSold = itemGroup.Sum(x => x.Amount);
+                var totalTraded = itemGroup.Sum(x => x.TotalPrice);
+
+                built.Add(new ChartDataContainer
                     {
                         ChartData = lcd,
-                        ItemId = item.Id,
+                        ItemId = itemGroup.Key,
                         ItemName = itemName,
-                        TotalSoldCount = itemGroup.Sum(x => x.Amount),
-                        TotalAvgAmount = itemGroup.Average(x => x.TotalPrice)
+                        TotalSoldCount = totalSold,
+                        TotalTraded = totalTraded,
+                        // The old page called this "TotalAvgAmount", showed the average value of a
+                        // transaction, and labelled it "sold a total of N, for X", which reads as
+                        // the total takings. It is the average price of one unit now, and the
+                        // total is stated separately.
+                        AveragePrice = totalSold == 0 ? 0 : totalTraded / totalSold
                     });
-
-
-                //lineChartData.Add(lcd);
             }
+
+            chartData = built.OrderByDescending(x => x.TotalTraded).ToList();
         }
-        catch (System.Exception exc)
+        catch
         {
+            loadFailed = true;
+            chartData ??= new List<ChartDataContainer>();
         }
     }
 
-    private string FormatCoins(double coins)
-    {
-        if (coins >= 1_000_000_000_000)
-            return $"{coins / 1_000_000_000_000:0.##}T";
-        if (coins >= 1_000_000_000)
-            return $"{coins / 1_000_000_000:0.##}B";
-        if (coins >= 1_000_000)
-            return $"{coins / 1_000_000:0.##}M";
-        if (coins >= 1_000)
-            return $"{coins / 1_000:0.##}K";
-
-        return coins.ToString("0.##");
-    }
     private class ChartDataContainer
     {
         public Guid ItemId { get; set; }
         public string ItemName { get; set; }
         public long TotalSoldCount { get; set; }
-        public double TotalAvgAmount { get; set; }
+        public double TotalTraded { get; set; }
+        public double AveragePrice { get; set; }
         public ChartData<double> ChartData { get; set; }
     }
 }

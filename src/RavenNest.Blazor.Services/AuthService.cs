@@ -93,7 +93,7 @@ namespace RavenNest.Blazor.Services
             }
         }
 
-        public async Task<SessionInfo> KickLoginAsync(string code, string scope, string code_verifier, string code_challenge)
+        public async Task<SessionInfo> KickLoginAsync(string code, string scope, string code_verifier, string code_challenge, string origin = null)
         {
             try
             {
@@ -101,7 +101,9 @@ namespace RavenNest.Blazor.Services
 
                 // we need to get the access token to use
 
-                var redirectUrl = $"https://{((Context?.Request?.Host.ToString()) ?? "www.ravenfall.stream")}/login/kick";
+                // Must match the redirect_uri sent to the authorize endpoint exactly, or Kick
+                // rejects the token exchange. Same origin resolution as GetKickLoginUrl.
+                var redirectUrl = ResolveOrigin(origin) + "/login/kick";
                 var kick = new KickRequests(code, scope, code_verifier, code_challenge, redirectUrl, settings.KickClientId, settings.KickClientSecret);
                 var kickAuth = await kick.AuthenticateAsync();
 
@@ -125,19 +127,18 @@ namespace RavenNest.Blazor.Services
                             return sessionInfo;
                         }
 
-                        var cleanUsername = GetUserNameWithoutPlatform(u.UserName);
-                        if (!cleanUsername.Equals(user.Name, System.StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(user.Name))
+                        // Same single path as the Twitch branch above, so both platforms leave the
+                        // account in the same state.
+                        var kickNameChanged = UserNameSync.Apply(gameData, u, "kick", user.Id.ToString(), user.Name, user.Name);
+                        if (kickNameChanged)
                         {
-                            var platformPostfix = u.UserName.Replace(cleanUsername, "");
-                            u.UserName = user.Name + platformPostfix;
-                            sessionInfo.UserName = user.Name + platformPostfix;
+                            sessionInfo.UserName = u.UserName;
                             sessionInfo.UserNameChanged = true;
                         }
 
                         var userAccess = gameData.GetUserAccess(u.Id, "kick");
                         if (userAccess != null)
                         {
-                            userAccess.PlatformUsername = user.Name; // in case username was changed, always keep this one up to date.
                             userAccess.AccessToken = kickAuth.access_token;
                             userAccess.Updated = System.DateTime.UtcNow;
                         }
@@ -147,6 +148,13 @@ namespace RavenNest.Blazor.Services
                         gameData.SetUserProperty(u.Id, UserProperties.Kick_AccessToken, kickAuth.access_token);
 
                         await ravenbotApi.UpdateUserSettingsAsync(u.Id);
+
+                        // Only on an actual rename. Moves a live session to the renamed channel
+                        // instead of leaving the bot in the old one until the next game restart.
+                        if (kickNameChanged)
+                        {
+                            await ravenbotApi.PushUserNamesAsync(u.Id);
+                        }
 
                         //await ravenbotApi.SendTwitchPubSubAccessTokenAsync(user.Id, user.Login, accessToken);
                     }
@@ -187,19 +195,19 @@ namespace RavenNest.Blazor.Services
                             return sessionInfo;
                         }
 
-                        var cleanUsername = GetUserNameWithoutPlatform(u.UserName);
-                        if (!cleanUsername.Equals(user.Login, System.StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(user.Login))
+                        // One call keeps UserName, DisplayName, the access row and the character
+                        // names in step. This used to update only some of them here and a different
+                        // subset elsewhere, which is how accounts ended up half renamed.
+                        var twitchNameChanged = UserNameSync.Apply(gameData, u, "twitch", user.Id, user.Login, user.DisplayName);
+                        if (twitchNameChanged)
                         {
-                            var platformPostfix = u.UserName.Replace(cleanUsername, "");
-                            u.UserName = user.Login + platformPostfix;
-                            sessionInfo.UserName = user.Login + platformPostfix;
+                            sessionInfo.UserName = u.UserName;
                             sessionInfo.UserNameChanged = true;
                         }
 
                         var twitchUserAccess = gameData.GetUserAccess(u.Id, "twitch");
                         if (twitchUserAccess != null)
                         {
-                            twitchUserAccess.PlatformUsername = user.Login; // in case username was changed, always keep this one up to date.
                             twitchUserAccess.AccessToken = accessToken;
                             twitchUserAccess.Updated = System.DateTime.UtcNow;
                         }
@@ -209,6 +217,13 @@ namespace RavenNest.Blazor.Services
                         gameData.SetUserProperty(u.Id, UserProperties.Twitch_PubSub, accessToken);
 
                         await ravenbotApi.UpdateUserSettingsAsync(u.Id);
+
+                        // Only on an actual rename. Moves a live session to the renamed channel
+                        // instead of leaving the bot in the old one until the next game restart.
+                        if (twitchNameChanged)
+                        {
+                            await ravenbotApi.PushUserNamesAsync(u.Id);
+                        }
 
                         //await ravenbotApi.SendTwitchPubSubAccessTokenAsync(user.Id, user.Login, accessToken);
                     }
@@ -224,13 +239,9 @@ namespace RavenNest.Blazor.Services
             }
         }
 
-        private string GetUserNameWithoutPlatform(string userName)
-        {
-            if (string.IsNullOrEmpty(userName) || !userName.Contains("@"))
-                return userName.Trim();
-
-            return userName.Split('@')[0].Trim();
-        }
+        // The platform suffix is now handled by UserNameSync.GetPlatformSuffix, which keeps the
+        // suffix instead of rebuilding the name with string replacement. The old approach stripped
+        // every occurrence of the name, so an account like "abc@abcstream" lost the wrong part.
 
         public async Task<SessionInfo> LoginAsync(UserLoginModel model)
         {
@@ -260,7 +271,45 @@ namespace RavenNest.Blazor.Services
         }
 
 
-        public string GetTwitchLoginUrl(string redirectToAfterLogin = "")
+        /// <summary>
+        /// Works out the origin ("scheme://host:port") that an OAuth provider should send the user
+        /// back to.
+        /// </summary>
+        /// <remarks>
+        /// This is the reason signing in on localhost ended up at www.ravenfall.stream. These URLs
+        /// are built from a button click, which in Blazor Server runs on the SignalR circuit rather
+        /// than during an HTTP request, and <see cref="RavenNestService.Context"/> is null there.
+        /// The host lookup silently fell through to the production fallback every time.
+        ///
+        /// <para>
+        /// Callers running in a component pass NavigationManager.BaseUri, which is correct on the
+        /// circuit. HttpContext is still used when there is one, and the production host remains
+        /// the last resort.
+        /// </para>
+        ///
+        /// <para>
+        /// The scheme is taken from the request rather than hardcoded to https, because Twitch and
+        /// Kick both allow http for localhost and that is exactly the case this needs to support.
+        /// </para>
+        /// </remarks>
+        private string ResolveOrigin(string origin)
+        {
+            if (!string.IsNullOrEmpty(origin) &&
+                Uri.TryCreate(origin, UriKind.Absolute, out var parsed))
+            {
+                return parsed.GetLeftPart(UriPartial.Authority);
+            }
+
+            var request = Context?.Request;
+            if (request != null && request.Host.HasValue)
+            {
+                return request.Scheme + "://" + request.Host.Value;
+            }
+
+            return "https://www.ravenfall.stream";
+        }
+
+        public string GetTwitchLoginUrl(string redirectToAfterLogin = "", string origin = null)
         {
             //could move List to parameters for passing more parameters for twitch to give back. This is an odd way of doing it but bonus effect
             //of adding some protection against CSRF
@@ -268,15 +317,15 @@ namespace RavenNest.Blazor.Services
             if (!string.IsNullOrEmpty(redirectToAfterLogin))
                 StateParametersList.Add(new("redirect", redirectToAfterLogin));
 
-            var host = (Context?.Request?.Host.ToString()) ?? "www.ravenfall.stream";
+            var baseUrl = ResolveOrigin(origin);
 
             return $"https://id.twitch.tv/oauth2/authorize?client_id={settings.TwitchClientId}&redirect_uri="
-                    + $"https://{host}/login/twitch"
+                    + $"{baseUrl}/login/twitch"
                     + "&response_type=token&scope=user:read:email+bits:read+channel:read:subscriptions+channel:read:redemptions"
                     + "&state=" + GetRandomizedBase64EncodedStateParameters(StateParametersList);
         }
 
-        public string GetKickLoginUrl(string redirectToAfterLogin = "")
+        public string GetKickLoginUrl(string redirectToAfterLogin = "", string origin = null)
         {
             // Generate a new code verifier and code challenge for this login attempt.
             var codeVerifier = PkceUtil.GenerateCodeVerifier();
@@ -294,9 +343,9 @@ namespace RavenNest.Blazor.Services
             StateParametersList.Add(new("code_challenge", base64EncodedCodeChallenge));
             StateParametersList.Add(new("scope", scope));
 
-            var host = (Context?.Request?.Host.ToString()) ?? "www.ravenfall.stream";
+            var baseUrl = ResolveOrigin(origin);
             var kickUrl = $"https://id.kick.com/oauth/authorize?client_id={settings.KickClientId}&redirect_uri="
-                    + $"https://{host}/login/kick"
+                    + $"{baseUrl}/login/kick"
                     + "&response_type=code"
                     + "&scope=" + scope
                     + "&code_challenge=" + base64EncodedCodeChallenge

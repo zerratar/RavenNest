@@ -1,36 +1,206 @@
-﻿@inject RavenNest.Blazor.Services.ClanService ClanService
+@using RavenNest.BusinessLogic
+@using RavenNest.BusinessLogic.Game
+@inject RavenNest.Blazor.Services.ClanService ClanService
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject NavigationManager NavigationManager
 
+@*
+    The clan tab used to be a logo, a name, a level and a Leave button. Everything below already
+    existed on the server and had no way of being seen: clan skills were not rendered anywhere on
+    the site at all, and your own rank and join date were only ever visible in game.
+*@
 @if (session == null && clan == null)
 {
 	<LoadIndicator></LoadIndicator>
 }
+else if (clan == null)
+{
+	<div class="rf-panel rf-panel--accent">
+		<h3 class="rf-panel__title">Not in a clan</h3>
+		<p class="rf-meta">
+			Clan members share clan skills and a clan level that everyone's play contributes to.
+			You can start your own clan or look at invites you have been sent.
+		</p>
+		<div class="rf-actions">
+			<a class="rf-btn rf-btn--primary" href="/clan">Clans</a>
+			<a class="rf-btn" href="/clan-invites">My invites</a>
+		</div>
+	</div>
+}
 else
 {
-	if (clan == null)
-	{
-		<h2>This character is not part of a clan. Join a clan to get more information here!</h2>
-	}
-	else
-	{
-		<div class="clan-header">
-			@if (!string.IsNullOrEmpty(clan.Logo))
+	<div class="rf-clan">
+		@if (!string.IsNullOrEmpty(clan.Logo))
+		{
+			<img src="@clan.Logo" class="rf-clan__logo" alt="@clan.Name" />
+		}
+		else
+		{
+			<img src="/api/twitch/logo/@clan.Owner" class="rf-clan__logo" alt="@clan.Name" />
+		}
+		<div class="rf-clan__id">
+			<h2 class="rf-clan__name">@clan.Name</h2>
+			<p class="rf-clan__level">Clan level <b>@clan.Level</b></p>
+		</div>
+		@if (clanRole != null)
+		{
+			<span class="rf-badge rf-badge--gold">@clanRole.Name</span>
+		}
+	</div>
+
+	@*
+		Clan level progress. The clan's experience was on the wire the whole time and the page
+		showed only the level, so there was no way to tell a clan that just levelled from one
+		about to.
+	*@
+	<section class="rf-panel">
+		<h3 class="rf-panel__title">Clan progress</h3>
+		<div class="rf-next">
+			<div class="rf-next__head">
+				<span class="rf-label">Next clan level</span>
+				<span class="rf-next__skill">Level <b>@(clan.Level + 1)</b></span>
+			</div>
+			<div class="rf-skill__bar rf-next__bar">
+				<span class="rf-skill__fill" style="@Bar(ClanLevelProgress)"></span>
+			</div>
+			<div class="rf-next__foot">
+				<span>@Utility.FormatExp(ClanExpToNextLevel) exp to go</span>
+				<span class="rf-meta">@Math.Round(ClanLevelProgress * 100, 1)% of the way</span>
+			</div>
+		</div>
+
+		<dl class="rf-facts">
+			@if (clanRole != null)
 			{
-			 <img src="@clan.Logo" class="clan-logo" />
+				<dt>Your rank</dt>
+				<dd>@clanRole.Name @if (clanRole.Level > 0) { <span class="rf-meta">&middot; rank level @clanRole.Level</span> }</dd>
+			}
+			@if (clanRole?.Joined != null)
+			{
+				<dt>Member since</dt>
+				<dd>@clanRole.Joined.Value.ToString("d MMMM yyyy") <span class="rf-meta">&middot; @DaysInClan days</span></dd>
+			}
+			@if (members != null)
+			{
+				<dt>Members</dt>
+				<dd>@members.Count(x => !x.InvitationPending) @if (members.Any(x => x.InvitationPending)) { <span class="rf-meta">&middot; @members.Count(x => x.InvitationPending) invited</span> }</dd>
+			}
+			@if (IsOwner)
+			{
+				<dt>Owner</dt>
+				<dd>You</dd>
+			}
+		</dl>
+	</section>
+
+	@*
+		Clan skills have never appeared anywhere on the website. Enchanting in particular gates
+		what the clan can do, and the only way to know its level was to ask in game.
+	*@
+	@if (ClanSkills.Count > 0)
+	{
+		<section class="rf-panel">
+			<h3 class="rf-panel__title">Clan skills</h3>
+			<ul class="rf-skills__list">
+				@foreach (var skill in ClanSkills)
+				{
+					<li class="rf-skill">
+						<span class="rf-skill__name">@skill.Name</span>
+						<span class="rf-skill__bar" title="@ClanSkillTitle(skill)">
+							<span class="rf-skill__fill" style="@Bar(SkillProgressOf(skill))"></span>
+						</span>
+						<span class="rf-skill__next" title="@ClanSkillTitle(skill)">
+							@if (skill.MaxLevel > 0 && skill.Level >= skill.MaxLevel)
+							{
+								<span class="rf-skill__max">Max</span>
+							}
+							else
+							{
+								@Utility.FormatExp(Math.Max(0, GameMath.ExperienceForLevel(skill.Level + 1) - skill.Experience))
+								<span class="rf-skill__next-to">to @(skill.Level + 1)</span>
+							}
+						</span>
+						<span class="rf-skill__level">
+							@skill.Level@if (skill.MaxLevel > 0)
+							{
+								<span class="rf-skill__level-max"> / @skill.MaxLevel</span>
+							}
+						</span>
+					</li>
+				}
+			</ul>
+		</section>
+	}
+
+	@if (members != null && members.Count > 0)
+	{
+		<section class="rf-panel">
+			<h3 class="rf-panel__title">Roster</h3>
+			<div class="rf-roster">
+				@foreach (var member in VisibleMembers)
+				{
+					<a class="rf-char" href="/inspect/@member.Player.Id">
+						<span class="rf-char__name">@member.Player.Name</span>
+						<span class="rf-char__level">@CombatLevelOf(member.Player)</span>
+						<span class="rf-char__slot">
+							@if (member.InvitationPending)
+							{
+								<span>Invited</span>
+							}
+							else if (member.IsPlaying)
+							{
+								@* Who is actually playing right now is the thing a clan wants to know. *@
+								<span class="rf-char__live"><i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i> @member.PlayingOn</span>
+							}
+							else
+							{
+								@(member.Player.ClanRole?.Name ?? "Member")
+							}
+						</span>
+					</a>
+				}
+			</div>
+
+			@if (!showAllMembers && HiddenMemberCount > 0)
+			{
+				<button type="button" class="rf-btn rf-btn--small" @onclick="ShowAllMembers">
+					Show all @members.Count members
+				</button>
+			}
+		</section>
+	}
+
+	<div class="rf-actions">
+		<a class="rf-btn" href="/clan">Manage clan</a>
+		@if (CanManage)
+		{
+			@if (confirmingLeave)
+			{
+				<span class="rf-meta">Leave @clan.Name?</span>
+				<button type="button" class="rf-btn rf-btn--danger rf-btn--small" @onclick="(async () => await LeaveClanAsync())">Yes, leave</button>
+				<button type="button" class="rf-btn rf-btn--small" @onclick="CancelLeave">Cancel</button>
 			}
 			else
 			{
-			 <img src="/api/twitch/logo/@clan.Owner" class="clan-logo" />
+				<button type="button" class="rf-btn rf-btn--small" @onclick="StartLeave">Leave clan</button>
 			}
-		 <h1>@clan.Name</h1>
-		 <p class="clan-level"><span>Level</span>&nbsp;<span>@clan.Level</span></p>
-		</div>
-
-		if (CanManage)
-		{
-			<button class="btn btn-danger" @onclick="(async () => await LeaveClanAsync())">Leave Clan</button>
 		}
-		<p>More coming soon.</p>
-	}
+	</div>
+}
+
+@code {
+    private int DaysInClan =>
+        clanRole?.Joined == null ? 0 : Math.Max(0, (int)(DateTime.UtcNow - clanRole.Joined.Value).TotalDays);
+
+    private string Bar(double progress)
+    {
+        var clamped = Math.Clamp(progress * 100d, 0d, 100d);
+        return "width: " + clamped.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%";
+    }
+
+    private string ClanSkillTitle(RavenNest.Models.ClanSkill skill)
+    {
+        var forNext = GameMath.ExperienceForLevel(skill.Level + 1);
+        return $"{Math.Round(skill.Experience).ToString("N0")} of {Math.Round(forNext).ToString("N0")} exp toward level {skill.Level + 1}";
+    }
 }
