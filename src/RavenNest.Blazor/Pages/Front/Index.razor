@@ -4,6 +4,7 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.TwitchService TwitchService
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JS
 
 @* The one hero that carries a paragraph and two buttons, and the one place a large image of the
    world is the point of the page. Every other hero is the shared height. *@
@@ -20,6 +21,76 @@
 <div class="white-section-break"></div>
 
 <div class="page-content">
+    @*
+        A change that has not happened yet, as a toast pinned to the bottom of the window.
+
+        A card among three others is enough for "here is what we did" and not enough for "this is
+        going to cost you something on Tuesday". The whole reason the announcements exist is that a
+        change to what a player earns must not arrive unannounced, and that only holds if the
+        warning is somewhere nobody can miss it. A toast costs the page no space and is still there
+        when the reader is halfway down it.
+    *@
+    @if (upcoming != null && !upcomingDismissed && dismissalChecked)
+    {
+        <div class="rf-upcoming" role="status">
+            <div class="rf-upcoming__banner">
+                <span class="rf-badge rf-badge--warn">Heads up</span>
+
+                <div class="rf-upcoming__text">
+                    <b class="rf-upcoming__title">@upcoming.Title</b>
+                    @if (!string.IsNullOrWhiteSpace(upcoming.Summary))
+                    {
+                        <span class="rf-upcoming__summary">@upcoming.Summary</span>
+                    }
+                </div>
+
+                <span class="rf-upcoming__when">
+                    <i class="fa-solid fa-calendar-day" aria-hidden="true"></i>
+                    @upcoming.EffectiveUtc.Value.ToLocalTime().ToString("d MMMM yyyy")
+                </span>
+
+                <div class="rf-upcoming__actions">
+                    <a class="rf-btn rf-btn--small" href="/news/@upcoming.Slug">Read more</a>
+                    @*
+                        Dismissal is remembered against this post's id rather than as a single
+                        flag, so putting it away does not also put away the next one.
+                    *@
+                    <button type="button" class="rf-upcoming__close" aria-label="Dismiss" @onclick="DismissUpcoming">
+                        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @*
+        Announcements, on the page every visitor lands on. Nothing on this site could tell players
+        anything before this: the old NewsService read an RSS feed from a Medium blog, was injected
+        here and never called, so a change to the game reached people through Discord or not at all.
+    *@
+    @if (announcements.Count > 0)
+    {
+        <div class="section">
+            <h1>News</h1>
+            <div class="rf-newsgrid">
+                @foreach (var post in announcements)
+                {
+                    <article class="rf-post">
+                        <AnnouncementMeta Post="post"></AnnouncementMeta>
+                        <h3 class="rf-post__title"><a href="/news/@post.Slug">@post.Title</a></h3>
+                        @if (!string.IsNullOrWhiteSpace(post.Summary))
+                        {
+                            <p class="rf-post__summary">@post.Summary</p>
+                        }
+                    </article>
+                }
+            </div>
+            <div class="rf-actions rf-newsgrid__more">
+                <a class="rf-btn" href="/news">Everything else</a>
+            </div>
+        </div>
+    }
+
     <div class="section">
         <h1>Features</h1>
         <a id="features" name="features"></a>
@@ -73,63 +144,6 @@
             </div>
         </div>
     </div>
-
-    @*
-        A change that has not happened yet gets its own line at the top, above everything else on
-        the page.
-
-        A card among three others is enough for "here is what we did" and not enough for "this is
-        going to cost you something on Tuesday". The whole reason the announcements exist is that a
-        change to what a player earns must not be able to arrive unannounced, and that only holds
-        if the warning is somewhere nobody can miss it.
-    *@
-    @if (upcoming != null)
-    {
-        <div class="section rf-upcoming">
-            <a class="rf-upcoming__link" href="/news/@upcoming.Slug">
-                <span class="rf-badge rf-badge--warn">Heads up</span>
-                <span class="rf-upcoming__text">
-                    <b>@upcoming.Title</b>
-                    @if (!string.IsNullOrWhiteSpace(upcoming.Summary))
-                    {
-                        <span class="rf-upcoming__summary">@upcoming.Summary</span>
-                    }
-                </span>
-                <span class="rf-upcoming__when">
-                    <i class="fa-solid fa-calendar-day" aria-hidden="true"></i>
-                    @upcoming.EffectiveUtc.Value.ToLocalTime().ToString("d MMMM")
-                </span>
-            </a>
-        </div>
-    }
-
-    @*
-        Announcements, on the page every visitor lands on. Nothing on this site could tell players
-        anything before this: the old NewsService read an RSS feed from a Medium blog, was injected
-        here and never called, so a change to the game reached people through Discord or not at all.
-    *@
-    @if (announcements.Count > 0)
-    {
-        <div class="section">
-            <h1>News</h1>
-            <div class="rf-newsgrid">
-                @foreach (var post in announcements)
-                {
-                    <article class="rf-post">
-                        <AnnouncementMeta Post="post"></AnnouncementMeta>
-                        <h3 class="rf-post__title"><a href="/news/@post.Slug">@post.Title</a></h3>
-                        @if (!string.IsNullOrWhiteSpace(post.Summary))
-                        {
-                            <p class="rf-post__summary">@post.Summary</p>
-                        }
-                    </article>
-                }
-            </div>
-            <div class="rf-actions">
-                <a class="rf-btn" href="/news">Everything else</a>
-            </div>
-        </div>
-    }
 
     <div class="section">
         <h1>Streaming now</h1>

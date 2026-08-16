@@ -1791,51 +1791,72 @@
     border-top: 1px solid var(--rf-line);
 }
 
-/* ---- The upcoming change line -------------------------------------------
-   One row, at the top of the landing page, for something that has not happened
-   yet. Deliberately not a card among the news cards: those are read if somebody
-   is browsing, and this has to be read by somebody who is not. */
+/* ---- The upcoming change toast -----------------------------------------
+   Something that has not happened yet, pinned to the bottom of the window.
+
+   It began as a row at the top of the landing page, which pushed everything down
+   and scrolled away after a second. A toast does neither: it costs the page no
+   space and it is still there while the reader is halfway down, which is the
+   point of a warning about a change that has not landed.
+
+   Dismissible, because a warning that cannot be put away stops being read, and
+   remembered against the announcement's id rather than as one flag, so the next
+   one still gets its turn.
+
+   Opaque rather than the translucent wash the inline banners use. It floats over
+   whatever happens to be behind it, and a tint over arbitrary content is muddy
+   at best and unreadable at worst. */
 
 .rf-front .rf-upcoming {
-    padding-top: var(--rf-space-5);
-    padding-bottom: 0;
+    position: fixed;
+    left: 50%;
+    bottom: var(--rf-space-5);
+    transform: translateX(-50%);
+    z-index: 50;
+    width: min(46rem, calc(100vw - 2rem));
+    max-width: none;
+    padding: 0;
+    margin: 0;
 }
 
-.rf-front .rf-upcoming__link {
+.rf-front .rf-upcoming__banner {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--rf-space-3);
-    padding: var(--rf-space-3) var(--rf-space-4);
-    background: var(--rf-warn-wash);
+    gap: var(--rf-space-3) var(--rf-space-4);
+    padding: var(--rf-space-4);
+    background: var(--rf-surface-raised);
     border: 1px solid var(--rf-warn);
     border-radius: var(--rf-radius);
-    color: var(--rf-ink);
-    text-decoration: none;
-    transition: background var(--rf-transition);
-}
-
-.rf-front .rf-upcoming__link:hover,
-.rf-front .rf-upcoming__link:focus-visible {
-    background: var(--rf-surface-2);
-    text-decoration: none;
+    box-shadow: var(--rf-shadow-lg), var(--rf-bevel);
 }
 
 .rf-front .rf-upcoming__text {
     display: flex;
     flex-direction: column;
     gap: var(--rf-space-1);
-    flex: 1 1 18rem;
+    flex: 1 1 16rem;
     min-width: 0;
 }
 
+.rf-front .rf-upcoming__title {
+    color: var(--rf-ink);
+    font-size: var(--rf-size-body);
+}
+
+/* Two lines at most. The summary is written to stand alone on a card, and a
+   toast is not the place to read four lines of it; Read more is right there. */
 .rf-front .rf-upcoming__summary {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
     color: var(--rf-ink-muted);
     font-size: var(--rf-size-small);
     line-height: 1.5;
 }
 
-/* The date is the point of the whole row, so it does not get to be the quiet
+/* The date is the point of the whole thing, so it does not get to be the quiet
    part of it. */
 .rf-front .rf-upcoming__when {
     display: inline-flex;
@@ -1844,4 +1865,73 @@
     color: var(--rf-warn);
     font-weight: 700;
     white-space: nowrap;
+}
+
+.rf-front .rf-upcoming__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    margin-left: auto;
+}
+
+.rf-front .rf-upcoming__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.9rem;
+    height: 1.9rem;
+    padding: 0;
+    border: 0;
+    border-radius: var(--rf-radius-sm);
+    background: none;
+    color: var(--rf-ink-muted);
+    cursor: pointer;
+    transition: background var(--rf-transition), color var(--rf-transition);
+}
+
+.rf-front .rf-upcoming__close:hover,
+.rf-front .rf-upcoming__close:focus-visible {
+    background: var(--rf-surface-2);
+    color: var(--rf-ink);
+}
+
+/* On a phone it spans the screen and the actions drop under the text, rather
+   than squeezing four things onto one line. */
+@media (max-width: 40rem) {
+    .rf-front .rf-upcoming {
+        left: var(--rf-space-3);
+        right: var(--rf-space-3);
+        bottom: var(--rf-space-3);
+        width: auto;
+        transform: none;
+    }
+
+    /* The badge sits alone on a row otherwise, and a toast on a phone cannot
+       afford a row that carries one word. It pairs with the date instead, which
+       is the other thing a reader checks first. */
+    .rf-front .rf-upcoming .rf-badge {
+        order: 1;
+    }
+
+    .rf-front .rf-upcoming__when {
+        order: 2;
+        margin-left: auto;
+    }
+
+    .rf-front .rf-upcoming__text {
+        order: 3;
+        flex-basis: 100%;
+    }
+
+    .rf-front .rf-upcoming__actions {
+        order: 4;
+        margin-left: 0;
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+/* The row of news cards runs straight into the button under it otherwise. */
+.rf-front .rf-newsgrid__more {
+    margin-top: var(--rf-space-5);
 }

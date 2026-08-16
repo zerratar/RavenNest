@@ -1,4 +1,5 @@
-﻿using RavenNest.Blazor.Services;
+﻿using Microsoft.JSInterop;
+using RavenNest.Blazor.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +20,55 @@ namespace RavenNest.Blazor.Pages.Front
         ///     of warnings is a wall, and the next thing to happen is the one that matters.
         /// </summary>
         private RavenNest.Blazor.Services.Announcements.Announcement upcoming;
+
+        /// <summary>
+        ///     Whether this visitor has put the banner away, and whether we have looked yet.
+        /// </summary>
+        /// <remarks>
+        ///     Nothing renders until the answer is known. Rendering first and hiding afterwards
+        ///     would show the banner for a frame to everybody who had already dismissed it, which
+        ///     is worse than it appearing a moment late.
+        /// </remarks>
+        private bool upcomingDismissed;
+        private bool dismissalChecked;
+
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (!firstRender || upcoming == null || dismissalChecked)
+            {
+                // Blazor Server cannot reach the browser before the first render, so this is the
+                // earliest the answer can be had.
+                if (firstRender && upcoming == null) dismissalChecked = true;
+                return;
+            }
+
+            try
+            {
+                upcomingDismissed = await JS.InvokeAsync<bool>("rfDismiss.isDismissed", upcoming.Id.ToString());
+            }
+            catch
+            {
+                // Storage refused or the helper is missing. Showing it is the harmless direction.
+                upcomingDismissed = false;
+            }
+
+            dismissalChecked = true;
+            StateHasChanged();
+        }
+
+        private async Task DismissUpcoming()
+        {
+            upcomingDismissed = true;
+
+            try
+            {
+                await JS.InvokeVoidAsync("rfDismiss.dismiss", upcoming.Id.ToString());
+            }
+            catch
+            {
+                // It comes back next visit, which is the right way for this to fail.
+            }
+        }
 
         protected override async Task OnInitializedAsync()
         {
