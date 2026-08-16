@@ -1114,7 +1114,20 @@ namespace RavenNest.BusinessLogic.Game
                 // if it is not going to be equipped, check if we already have a stack
                 // fill it += the amount or create a new stack.
 
-                var stack = GetUnequipped(itemId);//Get(itemId, false, tag);
+                // Matched on the item id alone, ignoring every other argument this method was
+                // handed. So adding a tagged, enchanted, skinned or renamed item merged it into
+                // whatever plain stack of that item happened to be lying around, and the tag, the
+                // enchantment and the skin were silently dropped on the floor.
+                //
+                // Streamer tokens are the case that bites: they are tagged with the streamer they
+                // came from, so buying one on the market while holding an untagged stack of the
+                // same token merged the two and lost which streamer it was for.
+                //
+                // It now looks for a stack that matches the one it is about to create. Nothing
+                // matching means a new stack, which is the correct outcome and was always the
+                // intent: the commented out call next to it was reaching for exactly this.
+                var key = new StackKey(itemId, tag, enchantment, transmogrificationId);
+                var stack = GetUnequipped(key);
                 if (stack != null)
                 {
                     if (gameData.GetInventoryItem(stack.Id) == null)
@@ -1495,6 +1508,23 @@ namespace RavenNest.BusinessLogic.Game
             lock (mutex) return items.FirstOrDefault(x => CanBeStacked(x, i) && !x.Equipped);
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// <summary>
+        ///     The unequipped stack that a stack with this key would merge into, or null when
+        ///     there is none and a new stack is needed.
+        /// </summary>
+        private InventoryItem GetUnequipped(StackKey key)
+        {
+            if (!key.IsStackable)
+            {
+                return null;
+            }
+
+            lock (mutex)
+            {
+                return items.FirstOrDefault(x => x != null && !x.Equipped && StackKey.CanMerge(x.Key(), key));
+            }
+        }
+
         public InventoryItem GetUnequipped(Guid itemId)
         {
             lock (mutex)
@@ -1786,66 +1816,81 @@ namespace RavenNest.BusinessLogic.Game
             return item.WeaponAim + item.WeaponPower + item.ArmorPower + item.MagicAim + item.MagicPower + item.RangedAim + item.RangedPower;
         }
 
+        /* All of these are one rule, said twelve times because there are five representations of
+           an item stack and any comparison of two of them needed its own overload. They now
+           project to StackKey and ask it, so there is one definition of "same stack" rather than
+           twelve copies that could drift apart.
+
+           The behaviour is unchanged. See StackKey for the two things the rule does not look at,
+           Name and Flags, and why they are still not looked at here. */
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.UserBankItem a, RavenNest.Models.InventoryItem b)
         {
-            return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
+            return a != null && b != null && StackKey.CanMerge(a.Key(), b.Key());
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.UserBankItem a, DataModels.InventoryItem b)
         {
-            return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
+            return a != null && b != null && StackKey.CanMerge(a.Key(), b.Key());
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.InventoryItem a, RavenNest.Models.InventoryItem b)
         {
-            return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
+            return a != null && b != null && StackKey.CanMerge(a.Key(), b.Key());
         }
+
+        /// <summary>
+        ///     An add request has an item id and nothing else, so there is no tag to compare and
+        ///     nothing on it that could make it unstackable. Left as it was: a request is allowed
+        ///     to merge into a tagged stack today, and tightening that here would be a behaviour
+        ///     change hidden inside a refactor.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.InventoryItem a, RavenNest.Models.AddItemRequest b)
         {
-            return CanBeStacked(a) && CanBeStacked(b) && a.ItemId == b.ItemId;
+            return a != null && b != null && a.Key().IsStackable && a.ItemId == b.ItemId;
         }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.InventoryItem a, ReadOnlyInventoryItem b)
         {
-            return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
+            return a != null && !b.IsNull() && StackKey.CanMerge(a.Key(), b.Key());
         }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.InventoryItem a, DataModels.InventoryItem b)
         {
-            return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
+            return a != null && b != null && StackKey.CanMerge(a.Key(), b.Key());
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.InventoryItem a, DataModels.UserBankItem b)
         {
-            return CanBeStacked(a) && CanBeStacked(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
+            return a != null && b != null && StackKey.CanMerge(a.Key(), b.Key());
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.UserBankItem item)
         {
-            return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment);
+            return item != null && item.Key().IsStackable;
         }
-
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(ReadOnlyInventoryItem item)
         {
-            return !item.IsNull() && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment);
+            return !item.IsNull() && item.Key().IsStackable;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(DataModels.InventoryItem item)
         {
-            return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment);
+            return item != null && item.Key().IsStackable;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool CanBeStacked(RavenNest.Models.InventoryItem item)
         {
-            return item != null && item.TransmogrificationId == null && string.IsNullOrEmpty(item.Enchantment);
+            return item != null && item.Key().IsStackable;
         }
 
         public static bool CanBeStacked(RavenNest.Models.AddItemRequest itemAdd)
