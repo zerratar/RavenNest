@@ -193,9 +193,51 @@ namespace RavenNest.BusinessLogic.Game
             return ev;
         }
 
+        /// <summary>
+        ///     Stores what the bot last reported about itself.
+        /// </summary>
+        /// <remarks>
+        ///     Both shapes are filled, and that is the fix rather than a tidy-up. This used to
+        ///     deserialise into the dictionary and fall back to the typed BotStats only if that
+        ///     threw. Deserialising a JSON object into Dictionary&lt;string, object&gt; does not
+        ///     throw, so the fallback never ran and no typed property was ever populated:
+        ///     JoinedChannelsCount stayed 0 and ListOfCurrentlyJoinedChannel stayed empty however
+        ///     many channels the bot was actually in.
+        ///
+        ///     <para>
+        ///     Only LastUpdated escaped it, because it is assigned below rather than deserialised,
+        ///     which is why the online check worked while everything else read as zero. The
+        ///     visible symptom was BotStats.IsInChannel always answering false, so the /bot page
+        ///     told every streamer the bot was not in their channel.
+        ///     </para>
+        ///
+        ///     <para>
+        ///     Errors are handled per member rather than per document. The payload mixes shapes
+        ///     the model does not always match, and one field that will not convert should cost
+        ///     that field rather than the whole report.
+        ///     </para>
+        /// </remarks>
         public void UpdateBotStats(string data)
         {
             if (string.IsNullOrEmpty(data)) return;
+
+            var lenient = new Newtonsoft.Json.JsonSerializerSettings
+            {
+                Error = (_, args) => args.ErrorContext.Handled = true
+            };
+
+            try
+            {
+                var stats = Newtonsoft.Json.JsonConvert.DeserializeObject<BotStats>(data, lenient);
+                if (stats != null)
+                {
+                    gameData.Bot = stats;
+                }
+            }
+            catch
+            {
+                // Keep the previous report rather than blanking it.
+            }
 
             try
             {
@@ -203,11 +245,7 @@ namespace RavenNest.BusinessLogic.Game
             }
             catch
             {
-                var stats = Newtonsoft.Json.JsonConvert.DeserializeObject<BotStats>(data);
-                if (stats != null)
-                {
-                    gameData.Bot = stats;
-                }
+                // The typed half above is still usable without the raw dictionary.
             }
 
             gameData.Bot.LastUpdated = DateTime.UtcNow;
