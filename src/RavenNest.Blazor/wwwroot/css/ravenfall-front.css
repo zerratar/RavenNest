@@ -912,3 +912,119 @@
     content: none;
     display: none;
 }
+
+/* ==========================================================================
+   Landing page
+   ==========================================================================
+   The class names here are new rather than reused. Every name the old markup
+   carried (.feature-list, .feature-item, .twitch-streams, .twitch-stream-item,
+   .patreon-content, .patreon-header, .patreon-text, .twitch-content,
+   .stream-view, .streamer-name, .section-split) also has rules in site.css, so
+   deleting Index.razor.css alone would have left the page styled by whatever
+   site.css says. Renaming is what actually detaches it. Nothing is removed from
+   site.css: other unconverted pages still use those names. */
+
+.rf-front .rf-herobtns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-3);
+    margin-top: var(--rf-space-5);
+}
+
+.rf-front .rf-lead {
+    max-width: 60ch;
+    margin: 0 auto var(--rf-space-5);
+    color: var(--rf-ink-muted);
+    text-align: center;
+    line-height: 1.6;
+}
+
+.rf-front .rf-actions--centred {
+    justify-content: center;
+    margin-top: var(--rf-space-6);
+}
+
+/* ---- Features ----------------------------------------------------------
+   auto-fit rather than a fixed count, so the seventh card does not sit alone
+   on a row of its own at every width. */
+
+.rf-front .rf-features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: var(--rf-space-4);
+}
+
+.rf-front .rf-feature {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: var(--rf-space-5) var(--rf-space-4);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+}
+
+.rf-front .rf-feature__img {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    margin-bottom: var(--rf-space-3);
+}
+
+.rf-front .rf-feature__title {
+    margin: 0 0 var(--rf-space-2);
+    font-size: var(--rf-size-heading);
+    font-weight: 700;
+    color: var(--rf-gold);
+}
+
+/* The heading rule in this file draws a rule under every h1 to h4 on the front
+   page. Inside a card that reads as a divider through the middle of it. */
+.rf-front .rf-feature__title::after {
+    content: none;
+}
+
+.rf-front .rf-feature__body {
+    margin: 0;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    line-height: 1.6;
+}
+
+/* ---- Patreon ----------------------------------------------------------- */
+
+.rf-front .rf-patron-cta {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: var(--rf-space-6);
+    text-align: center;
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-lg);
+    box-shadow: var(--rf-bevel);
+}
+
+.rf-front .rf-patron-cta__kicker {
+    margin: 0 0 var(--rf-space-3);
+    font-size: var(--rf-size-tiny);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
+    color: var(--rf-gold);
+}
+
+.rf-front .rf-patron-cta__body {
+    margin: 0;
+    color: var(--rf-ink-muted);
+    line-height: 1.7;
+}
+
+@media (max-width: 640px) {
+    .rf-front .rf-herobtns,
+    .rf-front .rf-actions--centred {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
