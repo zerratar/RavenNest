@@ -212,9 +212,12 @@ namespace RavenNest.BusinessLogic.Game
         ///     </para>
         ///
         ///     <para>
-        ///     Errors are handled per member rather than per document. The payload mixes shapes
-        ///     the model does not always match, and one field that will not convert should cost
-        ///     that field rather than the whole report.
+        ///     Errors are handled per member rather than per document. This is defence rather than
+        ///     necessity: checked against what ROBot actually serialises, a strict pass succeeds,
+        ///     because the bot sends real TimeSpan and DateTime values and Newtonsoft writes them
+        ///     in a form it can read back. The two models do drift apart though, the bot counting
+        ///     in ulong where this counts in int and long, so one field that will not convert
+        ///     should cost that field rather than the whole report.
         ///     </para>
         /// </remarks>
         public void UpdateBotStats(string data)
