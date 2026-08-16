@@ -165,6 +165,27 @@
     padding: 6rem var(--rf-space-6) var(--rf-space-7);
 }
 
+/* ---- The splitter -------------------------------------------------------
+   A torn paper edge, inverted to black, laid over the foot of every hero on the
+   site. It was drawn for the old look and does not belong to this one: a ragged
+   paper tear against flat panels and a dark ground reads as an artefact rather
+   than as a join.
+
+   The image is gone and the same 166px does the same job by fading the hero into
+   the page ground instead, so the photograph ends without an edge at all. Every
+   front page uses this one element, so they all change together.
+
+   The gradient starts fully transparent, so nothing is hidden that was not
+   already being covered by the graphic. */
+.rf-front .white-section-break {
+    background-image: none;
+    background: linear-gradient(to bottom,
+        rgba(18, 21, 28, 0) 0%,
+        rgba(18, 21, 28, 0.55) 55%,
+        var(--rf-bg) 100%);
+    filter: none;
+}
+
 /* The landing page is the exception, and says so in its markup rather than
    through a stylesheet nobody can find. It is the one hero carrying a paragraph
    and two buttons, and the one place a large image of the world is the point. */
@@ -172,8 +193,11 @@
    wraps to six lines, so the buttons ended up 118px behind the torn edge graphic.
    This one does get real bottom padding, because it is the one hero whose content
    can grow past the minimum height. */
+/* The one hero with a paragraph and two buttons in it, so it has the room to
+   sit them lower and reported as having space going spare above them. */
 .rf-front .top-section--tall {
-    min-height: 32rem;
+    min-height: 36rem;
+    padding-top: 9rem;
     padding-bottom: 11rem;
 }
 
@@ -289,13 +313,33 @@
     background: linear-gradient(180deg, var(--rf-scrim) 0%, transparent 100%);
 }
 
+/* Three columns: the logo, the links, everything else. The outer two are equal
+   fractions, so the middle one is centred on the header rather than on whatever
+   is left after the logo. The links used to start immediately after the logo and
+   leave the whole right half of the row empty.
+
+   .rf-sitenav is display: contents on a wide screen so its two children become
+   grid items here. On a phone it goes back to being a real box, because there it
+   is a dropdown panel and its children belong inside it. */
 .rf-front .rf-sitehead__inner {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
     gap: var(--rf-space-5);
     max-width: 90rem;
     margin: 0 auto;
     padding: var(--rf-space-3) var(--rf-space-5);
+}
+
+.rf-front .rf-sitenav {
+    display: contents;
+}
+
+.rf-front .rf-sitenav__links {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--rf-space-1);
 }
 
 .rf-front .rf-sitehead__logo {
@@ -313,13 +357,6 @@
    Small uppercase, the way the old header read, but tracked out so it does
    not look cramped, and with brass for the page you are on so the header
    answers "where am I" the same way the dashboard sidebar does. */
-
-.rf-front .rf-sitenav {
-    display: flex;
-    align-items: center;
-    gap: var(--rf-space-1);
-    flex: 1 1 auto;
-}
 
 .rf-front .rf-sitenav__end {
     display: flex;
@@ -507,12 +544,23 @@
 
 /* Below this the row genuinely cannot hold the links, so it becomes a menu. */
 @media (max-width: 56rem) {
+    /* One row again: logo, then the toggle pushed to the end. The nav is a panel
+       rather than grid items, so it stops being display: contents here. */
+    .rf-front .rf-sitehead__inner {
+        display: flex;
+    }
+
     .rf-front .rf-sitehead__toggle {
         display: inline-flex;
     }
 
     .rf-front .rf-sitenav {
         display: none;
+    }
+
+    .rf-front .rf-sitenav.is-open .rf-sitenav__links {
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .rf-front .rf-sitenav.is-open {
@@ -1195,11 +1243,15 @@
     box-shadow: var(--rf-bevel);
 }
 
-.rf-front .rf-feature__img {
-    width: 72px;
-    height: 72px;
-    object-fit: contain;
-    margin-bottom: var(--rf-space-3);
+/* Drawn rather than fetched, so it takes the accent from here and stays sharp.
+   The seven PNGs it replaces were a flat grey glyph in a diamond from a generic
+   icon set, at a size where the diamond was most of what you saw. */
+.rf-front .rf-feature__icon {
+    width: 56px;
+    height: 56px;
+    margin-bottom: var(--rf-space-4);
+    color: var(--rf-gold);
+    overflow: visible;
 }
 
 .rf-front .rf-feature__title {

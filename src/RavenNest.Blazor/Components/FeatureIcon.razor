@@ -1,0 +1,90 @@
+@*
+    The front page feature icons.
+
+    They were seven PNGs of a flat grey glyph inside a diamond, at 72px, from an icon set that has
+    nothing to do with the game. Drawn rather than fetched now, so they take the gold from the
+    stylesheet, stay sharp at any size, and cost nothing to load.
+
+    Line art on purpose. The cards are small and a filled illustration at 64px turns into a blob;
+    an outline at one and a half pixels still reads. Everything is currentColor so a card can
+    recolour its icon by setting a colour, and every path is stroked rather than filled for the
+    same reason.
+*@
+
+<svg class="rf-feature__icon" viewBox="0 0 48 48" role="img" aria-hidden="true" focusable="false"
+     fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    @switch (Name)
+    {
+        case "loyalty":
+            @* A heart held in a laurel: time given, and the reward for it. *@
+            <path d="M24 38c-6-4.2-11-8.6-11-14a5.6 5.6 0 0 1 11-2.2A5.6 5.6 0 0 1 35 24c0 5.4-5 9.8-11 14z" />
+            <path d="M12 12c-3 2.6-4 6.6-3.4 10.6" />
+            <path d="M36 12c3 2.6 4 6.6 3.4 10.6" />
+            <path d="M9 26c-1.6 4 .2 8.6 3.6 11" />
+            <path d="M39 26c1.6 4-.2 8.6-3.6 11" />
+            break;
+
+        case "clans":
+            @* A banner on a shield: the thing a group gathers under. *@
+            <path d="M24 6l14 4v13c0 8.4-5.8 14.8-14 19-8.2-4.2-14-10.6-14-19V10z" />
+            <path d="M19 15h10v14l-5-3.6L19 29z" />
+            break;
+
+        case "channelpoints":
+            @* A cut gem, which is what a channel point reward feels like being handed. *@
+            <path d="M15 10h18l7 10-16 18L8 20z" />
+            <path d="M8 20h32" />
+            <path d="M15 10l5 10-4 18" />
+            <path d="M33 10l-5 10 4 18" />
+            <path d="M20 20h8" />
+            break;
+
+        case "raids":
+            @* A horned skull. A raid boss, and the only icon here that is a threat. *@
+            <path d="M24 7c8.3 0 13.5 5.6 13.5 13.2 0 4.6-1.8 7.4-3.6 9.2-1 1-1.6 2.2-1.6 3.6V37a4 4 0 0 1-4 4H19.7a4 4 0 0 1-4-4v-4c0-1.4-.6-2.6-1.6-3.6-1.8-1.8-3.6-4.6-3.6-9.2C10.5 12.6 15.7 7 24 7z" />
+            @* Real circles rather than the arc shorthand: an arc starting at the point draws
+               beside it rather than around it, which put both sockets to the right of where they
+               belonged and left the skull lopsided. *@
+            <circle cx="19.5" cy="23" r="2.7" />
+            <circle cx="28.5" cy="23" r="2.7" />
+            <path d="M24 30v5" />
+            <path d="M10.5 15C8 13.5 6 11 5.5 8c3 .3 5.6 1.6 7.4 3.6" />
+            <path d="M37.5 15c2.5-1.5 4.5-4 5-7-3 .3-5.6 1.6-7.4 3.6" />
+            break;
+
+        case "skills":
+            @* Crossed sword and pick over a rising bar: fighting and gathering, both levelling. *@
+            <path d="M11 11l17 17" />
+            <path d="M9 15l4-4" />
+            <path d="M37 11L20 28" />
+            <path d="M39 15l-4-4" />
+            <path d="M12 41v-7" />
+            <path d="M20 41v-11" />
+            <path d="M28 41v-8" />
+            <path d="M36 41v-14" />
+            break;
+
+        case "trading":
+            @* A balance. Two sides agreeing is the whole of a trade. *@
+            <path d="M24 10v27" />
+            <path d="M14 37h20" />
+            <path d="M10 16h28" />
+            <circle cx="24" cy="13" r="3" />
+            <path d="M10 16L5 27h10z" />
+            <path d="M38 16l-5 11h10z" />
+            break;
+
+        case "crafting":
+            @* An anvil with a hammer over it. *@
+            <path d="M9 24h21c0 4.4-2.6 7.4-6 8.6V36h6v5H16v-5h6v-3.4C15.6 31.4 11 28.4 9 24z" />
+            <path d="M9 24v-4h6" />
+            <path d="M28 17l9-9" />
+            <path d="M33 4l8 8-4 4-8-8z" />
+            break;
+    }
+</svg>
+
+@code {
+    /// <summary>Which icon to draw. Unknown names draw nothing rather than throwing.</summary>
+    [Parameter] public string Name { get; set; }
+}

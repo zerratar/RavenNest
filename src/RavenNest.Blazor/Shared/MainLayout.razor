@@ -28,7 +28,15 @@
                     Menu
                 </button>
 
+                @*
+                    The links are wrapped so the header can be a three column grid on a wide
+                    screen: logo, links, everything else. Without a box of their own the links
+                    started immediately after the logo and the whole right half of the header was
+                    empty. On a phone the nav goes back to being one dropdown stack and the wrapper
+                    goes back to being a column inside it.
+                *@
                 <nav id="rf-site-menu" class="rf-sitenav @(menuOpen ? "is-open" : "")" aria-label="Main">
+                    <span class="rf-sitenav__links">
                     <NavLink class="rf-sitenav__link" href="/" Match="NavLinkMatch.All">Home</NavLink>
 
                     @*
@@ -71,6 +79,8 @@
                     {
                         <NavLink class="rf-sitenav__link" href="/login/redirect/characters" Match="NavLinkMatch.All">Dashboard</NavLink>
                     }
+
+                    </span>
 
                     <div class="rf-sitenav__end">
                         <div class="rf-social">
