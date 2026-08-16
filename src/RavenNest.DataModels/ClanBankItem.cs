@@ -12,9 +12,10 @@ namespace RavenNest.DataModels
     ///     is why nothing caught it and also why correcting it now costs nothing: there is no data
     ///     to migrate.
     ///
-    ///     It stays unmapped until the clan bank is built. See docs/clan-features-design.md; the
-    ///     table has to be created by hand, because this project has no EF migrations and nothing
-    ///     that reconciles the schema at startup.
+    ///     The table now exists, created by sql/clan-bank.sql, which had to be run by hand
+    ///     because this project has no EF migrations and nothing reconciles the schema at startup.
+    ///     GameData loads every set eagerly at boot, so the DbSet could not be added until the
+    ///     table was there: it would have taken the server down rather than degrading.
     /// </summary>
     public partial class ClanBankItem : Entity<ClanBankItem>
     {

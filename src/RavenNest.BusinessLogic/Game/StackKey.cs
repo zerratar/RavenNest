@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace RavenNest.BusinessLogic.Game
 {
@@ -136,6 +136,11 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         public static StackKey Key(this DataModels.UserBankItem item)
+        {
+            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags);
+        }
+
+        public static StackKey Key(this DataModels.ClanBankItem item)
         {
             return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags);
         }

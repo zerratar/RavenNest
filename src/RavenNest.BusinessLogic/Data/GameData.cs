@@ -104,6 +104,9 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<Pet> pets;
 
         private readonly EntitySet<UserBankItem> userBankItems;
+        private readonly EntitySet<ClanBankItem> clanBankItems;
+        private readonly EntitySet<ClanBankLog> clanBankLog;
+        private readonly EntitySet<ClanBankWithdrawalLimit> clanBankLimits;
         private readonly EntitySet<InventoryItem> inventoryItems;
         private readonly EntitySet<ResourceItemDrop> resourceItemDrops;
         private readonly EntitySet<ItemDrop> itemDrops;
@@ -196,6 +199,9 @@ namespace RavenNest.BusinessLogic.Data
                 typeof(Agreements),
                 typeof(ServerSettings),
                 typeof(UserBankItem),
+                typeof(ClanBankItem),
+                typeof(ClanBankLog),
+                typeof(ClanBankWithdrawalLimit),
                 typeof(ExpMultiplierEvent),
                 typeof(ItemRecipe),
                 typeof(ItemRecipeIngredient),
@@ -349,6 +355,18 @@ namespace RavenNest.BusinessLogic.Data
                     userBankItems = new EntitySet<UserBankItem>(restorePoint?.Get<UserBankItem>() ?? ctx.UserBankItem.ToList());
                     userBankItems.RegisterLookupGroup(nameof(User), x => x.UserId);
 
+                    // Reading a clan bank always means reading one clan, so that is the lookup.
+                    clanBankItems = new EntitySet<ClanBankItem>(restorePoint?.Get<ClanBankItem>() ?? ctx.ClanBankItem.ToList());
+                    clanBankItems.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
+
+                    // Two lookups: the log tab reads a clan, the daily allowance reads a character.
+                    clanBankLog = new EntitySet<ClanBankLog>(restorePoint?.Get<ClanBankLog>() ?? ctx.ClanBankLog.ToList());
+                    clanBankLog.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
+                    clanBankLog.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
+
+                    clanBankLimits = new EntitySet<ClanBankWithdrawalLimit>(restorePoint?.Get<ClanBankWithdrawalLimit>() ?? ctx.ClanBankWithdrawalLimit.ToList());
+                    clanBankLimits.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
+
                     vendorItems = new EntitySet<VendorItem>(restorePoint?.Get<VendorItem>() ?? ctx.VendorItem.ToList());
                     vendorItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
 
@@ -451,6 +469,7 @@ namespace RavenNest.BusinessLogic.Data
                         syntyAppearances, characters, characterStates,
                         userProperties, vendorTransaction,
                         userBankItems,
+                        clanBankItems, clanBankLog, clanBankLimits,
                         characterSkillRecords,
                         clanRolePermissions,
                         characterClanSkillCooldown,
@@ -2927,6 +2946,15 @@ namespace RavenNest.BusinessLogic.Data
         public AddEntityResult Add(UserBankItem item) => Update(() => userBankItems.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(ClanBankItem item) => Update(() => clanBankItems.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(ClanBankLog item) => Update(() => clanBankLog.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(ClanBankWithdrawalLimit item) => Update(() => clanBankLimits.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(RedeemableItem item) => Update(() => redeemableItems.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3430,6 +3458,46 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public UserBankItem GetUserBankItem(Guid id) => userBankItems[id];
+
+        #region Clan bank
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<ClanBankItem> GetClanBankItems(Guid clanId)
+            => clanBankItems[nameof(Clan), clanId].ToList();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ClanBankItem GetClanBankItem(Guid id) => clanBankItems[id];
+
+        /// <summary>
+        ///     The clan's stack of one item, matched the way stacking is matched everywhere else.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ClanBankItem GetClanBankStack(Guid clanId, StackKey key)
+            => clanBankItems[nameof(Clan), clanId].FirstOrDefault(x => x.Key() == key);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<ClanBankLog> GetClanBankLog(Guid clanId)
+            => clanBankLog[nameof(Clan), clanId].ToList();
+
+        /// <summary>
+        ///     What one character has taken out since a moment, for the daily allowance. Withdrawals
+        ///     are the negative rows, and the amount returned is positive.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public long GetClanBankWithdrawnSince(Guid characterId, DateTime since)
+            => clanBankLog[nameof(Character), characterId]
+                .Where(x => x.Time >= since && x.Amount < 0)
+                .Sum(x => -x.Amount);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<ClanBankWithdrawalLimit> GetClanBankLimits(Guid clanId)
+            => clanBankLimits[nameof(Clan), clanId].ToList();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ClanBankWithdrawalLimit GetClanBankLimit(Guid clanId, int roleLevel)
+            => clanBankLimits[nameof(Clan), clanId].FirstOrDefault(x => x.RoleLevel == roleLevel);
+
+        #endregion
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public UserBankItem GetStashItem(Guid userId, Guid itemId) =>
@@ -4262,6 +4330,15 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(UserBankItem item) => userBankItems.Remove(item);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(ClanBankItem item) => clanBankItems.Remove(item);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(ClanBankLog item) => clanBankLog.Remove(item);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(ClanBankWithdrawalLimit item) => clanBankLimits.Remove(item);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(Agreements item) => agreements.Remove(item);

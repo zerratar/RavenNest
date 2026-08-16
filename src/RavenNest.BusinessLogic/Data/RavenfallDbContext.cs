@@ -62,6 +62,10 @@ namespace RavenNest.BusinessLogic.Data
 
         public virtual DbSet<VendorItem> VendorItem { get; set; }
         public virtual DbSet<UserBankItem> UserBankItem { get; set; }
+
+        public virtual DbSet<ClanBankItem> ClanBankItem { get; set; }
+        public virtual DbSet<ClanBankLog> ClanBankLog { get; set; }
+        public virtual DbSet<ClanBankWithdrawalLimit> ClanBankWithdrawalLimit { get; set; }
         public virtual DbSet<ItemAttribute> ItemAttribute { get; set; }
         //public virtual DbSet<MagicItemAttribute> InventoryItemAttribute { get; set; }
 
@@ -196,6 +200,10 @@ namespace RavenNest.BusinessLogic.Data
             modelBuilder.Entity<InventoryItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<VendorItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<UserBankItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+
+            modelBuilder.Entity<ClanBankItem>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<ClanBankLog>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<ClanBankWithdrawalLimit>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
             //modelBuilder.Entity<MagicItemAttribute>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<ItemAttribute>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
