@@ -63,7 +63,13 @@ namespace RavenNest.BusinessLogic.AI
 
         public bool IsWaiting => Pending != null;
 
-        public async Task AskAsync(string text, CancellationToken cancellationToken = default)
+        /// <param name="context">
+        ///     Where the person is and what they are looking at, if that is known. Sent with the
+        ///     question rather than folded into the instructions, because one conversation outlives
+        ///     any one page: the instructions are fixed when the conversation starts, and by the
+        ///     third question the reader may be somewhere else entirely.
+        /// </param>
+        public async Task AskAsync(string text, string context = null, CancellationToken cancellationToken = default)
         {
             if (string.IsNullOrWhiteSpace(text)) return;
 
@@ -72,12 +78,20 @@ namespace RavenNest.BusinessLogic.AI
             if (IsWaiting) return;
 
             Error = null;
+
+            // Only the question is kept as a turn. The context is scaffolding for the model and
+            // showing it back would read as though the person had typed it.
             Turns.Add(new AiTurn { FromUser = true, Text = text });
+
+            var input = string.IsNullOrWhiteSpace(context)
+                ? text
+                : "[Context, not part of the question: " + context + "]" + Environment.NewLine
+                  + Environment.NewLine + text;
 
             var result = await ai.AskAsync(new AiRequest
             {
                 Instructions = instructions,
-                Input = text,
+                Input = input,
                 Tools = tools,
                 MaxOutputTokens = maxOutputTokens,
                 PreviousResponseId = previousResponseId

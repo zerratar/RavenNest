@@ -1,7 +1,8 @@
-@using RavenNest.BusinessLogic.AI
+﻿@using RavenNest.BusinessLogic.AI
 @using RavenNest.Blazor.Services.Assistant
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject PlayerAssistant Assistant
+@inject NavigationManager Navigation
 
 @*
     A bubble in the bottom right corner that opens a chat about your own characters.
@@ -183,7 +184,7 @@
 
         try
         {
-            await chat.AskAsync(text);
+            await chat.AskAsync(text, WhereTheyAre());
         }
         finally
         {
@@ -191,6 +192,68 @@
             remaining = Assistant.RemainingToday(userId);
         }
     }
+
+    /// <summary>
+    ///     Which page the question was asked from, in words.
+    /// </summary>
+    /// <remarks>
+    ///     Read at the moment of asking rather than when the widget was created. It lives in the
+    ///     layout, so one conversation spans every page somebody walks through, and the answer to
+    ///     "what about this one" depends on where they were standing when they asked.
+    ///
+    ///     <para>
+    ///     Where they are, not what is on the screen. The assistant still has to look things up
+    ///     with a tool, and a page name is a hint about what a vague question means rather than a
+    ///     substitute for the data.
+    ///     </para>
+    /// </remarks>
+    private string WhereTheyAre()
+    {
+        var path = Navigation.ToBaseRelativePath(Navigation.Uri);
+
+        var cut = path.IndexOfAny(new[] { '?', '#' });
+        if (cut >= 0) path = path.Substring(0, cut);
+
+        path = path.TrimEnd('/');
+        if (path.Length == 0) return "the site overview";
+
+        // Longest match first, so /clan-invites is not read as /clan.
+        foreach (var known in Pages)
+        {
+            if (path.Equals(known.Key, StringComparison.OrdinalIgnoreCase) ||
+                path.StartsWith(known.Key + "/", StringComparison.OrdinalIgnoreCase))
+            {
+                return known.Value;
+            }
+        }
+
+        return "the page at /" + path;
+    }
+
+    /// <summary>
+    ///     Only pages worth naming. A route the assistant has nothing to say about is better sent
+    ///     as its path than dressed up as a description that implies it can help there.
+    /// </summary>
+    private static readonly List<KeyValuePair<string, string>> Pages = new List<KeyValuePair<string, string>>
+    {
+        new KeyValuePair<string, string>("clan-invites", "their clan invitations"),
+        new KeyValuePair<string, string>("marketplace", "the marketplace, where players sell to each other"),
+        new KeyValuePair<string, string>("notifications", "their notifications"),
+        new KeyValuePair<string, string>("characters", "the list of their characters"),
+        new KeyValuePair<string, string>("character", "one of their characters in detail"),
+        new KeyValuePair<string, string>("dashboard", "their dashboard overview"),
+        new KeyValuePair<string, string>("inventory", "a character's inventory"),
+        new KeyValuePair<string, string>("loyalty", "their loyalty with each streamer"),
+        new KeyValuePair<string, string>("patreon", "their Patreon subscription"),
+        new KeyValuePair<string, string>("highscore", "the highscore tables"),
+        new KeyValuePair<string, string>("stash", "their item stash, which holds what no character is carrying"),
+        new KeyValuePair<string, string>("items", "the item catalogue"),
+        new KeyValuePair<string, string>("clan", "their clan"),
+        new KeyValuePair<string, string>("shop", "the vendor, where items are bought and sold for coins"),
+        new KeyValuePair<string, string>("town", "their town"),
+        new KeyValuePair<string, string>("bot", "their stream and bot settings"),
+        new KeyValuePair<string, string>("admin", "an administration page"),
+    };
 
     private async Task Resolve(bool approved)
     {

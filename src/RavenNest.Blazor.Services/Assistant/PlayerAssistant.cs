@@ -142,6 +142,12 @@ How to answer:
 - If they ask for something you have no tool for, say what you cannot do rather than approximating
   it. Guessing which item is best without checking their skills is exactly the kind of answer that
   reads as authoritative and is not.
+
+Some questions arrive with a line saying which page the person is looking at. Use it to work out
+what a vague question means: on the vendor page, ""is this worth it"" is about the vendor, and on a
+character page, ""what should I train"" is about that character. It tells you where they are, not
+what is on their screen, so still look things up with a tool rather than assuming. Do not mention
+the page back to them unless it matters to the answer.
 ";
         }
 
