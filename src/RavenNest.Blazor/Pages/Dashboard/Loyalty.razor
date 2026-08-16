@@ -137,6 +137,22 @@ else
                                     </tbody>
                                 </table>
                             </div>
+
+                            @*
+                                This table was paged without ever being given the controls, so
+                                playersPage could not leave 0 and every row past the first 25 was
+                                unreachable. The range label above said "1-25 of 2431" while the
+                                only thing that could change it was the search box.
+                            *@
+                            <nav class="rf-pager" aria-label="Player list pages">
+                                <button type="button" class="rf-btn rf-btn--small" disabled="@(playersPage == 0)" @onclick="() => playersPage--">
+                                    <i class="fas fa-chevron-left" aria-hidden="true"></i> Previous
+                                </button>
+                                <span class="rf-meta">Page @(playersPage + 1) of @PageCount(VisiblePlayers.Count)</span>
+                                <button type="button" class="rf-btn rf-btn--small" disabled="@(playersPage + 1 >= PageCount(VisiblePlayers.Count))" @onclick="() => playersPage++">
+                                    Next <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                                </button>
+                            </nav>
                         }
                     </section>
                 }
