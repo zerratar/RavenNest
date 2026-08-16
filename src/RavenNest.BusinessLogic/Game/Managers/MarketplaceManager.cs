@@ -164,7 +164,14 @@ namespace RavenNest.BusinessLogic.Game
                 return new ItemSellResult(ItemTradeState.DoesNotOwn);
             }
 
-            inventory.RemoveItem(itemToSell, amount);
+            // The listing is only created once the items are actually out of the inventory.
+            // Ignoring this result meant a failed remove left the items in the seller's backpack and
+            // also on the market, which is one of the ways items got duplicated.
+            if (!inventory.RemoveItem(itemToSell, amount))
+            {
+                logger.LogError($"Marketplace listing aborted for character '{character.Id}': unable to remove {amount}x item '{itemId}' from the inventory. Nothing was listed.");
+                return new ItemSellResult(ItemTradeState.Failed);
+            }
 
             var marketItem = new DataModels.MarketItem
             {
@@ -391,23 +398,34 @@ namespace RavenNest.BusinessLogic.Game
                 return 0;
             }
 
+            var sellerCharacter = gameData.GetCharacter(marketItem.SellerCharacterId);
+            var seller = gameData.GetUser(sellerCharacter.UserId);
+
+            // The goods are delivered before anything is paid or consumed.
+            //
+            // This used to run the other way round: the listing was decremented, both sides' coins
+            // moved, and only then was the item added, using a call that could not report failure.
+            // A rejected add therefore left the buyer paid up with nothing to show for it, and the
+            // listing gone. Delivering first turns the worst case into a purchase that simply did
+            // not happen.
+            var inventory = inventoryProvider.Get(character.Id);
+            if (!inventory.TryAddItem(itemId, buyAmount, out _, tag: marketItem.Tag, equipped: false,
+                    enchantment: marketItem.Enchantment, name: marketItem.Name,
+                    transmogrificationId: marketItem.TransmogrificationId,
+                    flags: marketItem.Flags))
+            {
+                logger.LogError($"Marketplace purchase aborted for character '{character.Id}': unable to deliver {buyAmount}x item '{itemId}'. No coins were taken and the listing is untouched.");
+                return 0;
+            }
+
             if (marketItem.Amount == buyAmount)
                 gameData.Remove(marketItem);
             else
                 marketItem.Amount -= buyAmount;
 
-            var sellerCharacter = gameData.GetCharacter(marketItem.SellerCharacterId);
-            var seller = gameData.GetUser(sellerCharacter.UserId);
-
             var sellerResources = gameData.GetResources(seller);
             sellerResources.Coins += totalCost;
             buyerResources.Coins -= totalCost;
-
-            var inventory = inventoryProvider.Get(character.Id);
-            inventory.AddItem(itemId, buyAmount, tag: marketItem.Tag, equipped: false,
-                enchantment: marketItem.Enchantment, name: marketItem.Name,
-                transmogrificationId: marketItem.TransmogrificationId,
-                flags: marketItem.Flags);
 
             var pricerPerItem = (totalCost / buyAmount);
 
