@@ -57,11 +57,21 @@ namespace RavenNest.DataModels.Generators
                         var propertyName = char.ToUpper(fieldName[0]) + fieldName.Substring(1);
                         var type = field.Declaration.Type.ToString();
 
+                        // this. on the field, always.
+                        //
+                        // Without it, a field called "value" is shadowed by the setter's own
+                        // implicit parameter, so Set(ref value, value) passes that parameter as
+                        // both arguments. Set compares them, finds them equal because they are the
+                        // same variable, and returns without assigning. The field is never written
+                        // and the getter returns null for the lifetime of the process.
+                        //
+                        // ServerSettings.Value and UserProperty.Value were both silently
+                        // unwritable for exactly this reason, with no error raised anywhere.
                         sb.AppendLine($@"
         public {type} {propertyName}
         {{
-            get => {fieldName};
-            set => Set(ref {fieldName}, value);
+            get => this.{fieldName};
+            set => Set(ref this.{fieldName}, value);
         }}");
                     }
 

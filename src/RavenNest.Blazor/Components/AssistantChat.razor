@@ -1,4 +1,4 @@
-@using RavenNest.BusinessLogic.AI
+﻿@using RavenNest.BusinessLogic.AI
 @using RavenNest.Blazor.Services.Assistant
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject PlayerAssistant Assistant
@@ -21,6 +21,21 @@
             <h2 class="rf-panel__title">Ask about your characters</h2>
             <span class="rf-meta">@remaining left today</span>
         </div>
+
+        @if (adminOnly)
+        {
+            @*
+                Said out loud, because an admin looking at a working chat box has no other way to
+                tell whether players can see it too, and "I thought it was live" is the wrong thing
+                to find out from a support message.
+            *@
+            <div class="rf-banner rf-banner--warn">
+                <p>
+                    Only you can see this. Players get it when
+                    <a href="/admin/settings">Let players use the assistant</a> is turned on.
+                </p>
+            </div>
+        }
 
         <div class="rf-chat__log" role="log" aria-live="polite">
             @if (chat.Turns.Count == 0)
@@ -97,6 +112,7 @@
 
 @code {
     private bool visible;
+    private bool adminOnly;
     private Guid userId;
     private AiConversation chat;
     private string draft;
@@ -106,8 +122,9 @@
     protected override void OnInitialized()
     {
         var session = AuthService.GetSession();
-        if (session == null || !Assistant.IsAvailable) return;
+        if (session == null || !Assistant.IsAvailableTo(session.Administrator)) return;
 
+        adminOnly = session.Administrator && !Assistant.IsOnForEveryone;
         userId = session.UserId;
         chat = Assistant.StartFor(userId);
         remaining = Assistant.RemainingToday(userId);

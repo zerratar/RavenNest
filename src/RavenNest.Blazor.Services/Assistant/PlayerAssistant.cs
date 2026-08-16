@@ -70,7 +70,24 @@ namespace RavenNest.Blazor.Services.Assistant
             this.settings = settings;
         }
 
-        public bool IsAvailable => ai.IsConfigured && settings.GetToggle(ServerSettingsRegistry.AssistantEnabled);
+        /// <summary>
+        ///     Whether this person can use it. Needs a key either way.
+        /// </summary>
+        /// <remarks>
+        ///     Administrators do not wait for the switch. Somebody has to try the thing before
+        ///     deciding whether to turn it on for everyone, and the only way to do that otherwise
+        ///     would be to turn it on for everyone.
+        /// </remarks>
+        public bool IsAvailableTo(bool isAdministrator)
+        {
+            if (!ai.IsConfigured) return false;
+            return isAdministrator || settings.GetToggle(ServerSettingsRegistry.AssistantEnabled);
+        }
+
+        /// <summary>
+        ///     Whether players other than administrators have it yet.
+        /// </summary>
+        public bool IsOnForEveryone => settings.GetToggle(ServerSettingsRegistry.AssistantEnabled);
 
         public int DailyLimit
         {
