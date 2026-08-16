@@ -2202,51 +2202,122 @@ namespace RavenNest.BusinessLogic.Game
             if (!integrityChecker.VerifyPlayer(sessionToken.SessionId, player.Id, 0))
                 return 0;
 
-            //var targetItem = gameData.GetInventoryItem(item);
             var inventory = inventoryProvider.Get(player.Id);
-            var itemToVendor = inventory.Get(inventoryItemId);
-            if (itemToVendor.Item == null) return 0;
-            if (itemToVendor.Item.Category == (int)DataModels.ItemCategory.StreamerToken)
-            {
-                return 0;
-            }
+
+            // Same guard as both website routes now. This one used to skip the lock check, so a
+            // stack busy with something else could be sold from the game client and not from the
+            // site, and the branch below it duplicated "asking for more than the stack holds sells
+            // the stack" as a whole second copy of the sale.
+            var take = TryTake(inventory, inventoryItemId, amount);
+            if (!take.Allowed || !VendorAccepts(take.Item)) return 0;
+
             var resources = gameData.GetResources(player);
             if (resources == null) return 0;
 
-            // The other two SellItemToVendor overloads already guard on this. This one did not, so
-            // a failed remove paid the player and left them holding the item, which creates coins
-            // out of nothing. Pay only for goods actually handed over.
-            var session = gameData.GetSession(sessionToken.SessionId);
-            if (amount <= itemToVendor.Amount)
+            // Pay only for goods actually handed over: ignoring this result paid the player and
+            // left them holding the item, which creates coins out of nothing.
+            if (!inventory.RemoveItem(take.Stack, take.Amount))
             {
-                if (!inventory.RemoveItem(itemToVendor, amount))
-                {
-                    logger.LogError($"Vendor sale aborted for character '{player.Id}': unable to remove {amount}x item '{itemToVendor.ItemId}'. No coins were paid.");
-                    return 0;
-                }
-
-                var price = itemToVendor.Item.ShopSellPrice * amount;
-                resources.Coins += price;
-                UpdateResources(session, player, resources);
-                UpdateStockAndLogTransaction(player.Id, itemToVendor.ItemId, amount, price, false);
-                return amount;
-            }
-
-            // Asking to sell more than the stack holds sells the whole stack. The amount is read
-            // before the remove, since removing the stack is what makes it unavailable afterwards.
-            var stackAmount = itemToVendor.Amount;
-            if (!inventory.RemoveStack(itemToVendor))
-            {
-                logger.LogError($"Vendor sale aborted for character '{player.Id}': unable to remove stack '{itemToVendor.Id}'. No coins were paid.");
+                logger.LogError($"Vendor sale aborted for character '{player.Id}': unable to remove {take.Amount}x item '{take.Stack.ItemId}'. No coins were paid.");
                 return 0;
             }
 
-            var totalPrice = stackAmount * itemToVendor.Item.ShopSellPrice;
-            resources.Coins += totalPrice;
+            var session = gameData.GetSession(sessionToken.SessionId);
+            var price = take.Item.ShopSellPrice * take.Amount;
+            resources.Coins += price;
             UpdateResources(session, player, resources);
-            UpdateStockAndLogTransaction(player.Id, itemToVendor.ItemId, stackAmount, totalPrice, false);
-            return stackAmount;
+            UpdateStockAndLogTransaction(player.Id, take.Stack.ItemId, take.Amount, price, false);
+            return take.Amount;
         }
+        /// <summary>
+        ///     The answer to "may this many of this stack leave this inventory", and the values
+        ///     needed to do it.
+        /// </summary>
+        private readonly struct InventoryTake
+        {
+            public readonly bool Allowed;
+            public readonly string Reason;
+            public readonly DataModels.InventoryItem Stack;
+            public readonly DataModels.Item Item;
+
+            /// <summary>Clamped to what the stack actually holds, so it is always deliverable.</summary>
+            public readonly long Amount;
+
+            private InventoryTake(bool allowed, string reason, DataModels.InventoryItem stack, DataModels.Item item, long amount)
+            {
+                Allowed = allowed;
+                Reason = reason;
+                Stack = stack;
+                Item = item;
+                Amount = amount;
+            }
+
+            public static InventoryTake No(string reason) => new InventoryTake(false, reason, null, null, 0);
+
+            public static InventoryTake Yes(DataModels.InventoryItem stack, DataModels.Item item, long amount) =>
+                new InventoryTake(true, null, stack, item, amount);
+        }
+
+        /// <summary>
+        ///     Everything that has to be true before any amount of any stack leaves a player,
+        ///     whatever asked for it and wherever the items are going.
+        /// </summary>
+        /// <remarks>
+        ///     This existed three times with three different sets of checks, so which protections
+        ///     applied depended on which entry point a player happened to reach. Selling to the
+        ///     vendor from the game client did not test whether the stack was locked, while both
+        ///     website routes did, so an item busy with something else could be sold from one of
+        ///     the three and not the other two.
+        ///
+        ///     <para>
+        ///     Rules belonging to a particular destination stay with that destination, because they
+        ///     are not properties of taking things out of an inventory. Refusing to sell a streamer
+        ///     token is a fact about the vendor, not about the item leaving.
+        ///     </para>
+        ///
+        ///     <para>
+        ///     The integrity check is not here either, and cannot be. It asks whether a character is
+        ///     currently locked to a given game session, so it only means anything on traffic that
+        ///     carries a session token. The website has authenticated the user by then and has no
+        ///     game session to name.
+        ///     </para>
+        /// </remarks>
+        private InventoryTake TryTake(PlayerInventory inventory, Guid inventoryItemId, long requestedAmount)
+        {
+            if (inventory.IsLocked(inventoryItemId))
+            {
+                return InventoryTake.No("That item is busy with something else right now.");
+            }
+
+            var stack = gameData.GetInventoryItem(inventoryItemId);
+            if (stack == null)
+            {
+                return InventoryTake.No("That item is not in the inventory.");
+            }
+
+            var item = gameData.GetItem(stack.ItemId);
+            if (item == null)
+            {
+                return InventoryTake.No("That item no longer exists.");
+            }
+
+            // Asking for more than the stack holds takes the stack. All three callers already did
+            // this, two by clamping and one by branching to a whole stack removal.
+            var amount = Math.Min(requestedAmount, stack.Amount.GetValueOrDefault());
+            if (amount <= 0)
+            {
+                return InventoryTake.No("There is none of that left to take.");
+            }
+
+            return InventoryTake.Yes(stack, item, amount);
+        }
+
+        /// <summary>The vendor's own rule, on top of <see cref="TryTake"/>.</summary>
+        private static bool VendorAccepts(DataModels.Item item)
+        {
+            return item.Category != (int)DataModels.ItemCategory.StreamerToken;
+        }
+
         public bool SellItemToVendor(Guid characterId, ItemFilter filter, IReadOnlyList<RavenNest.Models.InventoryItem> items)
         {
             var character = gameData.GetCharacter(characterId);
@@ -2263,33 +2334,19 @@ namespace RavenNest.BusinessLogic.Game
             var isSuccess = false;
             foreach (var invItem in items)
             {
-                if (inventory.IsLocked(invItem.Id))
+                var take = TryTake(inventory, invItem.Id, long.MaxValue);
+                if (!take.Allowed || !VendorAccepts(take.Item))
                 {
                     exclude.Add(invItem.Id);
                     continue;
                 }
 
-                var stack = gameData.GetInventoryItem(invItem.Id);
-                if (stack == null)
-                {
-                    exclude.Add(invItem.Id);
-                    continue;
-                }
-
-                var amountToVendor = stack.Amount.GetValueOrDefault();
-                var i = gameData.GetItem(stack.ItemId);
-                if (amountToVendor == 0 || i == null || i.Category == (int)DataModels.ItemCategory.StreamerToken)
-                {
-                    exclude.Add(invItem.Id);
-                    continue;
-                }
-
-                if (inventory.RemoveItem(stack, amountToVendor))
+                if (inventory.RemoveItem(take.Stack, take.Amount))
                 {
                     isSuccess = true;
-                    var price = i.ShopSellPrice * amountToVendor;
+                    var price = take.Item.ShopSellPrice * take.Amount;
                     resources.Coins += price;
-                    UpdateStockAndLogTransaction(characterId, stack.ItemId, amountToVendor, price, false);
+                    UpdateStockAndLogTransaction(characterId, take.Stack.ItemId, take.Amount, price, false);
                 }
             }
 
@@ -2307,40 +2364,34 @@ namespace RavenNest.BusinessLogic.Game
             var character = gameData.GetCharacter(characterId);
             if (character == null) return false;
             var inventory = inventoryProvider.Get(character.Id);
-            if (inventory.IsLocked(item.Id)) return false;
-            var stack = gameData.GetInventoryItem(item.Id);
-            if (stack == null) return false;
 
+            var take = TryTake(inventory, item.Id, amount);
+            if (!take.Allowed || !VendorAccepts(take.Item)) return false;
 
-            var amountToVendor = Math.Min(amount, stack.Amount.GetValueOrDefault());
-            if (amountToVendor <= 0) return false;
+            var resources = gameData.GetResources(character);
+            if (resources == null) return false;
 
-            var i = gameData.GetItem(item.ItemId);
-            if (i == null || i.Category == (int)DataModels.ItemCategory.StreamerToken)
-                return false;
-
-            if (inventory.RemoveItem(stack, amountToVendor))
+            if (!inventory.RemoveItem(take.Stack, take.Amount))
             {
-                var resources = gameData.GetResources(character);
-                if (resources == null) return false;
-                var price = i.ShopSellPrice * amountToVendor;
-                resources.Coins += price;
-
-                UpdateStockAndLogTransaction(characterId, item.ItemId, amountToVendor, price, false);
-
-                var sessionUserId = character.UserIdLock;
-                if (sessionUserId != null)
-                {
-                    var session = gameData.GetSessionByUserId(sessionUserId.Value);
-                    if (session != null)
-                    {
-                        UpdateResources(session, character, resources);
-                        SendItemRemoveEvent(session, stack, amountToVendor, character);
-                    }
-                }
-                return true;
+                return false;
             }
-            return false;
+
+            var price = take.Item.ShopSellPrice * take.Amount;
+            resources.Coins += price;
+            UpdateStockAndLogTransaction(characterId, take.Stack.ItemId, take.Amount, price, false);
+
+            var sessionUserId = character.UserIdLock;
+            if (sessionUserId != null)
+            {
+                var session = gameData.GetSessionByUserId(sessionUserId.Value);
+                if (session != null)
+                {
+                    UpdateResources(session, character, resources);
+                    SendItemRemoveEvent(session, take.Stack, take.Amount, character);
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
