@@ -17,20 +17,25 @@ namespace RavenNest.BusinessLogic.Game
     ///     place to change if the rule ever moves.
     /// </summary>
     /// <remarks>
-    ///     This reproduces the existing rule exactly rather than improving it. Two things are
-    ///     deliberately absent, because the pairwise overloads never compared them either:
+    ///     Every field that distinguishes one stack from another is in here, which is the whole
+    ///     definition of the type. The twelve overloads this replaced compared only the item and
+    ///     the tag, so two stacks differing in anything else merged and the surviving stack kept
+    ///     whichever value was there first.
     ///
-    ///     <list type="bullet">
-    ///     <item><description>
-    ///         <c>Name</c>. Two stacks of the same item with different names merge today, and the
-    ///         surviving stack keeps the name of whichever was there first. Names on stackable
-    ///         items come from market listings, so it is rare and low harm, but it is a real
-    ///         difference and adding Name to the key is the fix if it ever matters.
-    ///     </description></item>
-    ///     <item><description>
-    ///         <c>Flags</c>. Same reasoning.
-    ///     </description></item>
-    ///     </list>
+    ///     <para>
+    ///     <c>Name</c> is the item's overridden display name, and it is where an enchantment's name
+    ///     lives: EnchantmentManager writes "Rune Sword of Strength +12" into it beside the
+    ///     enchantment itself. So a differing name means a genuinely different item, and merging
+    ///     two of them threw one of the names away.
+    ///     </para>
+    ///
+    ///     <para>
+    ///     <c>Flags</c> is carried through every copy path and is not yet read to decide anything,
+    ///     so today it never differs between two stacks of the same item and including it changes
+    ///     nothing. It is in the key because the moment it does start meaning something, two
+    ///     stacks with different flags are different stacks, and the alternative is remembering to
+    ///     come back here at exactly the right time.
+    ///     </para>
     /// </remarks>
     public readonly struct StackKey : IEquatable<StackKey>
     {
@@ -38,8 +43,16 @@ namespace RavenNest.BusinessLogic.Game
         public readonly string Tag;
         public readonly string Enchantment;
         public readonly Guid? TransmogrificationId;
+        public readonly string Name;
+        public readonly int Flags;
 
-        public StackKey(Guid itemId, string tag, string enchantment, Guid? transmogrificationId)
+        public StackKey(
+            Guid itemId,
+            string tag,
+            string enchantment,
+            Guid? transmogrificationId,
+            string name = null,
+            int? flags = null)
         {
             ItemId = itemId;
 
@@ -54,6 +67,14 @@ namespace RavenNest.BusinessLogic.Game
             Enchantment = string.IsNullOrEmpty(enchantment) ? null : enchantment;
 
             TransmogrificationId = transmogrificationId;
+
+            // "No name" is written both ways across the representations, so both have to mean the
+            // same thing here or an unnamed stack would refuse to merge with another unnamed one.
+            Name = string.IsNullOrEmpty(name) ? null : name;
+
+            // Same for flags, which is int on one representation and int? on another. Absent and
+            // zero are the same absence.
+            Flags = flags.GetValueOrDefault();
         }
 
         /// <summary>
@@ -76,14 +97,16 @@ namespace RavenNest.BusinessLogic.Game
         public bool Equals(StackKey other)
         {
             return ItemId == other.ItemId
+                && Flags == other.Flags
                 && TransmogrificationId == other.TransmogrificationId
                 && string.Equals(Tag, other.Tag, StringComparison.Ordinal)
-                && string.Equals(Enchantment, other.Enchantment, StringComparison.Ordinal);
+                && string.Equals(Enchantment, other.Enchantment, StringComparison.Ordinal)
+                && string.Equals(Name, other.Name, StringComparison.Ordinal);
         }
 
         public override bool Equals(object obj) => obj is StackKey other && Equals(other);
 
-        public override int GetHashCode() => HashCode.Combine(ItemId, Tag, Enchantment, TransmogrificationId);
+        public override int GetHashCode() => HashCode.Combine(ItemId, Tag, Enchantment, TransmogrificationId, Name, Flags);
 
         public static bool operator ==(StackKey a, StackKey b) => a.Equals(b);
 
@@ -95,6 +118,8 @@ namespace RavenNest.BusinessLogic.Game
             if (!string.IsNullOrEmpty(Tag)) text += " tag:" + Tag;
             if (Enchantment != null) text += " ench:" + Enchantment;
             if (TransmogrificationId != null) text += " skin:" + TransmogrificationId;
+            if (Name != null) text += " name:" + Name;
+            if (Flags != 0) text += " flags:" + Flags;
             return text;
         }
     }
@@ -107,22 +132,22 @@ namespace RavenNest.BusinessLogic.Game
     {
         public static StackKey Key(this DataModels.InventoryItem item)
         {
-            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId);
+            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags);
         }
 
         public static StackKey Key(this DataModels.UserBankItem item)
         {
-            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId);
+            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags);
         }
 
         public static StackKey Key(this RavenNest.Models.InventoryItem item)
         {
-            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId);
+            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags);
         }
 
         public static StackKey Key(this ReadOnlyInventoryItem item)
         {
-            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId);
+            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags);
         }
 
         /// <summary>
@@ -133,7 +158,7 @@ namespace RavenNest.BusinessLogic.Game
         /// </summary>
         public static StackKey Key(this RavenNest.Models.AddItemRequest item)
         {
-            return new StackKey(item.ItemId, null, null, null);
+            return new StackKey(item.ItemId, null, null, null, null, null);
         }
     }
 }

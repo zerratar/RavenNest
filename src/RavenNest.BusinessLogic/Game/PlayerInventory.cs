@@ -1126,7 +1126,7 @@ namespace RavenNest.BusinessLogic.Game
                 // It now looks for a stack that matches the one it is about to create. Nothing
                 // matching means a new stack, which is the correct outcome and was always the
                 // intent: the commented out call next to it was reaching for exactly this.
-                var key = new StackKey(itemId, tag, enchantment, transmogrificationId);
+                var key = new StackKey(itemId, tag, enchantment, transmogrificationId, name, flags);
                 var stack = GetUnequipped(key);
                 if (stack != null)
                 {

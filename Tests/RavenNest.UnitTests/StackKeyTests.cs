@@ -6,11 +6,13 @@ using RavenNest.BusinessLogic.Game;
 namespace RavenNest.UnitTests
 {
     /// <summary>
-    ///     StackKey replaced twelve pairwise CanBeStacked overloads with one definition, and the
-    ///     whole value of that is only real if the definition says the same thing the twelve did.
+    ///     StackKey replaced twelve pairwise CanBeStacked overloads with one definition.
     ///
-    ///     The first test is the one that matters: it re-implements the old rule verbatim and
-    ///     compares it against the new one over every combination of the fields that go into it.
+    ///     It started out reproducing the old rule exactly, and the first test below still pins
+    ///     that for every field the old rule looked at. Name and Flags were then added on purpose,
+    ///     so the second test pins the difference: it is the one place the behaviour deliberately
+    ///     departs from what shipped before, and it should be visible rather than inferred from an
+    ///     absence.
     /// </summary>
     [TestClass]
     public class StackKeyTests
@@ -51,6 +53,11 @@ namespace RavenNest.UnitTests
             return Stackable(a) && Stackable(b) && a.Tag == b.Tag && a.ItemId == b.ItemId;
         }
 
+        /// <summary>
+        ///     Over the fields the old rule actually looked at, nothing has changed. The generated
+        ///     stacks here leave Name and Flags alone for that reason; the test below is the one
+        ///     that covers those.
+        /// </summary>
         [TestMethod]
         public void MatchesTheRuleItReplaced()
         {
@@ -71,6 +78,63 @@ namespace RavenNest.UnitTests
 
             // 2 items x 4 tags x 4 enchantments x 3 skins = 96 stacks, so 9216 pairs.
             Assert.AreEqual(9216, compared);
+        }
+
+
+        // ---- The deliberate departure -------------------------------------
+
+        /// <summary>
+        ///     Name is the item's overridden display name and it is where an enchantment's name
+        ///     lives, so two stacks with different names are different items. The old rule did not
+        ///     compare it, so they merged and one of the two names was thrown away.
+        /// </summary>
+        [TestMethod]
+        public void DifferentNamesNoLongerMerge()
+        {
+            var a = new RavenNest.DataModels.InventoryItem { ItemId = ItemA, Name = "Rune Sword of Strength +12" };
+            var b = new RavenNest.DataModels.InventoryItem { ItemId = ItemA, Name = "Rune Sword of Wisdom +4" };
+
+            Assert.IsTrue(OldRule(a, b), "the old rule merged these, which is the point");
+            Assert.IsFalse(PlayerInventory.CanBeStacked(a, b));
+        }
+
+        [TestMethod]
+        public void DifferentFlagsNoLongerMerge()
+        {
+            var a = new RavenNest.DataModels.InventoryItem { ItemId = ItemA, Flags = 1 };
+            var b = new RavenNest.DataModels.InventoryItem { ItemId = ItemA, Flags = 2 };
+
+            Assert.IsTrue(OldRule(a, b));
+            Assert.IsFalse(PlayerInventory.CanBeStacked(a, b));
+        }
+
+        /// <summary>
+        ///     And the absences still have to mean one thing. Name is written as both null and ""
+        ///     across the representations and Flags as both null and 0, so an unnamed unflagged
+        ///     stack has to merge with another one however each was spelled.
+        /// </summary>
+        [TestMethod]
+        public void AbsentNameAndFlagsAreOneValue()
+        {
+            var nulls = new StackKey(ItemA, null, null, null, null, null);
+            var empties = new StackKey(ItemA, null, null, null, "", 0);
+
+            Assert.AreEqual(nulls, empties);
+            Assert.AreEqual(nulls.GetHashCode(), empties.GetHashCode());
+            Assert.IsTrue(StackKey.CanMerge(nulls, empties));
+        }
+
+        /// <summary>
+        ///     Unnamed stacks of the same item still merge, which is the ordinary case and the one
+        ///     that would hurt most to break: every resource, every arrow, every fish.
+        /// </summary>
+        [TestMethod]
+        public void OrdinaryStacksStillMerge()
+        {
+            var a = new RavenNest.DataModels.InventoryItem { ItemId = ItemA };
+            var b = new RavenNest.DataModels.InventoryItem { ItemId = ItemA };
+
+            Assert.IsTrue(PlayerInventory.CanBeStacked(a, b));
         }
 
         [TestMethod]
