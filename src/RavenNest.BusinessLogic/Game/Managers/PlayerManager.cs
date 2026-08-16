@@ -2751,11 +2751,38 @@ namespace RavenNest.BusinessLogic.Game
             return GiftItemResult.OK(amountToGift, ModelMapper.Map(result), ModelMapper.Map(old));
         }
 
+        /// <summary>
+        ///     Moves coins from one character to another.
+        /// </summary>
+        /// <remarks>
+        ///     The sender is resolved through the session rather than looked up by id, and that is
+        ///     the whole point of this method's shape.
+        ///
+        ///     <para>
+        ///     It used to call gameData.GetCharacter(senderCharacterId) directly, so it would take
+        ///     coins from any character in the game rather than one belonging to the caller. The
+        ///     only thing checked was that the session token was valid, which every streamer
+        ///     running the client has, and character ids are not secret: they are in the /inspect
+        ///     links on the clan and highscore pages. So anyone able to read a character id could
+        ///     empty that character's purse into their own.
+        ///     </para>
+        ///
+        ///     <para>
+        ///     Every comparable method already went through GetCharacter(sessionToken, id), which
+        ///     only returns characters active in the calling session, and the gift path also runs
+        ///     the integrity check. This one did neither. It now does both, so it refuses exactly
+        ///     what gifting an item refuses.
+        ///     </para>
+        /// </remarks>
         public long SendCoins(SessionToken sessionToken, Guid senderCharacterId, Guid receiverCharacterId, long amount)
         {
-            var character = gameData.GetCharacter(senderCharacterId);
+            var character = GetCharacter(sessionToken, senderCharacterId);
+            if (character == null) return -1;
+
+            if (!integrityChecker.VerifyPlayer(sessionToken.SessionId, character.Id, 0)) return -1;
+
             var targetCharacter = gameData.GetCharacter(receiverCharacterId);
-            if (amount <= 0 || character == null || targetCharacter == null) return -1;
+            if (amount <= 0 || targetCharacter == null) return -1;
 
             var res = gameData.GetResources(character);
             var tarRes = gameData.GetResources(targetCharacter);
