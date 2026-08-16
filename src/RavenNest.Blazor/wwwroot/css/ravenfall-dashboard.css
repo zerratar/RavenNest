@@ -312,6 +312,21 @@
     z-index: 30;
 }
 
+/* NavMenu renders a bell of its own, and all three layouts that carry .rf-dash
+   already render one in .rf-dash__notify, so NavMenu's is always a duplicate
+   here. site.css hides it with `.dashboard .notifications`, and only
+   DashboardLayout has the `dashboard` class: AdminLayout is `page admin rf-dash`
+   and DarkAdminDashboardLayout is `page rf-dash`, so neither was covered. The
+   duplicate only showed below 641px, where site.css sets `.notifications`
+   back to display: block.
+
+   Keyed on .rf-dash rather than on the layout class so a fourth layout cannot
+   reintroduce it by being named something new. Scoped so MainLayout, which does
+   not wrap its bell in .notifications, is untouched either way. */
+.rf-dash .notifications {
+    display: none;
+}
+
 /* Below 641px the sidebar stacks above the content instead of sitting beside
    it, so the bell can be anchored to the top of the content column rather than
    to the window. Fixed, it tracked the viewport the whole way down and sat on
