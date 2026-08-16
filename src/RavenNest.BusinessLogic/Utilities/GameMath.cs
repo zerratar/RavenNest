@@ -281,34 +281,32 @@ namespace RavenNest.BusinessLogic
         /// <param name="i"></param>
         /// <param name="inStock"></param>
         /// <returns></returns>
+        /// <summary>
+        ///     The vendor's asking price: a flat 25% over what it pays for the same item.
+        /// </summary>
+        /// <remarks>
+        ///     <paramref name="inStock"/> is accepted and ignored, on purpose.
+        ///
+        ///     <para>
+        ///     This used to slide with stock, 1% off per ten held. It was half of a supply pricing
+        ///     idea whose other half, a matching reduction in what the vendor pays, was written but
+        ///     never wired up: all three sell paths pay a flat ShopSellPrice. One side moving on
+        ///     its own is what let a player buy an item for less than the vendor would pay for it
+        ///     back, which printed money from about two hundred in stock.
+        ///     </para>
+        ///
+        ///     <para>
+        ///     So it is flat for now, and flat is honest: the vendor has fixed prices and the
+        ///     spread is always the same 25%, which makes a round trip a guaranteed 20% loss at
+        ///     every stock level with no floor to get wrong. Supply pricing comes back as one
+        ///     change to both sides together, with stock that decays so the number means "recently
+        ///     sold" rather than "sold since the beginning of time", and with an announcement,
+        ///     because a payout that quietly drops reads as a bug.
+        ///     </para>
+        /// </remarks>
         public static long CalculateVendorBuyPrice(long minPrice, long inStock = 0)
         {
-            var price = (double)Math.Truncate(minPrice * 1.25d);
-
-            // full buy price until there are more than 10 items in stock
-            if (inStock - 10 <= 0)
-            {
-                return (long)price;
-            }
-
-            // Reduce 1% per 10 in stock, but never to a price the vendor would beat by
-            // buying it straight back.
-            //
-            // The floor used to be 25% of the asking price, which is about a third of what
-            // the vendor pays for the same item, and selling to the vendor pays a flat
-            // ShopSellPrice with no stock reduction at all. So from about 200 in stock a
-            // player could buy an item and immediately sell it back for more than they paid,
-            // and at the floor the round trip returned nearly 70% of the item's value, every
-            // time, for ever. Stock levels in the thousands are normal, so this was open.
-            //
-            // The floor is now just above minPrice, which is at least what selling pays, so
-            // the round trip is always a loss. Ties are possible at a price of one coin,
-            // where there is nothing left to round down to.
-            var min = Math.Max(1, (long)Math.Truncate(minPrice * 1.05d));
-            var reductionCount = Math.Truncate(inStock / 10.0);
-            price -= reductionCount * price * 0.01d;
-            if ((long)price <= min) return min;
-            return (long)price;
+            return (long)Math.Truncate(minPrice * 1.25d);
         }
 
         /*  CalculateVendorSellPrice was here.
