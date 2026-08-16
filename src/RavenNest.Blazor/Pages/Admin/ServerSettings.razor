@@ -95,10 +95,39 @@
                             }
                         </div>
                     }
+                    else if (setting.Kind == ServerSettingKind.Toggle)
+                    {
+                        @*
+                            A switch, and it saves the moment it is flipped. A toggle that needs a
+                            second press on a Save button is a toggle people will set and walk away
+                            from, believing it took.
+
+                            The word next to it is not decoration: on and off is a two state thing
+                            being shown by a position and a colour, and neither of those survives a
+                            screenshot, a colourblind reader, or a glance.
+                        *@
+                        <div class="rf-settings__row">
+                            <label class="rf-switch">
+                                <input type="checkbox"
+                                       checked="@IsOn(setting)"
+                                       @onchange="e => Toggle(setting, e)" />
+                                <span class="rf-switch__track" aria-hidden="true"></span>
+                                <span class="rf-switch__state">@(IsOn(setting) ? "On" : "Off")</span>
+                            </label>
+
+                            @if (Settings.GetSource(setting.Key) == ServerSettingSource.Database)
+                            {
+                                <button type="button" class="rf-btn" @onclick="() => Clear(setting)">
+                                    Reset
+                                </button>
+                            }
+                        </div>
+                    }
                     else
                     {
                         <div class="rf-settings__row">
                             <input class="rf-input"
+                                   type="@(setting.Kind == ServerSettingKind.Number ? "number" : "text")"
                                    list="@(setting.HasChoices ? ListId(setting) : null)"
                                    placeholder="@setting.Placeholder"
                                    value="@Draft(setting.Key)"
@@ -197,6 +226,25 @@
 
     private bool Changed(ServerSettingDefinition setting) =>
         (Draft(setting.Key) ?? "") != (Settings.GetString(setting.Key) ?? "");
+
+    /// <summary>
+    ///     Read through the provider rather than from the draft, so the switch shows what the server
+    ///     is actually doing rather than what was last typed into a box.
+    /// </summary>
+    private bool IsOn(ServerSettingDefinition setting) => Settings.GetToggle(setting.Key);
+
+    private void Toggle(ServerSettingDefinition setting, ChangeEventArgs e)
+    {
+        var on = e.Value is bool value && value;
+
+        // Written as the words the provider parses back, not as "True"/"False", so a value set here
+        // reads the same as one typed into appsettings.json.
+        Settings.Set(setting.Key, on ? "true" : "false", userName);
+        drafts[setting.Key] = on ? "true" : "false";
+
+        messageIsBad = false;
+        message = setting.Label + (on ? " turned on." : " turned off.");
+    }
 
     private void Save(ServerSettingDefinition setting)
     {

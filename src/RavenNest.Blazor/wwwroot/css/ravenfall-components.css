@@ -3260,15 +3260,6 @@ a.rf-badge:hover {
     font-size: var(--rf-size-small);
 }
 
-.rf-check {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--rf-space-2);
-    color: var(--rf-ink-muted);
-    font-size: var(--rf-size-small);
-    cursor: pointer;
-}
-
 /* The preview sits inside the editor panel, so it needs a boundary of its own or
    it reads as more form. */
 .rf-newsadmin__preview {
@@ -3604,4 +3595,84 @@ a.rf-badge:hover {
 .rf-chat__ask .rf-input {
     flex: 1 1 auto;
     min-width: 0;
+}
+
+/* ---- Switch ------------------------------------------------------------
+   For a setting that is only ever on or off. The checkbox underneath is the
+   real control and keeps its keyboard behaviour; the track is decoration
+   painted on top of it.
+
+   The state is also written next to it in words. Position and colour are the
+   two things a switch normally leans on and neither survives a colourblind
+   reader or a screenshot pasted into a chat, which is how most of these get
+   discussed. */
+
+.rf-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+    /* The track is 24px tall, which is a small thing to hit with a thumb. The
+       label is the hit area, so it gets the height without the track growing. */
+    min-height: 2.75rem;
+    cursor: pointer;
+}
+
+/* Not display:none, which would take it out of the tab order and off the
+   accessibility tree along with it. */
+.rf-switch input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.rf-switch__track {
+    position: relative;
+    flex: 0 0 auto;
+    width: 2.75rem;
+    height: 1.5rem;
+    border: 1px solid var(--rf-line);
+    border-radius: 999px;
+    background: var(--rf-surface-3);
+    transition: background var(--rf-transition), border-color var(--rf-transition);
+}
+
+.rf-switch__track::after {
+    content: "";
+    position: absolute;
+    top: 0.185rem;
+    left: 0.185rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: var(--rf-ink-muted);
+    transition: transform var(--rf-transition), background var(--rf-transition);
+}
+
+.rf-switch input:checked + .rf-switch__track {
+    border-color: var(--rf-gold);
+    background: var(--rf-gold);
+}
+
+.rf-switch input:checked + .rf-switch__track::after {
+    transform: translateX(1.25rem);
+    background: var(--rf-bg);
+}
+
+/* The focus ring has to move to the track, since the input it belongs to is
+   the hidden one. */
+.rf-switch input:focus-visible + .rf-switch__track {
+    outline: 2px solid var(--rf-gold);
+    outline-offset: 2px;
+}
+
+.rf-switch__state {
+    color: var(--rf-ink);
+    font-weight: 700;
+    font-size: var(--rf-size-small);
 }
