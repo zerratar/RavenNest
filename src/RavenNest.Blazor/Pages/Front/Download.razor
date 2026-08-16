@@ -1,4 +1,4 @@
-﻿@page "/download"
+@page "/download"
 @using RavenNest.Blazor.Services.Models
 @using Microsoft.AspNetCore.WebUtilities
 @using RavenNest.Blazor.Services
@@ -15,73 +15,119 @@
 <div class="page-content">
 
     <div class="section">
-        <h2>Get started with Ravenfall</h2>
-        <p>Experience the magic of Ravenfall on your favorite device. Select your platform and get your copy now.</p>
-        <div class="download-options">
-            <div class="option">
-                <h3><i class="fa-brands fa-windows"></i>&nbsp;Windows x64</h3>
-                <p>Download the latest version for Windows.</p>
-                <a href="/download/latest" class="raven-btn">Download Ravenfall.7z</a>
+        <p class="rf-lead">
+            Ravenfall runs on your machine and your viewers play it from chat. Download the client,
+            set a password, and type !join in your own channel.
+        </p>
+
+        <div class="rf-downloads">
+            <div class="rf-download">
+                <h3 class="rf-download__title"><i class="fa-brands fa-windows" aria-hidden="true"></i> Windows x64</h3>
+                <p class="rf-download__body">The supported build, with automatic updates.</p>
+                <a href="/download/latest" class="rf-btn rf-btn--primary">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i> Download for Windows
+                </a>
             </div>
-            <div class="option">
-                <h3><i class="fa-brands fa-linux"></i>&nbsp;Linux x86/x64 (Experimental)</h3>
-                <p>Experimental build for Linux users.</p>
-                <a href="/download/linux" class="raven-btn blue">Download Ravenfall.7z</a>
-                <small class="notice">Note: Linux is not officially supported yet and does not have a working auto-update. The link may not work if no successful build was made for the current version of the game.</small>
+
+            <div class="rf-download">
+                <h3 class="rf-download__title">
+                    <i class="fa-brands fa-linux" aria-hidden="true"></i> Linux x86/x64
+                    <span class="rf-badge rf-badge--warn">Experimental</span>
+                </h3>
+                <p class="rf-download__body">
+                    Not officially supported and it has no working auto update. The link may not
+                    work if the current version has no successful Linux build.
+                </p>
+                <a href="/download/linux" class="rf-btn">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i> Download for Linux
+                </a>
             </div>
         </div>
     </div>
 
     <div class="section">
-        <div class="system-requirements">
-            <h2>System Requirements</h2>
-            <p>Ravenfall is designed to perform well across a wide range of systems. To ensure an optimal gaming experience, please review our basic system requirements below.</p>
-            <ul>
-                <li><strong>OS</strong>: 64-bit Windows 10 or later (linux is untested)</li>
-                <li><strong>CPU</strong>: i5-6700 or equivalent (at least 4 cores)</li>
-                <li><strong>GPU</strong>: GTX 970 or equivalent (Dedicated)</li>
-            </ul>
-            <p>Note: These requirements are estimates for a game with about 25 players. For more players, hardware requirements may be higher. Please share your experiences on our <a href="https://discord.gg/gtfDts7" target="_blank">Discord</a> to help us refine these specifications.</p>
+        <h1>System requirements</h1>
+        @*
+            Was a bullet list of three lines that each had to carry their own label. A facts list
+            is the shape of a label and a value, and it puts the three where they can be compared
+            against what you have.
+        *@
+        <div class="rf-prose">
+            <dl class="rf-facts">
+                <dt>Operating system</dt>
+                <dd>64 bit Windows 10 or later. Linux is untested.</dd>
+
+                <dt>Processor</dt>
+                <dd>An i5-6700 or equivalent, with at least four cores.</dd>
+
+                <dt>Graphics</dt>
+                <dd>A GTX 970 or equivalent. A dedicated card rather than integrated.</dd>
+            </dl>
+
+            <p class="rf-meta">
+                These are estimates for about 25 players. More players than that wants more
+                machine. Tell us what you are running on
+                <a href="https://discord.gg/gtfDts7" target="_blank" rel="noopener">Discord</a> and
+                we will sharpen these numbers.
+            </p>
         </div>
     </div>
 
     <div class="section">
-        <div class="installation-guide">
-            <h2>Installation Guide</h2>
-            <p>Follow these steps to install and start playing Ravenfall:</p>
-            <ol>
-                <li><strong>Download the client:</strong> Unzip the downloaded file using <a href="https://www.7-zip.org/" target="_blank">7-zip</a> or similar software, and extract it into a new directory called “Ravenfall”.</li>
-                <li><strong>Set up 2FA (Optional):</strong> If you want to use your own account or a custom bot, set up Two-Factor Authentication for your Twitch account. Learn how to do it <a href="https://help.twitch.tv/s/article/two-factor-authentication?language=en_US">here</a>.</li>
-                <li><strong>Set a password:</strong> Head to <a href="https://www.ravenfall.stream/password">this link</a> and set a password for your Ravenfall account if you haven’t done so. This password is used only for the Ravenfall client, as it doesn't support Twitch login.</li>
-                <li><strong>Log in:</strong> Open the Ravenfall client, log in with your Twitch username and the password you just set, and explore the village on Home Island.</li>
-                <li><strong>Join the Twitch Chat:</strong> Type !join in your Twitch channel chat. You should see a response from RavenfallOfficial, and your character should be visible in the client.</li>
-                <li><strong>Adjust Screen Mode:</strong> To exit fullscreen mode, simply press Alt + Enter.</li>
+        <h1>Setting it up</h1>
+        <div class="rf-prose">
+            <ol class="rf-steps">
+                <li>
+                    <b>Unzip the client.</b> Use <a href="https://www.7-zip.org/" target="_blank" rel="noopener">7-Zip</a>
+                    or similar and extract it into a folder of its own.
+                </li>
+                <li>
+                    <b>Set a password.</b> The client cannot sign in with Twitch, so it needs one:
+                    set it on the <a href="/password">password page</a>.
+                </li>
+                <li>
+                    <b>Log in.</b> Open the client and sign in with your Twitch username and that
+                    password. You should arrive in the village on Home island.
+                </li>
+                <li>
+                    <b>Join from chat.</b> Type <span class="rf-cmd">!join</span> in your own
+                    channel. RavenfallOfficial replies and your character appears in the client.
+                </li>
+                <li>
+                    <b>Leave fullscreen</b> with Alt and Enter if you would rather it ran in a
+                    window.
+                </li>
             </ol>
+
+            <p class="rf-meta">
+                Two factor authentication on your Twitch account is only needed if you intend to
+                run your own bot rather than the official one.
+                <a href="https://help.twitch.tv/s/article/two-factor-authentication?language=en_US" target="_blank" rel="noopener">How to set it up</a>.
+            </p>
         </div>
     </div>
 
     <div class="section">
-        <div class="game-tips">
-            <h2>Additional Tips & Tricks</h2>
-            <p>To enhance your Ravenfall experience, here are some tips and notes:</p>
-            <ul>
-                <li><strong>Ravenfall Music:</strong> Feel free to use Ravenfall's public domain music on your stream.</li>
-                <li><strong>Client Running:</strong> Ensure the client is running for characters to gain experience, even when your stream is offline.</li>
-                <li><strong>Offline Input:</strong> Players can input commands at twitch.tv/popout/[username]/chat even when you're offline.</li>
-                <li><strong>Offscreen Play:</strong> Ravenfall doesn't have to be visible on the stream. Some streamers run the client offscreen, and viewers can still input commands, especially for events like raids or dungeons.</li>
-                <li><strong>Free Camera Mode:</strong> Press Ctrl + Tab to activate free camera mode, necessary for setting village bonuses. Check out the Streamers Control for comprehensive camera controls.</li>
-                <li><strong>Skill Mentoring Buildings:</strong> In free camera mode, you can fly to the Home village and set the skill mentoring buildings. Assign a mentor to each building to give characters leveling that skill an experience boost.</li>
-                <li><strong>Village Bonuses:</strong> Try not to overextend when choosing your village bonuses. For new servers, focusing exclusively on Barracks is advisable.</li>
-                <li><strong>Player List Size:</strong> If you change the player list size, it may seem to revert to the default size when you restart the client. Simply open the UI settings to restore your chosen size.</li>
-                <li><strong>Nightbot Commands:</strong> Consider using Nightbot commands to provide game information to players.</li>
+        <h1>Worth knowing</h1>
+        <div class="rf-prose">
+            <ul class="rf-tips">
+                <li><b>The client has to be running</b> for characters to earn experience, even when your stream is offline.</li>
+                <li><b>It does not have to be on screen.</b> Plenty of streamers run it offscreen and bring it up for raids and dungeons.</li>
+                <li><b>Viewers can play while you are offline</b> by typing in <span class="rf-cmd">twitch.tv/popout/[username]/chat</span>.</li>
+                <li><b>Free camera is Ctrl and Tab</b>, which is what you need to set town bonuses.</li>
+                <li><b>Town plots boost a skill</b> for everyone playing on your stream. Assign them in free camera at the Home village, or from your <a href="/town">town page</a>.</li>
+                <li><b>Do not spread your town too thin.</b> On a new server, putting everything into one skill is usually better than a little of each.</li>
+                <li><b>The music is public domain</b>, so you are free to use it on stream.</li>
+                <li><b>If the player list size resets</b> after a restart, open the UI settings and it comes back.</li>
             </ul>
         </div>
     </div>
 
     <div class="section">
-        <div class="community-guidelines">
-            <p>For more detailed guidelines, please visit our <a href="https://wiki.ravenfall.stream/index.php/Streamer_Setup_Guide">community wiki setup guide</a>. It is kept up to date by our dedicated community and may have more details than this page.</p>
-        </div>
+        <p class="rf-meta">
+            The <a href="https://wiki.ravenfall.stream/index.php/Streamer_Setup_Guide" target="_blank" rel="noopener">community wiki setup guide</a>
+            goes further than this page and is kept up to date by players.
+        </p>
     </div>
 
 </div>

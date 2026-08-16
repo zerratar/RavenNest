@@ -1128,3 +1128,88 @@
 .rf-front .rf-perk--absent i {
     color: var(--rf-ink-faint);
 }
+
+/* ---- Prose sections ----------------------------------------------------
+   A panel for pages that are mostly words. Capped in characters rather than
+   pixels: a line of prose gets hard to track back from at much over 70, and
+   several of these pages ran the full width of a wide monitor. */
+
+.rf-front .rf-prose {
+    max-width: 70ch;
+    margin: 0 auto;
+    padding: var(--rf-space-5) var(--rf-space-6);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+    line-height: 1.7;
+}
+
+.rf-front .rf-prose > :last-child {
+    margin-bottom: 0;
+}
+
+.rf-front .rf-steps,
+.rf-front .rf-tips {
+    margin: 0;
+    padding-left: var(--rf-space-5);
+}
+
+.rf-front .rf-steps li,
+.rf-front .rf-tips li {
+    margin-bottom: var(--rf-space-3);
+    color: var(--rf-ink-muted);
+}
+
+.rf-front .rf-steps li:last-child,
+.rf-front .rf-tips li:last-child {
+    margin-bottom: 0;
+}
+
+.rf-front .rf-steps b,
+.rf-front .rf-tips b {
+    color: var(--rf-ink);
+}
+
+/* ---- Downloads --------------------------------------------------------- */
+
+.rf-front .rf-downloads {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: var(--rf-space-4);
+    max-width: 56rem;
+    margin: 0 auto;
+}
+
+.rf-front .rf-download {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--rf-space-3);
+    padding: var(--rf-space-5);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    box-shadow: var(--rf-bevel);
+}
+
+.rf-front .rf-download__title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+    margin: 0;
+    font-size: var(--rf-size-heading);
+    font-weight: 700;
+}
+
+.rf-front .rf-download__title::after {
+    content: none;
+}
+
+.rf-front .rf-download__body {
+    margin: 0;
+    flex: 1 1 auto;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+}
