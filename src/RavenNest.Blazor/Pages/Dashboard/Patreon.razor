@@ -84,18 +84,27 @@ else
                             <span><b>2x experience</b> for your characters.</span>
                         </li>
                     }
+                    @*
+                        House counts are a floor rather than a bonus: the tier guarantees you that
+                        many plots however low your town level, and a town that has levelled past
+                        them keeps what it earned. The wording says "at least" for that reason.
+
+                        The top tier is not all of them. A town can reach 40 plots, one per ten town
+                        levels up to the maximum of 400, and the Patreon ladder stops at 30. This
+                        said "All village houses" and had done for as long as the page existed.
+                    *@
                     @if (patreonTierIndex == 2)
                     {
                         <li class="rf-perk">
                             <i class="fa-solid fa-check" aria-hidden="true"></i>
-                            <span><b>10 village houses</b> unlocked.</span>
+                            <span><b>At least 10 village houses</b>, whatever your town level.</span>
                         </li>
                     }
                     @if (patreonTierIndex == 3)
                     {
                         <li class="rf-perk">
                             <i class="fa-solid fa-check" aria-hidden="true"></i>
-                            <span><b>20 village houses</b> unlocked.</span>
+                            <span><b>At least 20 village houses</b>, whatever your town level.</span>
                         </li>
                         <li class="rf-perk">
                             <i class="fa-solid fa-check" aria-hidden="true"></i>
@@ -106,7 +115,11 @@ else
                     {
                         <li class="rf-perk">
                             <i class="fa-solid fa-check" aria-hidden="true"></i>
-                            <span><b>All village houses</b> unlocked.</span>
+                            <span>
+                                <b>At least 30 village houses</b>, whatever your town level. The
+                                last @(MaxVillageHouses - 30) are earned by levelling your town,
+                                one every ten levels up to @GameMath.MaxVillageLevel.
+                            </span>
                         </li>
                         <li class="rf-perk">
                             <i class="fa-solid fa-check" aria-hidden="true"></i>
@@ -209,6 +222,14 @@ else
 
     private bool personalizeMessage;
     private string targetLanguage = "None";
+
+    /// <summary>
+    ///     The most plots a town can hold: one per ten town levels, up to the maximum town level.
+    ///     Derived rather than written into the copy, because the copy having a number of its own
+    ///     is how this page came to claim the top tier unlocked all of them when it grants 30.
+    ///     GetOrCreateVillageHouses works it out the same way.
+    /// </summary>
+    private static int MaxVillageHouses => GameMath.MaxVillageLevel / 10;
 
     protected override async Task OnInitializedAsync()
     {
