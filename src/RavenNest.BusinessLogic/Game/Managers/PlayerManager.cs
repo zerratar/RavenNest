@@ -2226,7 +2226,7 @@ namespace RavenNest.BusinessLogic.Game
             var price = take.Item.ShopSellPrice * take.Amount;
             resources.Coins += price;
             UpdateResources(session, player, resources);
-            UpdateStockAndLogTransaction(player.Id, take.Stack.ItemId, take.Amount, price, false);
+            UpdateStockAndLogTransaction(player.Id, take.Stack.ItemId, take.Amount, price, false, restock: !take.IsSoulbound);
             return take.Amount;
         }
         /// <summary>
@@ -2242,6 +2242,14 @@ namespace RavenNest.BusinessLogic.Game
 
             /// <summary>Clamped to what the stack actually holds, so it is always deliverable.</summary>
             public readonly long Amount;
+
+            /// <summary>
+            ///     Bound to this character, either because this instance was bound or because
+            ///     nothing of this kind is ever tradable. Both spellings have to be tested: the
+            ///     definition covers items that are soulbound by their nature, and the instance
+            ///     covers one that became bound on the way.
+            /// </summary>
+            public bool IsSoulbound => Allowed && (Stack.Soulbound || Item.Soulbound);
 
             private InventoryTake(bool allowed, string reason, DataModels.InventoryItem stack, DataModels.Item item, long amount)
             {
@@ -2346,7 +2354,7 @@ namespace RavenNest.BusinessLogic.Game
                     isSuccess = true;
                     var price = take.Item.ShopSellPrice * take.Amount;
                     resources.Coins += price;
-                    UpdateStockAndLogTransaction(characterId, take.Stack.ItemId, take.Amount, price, false);
+                    UpdateStockAndLogTransaction(characterId, take.Stack.ItemId, take.Amount, price, false, restock: !take.IsSoulbound);
                 }
             }
 
@@ -2378,7 +2386,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var price = take.Item.ShopSellPrice * take.Amount;
             resources.Coins += price;
-            UpdateStockAndLogTransaction(characterId, take.Stack.ItemId, take.Amount, price, false);
+            UpdateStockAndLogTransaction(characterId, take.Stack.ItemId, take.Amount, price, false, restock: !take.IsSoulbound);
 
             var sessionUserId = character.UserIdLock;
             if (sessionUserId != null)
@@ -2423,6 +2431,16 @@ namespace RavenNest.BusinessLogic.Game
             var item = gameData.GetItem(itemId);
             if (item == null) return VendorBuyResult.Failed("That item no longer exists.");
 
+            // Selling a soulbound item is allowed and no longer restocks the vendor, but stock
+            // banked before that rule existed is still sitting on the shelf. Buying it would hand
+            // over an unbound copy of something that is meant never to leave its owner, which is
+            // the laundering route the restock rule closes going forward. This closes what is
+            // already there.
+            if (item.Soulbound)
+            {
+                return VendorBuyResult.Failed("The vendor will not part with that.");
+            }
+
             var vendorItem = gameData.GetVendorItemByItemId(itemId);
             var stock = vendorItem?.Stock ?? 0;
             if (stock <= 0) return VendorBuyResult.Failed("The vendor has none of those left.");
@@ -2466,10 +2484,18 @@ namespace RavenNest.BusinessLogic.Game
         /// <param name="amount"></param>
         /// <param name="totalPrice"></param>
         /// <param name="wasItemBought"></param>
-        private void UpdateStockAndLogTransaction(Guid characterId, Guid itemId, long amount, double totalPrice, bool wasItemBought)
+        /// <param name="restock">
+        ///     False when the goods are not to go on the shelf, which is how a soulbound item is
+        ///     sold without becoming buyable. The sale still happens and is still recorded; the
+        ///     item just does not come back.
+        /// </param>
+        private void UpdateStockAndLogTransaction(Guid characterId, Guid itemId, long amount, double totalPrice, bool wasItemBought, bool restock = true)
         {
             // Update Vendor Stock, we will not persist enchantment data for now, only itemId is relevant
-            UpdateVendorItemStock(itemId, amount, wasItemBought);
+            if (restock || wasItemBought)
+            {
+                UpdateVendorItemStock(itemId, amount, wasItemBought);
+            }
 
             gameData.Add(
                 new VendorTransaction

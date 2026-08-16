@@ -199,6 +199,12 @@ namespace RavenNest.Blazor.Services
                 foreach (var item in gameData.GetVendorItems())
                 {
                     var i = gameData.GetItem(item.ItemId);
+
+                    // Not offered, so the page does not advertise something PlayerManager will
+                    // refuse. Soulbound items can be sold to the vendor but never bought from it,
+                    // or vendoring one would be a way of handing it to somebody else.
+                    if (i == null || i.Soulbound) continue;
+
                     records.Add(new VendorItemRecord
                     {
                         VendorItem = item,

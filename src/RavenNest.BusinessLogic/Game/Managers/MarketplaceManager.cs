@@ -156,6 +156,15 @@ namespace RavenNest.BusinessLogic.Game
                 return new ItemSellResult(ItemTradeState.Untradable);
             }
 
+            // The check above this one asks whether the item is soulbound by its nature. It never
+            // asked whether this particular one is bound, so an instance that became bound could be
+            // listed and bought by somebody else, which is the whole thing soulbound exists to
+            // prevent. Both spellings, both refused.
+            if (itemToSell.Soulbound)
+            {
+                return new ItemSellResult(ItemTradeState.Untradable);
+            }
+
             var totalItemCount = itemToSell.Amount;//itemsToSell.Count > 0 ? itemsToSell.Sum(x => x.Amount.GetValueOrDefault()) : 0;
             var newItemAmount = totalItemCount - amount;
 
