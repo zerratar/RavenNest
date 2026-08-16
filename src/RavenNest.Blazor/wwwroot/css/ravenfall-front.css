@@ -1213,3 +1213,25 @@
     color: var(--rf-ink-muted);
     font-size: var(--rf-size-small);
 }
+
+/* A prose panel that holds a table rather than paragraphs, so the 70ch cap
+   would squeeze it. Same surface, room to breathe. */
+.rf-front .rf-prose--wide {
+    max-width: 64rem;
+}
+
+/* A count on a filter button, for rails where each option leads somewhere with
+   a different amount behind it. */
+.rf-front .rf-filter b {
+    padding: 0 var(--rf-space-1);
+    border-radius: var(--rf-radius-sm);
+    background: var(--rf-surface-3);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+}
+
+.rf-front .rf-filter.is-active b {
+    background: rgba(20, 22, 28, 0.22);
+    color: var(--rf-ink-inverse);
+}

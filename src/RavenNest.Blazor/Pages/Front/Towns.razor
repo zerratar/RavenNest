@@ -1,4 +1,4 @@
-﻿@*
+@*
     /town used to be a second route onto this page. It is the dashboard's own town page now, and
     nothing linked to the alias: the front page nav and footer both point at /towns.
 *@
@@ -12,91 +12,170 @@
 @inject AuthService AuthService
 
 <div class="top-section">
-	<div class="hero-text">
-		<h1>Town bonuses in active streams</h1>
-	</div>
+    <div class="hero-text">
+        <h1>Town bonuses</h1>
+    </div>
 </div>
 
 <div class="white-section-break"></div>
 <div class="page-content">
-	<div class="section">
+    <div class="section">
+        <p class="rf-lead">
+            Every stream running right now has a town, and its plots boost skills for everyone
+            playing there. Pick a skill to see which stream is the best place to train it.
+        </p>
 
-		@if (data == null)
-		{
-	  <h2>Loading town data...</h2>
-	  <LoadIndicator></LoadIndicator>
-		}
-		else
-		{
-	  <!-- Group these, By Skill/Category -->
-	  <!-- Then order by the streamer with highest % -->
+        @if (data == null)
+        {
+            <LoadIndicator></LoadIndicator>
+        }
+        else if (TypesWithBonus.Count == 0)
+        {
+            @*
+                The page used to render an empty div here, so "no streams are live" and "the page
+                is broken" looked identical. They are not the same thing and it should say which.
+            *@
+            <div class="rf-prose">
+                <h2 class="rf-panel__title">No town bonuses right now</h2>
+                <p>
+                    This lists towns in streams that are running at this moment, and either nobody
+                    is live or no live town has anyone assigned to a plot yet.
+                </p>
+                <div class="rf-actions">
+                    <a class="rf-btn rf-btn--primary" href="/streams">See who is streaming</a>
+                    <a class="rf-btn" href="/download">Run it yourself</a>
+                </div>
+            </div>
+        }
+        else
+        {
+            @*
+                Was fourteen stacked tables, one per skill, each with its own header, and you
+                scrolled to find the one you cared about. The question this page answers is "where
+                do I go to train X", so X is the control.
+            *@
+            <div class="rf-filters" role="group" aria-label="Filter by skill">
+                @foreach (var type in TypesWithBonus)
+                {
+                    var option = TownHouseTypes.Get(type);
+                    <button type="button"
+                            class="rf-filter @(selectedType == type ? "is-active" : "")"
+                            aria-pressed="@(selectedType == type)"
+                            @onclick="() => SelectType(type)">
+                        <i class="@TownHouseTypes.IconOf(type)" aria-hidden="true"></i>
+                        <span>@TownHouseTypes.LabelOf(type)</span>
+                        <b>@data[type].Count</b>
+                    </button>
+                }
+            </div>
 
-	  <div class="type-groups">
-				@foreach (var group in data.Keys.OrderBy(x => x.ToString()))
-				{
-					var towns = data[group];
-					if (towns.Count == 0)
-					{
-						continue;
-					}
+            <div class="rf-prose rf-prose--wide">
+                <h2 class="rf-panel__title">
+                    Best streams for @TownHouseTypes.LabelOf(selectedType).ToLowerInvariant()
+                </h2>
+                <p class="rf-meta">
+                    A @TownHouseTypes.LabelOf(selectedType).ToLowerInvariant() plot is driven by its
+                    occupant's @SelectedSkillName level, and the bonus below is every counting plot
+                    of that kind added together.
+                </p>
 
-		   <div class="type-group">
-			<div class="type-group-name">@group</div>
-
-			<table class="type-group-town-list">
-			 <thead>
-			  <tr>
-			   <th>Owner</th>
-			   @*<th>Name</th>*@
-			   <th>Bonus</th>
-			   <th>Level</th>
-			   <th>Slots</th>
-			  </tr>
-			 </thead>
-			 <tbody>
-								@foreach (var item in towns)
-								{
-				  <tr class="town-item">
-				   <td class='town-owner'><a href="@("https://www.twitch.tv/" + item.Owner.UserName)" target="_blank">@item.Owner.UserName</a></td>
-				   @*<td class='town-name'>@item.Name</td>*@
-				   <td class='town-bonus'>@(item.GetActiveBonus(group))%</td>
-				   <td class='town-level'>@item.Level</td>
-				   <td class='town-slots' title="The slot/hut info for this town. Active Count / Used Count / Total Count"><span class="town-slot-active">@item.ActiveSlotCount</span>/<span class="town-slot-used">@item.UsedSlotCount</span>/<span class="town-slot-total">@item.TotalSlotCount</span></td>
-				  </tr>
-								}
-			 </tbody>
-			</table>
-		   </div>
-				}
-	  </div>
-
-		}
- </div>
+                <div class="rf-scroll-x">
+                    <table class="rf-table">
+                        <thead>
+                            <tr>
+                                <th scope="col"><span class="rf-th rf-th--static">Streamer</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Bonus</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Town level</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Plots counting</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var town in data[selectedType])
+                            {
+                                <tr>
+                                    <td>
+                                        <a class="rf-item__name"
+                                           href="https://www.twitch.tv/@town.Owner.UserName"
+                                           target="_blank" rel="noopener">
+                                            <i class="fab fa-twitch" aria-hidden="true"></i> @town.Owner.UserName
+                                        </a>
+                                    </td>
+                                    <td><b class="rf-loyalty__points">@Percent(town.GetActiveBonus(selectedType))</b></td>
+                                    <td class="rf-table__quiet">@town.Level</td>
+                                    <td class="rf-table__quiet">
+                                        @town.ActiveSlotCount of @town.TotalSlotCount
+                                        @if (town.UsedSlotCount > town.ActiveSlotCount)
+                                        {
+                                            <span class="rf-meta">
+                                                &middot; @(town.UsedSlotCount - town.ActiveSlotCount) filled but away
+                                            </span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
 </div>
 
 @code {
+    private Dictionary<TownHouseSlotType, List<TownData>> data = null;
+    private List<TownHouseSlotType> slotTypes = null;
+    private TownHouseSlotType selectedType;
 
-	private Dictionary<TownHouseSlotType, List<TownData>> data = null;
-	private List<TownHouseSlotType> slotTypes = null;
+    /// <summary>Only the skills some live town is actually boosting, biggest list first.</summary>
+    private List<TownHouseSlotType> TypesWithBonus =>
+        data == null
+            ? new List<TownHouseSlotType>()
+            : data.Where(x => x.Value.Count > 0)
+                  .OrderByDescending(x => x.Value.Count)
+                  .ThenBy(x => TownHouseTypes.LabelOf(x.Key))
+                  .Select(x => x.Key)
+                  .ToList();
 
-	protected override void OnInitialized()
-	{
-		slotTypes = Enum.GetValues(typeof(TownHouseSlotType)).Cast<TownHouseSlotType>().Where(x => x != TownHouseSlotType.Undefined && x != TownHouseSlotType.NoSkill).ToList();
-		LoadTownDataAsync();
-	}
+    private string SelectedSkillName => TownHouseTypes.Get(selectedType)?.SkillName ?? "the skill";
 
-	private async Task LoadTownDataAsync()
-	{
-		var result = await TownService.GetTownsAsync();
+    protected override void OnInitialized()
+    {
+        slotTypes = Enum.GetValues(typeof(TownHouseSlotType)).Cast<TownHouseSlotType>()
+            .Where(x => x != TownHouseSlotType.Undefined && x != TownHouseSlotType.NoSkill)
+            .ToList();
+        LoadTownDataAsync();
+    }
 
-		data = new Dictionary<TownHouseSlotType, List<TownData>>();
-		foreach (var st in slotTypes)
-		{
-			var hasBonus = result.Select(x => new { Town = x, TypeBonus = x.GetActiveBonus(st) }).Where(x => x.TypeBonus > 0).ToList();
-			data[st] = hasBonus.OrderByDescending(x => x.TypeBonus).Select(x => x.Town).ToList();
-		}
+    private async Task LoadTownDataAsync()
+    {
+        var result = await TownService.GetTownsAsync();
 
-		StateHasChanged();
-	}
+        data = new Dictionary<TownHouseSlotType, List<TownData>>();
+        foreach (var st in slotTypes)
+        {
+            var hasBonus = result.Select(x => new { Town = x, TypeBonus = x.GetActiveBonus(st) })
+                                 .Where(x => x.TypeBonus > 0)
+                                 .ToList();
+            data[st] = hasBonus.OrderByDescending(x => x.TypeBonus).Select(x => x.Town).ToList();
+        }
 
+        var first = TypesWithBonus.FirstOrDefault();
+        if (first != default) selectedType = first;
+
+        StateHasChanged();
+    }
+
+    private void SelectType(TownHouseSlotType type)
+    {
+        selectedType = type;
+    }
+
+    /// <summary>
+    ///     The bonus was printed straight from a float, so it rendered as 142.34567% and would
+    ///     have used a comma as the separator under a Swedish locale.
+    /// </summary>
+    private static string Percent(double value)
+    {
+        return Math.Round(value, 1).ToString("0.#", System.Globalization.CultureInfo.CurrentCulture) + "%";
+    }
 }
