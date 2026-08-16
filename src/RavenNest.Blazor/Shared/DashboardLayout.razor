@@ -32,6 +32,12 @@
             @Body
         </div>
 
+        @*
+            Floats in the corner of every dashboard page. Renders nothing at all without an API
+            key and the switch, so this is invisible to everybody until somebody turns it on.
+        *@
+        <AssistantChat />
+
         @*     
         @if (IsAuthenticated)
         {

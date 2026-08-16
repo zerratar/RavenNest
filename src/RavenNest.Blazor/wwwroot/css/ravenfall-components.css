@@ -3512,27 +3512,6 @@ a.rf-badge:hover {
    type into. The confirmation deliberately looks nothing like the rest of the
    conversation: it is the one thing here that changes something. */
 
-.rf-chat__head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--rf-space-3);
-    margin-bottom: var(--rf-space-3);
-}
-
-.rf-chat__head .rf-panel__title {
-    margin: 0;
-}
-
-.rf-chat__log {
-    display: flex;
-    flex-direction: column;
-    gap: var(--rf-space-3);
-    max-height: 26rem;
-    overflow-y: auto;
-    padding-right: var(--rf-space-2);
-}
-
 .rf-chat__turn {
     padding: var(--rf-space-3);
     border-radius: var(--rf-radius-sm);
@@ -3675,4 +3654,144 @@ a.rf-badge:hover {
     color: var(--rf-ink);
     font-weight: 700;
     font-size: var(--rf-size-small);
+}
+
+/* ---- Assistant bubble --------------------------------------------------
+   Bottom right, on every page behind a login rather than parked on one of
+   them. It answers the same questions wherever you are, and a panel living on
+   the dashboard is one nobody finds from anywhere else.
+
+   Below the modal backdrop on purpose. A dialog that has taken over the screen
+   should not have a chat bubble floating on top of it. */
+
+.rf-assistant {
+    position: fixed;
+    right: var(--rf-space-5);
+    bottom: var(--rf-space-5);
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--rf-space-3);
+}
+
+.rf-assistant__bubble {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    padding: 0;
+    border: 1px solid var(--rf-line-gold);
+    border-radius: 50%;
+    background: var(--rf-surface-raised);
+    color: var(--rf-gold);
+    font-size: 1.25rem;
+    cursor: pointer;
+    box-shadow: var(--rf-shadow-lg);
+    transition: background var(--rf-transition), transform var(--rf-transition);
+}
+
+.rf-assistant__bubble:hover,
+.rf-assistant__bubble:focus-visible {
+    background: var(--rf-surface-3);
+    transform: translateY(-2px);
+}
+
+/* The button is an icon, so the name of the thing has to reach a screen reader
+   some other way. */
+.rf-assistant__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Something is waiting to be confirmed and the panel is shut. Paired with a
+   label, since a dot is only meaningful to somebody who can see it. */
+.rf-assistant__dot {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.25rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    border: 2px solid var(--rf-surface-raised);
+    border-radius: 50%;
+    background: var(--rf-warn);
+}
+
+.rf-assistant__panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-3);
+    width: min(24rem, calc(100vw - 2rem));
+    max-height: min(32rem, calc(100vh - 8rem));
+    padding: var(--rf-space-4);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-raised);
+    box-shadow: var(--rf-shadow-lg), var(--rf-bevel);
+}
+
+.rf-assistant__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--rf-space-3);
+}
+
+.rf-assistant__title {
+    margin: 0;
+    color: var(--rf-ink);
+    font-size: var(--rf-size-body);
+    font-weight: 700;
+}
+
+.rf-assistant__note {
+    margin: 0;
+    padding: var(--rf-space-2) var(--rf-space-3);
+    border-left: 2px solid var(--rf-warn);
+    background: var(--rf-warn-wash);
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+}
+
+/* Takes the slack in the panel and scrolls inside itself, so the ask row and
+   the confirmation stay put while the conversation grows. */
+.rf-assistant__log {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-3);
+    flex: 1 1 auto;
+    min-height: 4rem;
+    overflow-y: auto;
+    padding-right: var(--rf-space-2);
+}
+
+.rf-assistant .rf-chat__ask,
+.rf-assistant .rf-chat__confirm {
+    margin-top: 0;
+    flex: 0 0 auto;
+}
+
+/* On a phone it takes the width and most of the height, because a 24rem panel
+   in the corner of a 375px screen is a letterbox. */
+@media (max-width: 40rem) {
+    .rf-assistant {
+        right: var(--rf-space-3);
+        bottom: var(--rf-space-3);
+        left: var(--rf-space-3);
+        align-items: flex-end;
+    }
+
+    .rf-assistant__panel {
+        width: 100%;
+        max-height: calc(100vh - 7rem);
+    }
 }

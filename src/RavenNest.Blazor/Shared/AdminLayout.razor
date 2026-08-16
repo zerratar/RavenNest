@@ -25,6 +25,12 @@
             <div class="content px-4">
                 @Body
             </div>
+
+            @*
+                The admin navigation has no link to /dashboard at all, so without this an
+                administrator would have had to know the address to find the assistant.
+            *@
+            <AssistantChat />
         </div>
 
         <AIAssistance></AIAssistance>
