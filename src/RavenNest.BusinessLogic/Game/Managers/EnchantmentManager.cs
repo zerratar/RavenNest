@@ -214,10 +214,15 @@ namespace RavenNest.BusinessLogic.Game
 
                 while (clanSkill.Experience >= nextLevelReq)
                 {
+                    // The level goes up before the next requirement is read, which is the order the
+                    // clan and village loops use. It was the other way round here, so the
+                    // requirement was recomputed from the level the skill was leaving rather than
+                    // the one it had reached, and every level after the first in a single gain was
+                    // charged the previous level's price.
                     clanSkill.Experience -= nextLevelReq;
-                    nextLevelReq = GameMath.ExperienceForLevel(clanSkill.Level + 1);
                     ++clanSkill.Level;
                     ++gainedLevels;
+                    nextLevelReq = GameMath.ExperienceForLevel(clanSkill.Level + 1);
                 }
 
                 // TODO: 2. Send exp update to clients where players in same clan is regarding current state of the clan skill
