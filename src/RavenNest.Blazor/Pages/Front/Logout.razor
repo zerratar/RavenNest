@@ -1,10 +1,25 @@
-﻿@page "/logout"
+@page "/logout"
 @using RavenNest.Blazor.Services.Models
 @using Microsoft.AspNetCore.WebUtilities
 @inject NavigationManager NavigationManager
 @inject RavenNest.Blazor.Services.AuthService AuthService
 
-<p>Logging out... Please wait</p>
+@*
+    A bare paragraph against the page background, on a page that exists for about one frame before
+    it redirects. Its stylesheet was a hundred and thirty lines copied from the old login page:
+    input rows, a Twitch button, a separator graphic and a bad login message, none of which this
+    page has ever rendered.
+*@
+
+<div class="rf-narrow rf-narrow--pad">
+    <div class="rf-panel">
+        <h1 class="rf-panel__title">Signing you out</h1>
+        <p class="rf-meta">
+            Taking you back to the front page. If nothing happens,
+            <a href="/">go there yourself</a>.
+        </p>
+    </div>
+</div>
 
 @code {
 
