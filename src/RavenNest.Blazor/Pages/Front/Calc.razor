@@ -1,49 +1,237 @@
-﻿@page "/calc"
-@using RavenNest.Blazor.Services.Models
-@using Microsoft.AspNetCore.WebUtilities
+@page "/calc"
+@using RavenNest.BusinessLogic
+@using RavenNest.BusinessLogic.Extended
+@using RavenNest.BusinessLogic.Game
 @using RavenNest.Blazor.Services
-@inject NavigationManager NavigationManager
-@inject AuthService AuthService
 
+@*
+    The page was a heading, one number box and nothing that did anything with it: it stored a
+    target level in a field no code read, and only rendered at all if you were signed in. Everything
+    it needed already existed. The experience curve is GameMath.ExperienceForLevel, the level to
+    level arithmetic is SkillProgress, and the town rate is the one TownService derives for the town
+    page. This joins them up rather than adding maths of its own.
+*@
 
 <div class="top-section">
     <div class="hero-text">
-        <h1>Game and Exp Calculator</h1>
+        <h1>Experience calculator</h1>
     </div>
 </div>
 
-<div class="calculator">
-    <div class="calculator-area">
-        <h2>Village</h2>
-        @if (session.Authenticated)
-        {
-           <p>When will my Village reach level...</p>
-          <input name="target-village-level" type="number" class="input" value="@targetVillageLevelStr" @onchange="OnTargetVillageLevelChanged" />
-        }
+<div class="white-section-break"></div>
+
+<div class="page-content">
+    <div class="section">
+        <h1>Skill levels</h1>
+        <p class="rf-lead">
+            How much experience it takes to get a skill from one level to another, and how long
+            that is at a rate you set. Every skill uses the same curve, so this answers for any of
+            them.
+        </p>
+
+        <div class="rf-calc">
+            <div class="rf-formgrid">
+                <label class="rf-field">
+                    <span class="rf-label">From level</span>
+                    <input type="number" class="rf-input" min="1" max="@GameMath.MaxLevel"
+                           value="@fromLevel" @oninput="OnFromLevelChanged" />
+                </label>
+                <label class="rf-field">
+                    <span class="rf-label">To level</span>
+                    <input type="number" class="rf-input" min="1" max="@GameMath.MaxLevel"
+                           value="@toLevel" @oninput="OnToLevelChanged" />
+                </label>
+                <label class="rf-field">
+                    <span class="rf-label">Experience per hour</span>
+                    <input type="number" class="rf-input" min="0" placeholder="Leave empty to skip"
+                           value="@expPerHourText" @oninput="OnExpPerHourChanged" />
+                </label>
+            </div>
+
+            @if (toLevel <= fromLevel)
+            {
+                <div class="rf-banner rf-banner--warn">
+                    <h3 class="rf-banner__title">Pick a higher target</h3>
+                    <p>The target level has to be above the level you are starting from.</p>
+                </div>
+            }
+            else
+            {
+                <div class="rf-stats">
+                    <div class="rf-stat">
+                        <div class="rf-stat__value">@Utility.FormatExp(SkillExp)</div>
+                        <div class="rf-stat__label">Experience needed</div>
+                    </div>
+                    <div class="rf-stat">
+                        <div class="rf-stat__value">@(toLevel - fromLevel)</div>
+                        <div class="rf-stat__label">Levels gained</div>
+                    </div>
+                    <div class="rf-stat">
+                        <div class="rf-stat__value">@FormatDuration(SkillTime)</div>
+                        <div class="rf-stat__label">Time at that rate</div>
+                    </div>
+                </div>
+
+                <dl class="rf-facts">
+                    <dt>Exact experience</dt>
+                    <dd>@SkillExp.ToString("N0")</dd>
+
+                    <dt>The next level alone</dt>
+                    <dd>
+                        @Utility.FormatExp(GameMath.ExperienceForLevel(fromLevel + 1)) to reach
+                        level @(fromLevel + 1)
+                    </dd>
+
+                    <dt>The last level of the run</dt>
+                    <dd>
+                        @Utility.FormatExp(GameMath.ExperienceForLevel(toLevel)) to reach
+                        level @toLevel
+                    </dd>
+                </dl>
+
+                <p class="rf-meta">
+                    Experience counts within the current level rather than as a running total, so a
+                    level is worth the same whenever you get to it. The maximum is
+                    @GameMath.MaxLevel.
+                </p>
+            }
+        </div>
+    </div>
+
+    <div class="section">
+        <h1>Town levels</h1>
+        <p class="rf-lead">
+            How much streaming it takes to raise a town, which is the one number nothing in the
+            game tells you.
+        </p>
+
+        <div class="rf-calc">
+            <div class="rf-formgrid">
+                <label class="rf-field">
+                    <span class="rf-label">From town level</span>
+                    <input type="number" class="rf-input" min="1" max="@GameMath.MaxVillageLevel"
+                           value="@fromTown" @oninput="OnFromTownChanged" />
+                </label>
+                <label class="rf-field">
+                    <span class="rf-label">To town level</span>
+                    <input type="number" class="rf-input" min="1" max="@GameMath.MaxVillageLevel"
+                           value="@toTown" @oninput="OnToTownChanged" />
+                </label>
+            </div>
+
+            <label class="rf-check">
+                <input type="checkbox" checked="@townDoubled" @onchange="OnTownDoubledChanged" />
+                <span>
+                    <b>Mithril tier or above</b>
+                    <span class="rf-meta">Doubles the rate a town earns experience.</span>
+                </span>
+            </label>
+
+            @if (toTown <= fromTown)
+            {
+                <div class="rf-banner rf-banner--warn">
+                    <h3 class="rf-banner__title">Pick a higher target</h3>
+                    <p>The target town level has to be above the one you are starting from.</p>
+                </div>
+            }
+            else
+            {
+                <div class="rf-stats">
+                    <div class="rf-stat">
+                        <div class="rf-stat__value">@FormatDuration(TownTime)</div>
+                        <div class="rf-stat__label">Streaming needed</div>
+                    </div>
+                    <div class="rf-stat">
+                        <div class="rf-stat__value">@(toTown - fromTown)</div>
+                        <div class="rf-stat__label">Levels gained</div>
+                    </div>
+                    <div class="rf-stat">
+                        <div class="rf-stat__value">@PlotsGained</div>
+                        <div class="rf-stat__label">Plots unlocked</div>
+                    </div>
+                </div>
+
+                <p class="rf-meta">
+                    A town earns experience at a fixed rate while the game is running, so this does
+                    not depend on how many viewers are playing. Plots are earned one per ten town
+                    levels up to @GameMath.MaxVillageLevel, which is @(GameMath.MaxVillageLevel / 10)
+                    in total.
+                </p>
+            }
+        </div>
     </div>
 </div>
 
 @code {
-    private string myVillageLevelStr;
-    private string targetVillageLevelStr;
-    
-    private int targetVillageLevel;
+    private int fromLevel = 1;
+    private int toLevel = 99;
+    private string expPerHourText = "";
+    private long? expPerHour;
 
-    private double myVillageExp;
-    private RavenNest.Models.SessionInfo session;
-    protected override void OnInitialized()
+    private int fromTown = 1;
+    private int toTown = 100;
+    private bool townDoubled;
+
+    private double SkillExp => SkillProgress.ExpBetweenLevels(fromLevel, 0, toLevel);
+
+    private TimeSpan? SkillTime => SkillProgress.TimeFor(SkillExp, expPerHour);
+
+    private TimeSpan? TownTime => TownService.EstimateTimeBetweenTownLevels(fromTown, toTown, townDoubled);
+
+    /// <summary>
+    ///     Plots are a floor of level/10 capped at the maximum, so the gain is the difference
+    ///     between the two floors rather than a tenth of the levels crossed.
+    /// </summary>
+    private int PlotsGained
     {
-        session = AuthService.GetSession();
-
-    }
-
-    private void OnTargetVillageLevelChanged(ChangeEventArgs evt)
-    {
-        if (evt.Value != null && int.TryParse(evt.Value?.ToString() ?? targetVillageLevelStr, out var newLevel))
+        get
         {
-            targetVillageLevel = newLevel;
+            var max = GameMath.MaxVillageLevel / 10;
+            var before = Math.Min(fromTown / 10, max);
+            var after = Math.Min(toTown / 10, max);
+            return Math.Max(0, after - before);
         }
     }
 
-    //
+    private static int Clamp(string raw, int fallback, int max)
+    {
+        if (!int.TryParse(raw, out var value)) return fallback;
+        return Math.Clamp(value, 1, max);
+    }
+
+    private void OnFromLevelChanged(ChangeEventArgs e) =>
+        fromLevel = Clamp(e.Value?.ToString(), fromLevel, GameMath.MaxLevel);
+
+    private void OnToLevelChanged(ChangeEventArgs e) =>
+        toLevel = Clamp(e.Value?.ToString(), toLevel, GameMath.MaxLevel);
+
+    private void OnFromTownChanged(ChangeEventArgs e) =>
+        fromTown = Clamp(e.Value?.ToString(), fromTown, GameMath.MaxVillageLevel);
+
+    private void OnToTownChanged(ChangeEventArgs e) =>
+        toTown = Clamp(e.Value?.ToString(), toTown, GameMath.MaxVillageLevel);
+
+    private void OnTownDoubledChanged(ChangeEventArgs e) =>
+        townDoubled = e.Value is bool value && value;
+
+    private void OnExpPerHourChanged(ChangeEventArgs e)
+    {
+        expPerHourText = e.Value?.ToString() ?? "";
+        expPerHour = long.TryParse(expPerHourText, out var value) && value > 0 ? value : (long?)null;
+    }
+
+    /// <summary>
+    ///     Null means there is no rate to divide by, and saying so beats inventing a number.
+    /// </summary>
+    private static string FormatDuration(TimeSpan? value)
+    {
+        if (value == null) return "-";
+
+        var span = value.Value;
+        if (span.TotalMinutes < 1) return "under a minute";
+        if (span.TotalHours < 1) return (int)span.TotalMinutes + "m";
+        if (span.TotalDays < 2) return (int)span.TotalHours + "h " + span.Minutes + "m";
+        if (span.TotalDays < 365) return Math.Round(span.TotalDays, 1) + " days";
+        return Math.Round(span.TotalDays / 365d, 1) + " years";
+    }
 }

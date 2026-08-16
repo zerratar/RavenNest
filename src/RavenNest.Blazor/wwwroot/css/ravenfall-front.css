@@ -1028,3 +1028,26 @@
         align-items: stretch;
     }
 }
+
+/* ---- Calculator --------------------------------------------------------
+   A panel to put the inputs and their answers in. Everything inside it is a
+   component from ravenfall-components.css, which is selected by rf- names alone
+   and so works outside the dashboard without any of this. */
+
+.rf-front .rf-calc {
+    max-width: 52rem;
+    margin: 0 auto;
+    padding: var(--rf-space-6);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-lg);
+    box-shadow: var(--rf-bevel);
+}
+
+.rf-front .rf-calc .rf-stats {
+    margin-top: var(--rf-space-5);
+}
+
+.rf-front .rf-calc .rf-check {
+    margin-top: var(--rf-space-3);
+}

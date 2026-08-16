@@ -622,12 +622,47 @@ namespace RavenNest.Blazor.Services
         {
             if (level >= GameMath.MaxVillageLevel) return null;
 
-            var perSecond = GameMath.GetVillageExperience(level, VillageProcessorPlayerCount, TimeSpan.FromSeconds(1));
-            if (patreonTier >= (int)Patreon.Mithril) perSecond *= 2;
+            var perSecond = TownExperiencePerSecond(level, patreonTier >= (int)Patreon.Mithril);
             if (perSecond <= 0) return null;
 
             var remaining = Math.Max(0, GameMath.ExperienceForLevel(level + 1) - experience);
             return TimeSpan.FromSeconds(remaining / perSecond);
+        }
+
+        /// <summary>
+        ///     Town experience earned per second of streaming at a given town level.
+        /// </summary>
+        public static double TownExperiencePerSecond(int level, bool patreonDoubled)
+        {
+            var perSecond = GameMath.GetVillageExperience(level, VillageProcessorPlayerCount, TimeSpan.FromSeconds(1));
+            return patreonDoubled ? perSecond * 2 : perSecond;
+        }
+
+        /// <summary>
+        ///     Streaming time to take a town from one level to another, summed level by level.
+        /// </summary>
+        /// <remarks>
+        ///     Each level has its own rate, so this cannot be one division. Public and static
+        ///     because the experience calculator asks the same question about a hypothetical town
+        ///     that the town page asks about a real one, and two copies of this would drift.
+        /// </remarks>
+        public static TimeSpan? EstimateTimeBetweenTownLevels(int fromLevel, int toLevel, bool patreonDoubled)
+        {
+            var first = Math.Max(1, fromLevel);
+            var last = Math.Min(toLevel, GameMath.MaxVillageLevel);
+            if (last <= first) return TimeSpan.Zero;
+
+            var seconds = 0d;
+            for (var level = first; level < last; level++)
+            {
+                var perSecond = TownExperiencePerSecond(level, patreonDoubled);
+                if (perSecond <= 0) return null;
+
+                seconds += GameMath.ExperienceForLevel(level + 1) / perSecond;
+            }
+
+            if (double.IsNaN(seconds) || double.IsInfinity(seconds)) return null;
+            return TimeSpan.FromSeconds(seconds);
         }
 
         public static SkillStat GetSkillByHouseType(Skills stats, TownHouseSlotType type)

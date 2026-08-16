@@ -39,12 +39,37 @@ namespace RavenNest.BusinessLogic.Extended
         /// </summary>
         public static double ExpToLevel(PlayerSkill skill, int targetLevel)
         {
-            if (skill == null || targetLevel <= skill.Level)
+            if (skill == null)
                 return 0;
 
-            var total = ExpToNextLevel(skill);
+            return ExpBetweenLevels(skill.Level, skill.Experience, targetLevel);
+        }
+
+        /// <summary>
+        ///     Experience owed to get from one level to another, without needing a character.
+        /// </summary>
+        /// <param name="experienceIntoLevel">
+        ///     Progress already made within <paramref name="fromLevel"/>. Zero for a plain
+        ///     level to level question, and a skill's own Experience when asking about a real one,
+        ///     which counts within the current level rather than as a running total.
+        /// </param>
+        /// <remarks>
+        ///     Split out of <see cref="ExpToLevel(PlayerSkill, int)"/> so the same curve answers
+        ///     both "how far is my character" and "how much is a level worth", rather than the
+        ///     calculator growing a second copy of the arithmetic that could drift from this one.
+        /// </remarks>
+        public static double ExpBetweenLevels(int fromLevel, double experienceIntoLevel, int targetLevel)
+        {
+            if (targetLevel <= fromLevel)
+                return 0;
+
+            var first = Math.Max(1, fromLevel);
             var last = Math.Min(targetLevel, MaxLevel);
-            for (var level = skill.Level + 2; level <= last; level++)
+            if (last <= first)
+                return 0;
+
+            var total = Math.Max(0, GameMath.ExperienceForLevel(first + 1) - experienceIntoLevel);
+            for (var level = first + 2; level <= last; level++)
             {
                 total += GameMath.ExperienceForLevel(level);
             }
