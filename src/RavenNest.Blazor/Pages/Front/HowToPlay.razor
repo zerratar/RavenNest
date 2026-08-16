@@ -1,16 +1,136 @@
-﻿@page "/how-to-play"
-@using RavenNest.Blazor.Services.Models
-@using Microsoft.AspNetCore.WebUtilities
-@using RavenNest.Blazor.Services
-@inject NavigationManager NavigationManager
-@inject AuthService AuthService
+@page "/how-to-play"
 
-<h1>How to play</h1>
+@*
+    Was a bare h1 and nothing else, and unreachable besides: the only links to it sat in the branch
+    of NavMenu that stopped being rendered once MainLayout got its own nav.
 
-@code {
+    Written for the viewer rather than the streamer. What a streamer needs is on /download; this is
+    for somebody who has just seen the game on a stream and wants to know what to type. Every
+    command below was checked against the bot's own commands.json rather than remembered, including
+    the aliases.
+*@
 
-    protected override void OnInitialized()
-    {
-    }
+<div class="top-section">
+    <div class="hero-text">
+        <h1>How to play</h1>
+    </div>
+</div>
 
-}
+<div class="white-section-break"></div>
+
+<div class="page-content">
+    <div class="section">
+        <p class="rf-lead">
+            You do not install anything and you do not need an account. If a streamer is running
+            Ravenfall, you play it by typing in their chat.
+        </p>
+
+        <div class="rf-prose">
+            <ol class="rf-steps">
+                <li>
+                    <b>Find a stream running it.</b> The <a href="/streams">streams page</a> lists
+                    everyone playing right now.
+                </li>
+                <li>
+                    <b>Type <span class="rf-cmd">!join</span> in their chat.</b> That creates your
+                    character and puts it in the world. Nothing else is needed.
+                </li>
+                <li>
+                    <b>Pick something to train</b> with <span class="rf-cmd">!train</span>. Your
+                    character keeps at it whether or not you are still watching.
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="section">
+        <h1>The commands worth knowing</h1>
+        <div class="rf-prose">
+            <dl class="rf-facts">
+                <dt><span class="rf-cmd">!join</span></dt>
+                <dd>Puts your character into the stream you are watching.</dd>
+
+                <dt><span class="rf-cmd">!train</span></dt>
+                <dd>
+                    Start training a skill, for example <span class="rf-cmd">!train mining</span>.
+                    <span class="rf-cmd">!train all</span> trains your combat skills together.
+                    Also answers to <span class="rf-cmd">!task</span>.
+                </dd>
+
+                <dt><span class="rf-cmd">!stats</span></dt>
+                <dd>Your levels, and <span class="rf-cmd">!training</span> says what you are on now.</dd>
+
+                <dt><span class="rf-cmd">!raid</span> and <span class="rf-cmd">!dungeon</span></dt>
+                <dd>
+                    Join whatever the rest of the stream is fighting. These are the moments a stream
+                    plays together.
+                </dd>
+
+                <dt><span class="rf-cmd">!village</span></dt>
+                <dd>
+                    Claim a plot in the streamer's town, which boosts one skill for everyone playing
+                    there. How much depends on your level in that skill. Also
+                    <span class="rf-cmd">!town</span>.
+                </dd>
+
+                <dt><span class="rf-cmd">!clan</span></dt>
+                <dd>Join a clan, which shares clan skills and a level everyone contributes to.</dd>
+
+                <dt><span class="rf-cmd">!use</span></dt>
+                <dd>
+                    Eat or drink something from your inventory. Also
+                    <span class="rf-cmd">!eat</span>, <span class="rf-cmd">!drink</span> and
+                    <span class="rf-cmd">!consume</span>.
+                </dd>
+            </dl>
+
+            <p class="rf-meta">
+                There are seventy odd commands in total and the
+                <a href="/commands">commands page</a> lists them. A streamer can rename or disable
+                some, so if one does nothing, ask in chat.
+            </p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h1>Things that surprise people</h1>
+        <div class="rf-prose">
+            <ul class="rf-tips">
+                <li>
+                    <b>Your character keeps playing when you close the tab.</b> It stops when the
+                    streamer stops running the game, not when you stop watching.
+                </li>
+                <li>
+                    <b>Your progress follows you between streams.</b> The same character can play on
+                    any channel running Ravenfall.
+                </li>
+                <li>
+                    <b>You can play while the streamer is offline</b> by typing in
+                    <span class="rf-cmd">twitch.tv/popout/[channel]/chat</span>, as long as they have
+                    left the game running.
+                </li>
+                <li>
+                    <b>The website knows more than chat can tell you.</b> Sign in and your
+                    <a href="/characters">characters page</a> has your skills, your inventory, and
+                    which skill you are closest to levelling.
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="section">
+        <h1>Running it on your own stream</h1>
+        <div class="rf-prose">
+            <p>
+                Playing needs nothing installed. Hosting it does: you run the client, your viewers
+                type in your chat, and the official bot connects the two.
+            </p>
+            <div class="rf-actions">
+                <a class="rf-btn rf-btn--primary" href="/download">
+                    <i class="fa-solid fa-download" aria-hidden="true"></i> Download the game
+                </a>
+                <a class="rf-btn" href="/tiers">See the Patreon tiers</a>
+            </div>
+        </div>
+    </div>
+</div>

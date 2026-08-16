@@ -1,16 +1,83 @@
-﻿@page "/about"
-@using RavenNest.Blazor.Services.Models
-@using Microsoft.AspNetCore.WebUtilities
-@using RavenNest.Blazor.Services
-@inject NavigationManager NavigationManager
-@inject AuthService AuthService
+@page "/about"
 
-<h1>About Ravenfall</h1>
+@*
+    Was a bare h1, and unreachable: its only link was in the branch of NavMenu that stopped being
+    rendered once MainLayout got its own nav.
 
-@code {
+    Deliberately short. This page answers "what is this thing" for somebody who arrived from a
+    stream or a search, and hands off to the pages that go further rather than repeating them.
+*@
 
-    protected override void OnInitialized()
-    {
-    }
+<div class="top-section">
+    <div class="hero-text">
+        <h1>About Ravenfall</h1>
+    </div>
+</div>
 
-}
+<div class="white-section-break"></div>
+
+<div class="page-content">
+    <div class="section">
+        <div class="rf-prose">
+            <p>
+                Ravenfall is an idle role playing game that a Twitch streamer runs and their whole
+                chat plays. The streamer installs the client; everyone else joins by typing
+                <span class="rf-cmd">!join</span>. There is nothing for a viewer to download and
+                nothing to sign up for.
+            </p>
+            <p>
+                Characters carry on without you. You pick a skill to train and it keeps going while
+                you watch something else, and the progress is yours: the same character plays on any
+                channel running the game, so what you build on one stream comes with you to the
+                next.
+            </p>
+            <p>
+                Around that sit the things that make a chat play together rather than side by side.
+                Raids and dungeons the whole stream joins at once. Clans that share a level everyone
+                contributes to. A town per streamer whose plots boost a skill for everybody playing
+                there. A marketplace where players trade with each other rather than with the game.
+            </p>
+            <p>
+                It is free, and it stays free. The
+                <a href="https://www.patreon.com/ravenfall" target="_blank" rel="noopener">Patreon</a>
+                pays for the servers and gives patrons an experience multiplier and a few
+                conveniences; <a href="/tiers">the tiers page</a> lists exactly what, and nothing
+                there is unavailable to anyone else with time instead.
+            </p>
+        </div>
+    </div>
+
+    <div class="section">
+        <h1>Where to go next</h1>
+        <div class="rf-cards">
+            <a class="rf-card" href="/how-to-play">
+                <span class="rf-card__title">How to play</span>
+                <span class="rf-card__body">What to type in chat, and what the commands do.</span>
+            </a>
+            <a class="rf-card" href="/download">
+                <span class="rf-card__title">Run it on your stream</span>
+                <span class="rf-card__body">The client, the requirements and the setup steps.</span>
+            </a>
+            <a class="rf-card" href="/streams">
+                <span class="rf-card__title">Streams playing now</span>
+                <span class="rf-card__body">Watch it before you play it.</span>
+            </a>
+            <a class="rf-card" href="/highscore">
+                <span class="rf-card__title">Highscores</span>
+                <span class="rf-card__body">Every skill, every player, ranked.</span>
+            </a>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="rf-prose">
+            <p class="rf-meta">
+                Ravenfall is made by a small team and a community that has been playing it for
+                years. The best place to reach either is
+                <a href="https://discord.gg/gtfDts7" target="_blank" rel="noopener">Discord</a>, and
+                the <a href="https://wiki.ravenfall.stream/" target="_blank" rel="noopener">community wiki</a>
+                goes deeper on almost everything here.
+            </p>
+        </div>
+    </div>
+</div>
