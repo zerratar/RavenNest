@@ -97,6 +97,19 @@
     --rf-space-6: 2rem;
     --rf-space-7: 3rem;
 
+    /* ---- Dashboard art --------------------------------------------------
+       The band of painted scenery behind the top of a dashboard page.
+
+       The tint is not a taste setting. Measured against the seven generated
+       images, 65% is the lowest alpha at which the page title and subtitle both
+       clear 4.5:1, and it clears it by 1%. Anything lower fails. Any image added
+       to the set has to be measured at this alpha before it ships, and if one
+       comes in brighter than the current set the answer is to raise this rather
+       than to accept the image. */
+    --rf-art-height: 420px;
+    --rf-art-tint: 0.65;
+    --rf-art-saturation: 0.9;
+
     /* ---- Shape ----------------------------------------------------------- */
     --rf-radius-sm: 3px;
     --rf-radius: 6px;

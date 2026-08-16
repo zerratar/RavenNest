@@ -1,7 +1,15 @@
 ﻿@inherits LayoutComponentBase
 @using RavenNest.Blazor.Components
 @inject RavenNest.Blazor.Services.AuthService AuthService
-<div class="page dashboard rf-dash">
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+@*
+    rf-dash--art turns on the scenery band. Deliberately not on .rf-dash itself:
+    AdminLayout and DarkAdminDashboardLayout carry that class too and have no
+    business growing a landscape.
+*@
+<div class="page dashboard rf-dash rf-dash--art" style="--rf-art-img: url('@ArtImage')">
     <div class="sidebar">
         <NavMenu Dashboard="true" />
     </div>
@@ -40,10 +48,55 @@
 @code {
     public static DashboardLayout Instance { get; private set; }
     private RavenNest.Models.SessionInfo session;
+
+    /// <summary>
+    ///     Scenery per page, by first path segment.
+    ///
+    ///     Only the two that mean something are mapped. The rest of the set
+    ///     (atria, away, eldara, ironhill, kyo) are island scenes rather than
+    ///     page subjects, and guessing which page each belongs to would be
+    ///     inventing meaning the art does not carry.
+    /// </summary>
+    private static readonly Dictionary<string, string> ArtByPage =
+        new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["town"] = "town",
+        };
+
+    private const string DefaultArt = "home";
+
+    private string ArtImage
+    {
+        get
+        {
+            var path = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+
+            var cut = path.IndexOfAny(new[] { '/', '?', '#' });
+            if (cut >= 0) path = path.Substring(0, cut);
+
+            var name = ArtByPage.TryGetValue(path, out var art) ? art : DefaultArt;
+            return "/imgs/dashboard/" + name + ".jpg";
+        }
+    }
+
     protected override void OnInitialized()
     {
         Instance = this;
         session = AuthService.GetSession();
+
+        // The layout survives a route change, so the band would otherwise keep
+        // whichever scene was showing when the dashboard was first opened.
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
     }
 
     public void UpdateSession()
@@ -52,4 +105,4 @@
     }
 
     private bool IsAuthenticated => session != null && session.Authenticated;
-    }
+}

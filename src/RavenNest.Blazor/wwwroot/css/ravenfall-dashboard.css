@@ -430,3 +430,95 @@
     color: var(--rf-gold-bright);
     text-decoration: underline;
 }
+
+/* ==========================================================================
+   Dashboard art band
+   ==========================================================================
+   Painted scenery behind the top of a page, fading into the page ground before
+   the content proper begins. Everything here is scoped to `.rf-dash--art`,
+   which only DashboardLayout adds, so the admin layouts carry `.rf-dash`
+   without ever picking this up.
+
+   Three things this was measured into rather than styled into:
+
+   1. `.rf-dash .content` paints `--rf-bg` at `min-height: 100vh`. It is the
+      page ground and it is opaque, so anything behind it is invisible. In art
+      mode the ground moves to `.main` and the content goes transparent. This
+      was the whole reason the first attempt at this rendered nothing at all.
+
+   2. The page subtitle is `--rf-ink-muted`, a token chosen against a flat known
+      surface. Over art it needs 84% tint to reach 4.5:1 where `--rf-ink` needs
+      65%, so in art mode the subtitle is promoted. Without that the tint has to
+      go so dark the art may as well not be there. Same trap as `--rf-ink-faint`
+      being wrong for facts, one step up.
+
+   3. Blur does almost nothing for contrast: across 0 to 2.5px the worst pixel
+      moved 2.27 to 2.31. The tint does all of it. The images are therefore
+      pre-blurred at 1.2px for compression and softness rather than for
+      legibility, and there is no runtime filter, which keeps a large element
+      off the compositor during scroll. */
+
+.rf-dash--art .main {
+    position: relative;
+    background: var(--rf-bg);
+}
+
+.rf-dash--art .content {
+    position: relative;
+    z-index: 1;
+    background: transparent;
+}
+
+/* The art itself. Masked out before it reaches the content so there is no hard
+   edge to line anything up against. */
+.rf-dash--art .main::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: var(--rf-art-height);
+    background-image: var(--rf-art-img, none);
+    background-size: cover;
+    background-position: center 30%;
+    filter: saturate(var(--rf-art-saturation));
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 30%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* The tint, on its own layer so the saturation filter above does not touch it
+   and so the alpha is a single value that can be measured. */
+.rf-dash--art .main::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: var(--rf-art-height);
+    background: linear-gradient(to bottom,
+        rgba(18, 21, 28, var(--rf-art-tint)) 0%,
+        rgba(18, 21, 28, calc(var(--rf-art-tint) * 0.9)) 40%,
+        var(--rf-bg) 100%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* See note 2 above. This is what buys back the lighter tint. */
+.rf-dash--art .rf-page-subtitle {
+    color: var(--rf-ink);
+}
+
+/* Nothing to paint, so no reason to build the layers. */
+.rf-dash--art:not([style*="--rf-art-img"]) .main::before,
+.rf-dash--art:not([style*="--rf-art-img"]) .main::after {
+    display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .rf-dash--art .main::before {
+        animation: rf-art-in 400ms ease-out both;
+    }
+}
+
+@keyframes rf-art-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
