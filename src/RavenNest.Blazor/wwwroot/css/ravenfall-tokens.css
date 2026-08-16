@@ -117,6 +117,12 @@
        comes in brighter than the current set the answer is to raise this rather
        than to accept the image. */
     --rf-art-height: 420px;
+
+    /* The front page scenery band: how far the picture reaches down the page, and
+       how much of its lower edge is spent fading into the ground. Both are
+       overridden on the landing page, where the picture is the point. */
+    --rf-hero-art: 22rem;
+    --rf-hero-fade: 9rem;
     --rf-art-tint: 0.65;
     --rf-art-saturation: 0.9;
 

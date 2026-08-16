@@ -92,6 +92,52 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        /// <summary>
+        ///     How long a listing stands before it goes back to whoever posted it.
+        /// </summary>
+        /// <remarks>
+        ///     Was written inline as 14 days at the one place a listing is created, and nothing
+        ///     acted on it: expiry was an admin pressing a button, so a listing could sit expired
+        ///     for as long as nobody looked. MarketplaceExpiryWatcher sweeps for these now, and
+        ///     this is the one place the number lives.
+        /// </remarks>
+        public static readonly TimeSpan ListingLifetime = TimeSpan.FromDays(21);
+
+        /// <summary>
+        ///     Returns every listing that has run out of time to whoever posted it, and answers how
+        ///     many were returned.
+        /// </summary>
+        public int ReturnExpiredListings()
+        {
+            var now = DateTime.UtcNow;
+
+            // Materialised before anything is returned, because returning one removes it from the
+            // set being walked.
+            var expired = gameData.GetMarketItems()
+                .Where(x => x != null && x.Expires != null && x.Expires.Value < now)
+                .ToList();
+
+            var returned = 0;
+            foreach (var listing in expired)
+            {
+                // One listing that cannot be returned, because the seller's character has gone or
+                // the items cannot be delivered, must not stop the rest of the sweep.
+                try
+                {
+                    if (playerManager.ReturnMarketplaceItem(listing))
+                    {
+                        returned++;
+                    }
+                }
+                catch (Exception exc)
+                {
+                    logger.LogError($"Failed to expire marketplace listing '{listing.Id}': {exc}");
+                }
+            }
+
+            return returned;
+        }
+
         public bool Cancel(Guid id)
         {
             var i = gameData.GetMarketItem(id);
@@ -195,7 +241,7 @@ namespace RavenNest.BusinessLogic.Game
                 Enchantment = itemToSell.Enchantment,
                 Name = itemToSell.Name,
                 TransmogrificationId = itemToSell.TransmogrificationId,
-                Expires = DateTime.UtcNow.AddDays(14),
+                Expires = DateTime.UtcNow.Add(ListingLifetime),
             };
 
             gameData.Add(marketItem);

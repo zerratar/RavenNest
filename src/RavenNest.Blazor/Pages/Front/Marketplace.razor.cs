@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using RavenNest.Blazor.Services;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.Models;
@@ -36,8 +36,15 @@ namespace RavenNest.Blazor.Pages.Front
 
         private double TotalAsked => items == null ? 0 : items.Sum(x => x.PricePerItem * x.Amount);
 
-        private int ExpiredCount =>
-            items == null ? 0 : items.Count(x => x.Expires != null && x.Expires.Value <= DateTime.UtcNow);
+        /// <summary>The exact figure, always, for the tooltip.</summary>
+        private string AskedExact => ((long)TotalAsked).ToString("N0");
+
+        /// <summary>
+        ///     True once the whole number is long enough to want the smaller of the two stat
+        ///     sizes. Measured in place: thirteen digits with separators are 210px at the display
+        ///     size, which is as much as a stat column has to give on a normal screen.
+        /// </summary>
+        private bool AskedNeedsSmallerType => AskedExact.Length > 13;
 
         protected override async Task OnInitializedAsync()
         {
@@ -232,28 +239,6 @@ namespace RavenNest.Blazor.Pages.Front
             }
 
             await InvokeAsync(StateHasChanged);
-        }
-
-        private async Task CancelExpiredListings()
-        {
-            if (!isAdmin) return;
-
-            var itemsToCancel = items
-                .Where(x => x.Expires != null && x.Expires.Value < DateTime.UtcNow)
-                .Select(x => x.Id)
-                .ToList();
-
-            if (itemsToCancel.Count == 0)
-            {
-                return;
-            }
-
-            if (await MarketplaceService.CancelListingsAsync(itemsToCancel))
-            {
-                items = await MarketplaceService.GetMarketItemsAsync();
-                Reindex();
-                await InvokeAsync(StateHasChanged);
-            }
         }
 
         private MarkupString Indicator(string value)

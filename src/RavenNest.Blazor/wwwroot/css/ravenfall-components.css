@@ -515,6 +515,42 @@
     font-variant-numeric: tabular-nums;
 }
 
+/* A number long enough to need the smaller step. Measured in place rather than
+   with a text probe, which is worth saying because a probe got this wrong once:
+   copying the computed `font` shorthand drops the weight, and at 800 the same
+   digits are twice as wide as the probe reported.
+
+   At the display size thirteen digits with separators measure 210px. At this one
+   seventeen of them measure 192px. */
+.rf-stat__value--long {
+    font-size: var(--rf-size-title);
+}
+
+/* Whether there is room for the whole number is a question about the width of
+   the window, which C# cannot answer while rendering. So both are rendered and
+   the page shows whichever fits.
+
+   The switch is at 64rem because that is where three stat columns are wide
+   enough for the long form: below it the section is under 700px, the columns
+   are about 190px inside their padding, and 210px of digits does not go in. */
+.rf-stat__short {
+    display: inline;
+}
+
+.rf-stat__full {
+    display: none;
+}
+
+@media (min-width: 64rem) {
+    .rf-stat__short {
+        display: none;
+    }
+
+    .rf-stat__full {
+        display: inline;
+    }
+}
+
 .rf-stat__label {
     margin-top: var(--rf-space-1);
     font-size: var(--rf-size-tiny);

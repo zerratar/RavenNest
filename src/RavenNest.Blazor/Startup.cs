@@ -488,6 +488,7 @@ namespace RavenNest.Blazor
             // Picks up a Twitch rename made part way through a stream. Session start handles the
             // case where someone renames first and then launches the game.
             services.AddHostedService<RavenNest.BusinessLogic.Game.PlatformNameWatcher>();
+            services.AddHostedService<RavenNest.BusinessLogic.Game.MarketplaceExpiryWatcher>();
 
             services.AddSingleton<MarketplaceReportAggregator>();
             services.AddSingleton<EconomyReportAggregator>();

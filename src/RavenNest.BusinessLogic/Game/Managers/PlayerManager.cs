@@ -1902,9 +1902,18 @@ namespace RavenNest.BusinessLogic.Game
             var characterId = character.Id;
             var inventory = inventoryProvider.Get(characterId);
 
-            var inventoryItems = inventory.AddItem(itemId, amount, tag: item.Tag,
-                enchantment: item.Enchantment, name: item.Name,
-                transmogrificationId: item.TransmogrificationId, flags: item.Flags);
+            // Returned before the listing is torn down, and the result is checked, because this
+            // now runs unattended on a timer rather than only when an admin pressed a button. It
+            // used to add without looking, delete the listing, then index [0] of the list it got
+            // back: a failed return therefore lost the goods and threw on the way out.
+            if (!inventory.TryAddItem(itemId, amount, out var inventoryItems, tag: item.Tag,
+                    enchantment: item.Enchantment, name: item.Name,
+                    transmogrificationId: item.TransmogrificationId, flags: item.Flags)
+                || inventoryItems.Count == 0)
+            {
+                logger.LogError($"Marketplace return aborted for listing '{item.Id}': unable to give {amount}x '{itemId}' back to character '{characterId}'. The listing is untouched.");
+                return false;
+            }
 
             // Remove the item from the marketplace
             gameData.Remove(item);

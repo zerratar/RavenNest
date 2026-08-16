@@ -160,30 +160,68 @@
    the clearance is a minimum height rather than bottom padding: padding they do
    not need would be dead space on those two. */
 .rf-front .top-section {
+    position: relative;
     height: auto;
-    min-height: 20rem;
-    padding: 6rem var(--rf-space-6) var(--rf-space-7);
+    min-height: 0;
+    padding: 6rem var(--rf-space-6) var(--rf-space-5);
+    background-image: none;
 }
 
-/* ---- The splitter -------------------------------------------------------
-   A torn paper edge, inverted to black, laid over the foot of every hero on the
-   site. It was drawn for the old look and does not belong to this one: a ragged
-   paper tear against flat panels and a dark ground reads as an artefact rather
-   than as a join.
+/* The scenery is a band behind the top of the page rather than the background of
+   the hero box, which is the whole point: the hero box can now be only as tall as
+   the words in it while the picture stays the size it was.
 
-   The image is gone and the same 166px does the same job by fading the hero into
-   the page ground instead, so the photograph ends without an edge at all. Every
-   front page uses this one element, so they all change together.
+   It used to be the hero's own background, so the only way to show more of it was
+   to make the hero taller, and the only way to start the content sooner was to
+   make the picture smaller. Reported as a lot of unused space between a heading
+   and the content under it, on every page with a hero. */
+.rf-front .top-section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--rf-hero-art);
+    background: url('/imgs/TopImage.jpg') center / cover no-repeat;
+    pointer-events: none;
+    z-index: 0;
+}
 
-   The gradient starts fully transparent, so nothing is hidden that was not
-   already being covered by the graphic. */
-.rf-front .white-section-break {
-    background-image: none;
+/* The bottom of that band, dissolved into the page. This is what the torn paper
+   graphic used to do, except it now belongs to the band it is ending rather than
+   being a separate element sitting between two others. */
+.rf-front .top-section::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(var(--rf-hero-art) - var(--rf-hero-fade));
+    height: var(--rf-hero-fade);
     background: linear-gradient(to bottom,
         rgba(18, 21, 28, 0) 0%,
-        rgba(18, 21, 28, 0.55) 55%,
+        rgba(18, 21, 28, 0.6) 55%,
         var(--rf-bg) 100%);
-    filter: none;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Above the band. Without this the hero text is painted underneath it. */
+.rf-front .top-section > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* The band reaches past the hero and behind the start of the content, so the
+   content has to sit on nothing of its own for the picture to show through. The
+   page ground is on .main. */
+.rf-front .page-content {
+    margin-top: 0;
+}
+
+/* The torn paper edge is gone and so is the element that carried it. The fade
+   belongs to the band now, so this would be a second one 166px further down. */
+.rf-front .white-section-break {
+    display: none;
 }
 
 /* The landing page is the exception, and says so in its markup rather than
@@ -195,10 +233,13 @@
    can grow past the minimum height. */
 /* The one hero with a paragraph and two buttons in it, so it has the room to
    sit them lower and reported as having space going spare above them. */
+/* The landing page shows more of the world, because there the picture is the
+   point rather than the backdrop. */
 .rf-front .top-section--tall {
-    min-height: 36rem;
+    --rf-hero-art: 38rem;
+    --rf-hero-fade: 12rem;
     padding-top: 9rem;
-    padding-bottom: 11rem;
+    padding-bottom: 14rem;
 }
 
 .rf-front .content {

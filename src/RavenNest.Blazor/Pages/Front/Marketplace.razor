@@ -1,4 +1,4 @@
-@page "/marketplace"
+﻿@page "/marketplace"
 
 @using RavenNest.BusinessLogic.Game
 @using RavenNest.Blazor.Services.Models
@@ -45,15 +45,24 @@
                         <div class="rf-stat__value">@DistinctItemCount.ToString("N0")</div>
                         <div class="rf-stat__label">Distinct items</div>
                     </div>
+                    @*
+                        The whole number rather than 5.6B, whenever there is room for it. Whether
+                        there is room depends on the width of the window, which cannot be known
+                        here, so both are rendered and the stylesheet shows whichever fits. The
+                        exact figure is on the tooltip either way.
+                    *@
                     <div class="rf-stat">
-                        <div class="rf-stat__value" title="@TotalAsked.ToString("N0") coins">@Utility.FormatAmount(TotalAsked)</div>
+                        <div class="rf-stat__value @(AskedNeedsSmallerType ? "rf-stat__value--long" : null)" title="@AskedExact coins">
+                            <span class="rf-stat__full">@AskedExact</span>
+                            <span class="rf-stat__short">@Utility.FormatAmount(TotalAsked)</span>
+                        </div>
                         <div class="rf-stat__label">Coins asked</div>
                     </div>
                 </div>
 
                 <p class="rf-meta">
-                    Listings expire <b>14 days</b> after being posted, and the items go back to
-                    whoever listed them. Buying happens in game with
+                    Listings expire <b>21 days</b> after being posted, and the items go back to
+                    whoever listed them automatically. Buying happens in game with
                     <span class="rf-cmd">!market buy</span>.
                 </p>
 
@@ -74,12 +83,12 @@
                     }
                     <span class="rf-meta">Showing @filtered.Count of @items.Count</span>
 
-                    @if (isAdmin && ExpiredCount > 0)
-                    {
-                        <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="CancelExpiredListings">
-                            Cancel @ExpiredCount expired
-                        </button>
-                    }
+                    @*
+                        There was an admin only "cancel N expired" button here. Expiry runs on a
+                        timer now, so a listing goes back to its seller whether or not anybody is
+                        looking at this page, and a button to do by hand what the server already
+                        does is one more thing to forget.
+                    *@
                 </div>
 
                 <div class="rf-filters" role="group" aria-label="Filter listings by category">
