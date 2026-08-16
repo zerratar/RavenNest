@@ -1116,6 +1116,15 @@ a.rf-char:hover {
     white-space: nowrap;
 }
 
+/* A cell holding a number. Tabular figures so a column of prices lines up on
+   its digits, which is the only reason to put numbers in a column at all. Not
+   right aligned: the headings are left aligned and moving the values away from
+   their heading costs more than the ragged right edge does. */
+.rf-table__num {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
 .rf-th {
     display: inline-flex;
     align-items: center;
@@ -1250,6 +1259,50 @@ a.rf-item__name:focus-visible {
    them. Both change what you can do with the item, so both say so in words. */
 .rf-item__mark {
     color: var(--rf-gold);
+}
+
+/* The item's own flavour text, on the reference list where it is worth reading.
+
+   Clamped to three lines with the whole of it in a title, because the item
+   column is about 190 pixels wide in a seven column table and the longest
+   descriptions are a sentence and a half: unclamped they made a row twice the
+   height of the rows either side of it, which is what turns a table you can
+   scan into a list you have to read. */
+.rf-item__desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    max-width: 22rem;
+    color: var(--rf-ink-muted);
+    font-size: var(--rf-size-small);
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+/* ---- Item source -------------------------------------------------------
+   Where an item comes from and what it goes into. Three blocks that answer
+   three different questions, so each carries the question as its label rather
+   than leaving you to work out what a bare skill name and number meant. */
+
+.rf-source {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-1);
+    min-width: 12rem;
+}
+
+.rf-source + .rf-source {
+    margin-top: var(--rf-space-2);
+}
+
+.rf-source__label {
+    color: var(--rf-ink-faint);
+    font-size: var(--rf-size-tiny);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: var(--rf-tracking-label);
 }
 
 /* ---- Admin user view ---------------------------------------------------
