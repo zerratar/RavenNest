@@ -6,6 +6,7 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject RavenNest.Blazor.Services.ItemService ItemService
+@inject RavenNest.Blazor.Services.UserService UserService
 
 @*
     Shares its item vocabulary with the stash page: the same filter list, the same rarity bands,
@@ -437,36 +438,61 @@
                         </p>
                         @if (isTransmogrificationItemSelectorVisible)
                         {
-                            <label class="rf-field">
+                            @*
+                                The skin used to be picked by typing into an autocomplete, which
+                                asks you to already know the name of an item you are choosing by
+                                how it looks. The picker below lists what is eligible instead.
+                            *@
+                            <div class="rf-field">
                                 <span class="rf-label">Item to use as a skin</span>
-                                <BlazoredTypeahead SearchMethod="SearchSkinnableItem" @bind-Value="selectedSkin">
-                                    <SelectedTemplate>
-                                        @context.Name
-                                    </SelectedTemplate>
-                                    <ResultTemplate>
-                                        @context.Name
-                                    </ResultTemplate>
-                                </BlazoredTypeahead>
-                            </label>
-                            @if (selectedSkin != null)
-                            {
-                                <div class="rf-item">
-                                    <span class="rf-item__img">
-                                        <img src="@GetItemImage(selectedSkin.Id, itemDetailsDialogItem.Tag)" alt="" />
-                                    </span>
-                                    <span class="rf-item__body">
-                                        <span class="rf-item__name @ItemService.GetRarityClass(selectedSkin)">@GetItemName(selectedSkin)</span>
-                                    </span>
-                                </div>
-                            }
-                            <div class="rf-actions">
-                                @if (itemSkin != null)
+                                @if (selectedSkin == null)
                                 {
-                                    <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="ReplaceTransmogrification">Replace</button>
+                                    <button type="button" class="rf-btn" @onclick="OpenSkinPicker">
+                                        <i class="fa-solid fa-mask" aria-hidden="true"></i> Pick an item
+                                    </button>
                                 }
                                 else
                                 {
-                                    <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="AddTransmogrification">Apply</button>
+                                    <div class="rf-item">
+                                        <span class="rf-item__img">
+                                            <img src="@GetItemImage(selectedSkin.Id, itemDetailsDialogItem.Tag)" alt="" />
+                                        </span>
+                                        <span class="rf-item__body">
+                                            <span class="rf-item__name @ItemService.GetRarityClass(selectedSkin)">@GetItemName(selectedSkin)</span>
+                                            <span class="rf-item__meta">
+                                                @if (selectedSkinFromStash != null)
+                                                {
+                                                    <span>From your stash, so it moves to this character first</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>From this character's inventory</span>
+                                                }
+                                            </span>
+                                        </span>
+                                        <button type="button" class="rf-btn rf-btn--small" @onclick="OpenSkinPicker">Change</button>
+                                    </div>
+                                }
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(skinPickerError))
+                            {
+                                <div class="rf-banner rf-banner--bad">
+                                    <h3 class="rf-banner__title">That did not work</h3>
+                                    <p>@skinPickerError</p>
+                                </div>
+                            }
+
+                            <div class="rf-actions">
+                                @if (itemSkin != null)
+                                {
+                                    <button type="button" class="rf-btn rf-btn--small rf-btn--primary"
+                                            disabled="@(selectedSkin == null)" @onclick="ReplaceTransmogrification">Replace</button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="rf-btn rf-btn--small rf-btn--primary"
+                                            disabled="@(selectedSkin == null)" @onclick="AddTransmogrification">Apply</button>
                                 }
                                 <button type="button" class="rf-btn rf-btn--small" @onclick="HideApplyTransmogrificationDialog">Cancel</button>
                             </div>
@@ -488,6 +514,156 @@
                     </div>
                 }
             }
+        </div>
+    </div>
+}
+
+@*
+    The skin picker. Stacked over the item details dialog, so it carries a higher backdrop.
+
+    Only items that can actually be used as a skin for this particular item are listed. That is
+    the same eligibility the old autocomplete applied, but applied up front rather than to
+    whatever you had already typed, so an empty list now means "you own nothing that fits" instead
+    of "you have not typed the right name yet".
+*@
+@if (isSkinPickerVisible && itemDetailsDialogItem != null)
+{
+    <div class="rf-modal-backdrop rf-modal-backdrop--stacked" @onclick="CloseSkinPicker">
+        <div class="rf-modal rf-modal--wide" role="dialog" aria-modal="true"
+             aria-label="Choose an item to use as a skin" @onclick:stopPropagation="true">
+            <div class="rf-modal__head">
+                <h2 class="rf-modal__title">Choose a skin for @GetItemName(itemDetailsDialogItem)</h2>
+                <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CloseSkinPicker">&times;</button>
+            </div>
+
+            <div class="rf-tabs" role="tablist">
+                <button type="button" role="tab" aria-selected="@(!skinPickerStashTab)"
+                        class="rf-tab @(!skinPickerStashTab ? "is-active" : "")"
+                        @onclick="() => SetSkinPickerTab(false)">
+                    Inventory (@SkinCandidates(false).Count)
+                </button>
+                <button type="button" role="tab" aria-selected="@skinPickerStashTab"
+                        class="rf-tab @(skinPickerStashTab ? "is-active" : "")"
+                        @onclick="() => SetSkinPickerTab(true)">
+                    Stash (@SkinCandidates(true).Count)
+                </button>
+            </div>
+
+            <div class="rf-toolbar">
+                <input type="search" class="rf-input rf-search" placeholder="Search by name"
+                       aria-label="Search items to use as a skin"
+                       value="@skinPickerSearch" @oninput="OnSkinPickerSearchChanged" />
+            </div>
+
+            @if (skinPickerStashTab)
+            {
+                @*
+                    The write path resolves the skin through the character's own inventory, so a
+                    stash item cannot be used where it is. Saying so beats offering the choice and
+                    failing silently, which is what would happen if this tab just listed them.
+                *@
+                <p class="rf-meta">
+                    Choosing from the stash moves one of the item to this character first, then
+                    applies it. The skin is consumed either way.
+                </p>
+            }
+
+            @{
+                var candidates = VisibleSkinCandidates;
+            }
+
+            @if (candidates.Count == 0)
+            {
+                <div class="rf-banner rf-banner--warn">
+                    <h3 class="rf-banner__title">Nothing here fits</h3>
+                    <p>
+                        @if (!string.IsNullOrWhiteSpace(skinPickerSearch))
+                        {
+                            <span>Nothing matches that. Clear the search to see everything eligible.</span>
+                        }
+                        else if (skinPickerStashTab)
+                        {
+                            <span>
+                                Your stash holds nothing that can be used as a skin for this item.
+                                A skin has to be the same kind of item, so a helmet takes a helmet
+                                or a hat.
+                            </span>
+                        }
+                        else
+                        {
+                            <span>
+                                This character carries nothing that can be used as a skin for this
+                                item. A skin has to be the same kind of item, so a helmet takes a
+                                helmet or a hat. Enchanted items cannot be used.
+                            </span>
+                        }
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="rf-scroll-x">
+                    <table class="rf-table">
+                        <thead>
+                            <tr>
+                                <th scope="col"><span class="rf-th rf-th--static">Item</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Type</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Amount</span></th>
+                                <th scope="col"><span class="rf-th rf-th--static">Use</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var candidate in candidates)
+                            {
+                                var isChosen = skinPickerChoice != null && skinPickerChoice.Item.Id == candidate.Item.Id
+                                               && skinPickerChoice.FromStash == candidate.FromStash;
+                                <tr class="@(isChosen ? "is-selected" : "")">
+                                    <td>
+                                        <div class="rf-item">
+                                            <span class="rf-item__img">
+                                                <img src="@GetItemImage(candidate.Item.Id, candidate.Item.Name)" alt="" loading="lazy" />
+                                            </span>
+                                            <span class="rf-item__body">
+                                                <span class="rf-item__name @ItemService.GetRarityClass(candidate.Item)">@candidate.Item.Name</span>
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="rf-table__quiet">@candidate.Item.Type</td>
+                                    <td class="rf-table__quiet">@candidate.Amount.ToString("N0")</td>
+                                    <td>
+                                        <button type="button"
+                                                class="rf-btn rf-btn--small @(isChosen ? "rf-btn--primary" : "")"
+                                                @onclick="() => ChooseSkinCandidate(candidate)">
+                                            @(isChosen ? "Chosen" : "Choose")
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <p class="rf-meta">
+                    Showing @candidates.Count of @SkinCandidates(skinPickerStashTab).Count eligible.
+                </p>
+            }
+
+            <div class="rf-modal__foot rf-modal__foot--spread">
+                <span class="rf-meta">
+                    @if (skinPickerChoice == null)
+                    {
+                        <span>Nothing chosen yet.</span>
+                    }
+                    else
+                    {
+                        <span>@skinPickerChoice.Item.Name selected.</span>
+                    }
+                </span>
+                <span class="rf-actions">
+                    <button type="button" class="rf-btn" @onclick="CloseSkinPicker">Cancel</button>
+                    <button type="button" class="rf-btn rf-btn--primary"
+                            disabled="@(skinPickerChoice == null)" @onclick="ConfirmSkinPicker">OK</button>
+                </span>
+            </div>
         </div>
     </div>
 }
@@ -550,6 +726,27 @@
 
     private bool itemDetailDialogVisible;
     private bool isTransmogrificationItemSelectorVisible;
+
+    /// <summary>
+    ///     One row of the skin picker, from either source.
+    /// </summary>
+    /// <param name="StashItem">
+    ///     Set only for a stash row. The write path resolves a skin through the character's own
+    ///     inventory, so a stash item has to be moved across before it can be applied, and this is
+    ///     what it gets moved from.
+    /// </param>
+    private sealed record SkinCandidate(Item Item, long Amount, bool FromStash, UserBankItem StashItem);
+
+    private bool isSkinPickerVisible;
+    private bool skinPickerStashTab;
+    private string skinPickerSearch = "";
+    private SkinCandidate skinPickerChoice;
+    private string skinPickerError;
+
+    /// <summary>The stash row the chosen skin came from, when it came from the stash.</summary>
+    private UserBankItem selectedSkinFromStash;
+
+    private IReadOnlyList<UserBankItem> stashItems;
     private bool vendorConfirmationDialogVisible;
     private bool vendorAllConfirmationDialogVisible;
     private bool canVendorMany;
@@ -964,13 +1161,145 @@
     public async Task HideApplyTransmogrificationDialog()
     {
         this.isTransmogrificationItemSelectorVisible = false;
+        ClearSkinSelection();
         await InvokeAsync(StateHasChanged);
     }
 
     public async Task ShowApplyTransmogrificationDialog()
     {
         this.isTransmogrificationItemSelectorVisible = true;
+        ClearSkinSelection();
         await InvokeAsync(StateHasChanged);
+    }
+
+    private void ClearSkinSelection()
+    {
+        selectedSkin = null;
+        selectedSkinFromStash = null;
+        skinPickerChoice = null;
+        skinPickerSearch = "";
+        skinPickerError = null;
+    }
+
+    private void OpenSkinPicker()
+    {
+        skinPickerError = null;
+        skinPickerSearch = "";
+        skinPickerStashTab = false;
+
+        // Pre-select whatever is already chosen so reopening the picker does not look like it
+        // forgot.
+        skinPickerChoice = selectedSkin == null
+            ? null
+            : SkinCandidates(selectedSkinFromStash != null)
+                .FirstOrDefault(x => x.Item.Id == selectedSkin.Id);
+
+        // The stash belongs to the account rather than to this character, so it is fetched here
+        // rather than coming with the player.
+        stashItems = UserService.GetCurrentUser()?.Stash ?? new List<UserBankItem>();
+
+        isSkinPickerVisible = true;
+    }
+
+    private void CloseSkinPicker()
+    {
+        isSkinPickerVisible = false;
+    }
+
+    private void SetSkinPickerTab(bool stash)
+    {
+        skinPickerStashTab = stash;
+    }
+
+    private void OnSkinPickerSearchChanged(ChangeEventArgs e)
+    {
+        skinPickerSearch = e.Value?.ToString() ?? "";
+    }
+
+    private void ChooseSkinCandidate(SkinCandidate candidate)
+    {
+        skinPickerChoice = candidate;
+    }
+
+    private void ConfirmSkinPicker()
+    {
+        if (skinPickerChoice == null) return;
+
+        selectedSkin = skinPickerChoice.Item;
+        selectedSkinFromStash = skinPickerChoice.StashItem;
+        skinPickerError = null;
+        isSkinPickerVisible = false;
+    }
+
+    /// <summary>
+    ///     Everything the character or the account holds that could stand in for this item.
+    /// </summary>
+    /// <remarks>
+    ///     The eligibility is what the old autocomplete applied, only now it decides the list
+    ///     rather than filtering what was typed. An item has to be the same kind, cannot be the
+    ///     item itself, cannot already be its skin, and enchanted items are excluded because the
+    ///     enchantment would be destroyed with the item.
+    /// </remarks>
+    private IReadOnlyList<SkinCandidate> SkinCandidates(bool fromStash)
+    {
+        var result = new List<SkinCandidate>();
+        if (itemDetailsDialogItem == null) return result;
+
+        var currentItem = ItemService.GetItem(itemDetailsDialogItem.ItemId);
+        if (currentItem == null) return result;
+
+        bool Eligible(Item item) =>
+            item != null
+            && item.Id != currentItem.Id
+            && itemDetailsDialogItem.TransmogrificationId != item.Id
+            && ItemService.CanTransmogrify(item, currentItem);
+
+        if (fromStash)
+        {
+            foreach (var stashItem in stashItems ?? (IReadOnlyList<UserBankItem>)new List<UserBankItem>())
+            {
+                if (!string.IsNullOrEmpty(stashItem.Enchantment)) continue;
+
+                var item = ItemService.GetItem(stashItem.ItemId);
+                if (!Eligible(item)) continue;
+
+                result.Add(new SkinCandidate(item, stashItem.Amount, true, stashItem));
+            }
+        }
+        else
+        {
+            foreach (var invItem in Player.InventoryItems)
+            {
+                if (!string.IsNullOrEmpty(invItem.Enchantment)) continue;
+
+                var item = ItemService.GetItem(invItem.ItemId);
+                if (!Eligible(item)) continue;
+
+                result.Add(new SkinCandidate(item, invItem.Amount, false, null));
+            }
+        }
+
+        // One row per item rather than one per stack, so a player holding four of something does
+        // not see it four times.
+        return result
+            .GroupBy(x => x.Item.Id)
+            .Select(g => g.First() with { Amount = g.Sum(x => x.Amount) })
+            .OrderBy(x => x.Item.Name)
+            .ToList();
+    }
+
+    private IReadOnlyList<SkinCandidate> VisibleSkinCandidates
+    {
+        get
+        {
+            var all = SkinCandidates(skinPickerStashTab);
+            if (string.IsNullOrWhiteSpace(skinPickerSearch)) return all;
+
+            var needle = skinPickerSearch.Trim();
+            return all
+                .Where(x => (x.Item.Name ?? "").Contains(needle, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
     }
 
     public void RemoveTransmogrification()
@@ -981,20 +1310,43 @@
 
     public void ReplaceTransmogrification()
     {
-        if (selectedSkin != null)
-        {
-            Player = PlayerService.AddTransmogrification(Player.Id, itemDetailsDialogItem, selectedSkin.Id);
-            CloseItemDetails();
-        }
+        ApplySelectedSkin();
     }
 
     public void AddTransmogrification()
     {
-        if (selectedSkin != null)
+        ApplySelectedSkin();
+    }
+
+    /// <summary>
+    ///     Applies the chosen skin, moving it out of the stash first when that is where it is.
+    /// </summary>
+    /// <remarks>
+    ///     PlayerInventory.AddTransmogrification resolves the skin with GetUnequippedItem, which
+    ///     only looks at the character's own inventory. A stash item therefore has to be sent
+    ///     across before it can be used, and if that send fails there is no point attempting the
+    ///     transmogrification: it would return false and take the dialog down as though it had
+    ///     worked.
+    /// </remarks>
+    private void ApplySelectedSkin()
+    {
+        if (selectedSkin == null) return;
+
+        skinPickerError = null;
+
+        if (selectedSkinFromStash != null)
         {
-            Player = PlayerService.AddTransmogrification(Player.Id, itemDetailsDialogItem, selectedSkin.Id);
-            CloseItemDetails();
+            if (!PlayerService.SendToCharacter(Player.Id, selectedSkinFromStash, 1))
+            {
+                skinPickerError = "That item could not be moved out of your stash, so nothing was changed.";
+                return;
+            }
+
+            selectedSkinFromStash = null;
         }
+
+        Player = PlayerService.AddTransmogrification(Player.Id, itemDetailsDialogItem, selectedSkin.Id);
+        CloseItemDetails();
     }
 
     public void UnequipItem()

@@ -2959,3 +2959,23 @@ a.rf-badge:hover {
 .rf-chart canvas {
     max-width: 100%;
 }
+
+/* A dialog opened from inside another dialog. The base backdrop is z-index 100,
+   so without this the second one paints underneath the first and looks like the
+   click did nothing. */
+.rf-modal-backdrop--stacked {
+    z-index: 110;
+}
+
+/* The chosen row in a picker table. Border as well as background, because a
+   background tint alone is close to the hover state and the two are easy to
+   confuse while moving the pointer down a list. */
+.rf-table tbody tr.is-selected td {
+    background: var(--rf-gold-wash);
+    border-top: 1px solid var(--rf-line-gold);
+    border-bottom: 1px solid var(--rf-line-gold);
+}
+
+.rf-table tbody tr.is-selected .rf-item__name {
+    color: var(--rf-gold);
+}
