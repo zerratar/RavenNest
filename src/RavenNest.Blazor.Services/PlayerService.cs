@@ -280,10 +280,34 @@ namespace RavenNest.Blazor.Services
             return playerManager.ResetPlayerSkillsAsync(characterId);
         }
 
+        /// <summary>
+        ///     Frees a character the server still believes is in a session.
+        /// </summary>
+        /// <remarks>
+        ///     This only checked that somebody was signed in. It never checked whose character it
+        ///     was, so any signed in user could unstuck any character whose id they knew, which
+        ///     pulls somebody out of the stream they are playing in. The page hid the button behind
+        ///     an administrator check and the service did not, which is the wrong way round: hiding
+        ///     a button is a courtesy, refusing the call is the rule.
+        ///
+        ///     <para>
+        ///     It now needs an administrator, or your own character. That second half is slightly
+        ///     wider than the page, which is administrators only, and is the obvious shape of
+        ///     "unstuck my character". Say the word and it becomes administrators alone; either way
+        ///     it is far tighter than anybody holding an id.
+        ///     </para>
+        /// </remarks>
         public async Task<bool> UnstuckPlayerAsync(Guid fromCharacterId)
         {
             var session = GetSession();
-            if (session == null) return false;
+            if (session == null || !session.Authenticated) return false;
+
+            if (!session.Administrator)
+            {
+                var character = gameData.GetCharacter(fromCharacterId);
+                if (character == null || character.UserId != session.UserId) return false;
+            }
+
             return await playerManager.UnstuckPlayerAsync(fromCharacterId);
         }
 

@@ -81,6 +81,7 @@ namespace RavenNest.Blazor.Services.Assistant
         private readonly ServerService serverService;
         private readonly FactService facts;
         private readonly GameActions gameActions;
+        private readonly PlayerService playerService;
         private readonly IServerSettingsProvider settings;
 
         public PlayerAssistant(
@@ -91,6 +92,7 @@ namespace RavenNest.Blazor.Services.Assistant
             ServerService serverService,
             FactService facts,
             GameActions gameActions,
+            PlayerService playerService,
             IServerSettingsProvider settings)
         {
             this.ai = ai;
@@ -100,6 +102,7 @@ namespace RavenNest.Blazor.Services.Assistant
             this.serverService = serverService;
             this.facts = facts;
             this.gameActions = gameActions;
+            this.playerService = playerService;
             this.settings = settings;
         }
 
@@ -350,6 +353,14 @@ the page back to them unless it matters to the answer.
                     (args, ct) => Task.FromResult(ListPages(isAdministrator))),
 
                 new AiTool(
+                    "offer_character_link",
+                    "Put a button under your answer that opens one of the player's own characters, " +
+                    "optionally straight onto a tab. Use this rather than offer_link whenever the " +
+                    "answer is about a particular character.",
+                    CharacterLinkSchema,
+                    (args, ct) => Task.FromResult(OfferCharacterLink(offers, userId, args))),
+
+                new AiTool(
                     "offer_link",
                     "Put a button under your answer that takes the person to a page. Use it whenever " +
                     "your answer mentions somewhere on the site, and when they ask to be taken " +
@@ -421,6 +432,17 @@ the page back to them unless it matters to the answer.
                 (args, ct) => Task.FromResult(LiveStreams())));
 
             tools.Add(new AiTool(
+                "unstuck_character",
+                "Free a character the server still believes is in a session, when it is stuck and " +
+                "cannot rejoin. Same thing as the Unstuck button on a character's skills page. " +
+                "Has to be agreed to first.",
+                Schema("character", "The character's name or number."),
+                (args, ct) => Unstuck(userId, Text(args, "character")),
+                requiresConfirmation: true,
+                summarise: args => "Unstuck " + (Text(args, "character") ?? "a character") +
+                                   ", which frees it from the session it is stuck in."));
+
+            tools.Add(new AiTool(
                 "find_player",
                 "Look up any player by name and see their characters, levels and coins. " +
                 "Administrators only.",
@@ -450,10 +472,17 @@ the page back to them unless it matters to the answer.
                        "nothing to report about where it is.";
             }
 
+            // Whose stream the character is actually in. This was not reported at all, so asked
+            // what stream they were in the assistant said it could not see, which was wrong: the
+            // character knows, through the session it is locked to.
+            var session = gameData.GetSessionByCharacterId(character.Id);
+            var streamer = session == null ? null : gameData.GetUser(session.UserId)?.UserName;
+
             return Json(new
             {
                 character = character.Name,
                 doing = Doing(character),
+                inTheStreamOf = streamer,
                 island = string.IsNullOrWhiteSpace(state.Island) ? null : state.Island,
                 sailingTo = string.IsNullOrWhiteSpace(state.Destination) ? null : state.Destination,
                 health = state.Health,
@@ -555,6 +584,37 @@ the page back to them unless it matters to the answer.
                     : null,
                 items = shown
             });
+        }
+
+        /// <summary>
+        ///     Frees a stuck character, through the same service call the page's button uses.
+        /// </summary>
+        /// <remarks>
+        ///     An administrator tool, because the button is behind an administrator check on the
+        ///     skills page and the chat is not meant to be a wider door than the page. The service
+        ///     underneath now also refuses a character that is neither yours nor yours to
+        ///     administer, which it did not before.
+        /// </remarks>
+        private async Task<string> Unstuck(Guid userId, string which)
+        {
+            var character = Resolve(userId, which);
+            var characterId = character?.Id ?? Guid.Empty;
+
+            if (characterId == Guid.Empty)
+            {
+                // An administrator may well mean somebody else's character, so fall back to a
+                // search by name rather than only their own list.
+                var found = gameData.FindCharacter(x =>
+                    x.Name != null && x.Name.Equals(which, StringComparison.OrdinalIgnoreCase));
+
+                if (found == null) return "There is no character called '" + which + "'.";
+                characterId = found.Id;
+            }
+
+            var ok = await playerService.UnstuckPlayerAsync(characterId);
+            return ok
+                ? "Done. It should be able to rejoin now."
+                : "That did not work. It may not have been stuck, or it may not be one you can free.";
         }
 
         // ---- telling the game to do something ---------------------------------------------------
@@ -669,6 +729,60 @@ the page back to them unless it matters to the answer.
             return "A button to " + page.Name + " has been added under your answer. Mention what they " +
                    "will find there rather than describing the button.";
         }
+
+        /// <summary>
+        ///     A button that opens one of this user's characters, on a named tab.
+        /// </summary>
+        /// <remarks>
+        ///     The general page link could only reach /characters, which lands on whichever
+        ///     character was last open, on its overview. Asked to open a character's inventory it
+        ///     produced a button that went almost nowhere, which reads as broken rather than as
+        ///     approximate.
+        ///
+        ///     <para>
+        ///     The character is resolved against this user's own list, so the address is built out
+        ///     of something they own rather than out of anything the model supplied.
+        ///     </para>
+        /// </remarks>
+        private string OfferCharacterLink(IList<AiOffer> offers, Guid userId, JsonElement args)
+        {
+            var which = Text(args, "character");
+            var character = Resolve(userId, which);
+            if (character == null) return NoSuchCharacter(userId, which);
+
+            var tab = (Text(args, "tab") ?? "").Trim().ToLowerInvariant();
+            if (tab.Length > 0 && !KnownTabs.Contains(tab))
+            {
+                return "There is no tab called '" + tab + "'. It can be one of: " +
+                       string.Join(", ", KnownTabs) + ".";
+            }
+
+            var target = "/characters/" + character.CharacterIndex;
+            if (tab.Length > 0) target += "/" + tab;
+
+            var label = Text(args, "label");
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                label = tab.Length > 0
+                    ? "Open " + character.Name + " " + tab
+                    : "Open " + character.Name;
+            }
+
+            if (offers.Any(x => x.Target == target)) return "That button is already there.";
+
+            offers.Add(new AiOffer(AiOfferKind.Navigate, label.Trim(), target));
+            return "A button to " + character.Name + (tab.Length > 0 ? " " + tab : "") +
+                   " has been added under your answer.";
+        }
+
+        private static readonly string[] KnownTabs = { "overview", "skills", "inventory", "clan" };
+
+        private static readonly string CharacterLinkSchema =
+            "{\"type\":\"object\",\"properties\":{" +
+            "\"character\":{\"type\":\"string\",\"description\":\"Which character, by name or number.\"}," +
+            "\"tab\":{\"type\":[\"string\",\"null\"],\"description\":\"One of overview, skills, inventory, clan, or null for the overview.\"}," +
+            "\"label\":{\"type\":[\"string\",\"null\"],\"description\":\"What the button says, or null for a default.\"}}," +
+            "\"required\":[\"character\",\"tab\",\"label\"],\"additionalProperties\":false}";
 
         private const string LinkSchema =
             "{\"type\":\"object\",\"properties\":{" +

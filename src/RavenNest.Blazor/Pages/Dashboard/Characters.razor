@@ -3,7 +3,9 @@
 @using RavenNest.BusinessLogic.Extended
 @page "/characters"
 @page "/characters/{index:int?}"
+@page "/characters/{index:int}/{tab}"
 @page "/character/{characterId?}"
+@page "/character/{characterId}/{tab}"
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject NavigationManager NavigationManager
@@ -43,7 +45,7 @@ else
     @if (selectedPlayer != null)
     {
         @* No wrapping panel: the tab bodies are several sections each and bring their own. *@
-        <PlayerView SelectedPlayer="selectedPlayer" CanManage="true" ShowPlayerName="false"></PlayerView>
+        <PlayerView SelectedPlayer="selectedPlayer" CanManage="true" ShowPlayerName="false" Tab="@Tab"></PlayerView>
     }
 }
 
@@ -53,6 +55,13 @@ else
 
     [Parameter]
     public string CharacterId { get; set; }
+
+    /// <summary>
+    ///     Which tab of the character to open, from the address, so a link can point at somebody's
+    ///     inventory rather than only at the character.
+    /// </summary>
+    [Parameter]
+    public string Tab { get; set; }
 
     private WebsitePlayer selectedPlayer;
     private IReadOnlyList<WebsitePlayer> players;

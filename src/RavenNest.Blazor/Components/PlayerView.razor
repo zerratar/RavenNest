@@ -1,4 +1,4 @@
-@using RavenNest.Models
+﻿@using RavenNest.Models
 @using RavenNest.BusinessLogic.Extended
 @inject RavenNest.Blazor.Services.PlayerService PlayerService
 @inject RavenNest.Blazor.Services.AuthService AuthService
@@ -131,10 +131,24 @@
     [Parameter]
     public bool CanManage { get; set; }
 
+    /// <summary>
+    ///     Which tab to open, by name, from the address.
+    /// </summary>
+    /// <remarks>
+    ///     The tabs were state and nothing else, so there was no way to link to one. A link to a
+    ///     character's inventory could only ever land on the overview, which looks like the link
+    ///     not working.
+    /// </remarks>
+    [Parameter]
+    public string Tab { get; set; }
+
     private SessionInfo session;
     private bool editingAlias;
     private string oldIdentifier;
     private CharacterViewState viewState;
+
+    /// <summary>The tab name last taken from the address, so pressing a tab is not undone.</summary>
+    private string appliedTab;
 
     // The first character is joined with a bare !join; the rest carry their slot number.
     private string JoinCommand =>
@@ -163,6 +177,34 @@
         if (SelectedPlayer != null && CanManage)
         {
             PlayerService.SetActiveCharacter(SelectedPlayer);
+        }
+
+        ApplyTabFromRoute();
+    }
+
+    /// <summary>
+    ///     Opens the tab the address names.
+    /// </summary>
+    /// <remarks>
+    ///     Only when the address names a different tab than the last one applied. Doing it on every
+    ///     render would put the page back the instant somebody pressed a different tab, since the
+    ///     address still says the old one.
+    /// </remarks>
+    private void ApplyTabFromRoute()
+    {
+        if (string.IsNullOrWhiteSpace(Tab) || Tab == appliedTab) return;
+
+        appliedTab = Tab;
+
+        switch (Tab.Trim().ToLowerInvariant())
+        {
+            case "skills": viewState = CharacterViewState.Skills; break;
+            case "inventory":
+            case "items": viewState = CharacterViewState.Inventory; break;
+            case "clan": viewState = CharacterViewState.Clan; break;
+            case "customise":
+            case "customize": viewState = CharacterViewState.Customization; break;
+            default: viewState = CharacterViewState.Overview; break;
         }
     }
 
