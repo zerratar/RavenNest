@@ -4080,3 +4080,60 @@ a.rf-badge:hover {
 .rf-tw .rf-table td .rf-meta {
     display: block;
 }
+
+/* ---- Knowledge base ----------------------------------------------------
+   One card per fact, because a fact is a paragraph rather than a row, and a
+   table of paragraphs is unreadable at any width. */
+
+.rf-fact {
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-fact__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-2);
+    margin-bottom: var(--rf-space-2);
+}
+
+.rf-fact__title {
+    margin: 0 0 var(--rf-space-2) 0;
+    color: var(--rf-ink);
+    font-size: var(--rf-size-body);
+    font-weight: 700;
+}
+
+.rf-fact__body {
+    margin: 0 0 var(--rf-space-3) 0;
+    max-width: 70ch;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.rf-fact__what {
+    max-width: 70ch;
+    margin-bottom: var(--rf-space-4);
+}
+
+/* What was being discussed when a correction arrived. Set apart because it is
+   evidence rather than content. */
+.rf-fact__context {
+    margin: 0 0 var(--rf-space-3) 0;
+    padding-left: var(--rf-space-3);
+    border-left: 2px solid var(--rf-line);
+    font-style: italic;
+}
+
+.rf-fact__replaces {
+    margin-bottom: var(--rf-space-3);
+    padding: var(--rf-space-3);
+    border: 1px dashed var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+}
+
+.rf-fact__old {
+    margin: 0;
+    text-decoration: line-through;
+    opacity: 0.7;
+}

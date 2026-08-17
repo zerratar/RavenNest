@@ -1,0 +1,470 @@
+@layout AdminLayout
+@page "/admin/knowledge"
+@using RavenNest.Blazor.Services.Knowledge
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject FactService Facts
+
+@*
+    What the assistant knows, and the queue of things it has been told.
+
+    Four views, and the order is the order somebody works in: what needs deciding, what has gone out
+    of date, what nobody could answer, and then the whole store.
+
+    A proposal is shown with the conversation that produced it. Judging an assertion without knowing
+    what prompted it is guessing, and the point of the queue is that somebody who knows the game
+    decides rather than the assistant deciding for itself.
+*@
+
+@if (isAdmin)
+{
+    <header class="rf-page-head">
+        <h1 class="rf-page-title">Knowledge</h1>
+        <p class="rf-page-subtitle">
+            What the assistant is allowed to say about the game. Corrections from players wait here
+            until you accept them.
+        </p>
+    </header>
+
+    @if (message != null)
+    {
+        <div class="rf-banner @(messageIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status">
+            <p>@message</p>
+        </div>
+    }
+
+    <div class="rf-tabs" role="tablist">
+        <button type="button" role="tab" aria-selected="@(tab == Tab.Review)"
+                class="rf-tab @(tab == Tab.Review ? "is-active" : "")" @onclick="() => Show(Tab.Review)">
+            To review @if (proposals.Count > 0) { <span class="rf-badge rf-badge--warn">@proposals.Count</span> }
+        </button>
+        <button type="button" role="tab" aria-selected="@(tab == Tab.Stale)"
+                class="rf-tab @(tab == Tab.Stale ? "is-active" : "")" @onclick="() => Show(Tab.Stale)">
+            Out of date @if (stale.Count > 0) { <span class="rf-badge rf-badge--warn">@stale.Count</span> }
+        </button>
+        <button type="button" role="tab" aria-selected="@(tab == Tab.Gaps)"
+                class="rf-tab @(tab == Tab.Gaps ? "is-active" : "")" @onclick="() => Show(Tab.Gaps)">
+            Gaps @if (misses.Count > 0) { <span class="rf-badge">@misses.Count</span> }
+        </button>
+        <button type="button" role="tab" aria-selected="@(tab == Tab.All)"
+                class="rf-tab @(tab == Tab.All ? "is-active" : "")" @onclick="() => Show(Tab.All)">
+            Everything
+        </button>
+    </div>
+
+    @if (tab == Tab.Review)
+    {
+        @if (proposals.Count == 0)
+        {
+            <p class="rf-meta">Nothing waiting. Corrections from players show up here.</p>
+        }
+        else
+        {
+            @foreach (var fact in proposals)
+            {
+                <div class="rf-panel rf-fact">
+                    <div class="rf-fact__head">
+                        <span class="rf-badge rf-badge--warn">Waiting</span>
+                        <span class="rf-meta">
+                            from <b>@fact.CreatedBy</b>, @fact.CreatedUtc.ToLocalTime().ToString("d MMM HH:mm")
+                        </span>
+                    </div>
+
+                    <h3 class="rf-fact__title">@fact.Title</h3>
+                    <p class="rf-fact__body">@fact.Body</p>
+
+                    @if (!string.IsNullOrWhiteSpace(fact.Context))
+                    {
+                        @*
+                            What was being discussed. Without it a reviewer is judging an assertion
+                            with no idea what prompted it.
+                        *@
+                        <p class="rf-meta rf-fact__context">Asked about: @fact.Context</p>
+                    }
+
+                    @if (fact.Supersedes != null)
+                    {
+                        var replaced = Facts.Get(fact.Supersedes.Value);
+                        <div class="rf-fact__replaces">
+                            <span class="rf-label">Replaces</span>
+                            <p class="rf-meta">@(replaced?.Title ?? "a fact that has since gone") </p>
+                            @if (replaced != null)
+                            {
+                                <p class="rf-meta rf-fact__old">@replaced.Body</p>
+                            }
+                        </div>
+                    }
+
+                    <div class="rf-actions">
+                        <button type="button" class="rf-btn rf-btn--primary rf-btn--small" @onclick="() => Accept(fact)">
+                            Accept
+                        </button>
+                        <button type="button" class="rf-btn rf-btn--small" @onclick="() => Edit(fact)">
+                            Edit first
+                        </button>
+                        <button type="button" class="rf-btn rf-btn--danger rf-btn--small" @onclick="() => Discard(fact)">
+                            Discard
+                        </button>
+                    </div>
+                </div>
+            }
+        }
+    }
+    else if (tab == Tab.Stale)
+    {
+        <p class="rf-meta rf-fact__what">
+            These describe something in the code that has since changed. They are still being used,
+            because a slightly out of date answer beats none, but the wording wants checking.
+        </p>
+
+        @if (stale.Count == 0)
+        {
+            <p class="rf-meta">Nothing has drifted. Checked at every startup.</p>
+        }
+        else
+        {
+            @foreach (var fact in stale)
+            {
+                <div class="rf-panel rf-fact">
+                    <div class="rf-fact__head">
+                        <span class="rf-badge rf-badge--warn">Out of date</span>
+                        <span class="rf-meta">@fact.Context</span>
+                    </div>
+                    <h3 class="rf-fact__title">@fact.Title</h3>
+                    <p class="rf-fact__body">@fact.Body</p>
+                    <div class="rf-actions">
+                        <button type="button" class="rf-btn rf-btn--primary rf-btn--small" @onclick="() => Edit(fact)">
+                            Fix the wording
+                        </button>
+                        <button type="button" class="rf-btn rf-btn--small" @onclick="() => Republish(fact)">
+                            It is still right
+                        </button>
+                        <button type="button" class="rf-btn rf-btn--danger rf-btn--small" @onclick="() => Retire(fact)">
+                            Retire it
+                        </button>
+                    </div>
+                </div>
+            }
+        }
+    }
+    else if (tab == Tab.Gaps)
+    {
+        <p class="rf-meta rf-fact__what">
+            Questions the assistant was asked and found nothing for. This is the honest list of what
+            is worth writing down, and it beats guessing at what people want to know.
+        </p>
+
+        @if (misses.Count == 0)
+        {
+            <p class="rf-meta">Nothing unanswered yet.</p>
+        }
+        else
+        {
+            <TableView Caption="@(misses.Count + " unanswered")">
+                <table class="rf-table">
+                    <thead>
+                        <tr>
+                            <th scope="col"><span class="rf-th rf-th--static">Question</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Asked</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Last</span></th>
+                            <th scope="col"><span class="rf-th rf-th--static">Answer it</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var miss in misses)
+                        {
+                            <tr>
+                                <td data-label="">@miss.Query</td>
+                                <td data-label="Asked">@miss.Times</td>
+                                <td data-label="Last">@miss.LastAskedUtc.ToLocalTime().ToString("d MMM HH:mm")</td>
+                                <td data-label="">
+                                    <button type="button" class="rf-btn rf-btn--small" @onclick="() => WriteFor(miss)">
+                                        Write a fact
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </TableView>
+
+            <div class="rf-actions">
+                <button type="button" class="rf-btn rf-btn--small" @onclick="ClearGaps">Clear the list</button>
+            </div>
+        }
+    }
+    else
+    {
+        <div class="rf-toolbar">
+            <SearchBox Placeholder="Search what it knows"
+                       AriaLabel="Search the knowledge base"
+                       Value="@search"
+                       ValueChanged="OnSearchChanged" />
+            <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="StartNew">Write a fact</button>
+            <span class="rf-meta">@Listed.Count of @all.Count</span>
+        </div>
+
+        @foreach (var fact in Listed)
+        {
+            <div class="rf-panel rf-fact">
+                <div class="rf-fact__head">
+                    <span class="rf-badge @StatusClass(fact)">@StatusLabel(fact)</span>
+                    <span class="rf-badge">@fact.Source</span>
+                    @if (fact.TimesUsed > 0)
+                    {
+                        <span class="rf-meta">used @fact.TimesUsed time@(fact.TimesUsed == 1 ? "" : "s")</span>
+                    }
+                </div>
+
+                <h3 class="rf-fact__title">@fact.Title</h3>
+                <p class="rf-fact__body">@fact.Body</p>
+
+                @if (fact.Tags?.Count > 0)
+                {
+                    <p class="rf-meta">@string.Join(", ", fact.Tags)</p>
+                }
+
+                <div class="rf-actions">
+                    @if (fact.IsEditable)
+                    {
+                        <button type="button" class="rf-btn rf-btn--small" @onclick="() => Edit(fact)">Edit</button>
+                        @if (fact.Status != FactStatus.Retired)
+                        {
+                            <button type="button" class="rf-btn rf-btn--danger rf-btn--small" @onclick="() => Retire(fact)">Retire</button>
+                        }
+                    }
+                    else
+                    {
+                        @*
+                            Derived facts are regenerated at every startup, so an edit would be
+                            silently undone. Saying so beats a field that discards what you typed.
+                        *@
+                        <span class="rf-meta">Generated from the code. Change the code to change this.</span>
+                    }
+                </div>
+            </div>
+        }
+    }
+
+    @if (editing != null)
+    {
+        <div class="rf-modal-backdrop" @onclick="CancelEdit">
+            <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Edit a fact" @onclick:stopPropagation="true">
+                <div class="rf-modal__head">
+                    <h2 class="rf-modal__title">@(editing.Id == Guid.Empty ? "Write a fact" : "Edit")</h2>
+                    <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CancelEdit">&times;</button>
+                </div>
+
+                <label class="rf-field">
+                    <span class="rf-label">The question it answers</span>
+                    <input class="rf-input" @bind="editing.Title" @bind:event="oninput" />
+                    <span class="rf-meta">This is what retrieval matches on first, so word it the way somebody would ask.</span>
+                </label>
+
+                <label class="rf-field">
+                    <span class="rf-label">The answer</span>
+                    <textarea class="rf-input rf-textarea" rows="6" @bind="editing.Body" @bind:event="oninput"></textarea>
+                    <span class="rf-meta">Short. Retrieval returns whole facts, and a long one crowds out what it was found beside.</span>
+                </label>
+
+                <label class="rf-field">
+                    <span class="rf-label">Tags</span>
+                    <input class="rf-input" value="@tagText" @oninput="e => tagText = e.Value?.ToString()" />
+                    <span class="rf-meta">Comma separated. They count for more than the body when matching.</span>
+                </label>
+
+                <div class="rf-modal__foot">
+                    <button type="button" class="rf-btn" @onclick="CancelEdit">Cancel</button>
+                    <button type="button" class="rf-btn rf-btn--primary"
+                            disabled="@(string.IsNullOrWhiteSpace(editing.Title) || string.IsNullOrWhiteSpace(editing.Body))"
+                            @onclick="SaveEdit">
+                        Save and publish
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private enum Tab { Review, Stale, Gaps, All }
+
+    private bool isAdmin;
+    private string userName;
+    private Tab tab = Tab.Review;
+
+    private IReadOnlyList<Fact> all = Array.Empty<Fact>();
+    private IReadOnlyList<Fact> proposals = Array.Empty<Fact>();
+    private IReadOnlyList<Fact> stale = Array.Empty<Fact>();
+    private IReadOnlyList<KnowledgeMiss> misses = Array.Empty<KnowledgeMiss>();
+
+    private Fact editing;
+    private string tagText = "";
+    private string search = "";
+
+    private string message;
+    private bool messageIsBad;
+
+    private IReadOnlyList<Fact> Listed =>
+        string.IsNullOrWhiteSpace(search)
+            ? all
+            : all.Where(x =>
+                    (x.Title ?? "").Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    (x.Body ?? "").Contains(search, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+    protected override void OnInitialized()
+    {
+        var session = AuthService.GetSession();
+        isAdmin = session != null && (session.Administrator || session.Moderator);
+        if (!isAdmin) return;
+
+        userName = session.UserName;
+        Reload();
+
+        // Land on whatever needs attention. Nothing waiting means nothing to do here today.
+        if (proposals.Count == 0) tab = stale.Count > 0 ? Tab.Stale : Tab.All;
+    }
+
+    private void Reload()
+    {
+        all = Facts.GetAll();
+        proposals = Facts.GetByStatus(FactStatus.Proposed);
+        stale = Facts.GetByStatus(FactStatus.Stale);
+        misses = Facts.GetMisses();
+    }
+
+    private void Show(Tab which)
+    {
+        tab = which;
+        message = null;
+        Reload();
+    }
+
+    private void OnSearchChanged(string value) => search = value ?? "";
+
+    private static string StatusLabel(Fact fact) => fact.Status switch
+    {
+        FactStatus.Published => "In use",
+        FactStatus.Proposed => "Waiting",
+        FactStatus.Retired => "Retired",
+        FactStatus.Stale => "Out of date",
+        _ => fact.Status.ToString()
+    };
+
+    private static string StatusClass(Fact fact) => fact.Status switch
+    {
+        FactStatus.Published => "rf-badge--good",
+        FactStatus.Proposed => "rf-badge--warn",
+        FactStatus.Stale => "rf-badge--warn",
+        _ => ""
+    };
+
+    private void Accept(Fact fact)
+    {
+        Facts.Accept(fact.Id, userName);
+        Reload();
+        messageIsBad = false;
+        message = "Accepted. The assistant will use it from now on.";
+    }
+
+    private void Discard(Fact fact)
+    {
+        // Deleted rather than retired: nobody has seen it, so there is no wrong answer to trace.
+        Facts.Delete(fact.Id);
+        Reload();
+        messageIsBad = false;
+        message = "Discarded.";
+    }
+
+    private void Retire(Fact fact)
+    {
+        Facts.Retire(fact.Id);
+        Reload();
+        messageIsBad = false;
+        message = "Retired. It is kept, so an answer somebody saw can still be traced, but it will not be used.";
+    }
+
+    /// <summary>
+    ///     Says a stale fact is still correct despite the code having changed.
+    /// </summary>
+    /// <remarks>
+    ///     Clears the recorded dependency along with the flag. Leaving it would flag the same fact
+    ///     again at the next startup, and a warning that reappears after being dismissed is one
+    ///     people learn to ignore.
+    /// </remarks>
+    private void Republish(Fact fact)
+    {
+        fact.Status = FactStatus.Published;
+        fact.Context = null;
+        fact.DependsOn?.Clear();
+        Facts.Save(fact);
+        Reload();
+        messageIsBad = false;
+        message = "Marked as still correct.";
+    }
+
+    private void StartNew()
+    {
+        editing = new Fact { Source = FactSource.Admin, Status = FactStatus.Published, CreatedBy = userName };
+        tagText = "";
+    }
+
+    private void WriteFor(KnowledgeMiss miss)
+    {
+        editing = new Fact
+        {
+            Title = miss.Query,
+            Source = FactSource.Admin,
+            Status = FactStatus.Published,
+            CreatedBy = userName
+        };
+        tagText = "";
+    }
+
+    private void Edit(Fact fact)
+    {
+        editing = fact;
+        tagText = string.Join(", ", fact.Tags ?? new List<string>());
+    }
+
+    private void CancelEdit()
+    {
+        editing = null;
+    }
+
+    private void SaveEdit()
+    {
+        if (editing == null) return;
+
+        editing.Tags = (tagText ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => x.Trim())
+            .Where(x => x.Length > 0)
+            .ToList();
+
+        // Editing a proposal is also accepting it: somebody with authority has read it and decided
+        // what it should say.
+        if (editing.Status == FactStatus.Proposed || editing.Status == FactStatus.Stale)
+        {
+            editing.Status = FactStatus.Published;
+            editing.AcceptedBy = userName;
+            editing.AcceptedUtc = DateTime.UtcNow;
+            editing.Context = null;
+        }
+
+        Facts.Save(editing);
+        editing = null;
+        Reload();
+
+        messageIsBad = false;
+        message = "Saved.";
+    }
+
+    private void ClearGaps()
+    {
+        Facts.ClearMisses();
+        Reload();
+        messageIsBad = false;
+        message = "Cleared.";
+    }
+}
