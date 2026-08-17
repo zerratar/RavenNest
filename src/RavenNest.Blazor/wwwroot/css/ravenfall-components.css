@@ -4137,3 +4137,20 @@ a.rf-badge:hover {
     text-decoration: line-through;
     opacity: 0.7;
 }
+
+/* Buttons the assistant offered with an answer. Wrapped, because several can
+   arrive together and the panel is narrow. */
+.rf-chat__offers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+    margin-top: var(--rf-space-3);
+}
+
+/* A link styled as a button still needs to sit on the text baseline like one. */
+.rf-chat__offers .rf-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+    text-decoration: none;
+}

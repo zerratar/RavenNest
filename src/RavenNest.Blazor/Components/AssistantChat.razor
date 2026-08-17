@@ -75,6 +75,28 @@
                         <div class="rf-chat__turn @(turn.FromUser ? "rf-chat__turn--mine" : "")">
                             <span class="rf-chat__who">@(turn.FromUser ? "You" : "Assistant")</span>
                             <p class="rf-chat__text">@turn.Text</p>
+
+                            @if (turn.Offers.Count > 0)
+                            {
+                                @*
+                                    Buttons the answer came with. Kept on the turn rather than only
+                                    on the newest one, so scrolling back to an earlier answer still
+                                    has the link it offered.
+
+                                    Navigation only, and navigation changes nothing, so these do not
+                                    go through the confirmation card. Anything that would change
+                                    something still does.
+                                *@
+                                <div class="rf-chat__offers">
+                                    @foreach (var offer in turn.Offers)
+                                    {
+                                        <a class="rf-btn rf-btn--small" href="@offer.Target">
+                                            <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                                            @offer.Label
+                                        </a>
+                                    }
+                                </div>
+                            }
                         </div>
                     }
 

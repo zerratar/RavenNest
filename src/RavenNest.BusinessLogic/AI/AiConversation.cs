@@ -9,6 +9,16 @@ namespace RavenNest.BusinessLogic.AI
     {
         public bool FromUser { get; set; }
         public string Text { get; set; }
+
+        /// <summary>
+        ///     Buttons offered alongside this answer, if any.
+        /// </summary>
+        /// <remarks>
+        ///     Attached to the turn rather than held on the conversation, so scrolling back up to an
+        ///     earlier answer still shows the link it came with. An offer does not expire just
+        ///     because the exchange moved on.
+        /// </remarks>
+        public List<AiOffer> Offers { get; } = new List<AiOffer>();
     }
 
     /// <summary>
@@ -44,17 +54,26 @@ namespace RavenNest.BusinessLogic.AI
 
         private string previousResponseId;
 
+        /// <param name="offers">
+        ///     Where the tools put anything they want drawn as a button. Owned by whoever built the
+        ///     tools, because the closures need it before this exists, and drained onto each answer
+        ///     as it arrives.
+        /// </param>
         public AiConversation(
             IAiService ai,
             string instructions,
             IReadOnlyList<AiTool> tools = null,
-            int? maxOutputTokens = null)
+            int? maxOutputTokens = null,
+            IList<AiOffer> offers = null)
         {
             this.ai = ai;
             this.instructions = instructions;
             this.tools = tools;
             this.maxOutputTokens = maxOutputTokens;
+            this.offers = offers ?? new List<AiOffer>();
         }
+
+        private readonly IList<AiOffer> offers;
 
         /// <summary>
         ///     How many turns are kept for display. The model's own history is not affected: it
@@ -88,6 +107,7 @@ namespace RavenNest.BusinessLogic.AI
             if (IsWaiting) return;
 
             Error = null;
+            offers.Clear();
 
             // Only the question is kept as a turn. The context is scaffolding for the model and
             // showing it back would read as though the person had typed it.
@@ -161,7 +181,14 @@ namespace RavenNest.BusinessLogic.AI
 
             if (!string.IsNullOrWhiteSpace(result.Text))
             {
-                Remember(new AiTurn { FromUser = false, Text = result.Text });
+                var turn = new AiTurn { FromUser = false, Text = result.Text };
+
+                // Whatever the tools offered during this exchange belongs to this answer, and the
+                // sink is emptied so the next answer does not inherit it.
+                turn.Offers.AddRange(offers);
+                offers.Clear();
+
+                Remember(turn);
             }
         }
 

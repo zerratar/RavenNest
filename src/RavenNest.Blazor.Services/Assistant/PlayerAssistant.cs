@@ -179,11 +179,16 @@ namespace RavenNest.Blazor.Services.Assistant
 
         private AiConversation Build(Guid userId, bool isAdministrator, bool isModerator)
         {
+            // Created here and closed over by the tools, because the tools are built before the
+            // conversation exists and both need to be looking at the same list.
+            var offers = new List<AiOffer>();
+
             return new AiConversation(
                 ai,
                 InstructionsFor(userId, isAdministrator),
-                ToolsFor(userId, isAdministrator, isModerator),
-                maxOutputTokens: 2000);
+                ToolsFor(userId, isAdministrator, isModerator, offers),
+                maxOutputTokens: 2000,
+                offers: offers);
         }
 
         private string InstructionsFor(Guid userId, bool isAdministrator)
@@ -209,6 +214,10 @@ How to answer:
 - If they ask for something you have no tool for, say what you cannot do rather than approximating
   it. Guessing which item is best without checking their skills is exactly the kind of answer that
   reads as authoritative and is not.
+- When your answer points at somewhere on the site, add a button with offer_link. Telling somebody
+  they can do it on their stash page is a worse answer than the same sentence with a button under
+  it. If they ask to be taken somewhere, offer the link and say what they will find there, rather
+  than explaining that you cannot navigate for them.
 - Anything about where a character is, what it is wearing, or what an item does: use the tools.
   Those are facts about right now and guessing at them is always wrong.
 - Anything about how the game works, what something costs, or what a mechanic does: look it up with
@@ -250,7 +259,7 @@ the page back to them unless it matters to the answer.
             "- You still cannot change anything belonging to another player. Looking is all you can do\n" +
             "  there, and moving items is still only between this person's own characters.";
 
-        private IReadOnlyList<AiTool> ToolsFor(Guid userId, bool isAdministrator, bool isModerator)
+        private IReadOnlyList<AiTool> ToolsFor(Guid userId, bool isAdministrator, bool isModerator, IList<AiOffer> offers)
         {
             var tools = new List<AiTool>
             {
@@ -323,6 +332,23 @@ the page back to them unless it matters to the answer.
                     "Optionally filtered to names containing a word.",
                     Schema("search", "A word to filter item names by, or null for everything.", nullable: true),
                     (args, ct) => Task.FromResult(Vendor(Text(args, "search")))),
+
+                // Where things are on the site. Answering "you can do that on your stash page" is
+                // a worse answer than the same sentence with a button on it.
+                new AiTool(
+                    "list_pages",
+                    "The pages of the site and what each one is for. Use this when somebody asks " +
+                    "where to do something, or asks to be taken somewhere.",
+                    AiTool.NoParameters,
+                    (args, ct) => Task.FromResult(ListPages(isAdministrator))),
+
+                new AiTool(
+                    "offer_link",
+                    "Put a button under your answer that takes the person to a page. Use it whenever " +
+                    "your answer mentions somewhere on the site, and when they ask to be taken " +
+                    "somewhere. Say what they will find there; the button does the going.",
+                    LinkSchema,
+                    (args, ct) => Task.FromResult(OfferLink(offers, isAdministrator, args))),
 
                 // What the assistant knows that is not in the game's data: rules, mechanics,
                 // and anything an administrator has written down.
@@ -509,6 +535,63 @@ the page back to them unless it matters to the answer.
                 items = shown
             });
         }
+
+        // ---- getting around --------------------------------------------------------------------
+
+        private static string ListPages(bool isAdministrator)
+        {
+            return Json(SitePages.For(isAdministrator).Select(x => new
+            {
+                page = x.Path,
+                name = x.Name,
+                what = x.What
+            }));
+        }
+
+        /// <summary>
+        ///     Adds a button to the answer being written.
+        /// </summary>
+        /// <remarks>
+        ///     The page has to be one of ours, resolved from the list rather than taken as given, so
+        ///     the assistant cannot send anybody to an address it invented or to an admin page they
+        ///     cannot open. A button that leads nowhere is worse than a sentence telling them where
+        ///     to look.
+        ///
+        ///     <para>
+        ///     It offers rather than navigates. Moving somebody's browser out from under them while
+        ///     they are still reading the answer is startling, and one click is not the part that
+        ///     was hard. If it should jump straight there, that is a change in the widget rather
+        ///     than here.
+        ///     </para>
+        /// </remarks>
+        private static string OfferLink(IList<AiOffer> offers, bool isAdministrator, JsonElement args)
+        {
+            var wanted = Text(args, "page");
+            var page = SitePages.Resolve(wanted, isAdministrator);
+
+            if (page == null)
+            {
+                return "There is no page called '" + wanted + "'. Call list_pages and use one of those " +
+                       "paths, and do not invent an address.";
+            }
+
+            // Their words for it when they gave some, since "Open your clan stash" reads better than
+            // whatever the page is called in the menu.
+            var label = Text(args, "label");
+            if (string.IsNullOrWhiteSpace(label)) label = "Open " + page.Name;
+
+            if (offers.Any(x => x.Target == page.Path)) return "That button is already there.";
+
+            offers.Add(new AiOffer(AiOfferKind.Navigate, label.Trim(), page.Path));
+            return "A button to " + page.Name + " has been added under your answer. Mention what they " +
+                   "will find there rather than describing the button.";
+        }
+
+        private const string LinkSchema =
+            "{\"type\":\"object\",\"properties\":{" +
+            "\"page\":{\"type\":\"string\",\"description\":\"The path from list_pages, such as /stash.\"}," +
+            "\"label\":{\"type\":[\"string\",\"null\"],\"description\":\"What the button should say, or null for a default.\"}}," +
+            "\"required\":[\"page\",\"label\"],\"additionalProperties\":false}";
 
         // ---- knowledge -------------------------------------------------------------------------
 
