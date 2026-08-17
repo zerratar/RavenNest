@@ -80,6 +80,7 @@ namespace RavenNest.Blazor.Services.Assistant
         private readonly MarketPriceIndex marketPrices;
         private readonly ServerService serverService;
         private readonly FactService facts;
+        private readonly GameActions gameActions;
         private readonly IServerSettingsProvider settings;
 
         public PlayerAssistant(
@@ -89,6 +90,7 @@ namespace RavenNest.Blazor.Services.Assistant
             MarketPriceIndex marketPrices,
             ServerService serverService,
             FactService facts,
+            GameActions gameActions,
             IServerSettingsProvider settings)
         {
             this.ai = ai;
@@ -97,6 +99,7 @@ namespace RavenNest.Blazor.Services.Assistant
             this.marketPrices = marketPrices;
             this.serverService = serverService;
             this.facts = facts;
+            this.gameActions = gameActions;
             this.settings = settings;
         }
 
@@ -209,8 +212,12 @@ How to answer:
   know. A made up coin total or item count is worse than no answer.
 - Coins and resources belong to the account, not to a character. There is one figure for the whole
   account. Never add them up per character and never say a character has its own coins.
-- You cannot change anything except by moving items between their own characters, and that always
-  has to be agreed to first. Never say you have done something you have only proposed.
+- You can move items between their own characters, and tell the running game to change what a
+  character is training, sail somewhere, rest, or join a raid or dungeon. All of those have to be
+  agreed to first. Never say you have done something you have only proposed.
+- Those game actions only reach a character that is in a live stream, and they are sent to the game
+  rather than done here. Say it has been told to do something, not that it is now doing it, because
+  the game decides what actually happens.
 - If they ask for something you have no tool for, say what you cannot do rather than approximating
   it. Guessing which item is best without checking their skills is exactly the kind of answer that
   reads as authoritative and is not.
@@ -368,6 +375,20 @@ the page back to them unless it matters to the answer.
                     "whether it has been saved or sent for review.",
                     CorrectionSchema,
                     (args, ct) => Task.FromResult(RememberCorrection(userId, isAdministrator, isModerator, args))),
+
+                // Telling the running game to do something. Same calls the Twitch overlay makes,
+                // so this is the extension's buttons reachable from a conversation rather than a
+                // new power.
+                new AiTool(
+                    "control_character",
+                    "Tell the running game to do something with one of the player's characters: " +
+                    "change what it is training, sail to an island, rest in the onsen or stop, or " +
+                    "join a raid or dungeon. Only works while the character is in a live stream. " +
+                    "The player has to agree before it happens.",
+                    ControlSchema,
+                    (args, ct) => Task.FromResult(Control(userId, args)),
+                    requiresConfirmation: true,
+                    summarise: args => DescribeControl(userId, args)),
 
                 // The only one that changes anything, and the reason the confirmation machinery
                 // exists. Everything above it reads.
@@ -535,6 +556,68 @@ the page back to them unless it matters to the answer.
                 items = shown
             });
         }
+
+        // ---- telling the game to do something ---------------------------------------------------
+
+        /// <summary>
+        ///     Carries out a control action, once the player has agreed to it.
+        /// </summary>
+        /// <remarks>
+        ///     Everything here goes through GameActions, which resolves the character against the
+        ///     signed in user and finds the session it is actually in. Nothing is taken on trust
+        ///     from the arguments except which character was meant, and that is resolved by name
+        ///     against this user's own list.
+        /// </remarks>
+        private string Control(Guid userId, JsonElement args)
+        {
+            var character = Resolve(userId, Text(args, "character"));
+            if (character == null) return NoSuchCharacter(userId, Text(args, "character"));
+
+            if (!TryReadAction(Text(args, "action"), out var kind))
+            {
+                return "There is no action called '" + Text(args, "action") + "'.";
+            }
+
+            var result = gameActions.Run(character.Id, userId, kind, Text(args, "detail"));
+            return result.Message;
+        }
+
+        private string DescribeControl(Guid userId, JsonElement args)
+        {
+            var character = Resolve(userId, Text(args, "character"));
+            if (character == null || !TryReadAction(Text(args, "action"), out var kind))
+            {
+                return "Do something with your character.";
+            }
+
+            return gameActions.Describe(character.Id, kind, Text(args, "detail"));
+        }
+
+        private static bool TryReadAction(string text, out GameActionKind kind)
+        {
+            kind = default;
+            if (string.IsNullOrWhiteSpace(text)) return false;
+
+            switch (text.Trim().ToLowerInvariant())
+            {
+                case "train": kind = GameActionKind.Train; return true;
+                case "travel": kind = GameActionKind.Travel; return true;
+                case "rest": kind = GameActionKind.Rest; return true;
+                case "stop_resting": kind = GameActionKind.StopResting; return true;
+                case "join_raid": kind = GameActionKind.JoinRaid; return true;
+                case "join_dungeon": kind = GameActionKind.JoinDungeon; return true;
+                default: return false;
+            }
+        }
+
+        private static readonly string ControlSchema =
+            "{\"type\":\"object\",\"properties\":{" +
+            "\"character\":{\"type\":\"string\",\"description\":\"Which character, by name or number.\"}," +
+            "\"action\":{\"type\":\"string\",\"enum\":[\"train\",\"travel\",\"rest\",\"stop_resting\",\"join_raid\",\"join_dungeon\"]," +
+            "\"description\":\"What to do.\"}," +
+            "\"detail\":{\"type\":[\"string\",\"null\"],\"description\":\"For train, the skill such as magic or mining. " +
+            "For travel, the island: " + string.Join(", ", GameActions.IslandNames) + ". Null otherwise.\"}}," +
+            "\"required\":[\"character\",\"action\",\"detail\"],\"additionalProperties\":false}";
 
         // ---- getting around --------------------------------------------------------------------
 
