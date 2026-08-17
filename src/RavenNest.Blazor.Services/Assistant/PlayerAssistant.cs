@@ -209,6 +209,8 @@ How to answer:
 - If they ask for something you have no tool for, say what you cannot do rather than approximating
   it. Guessing which item is best without checking their skills is exactly the kind of answer that
   reads as authoritative and is not.
+- Anything about where a character is, what it is wearing, or what an item does: use the tools.
+  Those are facts about right now and guessing at them is always wrong.
 - Anything about how the game works, what something costs, or what a mechanic does: look it up with
   search_knowledge first. Do not explain a mechanic from memory. If nothing is written down, say so
   and offer to remember what they tell you, rather than reasoning your way to something plausible.
@@ -275,6 +277,29 @@ the page back to them unless it matters to the answer.
                     "current level each one is. Use this for any question about a level.",
                     Schema("character", "The character's name or number, as given by my_characters."),
                     (args, ct) => Task.FromResult(Skills(userId, Text(args, "character")))),
+
+                new AiTool(
+                    "where_is_character",
+                    "Where one of the player's characters is right now and what it is doing: island, " +
+                    "task, health, whether it is in a raid, dungeon, arena or onsen, and how much " +
+                    "experience an hour it is earning.",
+                    Schema("character", "The character's name or number, as given by my_characters."),
+                    (args, ct) => Task.FromResult(Whereabouts(userId, Text(args, "character")))),
+
+                new AiTool(
+                    "character_equipment",
+                    "What one of the player's characters is wearing and wielding, and which pet is " +
+                    "out. Use this for anything about equipment, and before suggesting a change.",
+                    Schema("character", "The character's name or number, as given by my_characters."),
+                    (args, ct) => Task.FromResult(Equipment(userId, Text(args, "character")))),
+
+                new AiTool(
+                    "search_items",
+                    "Search every item in the game by name, with its stats, level requirements and " +
+                    "what the vendor pays. Use this to answer what an item is or to compare items, " +
+                    "not just what the player already owns.",
+                    Schema("search", "Part of an item's name."),
+                    (args, ct) => Task.FromResult(SearchItems(Text(args, "search")))),
 
                 new AiTool(
                     "character_items",
@@ -356,6 +381,133 @@ the page back to them unless it matters to the answer.
                 (args, ct) => Task.FromResult(FindPlayer(Text(args, "name")))));
 
             return tools;
+        }
+
+        /// <summary>
+        ///     Where a character is and what it is doing.
+        /// </summary>
+        /// <remarks>
+        ///     State only exists while a character is in a running stream, so "nothing to report" is
+        ///     a real answer here rather than a failure, and it is said plainly. A character that is
+        ///     not playing is not lost.
+        /// </remarks>
+        private string Whereabouts(Guid userId, string which)
+        {
+            var character = Resolve(userId, which);
+            if (character == null) return NoSuchCharacter(userId, which);
+
+            var state = character.State;
+            if (state == null)
+            {
+                return character.Name + " is not in a running stream at the moment, so there is " +
+                       "nothing to report about where it is.";
+            }
+
+            return Json(new
+            {
+                character = character.Name,
+                doing = Doing(character),
+                island = string.IsNullOrWhiteSpace(state.Island) ? null : state.Island,
+                sailingTo = string.IsNullOrWhiteSpace(state.Destination) ? null : state.Destination,
+                health = state.Health,
+                inRaid = state.InRaid,
+                inDungeon = state.InDungeon,
+                inArena = state.InArena,
+                restingInOnsen = state.InOnsen,
+                experiencePerHour = state.ExpPerHour
+            });
+        }
+
+        /// <summary>
+        ///     What is worn and wielded, and which pet is out.
+        /// </summary>
+        private string Equipment(Guid userId, string which)
+        {
+            var character = Resolve(userId, which);
+            if (character == null) return NoSuchCharacter(userId, which);
+
+            var worn = (character.InventoryItems ?? Array.Empty<RavenNest.Models.InventoryItem>())
+                .Where(x => x.Equipped)
+                .Select(x => new
+                {
+                    name = ItemName(x),
+                    slot = gameData.GetItem(x.ItemId)?.Type.ToString(),
+                    enchanted = !string.IsNullOrEmpty(x.Enchantment),
+                    enchantment = x.Enchantment
+                })
+                .ToList();
+
+            var pet = character.ActiveBattlePet == null
+                ? null
+                : (character.BattlePets ?? Array.Empty<RavenNest.Models.BattlePet>())
+                    .FirstOrDefault(x => x.Id == character.ActiveBattlePet.Value);
+
+            return Json(new
+            {
+                character = character.Name,
+                combatLevel = character.CombatLevel,
+                equipped = worn,
+                nothingEquipped = worn.Count == 0,
+                pet = pet == null
+                    ? null
+                    : new { name = pet.Name, type = pet.Type.ToString(), tier = pet.Tier.ToString() },
+                petsOwned = character.BattlePets?.Count ?? 0
+            });
+        }
+
+        /// <summary>
+        ///     The item catalogue, so questions can be about items the player does not own.
+        /// </summary>
+        /// <remarks>
+        ///     Capped, because the catalogue is thousands of items and a broad word would otherwise
+        ///     return a list nobody can read and every one of them is tokens. The reply says when it
+        ///     has been cut rather than quietly presenting the first twenty as the whole answer.
+        /// </remarks>
+        private string SearchItems(string search)
+        {
+            if (string.IsNullOrWhiteSpace(search)) return "Give a word to search for.";
+
+            var matches = gameData.GetItems()
+                .Where(x => x.Name != null &&
+                            x.Name.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0)
+                .OrderBy(x => x.Name.Length)
+                .ToList();
+
+            if (matches.Count == 0) return "No item matches '" + search + "'.";
+
+            const int limit = 20;
+            var shown = matches.Take(limit).Select(x => new
+            {
+                name = x.Name,
+                type = x.Type.ToString(),
+                material = x.Material.ToString(),
+                weaponAim = x.WeaponAim,
+                weaponPower = x.WeaponPower,
+                magicAim = x.MagicAim,
+                magicPower = x.MagicPower,
+                rangedAim = x.RangedAim,
+                rangedPower = x.RangedPower,
+                armourPower = x.ArmorPower,
+                requires = new
+                {
+                    attack = x.RequiredAttackLevel,
+                    defense = x.RequiredDefenseLevel,
+                    magic = x.RequiredMagicLevel,
+                    ranged = x.RequiredRangedLevel,
+                    slayer = x.RequiredSlayerLevel
+                },
+                vendorPays = x.ShopSellPrice
+            });
+
+            return Json(new
+            {
+                matched = matches.Count,
+                showing = Math.Min(limit, matches.Count),
+                note = matches.Count > limit
+                    ? "Only the closest " + limit + " are shown. Ask with a more specific word for the rest."
+                    : null,
+                items = shown
+            });
         }
 
         // ---- knowledge -------------------------------------------------------------------------

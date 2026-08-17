@@ -111,8 +111,15 @@ namespace RavenNest.Blazor.Services.Knowledge
 
         public DateTime? LastUsedUtc { get; set; }
 
-        /// <summary>Derived facts are regenerated every startup, so editing one would be undone.</summary>
-        public bool IsEditable => Source != FactSource.Derived;
+        /// <summary>
+        ///     Whether editing this by hand would survive.
+        /// </summary>
+        /// <remarks>
+        ///     Derived facts are regenerated at every startup and wiki facts at every import, so an
+        ///     edit to either would be silently undone. Better to say so than to accept a change and
+        ///     lose it.
+        /// </remarks>
+        public bool IsEditable => Source != FactSource.Derived && Source != FactSource.Wiki;
 
         public bool IsRetrievable => Status == FactStatus.Published || Status == FactStatus.Stale;
     }

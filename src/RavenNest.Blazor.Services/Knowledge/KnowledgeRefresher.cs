@@ -38,14 +38,16 @@ namespace RavenNest.Blazor.Services.Knowledge
         private static readonly TimeSpan StartDelay = TimeSpan.FromMinutes(1);
 
         private readonly FactService facts;
+        private readonly WikiImporter wiki;
         private readonly GameData gameData;
         private readonly ILogger<KnowledgeRefresher> logger;
 
         private Timer timer;
 
-        public KnowledgeRefresher(FactService facts, GameData gameData, ILogger<KnowledgeRefresher> logger)
+        public KnowledgeRefresher(FactService facts, WikiImporter wiki, GameData gameData, ILogger<KnowledgeRefresher> logger)
         {
             this.facts = facts;
+            this.wiki = wiki;
             this.gameData = gameData;
             this.logger = logger;
         }
@@ -71,12 +73,28 @@ namespace RavenNest.Blazor.Services.Knowledge
                 logger.LogInformation("Regenerated " + generated.Count + " facts from the code.");
 
                 CheckDependencies();
+
+                // The wiki is somebody else's server, so it is fetched after the local work rather
+                // than before it. A wiki that is down should not stop the derived facts refreshing.
+                _ = ImportWikiAsync();
             }
             catch (Exception exc)
             {
                 // A knowledge base that failed to refresh is out of date. One that took the server
                 // down with it is worse.
                 logger.LogError("Could not refresh the knowledge base: " + exc);
+            }
+        }
+
+        private async Task ImportWikiAsync()
+        {
+            try
+            {
+                await wiki.ImportAsync();
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Could not import the wiki: " + exc);
             }
         }
 

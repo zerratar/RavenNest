@@ -326,6 +326,35 @@ namespace RavenNest.Blazor.Services.Knowledge
         }
 
         /// <summary>
+        ///     Replaces every imported wiki fact with a freshly fetched set.
+        /// </summary>
+        /// <remarks>
+        ///     Wholesale, like the derived ones, so a page deleted from the wiki disappears here
+        ///     rather than lingering as the only remaining copy of something its own authors
+        ///     withdrew. The caller is responsible for not calling this with nothing: a wiki that is
+        ///     down for an afternoon must not empty the knowledge base.
+        /// </remarks>
+        public void ReplaceFromWiki(IEnumerable<Fact> imported)
+        {
+            lock (mutex)
+            {
+                Load();
+
+                facts.RemoveAll(x => x.Source == FactSource.Wiki);
+
+                foreach (var fact in imported)
+                {
+                    fact.Id = fact.Id == Guid.Empty ? Guid.NewGuid() : fact.Id;
+                    fact.Source = FactSource.Wiki;
+                    fact.Status = FactStatus.Published;
+                    facts.Add(fact);
+                }
+
+                Persist();
+            }
+        }
+
+        /// <summary>
         ///     Marks a fact as describing something the code no longer says.
         /// </summary>
         public bool MarkStale(Guid id, string what)

@@ -518,6 +518,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<RavenNest.Blazor.Services.Announcements.DiscordAnnouncer>();
             services.AddSingleton<RavenNest.Blazor.Services.Announcements.NewsAssistant>();
             services.AddSingleton<RavenNest.Blazor.Services.Knowledge.FactService>();
+            services.AddSingleton<RavenNest.Blazor.Services.Knowledge.WikiImporter>();
             services.AddHostedService<RavenNest.Blazor.Services.Knowledge.KnowledgeRefresher>();
             services.AddSingleton<RavenNest.Blazor.Services.Assistant.PlayerAssistant>();
             services.AddSingleton<MarketplaceService>();
