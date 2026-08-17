@@ -9,6 +9,7 @@
 @inject RavenNest.Blazor.Services.ClanService ClanService
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject RavenNest.Blazor.Services.LogoService LogoService
+@implements IDisposable
 @inject NavigationManager NavigationManager
 
 <header class="rf-page-head">
@@ -263,6 +264,21 @@ else
                           ActingCharacterId="@(ActingCharacterId ?? Guid.Empty)"
                           IsOwner="@(Selected?.IsOwner ?? false)"></ClanBankView>
         }
+        else if (section == Section.Stash)
+        {
+            @*
+                The address asked for the stash and this rank cannot open it. Said out loud, because
+                falling through to the roster would look exactly like the bug where a link to a tab
+                changed the address and nothing else.
+            *@
+            <div class="rf-banner rf-banner--warn">
+                <p class="rf-banner__title">Your rank cannot open this clan's stash</p>
+                <p>
+                    Somebody who can edit ranks has to allow it. Everything else on this page still
+                    works.
+                </p>
+            </div>
+        }
         else
         {
             <ClanMemberList ClanId="@clan.Id" ActingCharacterId="@ActingCharacterId" CanManage="@canManageMembers"></ClanMemberList>
@@ -451,13 +467,60 @@ else
     private void ShowSection(Section which)
     {
         section = which;
+
+        // Kept in step with the address, so pressing a tab and then following a link to the tab
+        // the address already names still counts as a change.
+        appliedUri = NavigationManager.Uri;
     }
+
+    /// <summary>
+    ///     Opens the tab the address names.
+    /// </summary>
+    /// <remarks>
+    ///     /clan, /clan/ranks and /clan/stash are all this same component, so moving between them
+    ///     reuses the instance and OnInitialized does not run again. Reading the route only there
+    ///     meant a link to /clan/stash from a page already showing /clan changed the address and
+    ///     nothing else, which is exactly what a link to a tab is supposed to do and the one case
+    ///     that did not work.
+    /// </remarks>
+    private void ApplyRoute()
+    {
+        var uri = NavigationManager.Uri ?? "";
+        if (uri == appliedUri) return;
+
+        appliedUri = uri;
+
+        if (uri.IndexOf("/clan/ranks", StringComparison.OrdinalIgnoreCase) >= 0) section = Section.Ranks;
+        else if (uri.IndexOf("/clan/stash", StringComparison.OrdinalIgnoreCase) >= 0) section = Section.Stash;
+        else section = Section.Members;
+    }
+
+    private void OnLocationChanged(object sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        ApplyRoute();
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+
+    /// <summary>
+    ///     Which address this page last opened a tab for.
+    /// </summary>
+    /// <remarks>
+    ///     Tracked so the route is only applied when it actually changes. Without it, every
+    ///     re-render would snap the page back to whatever the address says, and pressing Members
+    ///     while sitting on /clan/stash would bounce straight back to the stash.
+    /// </remarks>
+    private string appliedUri;
 
     protected override void OnInitialized()
     {
-        var uri = NavigationManager.Uri.ToString();
-        if (uri.IndexOf("ranks", StringComparison.OrdinalIgnoreCase) > 0) section = Section.Ranks;
-        else if (uri.IndexOf("stash", StringComparison.OrdinalIgnoreCase) > 0) section = Section.Stash;
+        NavigationManager.LocationChanged += OnLocationChanged;
+        ApplyRoute();
+
         session = AuthService.GetSession();
         if (session == null || session.UserName == null)
         {
