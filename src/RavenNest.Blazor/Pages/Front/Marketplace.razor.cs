@@ -154,6 +154,12 @@ namespace RavenNest.Blazor.Pages.Front
             InvokeAsync(StateHasChanged);
         }
 
+        /// <summary>
+        ///     Bumped to empty the search box. A counter rather than a value, because the box
+        ///     is only ever written by the server on a deliberate clear. See SearchBox.
+        /// </summary>
+        private int clearSignal;
+
         private void OnSearchChanged(string value)
         {
             search = value ?? "";
@@ -162,6 +168,7 @@ namespace RavenNest.Blazor.Pages.Front
 
         private void ClearFilters()
         {
+            clearSignal++;
             search = "";
             itemFilter = ItemFilter.All;
             ApplyFilters();

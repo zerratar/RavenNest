@@ -52,7 +52,8 @@
                 <SearchBox Placeholder="Search commands"
                            AriaLabel="Search commands"
                            Value="@search"
-                           ValueChanged="OnSearchChanged" />
+                           ValueChanged="OnSearchChanged"
+                           ClearSignal="@clearSignal" />
                 @if (!string.IsNullOrWhiteSpace(search) || category != null)
                 {
                     <button type="button" class="rf-btn rf-btn--small" @onclick="ClearFilters">Clear filters</button>

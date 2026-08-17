@@ -74,7 +74,8 @@
                     <SearchBox Placeholder="Search by name"
                                AriaLabel="Search the marketplace by item name"
                                Value="@search"
-                               ValueChanged="OnSearchChanged" />
+                               ValueChanged="OnSearchChanged"
+                               ClearSignal="@clearSignal" />
                     @if (!string.IsNullOrWhiteSpace(search) || itemFilter != ItemFilter.All)
                     {
                         <button type="button" class="rf-btn rf-btn--small" @onclick="ClearFilters">Clear filters</button>
