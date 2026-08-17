@@ -159,6 +159,9 @@
 @code {
     private bool visible;
     private bool isAdmin;
+
+    /// <summary>Decides whether a correction is accepted straight away or queued. From the session.</summary>
+    private bool isModerator;
     private bool adminOnly;
     private bool open;
     private Guid userId;
@@ -189,9 +192,10 @@
         if (session == null || !Assistant.IsAvailableTo(session.Administrator)) return;
 
         isAdmin = session.Administrator;
+        isModerator = session.Moderator;
         adminOnly = isAdmin && !Assistant.IsOnForEveryone;
         userId = session.UserId;
-        chat = Assistant.StartFor(userId, isAdmin);
+        chat = Assistant.StartFor(userId, isAdmin, isModerator);
         Recount();
         visible = true;
     }
@@ -223,7 +227,7 @@
     {
         if (thinking) return;
 
-        chat = Assistant.Restart(userId, isAdmin);
+        chat = Assistant.Restart(userId, isAdmin, isModerator);
         draft = "";
         drawnTurns = -1;
     }

@@ -9,6 +9,7 @@ using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Settings;
+using RavenNest.Blazor.Services.Knowledge;
 using RavenNest.BusinessLogic;
 
 namespace RavenNest.Blazor.Services.Assistant
@@ -78,6 +79,7 @@ namespace RavenNest.Blazor.Services.Assistant
         private readonly PlayerManager playerManager;
         private readonly MarketPriceIndex marketPrices;
         private readonly ServerService serverService;
+        private readonly FactService facts;
         private readonly IServerSettingsProvider settings;
 
         public PlayerAssistant(
@@ -86,6 +88,7 @@ namespace RavenNest.Blazor.Services.Assistant
             PlayerManager playerManager,
             MarketPriceIndex marketPrices,
             ServerService serverService,
+            FactService facts,
             IServerSettingsProvider settings)
         {
             this.ai = ai;
@@ -93,6 +96,7 @@ namespace RavenNest.Blazor.Services.Assistant
             this.playerManager = playerManager;
             this.marketPrices = marketPrices;
             this.serverService = serverService;
+            this.facts = facts;
             this.settings = settings;
         }
 
@@ -152,9 +156,9 @@ namespace RavenNest.Blazor.Services.Assistant
         ///     conversation that was not given the admin tools has no route to them: they are absent
         ///     from the request, and a name the model invents resolves to nothing.
         /// </param>
-        public AiConversation StartFor(Guid userId, bool isAdministrator)
+        public AiConversation StartFor(Guid userId, bool isAdministrator, bool isModerator = false)
         {
-            return conversations.GetOrAdd(userId, _ => Build(userId, isAdministrator));
+            return conversations.GetOrAdd(userId, _ => Build(userId, isAdministrator, isModerator));
         }
 
         /// <summary>
@@ -166,19 +170,19 @@ namespace RavenNest.Blazor.Services.Assistant
         ///     only clears the screen is worse than none, because it is the one thing you reach for
         ///     when the assistant has got hold of the wrong end of something.
         /// </remarks>
-        public AiConversation Restart(Guid userId, bool isAdministrator)
+        public AiConversation Restart(Guid userId, bool isAdministrator, bool isModerator = false)
         {
-            var fresh = Build(userId, isAdministrator);
+            var fresh = Build(userId, isAdministrator, isModerator);
             conversations[userId] = fresh;
             return fresh;
         }
 
-        private AiConversation Build(Guid userId, bool isAdministrator)
+        private AiConversation Build(Guid userId, bool isAdministrator, bool isModerator)
         {
             return new AiConversation(
                 ai,
                 InstructionsFor(userId, isAdministrator),
-                ToolsFor(userId, isAdministrator),
+                ToolsFor(userId, isAdministrator, isModerator),
                 maxOutputTokens: 2000);
         }
 
@@ -205,6 +209,11 @@ How to answer:
 - If they ask for something you have no tool for, say what you cannot do rather than approximating
   it. Guessing which item is best without checking their skills is exactly the kind of answer that
   reads as authoritative and is not.
+- Anything about how the game works, what something costs, or what a mechanic does: look it up with
+  search_knowledge first. Do not explain a mechanic from memory. If nothing is written down, say so
+  and offer to remember what they tell you, rather than reasoning your way to something plausible.
+- When somebody corrects you, use remember_correction, and then say plainly what happened to it.
+  Never say you have learned something when it has only been sent for review.
 
 " + (isAdministrator ? AdminVoice : PlayerVoice) + @"
 
@@ -239,7 +248,7 @@ the page back to them unless it matters to the answer.
             "- You still cannot change anything belonging to another player. Looking is all you can do\n" +
             "  there, and moving items is still only between this person's own characters.";
 
-        private IReadOnlyList<AiTool> ToolsFor(Guid userId, bool isAdministrator)
+        private IReadOnlyList<AiTool> ToolsFor(Guid userId, bool isAdministrator, bool isModerator)
         {
             var tools = new List<AiTool>
             {
@@ -290,6 +299,25 @@ the page back to them unless it matters to the answer.
                     Schema("search", "A word to filter item names by, or null for everything.", nullable: true),
                     (args, ct) => Task.FromResult(Vendor(Text(args, "search")))),
 
+                // What the assistant knows that is not in the game's data: rules, mechanics,
+                // and anything an administrator has written down.
+                new AiTool(
+                    "search_knowledge",
+                    "Look up how something in Ravenfall works: rules, mechanics, costs, and anything " +
+                    "written down about the game. Use this before saying you do not know, and before " +
+                    "explaining any mechanic from memory.",
+                    Schema("question", "What to look up, in the player's own words."),
+                    (args, ct) => Task.FromResult(SearchKnowledge(Text(args, "question")))),
+
+                // Writing one down. What this does depends on who is asking, which is the point.
+                new AiTool(
+                    "remember_correction",
+                    "Record a correction when the person tells you something you said was wrong, or " +
+                    "teaches you something about the game worth keeping. Say plainly afterwards " +
+                    "whether it has been saved or sent for review.",
+                    CorrectionSchema,
+                    (args, ct) => Task.FromResult(RememberCorrection(userId, isAdministrator, isModerator, args))),
+
                 // The only one that changes anything, and the reason the confirmation machinery
                 // exists. Everything above it reads.
                 new AiTool(
@@ -329,6 +357,111 @@ the page back to them unless it matters to the answer.
 
             return tools;
         }
+
+        // ---- knowledge -------------------------------------------------------------------------
+
+        /// <summary>
+        ///     What the knowledge base has on a question.
+        /// </summary>
+        /// <remarks>
+        ///     Returning nothing is a useful answer rather than a failure, and it is recorded: the
+        ///     questions that find nothing are the only honest list of what is worth writing down.
+        ///     The reply says so plainly, because an assistant that pads out a gap with plausible
+        ///     reasoning is how a wrong mechanic ends up being repeated.
+        /// </remarks>
+        private string SearchKnowledge(string question)
+        {
+            var found = facts.Search(question);
+
+            if (found.Count == 0)
+            {
+                return "Nothing is written down about that. Say you do not know rather than working " +
+                       "it out, offer to remember a correction if they can tell you, and do not guess.";
+            }
+
+            return Json(found.Select(x => new
+            {
+                title = x.Title,
+                answer = x.Body,
+                source = x.Source.ToString(),
+                link = x.SourceUrl,
+                note = x.Status == FactStatus.Stale
+                    ? "This may be out of date: something in the game it describes has changed."
+                    : null
+            }));
+        }
+
+        /// <summary>
+        ///     Writes down a correction, at the authority of whoever gave it.
+        /// </summary>
+        /// <remarks>
+        ///     An administrator's or a moderator's correction is accepted immediately, because they
+        ///     already have that authority through the site and the chat is not a second, weaker set
+        ///     of rules. Everybody else's is proposed and waits for review.
+        ///
+        ///     <para>
+        ///     That difference is decided here from the signed in session, never from anything the
+        ///     model was told. A conversation cannot argue its way into publishing.
+        ///     </para>
+        ///
+        ///     <para>
+        ///     It does not overwrite anything. A correction that replaces an existing fact records
+        ///     which one, and the old fact is only retired when the new one is accepted, so nothing
+        ///     is lost while a proposal is still a proposal.
+        ///     </para>
+        /// </remarks>
+        private string RememberCorrection(Guid userId, bool isAdministrator, bool isModerator, JsonElement args)
+        {
+            var title = Text(args, "title");
+            var body = Text(args, "correction");
+
+            if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(body))
+            {
+                return "A correction needs both a short title and the correction itself.";
+            }
+
+            var user = gameData.GetUser(userId);
+            var trusted = isAdministrator || isModerator;
+
+            var replaces = Text(args, "replaces");
+            Guid? supersedes = null;
+            if (!string.IsNullOrWhiteSpace(replaces))
+            {
+                var existing = facts.Search(replaces, 1).FirstOrDefault();
+                if (existing != null && existing.IsEditable) supersedes = existing.Id;
+            }
+
+            var fact = facts.Save(new Fact
+            {
+                Title = title,
+                Body = body,
+                Source = FactSource.Learned,
+                Status = trusted ? FactStatus.Published : FactStatus.Proposed,
+                CreatedBy = user?.UserName ?? "a player",
+                AcceptedBy = trusted ? user?.UserName : null,
+                AcceptedUtc = trusted ? DateTime.UtcNow : (DateTime?)null,
+                Supersedes = supersedes,
+                Context = Text(args, "context")
+            });
+
+            if (trusted && supersedes != null)
+            {
+                facts.Accept(fact.Id, user?.UserName);
+            }
+
+            return trusted
+                ? "Saved, and it will be used from now on."
+                : "Written down and sent to an administrator to check. It will not be used until " +
+                  "somebody approves it. Tell the person exactly that; do not imply you have learned it.";
+        }
+
+        private const string CorrectionSchema =
+            "{\"type\":\"object\",\"properties\":{" +
+            "\"title\":{\"type\":\"string\",\"description\":\"The question this answers, in a line.\"}," +
+            "\"correction\":{\"type\":\"string\",\"description\":\"What is actually true, in a sentence or two.\"}," +
+            "\"replaces\":{\"type\":[\"string\",\"null\"],\"description\":\"The title of an existing fact this corrects, or null.\"}," +
+            "\"context\":{\"type\":[\"string\",\"null\"],\"description\":\"What was being discussed, so a reviewer can judge it.\"}}," +
+            "\"required\":[\"title\",\"correction\",\"replaces\",\"context\"],\"additionalProperties\":false}";
 
         // ---- administrator tools ---------------------------------------------------------------
 
