@@ -71,12 +71,10 @@
                     whose whole purpose is finding one particular thing.
                 *@
                 <div class="rf-toolbar">
-                    <input type="search"
-                           class="rf-input rf-search"
-                           placeholder="Search by name"
-                           aria-label="Search the marketplace by item name"
-                           value="@search"
-                           @oninput="OnSearchChanged" />
+                    <SearchBox Placeholder="Search by name"
+                               AriaLabel="Search the marketplace by item name"
+                               Value="@search"
+                               ValueChanged="OnSearchChanged" />
                     @if (!string.IsNullOrWhiteSpace(search) || itemFilter != ItemFilter.All)
                     {
                         <button type="button" class="rf-btn rf-btn--small" @onclick="ClearFilters">Clear filters</button>

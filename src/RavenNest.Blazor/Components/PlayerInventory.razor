@@ -117,12 +117,10 @@
         <section class="rf-panel">
             <div class="rf-toolbar">
                 @* An inventory of a few hundred items had no way to find one by name. *@
-                <input type="search"
-                       class="rf-input rf-search"
-                       placeholder="Search by name"
-                       aria-label="Search inventory by item name"
-                       value="@search"
-                       @oninput="OnSearchChanged" />
+                <SearchBox Placeholder="Search by name"
+                           AriaLabel="Search inventory by item name"
+                           Value="@search"
+                           ValueChanged="OnSearchChanged" />
                 @if (!string.IsNullOrWhiteSpace(search) || itemFilter != ItemFilter.All)
                 {
                     <button type="button" class="rf-btn rf-btn--small" @onclick="ClearFilters">Clear filters</button>
@@ -807,9 +805,9 @@
         }
     }
 
-    private void OnSearchChanged(ChangeEventArgs e)
+    private void OnSearchChanged(string value)
     {
-        search = e.Value?.ToString() ?? "";
+        search = value ?? "";
     }
 
     private void ClearFilters()

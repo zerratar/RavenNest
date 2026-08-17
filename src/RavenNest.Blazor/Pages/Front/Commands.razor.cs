@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using RavenNest.BusinessLogic.Data;
 using System;
 using System.Collections.Generic;
@@ -148,9 +148,9 @@ namespace RavenNest.Blazor.Pages.Front
                 StringComparison.OrdinalIgnoreCase);
         }
 
-        private void OnSearchChanged(ChangeEventArgs e)
+        private void OnSearchChanged(string value)
         {
-            search = e.Value?.ToString() ?? "";
+            search = value ?? "";
             ApplyFilters();
         }
 

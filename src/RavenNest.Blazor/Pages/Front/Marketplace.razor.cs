@@ -154,9 +154,9 @@ namespace RavenNest.Blazor.Pages.Front
             InvokeAsync(StateHasChanged);
         }
 
-        private void OnSearchChanged(ChangeEventArgs e)
+        private void OnSearchChanged(string value)
         {
-            search = e.Value?.ToString() ?? "";
+            search = value ?? "";
             ApplyFilters();
         }
 

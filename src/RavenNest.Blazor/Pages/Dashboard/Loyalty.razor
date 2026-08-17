@@ -82,12 +82,10 @@ else
                     <section class="rf-panel">
                         <h3 class="rf-panel__title">Players</h3>
                         <div class="rf-toolbar">
-                            <input type="search"
-                                   class="rf-input rf-search"
-                                   placeholder="Search players"
-                                   aria-label="Search players by name"
-                                   value="@search"
-                                   @oninput="OnSearchChanged" />
+                            <SearchBox Placeholder="Search players"
+                                       AriaLabel="Search players by name"
+                                       Value="@search"
+                                       ValueChanged="OnSearchChanged" />
                             <span class="rf-meta">@RangeLabel(playersPage, VisiblePlayers.Count) of @loyaltyData.UserLoyalties.Count</span>
                         </div>
 
@@ -406,9 +404,9 @@ else
         }
     }
 
-    private void OnSearchChanged(ChangeEventArgs e)
+    private void OnSearchChanged(string value)
     {
-        search = e.Value?.ToString() ?? "";
+        search = value ?? "";
         // A search that lands on page seven of the old results shows an empty table.
         playersPage = 0;
     }

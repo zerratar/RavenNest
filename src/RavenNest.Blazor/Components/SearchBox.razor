@@ -1,0 +1,118 @@
+﻿@using System.Threading
+@inject IJSRuntime JS
+@implements IDisposable
+
+@*
+    A text field that does not fight the person typing into it.
+
+    The bug this exists to stop: an input written as value="@field" with @oninput sending every
+    keystroke to the server. Each render writes the server's idea of the text back into the box, so
+    typing faster than the round trip lets a late render put an older string back. Characters vanish
+    mid word, and the box ends up disagreeing with the filter it is driving: an empty box over a
+    list saying "nothing matches that".
+
+    So there is no value attribute here at all. While somebody is typing, the browser owns the text
+    and the server only ever reads it. The server writes back exactly once, when something other
+    than the keyboard changes it, which in practice means Clear.
+
+    Changes are also held for a moment before being reported. A filter over four hundred rows does
+    not need recomputing eight times while somebody types eight letters, and the render that
+    followed each keystroke is what made the race easy to hit in the first place.
+*@
+
+<input type="search"
+       id="@id"
+       class="@Class"
+       placeholder="@Placeholder"
+       aria-label="@AriaLabel"
+       autocomplete="off"
+       @oninput="OnInput" />
+
+@code {
+    /// <summary>What the search is, as far as the rest of the page is concerned.</summary>
+    [Parameter]
+    public string Value { get; set; }
+
+    [Parameter]
+    public EventCallback<string> ValueChanged { get; set; }
+
+    [Parameter]
+    public string Placeholder { get; set; } = "Search";
+
+    [Parameter]
+    public string AriaLabel { get; set; }
+
+    [Parameter]
+    public string Class { get; set; } = "rf-input rf-search";
+
+    /// <summary>
+    ///     How long typing has to stop before the change is reported. Long enough to swallow a
+    ///     burst of keystrokes, short enough that it still feels like it is filtering as you type.
+    /// </summary>
+    [Parameter]
+    public int DelayMilliseconds { get; set; } = 200;
+
+    private readonly string id = "rf-search-" + Guid.NewGuid().ToString("N");
+
+    /// <summary>The last text this component reported upwards.</summary>
+    private string reported = "";
+
+    private CancellationTokenSource pending;
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        var text = e.Value?.ToString() ?? "";
+
+        // Supersede whatever was waiting: only the newest keystroke matters.
+        pending?.Cancel();
+        pending?.Dispose();
+        pending = new CancellationTokenSource();
+        var token = pending.Token;
+
+        try
+        {
+            await Task.Delay(DelayMilliseconds, token);
+        }
+        catch (TaskCanceledException)
+        {
+            // Another key arrived. That one will report.
+            return;
+        }
+
+        if (token.IsCancellationRequested) return;
+
+        reported = text;
+        await ValueChanged.InvokeAsync(text);
+    }
+
+    /// <summary>
+    ///     Pushes a value the page set itself into the box.
+    /// </summary>
+    /// <remarks>
+    ///     Only when it differs from what this component last reported. The parent almost always
+    ///     sets Value to exactly what it was just handed, and writing that back would be the very
+    ///     thing being avoided. What is left is the case that genuinely needs it: something other
+    ///     than the keyboard changed the search, which is Clear.
+    /// </remarks>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        var wanted = Value ?? "";
+        if (wanted == reported) return;
+
+        reported = wanted;
+        try
+        {
+            await JS.InvokeVoidAsync("rfInput.set", id, wanted);
+        }
+        catch (JSException)
+        {
+            // The box keeps whatever it had. Worse than clearing it, better than a broken circuit.
+        }
+    }
+
+    public void Dispose()
+    {
+        pending?.Cancel();
+        pending?.Dispose();
+    }
+}

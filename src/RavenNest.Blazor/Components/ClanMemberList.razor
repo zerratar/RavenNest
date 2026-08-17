@@ -15,12 +15,10 @@ else
 {
     <div class="rf-toolbar">
         @* A roster of a hundred characters had no way to find one. *@
-        <input type="search"
-               class="rf-input rf-search"
-               placeholder="Search members"
-               aria-label="Search clan members by name"
-               value="@search"
-               @oninput="OnSearchChanged" />
+        <SearchBox Placeholder="Search members"
+                   AriaLabel="Search clan members by name"
+                   Value="@search"
+                   ValueChanged="OnSearchChanged" />
 
         @*
             Who is actually playing right now was never on this page, and it is the thing a clan
@@ -309,9 +307,9 @@ else
             : (me?.Player.ClanRole?.Level ?? -1);
     }
 
-    private void OnSearchChanged(ChangeEventArgs e)
+    private void OnSearchChanged(string value)
     {
-        search = e.Value?.ToString() ?? "";
+        search = value ?? "";
     }
 
     private void ToggleOnlineOnly()
