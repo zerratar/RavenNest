@@ -1,4 +1,4 @@
-@using RavenNest.BusinessLogic
+﻿@using RavenNest.BusinessLogic
 @using RavenNest.BusinessLogic.Game
 @inject RavenNest.Blazor.Services.ClanService ClanService
 @inject RavenNest.Blazor.Services.AuthService AuthService
@@ -167,6 +167,21 @@ else
 					Show all @members.Count members
 				</button>
 			}
+		</section>
+	}
+
+	@*
+		The clan's stash, from the character looking at it. This character is the one acting, so the
+		rank shown on this page is exactly the rank the buttons obey, which is the point of reaching
+		it from here rather than from the clan page's tab strip.
+	*@
+	@if (canUseBank)
+	{
+		<section class="rf-panel">
+			<h3 class="rf-panel__title">Clan stash</h3>
+			<ClanBankView ClanId="@clan.Id"
+						  ActingCharacterId="@Player.Id"
+						  IsOwner="@IsOwner"></ClanBankView>
 		</section>
 	}
 

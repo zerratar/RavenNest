@@ -1,6 +1,7 @@
 ﻿@layout DashboardLayout
 @page "/clan"
 @page "/clan/ranks"
+@page "/clan/stash"
 @using RavenNest.Blazor.Components
 @using RavenNest.Blazor.Services
 @using RavenNest.BusinessLogic
@@ -239,13 +240,28 @@ else
 
     <section class="rf-panel">
         <div class="rf-tabs" role="tablist">
-            <button type="button" role="tab" aria-selected="@(!showRanks)" class="rf-tab @(!showRanks ? "is-active" : "")" @onclick="ShowMembers">Members</button>
-            <button type="button" role="tab" aria-selected="@showRanks" class="rf-tab @(showRanks ? "is-active" : "")" @onclick="ShowRanks">Ranks</button>
+            <button type="button" role="tab" aria-selected="@(section == Section.Members)" class="rf-tab @(section == Section.Members ? "is-active" : "")" @onclick="() => ShowSection(Section.Members)">Members</button>
+            <button type="button" role="tab" aria-selected="@(section == Section.Ranks)" class="rf-tab @(section == Section.Ranks ? "is-active" : "")" @onclick="() => ShowSection(Section.Ranks)">Ranks</button>
+            @if (canUseBank)
+            {
+                <button type="button" role="tab" aria-selected="@(section == Section.Stash)" class="rf-tab @(section == Section.Stash ? "is-active" : "")" @onclick="() => ShowSection(Section.Stash)">Stash</button>
+            }
         </div>
 
-        @if (showRanks)
+        @if (section == Section.Ranks)
         {
             <ClanRoleList ClanId="@clan.Id" ActingCharacterId="@ActingCharacterId" CanManage="@canEditRanks"></ClanRoleList>
+        }
+        else if (section == Section.Stash && canUseBank)
+        {
+            @*
+                Keyed on the clan and the acting character, so switching clan tabs rebuilds it
+                rather than showing one clan's holdings under another's name.
+            *@
+            <ClanBankView @key="@(clan.Id.ToString() + ActingCharacterId)"
+                          ClanId="@clan.Id"
+                          ActingCharacterId="@(ActingCharacterId ?? Guid.Empty)"
+                          IsOwner="@(Selected?.IsOwner ?? false)"></ClanBankView>
         }
         else
         {
@@ -286,7 +302,12 @@ else
     private bool canRenameClan;
     private RavenNest.BusinessLogic.Game.TypedClanRolePermissions myPermissions;
     private bool editingClanName;
-    private bool showRanks;
+    private enum Section { Members, Ranks, Stash }
+
+    private Section section = Section.Members;
+
+    /// <summary>Whether this rank may see the clan's stash at all.</summary>
+    private bool canUseBank;
     private bool showGetMoreNameChanges;
     private string clanError;
     private string changeNameSuccess;
@@ -427,18 +448,16 @@ else
         InvokeAsync(StateHasChanged);
     }
 
-    private void ShowMembers()
+    private void ShowSection(Section which)
     {
-        showRanks = false;
-    }
-    private void ShowRanks()
-    {
-        showRanks = true;
+        section = which;
     }
 
     protected override void OnInitialized()
     {
-        showRanks = NavigationManager.Uri.ToString().IndexOf("ranks", StringComparison.OrdinalIgnoreCase) > 0;
+        var uri = NavigationManager.Uri.ToString();
+        if (uri.IndexOf("ranks", StringComparison.OrdinalIgnoreCase) > 0) section = Section.Ranks;
+        else if (uri.IndexOf("stash", StringComparison.OrdinalIgnoreCase) > 0) section = Section.Stash;
         session = AuthService.GetSession();
         if (session == null || session.UserName == null)
         {
@@ -476,7 +495,7 @@ else
             selected = 0;
             clan = null;
             myPermissions = null;
-            canManageMembers = canEditRanks = canRenameClan = false;
+            canManageMembers = canEditRanks = canRenameClan = canUseBank = false;
             creating = true;
             return;
         }
@@ -493,6 +512,7 @@ else
         // Renaming is owner only in ClanService, so the pencil was shown to anybody holding the
         // permission and then did nothing when pressed. It now matches what the service allows.
         canRenameClan = membership.IsOwner && myPermissions != null && myPermissions.CanRenameClan;
+        canUseBank = myPermissions != null && myPermissions.CanUseClanBank;
 
         nameChangeCount = ClanService.GetNameChangeCount(clan.Id);
         oldClanName = clan.Name;

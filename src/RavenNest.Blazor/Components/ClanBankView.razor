@@ -1,0 +1,460 @@
+﻿@using RavenNest.Blazor.Services
+@using RavenNest.BusinessLogic.Game
+@inject ClanService ClanService
+@inject ItemService ItemService
+
+@*
+    The clan's shared stash: what it holds, what you can put in, and who has taken what.
+
+    Everything here is done as a named character, because a clan rank belongs to a character rather
+    than to the account, and the rank is what decides how much can be taken out. Without a character
+    there is nothing to act as, so the page says so rather than showing buttons that would refuse.
+
+    The log is not an extra. A shared bank whose history nobody can read is a bank nobody can trust,
+    and the first argument about a missing stack is not the moment to discover it was never recorded.
+*@
+
+<div class="rf-tabs" role="tablist">
+    <button type="button" role="tab" aria-selected="@(tab == Tab.Holdings)"
+            class="rf-tab @(tab == Tab.Holdings ? "is-active" : "")"
+            @onclick="() => Show(Tab.Holdings)">Holdings</button>
+    <button type="button" role="tab" aria-selected="@(tab == Tab.Deposit)"
+            class="rf-tab @(tab == Tab.Deposit ? "is-active" : "")"
+            @onclick="() => Show(Tab.Deposit)">Deposit</button>
+    <button type="button" role="tab" aria-selected="@(tab == Tab.Log)"
+            class="rf-tab @(tab == Tab.Log ? "is-active" : "")"
+            @onclick="() => Show(Tab.Log)">Log</button>
+    @if (IsOwner)
+    {
+        <button type="button" role="tab" aria-selected="@(tab == Tab.Allowances)"
+                class="rf-tab @(tab == Tab.Allowances ? "is-active" : "")"
+                @onclick="() => Show(Tab.Allowances)">Allowances</button>
+    }
+</div>
+
+@if (ActingCharacterId == Guid.Empty)
+{
+    <div class="rf-banner rf-banner--warn">
+        <p class="rf-banner__title">No character in this clan</p>
+        <p>
+            You own this clan but none of your characters have joined it. Putting things in and
+            taking them out is done by a character, so join with one to use the bank.
+        </p>
+    </div>
+}
+
+@if (message != null)
+{
+    <div class="rf-banner @(messageIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status">
+        <p>@message</p>
+    </div>
+}
+
+@if (tab == Tab.Holdings)
+{
+    <div class="rf-toolbar">
+        <span class="rf-meta">@holdings.Count item@(holdings.Count == 1 ? "" : "s") held</span>
+        <span class="rf-meta rf-bank__allowance">@AllowanceText</span>
+    </div>
+
+    @if (holdings.Count == 0)
+    {
+        <p class="rf-meta">The clan bank is empty. Anyone in the clan can put something in.</p>
+    }
+    else
+    {
+        <TableView>
+            <table class="rf-table">
+                <thead>
+                    <tr>
+                        <th scope="col"><span class="rf-th rf-th--static">Item</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Held</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Take</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in holdings)
+                    {
+                        <tr>
+                            <td data-label="">
+                                @{ var model = ItemService.GetItem(entry.ItemId); }
+                                <div class="rf-item">
+                                    <span class="rf-item__img">
+                                        <img src="@ItemService.GetItemImage(entry.ItemId.ToString(), entry.Item.Name)" alt="" loading="lazy" />
+                                    </span>
+                                    <span class="rf-item__body">
+                                        <span class="rf-item__name @(model == null ? "" : ItemService.GetRarityClass(model))">@entry.Name</span>
+                                        <span class="rf-item__meta">
+                                            @(model == null ? "" : ItemService.GetTypeName(model))
+                                            @if (entry.IsEnchanted)
+                                            {
+                                                <span class="rf-item__mark" title="@entry.Enchantment"><i class="fa-solid fa-sparkles" aria-hidden="true"></i> Enchanted</span>
+                                            }
+                                        </span>
+                                    </span>
+                                </div>
+                            </td>
+                            <td data-label="Held">@Utility.FormatAmount(entry.Amount)</td>
+                            <td data-label="">
+                                <button type="button" class="rf-btn rf-btn--small"
+                                        disabled="@(!CanWithdraw)"
+                                        title="@WithdrawTitle"
+                                        @onclick="() => OpenMove(entry, false)">
+                                    Take out
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </TableView>
+    }
+}
+else if (tab == Tab.Deposit)
+{
+    @if (ActingCharacterId == Guid.Empty)
+    {
+        <p class="rf-meta">Nothing to deposit from.</p>
+    }
+    else if (depositable.Count == 0)
+    {
+        <p class="rf-meta">
+            @actingName is carrying nothing that can go into the bank. Equipped and soulbound items
+            cannot be deposited.
+        </p>
+    }
+    else
+    {
+        <div class="rf-toolbar">
+            <span class="rf-meta">Depositing as <b>@actingName</b></span>
+        </div>
+
+        <TableView>
+            <table class="rf-table">
+                <thead>
+                    <tr>
+                        <th scope="col"><span class="rf-th rf-th--static">Item</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Carried</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Put in</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in depositable)
+                    {
+                        <tr>
+                            <td data-label="">
+                                @{ var model = ItemService.GetItem(entry.ItemId); }
+                                <div class="rf-item">
+                                    <span class="rf-item__img">
+                                        <img src="@ItemService.GetItemImage(entry.ItemId.ToString(), entry.Item.Name)" alt="" loading="lazy" />
+                                    </span>
+                                    <span class="rf-item__body">
+                                        <span class="rf-item__name @(model == null ? "" : ItemService.GetRarityClass(model))">@entry.Name</span>
+                                        <span class="rf-item__meta">
+                                            @(model == null ? "" : ItemService.GetTypeName(model))
+                                            @if (entry.IsEnchanted)
+                                            {
+                                                <span class="rf-item__mark" title="@entry.Enchantment"><i class="fa-solid fa-sparkles" aria-hidden="true"></i> Enchanted</span>
+                                            }
+                                        </span>
+                                    </span>
+                                </div>
+                            </td>
+                            <td data-label="Carried">@Utility.FormatAmount(entry.Amount)</td>
+                            <td data-label="">
+                                <button type="button" class="rf-btn rf-btn--small" @onclick="() => OpenMove(entry, true)">
+                                    Put in
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </TableView>
+    }
+}
+else if (tab == Tab.Log)
+{
+    @if (log.Count == 0)
+    {
+        <p class="rf-meta">Nothing has gone in or out yet.</p>
+    }
+    else
+    {
+        <TableView Caption="@(log.Count + " movement" + (log.Count == 1 ? "" : "s"))">
+            <table class="rf-table">
+                <thead>
+                    <tr>
+                        <th scope="col"><span class="rf-th rf-th--static">When</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Who</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Item</span></th>
+                        <th scope="col"><span class="rf-th rf-th--static">Amount</span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in log)
+                    {
+                        <tr>
+                            <td data-label="">@entry.Time.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                            <td data-label="Who">@entry.Who</td>
+                            <td data-label="Item">@entry.ItemName</td>
+                            @*
+                                In and out are said in words as well as by the sign, since a minus
+                                in front of a number is easy to read past and this is the column
+                                somebody is scanning when they think something is missing.
+                            *@
+                            <td data-label="Amount">
+                                <span class="rf-badge @(entry.IsWithdrawal ? "rf-badge--warn" : "rf-badge--good")">
+                                    @(entry.IsWithdrawal ? "Took out" : "Put in")
+                                </span>
+                                @Utility.FormatAmount(Math.Abs(entry.Amount))
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </TableView>
+    }
+}
+else if (tab == Tab.Allowances && IsOwner)
+{
+    <p class="rf-meta rf-bank__what">
+        How much each rank may take out per day. Counted per item, resets at midnight UTC, and does
+        not limit putting things in. Set a rank to 0 to stop it withdrawing at all, or to -1 for no
+        limit. You are the owner and are never limited.
+    </p>
+
+    <TableView>
+        <table class="rf-table">
+            <thead>
+                <tr>
+                    <th scope="col"><span class="rf-th rf-th--static">Rank</span></th>
+                    <th scope="col"><span class="rf-th rf-th--static">Items per day</span></th>
+                    <th scope="col"><span class="rf-th rf-th--static">Save</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var allowance in allowances)
+                {
+                    var level = allowance.RoleLevel;
+                    <tr>
+                        <td data-label="">
+                            <b>@allowance.RoleName</b>
+                            <span class="rf-meta">rank level @allowance.RoleLevel</span>
+                        </td>
+                        <td data-label="Items per day">
+                            <input type="number" class="rf-input rf-bank__limit"
+                                   value="@AllowanceDraft(level)"
+                                   @oninput="e => drafts[level] = e.Value?.ToString()" />
+                        </td>
+                        <td data-label="">
+                            <button type="button" class="rf-btn rf-btn--small rf-btn--primary"
+                                    @onclick="() => SaveAllowance(level)">
+                                Save
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </TableView>
+}
+
+@if (moving != null)
+{
+    <div class="rf-modal-backdrop" @onclick="CloseMove">
+        <div class="rf-modal" role="dialog" aria-modal="true" aria-label="Move items" @onclick:stopPropagation="true">
+            <div class="rf-modal__head">
+                <h2 class="rf-modal__title">@(movingIn ? "Put into the clan bank" : "Take out of the clan bank")</h2>
+                <button type="button" class="rf-modal__close" aria-label="Close" @onclick="CloseMove">&times;</button>
+            </div>
+
+            <p class="rf-meta">
+                @moving.Name @(movingIn ? "from" : "to") <b>@actingName</b>.
+                @(movingIn ? "Carrying" : "Held") @Utility.FormatAmount(moving.Amount).
+            </p>
+
+            @if (!movingIn && remaining >= 0)
+            {
+                <p class="rf-meta">Your rank can take out @Utility.FormatAmount(remaining) more today.</p>
+            }
+
+            <label class="rf-field">
+                <span class="rf-label">How many</span>
+                <input type="number" class="rf-input" min="1" max="@MoveMax"
+                       value="@moveAmount"
+                       @oninput="e => moveAmount = ParseAmount(e.Value?.ToString())" />
+            </label>
+
+            <div class="rf-modal__foot">
+                <button type="button" class="rf-btn" @onclick="CloseMove">Cancel</button>
+                <button type="button" class="rf-btn rf-btn--primary"
+                        disabled="@(busy || moveAmount <= 0 || moveAmount > MoveMax)"
+                        @onclick="ConfirmMove">
+                    @(movingIn ? "Put in" : "Take out")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private enum Tab { Holdings, Deposit, Log, Allowances }
+
+    [Parameter]
+    public Guid ClanId { get; set; }
+
+    /// <summary>
+    ///     The character acting in this clan. Empty only for an owner who has not joined their own
+    ///     clan with anybody, which is why the bank tells them so rather than offering buttons.
+    /// </summary>
+    [Parameter]
+    public Guid ActingCharacterId { get; set; }
+
+    [Parameter]
+    public bool IsOwner { get; set; }
+
+    private Tab tab = Tab.Holdings;
+
+    private IReadOnlyList<ClanBankEntry> holdings = Array.Empty<ClanBankEntry>();
+    private IReadOnlyList<ClanBankEntry> depositable = Array.Empty<ClanBankEntry>();
+    private IReadOnlyList<ClanBankLogEntry> log = Array.Empty<ClanBankLogEntry>();
+    private IReadOnlyList<ClanBankAllowance> allowances = Array.Empty<ClanBankAllowance>();
+
+    private readonly Dictionary<int, string> drafts = new Dictionary<int, string>();
+
+    private ClanBankEntry moving;
+    private bool movingIn;
+    private long moveAmount = 1;
+    private bool busy;
+
+    private long remaining;
+    private string actingName = "you";
+
+    private string message;
+    private bool messageIsBad;
+
+    private bool CanWithdraw => ActingCharacterId != Guid.Empty && remaining != 0;
+
+    private string WithdrawTitle =>
+        ActingCharacterId == Guid.Empty ? "No character of yours is in this clan"
+        : remaining == 0 ? "Your rank cannot take anything out today"
+        : null;
+
+    private string AllowanceText =>
+        ActingCharacterId == Guid.Empty ? null
+        : remaining < 0 ? "You can take out as much as you like"
+        : remaining == 0 ? "Your rank cannot take anything out today"
+        : "You can take out " + Utility.FormatAmount(remaining) + " more today";
+
+    private long MoveMax
+    {
+        get
+        {
+            if (moving == null) return 0;
+            if (movingIn || remaining < 0) return moving.Amount;
+            return Math.Min(moving.Amount, remaining);
+        }
+    }
+
+    protected override void OnParametersSet() => Reload();
+
+    private void Show(Tab which)
+    {
+        tab = which;
+        message = null;
+        Reload();
+    }
+
+    private void Reload()
+    {
+        holdings = ClanService.GetBankItems(ClanId);
+        log = ClanService.GetBankLog(ClanId);
+        remaining = ClanService.RemainingToday(ActingCharacterId, ClanId);
+
+        depositable = ActingCharacterId == Guid.Empty
+            ? Array.Empty<ClanBankEntry>()
+            : ClanService.GetDepositable(ActingCharacterId);
+
+        if (IsOwner)
+        {
+            allowances = ClanService.GetAllowances(ClanId);
+        }
+
+        actingName = ClanService.GetCharacterName(ActingCharacterId) ?? "you";
+    }
+
+    private void OpenMove(ClanBankEntry entry, bool putIn)
+    {
+        moving = entry;
+        movingIn = putIn;
+        moveAmount = 1;
+        message = null;
+    }
+
+    private void CloseMove()
+    {
+        moving = null;
+        busy = false;
+    }
+
+    private static long ParseAmount(string text) =>
+        long.TryParse(text, out var value) ? value : 0;
+
+    private void ConfirmMove()
+    {
+        if (moving == null || busy) return;
+
+        busy = true;
+        try
+        {
+            var result = movingIn
+                ? ClanService.Deposit(ActingCharacterId, ClanId, moving.Stack, moveAmount)
+                : ClanService.Withdraw(ActingCharacterId, ClanId, moving.Stack, moveAmount);
+
+            messageIsBad = !result.Ok;
+            message = result.Ok
+                ? (movingIn ? "Put " : "Took out ") + Utility.FormatAmount(moveAmount) + " " + moving.Name + "."
+                : result.Reason;
+
+            if (result.Ok) moving = null;
+        }
+        finally
+        {
+            busy = false;
+            Reload();
+        }
+    }
+
+    private string AllowanceDraft(int level)
+    {
+        if (drafts.TryGetValue(level, out var draft)) return draft;
+
+        foreach (var allowance in allowances)
+        {
+            if (allowance.RoleLevel == level) return allowance.ItemsPerDay.ToString();
+        }
+
+        return "0";
+    }
+
+    private void SaveAllowance(int level)
+    {
+        if (!int.TryParse(AllowanceDraft(level), out var value))
+        {
+            messageIsBad = true;
+            message = "That is not a number.";
+            return;
+        }
+
+        var ok = ClanService.SetAllowance(ClanId, level, value);
+
+        messageIsBad = !ok;
+        message = ok
+            ? "Allowance saved."
+            : "Only the clan owner can change allowances.";
+
+        drafts.Remove(level);
+        Reload();
+    }
+}

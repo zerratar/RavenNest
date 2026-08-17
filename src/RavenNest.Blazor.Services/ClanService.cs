@@ -2,6 +2,8 @@
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extensions;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.BusinessLogic.Game.ClanBank;
+using RavenNest.BusinessLogic.Game.Trading;
 using RavenNest.Models;
 using RavenNest.Sessions;
 using System;
@@ -16,17 +18,23 @@ namespace RavenNest.Blazor.Services
     {
         private readonly GameData gameData;
         private readonly IClanManager clanManager;
+        private readonly RavenNest.BusinessLogic.Game.ClanBank.ClanBankManager bank;
+        private readonly PlayerInventoryProvider inventoryProvider;
         public const int MaxClanNameLength = 40;
 
         public ClanService(
             GameData gameData,
             IClanManager clanManager,
+            RavenNest.BusinessLogic.Game.ClanBank.ClanBankManager bank,
+            PlayerInventoryProvider inventoryProvider,
             IHttpContextAccessor accessor,
             SessionInfoProvider sessionInfoProvider)
             : base(accessor, sessionInfoProvider)
         {
             this.gameData = gameData;
             this.clanManager = clanManager;
+            this.bank = bank;
+            this.inventoryProvider = inventoryProvider;
         }
 
         public Clan GetClan()
@@ -524,7 +532,145 @@ namespace RavenNest.Blazor.Services
 
             return this.clanManager.CreateClan(session.TwitchUserId, model.Name, model.Logo);
         }
+
+        #region Clan bank
+
+        /// <summary>The character's name, for saying who is acting rather than showing an id.</summary>
+        public string GetCharacterName(Guid characterId) =>
+            characterId == Guid.Empty ? null : gameData.GetCharacter(characterId)?.Name;
+
+        /// <summary>
+        ///     What the clan holds, with the item resolved so the page can draw it.
+        /// </summary>
+        public IReadOnlyList<ClanBankEntry> GetBankItems(Guid clanId)
+        {
+            var rows = bank.GetItems(clanId);
+            var result = new List<ClanBankEntry>();
+
+            foreach (var row in rows)
+            {
+                var item = gameData.GetItem(row.ItemId);
+                if (item == null) continue;
+
+                result.Add(new ClanBankEntry { Row = row, Item = item });
+            }
+
+            return result.OrderBy(x => x.Name).ToList();
+        }
+
+        /// <summary>
+        ///     What a character is carrying that could go into the bank.
+        /// </summary>
+        /// <remarks>
+        ///     Soulbound items are left out rather than shown and refused. The bank will not take
+        ///     them, and offering something that cannot be done is a worse answer than not offering
+        ///     it.
+        /// </remarks>
+        public IReadOnlyList<ClanBankEntry> GetDepositable(Guid characterId)
+        {
+            var character = gameData.GetCharacter(characterId);
+            if (character == null) return Array.Empty<ClanBankEntry>();
+
+            var result = new List<ClanBankEntry>();
+
+            foreach (var stack in inventoryProvider.Get(characterId).GetUnequippedItems())
+            {
+                if (stack.Soulbound) continue;
+
+                var item = gameData.GetItem(stack.ItemId);
+                if (item == null) continue;
+
+                result.Add(new ClanBankEntry { Inventory = stack, Item = item });
+            }
+
+            return result.OrderBy(x => x.Name).ToList();
+        }
+
+        public IReadOnlyList<ClanBankLogEntry> GetBankLog(Guid clanId)
+        {
+            var result = new List<ClanBankLogEntry>();
+
+            foreach (var row in bank.GetLog(clanId))
+            {
+                var character = gameData.GetCharacter(row.CharacterId);
+                var item = gameData.GetItem(row.ItemId);
+
+                result.Add(new ClanBankLogEntry
+                {
+                    Time = row.Time,
+                    Amount = row.Amount,
+                    Who = character?.Name ?? "someone who has left",
+                    ItemName = item?.Name ?? "an item that no longer exists"
+                });
+            }
+
+            return result;
+        }
+
+        /// <summary>How much more this character may take out today. -1 is no limit.</summary>
+        public long RemainingToday(Guid characterId, Guid clanId) =>
+            characterId == Guid.Empty ? 0 : bank.RemainingToday(characterId, clanId);
+
+        public TradeResult Deposit(Guid characterId, Guid clanId, StackKey stack, long amount) =>
+            bank.Deposit(characterId, clanId, stack, amount);
+
+        public TradeResult Withdraw(Guid characterId, Guid clanId, StackKey stack, long amount) =>
+            bank.Withdraw(characterId, clanId, stack, amount);
+
+        /// <summary>The per rank daily allowances, for the owner's editor.</summary>
+        public IReadOnlyList<ClanBankAllowance> GetAllowances(Guid clanId)
+        {
+            var result = new List<ClanBankAllowance>();
+            var seen = new HashSet<int>();
+
+            foreach (var role in gameData.GetClanRoles(clanId).OrderByDescending(x => x.Level))
+            {
+                if (!seen.Add(role.Level)) continue;
+
+                var limit = gameData.GetClanBankLimit(clanId, role.Level);
+
+                result.Add(new ClanBankAllowance
+                {
+                    RoleName = role.Name,
+                    RoleLevel = role.Level,
+                    ItemsPerDay = limit?.ItemsPerDay ?? ClanBankDefaults.ForRoleLevel(role.Level)
+                });
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        ///     Sets a rank's daily allowance. Owner only, since it decides how much of the clan's
+        ///     property everybody else can carry off.
+        /// </summary>
+        public bool SetAllowance(Guid clanId, int roleLevel, int itemsPerDay)
+        {
+            var session = GetSession();
+            if (!session.Authenticated) return false;
+
+            var clan = clanManager.GetClan(clanId);
+            if (clan == null || clan.OwnerUserId != session.UserId) return false;
+
+            if (itemsPerDay < ClanBankDefaults.Unlimited) itemsPerDay = ClanBankDefaults.Unlimited;
+
+            var limit = gameData.GetClanBankLimit(clanId, roleLevel);
+            if (limit == null)
+            {
+                var created = ClanBankDefaults.For(clanId, roleLevel);
+                created.ItemsPerDay = itemsPerDay;
+                gameData.Add(created);
+                return true;
+            }
+
+            limit.ItemsPerDay = itemsPerDay;
+            return true;
+        }
+
+        #endregion
     }
+
+
 
     /// <summary>
     ///     One character's place in one clan, or a clan you own with nobody of yours in it.
@@ -551,6 +697,59 @@ namespace RavenNest.Blazor.Services
 
         /// <summary>What to call this tab when the same clan appears more than once.</summary>
         public string ActingAs => CharacterName ?? "you";
+    }
+
+    /// <summary>
+    ///     One line of a bank list, from either side: a clan holding or something a character is
+    ///     carrying. One shape, because the two tables show the same columns.
+    /// </summary>
+    public class ClanBankEntry
+    {
+        public DataModels.ClanBankItem Row { get; set; }
+        public ReadOnlyInventoryItem Inventory { get; set; }
+        public DataModels.Item Item { get; set; }
+
+        /// <summary>For the item helpers, which take the model rather than the entity.</summary>
+        public Guid ItemId => Item?.Id ?? Guid.Empty;
+
+        public bool FromBank => Row != null;
+
+        public long Amount => Row?.Amount ?? Inventory.Amount;
+
+        public string Name
+        {
+            get
+            {
+                var given = Row != null ? Row.Name : Inventory.Name;
+                return string.IsNullOrWhiteSpace(given) ? Item?.Name ?? "unknown item" : given;
+            }
+        }
+
+        public string Enchantment => Row != null ? Row.Enchantment : Inventory.Enchantment;
+
+        public bool IsEnchanted => !string.IsNullOrEmpty(Enchantment);
+
+        public StackKey Stack => Row != null ? Row.Key() : Inventory.Key();
+    }
+
+    public class ClanBankLogEntry
+    {
+        public DateTime Time { get; set; }
+
+        /// <summary>Positive is a deposit, negative a withdrawal.</summary>
+        public long Amount { get; set; }
+
+        public string Who { get; set; }
+        public string ItemName { get; set; }
+
+        public bool IsWithdrawal => Amount < 0;
+    }
+
+    public class ClanBankAllowance
+    {
+        public string RoleName { get; set; }
+        public int RoleLevel { get; set; }
+        public int ItemsPerDay { get; set; }
     }
 
     public class ClanInvite

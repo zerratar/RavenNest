@@ -4054,3 +4054,29 @@ a.rf-badge:hover {
 .rf-tw.is-cards .rf-table td:not([data-label]) {
     display: block;
 }
+
+/* ---- Clan stash --------------------------------------------------------
+   Mostly the item table and modal that already exist. What is new is the
+   allowance, which has to be readable before somebody presses Take out rather
+   than discovered as a refusal afterwards. */
+
+.rf-bank__allowance {
+    margin-left: auto;
+}
+
+.rf-bank__what {
+    max-width: 66ch;
+    margin: 0 0 var(--rf-space-4) 0;
+}
+
+/* Wide enough for -1 and for four digits, narrow enough that it does not read
+   as a text field. */
+.rf-bank__limit {
+    width: 8rem;
+}
+
+/* The rank and its level stack, so the level does not read as part of the
+   name. */
+.rf-tw .rf-table td .rf-meta {
+    display: block;
+}

@@ -34,6 +34,15 @@ namespace RavenNest.Blazor.Components
 
         private bool IsOwner => clan != null && session != null && clan.OwnerUserId == session.UserId;
 
+        /// <summary>
+        ///     Whether this character's rank may see the clan's stash.
+        /// </summary>
+        /// <remarks>
+        ///     Read for this character rather than for the account. A rank belongs to a character,
+        ///     so the permission on this page has to be the one the buttons on it will obey.
+        /// </remarks>
+        private bool canUseBank;
+
         private IReadOnlyList<ClanSkill> ClanSkills =>
             clan?.ClanSkills?.Where(x => x != null).ToList() ?? (IReadOnlyList<ClanSkill>)Array.Empty<ClanSkill>();
 
@@ -120,6 +129,10 @@ namespace RavenNest.Blazor.Components
 
             loadedMembersFor = clan.Id;
             showAllMembers = false;
+
+            // For this character, not for the account. The rank the buttons obey belongs to the
+            // character whose tab this is.
+            canUseBank = ClanService.GetMyPermissions(clan.Id, Player?.Id)?.CanUseClanBank ?? false;
 
             try
             {
