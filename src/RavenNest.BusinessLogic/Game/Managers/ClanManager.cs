@@ -1106,6 +1106,10 @@ namespace RavenNest.BusinessLogic.Game
             {
                 builder.Values.CanSeeClanDetails = true;
                 builder.Values.CanUseClanSkills = true;
+
+                // Depositing is safe for anybody who is in the clan. Withdrawing is gated by the
+                // rank's daily allowance instead, and a Recruit's is zero.
+                builder.Values.CanUseClanBank = true;
             }
 
             if (level > 1)
@@ -1155,6 +1159,12 @@ namespace RavenNest.BusinessLogic.Game
         public bool CanCreateInvite { get; set; }
         public bool CanDeleteInvite { get; set; }
         public bool CanMakePublic { get; set; }
+
+        /// <summary>
+        ///     See the clan bank and put things into it. Taking things out needs this too, and then
+        ///     a daily allowance above zero for the rank, which is the knob that limits how much.
+        /// </summary>
+        public bool CanUseClanBank { get; set; }
     }
 
     public class ClanRolePermissionsBuilder
@@ -1186,6 +1196,13 @@ namespace RavenNest.BusinessLogic.Game
             values.CanDeleteInvite = Bool(permissions, index++);
             values.CanUseClanSkills = Bool(permissions, index++);
             values.CanSeeClanDetails = Bool(permissions, index++);
+
+            // 13. Appended rather than inserted, so every string already stored keeps meaning what
+            // it meant. A row written before the bank existed is twelve characters shorter than
+            // this reads, and Bool treats a position that is not there as not granted, which is the
+            // correct reading of a permission that did not exist when the row was written.
+            values.CanUseClanBank = Bool(permissions, index++);
+
             return values;
         }
 
@@ -1218,7 +1235,8 @@ namespace RavenNest.BusinessLogic.Game
                 Bin(Values.CanCreateInvite) +
                 Bin(Values.CanDeleteInvite) +
                 Bin(Values.CanUseClanSkills) +
-                Bin(Values.CanSeeClanDetails);
+                Bin(Values.CanSeeClanDetails) +
+                Bin(Values.CanUseClanBank);
         }
         internal string GenerateString()
         {

@@ -515,6 +515,7 @@ namespace RavenNest.BusinessLogic.Data
 
                 EnsureClanLevels(clans);
                 EnsureClanBankLimits(clans);
+                EnsureClanBankPermission();
 #warning TODO: Enable the EnsureExpMultipliersWithinBounds later, for now we need to allow players to remain their 100x
                 //EnsureExpMultipliersWithinBounds(expMultiplierEvents);
                 EnsureCraftingRequirements(items);
@@ -2460,6 +2461,51 @@ namespace RavenNest.BusinessLogic.Data
             if (added > 0)
             {
                 logger.LogInformation("Gave " + added + " clan rank(s) a default bank allowance.");
+            }
+        }
+
+        /// <summary>
+        ///     Gives ranks written before the clan bank existed the same bank permission a new
+        ///     clan's ranks get.
+        /// </summary>
+        /// <remarks>
+        ///     Permissions are a positional string, and every row already stored was written against
+        ///     the thirteen that existed at the time. Parse reads a missing position as not granted,
+        ///     which is the right reading but leaves every existing clan unable to open its own bank
+        ///     until an owner goes and ticks a box, for a permission they never chose not to have.
+        ///
+        ///     <para>
+        ///     This appends only. The thirteen characters already there are left byte for byte
+        ///     alone, so nothing anybody configured can be changed by it, and a row that has already
+        ///     been extended is skipped. Regenerating the whole string from a parse would be the
+        ///     obvious alternative and is a much larger promise: it would rewrite every permission
+        ///     of every rank of every clan on the strength of Parse and Generate agreeing exactly.
+        ///     </para>
+        /// </remarks>
+        private void EnsureClanBankPermission()
+        {
+            const int bankPosition = 13;
+            var updated = 0;
+
+            foreach (var permissions in clanRolePermissions.Entities)
+            {
+                var current = permissions.Permissions ?? "";
+                if (current.Length > bankPosition) continue;
+
+                var role = GetClanRole(permissions.ClanRoleId);
+                if (role == null) continue;
+
+                // Same rule a new clan gets: everybody but Inactive may see the bank and deposit.
+                // Whether they can take anything out is the rank's daily allowance, not this.
+                var granted = role.Level > 0 ? "1" : "0";
+
+                permissions.Permissions = current.PadRight(bankPosition, '0') + granted;
+                updated++;
+            }
+
+            if (updated > 0)
+            {
+                logger.LogInformation("Extended " + updated + " clan rank permission row(s) with the bank permission.");
             }
         }
 
