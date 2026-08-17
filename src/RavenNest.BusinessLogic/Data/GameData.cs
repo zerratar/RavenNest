@@ -514,6 +514,7 @@ namespace RavenNest.BusinessLogic.Data
                 //RemoveEmptyPlayers();
 
                 EnsureClanLevels(clans);
+                EnsureClanBankLimits(clans);
 #warning TODO: Enable the EnsureExpMultipliersWithinBounds later, for now we need to allow players to remain their 100x
                 //EnsureExpMultipliersWithinBounds(expMultiplierEvents);
                 EnsureCraftingRequirements(items);
@@ -2410,6 +2411,55 @@ namespace RavenNest.BusinessLogic.Data
             {
                 if (clan.Level == 0)
                     clan.Level = 1;
+            }
+        }
+
+        /// <summary>
+        ///     Gives every rank of every clan a bank allowance if it has none.
+        /// </summary>
+        /// <remarks>
+        ///     Same shape as the other passes here: fill in what is missing, never touch what is
+        ///     already there. A clan that has configured its limits keeps them, and a clan created
+        ///     before the bank existed gets sensible ones without an owner having to find a settings
+        ///     page before the feature does anything.
+        ///
+        ///     <para>
+        ///     Ranks are read per clan rather than assumed, because a clan can add its own, and a
+        ///     rank with no row would otherwise be silently unable to withdraw with no way to see
+        ///     why.
+        ///     </para>
+        /// </remarks>
+        private void EnsureClanBankLimits(EntitySet<Clan> clans)
+        {
+            var added = 0;
+            var levels = new HashSet<int>();
+
+            foreach (var clan in clans.Entities)
+            {
+                // Levels rather than roles, and collected before adding anything. Two ranks in one
+                // clan may sit at the same level, since creating a rank only checks that the name
+                // is free, and the allowance is keyed by level. Seeding per rank would write the
+                // same (clan, level) twice, which the unique index on that pair refuses at the next
+                // save rather than at the moment it happened.
+                levels.Clear();
+
+                foreach (var limit in clanBankLimits[nameof(Clan), clan.Id])
+                {
+                    levels.Add(limit.RoleLevel);
+                }
+
+                foreach (var role in clanRoles[nameof(Clan), clan.Id])
+                {
+                    if (!levels.Add(role.Level)) continue;
+
+                    Add(ClanBankDefaults.For(clan.Id, role.Level));
+                    added++;
+                }
+            }
+
+            if (added > 0)
+            {
+                logger.LogInformation("Gave " + added + " clan rank(s) a default bank allowance.");
             }
         }
 

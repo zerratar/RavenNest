@@ -345,6 +345,11 @@ namespace RavenNest.BusinessLogic.Game
 
         private void CreateDefaultRoles(DataModels.Clan clan)
         {
+            foreach (var level in new[] { 3, 2, 1, 0 })
+            {
+                EnsureBankAllowance(clan.Id, level);
+            }
+
             gameData.Add(new DataModels.ClanRole
             {
                 ClanId = clan.Id,
@@ -410,7 +415,30 @@ namespace RavenNest.BusinessLogic.Game
                 ClanId = clanId
             });
 
+            EnsureBankAllowance(clanId, level);
+
             return true;
+        }
+
+        /// <summary>
+        ///     Gives a rank a bank allowance if its level does not have one yet.
+        /// </summary>
+        /// <remarks>
+        ///     A rank with no row cannot withdraw and there is nothing on screen that says why, so
+        ///     every path that creates one comes through here. Levels rather than roles, because two
+        ///     ranks at the same level are the same level of trust and the limit is keyed that way.
+        ///
+        ///     <para>
+        ///     Never overwrites. A clan that has set its own limit keeps it, including when it adds
+        ///     another rank at a level it has already configured.
+        ///     </para>
+        /// </remarks>
+        private void EnsureBankAllowance(Guid clanId, int roleLevel)
+        {
+            if (gameData.GetClanBankLimit(clanId, roleLevel) != null)
+                return;
+
+            gameData.Add(ClanBankDefaults.For(clanId, roleLevel));
         }
 
         public IReadOnlyList<Player> GetClanMembers(Guid clanId)
