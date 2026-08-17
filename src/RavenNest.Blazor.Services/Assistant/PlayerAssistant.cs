@@ -8,6 +8,7 @@ using RavenNest.BusinessLogic.AI;
 using RavenNest.BusinessLogic.Data;
 using RavenNest.BusinessLogic.Extended;
 using RavenNest.BusinessLogic.Game;
+using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Settings;
 using RavenNest.Blazor.Services.Knowledge;
 using RavenNest.BusinessLogic;
@@ -82,6 +83,8 @@ namespace RavenNest.Blazor.Services.Assistant
         private readonly FactService facts;
         private readonly GameActions gameActions;
         private readonly PlayerService playerService;
+        private readonly BotService botService;
+        private readonly TownService townService;
         private readonly IServerSettingsProvider settings;
 
         public PlayerAssistant(
@@ -93,6 +96,8 @@ namespace RavenNest.Blazor.Services.Assistant
             FactService facts,
             GameActions gameActions,
             PlayerService playerService,
+            BotService botService,
+            TownService townService,
             IServerSettingsProvider settings)
         {
             this.ai = ai;
@@ -103,6 +108,8 @@ namespace RavenNest.Blazor.Services.Assistant
             this.facts = facts;
             this.gameActions = gameActions;
             this.playerService = playerService;
+            this.botService = botService;
+            this.townService = townService;
             this.settings = settings;
         }
 
@@ -218,6 +225,13 @@ How to answer:
 - You can move items between their own characters, and tell the running game to change what a
   character is training, sail somewhere, rest, or join a raid or dungeon. All of those have to be
   agreed to first. Never say you have done something you have only proposed.
+- If they own a town you can also change it: build every plot as one house type, change one plot, or
+  decide who lives in a plot. Read it with my_town first, and refer to plots by the number my_town
+  gives. Building every plot replaces every assignment in the town, so make sure they know that is
+  what they are agreeing to.
+- Whether the chat bot is in their channel is something you can check with my_bot_status. Use it for
+  any question about the bot being connected or commands not working, rather than the server wide
+  channel count, which says nothing about their channel.
 - Those game actions only reach a character that is in a live stream, and they are sent to the game
   rather than done here. Say it has been told to do something, not that it is now doing it, because
   the game decides what actually happens.
@@ -227,7 +241,9 @@ How to answer:
 - When your answer points at somewhere on the site, add a button with offer_link. Telling somebody
   they can do it on their stash page is a worse answer than the same sentence with a button under
   it. If they ask to be taken somewhere, offer the link and say what they will find there, rather
-  than explaining that you cannot navigate for them.
+  than explaining that you cannot navigate for them. When the place is one of their characters, use
+  offer_character_link instead and name the tab, so the button lands on the right character and the
+  right tab rather than on the character list.
 - Anything about where a character is, what it is wearing, or what an item does: use the tools.
   Those are facts about right now and guessing at them is always wrong.
 - Anything about how the game works, what something costs, or what a mechanic does: look it up with
@@ -343,6 +359,25 @@ the page back to them unless it matters to the answer.
                     Schema("search", "A word to filter item names by, or null for everything.", nullable: true),
                     (args, ct) => Task.FromResult(Vendor(Text(args, "search")))),
 
+                // Whether the bot is in this person's channel. The global count was all it could
+                // see, so asked the one question that matters it could only say it did not know.
+                new AiTool(
+                    "my_bot_status",
+                    "Whether the Ravenfall chat bot is in this person's own channel, which channel " +
+                    "it joins, whether their Twitch name and their Ravenfall account name still " +
+                    "agree, and whether their game is running. Use this for any question about the " +
+                    "bot being connected, joined, or not responding to commands.",
+                    AiTool.NoParameters,
+                    (args, ct) => Task.FromResult(BotStatus(userId))),
+
+                new AiTool(
+                    "my_town",
+                    "The player's town: its level, how far off the next one is, its resources, and " +
+                    "every plot with what is built on it and who lives there. Call this before " +
+                    "changing anything about the town.",
+                    AiTool.NoParameters,
+                    (args, ct) => Task.FromResult(Town(userId))),
+
                 // Where things are on the site. Answering "you can do that on your stash page" is
                 // a worse answer than the same sentence with a button on it.
                 new AiTool(
@@ -400,6 +435,37 @@ the page back to them unless it matters to the answer.
                     (args, ct) => Task.FromResult(Control(userId, args)),
                     requiresConfirmation: true,
                     summarise: args => DescribeControl(userId, args)),
+
+                // The town writes. Same three calls the town page's controls make, so this is
+                // those controls reachable from a sentence rather than a second way to edit a town.
+                new AiTool(
+                    "set_all_plots",
+                    "Build every plot in the player's town as one house type and move the best " +
+                    "people on their stream into them, which is what the in game quick command " +
+                    "does. Replaces every current assignment, so it has to be agreed to first.",
+                    Schema("type", "The house type, for instance Melee, Magic, Ranged, Mining or Woodcutting."),
+                    (args, ct) => SetAllPlots(userId, Text(args, "type")),
+                    requiresConfirmation: true,
+                    summarise: args => DescribeSetAllPlots(userId, Text(args, "type"))),
+
+                new AiTool(
+                    "set_plot_type",
+                    "Change what is built on one plot of the player's town, keeping whoever lives " +
+                    "there. Has to be agreed to first.",
+                    PlotTypeSchema,
+                    (args, ct) => SetPlotType(userId, args),
+                    requiresConfirmation: true,
+                    summarise: args => DescribeSetPlotType(userId, args)),
+
+                new AiTool(
+                    "set_plot_occupant",
+                    "Put somebody playing on the stream into one plot of the player's town, or " +
+                    "empty it. A person can only live on one plot, so this moves them off any " +
+                    "other. Has to be agreed to first.",
+                    PlotOccupantSchema,
+                    (args, ct) => SetPlotOccupant(userId, args),
+                    requiresConfirmation: true,
+                    summarise: args => DescribeSetPlotOccupant(userId, args)),
 
                 // The only one that changes anything, and the reason the confirmation machinery
                 // exists. Everything above it reads.
@@ -615,6 +681,286 @@ the page back to them unless it matters to the answer.
             return ok
                 ? "Done. It should be able to rejoin now."
                 : "That did not work. It may not have been stuck, or it may not be one you can free.";
+        }
+
+        // ---- the bot, and the town ---------------------------------------------------------------
+
+        /// <summary>
+        ///     Whether the bot is in this person's channel.
+        /// </summary>
+        /// <remarks>
+        ///     Only server_status existed, which reports how many channels the bot is in across
+        ///     everybody. Asked "is it in mine" the honest answer from that number is no idea, which
+        ///     is what it kept saying. BotService has known the answer all along, for the banner at
+        ///     the top of the bot page; it just was not reachable from here.
+        /// </remarks>
+        private string BotStatus(Guid userId)
+        {
+            var status = botService.GetBotStatusFor(userId);
+
+            return Json(new
+            {
+                botOnline = status.BotOnline,
+                inYourChannel = status.BotInChannel,
+                theChannelItJoins = status.ExpectedChannel,
+                yourTwitchLogin = status.TwitchLogin,
+                // Worth naming rather than leaving to be inferred from the two names differing: a
+                // rename is the usual reason the bot is up, in a channel, and still silent.
+                nameMismatch = status.NameMismatch,
+                yourGameIsRunning = status.HasActiveGameSession,
+                botUptime = status.BotOnline ? Describe(status.BotUptime) : null
+            });
+        }
+
+        private string Town(Guid userId)
+        {
+            var town = townService.GetMyTownAsync(userId).GetAwaiter().GetResult();
+            if (town == null) return "You do not have a town.";
+
+            return Json(new
+            {
+                name = town.Name,
+                level = town.Level,
+                experienceToNextLevel = Math.Round(town.ExperienceToNextLevel),
+                timeToNextLevel = town.TimeToNextLevel == null ? null : Describe(town.TimeToNextLevel.Value),
+                // Which decides what a change to the town can do: with the game off there is nobody
+                // playing to move into a plot.
+                yourGameIsRunning = town.IsStreamLive,
+                plots = town.TotalSlotCount,
+                plotsWithSomethingBuilt = town.BuiltSlotCount,
+                plotsEarningBonus = town.ActiveSlotCount,
+                nextPlotAtTownLevel = town.NextSlotAtTownLevel,
+                resources = new
+                {
+                    coins = Math.Floor(town.Coins),
+                    wood = Math.Floor(town.Wood),
+                    ore = Math.Floor(town.Ore),
+                    fish = Math.Floor(town.Fish),
+                    wheat = Math.Floor(town.Wheat)
+                },
+                // Numbered from one, the same as the page and the same as the messages the town
+                // service writes, so a plot referred to in conversation is the plot on screen.
+                plotList = town.Houses.Select(h => new
+                {
+                    plot = h.Slot + 1,
+                    built = h.IsBuilt ? TownHouseTypes.LabelOf(h.Type) : null,
+                    livesHere = h.AssignedCharacterName,
+                    skillLevel = h.IsAssigned ? h.SkillLevel : (int?)null,
+                    bonus = h.IsAssigned ? Math.Round(h.Bonus, 1) : (double?)null,
+                    earningItNow = h.IsActive
+                }).ToArray()
+            });
+        }
+
+        /// <summary>
+        ///     Reads a house type out of whatever the person called it.
+        /// </summary>
+        /// <remarks>
+        ///     Matched against the labels rather than parsed off the enum, because the enum holds
+        ///     two values that are not house types, and because a Melee house is driven by Health
+        ///     and somebody may well ask for it by that name.
+        /// </remarks>
+        private static TownHouseSlotType? ParseHouseType(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text)) return null;
+
+            var wanted = text.Trim();
+            foreach (var option in TownHouseTypes.All)
+            {
+                if (option.Label.Equals(wanted, StringComparison.OrdinalIgnoreCase) ||
+                    option.SkillName.Equals(wanted, StringComparison.OrdinalIgnoreCase))
+                {
+                    return option.Type;
+                }
+            }
+
+            return null;
+        }
+
+        private static string NoSuchHouseType(string text)
+        {
+            return "There is no '" + text + "' house. It can be one of: " +
+                   string.Join(", ", TownHouseTypes.All.Select(x => x.Label)) + ".";
+        }
+
+        private async Task<string> SetAllPlots(Guid userId, string type)
+        {
+            var parsed = ParseHouseType(type);
+            if (parsed == null) return NoSuchHouseType(type);
+
+            var result = await townService.SetAllHousesAsync(userId, parsed.Value);
+            return result.Message;
+        }
+
+        /// <summary>
+        ///     What setting every plot would do, for the person to agree to or not.
+        /// </summary>
+        /// <remarks>
+        ///     Built from the same plan the write uses, so the two cannot describe different things.
+        ///     Worth the extra pass: this replaces every assignment in the town at once, and it is
+        ///     the one thing the in game command cannot show before it commits.
+        /// </remarks>
+        private string DescribeSetAllPlots(Guid userId, string type)
+        {
+            var parsed = ParseHouseType(type);
+            if (parsed == null) return "Set every plot to " + type + ", which is not a house type.";
+
+            var label = TownHouseTypes.LabelOf(parsed.Value);
+            var plan = townService.PlanSetAllHousesAsync(userId, parsed.Value).GetAwaiter().GetResult();
+            if (plan == null) return "Set every plot in your town to " + label + ".";
+
+            if (!plan.IsStreamLive)
+            {
+                return "Build all " + plan.PlotCount + " plots as " + label + " houses. Nobody moves, " +
+                       "because with your game off there is nobody playing to move in.";
+            }
+
+            if (plan.Picks.Count == 0)
+            {
+                return "Build all " + plan.PlotCount + " plots as " + label + " houses and empty " +
+                       "every one of them, because nobody is playing on your stream right now.";
+            }
+
+            var names = string.Join(", ", plan.Picks.Take(5).Select(x => x.Name));
+            if (plan.Picks.Count > 5) names += " and " + (plan.Picks.Count - 5) + " more";
+
+            var summary = "Build all " + plan.PlotCount + " plots as " + label + " houses and move in " +
+                          names + ", for " + Math.Round(plan.TotalBonus) + "% bonus.";
+
+            if (plan.EmptyPlotCount > 0)
+            {
+                summary += " " + plan.EmptyPlotCount + " " +
+                           (plan.EmptyPlotCount == 1 ? "plot is" : "plots are") +
+                           " left empty, and anyone currently in them is moved out.";
+            }
+            else
+            {
+                summary += " Everyone currently living in a plot who is not on that list is moved out.";
+            }
+
+            return summary;
+        }
+
+        private async Task<string> SetPlotType(Guid userId, JsonElement args)
+        {
+            var plot = (int)Number(args, "plot");
+            var type = Text(args, "type");
+
+            // Demolishing is the one case with no house type behind it, and it also empties the
+            // plot, which is why the town service treats Undefined as its own thing.
+            TownHouseSlotType wanted;
+            if (IsClearing(type))
+            {
+                wanted = TownHouseSlotType.Undefined;
+            }
+            else
+            {
+                var parsed = ParseHouseType(type);
+                if (parsed == null) return NoSuchHouseType(type);
+                wanted = parsed.Value;
+            }
+
+            var result = await townService.SetHouseTypeAsync(userId, plot - 1, wanted);
+            return result.Message;
+        }
+
+        private string DescribeSetPlotType(Guid userId, JsonElement args)
+        {
+            var plot = (int)Number(args, "plot");
+            var type = Text(args, "type");
+
+            if (IsClearing(type)) return "Demolish whatever is on plot " + plot + ", emptying it.";
+
+            var parsed = ParseHouseType(type);
+            if (parsed == null) return "Build plot " + plot + " as a " + type + " house, which is not a house type.";
+
+            return "Build plot " + plot + " as a " + TownHouseTypes.LabelOf(parsed.Value) +
+                   " house, keeping whoever lives there.";
+        }
+
+        private static bool IsClearing(string type)
+        {
+            if (string.IsNullOrWhiteSpace(type)) return false;
+
+            var t = type.Trim();
+            return t.Equals("none", StringComparison.OrdinalIgnoreCase) ||
+                   t.Equals("empty", StringComparison.OrdinalIgnoreCase) ||
+                   t.Equals("clear", StringComparison.OrdinalIgnoreCase) ||
+                   t.Equals("demolish", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private async Task<string> SetPlotOccupant(Guid userId, JsonElement args)
+        {
+            var plot = (int)Number(args, "plot");
+            var who = Text(args, "who");
+
+            if (string.IsNullOrWhiteSpace(who))
+            {
+                var emptied = await townService.SetHouseOccupantAsync(userId, plot - 1, null);
+                return emptied.Message;
+            }
+
+            var candidate = FindCandidate(userId, plot, who);
+            if (candidate == null) return NoSuchCandidate(userId, plot, who);
+
+            var result = await townService.SetHouseOccupantAsync(userId, plot - 1, candidate.CharacterId);
+            return result.Message;
+        }
+
+        private string DescribeSetPlotOccupant(Guid userId, JsonElement args)
+        {
+            var plot = (int)Number(args, "plot");
+            var who = Text(args, "who");
+
+            if (string.IsNullOrWhiteSpace(who)) return "Empty plot " + plot + ", so anyone on your stream can claim it.";
+
+            var candidate = FindCandidate(userId, plot, who);
+            if (candidate == null) return "Move " + who + " into plot " + plot + ".";
+
+            var summary = "Move " + candidate.Name + " into plot " + plot +
+                          ", worth " + Math.Round(candidate.Bonus) + "% bonus.";
+
+            if (candidate.CurrentSlot != null)
+            {
+                summary += " They are on plot " + (candidate.CurrentSlot.Value + 1) +
+                           " at the moment, which this empties.";
+            }
+
+            return summary;
+        }
+
+        /// <summary>
+        ///     Resolves a name against the people who could actually take this plot.
+        /// </summary>
+        /// <remarks>
+        ///     Deliberately narrower than a search of every player. Only somebody playing on this
+        ///     stream can hold a plot usefully, and the town service refuses anybody else anyway, so
+        ///     resolving against a wider list would only produce a better looking way to fail.
+        /// </remarks>
+        private TownCandidate FindCandidate(Guid userId, int plot, string who)
+        {
+            var candidates = townService.GetHouseCandidatesAsync(userId, plot - 1).GetAwaiter().GetResult();
+            if (candidates == null || candidates.Count == 0) return null;
+
+            var wanted = (who ?? "").Trim();
+
+            return candidates.FirstOrDefault(x => string.Equals(x.Name, wanted, StringComparison.OrdinalIgnoreCase))
+                ?? candidates.FirstOrDefault(x => string.Equals(x.UserName, wanted, StringComparison.OrdinalIgnoreCase))
+                ?? candidates.FirstOrDefault(x =>
+                       x.Name != null && x.Name.StartsWith(wanted, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private string NoSuchCandidate(Guid userId, int plot, string who)
+        {
+            var candidates = townService.GetHouseCandidatesAsync(userId, plot - 1).GetAwaiter().GetResult();
+            if (candidates == null || candidates.Count == 0)
+            {
+                return "Nobody can move into plot " + plot + " right now. Either nothing is built on " +
+                       "it, or nobody is playing on your stream.";
+            }
+
+            return "There is nobody called '" + who + "' playing on your stream. These can take plot " +
+                   plot + ": " + string.Join(", ", candidates.Take(10).Select(x => x.Name)) + ".";
         }
 
         // ---- telling the game to do something ---------------------------------------------------
@@ -1302,6 +1648,18 @@ the page back to them unless it matters to the answer.
             return gameData.GetItem(item.ItemId)?.Name ?? "unknown item";
         }
 
+        /// <summary>
+        ///     A span of time in words. Rounded hard on purpose: nothing here is worth a number of
+        ///     seconds, and "about 3 days" is what somebody would say back.
+        /// </summary>
+        private static string Describe(TimeSpan span)
+        {
+            if (span.TotalMinutes < 1) return "less than a minute";
+            if (span.TotalHours < 1) return (int)span.TotalMinutes + " minutes";
+            if (span.TotalDays < 1) return Math.Round(span.TotalHours, 1) + " hours";
+            return Math.Round(span.TotalDays, 1) + " days";
+        }
+
         private static string Json(object value) =>
             JsonSerializer.Serialize(value);
 
@@ -1336,6 +1694,18 @@ the page back to them unless it matters to the answer.
                    ",\"description\":\"" + description + "\"}},\"required\":[\"" + name +
                    "\"],\"additionalProperties\":false}";
         }
+
+        private const string PlotTypeSchema =
+            "{\"type\":\"object\",\"properties\":{" +
+            "\"plot\":{\"type\":\"integer\",\"description\":\"Which plot, numbered from one as my_town reports them.\"}," +
+            "\"type\":{\"type\":\"string\",\"description\":\"The house type, for instance Melee, Magic or Mining, or 'none' to demolish it.\"}}," +
+            "\"required\":[\"plot\",\"type\"],\"additionalProperties\":false}";
+
+        private const string PlotOccupantSchema =
+            "{\"type\":\"object\",\"properties\":{" +
+            "\"plot\":{\"type\":\"integer\",\"description\":\"Which plot, numbered from one as my_town reports them.\"}," +
+            "\"who\":{\"type\":[\"string\",\"null\"],\"description\":\"The name of somebody playing on the stream, or null to empty the plot.\"}}," +
+            "\"required\":[\"plot\",\"who\"],\"additionalProperties\":false}";
 
         private const string MoveSchema =
             "{\"type\":\"object\",\"properties\":{" +

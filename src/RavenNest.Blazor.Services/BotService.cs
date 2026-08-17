@@ -28,20 +28,35 @@ namespace RavenNest.Blazor.Services
 
         public BotStatus GetBotStatus()
         {
-            var status = new BotStatus();
             var session = GetSession();
 
             if (session == null || !session.Authenticated)
             {
-                return status;
+                return new BotStatus();
             }
+
+            return GetBotStatusFor(session.UserId);
+        }
+
+        /// <summary>
+        /// The same status, for a user named outright rather than taken from the ambient session.
+        /// </summary>
+        /// <remarks>
+        /// The assistant closes over the id of the person it is talking to and never reads the
+        /// session again, so that it cannot be talked into answering about somebody else. Reading
+        /// the session in here would quietly undo that, hence the split. The caller is responsible
+        /// for the id being one it is allowed to ask about.
+        /// </remarks>
+        public BotStatus GetBotStatusFor(Guid userId)
+        {
+            var status = new BotStatus();
 
             var bot = gameData.Bot;
             status.BotOnline = bot != null && bot.IsOnline;
             status.BotUptime = bot?.Uptime ?? TimeSpan.Zero;
             status.BotLastReported = bot?.LastUpdated ?? default;
 
-            var user = gameData.GetUser(session.UserId);
+            var user = gameData.GetUser(userId);
             if (user == null)
             {
                 return status;
