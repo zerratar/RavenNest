@@ -243,6 +243,64 @@ namespace RavenNest.BusinessLogic.Game
             return true;
         }
 
+        /// <summary>Where the town hall stands. Null X and Z mean the plaza in the game scene.</summary>
+        public VillageTownHall GetTownHall(Guid sessionId)
+        {
+            var session = gameData.GetSession(sessionId);
+            if (session == null) return null;
+
+            var village = gameData.GetOrCreateVillageBySession(session);
+            if (village == null) return null;
+
+            return new VillageTownHall
+            {
+                X = village.TownHallX,
+                Z = village.TownHallZ,
+                Rotation = village.TownHallRotation ?? 0
+            };
+        }
+
+        /// <summary>
+        /// Moves and turns the town hall. As with houses, the game client checks the layout rules
+        /// (inside the village, clear of the plots, on ground); the server only refuses unusable numbers.
+        /// </summary>
+        public bool PlaceTownHall(Guid sessionId, double x, double z, double rotation)
+        {
+            if (!IsUsable(x) || !IsUsable(z) || double.IsNaN(rotation) || double.IsInfinity(rotation))
+            {
+                return false;
+            }
+
+            var session = gameData.GetSession(sessionId);
+            if (session == null) return false;
+
+            var village = gameData.GetOrCreateVillageBySession(session);
+            if (village == null) return false;
+
+            rotation %= 360;
+            if (rotation < 0) rotation += 360;
+
+            village.TownHallX = x;
+            village.TownHallZ = z;
+            village.TownHallRotation = rotation;
+            return true;
+        }
+
+        /// <summary>Puts the town hall back on the plaza.</summary>
+        public bool ResetTownHallPlacement(Guid sessionId)
+        {
+            var session = gameData.GetSession(sessionId);
+            if (session == null) return false;
+
+            var village = gameData.GetOrCreateVillageBySession(session);
+            if (village == null) return false;
+
+            village.TownHallX = null;
+            village.TownHallZ = null;
+            village.TownHallRotation = null;
+            return true;
+        }
+
         private static bool IsUsable(double value)
         {
             return !double.IsNaN(value) && !double.IsInfinity(value) && Math.Abs(value) <= MaxPlacementCoordinate;

@@ -84,6 +84,34 @@ namespace RavenNest.Controllers
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("townhall")]
+        public VillageTownHall GetTownHall()
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return villageManager.GetTownHall(sessionToken.SessionId);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("townhall/place")]
+        public bool PlaceTownHall([FromBody] VillageTownHall request)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return request != null && request.X != null && request.Z != null
+                && villageManager.PlaceTownHall(sessionToken.SessionId, request.X.Value, request.Z.Value, request.Rotation);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("townhall/reset-placement")]
+        public bool ResetTownHallPlacement()
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return villageManager.ResetTownHallPlacement(sessionToken.SessionId);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("{slot}/reset-placement")]
         public bool ResetHousePlacement(int slot)
         {
