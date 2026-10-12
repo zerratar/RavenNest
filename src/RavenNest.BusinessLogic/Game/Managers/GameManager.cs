@@ -317,6 +317,40 @@ namespace RavenNest.BusinessLogic.Game
             return now >= start && now <= end;
         }
 
+        /// <summary>How many of the characters the game rewarded are really in the session.</summary>
+        private static int CountParticipants(IEnumerable<DataModels.Character> sessionCharacters, Guid[] characters)
+        {
+            if (characters == null || sessionCharacters == null) return 0;
+            var count = 0;
+            foreach (var c in characters.Distinct())
+            {
+                if (sessionCharacters.Any(x => x.Id == c)) count++;
+            }
+
+            return count;
+        }
+
+        /// <summary>
+        /// Pays the session owner's village for a defeated raid or dungeon, on top of the players' rewards
+        /// (see VillageCoinRewards).
+        /// </summary>
+        private void PayVillage(DataModels.GameSession gameSession, int coins)
+        {
+            if (coins <= 0) return;
+            try
+            {
+                var village = gameData.GetOrCreateVillageBySession(gameSession);
+                if (village == null) return;
+                var resources = gameData.GetResources(village.ResourcesId);
+                if (resources == null) return;
+                resources.Coins += coins;
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Could not pay the village for a raid or dungeon: " + exc);
+            }
+        }
+
         private ConcurrentDictionary<Guid, DateTime> lastDungeonReward = new ConcurrentDictionary<Guid, DateTime>();
         private ConcurrentDictionary<Guid, DateTime> lastRaidReward = new ConcurrentDictionary<Guid, DateTime>();
         public EventItemReward[] GetDungeonRewardsAsync(SessionToken session, int tier, Guid[] characters)
@@ -404,6 +438,7 @@ namespace RavenNest.BusinessLogic.Game
                     }
                 }
 
+                PayVillage(gameSession, VillageCoinRewards.ForDungeon(tier, CountParticipants(sessionCharacters, characters)));
                 return rewards.ToArray();
             }
             finally
@@ -502,6 +537,7 @@ namespace RavenNest.BusinessLogic.Game
                     }
                 }
 
+                PayVillage(gameSession, VillageCoinRewards.ForRaid(CountParticipants(sessionCharacters, characters)));
                 return rewards.ToArray();
             }
             finally
