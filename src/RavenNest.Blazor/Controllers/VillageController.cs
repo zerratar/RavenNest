@@ -103,6 +103,15 @@ namespace RavenNest.Controllers
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("townhall/upgrade")]
+        public VillageTownHall UpgradeTownHall()
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return villageManager.UpgradeTownHall(sessionToken.SessionId);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("townhall/reset-placement")]
         public bool ResetTownHallPlacement()
         {

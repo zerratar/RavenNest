@@ -252,12 +252,71 @@ namespace RavenNest.BusinessLogic.Game
             var village = gameData.GetOrCreateVillageBySession(session);
             if (village == null) return null;
 
+            return TownHallState(village);
+        }
+
+        private static VillageTownHall TownHallState(Village village)
+        {
+            var tier = TownHallTierOf(village);
+            var next = TownHallTiers.Get(tier + 1);
             return new VillageTownHall
             {
                 X = village.TownHallX,
                 Z = village.TownHallZ,
-                Rotation = village.TownHallRotation ?? 0
+                Rotation = village.TownHallRotation ?? 0,
+                Tier = tier,
+                MaxTier = TownHallTiers.MaxTier,
+                NextLevel = next?.Level ?? 0,
+                NextWood = next?.Wood ?? 0,
+                NextOre = next?.Ore ?? 0,
+                NextFish = next?.Fish ?? 0,
+                NextWheat = next?.Wheat ?? 0
             };
+        }
+
+        /// <summary>
+        /// The village's town hall tier. The first time it is asked for, the village keeps the tier its
+        /// level gave it before tiers were bought, and that is stored; from then on only buying raises it.
+        /// </summary>
+        private static int TownHallTierOf(Village village)
+        {
+            if (village.TownHallTier == null)
+            {
+                village.TownHallTier = TownHallTiers.FromLevel(village.Level);
+            }
+
+            return village.TownHallTier.Value;
+        }
+
+        /// <summary>
+        /// Buys the next town hall tier: the village must have the level, and the resources, which are
+        /// spent. Returns the town hall afterwards, or null when the upgrade was not possible.
+        /// </summary>
+        public VillageTownHall UpgradeTownHall(Guid sessionId)
+        {
+            var session = gameData.GetSession(sessionId);
+            if (session == null) return null;
+
+            var village = gameData.GetOrCreateVillageBySession(session);
+            if (village == null) return null;
+
+            var tier = TownHallTierOf(village);
+            var next = TownHallTiers.Get(tier + 1);
+            if (next == null || village.Level < next.Level) return null;
+
+            var resources = gameData.GetResources(village.ResourcesId);
+            if (resources == null) return null;
+            if (resources.Wood < next.Wood || resources.Ore < next.Ore || resources.Fish < next.Fish || resources.Wheat < next.Wheat)
+            {
+                return null;
+            }
+
+            resources.Wood -= next.Wood;
+            resources.Ore -= next.Ore;
+            resources.Fish -= next.Fish;
+            resources.Wheat -= next.Wheat;
+            village.TownHallTier = tier + 1;
+            return TownHallState(village);
         }
 
         /// <summary>
