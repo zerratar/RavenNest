@@ -65,6 +65,33 @@ namespace RavenNest.Controllers
             return villageManager.RemoveHouse(sessionToken.SessionId, slot);
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("placements")]
+        public VillageHousePlacement[] GetPlacements()
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return villageManager.GetPlacements(sessionToken.SessionId);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{slot}/place")]
+        public bool PlaceHouse(int slot, [FromBody] VillageHousePlacement request)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return request != null && villageManager.PlaceHouse(sessionToken.SessionId, slot, request.X, request.Z, request.Rotation);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("{slot}/reset-placement")]
+        public bool ResetHousePlacement(int slot)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return villageManager.ResetHousePlacement(sessionToken.SessionId, slot);
+        }
+
         [HttpGet]
         public VillageInfo GetVillageInfo()
         {

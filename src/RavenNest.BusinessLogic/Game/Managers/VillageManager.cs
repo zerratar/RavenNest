@@ -165,6 +165,89 @@ namespace RavenNest.BusinessLogic.Game
                     })
             };
         }
+        /// <summary>
+        /// Furthest a building may be placed from the world origin on either axis. The server does
+        /// not know the village's layout, so this only stops nonsense values; the game client checks
+        /// the real rules (inside the village, on ground, not overlapping) before it sends a move.
+        /// </summary>
+        private const double MaxPlacementCoordinate = 10000;
+
+        /// <summary>
+        /// Positions of the houses that have been moved in build mode. Houses missing from the list
+        /// are at their original plot positions.
+        /// </summary>
+        public VillageHousePlacement[] GetPlacements(Guid sessionId)
+        {
+            var session = gameData.GetSession(sessionId);
+            if (session == null) return Array.Empty<VillageHousePlacement>();
+
+            var village = gameData.GetOrCreateVillageBySession(session);
+            if (village == null) return Array.Empty<VillageHousePlacement>();
+
+            return gameData.GetOrCreateVillageHouses(village)
+                .Where(x => x.PositionX != null && x.PositionZ != null)
+                .OrderBy(x => x.Slot)
+                .Select(x => new VillageHousePlacement
+                {
+                    Slot = x.Slot,
+                    X = x.PositionX.Value,
+                    Z = x.PositionZ.Value,
+                    Rotation = x.Rotation ?? 0
+                })
+                .ToArray();
+        }
+
+        /// <summary>Moves and rotates a house. Its type and resident are unchanged.</summary>
+        public bool PlaceHouse(Guid sessionId, int slot, double x, double z, double rotation)
+        {
+            if (!IsUsable(x) || !IsUsable(z) || double.IsNaN(rotation) || double.IsInfinity(rotation))
+            {
+                return false;
+            }
+
+            var session = gameData.GetSession(sessionId);
+            if (session == null) return false;
+
+            var village = gameData.GetOrCreateVillageBySession(session);
+            if (village == null) return false;
+
+            var targetHouse = gameData.GetOrCreateVillageHouses(village).FirstOrDefault(h => h.Slot == slot);
+            if (targetHouse == null)
+                return false;
+
+            rotation %= 360;
+            if (rotation < 0) rotation += 360;
+
+            targetHouse.PositionX = x;
+            targetHouse.PositionZ = z;
+            targetHouse.Rotation = rotation;
+            return true;
+        }
+
+        /// <summary>Puts a house back on its original plot position.</summary>
+        public bool ResetHousePlacement(Guid sessionId, int slot)
+        {
+            var session = gameData.GetSession(sessionId);
+            if (session == null) return false;
+
+            var village = gameData.GetOrCreateVillageBySession(session);
+            if (village == null) return false;
+
+            var targetHouse = gameData.GetOrCreateVillageHouses(village).FirstOrDefault(h => h.Slot == slot);
+            if (targetHouse == null)
+                return false;
+
+            targetHouse.PositionX = null;
+            targetHouse.PositionZ = null;
+            targetHouse.Rotation = null;
+            return true;
+        }
+
+        private static bool IsUsable(double value)
+        {
+            return !double.IsNaN(value) && !double.IsInfinity(value) && Math.Abs(value) <= MaxPlacementCoordinate;
+        }
+
         public bool RemoveHouse(Guid sessionId, int slot)
         {
             var session = gameData.GetSession(sessionId);
