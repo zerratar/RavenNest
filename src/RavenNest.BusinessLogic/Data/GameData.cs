@@ -230,6 +230,9 @@ namespace RavenNest.BusinessLogic.Data
                 var stopWatch = new Stopwatch();
                 stopWatch.Start();
 
+                // Missing tables and columns are added before anything reads or writes them.
+                DatabaseSchema.Ensure(db, logger);
+
                 #region Data Restoration
                 var restorePoint = backupProvider.GetRestorePoint(dataTypes);
 

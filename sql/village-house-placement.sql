@@ -9,6 +9,11 @@
 --
 -- Safe to run twice.
 
+-- Since DatabaseSchema (src/RavenNest.BusinessLogic/Data/DatabaseSchema.cs), the server adds missing
+-- columns itself at startup, so running this by hand is no longer required. It is kept as a record of
+-- the change and for adding the columns ahead of a deploy.
+--
+
 SET NOCOUNT ON;
 
 IF COL_LENGTH(N'dbo.VillageHouse', N'PositionX') IS NULL
