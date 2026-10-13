@@ -94,12 +94,11 @@ namespace RavenNest.Controllers
 
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("townhall/place")]
-        public bool PlaceTownHall([FromBody] VillageTownHall request)
+        public bool PlaceTownHall([FromBody] VillageTownHallPlacement request)
         {
             var sessionToken = GetSessionToken();
             AssertSessionTokenValidity(sessionToken);
-            return request != null && request.X != null && request.Z != null
-                && villageManager.PlaceTownHall(sessionToken.SessionId, request.X.Value, request.Z.Value, request.Rotation);
+            return request != null && villageManager.PlaceTownHall(sessionToken.SessionId, request.X, request.Z, request.Rotation);
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
