@@ -23,12 +23,19 @@ namespace RavenNest.BusinessLogic.Game
     /// metres taken away, at the price of the type it ends up as, so reshaping never costs more
     /// than the difference; removing gives back half of what was paid.
     /// </para>
+    /// <para>
+    /// A road can be wider or narrower at each point (MinWidth to MaxWidth times the type's width),
+    /// so the length it pays for is weighted by width: a road twice as wide costs twice as much per
+    /// metre. Its ends can be round or square; that costs nothing.
+    /// </para>
     /// </remarks>
     public class VillageRoadManager
     {
         public const int MaxPoints = 128;
         public const double MaxLength = 2000;
         public const double RemoveRefund = 0.5;
+        public const double MinWidth = 0.5;
+        public const double MaxWidth = 2.0;
 
         // The price list, per metre of road. Tiers count from 0 like the town hall tiers
         // (TownHallTiers), shown in game as one higher: gravel at the second hall, cobbles the third.
@@ -75,12 +82,14 @@ namespace RavenNest.BusinessLogic.Game
 
             var points = Clean(request.Points);
             if (points == null) return Fail("invalid");
+            var widths = CleanWidths(request.Widths, points.Length / 2);
+            if (widths == null) return Fail("invalid");
 
             var resources = gameData.GetResources(village.ResourcesId);
             if (resources == null) return Fail("unknown");
 
             var length = Length(points);
-            var cost = Cost(type, length);
+            var cost = Cost(type, PaidLength(points, widths));
             if (!CanPay(resources, cost)) return Fail("resources", resources);
 
             Pay(resources, cost);
@@ -90,6 +99,9 @@ namespace RavenNest.BusinessLogic.Game
                 VillageId = village.Id,
                 Type = type.Id,
                 Points = Format(points),
+                Widths = FormatWidths(widths),
+                StartRound = Round(request.StartRound),
+                EndRound = Round(request.EndRound),
                 Length = length,
                 Created = DateTime.UtcNow,
             };
@@ -109,13 +121,15 @@ namespace RavenNest.BusinessLogic.Game
 
             var points = Clean(request.Points);
             if (points == null) return Fail("invalid");
+            var widths = CleanWidths(request.Widths, points.Length / 2);
+            if (widths == null) return Fail("invalid");
 
             var resources = gameData.GetResources(village.ResourcesId);
             if (resources == null) return Fail("unknown");
 
             // what the road would cost now, against what was paid: pay the difference, or get it back
             var length = Length(points);
-            var cost = Cost(type, length);
+            var cost = Cost(type, PaidLength(points, widths));
             var difference = new Price(cost.Wood - road.PaidWood, cost.Ore - road.PaidOre, cost.Fish - road.PaidFish,
                 cost.Wheat - road.PaidWheat, cost.Coins - road.PaidCoins);
             var due = difference.Positive();
@@ -126,6 +140,9 @@ namespace RavenNest.BusinessLogic.Game
 
             road.Type = type.Id;
             road.Points = Format(points);
+            road.Widths = FormatWidths(widths);
+            road.StartRound = Round(request.StartRound ?? road.StartRound);
+            road.EndRound = Round(request.EndRound ?? road.EndRound);
             road.Length = length;
             road.Updated = DateTime.UtcNow;
             Remember(road, cost);
@@ -176,6 +193,33 @@ namespace RavenNest.BusinessLogic.Game
             var length = Length(points);
             if (length < 0.5 || length > MaxLength) return null;
             return points.Select(p => Math.Round(p, 2)).ToArray();
+        }
+
+        /// <summary>
+        /// One width per point, clamped to MinWidth to MaxWidth and rounded; all 1 when none were sent.
+        /// Null when they were sent but do not match the points.
+        /// </summary>
+        private static double[] CleanWidths(double[] widths, int count)
+        {
+            if (widths == null || widths.Length == 0) return Enumerable.Repeat(1.0, count).ToArray();
+            if (widths.Length != count || widths.Any(w => double.IsNaN(w) || double.IsInfinity(w))) return null;
+            return widths.Select(w => Math.Round(Math.Clamp(w, MinWidth, MaxWidth), 2)).ToArray();
+        }
+
+        /// <summary>1 for a half circle, 0 for a square end; nothing sent is round.</summary>
+        private static double? Round(double? round) => round.HasValue ? Math.Round(Math.Clamp(round.Value, 0.0, 1.0), 2) : (double?)null;
+
+        /// <summary>The length paid for: each stretch between two points, times their average width.</summary>
+        private static double PaidLength(double[] points, double[] widths)
+        {
+            var length = 0.0;
+            for (var i = 1; i < points.Length / 2; ++i)
+            {
+                var dx = points[i * 2] - points[i * 2 - 2];
+                var dz = points[i * 2 + 1] - points[i * 2 - 1];
+                length += Math.Sqrt(dx * dx + dz * dz) * (widths[i - 1] + widths[i]) / 2.0;
+            }
+            return length;
         }
 
         private static double Length(double[] points)
@@ -243,6 +287,21 @@ namespace RavenNest.BusinessLogic.Game
             return sb.ToString();
         }
 
+        private static string FormatWidths(double[] widths)
+        {
+            // 1 everywhere is the default; nothing stored keeps old roads and new plain ones alike
+            if (widths.All(w => Math.Abs(w - 1.0) < 0.001)) return null;
+            return string.Join(";", widths.Select(w => w.ToString("0.##", CultureInfo.InvariantCulture)));
+        }
+
+        private static double[] ParseWidths(string widths)
+        {
+            if (string.IsNullOrEmpty(widths)) return null;
+            return widths.Split(';')
+                .Select(v => double.TryParse(v, NumberStyles.Float, CultureInfo.InvariantCulture, out var d) ? d : 1)
+                .ToArray();
+        }
+
         private static double[] Parse(string points)
         {
             if (string.IsNullOrEmpty(points)) return Array.Empty<double>();
@@ -252,7 +311,15 @@ namespace RavenNest.BusinessLogic.Game
                 .ToArray();
         }
 
-        private static VillageRoadInfo Info(VillageRoad road) => new VillageRoadInfo { Id = road.Id, Type = road.Type, Points = Parse(road.Points) };
+        private static VillageRoadInfo Info(VillageRoad road) => new VillageRoadInfo
+        {
+            Id = road.Id,
+            Type = road.Type,
+            Points = Parse(road.Points),
+            Widths = ParseWidths(road.Widths),
+            StartRound = road.StartRound ?? 1,
+            EndRound = road.EndRound ?? 1,
+        };
 
         private static VillageRoadResult Fail(string error, Resources resources = null)
         {

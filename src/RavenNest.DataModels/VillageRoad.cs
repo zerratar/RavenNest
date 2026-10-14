@@ -15,7 +15,15 @@ namespace RavenNest.DataModels
         [PersistentData] private int type;
         /// <summary>The centre line, "x,z;x,z;..." in metres with an invariant decimal point.</summary>
         [PersistentData] private string points;
-        /// <summary>The length the road was paid for, in metres.</summary>
+        /// <summary>
+        /// The width at each point, "w;w;..." as multiples of the type's width, one per point. Null or
+        /// empty: 1 at every point, as roads had before widths existed.
+        /// </summary>
+        [PersistentData] private string widths;
+        /// <summary>How round each end is: 1 (or null) a half circle, 0 a square end.</summary>
+        [PersistentData] private double? startRound;
+        [PersistentData] private double? endRound;
+        /// <summary>The length of the centre line, in metres.</summary>
         [PersistentData] private double length;
         // What was paid, kept so removing refunds part of the real price, whatever the price list
         // says by then.

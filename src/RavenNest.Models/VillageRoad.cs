@@ -9,6 +9,11 @@ namespace RavenNest.Models
         public int Type { get; set; }
         /// <summary>The centre line as x, z pairs: x0, z0, x1, z1, ...</summary>
         public double[] Points { get; set; }
+        /// <summary>The width at each point as a multiple of the type's width, or null for 1 everywhere.</summary>
+        public double[] Widths { get; set; }
+        /// <summary>How round each end is: 1 a half circle, 0 a square end.</summary>
+        public double StartRound { get; set; } = 1;
+        public double EndRound { get; set; } = 1;
     }
 
     /// <summary>A kind of road the village can build, and what a metre of it costs.</summary>
@@ -29,11 +34,17 @@ namespace RavenNest.Models
         public double Coins { get; set; }
     }
 
-    /// <summary>A road to build or change: its type and centre line.</summary>
+    /// <summary>
+    /// A road to build or change: its type and centre line, and optionally a width per point and the
+    /// shape of its ends. A client that sends neither gets 1 everywhere and round ends.
+    /// </summary>
     public class VillageRoadRequest
     {
         public int Type { get; set; }
         public double[] Points { get; set; }
+        public double[] Widths { get; set; }
+        public double? StartRound { get; set; }
+        public double? EndRound { get; set; }
     }
 
     /// <summary>
