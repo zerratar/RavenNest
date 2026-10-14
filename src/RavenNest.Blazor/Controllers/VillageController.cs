@@ -14,6 +14,7 @@ namespace RavenNest.Controllers
     public class VillageController : GameApiController
     {
         private readonly VillageManager villageManager;
+        private readonly VillageRoadManager roadManager;
 
         public VillageController(
             ILogger<VillageController> logger,
@@ -22,10 +23,59 @@ namespace RavenNest.Controllers
             SessionInfoProvider sessionInfoProvider,
             SessionManager sessionManager,
             VillageManager villageManager,
+            VillageRoadManager roadManager,
             ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
             this.villageManager = villageManager;
+            this.roadManager = roadManager;
+        }
+
+        // ---- Roads, drawn in build mode. See VillageRoadManager. ----
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("roads/types")]
+        public VillageRoadType[] GetRoadTypes()
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return roadManager.GetTypes(sessionToken.SessionId);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("roads")]
+        public VillageRoadInfo[] GetRoads()
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return roadManager.GetRoads(sessionToken.SessionId);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("roads/build")]
+        public VillageRoadResult BuildRoad([FromBody] VillageRoadRequest request)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return roadManager.Build(sessionToken.SessionId, request);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("roads/{id}/change")]
+        public VillageRoadResult ChangeRoad(Guid id, [FromBody] VillageRoadRequest request)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return roadManager.Change(sessionToken.SessionId, id, request);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("roads/{id}/remove")]
+        public VillageRoadResult RemoveRoad(Guid id)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return roadManager.Remove(sessionToken.SessionId, id);
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]

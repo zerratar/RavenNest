@@ -68,6 +68,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<UserLoyalty> loyalty;
         private readonly EntitySet<UserProperty> userProperties;
         private readonly EntitySet<ClientDevice> clientDevices;
+        private readonly EntitySet<VillageRoad> villageRoads;
         private readonly EntitySet<UserLoyaltyRank> loyaltyRanks;
         private readonly EntitySet<UserLoyaltyReward> loyaltyRewards;
         private readonly EntitySet<UserClaimedLoyaltyReward> claimedLoyaltyRewards;
@@ -172,6 +173,7 @@ namespace RavenNest.BusinessLogic.Data
                 typeof(UserPatreon),
                 typeof(UserProperty),
                 typeof(ClientDevice),
+                typeof(VillageRoad),
                 typeof(SyntyAppearance),
                 typeof(Character),
                 typeof(CharacterState),
@@ -308,6 +310,9 @@ namespace RavenNest.BusinessLogic.Data
 
                     clientDevices = new EntitySet<ClientDevice>(restorePoint?.Get<ClientDevice>() ?? ctx.ClientDevice.ToList());
                     clientDevices.RegisterLookupGroup(nameof(User), x => x.UserId);
+
+                    villageRoads = new EntitySet<VillageRoad>(restorePoint?.Get<VillageRoad>() ?? ctx.VillageRoad.ToList());
+                    villageRoads.RegisterLookupGroup(nameof(Village), x => x.VillageId);
 
                     loyaltyRanks = new EntitySet<UserLoyaltyRank>(ctx.UserLoyaltyRank.ToList());
 
@@ -468,6 +473,7 @@ namespace RavenNest.BusinessLogic.Data
                     {
                         redeemableItems,
                         clientDevices,
+                        villageRoads,
                         serverSettings,
                         itemAttributes,
                         dailyAggregatedMarketplaceData,
@@ -3957,6 +3963,18 @@ namespace RavenNest.BusinessLogic.Data
         public AddEntityResult Add(ClientDevice device) => Update(() => clientDevices.Add(device));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<VillageRoad> GetVillageRoads(Guid villageId) => villageRoads[nameof(Village), villageId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public VillageRoad GetVillageRoad(Guid id) => villageRoads.TryGet(id, out var road) ? road : null;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(VillageRoad road) => Update(() => villageRoads.Add(road));
+
+        /// <summary>Saves a change to an entity soon, as Add and Remove do.</summary>
+        public void Touch() => ScheduleNextSave();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<UserProperty> GetUserProperties(Guid userId)
         {
             return this.userProperties[nameof(User), userId];
@@ -4436,6 +4454,9 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(ClientDevice item) => Update(() => clientDevices.Remove(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(VillageRoad item) => Update(() => villageRoads.Remove(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(ClanRolePermissions item) => clanRolePermissions.Remove(item);

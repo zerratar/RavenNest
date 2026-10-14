@@ -561,6 +561,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<AdminManager>();
             services.AddSingleton<IServerManager, ServerManager>();
             services.AddSingleton<VillageManager>();
+            services.AddSingleton<VillageRoadManager>();
             services.AddSingleton<IPatreonManager, PatreonManager>();
             services.AddSingleton<IClanManager, ClanManager>();
             services.AddSingleton<RavenNest.BusinessLogic.Game.ClanBank.ClanBankManager>();
