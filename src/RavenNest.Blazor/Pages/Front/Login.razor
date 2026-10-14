@@ -370,6 +370,19 @@ else
         }
     }
 
+    /// <summary>
+    ///     The redirect as a path on this site. The route gives it without its leading slash
+    ///     ("/login/redirect/password" gives "password"), which the browser then resolved against
+    ///     /login/redirect/ and landed on the wrong page; and a full address from the state would
+    ///     have sent a person to another site after signing in.
+    /// </summary>
+    private static string LocalPath(string url)
+    {
+        url = url.Trim();
+        while (url.StartsWith("/") || url.StartsWith("\\")) url = url.Substring(1);
+        return "/" + url.Replace("://", "/");
+    }
+
     private async Task NavigateToLastPageOrHomeIfAuthenticated()
     {
         if (!IsAuthenticated || !isAfterRender)
@@ -382,7 +395,7 @@ else
             MainLayout.Instance.UpdateSession();
             if (!string.IsNullOrEmpty(RedirectUrl))
             {
-                await JS.InvokeVoidAsync("window.navigateTo", RedirectUrl);
+                await JS.InvokeVoidAsync("window.navigateTo", LocalPath(RedirectUrl));
             }
             else if (session.UserNameChanged)
             {

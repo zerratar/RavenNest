@@ -865,6 +865,27 @@
     text-align: left;
 }
 
+/* The game client sign in: the code, large and spaced, so it is easy to compare with the one the
+   game shows. */
+.rf-device-code {
+    font-family: var(--rf-font-mono);
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-align: center;
+    color: var(--rf-gold);
+    padding: var(--rf-space-3) 0;
+    background: var(--rf-gold-wash);
+    border: 1px solid var(--rf-gold-dim);
+    border-radius: var(--rf-radius);
+}
+
+.rf-front .rf-device-name {
+    margin: 0;
+    text-align: center;
+    color: var(--rf-ink-muted);
+}
+
 /* The hint stays faint: it is inside the card, on an opaque surface. */
 .rf-front .rf-auth__hint {
     margin: 0;

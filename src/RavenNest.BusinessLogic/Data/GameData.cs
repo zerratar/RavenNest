@@ -67,6 +67,7 @@ namespace RavenNest.BusinessLogic.Data
 
         private readonly EntitySet<UserLoyalty> loyalty;
         private readonly EntitySet<UserProperty> userProperties;
+        private readonly EntitySet<ClientDevice> clientDevices;
         private readonly EntitySet<UserLoyaltyRank> loyaltyRanks;
         private readonly EntitySet<UserLoyaltyReward> loyaltyRewards;
         private readonly EntitySet<UserClaimedLoyaltyReward> claimedLoyaltyRewards;
@@ -170,6 +171,7 @@ namespace RavenNest.BusinessLogic.Data
                 typeof(UserClaimedLoyaltyReward),
                 typeof(UserPatreon),
                 typeof(UserProperty),
+                typeof(ClientDevice),
                 typeof(SyntyAppearance),
                 typeof(Character),
                 typeof(CharacterState),
@@ -303,6 +305,9 @@ namespace RavenNest.BusinessLogic.Data
 
                     userProperties = new EntitySet<UserProperty>(restorePoint?.Get<UserProperty>() ?? ctx.UserProperty.ToList());
                     userProperties.RegisterLookupGroup(nameof(User), x => x.UserId);
+
+                    clientDevices = new EntitySet<ClientDevice>(restorePoint?.Get<ClientDevice>() ?? ctx.ClientDevice.ToList());
+                    clientDevices.RegisterLookupGroup(nameof(User), x => x.UserId);
 
                     loyaltyRanks = new EntitySet<UserLoyaltyRank>(ctx.UserLoyaltyRank.ToList());
 
@@ -462,6 +467,7 @@ namespace RavenNest.BusinessLogic.Data
                     entitySets = new IEntitySet[]
                     {
                         redeemableItems,
+                        clientDevices,
                         serverSettings,
                         itemAttributes,
                         dailyAggregatedMarketplaceData,
@@ -3936,6 +3942,21 @@ namespace RavenNest.BusinessLogic.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ClientDevice GetClientDevice(Guid id)
+        {
+            return clientDevices.TryGet(id, out var device) ? device : null;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<ClientDevice> GetClientDevices(Guid userId)
+        {
+            return clientDevices[nameof(User), userId];
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(ClientDevice device) => Update(() => clientDevices.Add(device));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<UserProperty> GetUserProperties(Guid userId)
         {
             return this.userProperties[nameof(User), userId];
@@ -4412,6 +4433,9 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(UserProperty item) => userProperties.Remove(item);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(ClientDevice item) => Update(() => clientDevices.Remove(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(ClanRolePermissions item) => clanRolePermissions.Remove(item);

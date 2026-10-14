@@ -1,0 +1,149 @@
+@page "/login/device/{Code}"
+@using RavenNest.BusinessLogic.Game
+@inject NavigationManager NavigationManager
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject ClientLoginManager ClientLogin
+@inject IJSRuntime JS
+
+@*
+    Where "Sign in with Twitch" in the game client lands. The game shows a code and opens this
+    page at it; the streamer signs in with Twitch if they are not already, checks that the code
+    here is the one in the game, and approves. The game is asking the server all the while and
+    signs in the moment this page says yes.
+
+    The code is on the page and in the game on purpose: a link like this can be sent to someone
+    else, and comparing the two codes is how a person notices the request is not theirs.
+*@
+
+<div class="rf-auth">
+    <a class="rf-auth__brand" href="/" aria-label="Ravenfall home">
+        <img src="/imgs/logo.png" alt="Ravenfall" />
+    </a>
+
+    @if (state == State.Gone)
+    {
+        <h1 class="rf-auth__title">This sign in has ended</h1>
+        <p class="rf-auth__lead">It was used, cancelled, or waited longer than ten minutes.</p>
+        <div class="rf-auth__card">
+            <p class="rf-meta">Choose <b>Sign in with Twitch</b> in the game again to get a new code.</p>
+        </div>
+    }
+    else if (state == State.Approved)
+    {
+        <h1 class="rf-auth__title">The game is signed in</h1>
+        <p class="rf-auth__lead">as <b>@session.UserName</b> on @deviceName</p>
+        <div class="rf-auth__card">
+            <p class="rf-meta">You can close this tab and go back to Ravenfall. It signs in on its own from now on.</p>
+        </div>
+    }
+    else if (state == State.Denied)
+    {
+        <h1 class="rf-auth__title">Sign in cancelled</h1>
+        <p class="rf-auth__lead">Nothing was signed in.</p>
+        <div class="rf-auth__card">
+            <p class="rf-meta">If someone sent you this link, they wanted their game signed in to your account. Do not approve links you did not start yourself.</p>
+        </div>
+    }
+    else
+    {
+        <h1 class="rf-auth__title">Sign in the game</h1>
+        <p class="rf-auth__lead">Check that the game shows this same code.</p>
+
+        <div class="rf-auth__card">
+            <div class="rf-device-code" aria-label="Sign in code">@ClientLoginManager.FormatCode(Code)</div>
+            <p class="rf-device-name">@deviceName</p>
+
+            @if (!IsAuthenticated)
+            {
+                <button type="button" class="rf-btn rf-btn--twitch rf-btn--block rf-btn--tall" @onclick="ContinueWithTwitch">
+                    <i class="fab fa-twitch" aria-hidden="true"></i> Continue with Twitch
+                </button>
+                <p class="rf-auth__hint">
+                    You come back here after Twitch, to approve the sign in. Or
+                    <a href="/login/redirect/login/device/@ClientLoginManager.NormalizeCode(Code)">sign in with a Ravenfall password</a>.
+                </p>
+            }
+            else
+            {
+                <button type="button" class="rf-btn rf-btn--primary rf-btn--block rf-btn--tall" @onclick="Approve">
+                    Sign in the game as @session.UserName
+                </button>
+                <button type="button" class="rf-btn rf-btn--block" @onclick="Deny">This was not me</button>
+                @if (failed)
+                {
+                    <div class="rf-banner rf-banner--bad" role="alert">
+                        <p class="rf-banner__title">That did not work</p>
+                        <p>The sign in may have just run out. Start again from the game.</p>
+                    </div>
+                }
+            }
+        </div>
+
+        <p class="rf-auth__foot">
+            Only approve a code you see in your own game right now. Approving lets that game sign
+            in as you and keep signing in on its own; you can sign it out from the game.
+        </p>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Code { get; set; }
+
+    private enum State { Waiting, Approved, Denied, Gone }
+
+    private RavenNest.Models.SessionInfo session;
+    private State state;
+    private string deviceName = "";
+    private bool failed;
+
+    private bool IsAuthenticated => session != null && session.Authenticated && session.UserId != Guid.Empty;
+
+    protected override void OnInitialized()
+    {
+        session = AuthService.GetSession();
+        var request = ClientLogin.Find(Code);
+        if (request == null)
+        {
+            state = State.Gone;
+            return;
+        }
+
+        deviceName = request.DeviceName;
+        state = request.Denied ? State.Denied : request.ApprovedBy.HasValue ? State.Approved : State.Waiting;
+    }
+
+    private async Task ContinueWithTwitch()
+    {
+        // back to this page after Twitch, by the redirect the login page carries through Twitch
+        var url = AuthService.GetTwitchLoginUrl("/login/device/" + ClientLoginManager.NormalizeCode(Code), NavigationManager.BaseUri);
+        if (!string.IsNullOrEmpty(url))
+        {
+            await JS.InvokeVoidAsync("window.navigateTo", url);
+        }
+    }
+
+    private void Approve()
+    {
+        failed = false;
+        if (!IsAuthenticated)
+        {
+            return;
+        }
+
+        if (ClientLogin.Approve(Code, session.UserId))
+        {
+            state = State.Approved;
+            return;
+        }
+
+        failed = true;
+        if (ClientLogin.Find(Code) == null) state = State.Gone;
+    }
+
+    private void Deny()
+    {
+        ClientLogin.Deny(Code);
+        state = State.Denied;
+    }
+}
