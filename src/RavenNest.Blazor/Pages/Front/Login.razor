@@ -401,10 +401,8 @@ else
             {
                 await JS.InvokeVoidAsync("window.navigateTo", "/username-changed");
             }
-            else if (session.RequiresPasswordChange)
-            {
-                await JS.InvokeVoidAsync("window.navigateTo", "/password");
-            }
+            // An account without a password is no longer sent to set one: the game client signs in
+            // with Twitch now, so a password is only for those who would rather type one.
             else
             {
                 NavigationManager.NavigateTo("", true); // "/"

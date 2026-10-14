@@ -4,6 +4,10 @@
 @inject RavenNest.Blazor.Services.AuthService AuthService
 @inject ClientLoginManager ClientLogin
 @inject IJSRuntime JS
+@inject PersistentComponentState ApplicationState
+@implements IDisposable
+@inject Microsoft.AspNetCore.Http.IHttpContextAccessor HttpContextAccessor
+@inject Microsoft.Extensions.Logging.ILogger<DeviceLogin> Logger
 
 @*
     Where "Sign in with Twitch" in the game client lands. The game shows a code and opens this
@@ -31,7 +35,7 @@
     else if (state == State.Approved)
     {
         <h1 class="rf-auth__title">The game is signed in</h1>
-        <p class="rf-auth__lead">as <b>@session.UserName</b> on @deviceName</p>
+        <p class="rf-auth__lead">as <b>@(session?.UserName)</b> on @deviceName</p>
         <div class="rf-auth__card">
             <p class="rf-meta">You can close this tab and go back to Ravenfall. It signs in on its own from now on.</p>
         </div>
@@ -92,16 +96,42 @@
 
     private enum State { Waiting, Approved, Denied, Gone }
 
-    private RavenNest.Models.SessionInfo session;
+    /// <summary>Who is signed in on the site, as far as this page needs to know.</summary>
+    private sealed class Viewer
+    {
+        public Guid UserId { get; set; }
+        public string UserName { get; set; }
+    }
+
+    private Viewer session;
+    private PersistingComponentStateSubscription persisting;
     private State state;
     private string deviceName = "";
     private bool failed;
 
-    private bool IsAuthenticated => session != null && session.Authenticated && session.UserId != Guid.Empty;
+    private bool IsAuthenticated => session != null && session.UserId != Guid.Empty;
 
     protected override void OnInitialized()
     {
-        session = AuthService.GetSession();
+        // The page renders twice: first while the request is still there to read the session
+        // cookie from, then live over the circuit, which has no request. Read the second time, the
+        // session came back empty, so a streamer back from Twitch saw "Continue with Twitch" again
+        // and had to sign in twice. The first render hands who it found to the second.
+        persisting = ApplicationState.RegisterOnPersisting(() =>
+        {
+            ApplicationState.PersistAsJson("device-login-viewer", session);
+            return Task.CompletedTask;
+        });
+
+        if (!ApplicationState.TryTakeFromJson<Viewer>("device-login-viewer", out var carried) || carried == null)
+        {
+            var info = AuthService.GetSession();
+            carried = info != null && info.Authenticated ? new Viewer { UserId = info.UserId, UserName = info.UserName } : null;
+        }
+        session = carried;
+
+        Microsoft.Extensions.Logging.LoggerExtensions.LogInformation(Logger, "Device sign in page {Code}: {Render} render, signed in {SignedIn}",
+            ClientLoginManager.NormalizeCode(Code), HttpContextAccessor.HttpContext != null ? "request" : "live", IsAuthenticated);
         var request = ClientLogin.Find(Code);
         if (request == null)
         {
@@ -140,6 +170,8 @@
         failed = true;
         if (ClientLogin.Find(Code) == null) state = State.Gone;
     }
+
+    public void Dispose() => persisting.Dispose();
 
     private void Deny()
     {

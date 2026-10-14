@@ -295,6 +295,8 @@
 </head>
 <body>
     <component type="typeof(App)" render-mode="ServerPrerendered" />
+    @* carries what a page worked out while prerendering over to its live render, which has no request to read the session from *@
+    <persist-component-state />
 
     <div id="blazor-error-ui">
         <environment include="Staging,Production">
