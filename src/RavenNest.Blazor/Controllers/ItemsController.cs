@@ -134,6 +134,7 @@ namespace RavenNest.Controllers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AssertAdminAuthToken(AuthToken authToken)
         {
+            AssertAuthTokenValidity(authToken);
             var user = gameData.GetUser(authToken.UserId);
             if (!user.IsAdmin.GetValueOrDefault())
                 throw new Exception("You do not have permissions to call this API");

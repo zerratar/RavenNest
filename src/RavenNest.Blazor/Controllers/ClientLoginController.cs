@@ -151,7 +151,7 @@ namespace RavenNest.Controllers
                 && !string.IsNullOrEmpty(token.Token)
                 && token.UserId != Guid.Empty
                 && !token.Expired
-                && token.Token == secureHasher.Get(token);
+                && secureHasher.IsValid(token);
         }
     }
 }

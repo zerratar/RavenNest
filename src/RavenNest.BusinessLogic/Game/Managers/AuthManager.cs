@@ -109,10 +109,20 @@ namespace RavenNest.BusinessLogic.Game
             return authToken;
         }
 
+        /// <summary>
+        /// Reads an auth-token header. Returns null unless the token was signed by this server, so a
+        /// made up token never reaches a controller. Expiry is left to the caller, as before.
+        /// </summary>
         public AuthToken Get(string authToken)
         {
             var json = Base64Decode(authToken);
-            return JSON.Parse<AuthToken>(json);
+            var token = JSON.Parse<AuthToken>(json);
+            if (token != null && !secureHash.IsValid(token))
+            {
+                return null;
+            }
+
+            return token;
         }
 
         private static string Base64Decode(string str)
