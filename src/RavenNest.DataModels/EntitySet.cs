@@ -97,6 +97,12 @@ namespace RavenNest.DataModels
             return entities.ContainsKey(key);
         }
 
+        /// <summary>Whether the entity has an add or an update the database has not been written yet.</summary>
+        public bool HasUnsavedChange(Guid key)
+        {
+            return addedEntities.ContainsKey(key) || updatedEntities.ContainsKey(key);
+        }
+
         public TModel this[Guid key]
         {
             get

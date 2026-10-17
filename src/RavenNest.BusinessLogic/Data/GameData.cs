@@ -51,6 +51,7 @@ namespace RavenNest.BusinessLogic.Data
 
         private readonly IRavenfallDbContextProvider db;
         private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
+        private readonly Net.V2.GameEventRouter eventRouter;
         private readonly ILogger logger;
         private readonly IKernel kernel;
         private readonly IQueryBuilder queryBuilder;
@@ -220,7 +221,8 @@ namespace RavenNest.BusinessLogic.Data
             ILogger<GameData> logger,
             IKernel kernel,
             IQueryBuilder queryBuilder,
-            ITcpSocketApiConnectionProvider tcpConnectionProvider)
+            ITcpSocketApiConnectionProvider tcpConnectionProvider,
+            Net.V2.GameEventRouter eventRouter)
         {
             try
             {
@@ -230,6 +232,7 @@ namespace RavenNest.BusinessLogic.Data
                 this.queryBuilder = queryBuilder;
                 this.backupProvider = backupProvider;
                 this.tcpConnectionProvider = tcpConnectionProvider;
+                this.eventRouter = eventRouter;
 
                 var stopWatch = new Stopwatch();
                 stopWatch.Start();
@@ -4785,10 +4788,64 @@ namespace RavenNest.BusinessLogic.Data
                 ScheduleNextSave();
             }
 
+            if (!genericException)
+            {
+                RaiseSaveCompleted(start, clean: !errorSaving);
+            }
+
             if (errorSaving)
             {
                 CreateBackup();
             }
+        }
+
+        /// <summary>
+        /// After each save to the database, with the time it started and whether every write succeeded. Anything
+        /// changed before it started was written, unless the save was not clean or the row waits for a retry
+        /// (<see cref="IsSaved(Character, bool)"/>). The v2 game connection uses it to tell the game which saves are
+        /// stored, so the game can forget them.
+        /// </summary>
+        public event Action<DateTime, bool> SaveCompleted;
+
+        private void RaiseSaveCompleted(DateTime started, bool clean)
+        {
+            var handlers = SaveCompleted;
+            if (handlers == null)
+            {
+                return;
+            }
+
+            foreach (Action<DateTime, bool> handler in handlers.GetInvocationList())
+            {
+                try
+                {
+                    handler(started, clean);
+                }
+                catch (Exception exc)
+                {
+                    logger.LogError("A SaveCompleted handler failed: " + exc);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Whether a change made to the character's saved rows (character, skills, state) before a save that just
+        /// completed was written by it. After a clean save, only a row waiting out a retry back-off is missing; after
+        /// one with failures, a row still holding an unsaved change may be one that failed, so it counts as not saved
+        /// (even if the change is newer: the next save settles it).
+        /// </summary>
+        public bool IsSaved(Character character, bool cleanSave)
+        {
+            if (cleanSave)
+            {
+                return !failedSaves.ContainsKey(character.Id)
+                    && (character.SkillsId == Guid.Empty || !failedSaves.ContainsKey(character.SkillsId))
+                    && (character.StateId == Guid.Empty || !failedSaves.ContainsKey(character.StateId));
+            }
+
+            return !characters.HasUnsavedChange(character.Id)
+                && (character.SkillsId == Guid.Empty || !characterSkills.HasUnsavedChange(character.SkillsId))
+                && (character.StateId == Guid.Empty || !characterStates.HasUnsavedChange(character.StateId));
         }
 
         private void HandleSqlError(DataSaveError saveError)
@@ -5048,6 +5105,11 @@ namespace RavenNest.BusinessLogic.Data
                 return;
             }
 
+            if (eventRouter.TryRoute(entity))
+            {
+                return;
+            }
+
             // to the streamer's newest connection only: a copy to every connection gave a reconnecting client the same
             // event twice
             var connection = tcpConnectionProvider.GetLatestConnection(entity.UserId);
@@ -5066,6 +5128,12 @@ namespace RavenNest.BusinessLogic.Data
             {
                 return;
             }
+            // a streamer on the v2 connection gets it through their session's numbered, acknowledged event log
+            if (eventRouter.TryRoute(entity))
+            {
+                return;
+            }
+
             // one queue per streamer (PendingGameEvents), delivered to their newest connection by the game loop: it
             // waits there while the client is disconnected, instead of being parked where nothing reads it, and is
             // never copied to two connections
