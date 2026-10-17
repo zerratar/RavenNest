@@ -156,10 +156,11 @@ both the delta socket and the event socket:
   last event it applied. After a drop it reconnects with the same resume id; the report counts resumes and
   reconnects the server did not resume.
 * **Saves.** Each player has an outbox: every tick that changes a player makes a new version. Every tick a
-  `SaveBatch` carries every player whose newest version is not stored yet, with every change since the last
-  stored version (all skills and fields after joining or a resync). The server answers `SaveAcks` Accepted at
-  once and Stored after the database save. A player whose version was sent before and is still not stored is
-  sent again (a resend). At the end of the run the session keeps sending until everything is stored (the
+  numbered `SaveBatch` carries every player with a new version, with every change since the last stored
+  version (all skills and fields after joining or a resync). The server answers each batch once with `SaveAcks`
+  Accepted (`ThroughSequence`, listing only refused saves) and each player version with Stored after the
+  database save. A save still not stored after `--v2-resend-after` (10 s, as the game) is sent again (a resend),
+  and so is everything unconfirmed right after a reconnect. At the end of the run the session keeps sending until everything is stored (the
   game's quit wait, `--v2-drain-timeout`), then the usual verification runs.
 * **Events** are applied in sequence and acknowledged with the next save batch. The report counts gaps
   (missing sequence numbers, which would be lost events), repeats, and the events replayed after a resume.
@@ -179,6 +180,7 @@ both the delta socket and the event socket:
 | `--v2-repeat-share <0..1>` | repeat this share of commands with the same request id (needs `--v2-commands`) |
 | `--v2-drop-every <span>` | drop the WebSocket this often and resume |
 | `--v2-drop-pause <t>` | stay down this long after a drop before resuming (default 3s) |
+| `--v2-resend-after <t>` | send an unstored save again after this long without its Stored ack (default 10s, as the game's SaveOutbox) |
 | `--v2-drain-timeout <t>` | how long to wait at the end for every save to be stored (default 30s) |
 | `--server-pid <pid>` | report the server process's CPU time and memory (works for v1 too) |
 

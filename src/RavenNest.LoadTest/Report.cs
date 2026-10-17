@@ -270,9 +270,9 @@ public sealed class Report
         sb.AppendLine($"  v2 saves: {m.V2SaveBatches} batches, {m.V2PlayerSaves} player saves ({m.V2SkillEntries} skill entries, {m.V2FullSaves} full), {m.V2Resends} resends");
         sb.AppendLine($"    send to Accepted (per batch) p50 {Fmt(rt.P50)} p95 {Fmt(rt.P95)} p99 {Fmt(rt.P99)} max {Fmt(rt.Max)}; {m.V2BatchesWithoutAck} batches never acknowledged");
         sb.AppendLine($"    send to Stored (per player version) p50 {Fmt(stored.P50)} p95 {Fmt(stored.P95)} p99 {Fmt(stored.P99)} max {Fmt(stored.Max)}");
-        sb.AppendLine($"    acks: {m.V2AcceptedAcks} accepted, {m.V2StoredAcks} stored; players with unstored saves per session per tick: p50 {unconfirmed.P50:0} p95 {unconfirmed.P95:0} max {unconfirmed.Max:0}");
+        sb.AppendLine($"    acks: {m.V2AcceptedAcks} Accepted answers (one per batch), {m.V2StoredAcks} Stored acks (per player); players with unstored saves per session per tick: p50 {unconfirmed.P50:0} p95 {unconfirmed.P95:0} max {unconfirmed.Max:0}");
         var statuses = string.Join(", ", m.V2Counts.Where(x => x.Key.StartsWith("save ")).OrderByDescending(x => x.Value).Select(x => x.Key[5..] + " " + x.Value));
-        if (statuses.Length > 0) sb.AppendLine("    accepted statuses: " + statuses);
+        sb.AppendLine("    refused saves: " + (statuses.Length > 0 ? statuses : "none"));
         if (m.V2DrainSeconds != null)
         {
             sb.AppendLine(m.V2LeftUnstored == 0
@@ -355,7 +355,8 @@ public sealed class Report
                 protocol = o.Protocol.ToString().ToLowerInvariant(),
                 o.V2Commands,
                 o.V2RepeatShare,
-                v2DropEverySeconds = o.V2DropEvery.TotalSeconds
+                v2DropEverySeconds = o.V2DropEvery.TotalSeconds,
+                v2ResendAfterSeconds = o.V2ResendAfter.TotalSeconds
             },
             endpoints = m.Endpoints.OrderBy(x => x.Key).ToDictionary(x => x.Key, x =>
             {

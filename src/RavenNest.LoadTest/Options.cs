@@ -82,6 +82,9 @@ public sealed class Options
     /// <summary>How long a chaos drop stays down before resuming, so events and acks pile up on the server.</summary>
     public TimeSpan V2DropPause { get; set; } = TimeSpan.FromSeconds(3);
 
+    /// <summary>An unconfirmed save is sent again after this long without its Stored ack (the game's SaveOutbox.ResendAfter).</summary>
+    public TimeSpan V2ResendAfter { get; set; } = TimeSpan.FromSeconds(10);
+
     /// <summary>At the end, how long to keep resending until every save is stored (the game's quit wait).</summary>
     public TimeSpan V2DrainTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
@@ -170,6 +173,7 @@ public sealed class Options
                 case "--v2-drop-every": o.V2DropEvery = Span(Next()); break;
                 case "--v2-drop-pause": o.V2DropPause = Span(Next()); break;
                 case "--v2-drain-timeout": o.V2DrainTimeout = Span(Next()); break;
+                case "--v2-resend-after": o.V2ResendAfter = Span(Next()); break;
                 case "--server-pid": o.ServerPid = Int(Next()); break;
 
                 case "--verify": o.Verify = Bool(Next()); break;
@@ -283,6 +287,7 @@ Protocol:
                               is the first one and nothing was added twice (needs --v2-commands)
   --v2-drop-every <span>      v2 only: drop the WebSocket without a close this often and resume with the same resume id
   --v2-drop-pause <t>         v2 only: stay down this long after a drop before resuming (default 3s)
+  --v2-resend-after <t>       v2 only: send an unstored save again after this long without its Stored ack (default 10s, as the game)
   --v2-drain-timeout <t>      v2 only: at the end, how long to keep resending until every save is stored (default 30s)
   --server-pid <pid>          report the server process's CPU time and memory (Get-NetTCPConnection -LocalPort 443)
 

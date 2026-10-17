@@ -72,6 +72,9 @@ public sealed class SimPlayer
     /// <summary>The newest version that went out at least once, to count resends.</summary>
     public long LastSentVersion;
 
+    /// <summary>When the player's save last went out; an unstored save goes again after --v2-resend-after.</summary>
+    public DateTime LastSentAt = DateTime.MinValue;
+
     /// <summary>Exp gained per skill since the last version was made (SkillSave.Gained).</summary>
     public readonly double[] GainedSinceVersion = new double[32];
 

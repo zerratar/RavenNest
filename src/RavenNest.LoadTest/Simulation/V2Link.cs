@@ -32,6 +32,7 @@ public sealed class V2Link : IAsyncDisposable
     private readonly object gate = new();
     private readonly Dictionary<Guid, SimPlayer> byCharacter = new();
     private readonly Queue<SentBatch> unacked = new();
+    private long batchSequence; // keeps counting across reconnects, as the game's NetworkV2
     private V2Connection? connection;
     private bool everWelcomed;
     private long lastApplied, lastAcked, replayUntil;
@@ -65,9 +66,8 @@ public sealed class V2Link : IAsyncDisposable
 
     private sealed class SentBatch
     {
+        public long Sequence;
         public long SentAt;
-        public Guid FirstCharacter;
-        public long FirstVersion;
     }
 
     private sealed class PendingCommand
@@ -156,6 +156,9 @@ public sealed class V2Link : IAsyncDisposable
                     Interlocked.Increment(ref metrics.V2Resyncs);
                     foreach (var p in byCharacter.Values) p.NeedsFull = true;
                 }
+
+                // acks for what went on the old connection may be lost: send everything unconfirmed at the next tick
+                foreach (var p in byCharacter.Values) p.LastSentAt = DateTime.MinValue;
 
                 everWelcomed = true;
                 connection = c;
@@ -290,42 +293,32 @@ public sealed class V2Link : IAsyncDisposable
 
     private void OnAcks(SaveAcks message)
     {
-        if (message.Acks == null || message.Acks.Length == 0) return;
+        if (message.Stage != SaveStage.Accepted && (message.Acks == null || message.Acks.Length == 0)) return;
         var now = Stopwatch.GetTimestamp();
         lock (gate)
         {
             if (message.Stage == SaveStage.Accepted)
             {
-                Interlocked.Add(ref metrics.V2AcceptedAcks, message.Acks.Length);
-
-                // One Accepted message answers one batch, in order; its first ack is the batch's first save.
-                var first = message.Acks[0];
-                while (unacked.Count > 0)
+                // One answer per batch (ThroughSequence); the acks in it are only the refused saves.
+                Interlocked.Increment(ref metrics.V2AcceptedAcks);
+                while (unacked.Count > 0 && unacked.Peek().Sequence <= message.ThroughSequence)
                 {
                     var b = unacked.Dequeue();
-                    if (b.FirstCharacter == first.CharacterId && b.FirstVersion == first.Version)
+                    if (b.Sequence == message.ThroughSequence)
                     {
                         metrics.V2SaveRoundTrip.Record(Ms(b.SentAt, now), true);
-                        break;
                     }
-                    Interlocked.Increment(ref metrics.V2BatchesWithoutAck);
+                    else
+                    {
+                        Interlocked.Increment(ref metrics.V2BatchesWithoutAck);
+                    }
                 }
 
-                foreach (var ack in message.Acks)
+                foreach (var ack in message.Acks ?? Array.Empty<SaveAck>())
                 {
-                    metrics.CountV2("save " + ack.Status);
-                    if (!byCharacter.TryGetValue(ack.CharacterId, out var p)) continue;
-                    switch (ack.Status)
-                    {
-                        case SaveStatus.Ok:
-                        case SaveStatus.Stale:
-                            if (ack.Version > p.AcceptedVersion) p.AcceptedVersion = ack.Version;
-                            break;
-                        default:
-                            // UnknownCharacter, NotInSession, Invalid: the protocol says drop it, do not retry
-                            MarkStored(p, ack.Version);
-                            break;
-                    }
+                    // UnknownCharacter, NotInSession, Invalid: the protocol says drop it, do not retry
+                    metrics.CountV2("save refused: " + ack.Status);
+                    if (byCharacter.TryGetValue(ack.CharacterId, out var p)) MarkStored(p, ack.Version);
                 }
             }
             else
@@ -405,9 +398,10 @@ public sealed class V2Link : IAsyncDisposable
     // ------------------------------------------------------------------
 
     /// <summary>
-    /// One tick: turns this tick's changes into new player versions, then sends every player whose
-    /// newest version is not stored yet (a resend for those already sent). Nothing is lost while
-    /// disconnected: the outbox keeps it and the next connected tick sends it.
+    /// One tick: turns this tick's changes into new player versions, then sends every player with a new
+    /// version, and again any player whose save is still not stored after --v2-resend-after (the game's
+    /// SaveOutbox). Nothing is lost while disconnected: the outbox keeps it and the next connected tick
+    /// sends it.
     /// </summary>
     public async Task TickAsync(List<SimPlayer> joined, CancellationToken ct)
     {
@@ -432,10 +426,15 @@ public sealed class V2Link : IAsyncDisposable
             if (c == null || !c.IsOpen) return;
 
             var now = Stopwatch.GetTimestamp();
+            var wall = DateTime.UtcNow;
             var saves = new List<PlayerSave>();
             foreach (var p in joined)
             {
-                if (p.CharacterId != Guid.Empty && p.HasUnstoredSave) saves.Add(BuildSave(p, now));
+                if (p.CharacterId == Guid.Empty || !p.HasUnstoredSave) continue;
+                var fresh = p.Version > p.LastSentVersion;
+                if (!fresh && wall - p.LastSentAt < o.V2ResendAfter) continue; // sent, waiting for Stored
+                p.LastSentAt = wall;
+                saves.Add(BuildSave(p, now));
             }
 
             GameStateSave? gs = null;
@@ -449,12 +448,11 @@ public sealed class V2Link : IAsyncDisposable
             for (var start = 0; start < saves.Count || (start == 0 && gs != null); start += o.MaxBatch)
             {
                 var players = saves.Skip(start).Take(o.MaxBatch).ToArray();
-                var batch = new SaveBatch { Players = players, GameState = start == 0 ? gs : null, EventAck = ack };
-                SentBatch? sent = null;
+                var batch = new SaveBatch { Players = players, GameState = start == 0 ? gs : null, EventAck = ack, Sequence = ++batchSequence };
                 if (players.Length > 0)
                 {
-                    sent = new SentBatch { SentAt = now, FirstCharacter = players[0].CharacterId, FirstVersion = players[0].Version };
-                    unacked.Enqueue(sent);
+                    // the server answers only batches with players
+                    unacked.Enqueue(new SentBatch { Sequence = batch.Sequence, SentAt = now });
                 }
                 if (!c.Send(batch))
                 {
@@ -580,6 +578,7 @@ public sealed class V2Link : IAsyncDisposable
     {
         var clock = Stopwatch.StartNew();
         var joined = players.Where(p => p.Joined).ToList();
+        lock (gate) foreach (var p in joined) p.LastSentAt = DateTime.MinValue; // quitting sends everything unconfirmed at once
         int left;
         while (true)
         {
