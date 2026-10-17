@@ -27,6 +27,7 @@ namespace RavenNest.BusinessLogic.Game
         private readonly VillageManager villageManager;
         private readonly ITwitchExtensionConnectionProvider extWsConnectionProvider;
         private readonly ITcpSocketApiConnectionProvider tcpConnectionProvider;
+        private readonly ISecureHasher secureHasher;
 
         public const int MaxPlayerExpMultiplier = 100;
         public const double RaidExpFactor = 1.0;
@@ -50,7 +51,8 @@ namespace RavenNest.BusinessLogic.Game
             PlayerManager playerManager,
             VillageManager villageManager,
             ITwitchExtensionConnectionProvider extWsConnectionProvider,
-            ITcpSocketApiConnectionProvider tcpConnectionProvider)
+            ITcpSocketApiConnectionProvider tcpConnectionProvider,
+            ISecureHasher secureHasher)
         {
             this.logger = logger;
             this.twitchClient = twitchClient;
@@ -59,6 +61,7 @@ namespace RavenNest.BusinessLogic.Game
             this.villageManager = villageManager;
             this.extWsConnectionProvider = extWsConnectionProvider;
             this.tcpConnectionProvider = tcpConnectionProvider;
+            this.secureHasher = secureHasher;
         }
 
         /// <summary>
@@ -659,13 +662,29 @@ namespace RavenNest.BusinessLogic.Game
             catch { }
         }
 
+        /// <summary>
+        /// Reads a session token sent by a game client (REST session-token header, TCP api and delta
+        /// server auth). Returns null when the token is not one this server issued for that user's
+        /// own session, so a token cannot be made up or pointed at someone else's session.
+        /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public SessionToken Get(string sessionToken)
         {
             var json = Base64Decode(sessionToken);
             var token = JSON.Parse<SessionToken>(json);
+            if (token == null)
+            {
+                return null;
+            }
 
-            if (token != null && !string.IsNullOrEmpty(token.ClientVersion))
+            var session = token.SessionId != Guid.Empty ? gameData.GetSession(token.SessionId, false) : null;
+            if (!IsValidSessionToken(token, session, secureHasher, out var error))
+            {
+                LogRejectedSessionToken(token, error);
+                return null;
+            }
+
+            if (!string.IsNullOrEmpty(token.ClientVersion))
             {
                 var state = gameData.GetSessionState(token.SessionId);
                 if (state != null && string.IsNullOrEmpty(state.ClientVersion))
@@ -674,6 +693,68 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
             return token;
+        }
+
+        /// <summary>
+        /// A session token is accepted when the session exists, belongs to the token's user and, once a
+        /// TokenSigningKey is configured, carries the signature for that user and session.
+        /// </summary>
+        /// <remarks>
+        /// The signature lives in the existing AuthToken field rather than a new one: game clients
+        /// deserialize the token into their own copy of the class and serialize it again for every
+        /// request, so a field an older client does not know about would be dropped. The client only
+        /// checks that AuthToken is not empty.
+        ///
+        /// <para>
+        /// Without a key the signature is skipped, as before, so tokens handed out by an older server
+        /// keep working until the key is added. Without a key it could be forged anyway.
+        /// </para>
+        /// </remarks>
+        public static bool IsValidSessionToken(SessionToken token, DataModels.GameSession session, ISecureHasher hasher, out string error)
+        {
+            error = null;
+            if (token == null)
+            {
+                error = "no token";
+            }
+            else if (token.UserId == Guid.Empty || token.SessionId == Guid.Empty)
+            {
+                error = "missing user or session id";
+            }
+            else if (hasher.HasTokenSigningKey && !hasher.IsValidSessionSignature(token))
+            {
+                error = "bad signature";
+            }
+            else if (session == null)
+            {
+                error = "no such session";
+            }
+            else if (session.UserId != token.UserId)
+            {
+                error = "session belongs to another user";
+            }
+
+            return error == null;
+        }
+
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, DateTime> rejectedTokenLog = new();
+
+        private void LogRejectedSessionToken(SessionToken token, string error)
+        {
+            // Clients retry often, so log each session at most every 15 minutes.
+            var now = DateTime.UtcNow;
+            if (rejectedTokenLog.TryGetValue(token.SessionId, out var last) && now - last < TimeSpan.FromMinutes(15))
+            {
+                return;
+            }
+
+            if (rejectedTokenLog.Count > 10000)
+            {
+                rejectedTokenLog.Clear();
+            }
+
+            rejectedTokenLog[token.SessionId] = now;
+            logger.LogWarning("Rejected session token (" + error + ") for user " + token.UserId + ", session " + token.SessionId + ".");
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -714,7 +795,9 @@ namespace RavenNest.BusinessLogic.Game
             var twitch = gameData.GetUserAccess(user.Id, "twitch");
             return new SessionToken
             {
-                AuthToken = token.Token,
+                // Not the auth token's hash any more: a signature over this user and session, so the
+                // server can check the token on its own (see IsValidSessionToken).
+                AuthToken = secureHasher.GetSessionSignature(user.Id, session.Id),
                 ExpiresUtc = DateTime.UtcNow + TimeSpan.FromDays(180),
                 SessionId = session.Id,
                 StartedUtc = session.Started,

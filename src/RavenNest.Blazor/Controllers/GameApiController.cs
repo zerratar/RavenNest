@@ -89,7 +89,7 @@ namespace RavenNest.Controllers
             {
                 errorMessage = "Auth token has expired.";
             }
-            else if (authToken.Token != secureHasher.Get(authToken))
+            else if (!secureHasher.IsValid(authToken))
             {
                 errorMessage = "Auth token did not match expected value.";
             }
@@ -116,7 +116,7 @@ namespace RavenNest.Controllers
             {
                 validationError = "Auth token has expired.";
             }
-            else if (authToken.Token != secureHasher.Get(authToken))
+            else if (!secureHasher.IsValid(authToken))
             {
                 validationError = "Auth token did not match expected value.";
             }

@@ -3481,24 +3481,36 @@ namespace RavenNest.BusinessLogic.Game
         }
 
 
-        public void OnPlayerStateDelta(SessionToken sessionToken, IReadOnlyList<CharacterStateDelta> deltas)
+        /// <summary>
+        /// What a save needs to know about the session it came from. Built once per batch by
+        /// <see cref="TryGetSaveContext"/>, then used for each player in it, by the old delta socket and by v2.
+        /// </summary>
+        public sealed class SaveContext
         {
-            if (sessionToken == null || deltas == null || deltas.Count == 0)
-            {
-                return;
-            }
+            public SessionToken SessionToken;
+            public User Owner;
+            public DataModels.GameSession Session;
+            public DataModels.SessionState State;
+        }
 
+        /// <summary>
+        /// The session a save batch belongs to, or false (logged) when its owner is gone or banned. Creates the
+        /// game session row if it is missing, as the save handlers always did.
+        /// </summary>
+        public bool TryGetSaveContext(SessionToken sessionToken, string what, out SaveContext context)
+        {
+            context = null;
             var sessionOwner = gameData.GetUser(sessionToken.UserId);
             if (sessionOwner == null)
             {
                 logger.LogError("Unable to find session owner for " + sessionToken.UserName);
-                return;
+                return false;
             }
 
             if (sessionOwner.Status >= 1)
             {
-                logger.LogError("The user session from " + sessionOwner.UserName + " trying to save player states, but the owner has been banned.");
-                return;
+                logger.LogError("The user session from " + sessionOwner.UserName + " trying to save " + what + ", but the owner has been banned.");
+                return false;
             }
 
             var gameSession = gameData.GetSession(sessionToken.SessionId);
@@ -3509,121 +3521,37 @@ namespace RavenNest.BusinessLogic.Game
             }
 
             var sessionState = gameData.GetSessionState(gameSession.Id);
-            if (sessionState != null)
+            if (sessionState != null && string.IsNullOrEmpty(sessionState.ClientVersion))
             {
-                if (string.IsNullOrEmpty(sessionState.ClientVersion))
-                    sessionState.ClientVersion = sessionToken.ClientVersion;
+                sessionState.ClientVersion = sessionToken.ClientVersion;
+            }
 
-                sessionState.LastStateRequest = DateTime.UtcNow;
+            context = new SaveContext { SessionToken = sessionToken, Owner = sessionOwner, Session = gameSession, State = sessionState };
+            return true;
+        }
+
+        public void OnPlayerStateDelta(SessionToken sessionToken, IReadOnlyList<CharacterStateDelta> deltas)
+        {
+            if (sessionToken == null || deltas == null || deltas.Count == 0)
+            {
+                return;
+            }
+
+            if (!TryGetSaveContext(sessionToken, "player states", out var context))
+            {
+                return;
+            }
+
+            if (context.State != null)
+            {
+                context.State.LastStateRequest = DateTime.UtcNow;
             }
 
             foreach (var data in deltas)
             {
                 try
                 {
-                    try
-                    {
-                        if (data.DirtyMask == 0)
-                        {
-                            continue;
-                        }
-    
-                        var character = gameData.GetCharacter(data.CharacterId);
-                        if (character == null)
-                        {
-                            logger.LogError("Trying to update a character that does not exist. " + data.CharacterId + " (" + data.PlatformUserName + "). Creating a new one.");
-                            //character = CreateMissingCharacter(data, gameSession);
-                            //
-                            //SendRemovePlayerFromSession(delta.CharacterId, gameSession, "Character with ID " + delta.CharacterId + " does not exist.");
-                            continue;
-                        }
-    
-                        // take ownership of the character if its not part of a stream
-                        if (character.UserIdLock == null)
-                        {
-                            character.UserIdLock = sessionOwner.Id;
-                        }
-    
-                        // check if we are part of this session, if not, we should attempt to remove the character from the stream.
-                        if (character.UserIdLock != sessionOwner.Id)
-                        {
-                            try
-                            {
-                                if (TryMoveToSession(character, sessionOwner))
-                                {
-                                    continue;
-                                }
-    
-                                var characterSessionOwner = character.UserIdLock != null ? gameData.GetUser(character.UserIdLock.GetValueOrDefault()) : null;
-                                var partOfSession = characterSessionOwner != null ? characterSessionOwner.UserName : "";
-    #if DEBUG
-                                logger.LogError(character.Name + " is getting state updates from '" + sessionOwner.UserName + "' but is actually part of '" + partOfSession + "'. Update has been ignored.");
-    #endif
-                                SendRemovePlayerFromSession(character, gameSession, "Character is part of another session.");
-                                continue;
-                                // send remove from this session.
-                            }
-                            catch (Exception exc)
-                            {
-                                logger.LogError($"Unable to send remove player ({character?.Name}) from session ({sessionOwner?.UserName}): " + exc);
-                            }
-                            continue;
-                        }
-    
-                        var user = gameData.GetUser(character.UserId);
-                        if (user == null)
-                        {
-                            user = CreateUserFromCharacterData(sessionToken, character, data.Platform, data.PlatformUserId, data.PlatformUserName);
-                        }
-    
-    
-                        // Last line of defence for a name that drifted out of step.
-                        //
-                        // This used to only log the mismatch, because repairing it here meant repeating
-                        // the update in a fourth place with its own idea of which fields to touch. There
-                        // is one function for that now, so the repair can simply be made. In practice
-                        // this should no longer trigger: session start and the join path both keep the
-                        // names aligned, so anything reaching here is worth knowing about.
-                        if (!character.Name.Equals(user.UserName, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(data.PlatformUserName))
-                        {
-                            logger.LogWarning($"User name mismatch. Character: {character.Name}, User: {user.UserName}. Fixing from session data.");
-    
-                            UserNameSync.Apply(
-                                gameData,
-                                user,
-                                data.Platform ?? "twitch",
-                                data.PlatformUserId,
-                                Utility.SanitizeUserName(data.PlatformUserName, data.PlatformUserName));
-                        }
-    
-                        var characterSessionState = gameData.GetCharacterSessionState(sessionToken.SessionId, character.Id);
-                        characterSessionState.LastStateSaveRequest = DateTime.UtcNow;
-                        characterSessionState.LastStateUpdate = DateTime.UtcNow;
-    
-                        DataModels.CharacterState characterState = null;
-                        if (character.StateId != Guid.Empty)
-                        {
-                            characterState = gameData.GetCharacterState(character.StateId);
-                        }
-    
-                        if (characterState == null)
-                        {
-                            var state = CreateCharacterState(data);
-                            gameData.Add(state);
-                            character.StateId = state.Id;
-                        }
-                        else
-                        {
-                            var state = gameData.GetCharacterState(character.StateId);
-                            SetCharacterState(character, state, data);
-                        }
-    
-                        TrySendToExtension(character, data);
-                    }
-                    catch (Exception e)
-                    {
-                        logger.LogError($"Unable to update player state: {e}");
-                    }
+                    ApplyPlayerState(context, data);
                 }
                 catch (Exception exc)
                 {
@@ -3632,6 +3560,79 @@ namespace RavenNest.BusinessLogic.Game
                 }
             }
         }
+
+        /// <summary>Applies one player's state fields (those in <see cref="CharacterStateDelta.DirtyMask"/>).</summary>
+        public Protocol.SaveStatus ApplyPlayerState(SaveContext context, CharacterStateDelta data)
+        {
+            if (data.DirtyMask == 0)
+            {
+                return Protocol.SaveStatus.Ok;
+            }
+
+            var sessionToken = context.SessionToken;
+            var sessionOwner = context.Owner;
+            var character = gameData.GetCharacter(data.CharacterId);
+            if (character == null)
+            {
+                logger.LogError("Trying to update a character that does not exist. " + data.CharacterId + " (" + data.PlatformUserName + ").");
+                return Protocol.SaveStatus.UnknownCharacter;
+            }
+
+            if (!TryClaimForSession(character, context, "state"))
+            {
+                return Protocol.SaveStatus.NotInSession;
+            }
+
+            var user = gameData.GetUser(character.UserId);
+            if (user == null)
+            {
+                user = CreateUserFromCharacterData(sessionToken, character, data.Platform, data.PlatformUserId, data.PlatformUserName);
+            }
+
+            // Last line of defence for a name that drifted out of step.
+            //
+            // This used to only log the mismatch, because repairing it here meant repeating
+            // the update in a fourth place with its own idea of which fields to touch. There
+            // is one function for that now, so the repair can simply be made. In practice
+            // this should no longer trigger: session start and the join path both keep the
+            // names aligned, so anything reaching here is worth knowing about.
+            if (!character.Name.Equals(user.UserName, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(data.PlatformUserName))
+            {
+                logger.LogWarning($"User name mismatch. Character: {character.Name}, User: {user.UserName}. Fixing from session data.");
+
+                UserNameSync.Apply(
+                    gameData,
+                    user,
+                    data.Platform ?? "twitch",
+                    data.PlatformUserId,
+                    Utility.SanitizeUserName(data.PlatformUserName, data.PlatformUserName));
+            }
+
+            var characterSessionState = gameData.GetCharacterSessionState(sessionToken.SessionId, character.Id);
+            characterSessionState.LastStateSaveRequest = DateTime.UtcNow;
+            characterSessionState.LastStateUpdate = DateTime.UtcNow;
+
+            DataModels.CharacterState characterState = null;
+            if (character.StateId != Guid.Empty)
+            {
+                characterState = gameData.GetCharacterState(character.StateId);
+            }
+
+            if (characterState == null)
+            {
+                var state = CreateCharacterState(data);
+                gameData.Add(state);
+                character.StateId = state.Id;
+            }
+            else
+            {
+                SetCharacterState(character, characterState, data);
+            }
+
+            TrySendToExtension(character, data);
+            return Protocol.SaveStatus.Ok;
+        }
+
         public void OnExperienceDelta(SessionToken sessionToken, IReadOnlyList<DeltaExperienceUpdate> deltas)
         {
             if (sessionToken == null || deltas == null || deltas.Count == 0)
@@ -3639,151 +3640,21 @@ namespace RavenNest.BusinessLogic.Game
                 return;
             }
 
-            var sessionOwner = gameData.GetUser(sessionToken.UserId);
-            if (sessionOwner == null)
+            if (!TryGetSaveContext(sessionToken, "player exp", out var context))
             {
-                logger.LogError("Unable to find session owner for " + sessionToken.UserName);
                 return;
             }
 
-            if (sessionOwner.Status >= 1)
+            if (context.State != null)
             {
-                logger.LogError("The user session from " + sessionOwner.UserName + " trying to save players, but the owner has been banned.");
-                return;
-            }
-
-            var gameSession = gameData.GetSession(sessionToken.SessionId);
-            if (gameSession == null)
-            {
-                gameSession = GameData.CreateSession(sessionToken.UserId, sessionToken.SessionId);
-                gameData.Add(gameSession);
-            }
-
-            if (sessionOwner.Status >= 1)
-            {
-                logger.LogError("The user session from " + sessionOwner.UserName + " trying to save player exp, but the owner has been banned.");
-                return;
-            }
-
-            var sessionState = gameData.GetSessionState(gameSession.Id);
-            if (sessionState != null)
-            {
-                if (string.IsNullOrEmpty(sessionState.ClientVersion))
-                    sessionState.ClientVersion = sessionToken.ClientVersion;
-
-                sessionState.LastExpRequest = DateTime.UtcNow;
+                context.State.LastExpRequest = DateTime.UtcNow;
             }
 
             foreach (var delta in deltas)
             {
                 try
                 {
-                    var character = gameData.GetCharacter(delta.CharacterId);
-                    if (character == null)
-                    {
-                        logger.LogError("Trying to update a character that does not exist. " + delta.CharacterId);
-                        character = CreateMissingCharacter(delta.CharacterId, gameSession);
-                        //SendRemovePlayerFromSession(delta.CharacterId, gameSession, "Character with ID " + delta.CharacterId + " does not exist.");
-                        //continue;
-                    }
-    
-                    if (delta.DirtyMask == 0 || delta.Changes == null || delta.Changes.Length == 0)
-                    {
-                        logger.LogWarning("Experience delta has no changes. For character " + character.Name + " on " + sessionOwner.UserName);
-                        continue;
-                    }
-    
-                    // take ownership of the character if its not part of a stream
-                    if (character.UserIdLock == null)
-                    {
-                        character.UserIdLock = sessionOwner.Id;
-                    }
-    
-                    if (character.UserIdLock != sessionOwner.Id)
-                    {
-                        try
-                        {
-                            if (TryMoveToSession(character, sessionOwner))
-                            {
-                                continue;
-                            }
-    
-                            var characterSessionOwner = character.UserIdLock != null ? gameData.GetUser(character.UserIdLock.GetValueOrDefault()) : null;
-                            var partOfSession = characterSessionOwner != null ? characterSessionOwner.UserName : "";
-                            // check if we had a recent update from the other session owner. If so, we should remove it from this session, otherwise we will keep the player in this session.
-                            //logger.LogError("User session lock mismatch. Character: " + character.Name + " Session: " + sessionOwner.UserName + " UserIdLock: " + partOfSession);
-    #if DEBUG
-                            logger.LogError(character.Name + " is getting exp updates from '" + sessionOwner.UserName + "' but is actually part of '" + partOfSession + "'. Update has been ignored.");
-    #endif
-                            SendRemovePlayerFromSession(character, gameSession, "Character is part of another session.");
-                            continue;
-                        }
-                        catch (Exception exc)
-                        {
-                            logger.LogError($"Unable to send remove player ({character?.Name}) from session ({sessionOwner?.UserName}): " + exc);
-                            continue;
-                        }
-                    }
-    
-    
-                    var user = gameData.GetUser(character.UserId);
-                    if (user == null)
-                    {
-                        user = CreateUserFromCharacterData(sessionToken, character);
-                    }
-    
-                    Skills skills = GetOrCreateCharacterSkills(character);
-    
-                    var characterSessionState = gameData.GetCharacterSessionState(sessionToken.SessionId, character.Id);
-                    characterSessionState.LastExpSaveRequest = DateTime.UtcNow;
-    
-                    foreach (var update in delta.Changes)
-                    {
-                        var level = update.Level;
-                        if (level > GameMath.MaxLevel)
-                        {
-                            continue;
-                        }
-    
-                        if (level < 0)
-                        {
-                            level = 1;
-                        }
-    
-                        var skill = skills.GetSkill(update.Index);
-                        if (skill == null) continue;
-    
-                        double experience = update.Experience;
-                        var existingLevel = skill.Level;
-    
-                        if (skill.Level == GameMath.MaxLevel)
-                        {
-                            var maxExp = GameMath.ExperienceForLevel(GameMath.MaxLevel + 1);
-                            if (experience >= maxExp)
-                            {
-                                experience = maxExp;
-                            }
-                        }
-    
-                        if (skills.Set(skill.Index, level, experience))
-                        {
-                            if (existingLevel != level)
-                            {
-                                UpdateCharacterSkillRecord(character.Id, skill.Index, level, experience);
-                            }
-    
-                            characterSessionState.LastExpUpdate = DateTime.UtcNow;
-    
-                            TrySendToExtension(character, new CharacterExpUpdate
-                            {
-                                CharacterId = character.Id,
-                                Experience = experience,
-                                Level = level,
-                                SkillIndex = skill.Index,
-                                Percent = SkillsExtended.GetPercentForNextLevel(skill.Level, skill.Experience),
-                            });
-                        }
-                    }
+                    ApplyExperience(context, delta);
                 }
                 catch (Exception exc)
                 {
@@ -3791,6 +3662,149 @@ namespace RavenNest.BusinessLogic.Game
                     logger.LogError("Failed to apply an experience update for character " + delta.CharacterId + ": " + exc);
                 }
             }
+        }
+
+        /// <summary>Applies one player's skill levels and experience from the old delta socket.</summary>
+        public Protocol.SaveStatus ApplyExperience(SaveContext context, DeltaExperienceUpdate delta)
+        {
+            var skills = delta.Changes == null || delta.DirtyMask == 0
+                ? Array.Empty<Protocol.SkillSave>()
+                : Array.ConvertAll(delta.Changes, x => new Protocol.SkillSave { Index = x.Index, Level = x.Level, Experience = x.Experience });
+            return ApplyExperience(context, delta.CharacterId, skills);
+        }
+
+        /// <summary>Applies one player's skill levels and experience (the total within each level).</summary>
+        public Protocol.SaveStatus ApplyExperience(SaveContext context, Guid characterId, IReadOnlyList<Protocol.SkillSave> changes)
+        {
+            var sessionToken = context.SessionToken;
+            var character = gameData.GetCharacter(characterId);
+            if (character == null)
+            {
+                logger.LogError("Trying to update a character that does not exist. " + characterId);
+                character = CreateMissingCharacter(characterId, context.Session);
+                //SendRemovePlayerFromSession(delta.CharacterId, gameSession, "Character with ID " + delta.CharacterId + " does not exist.");
+                if (character == null)
+                {
+                    return Protocol.SaveStatus.UnknownCharacter;
+                }
+            }
+
+            if (changes == null || changes.Count == 0)
+            {
+                logger.LogWarning("Experience delta has no changes. For character " + character.Name + " on " + context.Owner.UserName);
+                return Protocol.SaveStatus.Ok;
+            }
+
+            if (!TryClaimForSession(character, context, "exp"))
+            {
+                return Protocol.SaveStatus.NotInSession;
+            }
+
+            var user = gameData.GetUser(character.UserId);
+            if (user == null)
+            {
+                user = CreateUserFromCharacterData(sessionToken, character);
+            }
+
+            Skills skills = GetOrCreateCharacterSkills(character);
+
+            var characterSessionState = gameData.GetCharacterSessionState(sessionToken.SessionId, character.Id);
+            characterSessionState.LastExpSaveRequest = DateTime.UtcNow;
+
+            foreach (var update in changes)
+            {
+                var level = update.Level;
+                if (level > GameMath.MaxLevel)
+                {
+                    continue;
+                }
+
+                if (level < 0)
+                {
+                    level = 1;
+                }
+
+                var skill = skills.GetSkill(update.Index);
+                if (skill == null) continue;
+
+                double experience = update.Experience;
+                var existingLevel = skill.Level;
+
+                if (skill.Level == GameMath.MaxLevel)
+                {
+                    var maxExp = GameMath.ExperienceForLevel(GameMath.MaxLevel + 1);
+                    if (experience >= maxExp)
+                    {
+                        experience = maxExp;
+                    }
+                }
+
+                if (skills.Set(skill.Index, level, experience))
+                {
+                    if (existingLevel != level)
+                    {
+                        UpdateCharacterSkillRecord(character.Id, skill.Index, level, experience);
+                    }
+
+                    characterSessionState.LastExpUpdate = DateTime.UtcNow;
+
+                    TrySendToExtension(character, new CharacterExpUpdate
+                    {
+                        CharacterId = character.Id,
+                        Experience = experience,
+                        Level = level,
+                        SkillIndex = skill.Index,
+                        Percent = SkillsExtended.GetPercentForNextLevel(skill.Level, skill.Experience),
+                    });
+                }
+            }
+
+            return Protocol.SaveStatus.Ok;
+        }
+
+        /// <summary>
+        /// Whether this session may save the character: it takes a character no stream owns, and one whose owning
+        /// stream has gone quiet (<see cref="TryMoveToSession"/>). A character another live stream owns is told to
+        /// leave this one and the save is ignored.
+        /// </summary>
+        /// <remarks>
+        /// A character just taken over from a quiet stream used to have that first save ignored as well, so it was
+        /// lost; now it is applied.
+        /// </remarks>
+        private bool TryClaimForSession(Character character, SaveContext context, string what)
+        {
+            var sessionOwner = context.Owner;
+
+            // take ownership of the character if its not part of a stream
+            if (character.UserIdLock == null)
+            {
+                character.UserIdLock = sessionOwner.Id;
+            }
+
+            if (character.UserIdLock == sessionOwner.Id)
+            {
+                return true;
+            }
+
+            try
+            {
+                if (TryMoveToSession(character, sessionOwner))
+                {
+                    return true;
+                }
+
+#if DEBUG
+                var characterSessionOwner = character.UserIdLock != null ? gameData.GetUser(character.UserIdLock.GetValueOrDefault()) : null;
+                var partOfSession = characterSessionOwner != null ? characterSessionOwner.UserName : "";
+                logger.LogError(character.Name + " is getting " + what + " updates from '" + sessionOwner.UserName + "' but is actually part of '" + partOfSession + "'. Update has been ignored.");
+#endif
+                SendRemovePlayerFromSession(character, context.Session, "Character is part of another session.");
+            }
+            catch (Exception exc)
+            {
+                logger.LogError($"Unable to send remove player ({character?.Name}) from session ({sessionOwner?.UserName}): " + exc);
+            }
+            return false;
         }
 
         private bool TryMoveToSession(Character character, User newSessionOwner)

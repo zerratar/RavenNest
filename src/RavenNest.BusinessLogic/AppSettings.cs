@@ -44,5 +44,17 @@
         #endregion
 
         public int TcpApiPort { get; set; }
+
+        /// <summary>
+        /// Secret used to sign auth and session tokens with HMAC-SHA256. Keep it out of source control.
+        /// When missing, tokens are signed the old way with the constant in SecureHasher, which anyone
+        /// reading the source can forge.
+        /// </summary>
+        public string TokenSigningKey { get; set; }
+
+        /// <summary>
+        /// Switches off the v2 game connection (/api/v2/game): games that try it are told to use the old path.
+        /// </summary>
+        public bool DisableGameConnectionV2 { get; set; }
     }
 }

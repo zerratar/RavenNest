@@ -34,6 +34,7 @@
     <ProjectReference Include="..\RavenNest.DataAnnotations\RavenNest.DataAnnotations.csproj" />
     <ProjectReference Include="..\RavenNest.DataModels\RavenNest.DataModels.csproj" />
     <ProjectReference Include="..\RavenNest.Models\RavenNest.Models.csproj" />
+    <ProjectReference Include="..\RavenNest.Protocol\RavenNest.Protocol.csproj" />
     <ProjectReference Include="..\RavenNest.DataModels.Generators\RavenNest.DataModels.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>
