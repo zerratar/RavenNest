@@ -74,7 +74,7 @@ namespace RavenNest.Controllers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void AssertAdminAuthToken(AuthToken authToken)
         {
-            if (authToken == null) throw new Exception(InsufficientPermissions);
+            if (authToken == null || authToken.Expired) throw new Exception(InsufficientPermissions);
             var user = gameData.GetUser(authToken.UserId);
             if (!user.IsAdmin.GetValueOrDefault()) throw new Exception(InsufficientPermissions);
 

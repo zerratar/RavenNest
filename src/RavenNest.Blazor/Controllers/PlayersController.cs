@@ -638,7 +638,7 @@ namespace RavenNest.Controllers
             if (authToken.UserId == Guid.Empty) throw new NullReferenceException(nameof(authToken.UserId));
             if (authToken.Expired) throw new Exception("Session has expired.");
             if (string.IsNullOrEmpty(authToken.Token)) throw new Exception("Session has expired.");
-            if (authToken.Token != secureHasher.Get(authToken))
+            if (!secureHasher.IsValid(authToken))
             {
                 throw new Exception("Session has expired.");
             }
