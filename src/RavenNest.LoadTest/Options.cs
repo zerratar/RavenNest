@@ -79,6 +79,9 @@ public sealed class Options
     /// <summary>Every this often, drop the WebSocket without a close and resume. Zero is off.</summary>
     public TimeSpan V2DropEvery { get; set; }
 
+    /// <summary>How long a chaos drop stays down before resuming, so events and acks pile up on the server.</summary>
+    public TimeSpan V2DropPause { get; set; } = TimeSpan.FromSeconds(3);
+
     /// <summary>At the end, how long to keep resending until every save is stored (the game's quit wait).</summary>
     public TimeSpan V2DrainTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
@@ -165,6 +168,7 @@ public sealed class Options
                 case "--v2-commands": o.V2Commands = true; break;
                 case "--v2-repeat-share": o.V2RepeatShare = Dbl(Next()); break;
                 case "--v2-drop-every": o.V2DropEvery = Span(Next()); break;
+                case "--v2-drop-pause": o.V2DropPause = Span(Next()); break;
                 case "--v2-drain-timeout": o.V2DrainTimeout = Span(Next()); break;
                 case "--server-pid": o.ServerPid = Int(Next()); break;
 
@@ -278,6 +282,7 @@ Protocol:
   --v2-repeat-share <0..1>    v2 only: resend this share of commands with the same request id and check the answer
                               is the first one and nothing was added twice (needs --v2-commands)
   --v2-drop-every <span>      v2 only: drop the WebSocket without a close this often and resume with the same resume id
+  --v2-drop-pause <t>         v2 only: stay down this long after a drop before resuming (default 3s)
   --v2-drain-timeout <t>      v2 only: at the end, how long to keep resending until every save is stored (default 30s)
   --server-pid <pid>          report the server process's CPU time and memory (Get-NetTCPConnection -LocalPort 443)
 

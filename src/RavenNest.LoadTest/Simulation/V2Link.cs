@@ -39,6 +39,7 @@ public sealed class V2Link : IAsyncDisposable
     private long eventGapsLogged, mismatchesLogged;
 
     private DateTime nextConnect = DateTime.MinValue;
+    private DateTime downUntil = DateTime.MinValue; // a chaos drop's outage: the tick does not reconnect before
     private TimeSpan backoff = TimeSpan.FromSeconds(1);
     private bool giveUp;
 
@@ -222,6 +223,10 @@ public sealed class V2Link : IAsyncDisposable
                 lock (gate) before = lastApplied;
                 c.Abort();
                 Interlocked.Increment(ref metrics.V2ChaosDrops);
+                downUntil = DateTime.UtcNow + o.V2DropPause;
+                lock (gate) if (connection == c) connection = null; // the tick sees no connection while down
+                // down for a while, as a real network blip: saves pile up in the outbox, events and acks on the server
+                await Task.Delay(o.V2DropPause, ct);
                 var resumesBefore = Interlocked.Read(ref metrics.V2Resumes);
                 if (await ConnectAsync(ct, now: true))
                 {
@@ -407,7 +412,7 @@ public sealed class V2Link : IAsyncDisposable
     public async Task TickAsync(List<SimPlayer> joined, CancellationToken ct)
     {
         CheckConnection();
-        if (connection == null) await ConnectAsync(ct);
+        if (connection == null && DateTime.UtcNow >= downUntil) await ConnectAsync(ct);
 
         lock (gate)
         {

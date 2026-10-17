@@ -169,7 +169,8 @@ both the delta socket and the event socket:
   drop go again with the same id after the reconnect. `--v2-repeat-share 0.1` sends 10% of them a second time
   with the same id and checks the answer is the same (status, value, inventory revision and amounts), and for
   `items.add` reads the player back over REST to check the item was not added twice.
-* **Chaos.** `--v2-drop-every 1m` drops the socket without a close every minute and resumes at once.
+* **Chaos.** `--v2-drop-every 1m` drops the socket without a close every minute, stays down for
+  `--v2-drop-pause` (3 s), then resumes; the events the server made meanwhile must be replayed with no gap.
 
 | v2 option | |
 | --- | --- |
@@ -177,6 +178,7 @@ both the delta socket and the event socket:
 | `--v2-commands` | joins, restores and commands as v2 commands |
 | `--v2-repeat-share <0..1>` | repeat this share of commands with the same request id (needs `--v2-commands`) |
 | `--v2-drop-every <span>` | drop the WebSocket this often and resume |
+| `--v2-drop-pause <t>` | stay down this long after a drop before resuming (default 3s) |
 | `--v2-drain-timeout <t>` | how long to wait at the end for every save to be stored (default 30s) |
 | `--server-pid <pid>` | report the server process's CPU time and memory (works for v1 too) |
 
