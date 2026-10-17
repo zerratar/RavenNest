@@ -145,6 +145,20 @@ public sealed class StreamerSession : IAsyncDisposable
 
     public async Task JoinPlayersAsync(CancellationToken ct)
     {
+        try
+        {
+            await JoinPlayersCoreAsync(ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            JoinFinished ??= DateTime.UtcNow;
+            Roster.Save(o.RosterFolder, Name, Players);
+            Log("join phase cut short by the end of the run: " + JoinedCount + "/" + Players.Length + " players joined");
+        }
+    }
+
+    private async Task JoinPlayersCoreAsync(CancellationToken ct)
+    {
         JoinStarted = DateTime.UtcNow;
         var pending = Players.ToList();
 
