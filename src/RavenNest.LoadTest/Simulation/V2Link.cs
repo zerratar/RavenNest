@@ -411,13 +411,14 @@ public sealed class V2Link : IAsyncDisposable
 
         lock (gate)
         {
+            // the backlog: players whose earlier saves are still not stored, before this tick adds versions
             var unconfirmed = 0;
             foreach (var p in joined)
             {
                 if (p.CharacterId == Guid.Empty) continue;
                 byCharacter.TryAdd(p.CharacterId, p);
-                MakeVersion(p);
                 if (p.HasUnstoredSave) unconfirmed++;
+                MakeVersion(p);
             }
             Unconfirmed = unconfirmed;
             metrics.V2Unconfirmed.Sample(unconfirmed);
