@@ -52,6 +52,18 @@ namespace RavenNest.Controllers
             return gameManager.GetGameInfo(session);
         }
 
+        /// <summary>
+        /// The signed token for the v2 game connection, for the session in the session-token header. The same
+        /// value BeginSession returns as ConnectionToken, for games whose models do not have that field.
+        /// </summary>
+        [HttpGet("connection-token")]
+        public string GetConnectionToken()
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            return connectionTokens.Issue(session);
+        }
+
         [HttpPost("upload-log/{requestId}")]
         public async Task<IActionResult> UploadLogAsync(Guid requestId)
         {
