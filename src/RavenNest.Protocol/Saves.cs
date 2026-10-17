@@ -123,6 +123,8 @@ namespace RavenNest.Protocol
         [Key(24)] public string PlatformUserName { get; set; }
 
         public bool Has(PlayerStateFields field) => (Changed & field) == field;
+
+        public PlayerStateSave Clone() => (PlayerStateSave)MemberwiseClone();
     }
 
     [MessagePackObject]
