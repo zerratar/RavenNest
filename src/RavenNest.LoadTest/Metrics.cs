@@ -16,6 +16,9 @@ public sealed class EndpointStats
     private readonly Dictionary<string, long> failures = new();
     private long ok, failed, windowOk, windowFailed;
 
+    /// <summary>A sample that is not a time (a count), recorded the same way.</summary>
+    public void Sample(double value) => Record(value, true);
+
     public void Record(double milliseconds, bool success, string? failure = null)
     {
         lock (gate)
@@ -112,7 +115,41 @@ public sealed class Metrics
     // players
     public long PlayersJoined, PlayersNew, PlayersJoinFailed, PlayersRestored;
 
+    // v2 connection: wire
+    public long V2BytesOut, V2BytesIn, V2MessagesOut, V2MessagesIn, V2DecodeFailures;
+    public long V2Connects, V2ConnectFailures, V2Drops, V2ChaosDrops, V2Resumes, V2ResumeFailures, V2Resyncs;
+
+    // v2 saves
+    public long V2SaveBatches, V2PlayerSaves, V2SkillEntries, V2FullSaves, V2Resends, V2BatchesWithoutAck;
+    public long V2AcceptedAcks, V2StoredAcks;
+
+    /// <summary>One sample per acknowledged batch: from sending it to its Accepted acks.</summary>
+    public readonly EndpointStats V2SaveRoundTrip = new();
+
+    /// <summary>One sample per Stored ack: from the first send of that player version to the ack.</summary>
+    public readonly EndpointStats V2SaveStored = new();
+
+    /// <summary>One sample per session per tick: players whose newest version is not stored yet.</summary>
+    public readonly EndpointStats V2Unconfirmed = new();
+    public readonly ConcurrentQueue<(double Seconds, int Players)> V2UnconfirmedOverTime = new();
+
+    // v2 events
+    public long V2EventGaps, V2EventRepeats, V2EventReplays, V2EventAcks;
+
+    // v2 commands
+    public long V2CommandRepeats, V2RepeatMatches, V2RepeatMismatches, V2RepeatChecked, V2DoubleAdds;
+    public long V2CommandResends, V2DuplicateResults, V2LateResults;
+
+    // v2 end of run
+    public double? V2DrainSeconds;
+    public int V2LeftUnstored;
+
+    /// <summary>Anything else worth counting on v2 by name: ack statuses, command statuses, rejections.</summary>
+    public readonly ConcurrentDictionary<string, long> V2Counts = new();
+
     public EndpointStats Endpoint(string name) => Endpoints.GetOrAdd(name, _ => new EndpointStats());
 
     public void CountEvent(string type) => EventsByType.AddOrUpdate(type, 1, (_, n) => n + 1);
+
+    public void CountV2(string what, long n = 1) => V2Counts.AddOrUpdate(what, n, (_, v) => v + n);
 }

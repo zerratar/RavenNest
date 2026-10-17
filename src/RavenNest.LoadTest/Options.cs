@@ -14,6 +14,15 @@ public enum JoinMode
     Restore
 }
 
+public enum WireProtocol
+{
+    /// <summary>What the game does today: the delta socket (3921), the event socket (3920) and REST commands.</summary>
+    V1,
+
+    /// <summary>The v2 game connection: one WebSocket at /api/v2/game for saves, events and (optionally) commands.</summary>
+    V2
+}
+
 public sealed class Options
 {
     public const string PasswordEnv = "RAVENNEST_LOADTEST_PASSWORD";
@@ -57,6 +66,24 @@ public sealed class Options
     /// <summary>Every this often, opens a second event socket and then closes the first, as the game does when it reconnects. Zero is off.</summary>
     public TimeSpan EventReconnectEvery { get; set; }
     public int RequestTimeoutSeconds { get; set; } = 30;
+
+    // ---- v2 ----
+    public WireProtocol Protocol { get; set; } = WireProtocol.V1;
+
+    /// <summary>Joins, restores and commands go as v2 CommandRequests instead of REST (fetch stays on REST).</summary>
+    public bool V2Commands { get; set; }
+
+    /// <summary>Share of v2 commands sent a second time with the same request id, to check the answer is the first one.</summary>
+    public double V2RepeatShare { get; set; }
+
+    /// <summary>Every this often, drop the WebSocket without a close and resume. Zero is off.</summary>
+    public TimeSpan V2DropEvery { get; set; }
+
+    /// <summary>At the end, how long to keep resending until every save is stored (the game's quit wait).</summary>
+    public TimeSpan V2DrainTimeout { get; set; } = TimeSpan.FromSeconds(30);
+
+    /// <summary>The server's process id, to report its CPU time and memory. Zero is off.</summary>
+    public int ServerPid { get; set; }
 
     // ---- checking ----
     public bool Verify { get; set; } = true;
@@ -134,6 +161,13 @@ public sealed class Options
                 case "--event-reconnect-every": o.EventReconnectEvery = Span(Next()); break;
                 case "--request-timeout": o.RequestTimeoutSeconds = Int(Next()); break;
 
+                case "--protocol": o.Protocol = Enum.Parse<WireProtocol>(Next(), true); break;
+                case "--v2-commands": o.V2Commands = true; break;
+                case "--v2-repeat-share": o.V2RepeatShare = Dbl(Next()); break;
+                case "--v2-drop-every": o.V2DropEvery = Span(Next()); break;
+                case "--v2-drain-timeout": o.V2DrainTimeout = Span(Next()); break;
+                case "--server-pid": o.ServerPid = Int(Next()); break;
+
                 case "--verify": o.Verify = Bool(Next()); break;
                 case "--no-verify": o.Verify = false; break;
                 case "--verify-sample": o.VerifySample = Int(Next()); break;
@@ -163,6 +197,15 @@ public sealed class Options
         if (o.Tick <= TimeSpan.Zero) throw new ArgumentException("--tick must be above zero");
         if (o.JoinConcurrency < 1) o.JoinConcurrency = 1;
         if (o.MaxBatch < 1) o.MaxBatch = 1;
+        if (o.V2RepeatShare < 0 || o.V2RepeatShare > 1) throw new ArgumentException("--v2-repeat-share must be between 0 and 1");
+        if (o.Protocol != WireProtocol.V2 && (o.V2Commands || o.V2RepeatShare > 0 || o.V2DropEvery > TimeSpan.Zero))
+        {
+            throw new ArgumentException("--v2-commands, --v2-repeat-share and --v2-drop-every need --protocol v2");
+        }
+        if (o.V2RepeatShare > 0 && !o.V2Commands)
+        {
+            throw new ArgumentException("--v2-repeat-share repeats v2 commands: add --v2-commands");
+        }
         if (o.ClientVersion.Contains("9.4.0"))
         {
             // DeltaServer reads player state in an older layout for any version containing "9.4.0".
@@ -227,6 +270,16 @@ How much:
   --new-connection-per-request   open a new HTTP connection for every request, as the game client currently does
   --event-reconnect-every <span> every this often open a second event socket, then close the first (the game's reconnect)
   --request-timeout <s>       per request timeout in seconds (default 30)
+
+Protocol:
+  --protocol v1|v2            v1 (default): delta socket 3921 + event socket 3920, what the game does today.
+                              v2: one WebSocket at /api/v2/game for saves (with Accepted/Stored acks) and events
+  --v2-commands               v2 only: joins, restores and the command mix go as v2 CommandRequests (fetch stays on REST)
+  --v2-repeat-share <0..1>    v2 only: resend this share of commands with the same request id and check the answer
+                              is the first one and nothing was added twice (needs --v2-commands)
+  --v2-drop-every <span>      v2 only: drop the WebSocket without a close this often and resume with the same resume id
+  --v2-drain-timeout <t>      v2 only: at the end, how long to keep resending until every save is stored (default 30s)
+  --server-pid <pid>          report the server process's CPU time and memory (Get-NetTCPConnection -LocalPort 443)
 
 Checking:
   --no-verify                 skip the read back at the end

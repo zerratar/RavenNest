@@ -56,6 +56,30 @@ public sealed class SimPlayer
     public DateTime LevelUpEta = DateTime.MaxValue;
     public CharacterStateDelta? LastSentState;
 
+    // ---- v2: the outbox, what the game client keeps per player until the server says it is stored ----
+
+    /// <summary>Goes up whenever something to save changed (a tick with exp or state changes, a full resync).</summary>
+    public long Version;
+    public long AcceptedVersion;
+    public long StoredVersion;
+
+    /// <summary>The next version carries every skill and state field (after joining, or a ResyncRequired).</summary>
+    public bool NeedsFull = true;
+
+    /// <summary>The versions not stored yet, with what each changed; a resend carries all of their changes.</summary>
+    public readonly List<PendingSave> Pending = new();
+
+    /// <summary>The newest version that went out at least once, to count resends.</summary>
+    public long LastSentVersion;
+
+    /// <summary>Exp gained per skill since the last version was made (SkillSave.Gained).</summary>
+    public readonly double[] GainedSinceVersion = new double[32];
+
+    /// <summary>A v2 command for this player is in flight, so a repeat check can read the inventory without a race.</summary>
+    public volatile bool CommandBusy;
+
+    public bool HasUnstoredSave => Version > StoredVersion;
+
     public bool HasSentExp
     {
         get
@@ -102,6 +126,7 @@ public sealed class SimPlayer
     {
         if (amount <= 0) return;
         Exp[skill] += amount;
+        GainedSinceVersion[skill] += amount;
         var next = GameMath.ExperienceForLevel(Level[skill] + 1);
         while (Exp[skill] >= next && Level[skill] < GameMath.MaxLevel)
         {
@@ -168,4 +193,17 @@ public sealed class SimPlayer
             m |= (uint)CharacterStateFields.Platform;
         return m;
     }
+}
+
+/// <summary>One v2 player version that is not stored yet.</summary>
+public sealed class PendingSave
+{
+    public long Version;
+    public uint SkillMask;
+    public uint StateMask;
+    public bool Full;
+    public double[]? Gained;
+
+    /// <summary>Stopwatch timestamp of the first send, 0 until sent.</summary>
+    public long FirstSent;
 }

@@ -80,7 +80,7 @@ public sealed class RestApi : IDisposable
         return new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
     }
 
-    private static async ValueTask<Stream> ConnectIPv4Async(SocketsHttpConnectionContext context, CancellationToken ct)
+    internal static async ValueTask<Stream> ConnectIPv4Async(SocketsHttpConnectionContext context, CancellationToken ct)
     {
         var host = context.DnsEndPoint.Host;
         var address = IPAddress.TryParse(host, out var ip) ? ip
@@ -211,6 +211,12 @@ public sealed class RestApi : IDisposable
                     : state.ToString();
             return (null, "BeginSession refused: " + why);
         }
-        return (new BeginSessionResult { SessionToken = sessionToken, State = state, ExpectedClientVersion = json.Get("expectedClientVersion")?.ToString() }, null);
+        return (new BeginSessionResult
+        {
+            SessionToken = sessionToken,
+            State = state,
+            ExpectedClientVersion = json.Get("expectedClientVersion")?.ToString(),
+            ConnectionToken = json.Str("connectionToken") // the signed v2 token; servers without v2 leave it out
+        }, null);
     }
 }

@@ -4,12 +4,14 @@ using RavenNest.LoadTest.Delta;
 using RavenNest.LoadTest.Events;
 using RavenNest.LoadTest.Rest;
 using RavenNest.Models;
+using RavenNest.Protocol;
 
 namespace RavenNest.LoadTest.Simulation;
 
 /// <summary>
-/// One simulated streamer: signs in, begins a game session, keeps both sockets up, joins the
-/// players, sends deltas every tick and optionally fires REST commands.
+/// One simulated streamer: signs in, begins a game session, keeps both sockets up (or with
+/// --protocol v2 the one v2 connection), joins the players, sends deltas or v2 saves every tick and
+/// optionally fires commands.
 /// </summary>
 public sealed class StreamerSession : IAsyncDisposable
 {
@@ -21,6 +23,7 @@ public sealed class StreamerSession : IAsyncDisposable
     private readonly object rngLock = new();
     private DeltaConnection? delta;
     private EventConnection? events;
+    private V2Link? v2;
     private string? sessionTokenB64;
     private DateTime lastDeltaReconnect = DateTime.MinValue;
     private int lastGameStatePlayerCount = -1;
@@ -55,6 +58,8 @@ public sealed class StreamerSession : IAsyncDisposable
     public double WorstTickMs => worstTickMs;
     public bool DeltaConnected => delta?.Connected ?? false;
     public bool EventsConnected => events?.IsConnected ?? false;
+    public bool V2Connected => v2?.Connected ?? false;
+    public int V2Unconfirmed => v2?.Unconfirmed ?? 0;
     public int JoinedCount => Players.Count(p => p.Joined);
 
     private void Log(string message) => Console.WriteLine(DateTime.Now.ToString("HH:mm:ss") + " [" + Name + "] " + message);
@@ -110,15 +115,35 @@ public sealed class StreamerSession : IAsyncDisposable
         nextRaid = now.AddMinutes(15 + index);
         nextDungeon = now.AddMinutes(20 + index);
 
-        events = new EventConnection(o.EffectiveTcpHost, o.EventPort, () => sessionTokenB64!, metrics, Log);
-        events.Start(ct);
-
-        delta = new DeltaConnection(o.EffectiveTcpHost, o.DeltaPort, () => DeltaConnection.AuthPayload(sessionTokenB64!), metrics, Log);
-        delta.Disconnected += OnDeltaDisconnected;
-        lastDeltaReconnect = DateTime.UtcNow;
-        if (await delta.ConnectAsync(ct))
+        if (o.Protocol == WireProtocol.V2)
         {
-            Log("delta socket connected");
+            // v2 replaces both sockets: saves, events and (with --v2-commands) commands go on one WebSocket
+            if (string.IsNullOrEmpty(result.ConnectionToken))
+            {
+                Log("BeginSession returned no ConnectionToken: this server has no v2 connection. Run it from a branch with network v2, or use --protocol v1.");
+                return false;
+            }
+
+            v2 = new V2Link(o, metrics, Log, result.ConnectionToken, BuildGameState);
+            if (!await v2.ConnectAsync(ct, now: true))
+            {
+                Log("could not open the v2 connection");
+                return false;
+            }
+            Log("v2 connection open (" + V2.V2Connection.EndpointFor(o.BaseUrl) + ")");
+        }
+        else
+        {
+            events = new EventConnection(o.EffectiveTcpHost, o.EventPort, () => sessionTokenB64!, metrics, Log);
+            events.Start(ct);
+
+            delta = new DeltaConnection(o.EffectiveTcpHost, o.DeltaPort, () => DeltaConnection.AuthPayload(sessionTokenB64!), metrics, Log);
+            delta.Disconnected += OnDeltaDisconnected;
+            lastDeltaReconnect = DateTime.UtcNow;
+            if (await delta.ConnectAsync(ct))
+            {
+                Log("delta socket connected");
+            }
         }
 
         if (o.CommandRate > 0)
@@ -128,6 +153,13 @@ public sealed class StreamerSession : IAsyncDisposable
 
         return true;
     }
+
+    private GameStateSave BuildGameState(int playerCount) => new GameStateSave
+    {
+        PlayerCount = playerCount,
+        Raid = new RaidInfo { NextRaid = nextRaid },
+        Dungeon = new DungeonInfo { NextDungeon = nextDungeon }
+    };
 
     private void OnDeltaDisconnected()
     {
@@ -204,6 +236,12 @@ public sealed class StreamerSession : IAsyncDisposable
             Identifier = "1",
         };
 
+        if (v2 != null && o.V2Commands)
+        {
+            await JoinV2Async(p, body, ct);
+            return;
+        }
+
         // RavenNestClient.PlayerJoinAsync retries a few times on a network error
         for (var attempt = 0; attempt < 3 && !ct.IsCancellationRequested; ++attempt)
         {
@@ -244,10 +282,51 @@ public sealed class StreamerSession : IAsyncDisposable
         }
     }
 
+    private async Task JoinV2Async(SimPlayer p, PlayerJoinData body, CancellationToken ct)
+    {
+        // a join that timed out is asked again with the same request id, so it cannot join twice
+        var id = Guid.NewGuid();
+        for (var attempt = 0; attempt < 3 && !ct.IsCancellationRequested; ++attempt)
+        {
+            CommandResult? r;
+            try
+            {
+                r = await v2!.SendCommandAsync(RavenNest.Protocol.Commands.PlayerJoin, CommandArgs.Pack(body), ct, id);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+
+            if (r == null) continue;
+            if (r.Status is CommandStatus.Busy or CommandStatus.Error && attempt < 2)
+            {
+                await Task.Delay(250 * (attempt + 1), ct).ContinueWith(_ => { });
+                continue;
+            }
+
+            PlayerJoinResult? value = null;
+            try { value = V2Link.Value<PlayerJoinResult>(r); } catch (Exception exc) { metrics.CountV2("join answer unreadable: " + exc.GetType().Name); }
+            if (r.Status != CommandStatus.Ok || value == null || !ApplyJoinResult(p, V2Link.ToJson(value), out var error))
+            {
+                metrics.CountV2("join refused: " + (value?.ErrorMessage ?? r.Error ?? r.Status.ToString()));
+                Interlocked.Increment(ref metrics.PlayersJoinFailed);
+            }
+            return;
+        }
+        Interlocked.Increment(ref metrics.PlayersJoinFailed);
+    }
+
     private async Task RestoreAsync(List<SimPlayer> known, CancellationToken ct)
     {
         const string endpoint = "POST players/restore";
         var body = new PlayerRestoreData { Characters = known.Select(p => p.CharacterId).ToArray(), ForceAdd = false };
+        if (v2 != null && o.V2Commands)
+        {
+            await RestoreV2Async(known, body, ct);
+            return;
+        }
+
         var r = await api.SendAsync(endpoint, HttpMethod.Post, "players/restore", body, ct, record: false);
         if (!r.Ok)
         {
@@ -274,6 +353,25 @@ public sealed class StreamerSession : IAsyncDisposable
         api.RecordOutcome(endpoint, r, restored > 0, restored > 0 ? null : "restore returned no players");
         Interlocked.Add(ref metrics.PlayersRestored, restored);
         Log("restored " + restored + "/" + known.Count + " players in one request (" + r.Milliseconds.ToString("0") + " ms)");
+    }
+
+    private async Task RestoreV2Async(List<SimPlayer> known, PlayerRestoreData body, CancellationToken ct)
+    {
+        var started = Stopwatch.StartNew();
+        var r = await v2!.SendCommandAsync(RavenNest.Protocol.Commands.PlayerRestore, CommandArgs.Pack(body), ct);
+        PlayerRestoreResult? value = null;
+        try { value = V2Link.Value<PlayerRestoreResult>(r); } catch (Exception exc) { metrics.CountV2("restore answer unreadable: " + exc.GetType().Name); }
+        var byCharacter = known.ToDictionary(p => p.CharacterId);
+        var restored = 0;
+        foreach (var item in value?.Players ?? Array.Empty<PlayerJoinResult>())
+        {
+            if (item?.Player != null && byCharacter.TryGetValue(item.Player.Id, out var p) && ApplyJoinResult(p, V2Link.ToJson(item), out _))
+            {
+                restored++;
+            }
+        }
+        Interlocked.Add(ref metrics.PlayersRestored, restored);
+        Log("restored " + restored + "/" + known.Count + " players in one v2 command (" + started.Elapsed.TotalMilliseconds.ToString("0") + " ms)");
     }
 
     private bool ApplyJoinResult(SimPlayer p, JToken? json, out string error)
@@ -353,6 +451,14 @@ public sealed class StreamerSession : IAsyncDisposable
 
     private async Task TickAsync(CancellationToken ct)
     {
+        if (v2 != null)
+        {
+            var players = Players.Where(p => p.Joined).ToList();
+            if (players.Count > 0) Simulate(players);
+            await v2.TickAsync(players, ct);
+            return;
+        }
+
         if (delta == null) return;
 
         if (!delta.Connected)
@@ -578,6 +684,10 @@ public sealed class StreamerSession : IAsyncDisposable
                 }
 
                 var player = joined[Next(joined.Count)];
+                for (var tries = 0; player.CommandBusy && tries < 8; ++tries)
+                {
+                    player = joined[Next(joined.Count)];
+                }
                 var command = o.Commands[Next(o.Commands.Length)];
                 running.Add(Task.Run(async () =>
                 {
@@ -595,8 +705,13 @@ public sealed class StreamerSession : IAsyncDisposable
         try { await Task.WhenAll(running).WaitAsync(TimeSpan.FromSeconds(o.RequestTimeoutSeconds)); } catch { }
     }
 
-    private Task<ApiResult> RunCommandAsync(string command, SimPlayer p, CancellationToken ct)
+    private Task RunCommandAsync(string command, SimPlayer p, CancellationToken ct)
     {
+        if (v2 != null && o.V2Commands && command != "fetch")
+        {
+            return RunCommandV2Async(command, p, ct);
+        }
+
         var cid = p.CharacterId;
         switch (command)
         {
@@ -615,9 +730,92 @@ public sealed class StreamerSession : IAsyncDisposable
         }
     }
 
+    /// <summary>The same command mix as REST, as v2 CommandRequests, with the optional repeat check.</summary>
+    private async Task RunCommandV2Async(string command, SimPlayer p, CancellationToken ct)
+    {
+        if (p.CommandBusy) return;
+        p.CommandBusy = true;
+        try
+        {
+            var cid = p.CharacterId;
+            var item = Guid.Empty;
+            string name;
+            byte[] args;
+            switch (command)
+            {
+                case "additem" when itemIds.Count > 0:
+                    item = itemIds[Next(itemIds.Count)];
+                    (name, args) = (RavenNest.Protocol.Commands.AddItem, CommandArgs.Pack(cid, item));
+                    break;
+                case "craft" when itemIds.Count > 0:
+                    (name, args) = (RavenNest.Protocol.Commands.Craft, CommandArgs.Pack(cid, itemIds[Next(itemIds.Count)], 1));
+                    break;
+                case "produce" when recipeIds.Count > 0:
+                    (name, args) = (RavenNest.Protocol.Commands.Produce, CommandArgs.Pack(cid, recipeIds[Next(recipeIds.Count)], 1L));
+                    break;
+                case "equipall":
+                    (name, args) = (RavenNest.Protocol.Commands.EquipBest, CommandArgs.Pack(cid));
+                    break;
+                case "highscore":
+                    (name, args) = (RavenNest.Protocol.Commands.Highscore, CommandArgs.Pack(cid, "all"));
+                    break;
+                default:
+                    return;
+            }
+
+            var id = Guid.NewGuid();
+            var first = await v2!.SendCommandAsync(name, args, ct, id);
+            if (first == null || o.V2RepeatShare <= 0 || NextDouble() >= o.V2RepeatShare)
+            {
+                return;
+            }
+
+            var (again, _) = await v2.RepeatAsync(new CommandRequest { RequestId = id, Command = name, Args = args }, first, ct);
+            if (again == null || command != "additem" || first.Status != CommandStatus.Ok)
+            {
+                return;
+            }
+
+            // Was the item added twice? The first answer says what the stack held after the add; the server's
+            // copy must still hold exactly that (this player has no other command in flight).
+            var stack = first.Inventory?.Where(u => u.CharacterId == cid).SelectMany(u => u.Stacks ?? Array.Empty<InventoryStack>())
+                .LastOrDefault(s => s.ItemId == item);
+            if (stack == null) return;
+            var r = await api.SendAsync("GET players/{id} (repeat check)", HttpMethod.Get, "players/" + cid, null, ct);
+            var items = r.Ok ? r.Json().Get("inventoryItems") as JArray : null;
+            if (items == null) return;
+            var held = items.Where(x => x.GuidOf("id") == stack.Id).Select(x => x.Get("amount")?.Value<long>() ?? 0).FirstOrDefault();
+            Interlocked.Increment(ref metrics.V2RepeatChecked);
+            if (held > stack.Amount)
+            {
+                Interlocked.Increment(ref metrics.V2DoubleAdds);
+                Log("v2: items.add repeated with the same request id: the stack holds " + held + ", the first answer said " + stack.Amount);
+            }
+        }
+        finally
+        {
+            p.CommandBusy = false;
+        }
+    }
+
     // ------------------------------------------------------------------
     // the end
     // ------------------------------------------------------------------
+
+    /// <summary>--v2-drop-every; nothing on v1.</summary>
+    public Task V2ChaosLoopAsync(CancellationToken ct) => v2?.ChaosLoopAsync(ct) ?? Task.CompletedTask;
+
+    /// <summary>v2: keeps sending until every save is stored (or --v2-drain-timeout). Returns the players left.</summary>
+    public async Task<int> DrainAsync(CancellationToken ct)
+    {
+        if (v2 == null) return 0;
+        var clock = Stopwatch.StartNew();
+        var left = await v2.DrainAsync(Players, ct);
+        Log(left == 0
+            ? "v2: every save stored " + clock.Elapsed.TotalSeconds.ToString("0.0") + " s after the load stopped"
+            : "v2: " + left + " players still had unstored saves after " + clock.Elapsed.TotalSeconds.ToString("0.0") + " s");
+        return left;
+    }
 
     public RestApi Api => api;
 
@@ -661,6 +859,7 @@ public sealed class StreamerSession : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        if (v2 != null) await v2.DisposeAsync();
         if (events != null) await events.DisposeAsync();
         if (delta != null) await delta.DisposeAsync();
         api.Dispose();

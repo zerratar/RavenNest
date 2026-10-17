@@ -49,7 +49,9 @@ static async Task<int> RunAsync(Options o)
         return 1;
     }
 
-    Console.WriteLine($"RavenNest load test: {o.Sessions} session(s) x {o.Players} players against {o.BaseUrl} (sockets {o.EffectiveTcpHost}:{o.EventPort}/{o.DeltaPort}), {o.Duration.TotalSeconds:0} s");
+    Console.WriteLine(o.Protocol == WireProtocol.V2
+        ? $"RavenNest load test: {o.Sessions} session(s) x {o.Players} players against {o.BaseUrl} on the v2 connection{(o.V2Commands ? " (joins and commands too)" : "")}, {o.Duration.TotalSeconds:0} s"
+        : $"RavenNest load test: {o.Sessions} session(s) x {o.Players} players against {o.BaseUrl} (sockets {o.EffectiveTcpHost}:{o.EventPort}/{o.DeltaPort}), {o.Duration.TotalSeconds:0} s");
     Console.WriteLine("Ctrl+C stops early and still verifies; press it twice to abort.");
 
     var metrics = new Metrics();
@@ -103,7 +105,8 @@ static async Task<int> RunAsync(Options o)
             s.JoinPlayersAsync(run.Token),
             s.TickLoopAsync(run.Token),
             s.CommandLoopAsync(run.Token),
-            s.EventReconnectLoopAsync(run.Token)
+            s.EventReconnectLoopAsync(run.Token),
+            s.V2ChaosLoopAsync(run.Token)
         }).ToList();
 
         await Task.WhenAll(work);
@@ -113,6 +116,13 @@ static async Task<int> RunAsync(Options o)
         {
             report.PrintFinal(null, null);
             return 1;
+        }
+
+        if (o.Protocol == WireProtocol.V2)
+        {
+            // the game's quit: send what is not stored yet and wait for the Stored acks
+            Console.WriteLine($"load stopped; waiting up to {o.V2DrainTimeout.TotalSeconds:0} s for every v2 save to be stored");
+            await Task.WhenAll(live.Select(s => s.DrainAsync(abort.Token)));
         }
 
         if (o.Verify)
