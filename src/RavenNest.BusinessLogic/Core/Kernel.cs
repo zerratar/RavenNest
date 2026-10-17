@@ -86,18 +86,25 @@ namespace RavenNest.BusinessLogic
                 }
                 try
                 {
+                    // Take the due timeout under the lock, run it outside. It used to run inside, so SetTimeout waited
+                    // for whatever the action did: the database save is one, and every GameData.Add during a save
+                    // schedules the next one, so a level up (a new skill record) stalled its caller for the whole
+                    // database write, seconds at a time under load.
+                    TimeoutCallbackHandle due = null;
                     lock (timeoutMutex)
                     {
                         var item = this.timeouts.OrderBy(x => x.Timeout).FirstOrDefault();
-                        if (item != null)
+                        if (item != null && DateTime.Now >= item.Timeout)
                         {
-                            if (DateTime.Now >= item.Timeout)
-                            {
-                                ClearTimeout(item);
-                                item.Action?.Invoke();
-                                continue;
-                            }
+                            this.timeouts.Remove(item);
+                            due = item;
                         }
+                    }
+
+                    if (due != null)
+                    {
+                        due.Action?.Invoke();
+                        continue;
                     }
                 }
                 catch
