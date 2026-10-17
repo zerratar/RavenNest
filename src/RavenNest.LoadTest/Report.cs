@@ -108,7 +108,7 @@ public sealed class Report
             sb.AppendLine($"    {type,-28} {count}");
         }
         sb.AppendLine($"  connections: delta {m.DeltaConnects} connects, {m.DeltaDrops} drops, {m.DeltaConnectFailures} failed connects;"
-            + $" events {m.EventConnects} connects, {m.EventDrops} drops, {m.EventConnectFailures} failed connects");
+            + $" events {m.EventConnects} connects, {m.EventDrops} drops, {m.EventConnectFailures} failed connects, {m.EventChaosReconnects} chaos reconnects");
 
         AppendVerify(sb, rest);
         AppendVerify(sb, db);

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net;
 using System.Net.Security;
+using System.Net.Sockets;
 using System.Text;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -66,6 +67,9 @@ public sealed class RestApi : IDisposable
             PooledConnectionLifetime = pooled ? TimeSpan.FromMinutes(10) : TimeSpan.Zero,
             AutomaticDecompression = DecompressionMethods.All,
             UseCookies = false,
+            // localhost resolves to ::1 first and the server listens on IPv4 only, so every new connection
+            // would wait about 2 s for Windows to give up on IPv6. The game connects over IPv4.
+            ConnectCallback = ConnectIPv4Async,
             SslOptions = new SslClientAuthenticationOptions
             {
                 // The local server uses a development certificate. The host was checked to be this
@@ -74,6 +78,24 @@ public sealed class RestApi : IDisposable
             }
         };
         return new HttpClient(handler) { Timeout = Timeout.InfiniteTimeSpan };
+    }
+
+    private static async ValueTask<Stream> ConnectIPv4Async(SocketsHttpConnectionContext context, CancellationToken ct)
+    {
+        var host = context.DnsEndPoint.Host;
+        var address = IPAddress.TryParse(host, out var ip) ? ip
+            : (await Dns.GetHostAddressesAsync(host, AddressFamily.InterNetwork, ct)).First();
+        var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
+        try
+        {
+            await socket.ConnectAsync(new IPEndPoint(address, context.DnsEndPoint.Port), ct);
+            return new NetworkStream(socket, ownsSocket: true);
+        }
+        catch
+        {
+            socket.Dispose();
+            throw;
+        }
     }
 
     /// <summary>

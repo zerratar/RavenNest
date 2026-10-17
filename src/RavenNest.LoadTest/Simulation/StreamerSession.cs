@@ -628,6 +628,37 @@ public sealed class StreamerSession : IAsyncDisposable
         Log(r.Ok ? "session ended" : "ending the session failed: " + r.Error);
     }
 
+    /// <summary>
+    /// The game's reconnect: a new event socket signs in while the old one is still open, then the old one
+    /// closes. The old server ended the stream's game loop when the old connection went, so no more events
+    /// (resource drops, village updates) arrived for the rest of the session.
+    /// </summary>
+    public async Task EventReconnectLoopAsync(CancellationToken ct)
+    {
+        if (o.EventReconnectEvery <= TimeSpan.Zero || events == null) return;
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                await Task.Delay(o.EventReconnectEvery, ct);
+                var replacement = new EventConnection(o.EffectiveTcpHost, o.EventPort, () => sessionTokenB64!, metrics, Log);
+                replacement.Start(ct);
+                var deadline = DateTime.UtcNow.AddSeconds(10);
+                while (!replacement.IsConnected && DateTime.UtcNow < deadline)
+                {
+                    await Task.Delay(100, ct);
+                }
+                await Task.Delay(1000, ct);
+                var old = events;
+                events = replacement;
+                await old.DisposeAsync();
+                Interlocked.Increment(ref metrics.EventChaosReconnects);
+                Log("event socket: replaced by a new connection (chaos)");
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (events != null) await events.DisposeAsync();

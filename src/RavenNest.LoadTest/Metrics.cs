@@ -107,7 +107,7 @@ public sealed class Metrics
 
     // event socket
     public long EventBatches, EventCount, EventBytes, EventDecodeFailures;
-    public long EventConnects, EventDrops, EventConnectFailures;
+    public long EventConnects, EventDrops, EventConnectFailures, EventChaosReconnects;
 
     // players
     public long PlayersJoined, PlayersNew, PlayersJoinFailed, PlayersRestored;

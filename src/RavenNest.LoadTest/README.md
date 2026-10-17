@@ -118,6 +118,9 @@ dotnet run -c Release --project src/RavenNest.LoadTest -- run --players 1000 --v
 
 # what the game client does today: a new HTTP connection (and TLS handshake) for every request
 dotnet run -c Release --project src/RavenNest.LoadTest -- run --players 1000 --new-connection-per-request
+
+# the game's reconnect every minute: a new event socket signs in, then the old one closes
+dotnet run -c Release --project src/RavenNest.LoadTest -- run --players 1000 --event-reconnect-every 1m
 ```
 
 `help` lists every option. Durations take `ms`, `s`, `m` or `h`. `--duration` counts from the moment the

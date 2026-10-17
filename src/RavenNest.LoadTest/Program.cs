@@ -102,7 +102,8 @@ static async Task<int> RunAsync(Options o)
         {
             s.JoinPlayersAsync(run.Token),
             s.TickLoopAsync(run.Token),
-            s.CommandLoopAsync(run.Token)
+            s.CommandLoopAsync(run.Token),
+            s.EventReconnectLoopAsync(run.Token)
         }).ToList();
 
         await Task.WhenAll(work);

@@ -53,6 +53,9 @@ public sealed class Options
     public double CommandRate { get; set; }
     public string[] Commands { get; set; } = new[] { "additem", "produce", "equipall", "fetch" };
     public bool NewConnectionPerRequest { get; set; }
+
+    /// <summary>Every this often, opens a second event socket and then closes the first, as the game does when it reconnects. Zero is off.</summary>
+    public TimeSpan EventReconnectEvery { get; set; }
     public int RequestTimeoutSeconds { get; set; } = 30;
 
     // ---- checking ----
@@ -128,6 +131,7 @@ public sealed class Options
                 case "--command-rate": o.CommandRate = Dbl(Next()); break;
                 case "--commands": o.Commands = Next().Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(x => x.ToLowerInvariant()).ToArray(); break;
                 case "--new-connection-per-request": o.NewConnectionPerRequest = true; break;
+                case "--event-reconnect-every": o.EventReconnectEvery = Span(Next()); break;
                 case "--request-timeout": o.RequestTimeoutSeconds = Int(Next()); break;
 
                 case "--verify": o.Verify = Bool(Next()); break;
@@ -221,6 +225,7 @@ How much:
   --command-rate <n>          REST commands per second per session (default 0 = off)
   --commands <list>           any of additem,produce,craft,equipall,fetch,highscore (default additem,produce,equipall,fetch)
   --new-connection-per-request   open a new HTTP connection for every request, as the game client currently does
+  --event-reconnect-every <span> every this often open a second event socket, then close the first (the game's reconnect)
   --request-timeout <s>       per request timeout in seconds (default 30)
 
 Checking:
