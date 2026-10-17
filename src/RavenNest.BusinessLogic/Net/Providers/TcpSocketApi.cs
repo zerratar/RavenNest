@@ -137,7 +137,7 @@ namespace RavenNest.BusinessLogic.Net
             if (connectionProvider.Remove(connectionId, out var connection))
             {
                 // Stop any game processor sessions if needed
-                gameProcessorManager.Stop(connection.SessionToken);
+                gameProcessorManager.Stop(connection.SessionToken, connectionId);
             }
             //logger.LogInformation($"ConnectionId={connectionId} disconnected.");
         }
@@ -312,7 +312,7 @@ namespace RavenNest.BusinessLogic.Net
                                 tcpConnection.SessionToken = token;
                                 tcpConnection.TimeOffset = offset;
                                 connectionProvider.AttachSessionToken(tcpConnection.ConnectionId, token, offset);
-                                gameProcessorManager.Start(token);
+                                gameProcessorManager.Start(token, tcpConnection.ConnectionId);
                             }
 
                             if (tcpConnection.TimeOffset > offset)
@@ -390,11 +390,16 @@ namespace RavenNest.BusinessLogic.Net
             }
         }
 
-        public void Send(int connectionId, ArraySegment<byte> message)
+        /// <summary>Hands the message to the socket's send queue; false when it could not take it.</summary>
+        public bool Send(int connectionId, ArraySegment<byte> message)
         {
-            server?.Send(connectionId, message);
-            dataSent += message.Count;
-            messagesSent++;
+            var accepted = server != null && server.Send(connectionId, message);
+            if (accepted)
+            {
+                dataSent += message.Count;
+                messagesSent++;
+            }
+            return accepted;
         }
 
         private bool CheckSessionTokenValidity(SessionToken sessionToken)
