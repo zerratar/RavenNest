@@ -11,12 +11,10 @@ namespace RavenNest.BusinessLogic.Net
     public class TcpSocketApiConnection
     {
         private const int MaxQueueSize = 256;
-        private const int MinQueueSize = 32;
         private int QueueSize = MaxQueueSize;
 
         private readonly GameData gameData;
         private readonly int connectionId;
-        private readonly ConcurrentQueue<GameEvent> sendQueue = new ConcurrentQueue<GameEvent>();
         private readonly TcpSocketApi server;
 
         private DataModels.SessionState sessionState;
@@ -32,6 +30,9 @@ namespace RavenNest.BusinessLogic.Net
         public DateTime Created { get; }
         public int ConnectionId => connectionId;
         public SessionToken SessionToken { get; set; }
+
+        /// <summary>When it signed in; the newest connection of a streamer gets their events.</summary>
+        public DateTime Attached { get; set; }
         public bool Connected => server.IsConnected(this.connectionId);
 
         public TimeSpan TimeOffset { get; set; } = TimeSpan.MaxValue;
@@ -48,8 +49,7 @@ namespace RavenNest.BusinessLogic.Net
                 return false;
             }
 
-            server.Send(connectionId, bytes);
-            return true;
+            return server.Send(connectionId, bytes);
         }
 
         public int GetMaxMessageSize()
@@ -79,18 +79,6 @@ namespace RavenNest.BusinessLogic.Net
             return false;
         }
 
-        internal void Enqueue(GameEvent model)
-        {
-            sendQueue.Enqueue(model);
-        }
-
-        internal void Enqueue(DataModels.GameEvent model)
-        {
-            var gameEvent = ModelMapper.Map(model);
-
-            sendQueue.Enqueue(gameEvent);
-        }
-
         internal void Send(DataModels.GameEvent model)
         {
             try
@@ -101,38 +89,59 @@ namespace RavenNest.BusinessLogic.Net
             catch { }
         }
 
-        internal void ProcessSendQueue()
+        /// <summary>
+        /// Sends what is waiting for the streamer's client, a batch at a time. Events leave the queue only when the
+        /// send is accepted; a batch too big for one message is tried smaller, and a single event too big to ever go
+        /// is dropped (logged by the caller) rather than blocking everything behind it. A failure leaves the events for
+        /// the next try instead of wiping the queue, as it did before.
+        /// </summary>
+        /// <returns>How many were sent.</returns>
+        internal int Deliver(PendingGameEvents pending, Action<string> log)
         {
+            var sent = 0;
             try
             {
-                var toSend = new List<GameEvent>();
-
-                while (toSend.Count < QueueSize && sendQueue.TryDequeue(out var @event))
+                for (var round = 0; round < 8; ++round)
                 {
-                    toSend.Add(@event);
-                }
+                    var batch = pending.Peek(QueueSize, out var last);
+                    if (batch.Count == 0)
+                    {
+                        break;
+                    }
 
-                if (toSend.Count > 0)
-                {
-                    if (!Send(new EventList
+                    var bytes = MessagePackSerializer.Serialize(new EventList { Events = batch }, MessagePack.Resolvers.ContractlessStandardResolver.Options);
+                    if (bytes.Length >= GetMaxMessageSize())
                     {
-                        Events = toSend
-                    }))
-                    {
-                        // we tried to send too much.
-                        // throttle queue. and re-enqueue items.
-                        QueueSize = MinQueueSize;
-                        foreach (var item in toSend)
+                        if (batch.Count == 1)
                         {
-                            Enqueue(item);
+                            log?.Invoke("A game event of type " + batch[0].Type + " is too big to send (" + bytes.Length + " bytes) and is dropped.");
+                            pending.RemoveThrough(last);
+                            continue;
                         }
+                        QueueSize = Math.Max(1, batch.Count / 2);
+                        continue;
+                    }
+
+                    if (!server.Send(connectionId, bytes))
+                    {
+                        // the socket is gone or backed up: keep them for the next try
+                        break;
+                    }
+
+                    pending.RemoveThrough(last);
+                    sent += batch.Count;
+                    QueueSize = Math.Min(MaxQueueSize, QueueSize * 2);
+                    if (batch.Count < QueueSize)
+                    {
+                        break;
                     }
                 }
             }
-            catch
+            catch (Exception exc)
             {
-                sendQueue.Clear();
+                log?.Invoke("Failed to send game events, they wait for the next try: " + exc.Message);
             }
+            return sent;
         }
     }
 }

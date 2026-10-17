@@ -13,6 +13,7 @@ namespace RavenNest.BusinessLogic.Net
         private readonly ConcurrentDictionary<int, TcpSocketApiConnection> connections = new ConcurrentDictionary<int, TcpSocketApiConnection>();
         private readonly ConcurrentDictionary<Guid, List<TcpSocketApiConnection>> userConnections = new ConcurrentDictionary<Guid, List<TcpSocketApiConnection>>();
         private readonly ConcurrentDictionary<Guid, TcpSocketApiConnection> sessionConnections = new ConcurrentDictionary<Guid, TcpSocketApiConnection>();
+        private readonly ConcurrentDictionary<Guid, PendingGameEvents> pendingEvents = new ConcurrentDictionary<Guid, PendingGameEvents>();
 
         public TcpSocketApiConnection Add(int connectionId, TcpSocketApi server, GameData gameData)
         {
@@ -28,17 +29,14 @@ namespace RavenNest.BusinessLogic.Net
 
             connection.SessionToken = token;
             connection.TimeOffset = offset;
+            connection.Attached = DateTime.UtcNow;
             if (token != null)
             {
-                userConnections.AddOrUpdate(token.UserId,
-                    new List<TcpSocketApiConnection> {
-                            connection
-                    },
-                    (key, list) =>
-                    {
-                        list.Add(connection);
-                        return list;
-                    });
+                var list = userConnections.GetOrAdd(token.UserId, _ => new List<TcpSocketApiConnection>());
+                lock (list)
+                {
+                    list.Add(connection);
+                }
                 sessionConnections[token.SessionId] = connection;
             }
         }
@@ -50,20 +48,26 @@ namespace RavenNest.BusinessLogic.Net
 
         public bool Remove(int connectionId, out TcpSocketApiConnection connection)
         {
-            connections.TryGetValue(connectionId, out connection);
-            var wasRemoved = connections.TryRemove(connectionId, out _);
+            var wasRemoved = connections.TryRemove(connectionId, out connection);
+            if (connection == null)
+            {
+                return false;
+            }
 
             if (connection.SessionToken != null)
             {
-                if (sessionConnections.TryGetValue(connection.SessionToken.SessionId, out var sessionConnection) && !sessionConnection.Connected)
+                if (sessionConnections.TryGetValue(connection.SessionToken.SessionId, out var sessionConnection)
+                    && (sessionConnection.ConnectionId == connectionId || !sessionConnection.Connected))
                 {
                     sessionConnections.TryRemove(connection.SessionToken.SessionId, out _);
                 }
 
                 if (userConnections.TryGetValue(connection.SessionToken.UserId, out var uCon))
                 {
-                    uCon.RemoveAll(x => !x.Connected || x.ConnectionId == connectionId);
-                    userConnections[connection.SessionToken.UserId] = uCon;
+                    lock (uCon)
+                    {
+                        uCon.RemoveAll(x => !x.Connected || x.ConnectionId == connectionId);
+                    }
                 }
             }
 
@@ -77,9 +81,13 @@ namespace RavenNest.BusinessLogic.Net
 
         public IReadOnlyList<TcpSocketApiConnection> GetAllConnectionsByUserId(Guid userId)
         {
-            userConnections.TryGetValue(userId, out var connections);
-            if (connections != null)
-                return connections;
+            if (userConnections.TryGetValue(userId, out var list))
+            {
+                lock (list)
+                {
+                    return list.ToArray();
+                }
+            }
 
             return Array.Empty<TcpSocketApiConnection>();
         }
@@ -93,19 +101,34 @@ namespace RavenNest.BusinessLogic.Net
                     return true;
                 }
 
-                if (!connection.Connected)
-                {
-                    Remove(connection.ConnectionId, out _);
-                }
+                var userId = connection.SessionToken?.UserId;
+                Remove(connection.ConnectionId, out _);
+                connection = userId != null ? GetLatestConnection(userId.Value) : null;
+                return connection != null;
             }
 
-            if (userConnections.TryGetValue(connection.SessionToken.UserId, out var uCon))
-            {
-                connection = uCon.FirstOrDefault(x => x.Connected);
-            }
-
-            return connection != null;
+            connection = null;
+            return false;
         }
 
+        /// <summary>The streamer's newest connected, signed-in connection: the one their events go to.</summary>
+        public TcpSocketApiConnection GetLatestConnection(Guid userId)
+        {
+            TcpSocketApiConnection latest = null;
+            foreach (var connection in GetAllConnectionsByUserId(userId))
+            {
+                if (connection.Connected && connection.SessionToken != null && (latest == null || connection.Attached > latest.Attached))
+                {
+                    latest = connection;
+                }
+            }
+            return latest;
+        }
+
+        /// <summary>The events waiting to go to the streamer's client (see <see cref="PendingGameEvents"/>).</summary>
+        public PendingGameEvents GetPendingEvents(Guid userId)
+        {
+            return pendingEvents.GetOrAdd(userId, _ => new PendingGameEvents());
+        }
     }
 }

@@ -17,5 +17,8 @@ namespace RavenNest.BusinessLogic.Net
         bool Remove(int connectionId, out TcpSocketApiConnection connection);
 
         void AttachSessionToken(int connectionId, SessionToken token, TimeSpan offset);
+
+        TcpSocketApiConnection GetLatestConnection(Guid userId);
+        PendingGameEvents GetPendingEvents(Guid userId);
     }
 }

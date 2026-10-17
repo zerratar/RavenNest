@@ -209,9 +209,17 @@ namespace RavenNest.BusinessLogic.Game.Processors
 
         private void PushGameEvents()
         {
-            if (tcpConnectionProvider.TryGet(this.sessionToken.SessionId, out var connection) && connection.Connected)
+            // what waits for this streamer goes to their newest connection; while none is up it keeps waiting
+            var connection = tcpConnectionProvider.GetLatestConnection(this.sessionToken.UserId);
+            if (connection == null)
             {
-                connection.ProcessSendQueue();
+                return;
+            }
+
+            var pending = tcpConnectionProvider.GetPendingEvents(this.sessionToken.UserId);
+            if (pending.Count > 0)
+            {
+                connection.Deliver(pending, message => logger.LogWarning("[" + sessionToken.UserName + "] " + message));
             }
         }
 

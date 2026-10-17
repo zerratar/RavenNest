@@ -4917,23 +4917,16 @@ namespace RavenNest.BusinessLogic.Data
                 return;
             }
 
-            // is it possible that there are multiple tcp connections from the client or same streamer?
-            // are we using the wrong connection if so? or wrong session?
-            var wasSent = false;
-            foreach (var connection in tcpConnectionProvider.GetAllConnectionsByUserId(entity.UserId))
+            // to the streamer's newest connection only: a copy to every connection gave a reconnecting client the same
+            // event twice
+            var connection = tcpConnectionProvider.GetLatestConnection(entity.UserId);
+            if (connection != null)
             {
-                if (!connection.Connected)
-                {
-                    continue;
-                }
                 connection.Send(entity);
-                wasSent = true;
+                return;
             }
 
-            if (!wasSent)
-            {
-                EnqueueGameEvent(entity);
-            }
+            EnqueueGameEvent(entity);
         }
 
         public void EnqueueGameEvent(GameEvent entity)
@@ -4942,21 +4935,10 @@ namespace RavenNest.BusinessLogic.Data
             {
                 return;
             }
-            // is it possible that there are multiple tcp connections from the client or same streamer?
-            // are we using the wrong connection if so? or wrong session?
-            var wasEnqueued = false;
-            foreach (var connection in tcpConnectionProvider.GetAllConnectionsByUserId(entity.UserId))
-            {
-                if (!connection.Connected)
-                {
-                    continue;
-                }
-                connection.Enqueue(entity);
-                wasEnqueued = true;
-            }
-
-            if (!wasEnqueued)
-                Add(entity);
+            // one queue per streamer (PendingGameEvents), delivered to their newest connection by the game loop: it
+            // waits there while the client is disconnected, instead of being parked where nothing reads it, and is
+            // never copied to two connections
+            tcpConnectionProvider.GetPendingEvents(entity.UserId).Add(RavenNest.BusinessLogic.Extensions.ModelMapper.Map(entity));
         }
 
 
