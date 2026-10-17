@@ -124,6 +124,14 @@ public sealed class StreamerSession : IAsyncDisposable
                 return false;
             }
 
+            // the game can also fetch its token here (older models drop the BeginSession field): it must be the same kind
+            var fetched = await api.SendAsync("GET game/connection-token", HttpMethod.Get, "game/connection-token", null, ct);
+            var other = fetched.Ok ? fetched.Json()?.Type == JTokenType.String ? fetched.Json()!.ToString() : null : null;
+            metrics.CountV2(other == null ? "connection-token endpoint: no token (" + (fetched.Error ?? "not a JSON string") + ")"
+                : other == result.ConnectionToken ? "connection-token endpoint: same token as BeginSession"
+                : other.Length == result.ConnectionToken.Length ? "connection-token endpoint: a different token of the same kind"
+                : "connection-token endpoint: a token of another kind");
+
             v2 = new V2Link(o, metrics, Log, result.ConnectionToken, BuildGameState);
             if (!await v2.ConnectAsync(ct, now: true))
             {
