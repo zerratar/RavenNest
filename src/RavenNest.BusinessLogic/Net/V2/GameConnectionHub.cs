@@ -26,6 +26,7 @@ namespace RavenNest.BusinessLogic.Net.V2
         private readonly ConcurrentDictionary<Guid, GameSessionActor> sessionsByUser = new ConcurrentDictionary<Guid, GameSessionActor>();
         private readonly ConcurrentDictionary<Guid, long> inventoryRevisions = new ConcurrentDictionary<Guid, long>();
         private readonly SemaphoreSlim sessionChanges = new SemaphoreSlim(1, 1);
+        private readonly PlayerInventoryProvider inventories;
         private readonly GameConnectionTokens tokens;
         private readonly SessionManager sessionManager;
         private readonly ITcpSocketApiConnectionProvider oldConnections;
@@ -51,6 +52,7 @@ namespace RavenNest.BusinessLogic.Net.V2
             Players = playerManager;
             GameProcessors = gameProcessors;
             Commands = new CommandDispatcher(playerManager, inventories);
+            this.inventories = inventories;
             this.tokens = tokens;
             this.sessionManager = sessionManager;
             this.oldConnections = oldConnections;
@@ -222,8 +224,72 @@ namespace RavenNest.BusinessLogic.Net.V2
                 return false;
             }
 
-            session.AddEvent(gameEvent.Type, gameEvent.Data);
+            var characterId = Guid.Empty;
+            InventoryUpdate inventory = null;
+            if (gameEvent.Type == (int)RavenNest.Models.GameEventType.ItemAdd)
+            {
+                inventory = DescribeItemAdd(gameEvent.Data, out characterId);
+            }
+
+            session.AddEvent(gameEvent.Type, gameEvent.Data, characterId, inventory);
             return true;
+        }
+
+        /// <summary>
+        /// An item added outside a command (a resource drop, loot): the stack as it is now, with the character's next
+        /// inventory revision, so the game can tell when it missed one. Null when the event cannot be read.
+        /// </summary>
+        private InventoryUpdate DescribeItemAdd(byte[] data, out Guid characterId)
+        {
+            characterId = Guid.Empty;
+            try
+            {
+                var add = MessagePack.MessagePackSerializer.Deserialize<RavenNest.Models.ItemAdd>(data, MessagePack.Resolvers.ContractlessStandardResolver.Options);
+                if (add == null || add.PlayerId == Guid.Empty)
+                {
+                    return null;
+                }
+
+                characterId = add.PlayerId;
+                var inventory = inventories.Get(add.PlayerId);
+                if (inventory == null)
+                {
+                    return null;
+                }
+
+                var stack = inventory.Get(add.InventoryItemId);
+                if (stack.Id == Guid.Empty)
+                {
+                    return null; // already gone again (sold, used) by the time the event is routed
+                }
+
+                return new InventoryUpdate
+                {
+                    CharacterId = add.PlayerId,
+                    Revision = NextInventoryRevision(add.PlayerId),
+                    Stacks = new[]
+                    {
+                        new InventoryStack
+                        {
+                            Id = stack.Id,
+                            ItemId = stack.ItemId,
+                            Amount = stack.Amount,
+                            Equipped = stack.Equipped,
+                            Soulbound = stack.Soulbound,
+                            Name = stack.Name,
+                            Enchantment = stack.Enchantment,
+                            Tag = stack.Tag,
+                            TransmogrificationId = stack.TransmogrificationId,
+                            Flags = stack.Flags
+                        }
+                    }
+                };
+            }
+            catch (Exception exc)
+            {
+                logger.LogWarning("Could not describe an ItemAdd event for v2: " + exc.Message);
+                return null;
+            }
         }
 
         private void OnSaveCompleted(DateTime started, bool clean)
