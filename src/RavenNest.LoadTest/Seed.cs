@@ -23,7 +23,8 @@ public static class Seed
         }
 
         // the server's own hasher, so the hash is whatever AuthManager.Authenticate compares against
-        var hash = new SecureHasher().Get(o.Password);
+        // (password hashes do not use the token signing key, so no key is needed here)
+        var hash = new SecureHasher(tokenSigningKey: null).Get(o.Password);
         var names = Enumerable.Range(0, o.Sessions).Select(o.StreamerNameFor).ToList();
         var sql = BuildSql(names, hash);
         await File.WriteAllTextAsync(o.SeedOut, sql);
