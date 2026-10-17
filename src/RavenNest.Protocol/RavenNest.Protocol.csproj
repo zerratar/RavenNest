@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The messages of the v2 game connection (docs/network-v2.md in the game repo), shared by the server and the
+    game. The game compiles these same files from source (its MessagePack is source too), in the Unity 6.7 editor
+    on Mono and in player builds on CoreCLR, so this stays .NET Standard 2.1 and C# 9, with no other dependencies.
+  -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <RootNamespace>RavenNest.Protocol</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MessagePack" Version="2.6.100-alpha" />
+  </ItemGroup>
+
+</Project>
