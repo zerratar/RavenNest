@@ -145,6 +145,65 @@ took longer than the tick interval, and the verification.
 Exit code 0 when fine, 2 when verification found players whose saved exp is behind what was sent
 (after a recheck), 1 when the run could not start.
 
+## The v2 connection (`--protocol v2`)
+
+With `--protocol v2` a session plays the game the way the v2 client will (docs/network-v2.md in the game
+repo). Signing in and BeginSession stay on REST; BeginSession must return a `ConnectionToken`, otherwise the
+run stops with a message (the server has no v2). Then one WebSocket to `wss://<host>/api/v2/game` replaces
+both the delta socket and the event socket:
+
+* **Hello and resume.** The session sends `Hello` with the token, a resume id made once per run, and the
+  last event it applied. After a drop it reconnects with the same resume id; the report counts resumes and
+  reconnects the server did not resume.
+* **Saves.** Each player has an outbox: every tick that changes a player makes a new version. Every tick a
+  `SaveBatch` carries every player whose newest version is not stored yet, with every change since the last
+  stored version (all skills and fields after joining or a resync). The server answers `SaveAcks` Accepted at
+  once and Stored after the database save. A player whose version was sent before and is still not stored is
+  sent again (a resend). At the end of the run the session keeps sending until everything is stored (the
+  game's quit wait, `--v2-drain-timeout`), then the usual verification runs.
+* **Events** are applied in sequence and acknowledged with the next save batch. The report counts gaps
+  (missing sequence numbers, which would be lost events), repeats, and the events replayed after a resume.
+* **Commands.** With `--v2-commands` joins, restores and the command mix go as `CommandRequest`s
+  (additem `items.add`, produce `items.produce`, craft `items.craft`, equipall `equipment.equip-best`,
+  highscore `highscore.rank`; `fetch` stays on REST). Each request has its own id; commands waiting during a
+  drop go again with the same id after the reconnect. `--v2-repeat-share 0.1` sends 10% of them a second time
+  with the same id and checks the answer is the same (status, value, inventory revision and amounts), and for
+  `items.add` reads the player back over REST to check the item was not added twice.
+* **Chaos.** `--v2-drop-every 1m` drops the socket without a close every minute and resumes at once.
+
+| v2 option | |
+| --- | --- |
+| `--protocol v1\|v2` | v1 (default) the delta and event sockets, v2 the WebSocket |
+| `--v2-commands` | joins, restores and commands as v2 commands |
+| `--v2-repeat-share <0..1>` | repeat this share of commands with the same request id (needs `--v2-commands`) |
+| `--v2-drop-every <span>` | drop the WebSocket this often and resume |
+| `--v2-drain-timeout <t>` | how long to wait at the end for every save to be stored (default 30s) |
+| `--server-pid <pid>` | report the server process's CPU time and memory (works for v1 too) |
+
+The v2 numbers in the reports: player saves and resends, send to Accepted per batch and send to Stored per
+player version (p50/p95/p99), players with unstored saves per tick, ack statuses, bytes and messages on the
+socket (payload, without WebSocket and TLS framing), connects, drops, resumes, event gaps and replays,
+command statuses and the repeat checks. The JSON report has them under `v2`, plus `bytesOnWire`,
+`serverCpu` and `loadTesterCpu` for both protocols.
+
+### Comparing v1 and v2
+
+Run the same load on the same server, once per protocol, and compare the JSON files:
+
+```powershell
+$server = (Get-NetTCPConnection -LocalPort 443 -State Listen).OwningProcess
+dotnet run -c Release --project src/RavenNest.LoadTest -- run --base-url https://localhost --players 1000 --duration 5m --command-rate 5 --verify-db --server-pid $server --json-report v1-1000.json
+dotnet run -c Release --project src/RavenNest.LoadTest -- run --base-url https://localhost --players 1000 --duration 5m --command-rate 5 --verify-db --server-pid $server --json-report v2-1000.json --protocol v2 --v2-commands
+
+# v2 with drops every minute and repeated commands
+dotnet run -c Release --project src/RavenNest.LoadTest -- run --base-url https://localhost --players 1000 --duration 5m --command-rate 5 --verify-db --protocol v2 --v2-commands --v2-drop-every 1m --v2-repeat-share 0.1
+```
+
+Use `https://localhost` rather than `127.0.0.1` for a Release build of the server, which redirects anything
+but localhost to www. What to compare: `bytesOnWire` (v1: delta and event socket payload; v2: the
+WebSocket), `serverCpu.coresBusy`, the command endpoints (`GET players/...` against `v2 items.add` and so
+on), events, and the verification. v1 has no save latency to compare: the delta socket never answers.
+
 ## Reading the results
 
 * The delta socket gets no replies, so the client cannot time the server's handling of a frame. The
@@ -159,8 +218,9 @@ Exit code 0 when fine, 2 when verification found players whose saved exp is behi
 
 ## Code layout
 
-* `Delta/` the delta socket and frame writer (port of the game's `DeltaClient`). A v2 protocol writer
-  can sit next to it and be chosen by an option, so v1 and v2 runs report the same numbers.
+* `Delta/` the delta socket and frame writer (port of the game's `DeltaClient`).
+* `V2/` the v2 WebSocket (`V2Connection`: Hello, one read loop, one write loop); `Simulation/V2Link.cs` is
+  the game side on top of it (outbox, acks, events, commands, resume, chaos).
 * `Events/` the game event socket.
 * `Rest/` the REST calls, sent the way `WebApiRequest` sends them.
 * `Simulation/` the streamer session, players, verification and roster.
