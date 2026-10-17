@@ -562,9 +562,11 @@ namespace RavenNest.BusinessLogic.Net.V2
             }
 
             var token = Token;
+            // Registered before it starts: a command that fails at once removes its entry (so a retry runs it again),
+            // and that removal must not come before the entry is there. Only this worker reads entry.Task.
             var entry = new CommandEntry { Created = DateTime.UtcNow };
-            entry.Task = Task.Run(() => RunCommandAsync(token, request));
             commands[request.RequestId] = entry;
+            entry.Task = Task.Run(() => RunCommandAsync(token, request));
             _ = ReplyWhenDoneAsync(entry.Task);
         }
 
