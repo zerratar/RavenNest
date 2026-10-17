@@ -33,5 +33,11 @@ namespace RavenNest.BusinessLogic.Game
         /// Checks SessionToken.AuthToken against GetSessionSignature in constant time.
         /// </summary>
         bool IsValidSessionSignature(SessionToken token);
+
+        /// <summary>
+        /// HMAC-SHA256 of <paramref name="data"/> with the token signing key (the old constant when none is set),
+        /// for binary tokens such as the v2 game connection token.
+        /// </summary>
+        byte[] SignBytes(byte[] data);
     }
 }

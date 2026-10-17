@@ -21,6 +21,7 @@ namespace RavenNest.Controllers
         private readonly GameManager gameManager;
         private readonly SessionInfoProvider siProvider;
         private readonly ILogger<GameController> logger;
+        private readonly BusinessLogic.Net.V2.GameConnectionTokens connectionTokens;
 
         public GameController(
             ILogger<GameController> logger,
@@ -30,7 +31,8 @@ namespace RavenNest.Controllers
             SessionInfoProvider sessionInfoProvider,
             SessionManager sessionManager,
             GameManager gameManager,
-            ISecureHasher secureHasher)
+            ISecureHasher secureHasher,
+            BusinessLogic.Net.V2.GameConnectionTokens connectionTokens)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
             this.siProvider = sessionInfoProvider;
@@ -39,6 +41,7 @@ namespace RavenNest.Controllers
             this.adminManager = adminManager;
             this.sessionManager = sessionManager;
             this.gameManager = gameManager;
+            this.connectionTokens = connectionTokens;
         }
 
         [HttpGet]
@@ -224,7 +227,7 @@ namespace RavenNest.Controllers
                 return null;
             }
 
-
+            session.ConnectionToken = connectionTokens.Issue(session.SessionToken);
             return session;
         }
 
@@ -252,7 +255,7 @@ namespace RavenNest.Controllers
                 return null;
             }
 
-
+            session.ConnectionToken = connectionTokens.Issue(session.SessionToken);
             return session;
         }
 

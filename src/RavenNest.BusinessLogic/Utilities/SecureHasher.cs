@@ -88,6 +88,14 @@ namespace RavenNest.BusinessLogic.Game
             return FixedTimeEquals(token.AuthToken, GetSessionSignature(token.UserId, token.SessionId));
         }
 
+        public byte[] SignBytes(byte[] data)
+        {
+            using (var hmac = new HMACSHA256(tokenSigningKey ?? Encoding.UTF8.GetBytes(HASHKEY)))
+            {
+                return hmac.ComputeHash(data);
+            }
+        }
+
         private string SignToken(string text)
         {
             if (tokenSigningKey == null)

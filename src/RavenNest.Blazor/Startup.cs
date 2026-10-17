@@ -26,6 +26,7 @@ using RavenNest.BusinessLogic.Game.Processors.Tasks;
 using RavenNest.BusinessLogic.Github;
 using RavenNest.BusinessLogic.Net;
 using RavenNest.BusinessLogic.Net.DeltaTcpLib;
+using RavenNest.BusinessLogic.Net.V2;
 using RavenNest.BusinessLogic.Providers;
 using RavenNest.BusinessLogic.Serializers;
 using RavenNest.BusinessLogic.Tv;
@@ -311,6 +312,10 @@ namespace RavenNest.Blazor
                 KeepAliveInterval = TimeSpan.FromSeconds(30)
             });
 
+            // the v2 game connection: one WebSocket per game session (RavenNest.Protocol)
+            app.Map(RavenNest.Protocol.ProtocolInfo.Path, v2 => v2.Run(context =>
+                context.RequestServices.GetRequiredService<GameConnectionHub>().HandleAsync(context)));
+
             app.UseHttpsRedirection();
             app.UseResponseCaching();
 
@@ -448,6 +453,7 @@ namespace RavenNest.Blazor
             // Start the TCP Api
             app.ApplicationServices.GetService<ITcpSocketApi>().Start();
             app.ApplicationServices.GetService<DeltaServer>().Start();
+            app.ApplicationServices.GetService<GameConnectionHub>();
 
             // Start Generating Ravenfall Tv Episodes
             app.ApplicationServices.GetService<RavenfallTvManager>();
@@ -467,6 +473,7 @@ namespace RavenNest.Blazor
             Dispose<EconomyReportAggregator>(app);
             Dispose<RavenfallTvManager>(app);
             Dispose<DeltaServer>(app);
+            Dispose<GameConnectionHub>(app);
         }
 
         private void Dispose<T>(IApplicationBuilder app) where T : IDisposable
@@ -585,6 +592,9 @@ namespace RavenNest.Blazor
 
 
             services.AddSingleton<IGameProcessorManager, GameProcessorManager>();
+            services.AddSingleton<GameEventRouter>();
+            services.AddSingleton<GameConnectionTokens>();
+            services.AddSingleton<GameConnectionHub>();
 
             services.AddSingleton<ITcpSocketApiConnectionProvider, TcpSocketApiConnectionProvider>();
             services.AddSingleton<ITcpSocketApi, TcpSocketApi>();

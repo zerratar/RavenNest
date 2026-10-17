@@ -76,9 +76,6 @@ namespace RavenNest.Protocol
         /// <summary>(Guid characterId) -> bool</summary>
         public const string ToggleHelmet = "equipment.toggle-helmet";
 
-        /// <summary>(Guid characterId, int[] appearance) -> bool</summary>
-        public const string UpdateAppearance = "appearance.update";
-
         // Enchanting
 
         /// <summary>(Guid characterId, Guid inventoryItemId) -> ItemEnchantmentResult</summary>
