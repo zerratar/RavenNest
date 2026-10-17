@@ -162,7 +162,8 @@ namespace RavenNest.BusinessLogic.Net.DeltaTcpLib
                                 catch (Exception exc)
                                 {
                                     logger?.LogError($"Failed to parse experience update from client ({session.UserName}): " + exc);
-                                    break;
+                                    // the frame was read whole, so the next one starts cleanly: skip this one
+                                    // instead of closing the connection and losing everything queued behind it
                                 }
                             }
                             else if (type == 3)
@@ -176,7 +177,8 @@ namespace RavenNest.BusinessLogic.Net.DeltaTcpLib
                                 catch (Exception exc)
                                 {
                                     logger?.LogError($"Failed to parse player state update from client ({session.UserName}): " + exc);
-                                    break;
+                                    // the frame was read whole, so the next one starts cleanly: skip this one
+                                    // instead of closing the connection and losing everything queued behind it
                                 }
                             }
                             else if (type == 4)
@@ -190,7 +192,8 @@ namespace RavenNest.BusinessLogic.Net.DeltaTcpLib
                                 catch (Exception exc)
                                 {
                                     logger?.LogError($"Failed to parse game state update from client ({session.UserName}): " + exc);
-                                    break;
+                                    // the frame was read whole, so the next one starts cleanly: skip this one
+                                    // instead of closing the connection and losing everything queued behind it
                                 }
                             }
                         }
@@ -199,7 +202,11 @@ namespace RavenNest.BusinessLogic.Net.DeltaTcpLib
                 }
             }
             catch { }
-            finally { client.Close(); }
+            finally
+            {
+                _sessions.TryRemove(client, out _);
+                client.Close();
+            }
         }
 
         public static List<DeltaExperienceUpdate> ParseExperience(ReadOnlySpan<byte> span, ref int pos)

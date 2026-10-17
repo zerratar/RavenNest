@@ -9,8 +9,10 @@ public class PlayerInventoryProvider
 {
     private readonly ILogger<PlayerInventoryProvider> logger;
     private readonly GameData gameData;
-    private readonly ConcurrentDictionary<Guid, PlayerInventory> inventories
-        = new ConcurrentDictionary<Guid, PlayerInventory>();
+    // Lazy, so two threads asking at once share one inventory: the old check-then-set could build two for one
+    // character, each with its own lock and its own view of the stacks, so an add through one was invisible to the other
+    private readonly ConcurrentDictionary<Guid, Lazy<PlayerInventory>> inventories
+        = new ConcurrentDictionary<Guid, Lazy<PlayerInventory>>();
 
     public PlayerInventoryProvider(
         ILogger<PlayerInventoryProvider> logger,
@@ -21,10 +23,7 @@ public class PlayerInventoryProvider
     }
     public PlayerInventory Get(Guid characterId)
     {
-        if (inventories.TryGetValue(characterId, out var inventory))
-        {
-            return inventory;
-        }
-        return inventories[characterId] = new PlayerInventory(logger, gameData, characterId);
+        return inventories.GetOrAdd(characterId,
+            id => new Lazy<PlayerInventory>(() => new PlayerInventory(logger, gameData, id), System.Threading.LazyThreadSafetyMode.ExecutionAndPublication)).Value;
     }
 }
