@@ -57,11 +57,12 @@ namespace RavenNest.Controllers
         /// value BeginSession returns as ConnectionToken, for games whose models do not have that field.
         /// </summary>
         [HttpGet("connection-token")]
-        public string GetConnectionToken()
+        public IActionResult GetConnectionToken()
         {
             var session = GetSessionToken();
             AssertSessionTokenValidity(session);
-            return connectionTokens.Issue(session);
+            // as a JSON string, which the game's JSON reader expects (a plain string would go out as text)
+            return new JsonResult(connectionTokens.Issue(session));
         }
 
         [HttpPost("upload-log/{requestId}")]
