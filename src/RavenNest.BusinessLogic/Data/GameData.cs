@@ -4648,43 +4648,77 @@ namespace RavenNest.BusinessLogic.Data
                         var fullName = entitySet.GetFullName();
                         try
                         {
+                            // A batch that fails is written again one entity at a time, so one bad row no longer holds
+                            // back every other change of its type (it used to fail the whole set, retried every two
+                            // seconds for ever); a row that keeps failing waits longer each time (see FailedSave).
+                            var setFailed = false;
                             var queue = BuildSaveQueue(entitySet);
-                            while (queue.TryPeek(out var saveData))
+                            while (queue.TryDequeue(out var saveData))
                             {
                                 if (saveData.Entities.Count == 0)
                                 {
-                                    queue.Dequeue();
                                     continue;
                                 }
 
-                                using (var con = db.GetConnection())
+                                entityType = fullName;
+                                if (TryWriteBatch(saveData, out var written, out var failedQuery, out var batchError))
                                 {
-                                    con.Open();
-
-                                    var query = queryBuilder.Build(saveData);
-                                    if (query == null || string.IsNullOrEmpty(query.Command))
-                                    {
-                                        queue.Dequeue();
-                                        continue;
-                                    }
-
-                                    entityType = fullName;
-                                    var command = con.CreateCommand();
-                                    lastQuery = command.CommandText = query.Command;
-                                    var result = command.ExecuteNonQuery();
-
-
                                     lastSavedEntities.TryGetValue(name, out var c);
-                                    c += result;
-                                    lastSavedEntities[name] = c;
-                                    savedEntitiesCount += result;
-                                    ClearChangeSetState(saveData);
-                                    queue.Dequeue();
-                                    con.Close();
+                                    lastSavedEntities[name] = c + written;
+                                    savedEntitiesCount += written;
+                                    entitySet.ClearSaved(saveData.Changes);
+                                    continue;
+                                }
+
+                                lastQuery = failedQuery;
+                                if (saveData.Entities.Count == 1)
+                                {
+                                    setFailed = true;
+                                    NoteFailedSave(fullName, saveData, failedQuery, batchError);
+                                    continue;
+                                }
+
+                                var failedInARow = 0;
+                                for (var i = 0; i < saveData.Entities.Count; ++i)
+                                {
+                                    var change = saveData.Changes[i];
+                                    var single = new EntityStoreItems(saveData.State, new[] { saveData.Entities[i] }, new[] { change });
+                                    if (TryWriteBatch(single, out written, out failedQuery, out var singleError))
+                                    {
+                                        failedInARow = 0;
+                                        lastSavedEntities.TryGetValue(name, out var c);
+                                        lastSavedEntities[name] = c + written;
+                                        savedEntitiesCount += written;
+                                        entitySet.ClearSaved(single.Changes);
+                                    }
+                                    else
+                                    {
+                                        setFailed = true;
+                                        NoteFailedSave(fullName, single, failedQuery, singleError);
+                                        if (++failedInARow >= 3)
+                                        {
+                                            // more likely the database than these rows: the rest waits for the next save
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (failedInARow >= 3)
+                                {
+                                    logger.LogError("Saving " + fullName + " failed for several rows in a row; the rest of its changes wait for the next save.");
+                                    break;
                                 }
                             }
 
-                            backupProvider.ClearRestorePoint(entitySet);
+                            if (setFailed)
+                            {
+                                errorSaving = true;
+                                backupProvider.CreateRestorePoint(new[] { entitySet });
+                            }
+                            else
+                            {
+                                backupProvider.ClearRestorePoint(entitySet);
+                            }
                         }
                         catch (SqlException exc)
                         {
@@ -4853,13 +4887,110 @@ namespace RavenNest.BusinessLogic.Data
         private ICollection<EntityStoreItems> CreateBatches(EntityState state, IReadOnlyList<EntityChangeSet> items, int batchSize)
         {
             if (items == null || items.Count == 0) return new List<EntityStoreItems>();
-            var batches = (int)Math.Floor(items.Count / (float)batchSize) + 1;
-            var batchList = new List<EntityStoreItems>(batches);
-            for (var i = 0; i < batches; ++i)
+
+            // each change with its version now, so the save clears only what did not change again while it was written;
+            // rows that failed lately wait out their back-off
+            var now = DateTime.UtcNow;
+            var ready = new List<EntityChangeSet>(items.Count);
+            foreach (var item in items)
             {
-                batchList.Add(new EntityStoreItems(state, items.SliceAs(i * batchSize, batchSize, x => x.Entity)));
+                if (item?.Entity == null) continue;
+                if (failedSaves.TryGetValue(item.Entity.Id, out var failed) && failed.RetryAfter > now) continue;
+                ready.Add(item);
+            }
+
+            var batchList = new List<EntityStoreItems>(ready.Count / batchSize + 1);
+            for (var start = 0; start < ready.Count; start += batchSize)
+            {
+                var count = Math.Min(batchSize, ready.Count - start);
+                var entities = new IEntity[count];
+                var changes = new SavedChange[count];
+                for (var i = 0; i < count; ++i)
+                {
+                    var change = ready[start + i];
+                    entities[i] = change.Entity;
+                    changes[i] = new SavedChange(change, change.Version);
+                }
+                batchList.Add(new EntityStoreItems(state, entities, changes));
             }
             return batchList;
+        }
+
+        /// <summary>A row whose save failed: how often, and when to try it again.</summary>
+        private readonly struct FailedSave
+        {
+            public FailedSave(int failures, DateTime retryAfter)
+            {
+                Failures = failures;
+                RetryAfter = retryAfter;
+            }
+
+            public int Failures { get; }
+            public DateTime RetryAfter { get; }
+        }
+
+        private readonly ConcurrentDictionary<Guid, FailedSave> failedSaves = new ConcurrentDictionary<Guid, FailedSave>();
+
+        /// <summary>Writes one batch in its own connection; false (and the query and error) if the database refused it.</summary>
+        private bool TryWriteBatch(EntityStoreItems saveData, out int written, out string failedQuery, out Exception error)
+        {
+            written = 0;
+            failedQuery = null;
+            error = null;
+            var query = queryBuilder.Build(saveData);
+            if (query == null || string.IsNullOrEmpty(query.Command))
+            {
+                return true;
+            }
+
+            try
+            {
+                using (var con = db.GetConnection())
+                {
+                    con.Open();
+                    var command = con.CreateCommand();
+                    command.CommandText = query.Command;
+                    written = command.ExecuteNonQuery();
+                    con.Close();
+                }
+
+                foreach (var entity in saveData.Entities)
+                {
+                    if (entity != null) failedSaves.TryRemove(entity.Id, out _);
+                }
+                return true;
+            }
+            catch (SqlException exc)
+            {
+                failedQuery = query.Command;
+                error = exc;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// A row the database refused: logged with its type and id, its query kept as before, and tried again after a
+        /// wait that doubles each time (up to five minutes), so it neither blocks others nor floods the log.
+        /// </summary>
+        private void NoteFailedSave(string entityType, EntityStoreItems single, string query, Exception error)
+        {
+            var entity = single.Entities.Count > 0 ? single.Entities[0] : null;
+            if (entity == null) return;
+
+            failedSaves.TryGetValue(entity.Id, out var previous);
+            var failures = previous.Failures + 1;
+            var wait = TimeSpan.FromSeconds(Math.Min(300, Math.Pow(2, Math.Min(failures, 9))));
+            failedSaves[entity.Id] = new FailedSave(failures, DateTime.UtcNow + wait);
+
+            if (failures == 1 || failures % 10 == 0)
+            {
+                logger.LogError("Failed to save " + entityType + " " + entity.Id + " (" + single.State + ", failure " + failures + ", next try in " + wait.TotalSeconds + " s): " + error?.Message);
+                try
+                {
+                    File.WriteAllText(Path.Combine(FolderPaths.GeneratedDataPath, entityType + "_error_query.sql"), query ?? "");
+                }
+                catch { }
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

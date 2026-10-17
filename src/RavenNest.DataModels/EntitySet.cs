@@ -14,6 +14,10 @@ namespace RavenNest.DataModels
         private readonly ConcurrentDictionary<Guid, EntityChangeSet> removedEntities;
         private readonly ConcurrentDictionary<string, EntityLookupGroup<TModel>> groupLookup = new();
         private readonly bool trackChanges;
+
+        // guards the three change dictionaries together, so a save clearing a change and an entity changing again
+        // cannot interleave
+        private readonly object changeLock = new object();
         public IReadOnlyList<TModel> Entities => entities.Values.AsReadOnlyList();
         public IReadOnlyList<EntityChangeSet> Added => addedEntities.Values.AsReadOnlyList();
         public IReadOnlyList<EntityChangeSet> Updated => updatedEntities.Values.AsReadOnlyList();
@@ -171,12 +175,15 @@ namespace RavenNest.DataModels
 
             if (trackChanges)
             {
-                addedEntities[key] = new EntityChangeSet
+                lock (changeLock)
                 {
-                    LastModified = DateTime.UtcNow,
-                    State = EntityState.Added,
-                    Entity = model
-                };
+                    addedEntities[key] = new EntityChangeSet
+                    {
+                        LastModified = DateTime.UtcNow,
+                        State = EntityState.Added,
+                        Entity = model
+                    };
+                }
             }
 
             return AddEntityResult.Success;
@@ -197,18 +204,21 @@ namespace RavenNest.DataModels
 
                 if (trackChanges)
                 {
-                    if (addedEntities.TryRemove(key, out _))
+                    lock (changeLock)
                     {
-                        return RemoveEntityResult.Success;
-                    }
+                        if (addedEntities.TryRemove(key, out _))
+                        {
+                            return RemoveEntityResult.Success;
+                        }
 
-                    updatedEntities.TryRemove(key, out _);
-                    removedEntities[key] = new EntityChangeSet
-                    {
-                        LastModified = DateTime.UtcNow,
-                        State = EntityState.Deleted,
-                        Entity = model
-                    };
+                        updatedEntities.TryRemove(key, out _);
+                        removedEntities[key] = new EntityChangeSet
+                        {
+                            LastModified = DateTime.UtcNow,
+                            State = EntityState.Deleted,
+                            Entity = model
+                        };
+                    }
                 }
 
                 return RemoveEntityResult.Success;
@@ -252,20 +262,34 @@ namespace RavenNest.DataModels
 
             if (trackChanges)
             {
-                if (addedEntities.ContainsKey(key) || removedEntities.ContainsKey(key)) return;
-                if (updatedEntities.TryGetValue(key, out var value))
+                lock (changeLock)
                 {
-                    value.LastModified = DateTime.UtcNow;
-                    value.State = EntityState.Modified;
-                    return;
-                }
+                    if (removedEntities.ContainsKey(key)) return;
 
-                updatedEntities[key] = new EntityChangeSet
-                {
-                    LastModified = DateTime.UtcNow,
-                    State = EntityState.Modified,
-                    Entity = entity
-                };
+                    // a new entity changed before its insert is written: the insert takes the new values, unless it
+                    // is being written right now, which the version tells the save
+                    if (addedEntities.TryGetValue(key, out var added))
+                    {
+                        added.LastModified = DateTime.UtcNow;
+                        added.Version++;
+                        return;
+                    }
+
+                    if (updatedEntities.TryGetValue(key, out var value))
+                    {
+                        value.LastModified = DateTime.UtcNow;
+                        value.State = EntityState.Modified;
+                        value.Version++;
+                        return;
+                    }
+
+                    updatedEntities[key] = new EntityChangeSet
+                    {
+                        LastModified = DateTime.UtcNow,
+                        State = EntityState.Modified,
+                        Entity = entity
+                    };
+                }
             }
         }
 
@@ -279,6 +303,51 @@ namespace RavenNest.DataModels
                         return new ConcurrentDictionary<Guid, TModel>(dictionary);
                     })),
                 lookupKey);
+        }
+
+        public void ClearSaved(IReadOnlyList<SavedChange> saved)
+        {
+            if (saved == null) return;
+            lock (changeLock)
+            {
+                foreach (var item in saved)
+                {
+                    var change = item.Change;
+                    if (change?.Entity == null) continue;
+                    var key = change.Entity.Id;
+
+                    if (addedEntities.TryGetValue(key, out var added) && ReferenceEquals(added, change))
+                    {
+                        addedEntities.TryRemove(key, out _);
+                        if (added.Version != item.Version && entities.ContainsKey(key))
+                        {
+                            // inserted with the values it had when the save began, and changed since: the row is
+                            // there now, so the change goes in as an update next time
+                            updatedEntities[key] = new EntityChangeSet
+                            {
+                                LastModified = DateTime.UtcNow,
+                                State = EntityState.Modified,
+                                Entity = change.Entity
+                            };
+                        }
+                        continue;
+                    }
+
+                    if (updatedEntities.TryGetValue(key, out var updated) && ReferenceEquals(updated, change))
+                    {
+                        if (updated.Version == item.Version)
+                        {
+                            updatedEntities.TryRemove(key, out _);
+                        }
+                        continue;
+                    }
+
+                    if (removedEntities.TryGetValue(key, out var removed) && ReferenceEquals(removed, change))
+                    {
+                        removedEntities.TryRemove(key, out _);
+                    }
+                }
+            }
         }
 
         public void Clear(IReadOnlyList<IEntity> entities)
