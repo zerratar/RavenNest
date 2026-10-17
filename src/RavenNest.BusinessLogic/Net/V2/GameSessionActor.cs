@@ -57,8 +57,20 @@ namespace RavenNest.BusinessLogic.Net.V2
         /// <summary>The session token the rest of the server works with; refreshed on every Hello.</summary>
         public SessionToken Token { get; private set; }
 
-        /// <summary>The game run's resume id, from its last Hello.</summary>
-        public Guid ResumeId { get; private set; }
+        /// <summary>The game run's resume id, from its last Hello. Kept in the event log, so it survives a restart.</summary>
+        public Guid ResumeId
+        {
+            get => events.ResumeId;
+            private set => events.ResumeId = value;
+        }
+
+        /// <summary>
+        /// A stream's game loop keeps running this long after its last connection went, so a short drop does not
+        /// stop raids, dungeons and item drops for everyone.
+        /// </summary>
+        public static readonly TimeSpan GameLoopGrace = TimeSpan.FromSeconds(60);
+
+        private readonly List<(int ConnectionId, DateTime Closed)> closedConnections = new List<(int, DateTime)>();
 
         public bool Ended => ended;
 
@@ -176,7 +188,8 @@ namespace RavenNest.BusinessLogic.Net.V2
         /// <summary>A connection's read loop ended.</summary>
         public void Detach(GameConnection closed) => Post(() =>
         {
-            hub.GameProcessors.Stop(Token, closed.Id);
+            // the game loop stops after the grace time (Tick), unless a new connection took over by then
+            closedConnections.Add((closed.Id, DateTime.UtcNow));
             if (connection == closed)
             {
                 connection = null;
@@ -237,9 +250,18 @@ namespace RavenNest.BusinessLogic.Net.V2
                 return;
             }
 
+            for (var i = closedConnections.Count - 1; i >= 0; i--)
+            {
+                if (now - closedConnections[i].Closed > GameLoopGrace)
+                {
+                    hub.GameProcessors.Stop(Token, closedConnections[i].ConnectionId);
+                    closedConnections.RemoveAt(i);
+                }
+            }
+
             foreach (var (id, entry) in commands)
             {
-                if (entry.Task.IsCompleted && (now - entry.Created).TotalSeconds > ProtocolInfo.CommandResultKeepSeconds)
+                if (entry.Task != null && entry.Task.IsCompleted && (now - entry.Created).TotalSeconds > ProtocolInfo.CommandResultKeepSeconds)
                 {
                     commands.TryRemove(id, out _);
                 }
@@ -268,6 +290,16 @@ namespace RavenNest.BusinessLogic.Net.V2
             }
 
             ended = true;
+            foreach (var (connectionId, _) in closedConnections)
+            {
+                hub.GameProcessors.Stop(Token, connectionId);
+            }
+            closedConnections.Clear();
+            if (connection != null)
+            {
+                hub.GameProcessors.Stop(Token, connection.Id);
+            }
+
             var left = events.After(events.AckedThrough, int.MaxValue);
             if (connection != null)
             {
@@ -309,15 +341,17 @@ namespace RavenNest.BusinessLogic.Net.V2
                 return;
             }
 
-            var accepted = new List<SaveAck>(batch.Players.Length);
+            // one answer per batch, listing only the saves that were refused (it was one ack per player before,
+            // which with 1000 players was most of the traffic)
+            var refused = new List<SaveAck>();
             List<SaveAck> stored = null;
             if (!hub.Players.TryGetSaveContext(Token, "players", out var context))
             {
                 foreach (var save in batch.Players)
                 {
-                    accepted.Add(new SaveAck { CharacterId = save.CharacterId, Version = save.Version, Status = SaveStatus.Invalid });
+                    refused.Add(new SaveAck { CharacterId = save.CharacterId, Version = save.Version, Status = SaveStatus.Invalid });
                 }
-                connection?.Send(new SaveAcks { Stage = SaveStage.Accepted, Acks = accepted.ToArray() });
+                connection?.Send(new SaveAcks { Stage = SaveStage.Accepted, ThroughSequence = batch.Sequence, Acks = refused.ToArray() });
                 return;
             }
 
@@ -342,8 +376,7 @@ namespace RavenNest.BusinessLogic.Net.V2
 
                 if (save.Version <= state.Accepted)
                 {
-                    // already have it (a resend after a lost ack): say so again, and that it is stored if it is
-                    accepted.Add(new SaveAck { CharacterId = save.CharacterId, Version = save.Version, Status = SaveStatus.Stale });
+                    // already have it (a resend after a lost ack): say again that it is stored, if it is
                     if (state.Stored >= save.Version)
                     {
                         (stored ??= new List<SaveAck>()).Add(new SaveAck { CharacterId = save.CharacterId, Version = state.Stored });
@@ -367,7 +400,7 @@ namespace RavenNest.BusinessLogic.Net.V2
                 catch (Exception exc)
                 {
                     logger.LogError("v2 session " + SessionId + ": saving " + save.CharacterId + " failed: " + exc);
-                    continue; // no ack: the game sends it again
+                    continue; // never stored, so the game sends it again
                 }
 
                 if (status == SaveStatus.Ok)
@@ -375,13 +408,13 @@ namespace RavenNest.BusinessLogic.Net.V2
                     state.Accepted = save.Version;
                     state.AcceptedAt = DateTime.UtcNow;
                 }
-                accepted.Add(new SaveAck { CharacterId = save.CharacterId, Version = save.Version, Status = status });
+                else
+                {
+                    refused.Add(new SaveAck { CharacterId = save.CharacterId, Version = save.Version, Status = status });
+                }
             }
 
-            if (accepted.Count > 0)
-            {
-                connection?.Send(new SaveAcks { Stage = SaveStage.Accepted, Acks = accepted.ToArray() });
-            }
+            connection?.Send(new SaveAcks { Stage = SaveStage.Accepted, ThroughSequence = batch.Sequence, Acks = refused.Count > 0 ? refused.ToArray() : null });
             if (stored != null)
             {
                 connection?.Send(new SaveAcks { Stage = SaveStage.Stored, Acks = stored.ToArray() });

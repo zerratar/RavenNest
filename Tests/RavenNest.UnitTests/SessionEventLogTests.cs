@@ -113,6 +113,24 @@ namespace RavenNest.UnitTests
         }
 
         [TestMethod]
+        public void ResumeId_SurvivesAReload_AndARewrite()
+        {
+            var id = Guid.NewGuid();
+            var resume = Guid.NewGuid();
+            using (var log = new SessionEventLog(folder, id))
+            {
+                log.Add(1, null, Guid.Empty);
+                log.ResumeId = resume;
+            }
+
+            using (new SessionEventLog(folder, id)) { } // the reload rewrites the file
+            using (var reloaded = new SessionEventLog(folder, id))
+            {
+                Assert.AreEqual(resume, reloaded.ResumeId);
+            }
+        }
+
+        [TestMethod]
         public void Delete_RemovesTheFile()
         {
             var log = new SessionEventLog(folder, Guid.NewGuid());

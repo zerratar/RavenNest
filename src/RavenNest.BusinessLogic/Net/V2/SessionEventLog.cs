@@ -28,6 +28,7 @@ namespace RavenNest.BusinessLogic.Net.V2
 
         private const byte EventRecord = 1;
         private const byte AckRecord = 2;
+        private const byte ResumeRecord = 3;
         private const long CompactAboveBytes = 1024 * 1024;
 
         private readonly LinkedList<(SessionEvent Event, DateTime Added)> events = new LinkedList<(SessionEvent, DateTime)>();
@@ -44,6 +45,23 @@ namespace RavenNest.BusinessLogic.Net.V2
 
         /// <summary>The newest event's sequence, 0 before the first.</summary>
         public long LastSequence { get; private set; }
+
+        private Guid resumeId;
+
+        /// <summary>
+        /// The resume id of the game run the session last spoke to, kept here so a reconnect after a server restart
+        /// still resumes (and gets the events it missed) instead of starting over.
+        /// </summary>
+        public Guid ResumeId
+        {
+            get => resumeId;
+            set
+            {
+                if (value == resumeId) return;
+                resumeId = value;
+                Append(ResumeRecord, value.ToByteArray());
+            }
+        }
 
         /// <summary>Everything up to here is confirmed by the client.</summary>
         public long AckedThrough { get; private set; }
@@ -164,6 +182,10 @@ namespace RavenNest.BusinessLogic.Net.V2
                         {
                             loaded.Add(MessagePackSerializer.Deserialize<SessionEvent>(body, ProtocolSerializer.Messages));
                         }
+                        else if (header[4] == ResumeRecord && length == 16)
+                        {
+                            resumeId = new Guid(body);
+                        }
                         else if (header[4] == AckRecord && length == 8)
                         {
                             acked = Math.Max(acked, BinaryPrimitives.ReadInt64LittleEndian(body));
@@ -217,6 +239,10 @@ namespace RavenNest.BusinessLogic.Net.V2
                         Append(EventRecord, MessagePackSerializer.Serialize(last, ProtocolSerializer.Messages));
                     }
                     Append(AckRecord, ack);
+                    if (resumeId != Guid.Empty)
+                    {
+                        Append(ResumeRecord, resumeId.ToByteArray());
+                    }
                     foreach (var (e, _) in events)
                     {
                         Append(EventRecord, MessagePackSerializer.Serialize(e, ProtocolSerializer.Messages));
