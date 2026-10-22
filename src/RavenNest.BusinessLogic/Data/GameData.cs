@@ -4995,7 +4995,7 @@ namespace RavenNest.BusinessLogic.Data
             failedQuery = null;
             error = null;
             var query = queryBuilder.Build(saveData);
-            if (query == null || string.IsNullOrEmpty(query.Command))
+            if (query == null || query.Commands.Count == 0)
             {
                 return true;
             }
@@ -5005,9 +5005,13 @@ namespace RavenNest.BusinessLogic.Data
                 using (var con = db.GetConnection())
                 {
                     con.Open();
-                    var command = con.CreateCommand();
-                    command.CommandText = query.Command;
-                    written = command.ExecuteNonQuery();
+                    foreach (var part in query.Commands)
+                    {
+                        using var command = con.CreateCommand();
+                        command.CommandText = part.Text;
+                        command.Parameters.AddRange(part.Parameters.ToArray());
+                        written += command.ExecuteNonQuery();
+                    }
                     con.Close();
                 }
 
