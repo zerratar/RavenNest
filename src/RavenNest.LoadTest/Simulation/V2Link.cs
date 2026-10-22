@@ -27,6 +27,7 @@ public sealed class V2Link : IAsyncDisposable
     private readonly Guid resumeId = Guid.NewGuid();
     private readonly SemaphoreSlim connectLock = new(1, 1);
     private readonly ConcurrentDictionary<Guid, PendingCommand> commands = new();
+    private readonly Dictionary<Guid, long> revisions = new(); // newest inventory revision seen per character, under gate
 
     // everything below is guarded by gate: the tick builds saves, the read loop applies acks and events
     private readonly object gate = new();
@@ -73,6 +74,7 @@ public sealed class V2Link : IAsyncDisposable
     private sealed class PendingCommand
     {
         public required CommandRequest Request;
+        public bool IsRepeat;
         public readonly TaskCompletionSource<CommandResult> Done = new(TaskCreationOptions.RunContinuationsAsynchronously);
     }
 
@@ -374,17 +376,58 @@ public sealed class V2Link : IAsyncDisposable
 
                 if (e.Sequence <= replayUntil) Interlocked.Increment(ref metrics.V2EventReplays);
                 lastApplied = e.Sequence;
+                if (e.Type == (int)GameEventType.ItemAdd)
+                {
+                    Interlocked.Increment(ref metrics.V2ItemAddEvents);
+                    if (e.Inventory != null) Interlocked.Increment(ref metrics.V2ItemAddWithInventory);
+                }
+                if (e.Inventory != null) ObserveRevision(e.Inventory);
                 Interlocked.Increment(ref metrics.EventCount);
                 metrics.CountEvent(Enum.IsDefined(typeof(GameEventType), e.Type) ? ((GameEventType)e.Type).ToString() : "Type" + e.Type);
             }
         }
     }
 
+    /// <summary>
+    /// Inventory revisions go up by one per change on the server. A jump is a change the game never heard of (a gap);
+    /// a lower one than already seen means two paths (events, command results) delivered them out of order.
+    /// Call under gate.
+    /// </summary>
+    private void ObserveRevision(InventoryUpdate update)
+    {
+        Interlocked.Increment(ref metrics.V2RevisionUpdates);
+        if (!revisions.TryGetValue(update.CharacterId, out var last))
+        {
+            revisions[update.CharacterId] = update.Revision;
+            return;
+        }
+
+        if (update.Revision <= last)
+        {
+            Interlocked.Increment(ref metrics.V2RevisionOutOfOrder);
+            return;
+        }
+
+        if (update.Revision > last + 1)
+        {
+            Interlocked.Increment(ref metrics.V2RevisionGaps);
+            Interlocked.Add(ref metrics.V2RevisionMissing, update.Revision - last - 1);
+        }
+        revisions[update.CharacterId] = update.Revision;
+    }
+
     private void OnCommandResult(CommandResult result)
     {
         if (commands.TryGetValue(result.RequestId, out var pending))
         {
-            if (!pending.Done.TrySetResult(result)) Interlocked.Increment(ref metrics.V2DuplicateResults);
+            if (!pending.Done.TrySetResult(result))
+            {
+                Interlocked.Increment(ref metrics.V2DuplicateResults);
+            }
+            else if (result.Inventory != null && !pending.IsRepeat)
+            {
+                lock (gate) foreach (var u in result.Inventory) ObserveRevision(u);
+            }
         }
         else
         {
@@ -606,7 +649,7 @@ public sealed class V2Link : IAsyncDisposable
     public async Task<CommandResult?> SendCommandAsync(string command, byte[] args, CancellationToken ct, Guid? requestId = null, string? endpointName = null)
     {
         var request = new CommandRequest { RequestId = requestId ?? Guid.NewGuid(), Command = command, Args = args };
-        var pending = new PendingCommand { Request = request };
+        var pending = new PendingCommand { Request = request, IsRepeat = endpointName != null && endpointName.EndsWith("(repeat)") };
         var name = endpointName ?? "v2 " + command;
         if (!commands.TryAdd(request.RequestId, pending))
         {
