@@ -145,57 +145,51 @@ namespace RavenNest.BusinessLogic.Data
 
         internal static SqlParameter CreateParameter(string name, Type declared, object value)
         {
+            // The parameter's type comes from the property, never from the value. A null declared as another type
+            // would change the statement's parameter list, and with many rows per command every mix of nulls (a
+            // character's UserIdLock, TitleId, LastUsed) would be a new plan again.
             var type = Nullable.GetUnderlyingType(declared) ?? declared;
-            if (value == null)
-            {
-                return new SqlParameter(name, SqlDbType.NVarChar, -1) { Value = DBNull.Value };
-            }
+            var parameter = DeclareParameter(name, type);
+            parameter.Value = value == null ? DBNull.Value : ParameterValue(type, value);
+            return parameter;
+        }
 
-            if (type == typeof(string) || type == typeof(char) || type == typeof(TimeSpan))
-            {
-                return new SqlParameter(name, SqlDbType.NVarChar, -1) { Value = value.ToString() };
-            }
-            if (type == typeof(DateTime))
-            {
-                return new SqlParameter(name, SqlDbType.DateTime2) { Value = value };
-            }
-            if (type == typeof(Guid))
-            {
-                return new SqlParameter(name, SqlDbType.UniqueIdentifier) { Value = value };
-            }
-            if (type.IsEnum)
-            {
-                return new SqlParameter(name, SqlDbType.Int) { Value = Convert.ToInt32(value) };
-            }
-            if (type == typeof(bool))
-            {
-                return new SqlParameter(name, SqlDbType.Bit) { Value = (bool)value };
-            }
+        private static SqlParameter DeclareParameter(string name, Type type)
+        {
+            if (type == typeof(string) || type == typeof(char) || type == typeof(TimeSpan)) return new SqlParameter(name, SqlDbType.NVarChar, -1);
+            if (type == typeof(DateTime)) return new SqlParameter(name, SqlDbType.DateTime2);
+            if (type == typeof(Guid)) return new SqlParameter(name, SqlDbType.UniqueIdentifier);
+            if (type.IsEnum) return new SqlParameter(name, SqlDbType.Int);
+            if (type == typeof(bool)) return new SqlParameter(name, SqlDbType.Bit);
+            if (type == typeof(double)) return new SqlParameter(name, SqlDbType.Float);
+            if (type == typeof(float)) return new SqlParameter(name, SqlDbType.Real);
+            if (type == typeof(int) || type == typeof(short) || type == typeof(byte) || type == typeof(sbyte) || type == typeof(ushort)) return new SqlParameter(name, SqlDbType.Int);
+            if (type == typeof(long) || type == typeof(uint)) return new SqlParameter(name, SqlDbType.BigInt);
+            if (type == typeof(ulong) || type == typeof(decimal)) return new SqlParameter(name, SqlDbType.Decimal) { Precision = 38, Scale = 10 };
+            return new SqlParameter(name, SqlDbType.NVarChar, -1);
+        }
+
+        private static object ParameterValue(Type type, object value)
+        {
+            if (type == typeof(string) || type == typeof(char) || type == typeof(TimeSpan)) return value.ToString();
+            if (type == typeof(DateTime) || type == typeof(Guid) || type == typeof(bool)) return value;
+            if (type.IsEnum) return Convert.ToInt32(value);
             if (type == typeof(double))
             {
                 var d = (double)value;
-                return new SqlParameter(name, SqlDbType.Float) { Value = double.IsNaN(d) || double.IsInfinity(d) ? 0d : d };
+                return double.IsNaN(d) || double.IsInfinity(d) ? 0d : d;
             }
             if (type == typeof(float))
             {
                 var f = (float)value;
-                return new SqlParameter(name, SqlDbType.Real) { Value = float.IsNaN(f) || float.IsInfinity(f) ? 0f : f };
+                return float.IsNaN(f) || float.IsInfinity(f) ? 0f : f;
             }
-            if (type == typeof(int) || type == typeof(short) || type == typeof(byte) || type == typeof(sbyte) || type == typeof(ushort))
-            {
-                return new SqlParameter(name, SqlDbType.Int) { Value = Convert.ToInt32(value) };
-            }
-            if (type == typeof(long) || type == typeof(uint))
-            {
-                return new SqlParameter(name, SqlDbType.BigInt) { Value = Convert.ToInt64(value) };
-            }
-            if (type == typeof(ulong) || type == typeof(decimal))
-            {
-                return new SqlParameter(name, SqlDbType.Decimal) { Precision = 38, Scale = 10, Value = Convert.ToDecimal(value) };
-            }
+            if (type == typeof(int) || type == typeof(short) || type == typeof(byte) || type == typeof(sbyte) || type == typeof(ushort)) return Convert.ToInt32(value);
+            if (type == typeof(long) || type == typeof(uint)) return Convert.ToInt64(value);
+            if (type == typeof(ulong) || type == typeof(decimal)) return Convert.ToDecimal(value);
 
             // anything else was written as NULL
-            return new SqlParameter(name, SqlDbType.NVarChar, -1) { Value = DBNull.Value };
+            return DBNull.Value;
         }
 
         // The same saves as plain SQL with the values written out: only for the logs and the error query file now.

@@ -127,6 +127,50 @@ namespace RavenNest.UnitTests
         }
 
         [TestMethod]
+        public void Nulls_keep_the_parameter_types_of_their_properties()
+        {
+            // A character's UserIdLock, TitleId and LastUsed are often null. If a null changed a parameter's type,
+            // every mix of nulls in a command would be a new statement and a new plan.
+            List<IEntity> Characters(bool withNulls)
+            {
+                var entities = new List<IEntity>();
+                for (var i = 0; i < 10; ++i)
+                {
+                    var useNull = withNulls && i % 2 == 0;
+                    entities.Add(new Character
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = "character" + i,
+                        UserIdLock = useNull ? null : Guid.NewGuid(),
+                        TitleId = useNull ? null : Guid.NewGuid(),
+                        LastUsed = useNull ? null : DateTime.UtcNow
+                    });
+                }
+                return entities;
+            }
+
+            var qb = new QueryBuilder();
+            foreach (var state in new[] { EntityState.Added, EntityState.Modified })
+            {
+                var all = qb.Build(new EntityStoreItems(state, Characters(false)));
+                var mixed = qb.Build(new EntityStoreItems(state, Characters(true)));
+                Assert.AreEqual(all.Commands.Count, mixed.Commands.Count, state.ToString());
+                for (var c = 0; c < all.Commands.Count; ++c)
+                {
+                    Assert.AreEqual(all.Commands[c].Text, mixed.Commands[c].Text, state.ToString());
+                    var a = all.Commands[c].Parameters;
+                    var b = mixed.Commands[c].Parameters;
+                    Assert.AreEqual(a.Count, b.Count, state.ToString());
+                    for (var i = 0; i < a.Count; ++i)
+                    {
+                        Assert.AreEqual(a[i].SqlDbType, b[i].SqlDbType, state + " " + a[i].ParameterName);
+                        Assert.AreEqual(a[i].Size, b[i].Size, state + " " + a[i].ParameterName);
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
         public void Large_saves_stay_under_the_parameter_limit()
         {
             var qb = new QueryBuilder();

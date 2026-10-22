@@ -5005,13 +5005,19 @@ namespace RavenNest.BusinessLogic.Data
                 using (var con = db.GetConnection())
                 {
                     con.Open();
+                    // One transaction for all the commands of a batch: a large insert is split to stay under the
+                    // parameter limit, and if a later part failed, the rows of the earlier parts would already be in
+                    // the database and the row by row retry below would fail them on their keys for ever.
+                    using var transaction = con.BeginTransaction();
                     foreach (var part in query.Commands)
                     {
                         using var command = con.CreateCommand();
+                        command.Transaction = transaction;
                         command.CommandText = part.Text;
                         command.Parameters.AddRange(part.Parameters.ToArray());
                         written += command.ExecuteNonQuery();
                     }
+                    transaction.Commit();
                     con.Close();
                 }
 
