@@ -76,9 +76,17 @@ namespace RavenNest.BusinessLogic.Net.V2
         public bool Enabled => !settings.DisableGameConnectionV2;
 
         /// <summary>The next revision of a character's inventory, for changes a command or event carries.</summary>
+        /// <summary>
+        /// Where this server run starts numbering inventory revisions: from the clock, so a run always numbers above the
+        /// last one. Events kept on disk from before a restart carry the old run's numbers; starting each run at 1
+        /// made those look newer than the new run's, so the game skipped real changes. The game takes a jump of more
+        /// than a million as a new server run rather than as missed changes.
+        /// </summary>
+        private static readonly long revisionBase = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() * 1000;
+
         internal long NextInventoryRevision(Guid characterId)
         {
-            return inventoryRevisions.AddOrUpdate(characterId, 1, (_, r) => r + 1);
+            return inventoryRevisions.AddOrUpdate(characterId, revisionBase + 1, (_, r) => r + 1);
         }
 
         public async Task HandleAsync(HttpContext context)
