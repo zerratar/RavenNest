@@ -232,9 +232,9 @@ public sealed class V2Link : IAsyncDisposable
                 if (c == null || !c.IsOpen) continue;
                 long before;
                 lock (gate) before = lastApplied;
+                downUntil = DateTime.UtcNow + o.V2DropPause; // before the abort, so the tick does not reconnect at once
                 c.Abort();
                 Interlocked.Increment(ref metrics.V2ChaosDrops);
-                downUntil = DateTime.UtcNow + o.V2DropPause;
                 lock (gate) if (connection == c) connection = null; // the tick sees no connection while down
                 // down for a while, as a real network blip: saves pile up in the outbox, events and acks on the server
                 await Task.Delay(o.V2DropPause, ct);
