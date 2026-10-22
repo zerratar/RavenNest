@@ -524,11 +524,11 @@ namespace RavenNest.BusinessLogic.Net.V2
         // ---------------------------------------------------------------------------------------------------------
 
         /// <summary>A game event for this streamer, from any thread.</summary>
-        public void AddEvent(int type, byte[] data) => Post(() =>
+        public void AddEvent(int type, byte[] data, Guid characterId = default, InventoryUpdate inventory = null) => Post(() =>
         {
             if (!ended)
             {
-                events.Add(type, data, Guid.Empty);
+                events.Add(type, data, characterId, inventory);
             }
         });
 
