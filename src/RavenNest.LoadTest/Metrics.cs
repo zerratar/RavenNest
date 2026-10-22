@@ -137,7 +137,7 @@ public sealed class Metrics
     public long V2EventGaps, V2EventRepeats, V2EventReplays, V2EventAcks;
 
     // v2 inventory revisions (item drop events and command results, per character)
-    public long V2ItemAddEvents, V2ItemAddWithInventory, V2RevisionUpdates, V2RevisionGaps, V2RevisionMissing, V2RevisionOutOfOrder;
+    public long V2ItemAddEvents, V2ItemAddWithInventory, V2RevisionUpdates, V2RevisionGaps, V2RevisionMissing, V2RevisionOutOfOrder, V2RevisionRestarts;
 
     // v2 commands
     public long V2CommandRepeats, V2RepeatMatches, V2RepeatMismatches, V2RepeatChecked, V2DoubleAdds;

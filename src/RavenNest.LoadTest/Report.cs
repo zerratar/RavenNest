@@ -284,7 +284,7 @@ public sealed class Report
         sb.AppendLine($"  v2 connection: {m.V2Connects} connects, {m.V2ConnectFailures} failed, {m.V2Drops} drops by the server or network, {m.V2ChaosDrops} chaos drops,"
             + $" {m.V2Resumes} resumed, {m.V2ResumeFailures} not resumed, {m.V2Resyncs} resyncs");
         sb.AppendLine($"  v2 inventory: {m.V2ItemAddEvents} ItemAdd events, {m.V2ItemAddWithInventory} with an inventory update; {m.V2RevisionUpdates} revisions seen (events and command results),"
-            + $" {m.V2RevisionGaps} gaps ({m.V2RevisionMissing} revisions missing), {m.V2RevisionOutOfOrder} out of order");
+            + $" {m.V2RevisionGaps} gaps ({m.V2RevisionMissing} revisions missing), {m.V2RevisionOutOfOrder} out of order, {m.V2RevisionRestarts} numbering restarts (server restarted)");
         if (o.V2Commands)
         {
             sb.AppendLine($"  v2 commands: {m.V2CommandResends} resent after a reconnect, {m.V2DuplicateResults} duplicate answers, {m.V2LateResults} answers nobody waited for");
@@ -405,7 +405,7 @@ public sealed class Report
                 wire = new { bytesOut = m.V2BytesOut, bytesIn = m.V2BytesIn, messagesOut = m.V2MessagesOut, messagesIn = m.V2MessagesIn, decodeFailures = m.V2DecodeFailures },
                 connection = new { connects = m.V2Connects, connectFailures = m.V2ConnectFailures, drops = m.V2Drops, chaosDrops = m.V2ChaosDrops, resumes = m.V2Resumes, resumeFailures = m.V2ResumeFailures, resyncs = m.V2Resyncs },
                 events = new { gaps = m.V2EventGaps, repeats = m.V2EventRepeats, replayedAfterResume = m.V2EventReplays, acks = m.V2EventAcks },
-                inventory = new { itemAddEvents = m.V2ItemAddEvents, itemAddWithInventory = m.V2ItemAddWithInventory, revisions = m.V2RevisionUpdates, gaps = m.V2RevisionGaps, missing = m.V2RevisionMissing, outOfOrder = m.V2RevisionOutOfOrder },
+                inventory = new { itemAddEvents = m.V2ItemAddEvents, itemAddWithInventory = m.V2ItemAddWithInventory, revisions = m.V2RevisionUpdates, gaps = m.V2RevisionGaps, missing = m.V2RevisionMissing, outOfOrder = m.V2RevisionOutOfOrder, restarts = m.V2RevisionRestarts },
                 commands = new
                 {
                     resentAfterReconnect = m.V2CommandResends,

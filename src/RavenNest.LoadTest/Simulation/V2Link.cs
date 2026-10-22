@@ -417,6 +417,13 @@ public sealed class V2Link : IAsyncDisposable
 
         if (update.Revision <= last)
         {
+            if (update.Revision < last - 1000)
+            {
+                // the server numbers again from 1 after a restart (the game's InventoryRevisions does the same)
+                Interlocked.Increment(ref metrics.V2RevisionRestarts);
+                revisions[update.CharacterId] = update.Revision;
+                return;
+            }
             Interlocked.Increment(ref metrics.V2RevisionOutOfOrder);
             return;
         }
