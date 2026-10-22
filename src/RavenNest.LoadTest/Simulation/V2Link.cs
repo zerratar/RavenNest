@@ -37,6 +37,10 @@ public sealed class V2Link : IAsyncDisposable
     private V2Connection? connection;
     private bool everWelcomed;
     private long lastApplied, lastAcked, replayUntil;
+
+    // After a Welcome that did not resume, the server sends from its log's confirmed point, which the Welcome
+    // does not say: the first event then is the start, not a gap.
+    private bool startUnknown;
     private int lastGameStatePlayerCount = -1;
     private long eventGapsLogged, mismatchesLogged;
 
@@ -150,6 +154,7 @@ public sealed class V2Link : IAsyncDisposable
                     lastAcked = 0;
                 }
                 replayUntil = everWelcomed && welcome.Resumed ? welcome.EventSequence : 0;
+                startUnknown = !welcome.Resumed;
                 // a resume acknowledges the Hello's cursor; otherwise acknowledge again with the next save
                 lastAcked = welcome.Resumed ? Math.Min(cursor, lastApplied) : 0;
 
@@ -166,6 +171,7 @@ public sealed class V2Link : IAsyncDisposable
                 connection = c;
             }
             if (note != null) log(note);
+            log("v2: Welcome (resumed " + welcome.Resumed + ", resync " + welcome.ResyncRequired + ", server event sequence " + welcome.EventSequence + ", our cursor " + cursor + ")");
             c.Start((m, size) => OnMessage(c, m, size));
 
             // Commands still waiting go again with the same id: the server answers a repeat with the first result.
@@ -365,6 +371,13 @@ public sealed class V2Link : IAsyncDisposable
                     // harmless by design (the client skips it), but after a clean resume there should be none
                     Interlocked.Increment(ref metrics.V2EventRepeats);
                     continue;
+                }
+
+                if (startUnknown)
+                {
+                    startUnknown = false;
+                    if (e.Sequence > lastApplied + 1) metrics.CountV2("events started after a Welcome without resume at the log's confirmed point");
+                    lastApplied = e.Sequence - 1;
                 }
 
                 if (e.Sequence > lastApplied + 1)
