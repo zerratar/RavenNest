@@ -182,6 +182,7 @@ both the delta socket and the event socket:
 | `--v2-drop-pause <t>` | stay down this long after a drop before resuming (default 3s) |
 | `--v2-resend-after <t>` | send an unstored save again after this long without its Stored ack (default 10s, as the game's SaveOutbox) |
 | `--v2-drain-timeout <t>` | how long to wait at the end for every save to be stored (default 30s) |
+| `--first-session <n>` | number the sessions from n (streamer `<streamer><n>`, players `<prefix>_s<n>_...`), so two runs can share a server |
 | `--server-pid <pid>` | report the server process's CPU time and memory (works for v1 too) |
 
 The v2 numbers in the reports: player saves and resends, send to Accepted per batch and send to Stored per
