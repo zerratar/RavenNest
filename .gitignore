@@ -334,3 +334,8 @@ appsettings.json
 appsettings.*.json
 *settings.json
 settings.json
+
+# RavenNest.LoadTest output (the seed script holds a password hash)
+loadtest-seed.sql
+loadtest-rosters/
+loadtest-*.json

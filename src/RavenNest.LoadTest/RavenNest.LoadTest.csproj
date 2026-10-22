@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>RavenNest.LoadTest</RootNamespace>
+    <AssemblyName>RavenNest.LoadTest</AssemblyName>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+  </PropertyGroup>
+
+  <!--
+    The server's own code is referenced on purpose: the delta frames are checked against the
+    server's parsers (self-test), the TCP envelope is the server's TypedPacket, the exp curve is the
+    server's GameMath and the seed step hashes the password with the server's SecureHasher. If any
+    of those change, this tool changes with them instead of drifting.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="..\RavenNest.BusinessLogic\RavenNest.BusinessLogic.csproj" />
+    <ProjectReference Include="..\RavenNest.Models\RavenNest.Models.csproj" />
+  </ItemGroup>
+
+</Project>
