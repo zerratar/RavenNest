@@ -76,6 +76,9 @@ namespace RavenNest.BusinessLogic.Net.V2
 
         public bool IsConnected => connection != null && connection.IsOpen;
 
+        /// <summary>How long the session has had no connection (zero while it has one). Read from any thread.</summary>
+        public TimeSpan DisconnectedFor => connection != null ? TimeSpan.Zero : DateTime.UtcNow - idleSince;
+
         public int UnconfirmedEvents => events.Count;
 
         private sealed class PlayerSaveState
