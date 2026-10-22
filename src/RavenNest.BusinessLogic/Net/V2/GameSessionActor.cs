@@ -173,6 +173,15 @@ namespace RavenNest.BusinessLogic.Net.V2
                 eventsSentThrough = events.AckedThrough;
             }
 
+            if (!resumed || restarted)
+            {
+                // A game run that does not resume numbers its saves on its own (another PC, a restarted game, a clock
+                // that went back): the last run's versions must not make its saves look stale. Stale saves were
+                // skipped and answered as stored, so the new run's progress was lost without a word. It sends full
+                // saves now (ResyncRequired), which the database save turns into Stored acks as usual.
+                saves.Clear();
+            }
+
             ResumeId = hello.ResumeId;
             welcomed = true;
             connection.Send(new Welcome
