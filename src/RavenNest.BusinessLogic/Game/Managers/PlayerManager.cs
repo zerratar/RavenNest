@@ -5216,7 +5216,7 @@ namespace RavenNest.BusinessLogic.Game
             //    coinCost += delta * AutoRestCost;
             //}
 
-            state.AutoJoinDungeonCount = update.AutoJoinRaidCount;
+            state.AutoJoinDungeonCount = update.AutoJoinDungeonCount;
             state.AutoJoinRaidCount = update.AutoJoinRaidCount;
             state.IsAutoResting = update.IsAutoResting;
             state.X = update.X;
@@ -5318,7 +5318,9 @@ namespace RavenNest.BusinessLogic.Game
                     coinCost += delta * AutoJoinRaidCost;
                 }
 
-                state.AutoJoinDungeonCount = update.AutoJoinDungeonCount;
+                // the raid count (it set the dungeon count here, so the raid count never moved and every change
+                // charged the auto-join cost again from the stale value)
+                state.AutoJoinRaidCount = update.AutoJoinRaidCount;
             }
 
 
