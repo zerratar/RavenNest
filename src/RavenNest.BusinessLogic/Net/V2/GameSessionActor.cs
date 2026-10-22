@@ -83,6 +83,9 @@ namespace RavenNest.BusinessLogic.Net.V2
             public long Accepted;
             public DateTime AcceptedAt;
             public long Stored;
+
+            /// <summary>Versions accepted and not stored yet, oldest first, with when: a database save stores those accepted before it began.</summary>
+            public readonly List<(long Version, DateTime At)> Unstored = new List<(long, DateTime)>(4);
         }
 
         private sealed class CommandEntry
@@ -416,6 +419,11 @@ namespace RavenNest.BusinessLogic.Net.V2
                 {
                     state.Accepted = save.Version;
                     state.AcceptedAt = DateTime.UtcNow;
+                    state.Unstored.Add((save.Version, state.AcceptedAt));
+                    if (state.Unstored.Count > 64)
+                    {
+                        state.Unstored.RemoveAt(0); // the database is failing; a newer version stores the older ones too
+                    }
                 }
                 else
                 {
@@ -436,7 +444,17 @@ namespace RavenNest.BusinessLogic.Net.V2
             List<SaveAck> stored = null;
             foreach (var (characterId, state) in saves)
             {
-                if (state.Accepted <= state.Stored || state.AcceptedAt >= started)
+                // The newest version accepted before this save began is in the database now, even when a newer one
+                // came in while it wrote. (Only the latest version was looked at before: a player saved every tick was
+                // nearly always accepted again during the write, so Stored hardly ever came, and the game kept
+                // resending everything, in full.)
+                var through = 0L;
+                foreach (var (version, at) in state.Unstored)
+                {
+                    if (at < started) through = version; else break;
+                }
+
+                if (through <= state.Stored)
                 {
                     continue;
                 }
@@ -447,7 +465,8 @@ namespace RavenNest.BusinessLogic.Net.V2
                     continue;
                 }
 
-                state.Stored = state.Accepted;
+                state.Stored = through;
+                state.Unstored.RemoveAll(x => x.Version <= through);
                 (stored ??= new List<SaveAck>()).Add(new SaveAck { CharacterId = characterId, Version = state.Stored });
             }
 
