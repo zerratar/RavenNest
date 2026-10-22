@@ -156,6 +156,7 @@ namespace RavenNest.BusinessLogic.Net.V2
             }
 
             var session = await GetOrStartSessionAsync(token);
+            TakeOldPathEvents(session, token.UserId);
             session.Attach(connection, hello, token);
             return session;
         }
@@ -199,17 +200,24 @@ namespace RavenNest.BusinessLogic.Net.V2
             var session = new GameSessionActor(this, token, log, logger);
             sessionsByUser[token.UserId] = session;
 
-            // events that waited on the old path while the streamer had no v2 session
-            var pending = oldConnections.GetPendingEvents(token.UserId);
+            logger.LogInformation("v2 session started for " + token.UserName + " (" + token.SessionId + ")" + (log.Count > 0 ? ", " + log.Count + " events from its log" : ""));
+            return session;
+        }
+
+        /// <summary>
+        /// Events that waited on the old path (the streamer had no v2 connection, or used the old one meanwhile) go to
+        /// the v2 session, ahead of the Welcome. Done on every Hello, not only for a new session: a session that sat
+        /// without a connection leaves new events on the old path (see <see cref="RouteEvent"/>).
+        /// </summary>
+        private void TakeOldPathEvents(GameSessionActor session, Guid userId)
+        {
+            var pending = oldConnections.GetPendingEvents(userId);
             var waiting = pending.Peek(PendingGameEvents.MaxEvents, out var last);
             if (waiting.Count > 0)
             {
                 pending.RemoveThrough(last);
                 session.AddEvents(waiting.Select(e => new SessionEvent { Type = e.Type, Data = e.Data }).ToList());
             }
-
-            logger.LogInformation("v2 session started for " + token.UserName + " (" + token.SessionId + ")" + (log.Count > 0 ? ", " + log.Count + " events from its log" : ""));
-            return session;
         }
 
         internal void Remove(GameSessionActor session)
@@ -220,6 +228,17 @@ namespace RavenNest.BusinessLogic.Net.V2
         private bool RouteEvent(DataModels.GameEvent gameEvent)
         {
             if (gameEvent == null || !sessionsByUser.TryGetValue(gameEvent.UserId, out var session) || session.Ended)
+            {
+                return false;
+            }
+
+            // A v2 session lives on for 30 minutes without a connection. When the streamer is on the old event socket
+            // now (v2 switched off, an older game), or nothing has been connected for longer than the game loop's
+            // grace, the event takes the old path: it used to go into this session's log, where nobody read it, so a
+            // streamer back on the old connection got no events at all. A v2 connection that comes back takes
+            // whatever waits on the old path (TakeOldPathEvents).
+            if (!session.IsConnected
+                && (oldConnections.GetLatestConnection(gameEvent.UserId) != null || session.DisconnectedFor > GameSessionActor.GameLoopGrace))
             {
                 return false;
             }
