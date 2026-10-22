@@ -25,6 +25,17 @@ namespace RavenNest.BusinessLogic.Data
         private const int MaxParameters = 2000;
 
         /// <summary>
+        /// Rows per UPDATE or INSERT command. Small on purpose: with up to 2000 parameters a command took 10-15 times
+        /// longer per row than with a handful (500 Skills rows: about 900 ms in commands of 57 rows, 60-90 ms in commands
+        /// of 2-4), and every row count that occurred was a plan of its own, of several MB each (300 plans, 430 MB in
+        /// 15 minutes). With at most 4 rows a table has at most 4 statement shapes per kind, each a small plan.
+        /// </summary>
+        private const int MaxRowsPerCommand = 4;
+
+        /// <summary>Ids per DELETE command: one statement, so a longer list is cheap, but each length is a plan.</summary>
+        private const int MaxIdsPerDelete = 16;
+
+        /// <summary>
         /// The save as parameterized commands. Each command's text depends only on the entity type and how many rows
         /// it carries, so SQL Server reuses its plans. The values used to be written into the SQL, which made every
         /// save a new statement with a new cached plan: in a two hour soak the plan cache grew to 5.6 GB, pushed the
@@ -60,7 +71,7 @@ namespace RavenNest.BusinessLogic.Data
                 var type = group.Key;
                 var idProperty = GetProperty(type, "Id");
                 var sets = GetProperties(type).Where(x => x.Name != "Id").ToArray();
-                var rowsPerCommand = Math.Max(1, MaxParameters / (sets.Length + 1));
+                var rowsPerCommand = Math.Clamp(MaxParameters / (sets.Length + 1), 1, MaxRowsPerCommand);
                 foreach (var chunk in group.Chunk(rowsPerCommand))
                 {
                     var sb = new StringBuilder();
@@ -88,7 +99,7 @@ namespace RavenNest.BusinessLogic.Data
             {
                 var type = group.Key;
                 var idProperty = GetProperty(type, "Id");
-                foreach (var chunk in group.Chunk(MaxParameters))
+                foreach (var chunk in group.Chunk(MaxIdsPerDelete))
                 {
                     var parameters = new List<SqlParameter>(chunk.Length);
                     var ids = chunk.Select(entity => Add(parameters, idProperty.PropertyType, idProperty.GetValue(entity))).ToList();
@@ -106,8 +117,7 @@ namespace RavenNest.BusinessLogic.Data
                 var type = group.Key;
                 var properties = GetProperties(type);
                 var propertyNames = string.Join(", ", properties.Select(x => x.Name));
-                // a VALUES list takes at most 1000 rows
-                var rowsPerCommand = Math.Clamp(MaxParameters / Math.Max(1, properties.Length), 1, 1000);
+                var rowsPerCommand = Math.Clamp(MaxParameters / Math.Max(1, properties.Length), 1, MaxRowsPerCommand);
                 foreach (var chunk in group.Chunk(rowsPerCommand))
                 {
                     var sb = new StringBuilder();

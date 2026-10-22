@@ -171,6 +171,25 @@ namespace RavenNest.UnitTests
         }
 
         [TestMethod]
+        public void Saves_of_any_size_use_only_a_few_statement_shapes()
+        {
+            // every distinct command text is a plan in SQL Server: saves of 1 to 300 rows must not make 300 of them
+            var qb = new QueryBuilder();
+            foreach (var state in new[] { EntityState.Added, EntityState.Modified, EntityState.Deleted })
+            {
+                var texts = new HashSet<string>();
+                for (var rows = 1; rows <= 300; ++rows)
+                {
+                    foreach (var command in qb.Build(new EntityStoreItems(state, Users(rows, "dave"))).Commands)
+                    {
+                        texts.Add(command.Text);
+                    }
+                }
+                Assert.IsTrue(texts.Count <= 16, state + ": " + texts.Count + " different statements");
+            }
+        }
+
+        [TestMethod]
         public void Large_saves_stay_under_the_parameter_limit()
         {
             var qb = new QueryBuilder();
