@@ -8,13 +8,14 @@ namespace RavenNest.Tools
     {
         static int Main(string[] args)
         {
-            // "RavenNest.Tools package [--no-bot]" builds the release packages without the window
+            // "RavenNest.Tools package [--build] [--no-bot]" builds the release packages without the window;
+            // --build makes the Unity release builds first
             if (args.Length > 0 && args[0].Equals("package", StringComparison.OrdinalIgnoreCase))
             {
                 var packager = new ReleasePackager(x => System.Console.WriteLine(x), null);
                 try
                 {
-                    packager.Run(includeBot: Array.IndexOf(args, "--no-bot") < 0);
+                    packager.Run(includeBot: Array.IndexOf(args, "--no-bot") < 0, buildGame: Array.IndexOf(args, "--build") >= 0);
                     System.Console.WriteLine(packager.LogText);
                     return 0;
                 }

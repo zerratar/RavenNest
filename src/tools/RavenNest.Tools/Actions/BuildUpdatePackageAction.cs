@@ -33,7 +33,12 @@ namespace RavenNest.Tools.Actions
             }
         }
 
-        public async void Apply()
+        public void Apply() => Apply(buildGame: false);
+
+        /// <summary>Makes the Unity release builds first (the game project must not be open in Unity), then the packages.</summary>
+        public void BuildAndApply() => Apply(buildGame: true);
+
+        private async void Apply(bool buildGame)
         {
             if (running)
                 return;
@@ -44,7 +49,7 @@ namespace RavenNest.Tools.Actions
             var packager = new ReleasePackager(x => ToolStatus.Text = x, x => ToolProgress.Value = x);
             try
             {
-                await Task.Run(() => packager.Run());
+                await Task.Run(() => packager.Run(buildGame: buildGame));
             }
             catch (Exception exc)
             {

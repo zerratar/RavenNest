@@ -29,6 +29,11 @@ namespace RavenNest.Tools
             buildUpdatePackage.Apply();
         }
 
+        private void BuildGameAndPackage_Invoke(object sender, EventArgs e)
+        {
+            buildUpdatePackage.BuildAndApply();
+        }
+
         private void ExpBump_Invoke(object sender, EventArgs e)
         {
             expAdjuster.Apply();
@@ -69,6 +74,10 @@ namespace RavenNest.Tools
             if (key.Key == ConsoleKey.F2)
             {
                 buildUpdatePackage.Apply();
+            }
+            if (key.Key == ConsoleKey.F3)
+            {
+                buildUpdatePackage.BuildAndApply();
             }
             if (key.Key == ConsoleKey.F5)
             {

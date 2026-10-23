@@ -115,8 +115,74 @@ namespace RavenNest.Tools.Actions
             return match.Value;
         }
 
-        public void Run(bool includeBot = true)
+        /// <summary>
+        /// Makes the release builds first, with a batch mode Unity running ReleaseBuild.BuildFromCommandLine (game repo,
+        /// Assets/Scripts/Editor/ReleaseBuild.cs). Unity cannot open a project that is already open, so with the editor
+        /// running use Ravenfall > Release > Build and Package there instead.
+        /// </summary>
+        public void BuildGame()
         {
+            if (ProjectIsOpen())
+                throw new InvalidOperationException("The game project is open in Unity. Close it, or use Ravenfall > Release > Build and Package in the editor.");
+
+            var unity = UnityEditorPath();
+            var unityLog = Path.Combine(GameFolder, "Logs", "release-build-unity.log");
+            var buildLog = Path.Combine(GameFolder, "Logs", "release-build.txt");
+            status("Building the game for Windows and Linux in Unity, this takes a while (log: " + unityLog + ")");
+            var watch = Stopwatch.StartNew();
+
+            var startInfo = new ProcessStartInfo(unity,
+                $"-batchmode -projectPath \"{GameFolder}\" -executeMethod ReleaseBuild.BuildFromCommandLine -logFile \"{unityLog}\"")
+            {
+                UseShellExecute = false,
+            };
+
+            using (var process = Process.Start(startInfo))
+            {
+                process.WaitForExit();
+                if (File.Exists(buildLog))
+                    Log(File.ReadAllText(buildLog).TrimEnd());
+
+                if (process.ExitCode != 0)
+                    throw new InvalidOperationException($"The Unity build failed (exit code {process.ExitCode}), see {buildLog} and {unityLog}");
+            }
+
+            Log($"Unity builds done in {watch.Elapsed:hh\\:mm\\:ss}");
+        }
+
+        private static bool ProjectIsOpen()
+        {
+            // an open editor holds Temp/UnityLockfile open
+            var lockFile = Path.Combine(GameFolder, "Temp", "UnityLockfile");
+            if (!File.Exists(lockFile))
+                return false;
+            try
+            {
+                using (File.Open(lockFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) { }
+                return false;
+            }
+            catch (IOException)
+            {
+                return true;
+            }
+        }
+
+        private static string UnityEditorPath()
+        {
+            // the editor version the project is on, where Unity Hub installs it
+            var version = File.ReadAllLines(Path.Combine(GameFolder, "ProjectSettings", "ProjectVersion.txt"))
+                .First(x => x.StartsWith("m_EditorVersion:")).Split(':')[1].Trim();
+            var path = Path.Combine(@"C:\Program Files\Unity\Hub\Editor", version, "Editor", "Unity.exe");
+            if (!File.Exists(path))
+                throw new InvalidOperationException("Unity " + version + " is not installed at " + path);
+            return path;
+        }
+
+        public void Run(bool includeBot = true, bool buildGame = false)
+        {
+            if (buildGame)
+                BuildGame();
+
             var version = CheckBuilds();
             var tag = "v" + version + "-alpha";
             OutputFolder = Path.Combine(OutputRoot, tag);

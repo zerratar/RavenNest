@@ -13,7 +13,7 @@ namespace RavenNest.Tools
         private int LogoLabelWidth = 54;
 
         private TextBlock ToolStatus;
-        private MenuItem ExpBump, BuildUpdatePackage, SkillRollbackv0788, RestoreInventory;
+        private MenuItem ExpBump, BuildUpdatePackage, BuildGameAndPackage, SkillRollbackv0788, RestoreInventory;
         //private Shinobytes.Console.Forms.Image Logo;
 
         public void InitializeComponents()
@@ -83,6 +83,10 @@ namespace RavenNest.Tools
                 BuildUpdatePackage.Invoke += BuildUpdatePackage_Invoke;
                 editMenu.SubItems.Add(BuildUpdatePackage);
 
+                BuildGameAndPackage = new MenuItem("Build Game and Release Packages");
+                BuildGameAndPackage.Invoke += BuildGameAndPackage_Invoke;
+                editMenu.SubItems.Add(BuildGameAndPackage);
+
                 ExpBump = new MenuItem("Fix Exp Bump");
                 ExpBump.Invoke += ExpBump_Invoke;
                 ExpBump.IsEnabled = false;
@@ -106,7 +110,7 @@ namespace RavenNest.Tools
             {
                 ForegroundColor = ConsoleColor.Black
             });
-            statusStrip.Controls.Add(new TextBlock("F2=Build Update Package")
+            statusStrip.Controls.Add(new TextBlock("F2=Release Packages  F3=Build Game and Packages")
             {
                 ForegroundColor = ConsoleColor.Black
             });
