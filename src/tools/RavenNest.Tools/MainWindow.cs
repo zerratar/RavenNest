@@ -20,10 +20,8 @@ namespace RavenNest.Tools
             buildUpdatePackage = new BuildUpdatePackageAction(ToolProgress, ToolStatus);
             restoreInventoryItems = new RestoreInventoryItems(ToolProgress, ToolStatus,
                 @"G:\Ravenfall\Projects\RavenNest\src\generated-data\backups\active", @"G:\Ravenfall\Projects\RavenNest\src\generated-data\backups\newest");
-            var version = buildUpdatePackage.GetNextVersion();
-            var nextVersion = version.Major + "." + version.Minor + "." + version.Build + "." + (version.Revision != -1 ? version.Revision : 0);
-            if (!string.IsNullOrEmpty(nextVersion))
-                BuildUpdatePackage.Text = "Build Update Package (" + nextVersion + ")";
+            var version = buildUpdatePackage.GetVersion();
+            BuildUpdatePackage.Text = version != null ? "Build Release Packages (" + version + ")" : "Build Release Packages (no release builds)";
         }
 
         private void BuildUpdatePackage_Invoke(object sender, EventArgs e)

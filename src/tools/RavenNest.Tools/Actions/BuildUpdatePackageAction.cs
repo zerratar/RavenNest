@@ -1,46 +1,13 @@
-﻿using Microsoft.AspNetCore.Http.Features;
-using SevenZip;
-using Shinobytes.Console.Forms;
+﻿using Shinobytes.Console.Forms;
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
-using UnityVersionChanger;
 
 namespace RavenNest.Tools.Actions
 {
+    /// <summary>The Tools menu entry (F2) for <see cref="ReleasePackager"/>: builds every file of a GitHub release.</summary>
     public class BuildUpdatePackageAction
     {
-        private const string RavenBotFolder = @"G:\Ravenfall\Projects\RavenBot";
-        private const string UnityBuildFolderWin = @"G:\Ravenfall\Projects\Ravenfall Legacy\Build";
-        private const string UnityBuildFolderLinux = @"G:\Ravenfall\Projects\Ravenfall Legacy\Build Linux";
-
-        private const int MAX_REVISION = 10;
-        private const int MAX_BUILD = 10;
-        private const int MAX_MINOR = 10;
-
-        /// <summary>
-        /// Until we have an updated, the files are the same therefor we don't need to compress it twice.
-        /// </summary>
-        private const bool LinuxUpdateIsCopyOfReleaseBuild = true;
-
-        private const string LinuxCompression = ".7z";//".tar.gz";
-        private const string WindowsCompression = ".7z";
-
-
-        private BuildState buildState = BuildState.Full_Windows;
-        private readonly SevenZipCompressor compressor;
-        private string targetBuildName;
-
-
-        public int MajorIncrement = 0;
-        public int MinorIncrement = 0;
-        public int BuildIncrement = 0;
-        public int RevisionIncrement = 1;
-        private Version BuildVersion;
+        private bool running;
 
         public BuildUpdatePackageAction(
           ProgressBar toolProgress,
@@ -48,334 +15,45 @@ namespace RavenNest.Tools.Actions
         {
             this.ToolProgress = toolProgress;
             this.ToolStatus = toolStatus;
-
-            var p = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            var dll = System.IO.Path.Combine(p, "libs", "7z.dll");
-
-            SevenZipCompressor.SetLibraryPath(dll);
-            compressor = new SevenZipCompressor
-            {
-                PreserveDirectoryRoot = true,
-                ArchiveFormat = OutArchiveFormat.SevenZip,
-                CompressionMethod = CompressionMethod.Lzma2,
-                CompressionLevel = CompressionLevel.Ultra,
-                CompressionMode = CompressionMode.Create
-            };
-            compressor.Compressing += Compressor_Compressing;
-            compressor.CompressionFinished += Compressor_CompressionFinished;
         }
 
         public ProgressBar ToolProgress { get; }
         public TextBlock ToolStatus { get; }
+
+        /// <summary>The version the release builds carry, or null when they are missing or not fit for release.</summary>
+        public string GetVersion()
+        {
+            try
+            {
+                return new ReleasePackager(null, null).CheckBuilds();
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
         public async void Apply()
         {
-            if (buildState == BuildState.RavenBot)
-            {
-                ToolStatus.Text = "Building RavenBot...";
-                ToolProgress.Indeterminate = true;
-                await BuildRavenBotAsync();
-                ToolStatus.Text = "RavenBot built!";
-                // wait for a second to ensure the ravenbot build was done.
-                await Task.Delay(1000);
-                buildState = BuildState.Full_Windows;
-            }
+            if (running)
+                return;
 
-            BuildVersion = GetNextVersion();
-
-            ToolStatus.Text = "Building Release Package...";
+            running = true;
             ToolProgress.Indeterminate = false;
-            await BuildPackageAsync();
-        }
-
-        private async Task BuildRavenBotAsync()
-        {
-            await Task.Run(() =>
-            {
-                // dotnet publish -r win10-x64 -c release -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true -o "G:\Ravenfall\Projects\Ravenfall-Legacy\Build\"
-                var startInfo = new ProcessStartInfo
-                {
-                    FileName = "dotnet.exe",
-                    WorkingDirectory = RavenBotFolder,
-                    Arguments = $"publish -r win10-x64 -c release -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true -o \"{UnityBuildFolderWin}\"",
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                };
-                var readResult = "";
-                using (var process = System.Diagnostics.Process.Start(startInfo))
-                {
-                    if (process != null)
-                    {
-                        readResult = process.StandardOutput.ReadToEnd();
-                        process.WaitForExit();
-                    }
-                }
-                buildState = BuildState.Full_Windows;
-            });
-        }
-
-        private async Task BuildPackageAsync()
-        {
-            await Task.Run(() =>
-            {
-                var allFiles = GetFiles();
-                var buildFolder = GetTargetBuildFolder();
-                targetBuildName = GetTargetName();
-                ToolStatus.Text = "Building " + targetBuildName + "..";
-                var targetFile = System.IO.Path.Combine(buildFolder, targetBuildName);
-                if (System.IO.File.Exists(targetFile))
-                    System.IO.File.Delete(targetFile);
-
-                if (LinuxUpdateIsCopyOfReleaseBuild && buildState == BuildState.Update_Linux)
-                {
-                    System.IO.File.Copy(
-                        System.IO.Path.Combine(buildFolder, GetReleaseFileName(false))
-                        , targetFile, true);
-                    Compressor_CompressionFinished(this, EventArgs.Empty);
-                }
-                else
-                {
-                    compressor.CompressFiles(targetFile, allFiles);
-                }
-
-            });
-        }
-
-        private string GetTargetName()
-        {
-            if (buildState == BuildState.Update_Windows)
-            {
-                return "update" + WindowsCompression;
-            }
-
-            if (buildState == BuildState.Update_Linux)
-            {
-                return "update-linux" + LinuxCompression;
-            }
-
-            var isWindowsBuild = IsWindowsBuild();
-            var platformExtension = isWindowsBuild ? "" : "-linux";
-
-            // var buildFolder = GetTargetBuildFolder();
-            // while we could check both folders, its better to make sure both are up to date to the same version number. Therefor always use windows folder for this
-            //var existingArchives = System.IO.Directory.GetFiles(UnityBuildFolderWin, "Ravenfall.v*a-alpha.7z");
-            //if (existingArchives.Length == 0)
-            //    return "ravenfall" + platformExtension + ".7z";
-
-            //System.Version v = IncrementVersion(a.Version, MajorIncrement, MinorIncrement, BuildIncrement, RevisionIncrement);
-            return GetReleaseFileName(isWindowsBuild);
-        }
-
-        private string GetReleaseFileName(bool windowsBuild)
-        {
-            var platformExtension = windowsBuild ? "" : "-linux";
-            var extension = windowsBuild ? WindowsCompression : LinuxCompression;
-            var fileName = "Ravenfall.v" + BuildVersion.ToString(4) + "a-alpha" + platformExtension;
-            return fileName + extension;
-        }
-
-
-        internal Version GetNextVersion()
-        {
-            var existingArchives = System.IO.Directory.GetFiles(UnityBuildFolderWin, "Ravenfall.v*a-alpha.7z");
-            if (existingArchives.Length == 0)
-            {
-                // no existing archives, try reading the globalgamemanagers file
-                var file = Directory.GetFiles(UnityBuildFolderWin, "globalgamemanagers", SearchOption.AllDirectories).FirstOrDefault();
-                using var gm = new BinaryFile(file);
-
-                var index = 1900;
-                var expectedVersion = "0.9.2.1a";
-
-                var strPosIndex = gm.IndexOf("0.9.", index);
-                //strPosIndex -= 4;
-                var v = GetVersion(gm.ReadString(strPosIndex));
-                return IncrementVersion(v, MajorIncrement, MinorIncrement, BuildIncrement, RevisionIncrement);
-            }
-            var archives = existingArchives.Select(x => new { File = x, Version = GetVersion(x) }).OrderByDescending(x => x.Version).ToList();
-            var a = archives.FirstOrDefault();
-            if (a == null)
-                return null;
-
-            return IncrementVersion(a.Version, MajorIncrement, MinorIncrement, BuildIncrement, RevisionIncrement);
-        }
-
-        private System.Version IncrementVersion(System.Version version, int major, int minor, int build, int revision)
-        {
-            revision = version.Revision < 0 ? revision : version.Revision + revision;
-
-            build = version.Build;
-            minor = version.Minor;
-            major = version.Major;
-
-            if (revision >= MAX_REVISION)
-            {
-                revision = 0;
-                build++;
-            }
-
-            if (build >= MAX_BUILD)
-            {
-                build = 0;
-                minor++;
-            }
-
-            if (minor >= MAX_MINOR)
-            {
-                minor = 0;
-                major++;
-            }
-
-            return new System.Version(major, minor, build, revision);
-        }
-
-        private System.Version GetVersion(string x)
-        {
-            var vString = System.IO.Path.GetFileNameWithoutExtension(x)
-                .Replace("Ravenfall.v", "")
-                .Replace("a-alpha", "");
-
-            if (System.Version.TryParse(vString, out var version))
-                return version;
-
-            return new System.Version();
-        }
-
-        private void Compressor_CompressionFinished(object sender, System.EventArgs e)
-        {
-            switch (buildState)
-            {
-                case BuildState.Full_Windows:
-                    ToolStatus.Text = "Building Update Package..";
-                    buildState = BuildState.Update_Windows;
-                    BuildPackageAsync();
-                    break;
-                case BuildState.Update_Windows:
-                    ToolStatus.Text = "Building Linux Release Package..";
-                    buildState = BuildState.Full_Linux;
-                    BuildPackageAsync();
-                    break;
-                case BuildState.Full_Linux:
-                    ToolStatus.Text = "Building Linux Update Package..";
-                    buildState = BuildState.Update_Linux;
-                    BuildPackageAsync();
-                    break;
-                case BuildState.Update_Linux:
-                    ToolStatus.Text = "All packages built!";
-                    buildState = BuildState.Completed;
-                    break;
-            }
-        }
-
-        private void Compressor_Compressing(object sender, ProgressEventArgs e)
-        {
-            ToolStatus.Text = "Building " + targetBuildName + "..";
             ToolProgress.MaxValue = 100;
-            ToolProgress.Value = e.PercentDone;
-        }
-
-        private string GetTargetBuildFolder()
-        {
-            var winBuild = IsWindowsBuild();
-            var buildFolder = winBuild ? UnityBuildFolderWin : UnityBuildFolderLinux;
-            return buildFolder;
-        }
-
-        private bool IsWindowsBuild()
-        {
-            return buildState == BuildState.Full_Windows || buildState == BuildState.Update_Windows;
-        }
-
-        private string[] GetFiles()
-        {
-            var winBuild = IsWindowsBuild();
-            var buildFolder = GetTargetBuildFolder();
-            var legacyDataDir = System.IO.Path.Combine(buildFolder, "Ravenfall Legacy_Data");
-            var targetDataDir = System.IO.Path.Combine(buildFolder, "Ravenfall_Data");
-
-            if (System.IO.Directory.Exists(legacyDataDir))
+            var packager = new ReleasePackager(x => ToolStatus.Text = x, x => ToolProgress.Value = x);
+            try
             {
-                if (System.IO.Directory.Exists(targetDataDir))
-                {
-                    System.IO.Directory.Delete(targetDataDir, true);
-                }
-
-                System.IO.Directory.Move(legacyDataDir, targetDataDir);
+                await Task.Run(() => packager.Run());
             }
-
-            if (winBuild)
+            catch (Exception exc)
             {
-                var legacyExe = System.IO.Path.Combine(buildFolder, "Ravenfall Legacy.exe");
-                var targetExe = System.IO.Path.Combine(buildFolder, "Ravenfall.exe");
-
-                if (System.IO.File.Exists(legacyExe))
-                {
-                    if (System.IO.File.Exists(targetExe))
-                    {
-                        System.IO.File.Delete(targetExe);
-                    }
-
-                    System.IO.File.Move(legacyExe, targetExe, true);
-                }
+                ToolStatus.Text = "Packaging failed: " + exc.Message;
             }
-
-            var files = System.IO.Directory.GetFiles(buildFolder, "*", System.IO.SearchOption.AllDirectories);
-
-            //var filesToRename = files.Where(x => x.Contains("Ravenfall Legacy")).ToList();
-            return files.Where(FilterFiles).ToArray();
-        }
-
-        private bool FilterFiles(string x)
-        {
-            var lower = x.ToLower();
-            var test = NotContains(lower, ".7z", "settings.json",
-                "pub-sub.json", "autologin.conf", "tmpautologin.conf", "pubsub-tokens.json",
-                "camera-positions.json", "island-camera-settings.json", "game-settings.json", "state-data.json", "__DEBUG__",
-                "\\update\\", "\\update\\",
-                "\\data\\", "data\\stats", "data\\sounds",
-                "_DoNotShip", "_ButDontShipItWithYourGame");
-            if (buildState == BuildState.Update_Windows)
+            finally
             {
-                test &= NotContains(lower,
-                    "fonts\\",
-                    "RavenWeave",
-                    "build\\Microsoft.Bcl.AsyncInterfaces",
-                    "build\\SharpCompress",
-                    "build\\System.Buffers",
-                    "build\\Newtonsoft.Json",
-                    "build\\System.Memory",
-                    "build\\System.Numerics.Vectors",
-                    "build\\System.Runtime.CompilerServices.Unsafe",
-                    "build\\System.Text.Encoding.CodePages",
-                    "build\\System.Threading.Tasks.Extensions",
-                    "build\\ZstdSharp"
-                );
+                running = false;
             }
-
-            return test;
         }
-
-        private static bool NotContains(string input, params string[] cases)
-        {
-            input = input.Replace("/", "\\");
-            foreach (var c in cases)
-            {
-                var test = c.Replace("/", "\\");
-                if (input.IndexOf(test, StringComparison.OrdinalIgnoreCase) >= 0)
-                    return false;
-            }
-
-            return true;
-        }
-
-    }
-
-    public enum BuildState
-    {
-        RavenBot,
-        Full_Windows,
-        Full_Linux,
-        Update_Windows,
-        Update_Linux,
-        Completed
     }
 }
