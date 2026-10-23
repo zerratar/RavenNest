@@ -4995,7 +4995,7 @@ namespace RavenNest.BusinessLogic.Data
             failedQuery = null;
             error = null;
             var query = queryBuilder.Build(saveData);
-            if (query == null || string.IsNullOrEmpty(query.Command))
+            if (query == null || query.Commands.Count == 0)
             {
                 return true;
             }
@@ -5005,9 +5005,23 @@ namespace RavenNest.BusinessLogic.Data
                 using (var con = db.GetConnection())
                 {
                     con.Open();
-                    var command = con.CreateCommand();
-                    command.CommandText = query.Command;
-                    written = command.ExecuteNonQuery();
+                    // An insert split into several commands runs in one transaction: if a later part failed, the rows
+                    // of the earlier parts would already be in the database and the row by row retry below would
+                    // fail them on their keys for ever. Updates and deletes can simply be written again, so they run
+                    // without one and hold no row locks across the batch (a long transaction here can deadlock with
+                    // anything else that touches these tables while the server saves).
+                    using var transaction = saveData.State == EntityState.Added && query.Commands.Count > 1
+                        ? con.BeginTransaction()
+                        : null;
+                    foreach (var part in query.Commands)
+                    {
+                        using var command = con.CreateCommand();
+                        command.Transaction = transaction;
+                        command.CommandText = part.Text;
+                        command.Parameters.AddRange(part.Parameters.ToArray());
+                        written += command.ExecuteNonQuery();
+                    }
+                    transaction?.Commit();
                     con.Close();
                 }
 

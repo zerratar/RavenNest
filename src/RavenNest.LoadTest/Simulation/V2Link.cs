@@ -417,14 +417,17 @@ public sealed class V2Link : IAsyncDisposable
 
         if (update.Revision <= last)
         {
-            if (update.Revision < last - 1000)
-            {
-                // the server numbers again from 1 after a restart (the game's InventoryRevisions does the same)
-                Interlocked.Increment(ref metrics.V2RevisionRestarts);
-                revisions[update.CharacterId] = update.Revision;
-                return;
-            }
+            // already seen, or older than what was seen (the game skips it)
             Interlocked.Increment(ref metrics.V2RevisionOutOfOrder);
+            return;
+        }
+
+        if (update.Revision > last + 1_000_000)
+        {
+            // a new server run: each run numbers from the clock, so a restart is a big jump, not missed changes
+            // (the game's InventoryRevisions does the same)
+            Interlocked.Increment(ref metrics.V2RevisionRestarts);
+            revisions[update.CharacterId] = update.Revision;
             return;
         }
 

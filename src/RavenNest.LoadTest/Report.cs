@@ -284,7 +284,7 @@ public sealed class Report
         sb.AppendLine($"  v2 connection: {m.V2Connects} connects, {m.V2ConnectFailures} failed, {m.V2Drops} drops by the server or network, {m.V2ChaosDrops} chaos drops,"
             + $" {m.V2Resumes} resumed, {m.V2ResumeFailures} not resumed, {m.V2Resyncs} resyncs");
         sb.AppendLine($"  v2 inventory: {m.V2ItemAddEvents} ItemAdd events, {m.V2ItemAddWithInventory} with an inventory update; {m.V2RevisionUpdates} revisions seen (events and command results),"
-            + $" {m.V2RevisionGaps} gaps ({m.V2RevisionMissing} revisions missing), {m.V2RevisionOutOfOrder} out of order, {m.V2RevisionRestarts} numbering restarts (server restarted)");
+            + $" {m.V2RevisionGaps} gaps ({m.V2RevisionMissing} revisions missing), {m.V2RevisionOutOfOrder} out of order, {m.V2RevisionRestarts} new server runs (a jump of more than a million)");
         if (o.V2Commands)
         {
             sb.AppendLine($"  v2 commands: {m.V2CommandResends} resent after a reconnect, {m.V2DuplicateResults} duplicate answers, {m.V2LateResults} answers nobody waited for");

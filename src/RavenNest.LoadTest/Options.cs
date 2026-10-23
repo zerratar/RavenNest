@@ -111,7 +111,13 @@ public sealed class Options
 
     public string EffectiveTcpHost => TcpHost ?? BaseUrl.Host;
 
-    public string StreamerNameFor(int sessionIndex) => StreamerName + (sessionIndex + 1);
+    /// <summary>The number of the first session (streamer account and player names), so two runs at once do not share any.</summary>
+    public int FirstSession { get; set; } = 1;
+
+    public string StreamerNameFor(int sessionIndex) => StreamerName + (sessionIndex + FirstSession);
+
+    /// <summary>The session's number in streamer and player names: 1 for the first unless --first-session moves it.</summary>
+    public int SessionNumber(int sessionIndex) => sessionIndex + FirstSession;
 
     public static Options Parse(string[] args)
     {
@@ -152,6 +158,7 @@ public sealed class Options
 
                 case "--players": o.Players = Int(Next()); break;
                 case "--sessions": o.Sessions = Int(Next()); break;
+                case "--first-session": o.FirstSession = Int(Next()); break;
                 case "--duration": o.Duration = Span(Next()); break;
                 case "--tick": o.Tick = Span(Next()); break;
                 case "--join-mode": o.JoinMode = Enum.Parse<JoinMode>(Next(), true); break;
@@ -264,6 +271,8 @@ Who (secrets come from environment variables; the command line is visible to oth
 How much:
   --players <n>               players per session (default 1000)
   --sessions <n>              concurrent streamer sessions (default 1)
+  --first-session <n>         number of the first session: streamer <streamer><n>, players <prefix>_s<n>_... (default 1);
+                              lets two runs share a server without sharing accounts or players
   --duration <t>              how long to run after the session started (default 5m; units ms/s/m/h)
   --tick <t>                  delta interval (default 2s, the game's GameSyncInterval)
   --join-mode join|restore    join each player (chat !join) or one restore request (game restart) (default join)

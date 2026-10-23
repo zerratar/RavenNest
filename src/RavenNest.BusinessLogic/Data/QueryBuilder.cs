@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Reflection;
@@ -20,16 +21,188 @@ namespace RavenNest.BusinessLogic.Data
             typeof(byte?), typeof(sbyte?), typeof(ushort?), typeof(short?), typeof(uint?), typeof(int?), typeof(ulong?), typeof(long?), typeof(decimal?), typeof(float?), typeof(double?)
         };
 
+        /// <summary>SQL Server takes at most 2100 parameters in one request.</summary>
+        private const int MaxParameters = 2000;
+
+        /// <summary>
+        /// Rows per UPDATE or INSERT command. Small on purpose: with up to 2000 parameters a command took 10-15 times
+        /// longer per row than with a handful (500 Skills rows: about 900 ms in commands of 57 rows, 60-90 ms in commands
+        /// of 2-4), and every row count that occurred was a plan of its own, of several MB each (300 plans, 430 MB in
+        /// 15 minutes). With at most 4 rows a table has at most 4 statement shapes per kind, each a small plan.
+        /// </summary>
+        private const int MaxRowsPerCommand = 4;
+
+        /// <summary>Ids per DELETE command: one statement, so a longer list is cheap, but each length is a plan.</summary>
+        private const int MaxIdsPerDelete = 16;
+
+        /// <summary>
+        /// The save as parameterized commands. Each command's text depends only on the entity type and how many rows
+        /// it carries, so SQL Server reuses its plans. The values used to be written into the SQL, which made every
+        /// save a new statement with a new cached plan: in a two hour soak the plan cache grew to 5.6 GB, pushed the
+        /// data out of SQL Server's memory, and a database save went from about 1 s to 5-60 s after an hour.
+        /// </summary>
         public SqlSaveQuery Build(EntityStoreItems saveData)
         {
+            if (saveData?.Entities == null || saveData.Entities.Count == 0)
+            {
+                return null;
+            }
+
             switch (saveData.State)
             {
-                case EntityState.Added: return BuildInsertQuery(saveData);
-                case EntityState.Deleted: return BuildDeleteQuery(saveData);
-                case EntityState.Modified: return BuildUpdateQuery(saveData);
+                case EntityState.Added: return new SqlSaveQuery(BuildInsertCommands(saveData), () => BuildInsertQuery(saveData).Command);
+                case EntityState.Deleted: return new SqlSaveQuery(BuildDeleteCommands(saveData), () => BuildDeleteQuery(saveData).Command);
+                case EntityState.Modified: return new SqlSaveQuery(BuildUpdateCommands(saveData), () => BuildUpdateQuery(saveData).Command);
                 default: return null;
             }
         }
+
+        private static Type EntityType(IEntity entity)
+        {
+            var type = entity.GetType();
+            return type.FullName.Contains("Extended") ? type.BaseType : type;
+        }
+
+        private List<SqlSaveCommand> BuildUpdateCommands(EntityStoreItems saveData)
+        {
+            var commands = new List<SqlSaveCommand>();
+            foreach (var group in saveData.Entities.Where(x => x != null).GroupBy(EntityType))
+            {
+                var type = group.Key;
+                var idProperty = GetProperty(type, "Id");
+                var sets = GetProperties(type).Where(x => x.Name != "Id").ToArray();
+                var rowsPerCommand = Math.Clamp(MaxParameters / (sets.Length + 1), 1, MaxRowsPerCommand);
+                foreach (var chunk in group.Chunk(rowsPerCommand))
+                {
+                    var sb = new StringBuilder();
+                    var parameters = new List<SqlParameter>(chunk.Length * (sets.Length + 1));
+                    foreach (var entity in chunk)
+                    {
+                        sb.Append("UPDATE [").Append(type.Name).Append("] SET ");
+                        for (var i = 0; i < sets.Length; ++i)
+                        {
+                            if (i > 0) sb.Append(',');
+                            sb.Append(sets[i].Name).Append(" = ").Append(Add(parameters, sets[i].PropertyType, sets[i].GetValue(entity)));
+                        }
+                        sb.Append(" WHERE Id = ").Append(Add(parameters, idProperty.PropertyType, idProperty.GetValue(entity))).Append(";\n");
+                    }
+                    commands.Add(new SqlSaveCommand(sb.ToString(), parameters));
+                }
+            }
+            return commands;
+        }
+
+        private List<SqlSaveCommand> BuildDeleteCommands(EntityStoreItems saveData)
+        {
+            var commands = new List<SqlSaveCommand>();
+            foreach (var group in saveData.Entities.Where(x => x != null).GroupBy(EntityType))
+            {
+                var type = group.Key;
+                var idProperty = GetProperty(type, "Id");
+                foreach (var chunk in group.Chunk(MaxIdsPerDelete))
+                {
+                    var parameters = new List<SqlParameter>(chunk.Length);
+                    var ids = chunk.Select(entity => Add(parameters, idProperty.PropertyType, idProperty.GetValue(entity))).ToList();
+                    commands.Add(new SqlSaveCommand("DELETE FROM [" + type.Name + "] WHERE Id IN (" + string.Join(",", ids) + ");", parameters));
+                }
+            }
+            return commands;
+        }
+
+        private List<SqlSaveCommand> BuildInsertCommands(EntityStoreItems saveData)
+        {
+            var commands = new List<SqlSaveCommand>();
+            foreach (var group in saveData.Entities.Where(x => x != null).GroupBy(EntityType))
+            {
+                var type = group.Key;
+                var properties = GetProperties(type);
+                var propertyNames = string.Join(", ", properties.Select(x => x.Name));
+                var rowsPerCommand = Math.Clamp(MaxParameters / Math.Max(1, properties.Length), 1, MaxRowsPerCommand);
+                foreach (var chunk in group.Chunk(rowsPerCommand))
+                {
+                    var sb = new StringBuilder();
+                    var parameters = new List<SqlParameter>(chunk.Length * properties.Length);
+                    sb.Append("INSERT INTO [").Append(type.Name).Append("] (").Append(propertyNames).Append(") VALUES ");
+                    for (var r = 0; r < chunk.Length; ++r)
+                    {
+                        if (r > 0) sb.Append(',');
+                        sb.Append('(');
+                        for (var i = 0; i < properties.Length; ++i)
+                        {
+                            if (i > 0) sb.Append(',');
+                            sb.Append(Add(parameters, properties[i].PropertyType, properties[i].GetValue(chunk[r])));
+                        }
+                        sb.Append(')');
+                    }
+                    sb.Append(';');
+                    commands.Add(new SqlSaveCommand(sb.ToString(), parameters));
+                }
+            }
+            return commands;
+        }
+
+        /// <summary>
+        /// Adds a parameter for a value and returns its name. The conversions match the SQL the values used to be
+        /// written as (NULL, NaN as 0, enums as numbers, text as text), and every parameter has a fixed type and
+        /// size, because a parameter declared differently is a different plan.
+        /// </summary>
+        private static string Add(List<SqlParameter> parameters, Type type, object value)
+        {
+            var name = "@p" + parameters.Count;
+            parameters.Add(CreateParameter(name, type, value));
+            return name;
+        }
+
+        internal static SqlParameter CreateParameter(string name, Type declared, object value)
+        {
+            // The parameter's type comes from the property, never from the value. A null declared as another type
+            // would change the statement's parameter list, and with many rows per command every mix of nulls (a
+            // character's UserIdLock, TitleId, LastUsed) would be a new plan again.
+            var type = Nullable.GetUnderlyingType(declared) ?? declared;
+            var parameter = DeclareParameter(name, type);
+            parameter.Value = value == null ? DBNull.Value : ParameterValue(type, value);
+            return parameter;
+        }
+
+        private static SqlParameter DeclareParameter(string name, Type type)
+        {
+            if (type == typeof(string) || type == typeof(char) || type == typeof(TimeSpan)) return new SqlParameter(name, SqlDbType.NVarChar, -1);
+            if (type == typeof(DateTime)) return new SqlParameter(name, SqlDbType.DateTime2);
+            if (type == typeof(Guid)) return new SqlParameter(name, SqlDbType.UniqueIdentifier);
+            if (type.IsEnum) return new SqlParameter(name, SqlDbType.Int);
+            if (type == typeof(bool)) return new SqlParameter(name, SqlDbType.Bit);
+            if (type == typeof(double)) return new SqlParameter(name, SqlDbType.Float);
+            if (type == typeof(float)) return new SqlParameter(name, SqlDbType.Real);
+            if (type == typeof(int) || type == typeof(short) || type == typeof(byte) || type == typeof(sbyte) || type == typeof(ushort)) return new SqlParameter(name, SqlDbType.Int);
+            if (type == typeof(long) || type == typeof(uint)) return new SqlParameter(name, SqlDbType.BigInt);
+            if (type == typeof(ulong) || type == typeof(decimal)) return new SqlParameter(name, SqlDbType.Decimal) { Precision = 38, Scale = 10 };
+            return new SqlParameter(name, SqlDbType.NVarChar, -1);
+        }
+
+        private static object ParameterValue(Type type, object value)
+        {
+            if (type == typeof(string) || type == typeof(char) || type == typeof(TimeSpan)) return value.ToString();
+            if (type == typeof(DateTime) || type == typeof(Guid) || type == typeof(bool)) return value;
+            if (type.IsEnum) return Convert.ToInt32(value);
+            if (type == typeof(double))
+            {
+                var d = (double)value;
+                return double.IsNaN(d) || double.IsInfinity(d) ? 0d : d;
+            }
+            if (type == typeof(float))
+            {
+                var f = (float)value;
+                return float.IsNaN(f) || float.IsInfinity(f) ? 0f : f;
+            }
+            if (type == typeof(int) || type == typeof(short) || type == typeof(byte) || type == typeof(sbyte) || type == typeof(ushort)) return Convert.ToInt32(value);
+            if (type == typeof(long) || type == typeof(uint)) return Convert.ToInt64(value);
+            if (type == typeof(ulong) || type == typeof(decimal)) return Convert.ToDecimal(value);
+
+            // anything else was written as NULL
+            return DBNull.Value;
+        }
+
+        // The same saves as plain SQL with the values written out: only for the logs and the error query file now.
 
         private SqlSaveQuery BuildUpdateQuery(EntityStoreItems saveData)
         {

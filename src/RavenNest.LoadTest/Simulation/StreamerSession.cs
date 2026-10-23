@@ -43,8 +43,8 @@ public sealed class StreamerSession : IAsyncDisposable
         rng = new Random(1000 + index);
         Players = Enumerable.Range(1, options.Players)
             .Select(n => new SimPlayer(n,
-                (options.PlayerPrefix + "_s" + (index + 1) + "_" + n.ToString("D5")).ToLowerInvariant(),
-                options.PlayerPrefix + "-s" + (index + 1) + "-" + n.ToString("D5")))
+                (options.PlayerPrefix + "_s" + options.SessionNumber(index) + "_" + n.ToString("D5")).ToLowerInvariant(),
+                options.PlayerPrefix + "-s" + options.SessionNumber(index) + "-" + n.ToString("D5")))
             .ToArray();
     }
 
