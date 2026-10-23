@@ -5005,10 +5005,14 @@ namespace RavenNest.BusinessLogic.Data
                 using (var con = db.GetConnection())
                 {
                     con.Open();
-                    // One transaction for all the commands of a batch: a large insert is split to stay under the
-                    // parameter limit, and if a later part failed, the rows of the earlier parts would already be in
-                    // the database and the row by row retry below would fail them on their keys for ever.
-                    using var transaction = con.BeginTransaction();
+                    // An insert split into several commands runs in one transaction: if a later part failed, the rows
+                    // of the earlier parts would already be in the database and the row by row retry below would
+                    // fail them on their keys for ever. Updates and deletes can simply be written again, so they run
+                    // without one and hold no row locks across the batch (a long transaction here can deadlock with
+                    // anything else that touches these tables while the server saves).
+                    using var transaction = saveData.State == EntityState.Added && query.Commands.Count > 1
+                        ? con.BeginTransaction()
+                        : null;
                     foreach (var part in query.Commands)
                     {
                         using var command = con.CreateCommand();
@@ -5017,7 +5021,7 @@ namespace RavenNest.BusinessLogic.Data
                         command.Parameters.AddRange(part.Parameters.ToArray());
                         written += command.ExecuteNonQuery();
                     }
-                    transaction.Commit();
+                    transaction?.Commit();
                     con.Close();
                 }
 
