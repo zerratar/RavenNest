@@ -72,7 +72,7 @@ dotnet run --project src/RavenNest.LoadTest -- seed --sessions 4 --execute
 | --- | --- |
 | `RAVENNEST_LOADTEST_PASSWORD` | the password used for the seed |
 | `RAVENNEST_ACCESS_KEY` | the game's access key: the Access Key field on the GameManager in the Unity scene (it must match the `AccessKey` of the server's game client row) |
-| `--client-version` | defaults to `0.9.4.4a` (the Unity project's version). BeginSession refuses a version older than the server expects; the error says which version it wanted |
+| `--client-version` | defaults to `0.9.5.0a` (the Unity project's version). BeginSession refuses a version older than the server expects; the error says which version it wanted |
 | `RAVENNEST_LOADTEST_DB` | only for `--verify-db`: the dev database connection string (only SELECTs are run) |
 
 Instead of the password, a single session can use an `auth-token` header value from

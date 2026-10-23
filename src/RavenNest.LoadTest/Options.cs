@@ -44,7 +44,7 @@ public sealed class Options
     public string? Password { get; set; }
     public string? AccessKey { get; set; }
     public string? AuthToken { get; set; }
-    public string ClientVersion { get; set; } = "0.9.4.4a";
+    public string ClientVersion { get; set; } = "0.9.5.0a";
     public string PlayerPrefix { get; set; } = "loadtest";
 
     // ---- how much ----
@@ -265,7 +265,7 @@ Who (secrets come from environment variables; the command line is visible to oth
   --password <pw>             or env RAVENNEST_LOADTEST_PASSWORD
   --access-key <key>          the game's access key, or env RAVENNEST_ACCESS_KEY
   --auth-token <base64>       an auth-token header value instead of a password, or env RAVENNEST_LOADTEST_AUTH_TOKEN (one session only)
-  --client-version <v>        version sent to BeginSession (default 0.9.4.4a)
+  --client-version <v>        version sent to BeginSession (default 0.9.5.0a)
   --player-prefix <p>         simulated players are <p>_s<session>_<n> (default loadtest); reuse it to reuse the same players
 
 How much:
