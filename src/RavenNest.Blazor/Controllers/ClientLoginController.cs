@@ -115,7 +115,7 @@ namespace RavenNest.Controllers
 
         /// <summary>A device token for a client signed in with a password, for remember me.</summary>
         [HttpPost("register")]
-        public ActionResult<string> Register(DeviceModel model)
+        public ActionResult Register(DeviceModel model)
         {
             var authToken = GetAuthToken();
             if (!IsValid(authToken))
@@ -129,7 +129,9 @@ namespace RavenNest.Controllers
                 return Unauthorized();
             }
 
-            return token;
+            // as JSON: a plain string result goes out as text/plain, which the game cannot read as its string,
+            // so "remember this computer" never stored the token
+            return new JsonResult(token);
         }
 
         /// <summary>Forgets the device, when the game logs out.</summary>
