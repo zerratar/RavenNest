@@ -5189,7 +5189,7 @@ namespace RavenNest.BusinessLogic.Game
             state.InOnsen = HasFlag(update, CharacterFlags.InOnsen);
             state.IsCaptain = HasFlag(update, CharacterFlags.IsCaptain);
             state.Island = update.Island != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null;
-            state.Destination = update.Destination != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null;
+            state.Destination = update.Destination != RavenNest.Models.Island.Ferry ? update.Destination.ToString() : null;
             state.ExpPerHour = update.ExpPerHour;
             state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
             state.Task = task;
@@ -5287,7 +5287,7 @@ namespace RavenNest.BusinessLogic.Game
 
             if (update.HasValue(CharacterStateFields.Destination))
             {
-                state.Destination = update.Destination != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null;
+                state.Destination = update.Destination != RavenNest.Models.Island.Ferry ? update.Destination.ToString() : null;
             }
 
             if (update.HasValue(CharacterStateFields.ExpPerHour))
@@ -5415,7 +5415,7 @@ namespace RavenNest.BusinessLogic.Game
 
             state.RestedTime = 0;
             state.Island = update.Island != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null;
-            state.Destination = update.Destination != RavenNest.Models.Island.Ferry ? update.Island.ToString() : null;
+            state.Destination = update.Destination != RavenNest.Models.Island.Ferry ? update.Destination.ToString() : null;
             state.ExpPerHour = update.ExpPerHour;
             state.EstimatedTimeForLevelUp = update.EstimatedTimeForLevelUp.ToString("yyyy-MM-ddTHH:mm:ss.fffffff");
             state.AutoJoinRaidCounter = update.AutoJoinRaidCounter;
