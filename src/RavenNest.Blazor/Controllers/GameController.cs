@@ -127,6 +127,53 @@ namespace RavenNest.Controllers
             }
         }
 
+        /// <summary>
+        /// Who the server remembers in the streamer's stream, in the game's state file format: the characters locked
+        /// to the streamer and the last player list the game sent. The game compares it with its own state file at
+        /// startup, so players are not lost with a lost state file (a reinstall).
+        /// </summary>
+        [HttpGet("session-players")]
+        public GameSessionPlayerCache GetSessionPlayers()
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            var cache = adminManager.GetStreamerStateCache(session.UserId);
+            // when the list was last stored, so the game's state expiry setting applies to it as to its own file
+            var stored = sessionManager.GetSessionPlayerListTime(session.UserId);
+            if (stored != null) cache.Created = stored.Value;
+            return cache;
+        }
+
+        /// <summary>
+        /// Players the streamer chose not to restore: no longer locked to the streamer, so the server stops offering them
+        /// at the next start. Only characters locked to this streamer are touched.
+        /// </summary>
+        [HttpPost("release-players")]
+        public int ReleasePlayers([FromBody] Guid[] characterIds)
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            var released = 0;
+            foreach (var id in characterIds ?? Array.Empty<Guid>())
+            {
+                var character = gameData.GetCharacter(id);
+                if (character == null || character.UserIdLock != session.UserId) continue;
+                character.PrevUserIdLock = character.UserIdLock;
+                character.UserIdLock = null;
+                released++;
+            }
+            return released;
+        }
+
+        /// <summary>The players in the streamer's game now, sent by the game about once a minute; replaces the last list.</summary>
+        [HttpPost("session-players")]
+        public bool SetSessionPlayers([FromBody] Guid[] characterIds)
+        {
+            var session = GetSessionToken();
+            AssertSessionTokenValidity(session);
+            return sessionManager.SetSessionPlayerList(session.UserId, characterIds);
+        }
+
         [HttpGet("exp-multiplier")]
         public ExpMultiplier GetExpMultiplier()
         {

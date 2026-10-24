@@ -610,6 +610,39 @@ namespace RavenNest.BusinessLogic.Game
 #endif
         }
 
+        /// <summary>
+        /// The game's own list of who is in the stream, replacing the stored one. UpdateSessionPlayerList only ever adds
+        /// to it (players who left stayed in it), so the game keeps it current while it runs.
+        /// </summary>
+        public bool SetSessionPlayerList(Guid ownerId, Guid[] characterIds)
+        {
+            try
+            {
+                var folder = System.IO.Path.Combine(FolderPaths.GeneratedDataPath, FolderPaths.SessionPlayers);
+                if (!System.IO.Directory.Exists(folder))
+                {
+                    System.IO.Directory.CreateDirectory(folder);
+                }
+
+                var ids = (characterIds ?? Array.Empty<Guid>()).Where(x => x != Guid.Empty).Distinct().ToList();
+                var playerlistFile = System.IO.Path.Combine(folder, ownerId.ToString() + ".json");
+                System.IO.File.WriteAllText(playerlistFile, Newtonsoft.Json.JsonConvert.SerializeObject(ids));
+                return true;
+            }
+            catch (Exception exc)
+            {
+                logger.LogError("Unable to store the session player list for " + ownerId + ": " + exc.Message);
+                return false;
+            }
+        }
+
+        /// <summary>When the streamer's session player list was last written, or null when there is none.</summary>
+        public DateTime? GetSessionPlayerListTime(Guid ownerId)
+        {
+            var file = System.IO.Path.Combine(FolderPaths.GeneratedDataPath, FolderPaths.SessionPlayers, ownerId.ToString() + ".json");
+            return System.IO.File.Exists(file) ? System.IO.File.GetLastWriteTimeUtc(file) : null;
+        }
+
         public void UpdateSessionPlayerList(Guid userId)
         {
             var session = gameData.GetSessionByUserId(userId, false, false);

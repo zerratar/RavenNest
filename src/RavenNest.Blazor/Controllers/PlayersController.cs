@@ -164,6 +164,17 @@ namespace RavenNest.Controllers
         {
             return playerManager.RestorePlayersToGame(AssertGetSessionToken(), players);
         }
+
+        /// <summary>
+        /// Adds players back without taking anyone else out of the session: the players the server remembers from the
+        /// streamer's last session that the game's own state file did not have (a lost or old state file).
+        /// </summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("restore-more")]
+        public Task<PlayerRestoreResult> RestoreMore([FromBody] PlayerRestoreData players)
+        {
+            return playerManager.RestorePlayersToGame(AssertGetSessionToken(), players, removeOthers: false);
+        }
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpDelete("{characterId}")]
         public Task<bool> RemovePlayer(Guid characterId)

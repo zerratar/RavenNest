@@ -460,7 +460,12 @@ namespace RavenNest.BusinessLogic.Game
             return result;
         }
 
-        public async Task<PlayerRestoreResult> RestorePlayersToGame(SessionToken sessionToken, PlayerRestoreData players)
+        /// <summary>
+        /// Adds the characters back to the streamer's game. A full restore (the game's state file at startup) also takes
+        /// out of the session everyone not in the list; <paramref name="removeOthers"/> false only adds, for players the
+        /// game restores later on (those the server remembers but the state file did not have).
+        /// </summary>
+        public async Task<PlayerRestoreResult> RestorePlayersToGame(SessionToken sessionToken, PlayerRestoreData players, bool removeOthers = true)
         {
             var result = new PlayerRestoreResult();
             var session = gameData.GetSession(sessionToken.SessionId);
@@ -475,14 +480,17 @@ namespace RavenNest.BusinessLogic.Game
                 result.Success = true;
                 var chars = players.Characters ?? Array.Empty<Guid>();
                 var charactersToAdd = new HashSet<Guid>(players.Characters);
-                var currentCharacters = gameData.GetActiveSessionCharacters(session);
-                foreach (var c in currentCharacters)
+                if (removeOthers)
                 {
-                    if (charactersToAdd.Contains(c.Id))
+                    var currentCharacters = gameData.GetActiveSessionCharacters(session);
+                    foreach (var c in currentCharacters)
                     {
-                        continue;
+                        if (charactersToAdd.Contains(c.Id))
+                        {
+                            continue;
+                        }
+                        await RemovePlayerFromActiveSession(session, c.Id);
                     }
-                    await RemovePlayerFromActiveSession(session, c.Id);
                 }
 
                 if (chars.Length == 0)
