@@ -239,9 +239,16 @@ namespace RavenNest.BusinessLogic.Game.StreamerShop
 
         // ---- Viewers: buying ----------------------------------------------------------------------------
 
-        /// <summary>Buys one from a listing for a character playing in the stream.</summary>
-        public StreamerShopBuyResult Buy(SessionToken token, Guid characterId, Guid listingId)
+        /// <summary>
+        ///     Buys from a listing for a character playing in the stream: one, or as many as asked for
+        ///     (a shelf of a thousand ore would be a chore one at a time). All of them or none: not
+        ///     more than is left, not more than the limit per viewer allows, and only if the buyer can
+        ///     pay for them all.
+        /// </summary>
+        public StreamerShopBuyResult Buy(SessionToken token, Guid characterId, Guid listingId, long amount = 1)
         {
+            if (amount < 1) amount = 1;
+
             var session = gameData.GetSession(token.SessionId);
             if (session == null) return BuyFail(StreamerShopBuyResultCode.Error, "The stream could not be found.");
 
@@ -265,27 +272,49 @@ namespace RavenNest.BusinessLogic.Game.StreamerShop
                     return BuyFail(StreamerShopBuyResultCode.NotAllowed, "Your clan role cannot buy this.");
             }
 
+            if (amount > listing.Amount)
+            {
+                var short_ = BuyFail(StreamerShopBuyResultCode.NotEnoughLeft, "Only " + listing.Amount + " left on that shelf.");
+                short_.MaxAmount = listing.Amount;
+                short_.AmountLeft = listing.Amount;
+                return short_;
+            }
+
             if (listing.MaxPerViewer > 0)
             {
                 var bought = gameData.GetStreamerShopTransactionsByListing(listing.Id).Where(x => x.BuyerUserId == character.UserId).Sum(x => x.Amount);
-                if (bought >= listing.MaxPerViewer) return BuyFail(StreamerShopBuyResultCode.LimitReached, "You have bought as many of these as you may.");
+                var allowed = Math.Max(0, listing.MaxPerViewer - bought);
+                if (amount > allowed)
+                {
+                    var limited = BuyFail(StreamerShopBuyResultCode.LimitReached, allowed == 0
+                        ? "You have bought as many of these as you may."
+                        : "You may buy " + allowed + " more of these.");
+                    limited.MaxAmount = allowed;
+                    return limited;
+                }
             }
+
+            // a price of up to 100,000,000 times a large stack can pass what a long holds
+            var price = listing.PricePerItem;
+            if (amount > long.MaxValue / Math.Max(1, price)) return BuyFail(StreamerShopBuyResultCode.InsufficientCoins, "That is more coins than anyone has.");
+            var total = price * amount;
 
             var village = gameData.GetOrCreateVillageBySession(session);
             var world = new StreamerShopWorld(gameData, inventories).WithCharacter(character.Id).WithVillage(village);
-            var price = listing.PricePerItem;
-            if (world.CoinsOf(character.Id) < price)
+            var coins = world.CoinsOf(character.Id);
+            if (coins < total)
             {
-                var poor = BuyFail(StreamerShopBuyResultCode.InsufficientCoins, "You need " + price + " coins.");
-                poor.CoinsLeft = world.CoinsOf(character.Id);
-                poor.Price = price;
+                var poor = BuyFail(StreamerShopBuyResultCode.InsufficientCoins, "You need " + total + " coins.");
+                poor.CoinsLeft = coins;
+                poor.Price = total;
+                poor.MaxAmount = price > 0 ? Math.Min(amount, coins / price) : 0;
                 return poor;
             }
 
             var plan = new TradePlan(
                 TradeKind.StreamerShopPurchase,
-                new[] { new ItemMove(ItemMove.Outside, character.Id, listing.Key(), 1) },
-                new[] { new CoinMove(character.Id, village.Id, price) });
+                new[] { new ItemMove(ItemMove.Outside, character.Id, listing.Key(), amount) },
+                new[] { new CoinMove(character.Id, village.Id, total) });
 
             var trade = new TradeExecutor(world).Commit(plan);
             if (!trade.Ok)
@@ -294,11 +323,12 @@ namespace RavenNest.BusinessLogic.Game.StreamerShop
                 return BuyFail(StreamerShopBuyResultCode.Error, trade.Reason);
             }
 
-            listing.Amount -= 1;
-            listing.Sold += 1;
-            listing.CoinsEarned += price;
+            listing.Amount -= amount;
+            listing.Sold += amount;
+            listing.CoinsEarned += total;
 
-            var points = Math.Min(MaxLoyaltyPointsPerPurchase, price / CoinsPerLoyaltyPoint);
+            // capped per item, so splitting a purchase in many small ones earns nothing extra
+            var points = Math.Min(MaxLoyaltyPointsPerPurchase * amount, total / CoinsPerLoyaltyPoint);
             if (points > 0)
             {
                 var loyalty = gameData.GetUserLoyalty(character.UserId, listing.StreamerUserId) ?? CreateLoyalty(character.UserId, listing.StreamerUserId);
@@ -315,8 +345,8 @@ namespace RavenNest.BusinessLogic.Game.StreamerShop
                 BuyerCharacterId = character.Id,
                 ItemId = listing.ItemId,
                 ItemName = itemName,
-                Amount = 1,
-                Price = price,
+                Amount = amount,
+                Price = total,
                 LoyaltyPoints = points,
                 Created = DateTime.UtcNow
             });
@@ -329,7 +359,8 @@ namespace RavenNest.BusinessLogic.Game.StreamerShop
                 ItemId = listing.ItemId,
                 ItemName = itemName,
                 InventoryItemId = world.Added.FirstOrDefault().Row?.Id ?? Guid.Empty,
-                Price = price,
+                Amount = amount,
+                Price = total,
                 CoinsLeft = world.CoinsOf(character.Id),
                 LoyaltyPoints = points,
                 AmountLeft = listing.Amount

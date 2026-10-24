@@ -1,4 +1,4 @@
-namespace RavenNest.Protocol
+﻿namespace RavenNest.Protocol
 {
     /// <summary>
     /// The commands the server answers on the v2 connection, with their arguments in order and what they return.
@@ -38,7 +38,7 @@ namespace RavenNest.Protocol
         /// <summary>(Guid characterId, Guid itemId) -> RedeemItemResult</summary>
         public const string Redeem = "items.redeem";
 
-        /// <summary>(Guid characterId, Guid listingId) -> StreamerShopBuyResult: buys one from a tavern shelf.</summary>
+        /// <summary>(Guid characterId, Guid listingId, long amount) -> StreamerShopBuyResult: buys from a tavern shelf.</summary>
         public const string ShopBuy = "shop.buy";
 
         /// <summary>(Guid characterId, Guid inventoryItemId, string argument or null) -> ItemUseResult</summary>

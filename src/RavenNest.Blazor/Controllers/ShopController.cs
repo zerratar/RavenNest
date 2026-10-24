@@ -87,14 +87,14 @@ namespace RavenNest.Controllers
             return shop.Remove(sessionToken.SessionId, id);
         }
 
-        /// <summary>Buys one from a listing for a character playing in the stream (a viewer's !redeem).</summary>
+        /// <summary>Buys from a listing for a character playing in the stream (a viewer's !redeem); one unless an amount is given.</summary>
         [ApiExplorerSettings(IgnoreApi = true)]
-        [HttpGet("{id}/buy/{characterId}")]
-        public StreamerShopBuyResult Buy(Guid id, Guid characterId)
+        [HttpGet("{id}/buy/{characterId}/{amount?}")]
+        public StreamerShopBuyResult Buy(Guid id, Guid characterId, long amount = 1)
         {
             var sessionToken = GetSessionToken();
             AssertSessionTokenValidity(sessionToken);
-            return shop.Buy(sessionToken, characterId, id);
+            return shop.Buy(sessionToken, characterId, id, amount);
         }
     }
 }

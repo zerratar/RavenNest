@@ -139,7 +139,9 @@ namespace RavenNest.Models
         InsufficientCoins = 5,
         OwnListing = 6,
         NotInSession = 7,
-        Error = 8
+        Error = 8,
+        /// <summary>Fewer left on the shelf than asked for; <see cref="StreamerShopBuyResult.MaxAmount"/> says how many.</summary>
+        NotEnoughLeft = 9
     }
 
     public class StreamerShopBuyResult
@@ -151,7 +153,12 @@ namespace RavenNest.Models
         public Guid ItemId { get; set; }
         public string ItemName { get; set; }
         public Guid InventoryItemId { get; set; }
+        /// <summary>How many were bought.</summary>
+        public long Amount { get; set; }
+        /// <summary>What they cost in all (or, when refused for coins, what they would have).</summary>
         public long Price { get; set; }
+        /// <summary>When refused: how many the buyer could have had instead (left on the shelf, left of their limit, or that they can pay for).</summary>
+        public long MaxAmount { get; set; }
         public long CoinsLeft { get; set; }
         public long LoyaltyPoints { get; set; }
         /// <summary>How many are left on the shelf after this purchase.</summary>
