@@ -153,7 +153,11 @@ namespace RavenNest.BusinessLogic.Net.V2
                 return null;
             }
 
-            if (!sessionManager.IsExpectedVersion(hello.ClientVersion))
+            // An older game is let in, as on the old path: it keeps its session and is told an update is out
+            // (GameUpdated, from its game processor). Only a required update turns it away. Refusing every game older
+            // than the newest release cut off every stream on the previous version the moment the server restarted
+            // after a release (0.9.5.1a): they could not reconnect, and the game does not recover from this refusal.
+            if (!sessionManager.IsExpectedVersion(hello.ClientVersion) && GameUpdates.IsRequiredUpdate(Data.Client?.ClientVersion))
             {
                 connection.Reject(new Rejected
                 {
