@@ -168,6 +168,11 @@ namespace RavenNest.BusinessLogic.Net.V2
                 return null;
             }
 
+            if (GameVersion.TryParse(hello.ClientVersion, out var clientVersion) && clientVersion >= ProtocolInfo.LargeMessagesFrom)
+            {
+                connection.MaxSendBytes = ProtocolInfo.MaxMessageBytes;
+            }
+
             var session = await GetOrStartSessionAsync(token);
             TakeOldPathEvents(session, token.UserId);
             session.Attach(connection, hello, token);

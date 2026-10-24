@@ -50,6 +50,12 @@ namespace RavenNest.BusinessLogic.Net.V2
         public long MessagesIn, MessagesOut, BytesIn, BytesOut;
 
         /// <summary>
+        /// The largest message this game reads: 4 MB until its Hello shows a game that reads more
+        /// (<see cref="ProtocolInfo.LargeMessagesFrom"/>).
+        /// </summary>
+        public int MaxSendBytes { get; set; } = ProtocolInfo.LegacyMaxMessageBytes;
+
+        /// <summary>
         /// Queues a message. False when the connection is closing or its queue is full (a client that stopped
         /// reading); the caller keeps whatever needs to survive (events stay in the log, saves stay unacknowledged).
         /// </summary>
@@ -68,6 +74,16 @@ namespace RavenNest.BusinessLogic.Net.V2
             catch (Exception exc)
             {
                 logger.LogError("Could not serialize a v2 " + message.GetType().Name + ": " + exc);
+                return false;
+            }
+
+            // A game closes the connection on a message over what it reads and asks again after reconnecting, so an
+            // answer that big (a restore of 600 players to a 0.9.5.1a game) dropped the link over and over. Refused
+            // instead: the game goes back to the old connection, which has room for it.
+            if (data.Length > MaxSendBytes && message is not Rejected)
+            {
+                logger.LogWarning("v2 connection " + Id + ": a " + message.GetType().Name + " of " + data.Length + " bytes is over the limit; sending the game to the old connection.");
+                Reject(new Rejected { Reason = RejectReason.MessageTooLarge, Message = "An answer was too large for this connection; use the old one." });
                 return false;
             }
 
@@ -136,6 +152,8 @@ namespace RavenNest.BusinessLogic.Net.V2
                     }
 
                     message.Write(buffer, 0, result.Count);
+                    // every part counts: a big message can take longer to arrive than DeadAfterMs
+                    LastReceived = DateTime.UtcNow;
                     if (message.Length > ProtocolInfo.MaxMessageBytes)
                     {
                         Reject(new Rejected { Reason = RejectReason.MessageTooLarge, Message = "Messages are limited to " + ProtocolInfo.MaxMessageBytes + " bytes.", Reconnect = true });
