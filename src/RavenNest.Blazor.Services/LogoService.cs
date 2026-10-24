@@ -129,6 +129,22 @@ namespace RavenNest.Blazor.Services
                     {
                         return data;
                     }
+
+                    // Not cached: the clan logo was only ever stored when the owner signed in to the website with
+                    // Twitch, so every other owner's capes showed the placeholder in the game while the website (which
+                    // shows the owner's channel picture) looked right. The clan's own logo when it has one, otherwise
+                    // that same channel picture.
+                    var owner = gameData.GetUserByTwitchId(userId);
+                    var ownerClan = owner != null ? gameData.GetClanByOwner(owner.Id) : null;
+                    if (ownerClan != null && !string.IsNullOrWhiteSpace(ownerClan.Logo)
+                        && ownerClan.Logo.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                        && !ownerClan.Logo.Contains("/api/twitch/logo/") && !ownerClan.Logo.Contains("/api/clan/logo/"))
+                    {
+                        var custom = await DownloadClanLogoAsync(userId, ownerClan.Logo);
+                        if (custom != null) return custom;
+                    }
+
+                    return await GetChannelPictureAsync(userId);
                 }
 
                 //if (string.IsNullOrEmpty(logoUrl))

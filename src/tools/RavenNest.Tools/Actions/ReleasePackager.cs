@@ -14,9 +14,9 @@ namespace RavenNest.Tools.Actions
     /// <summary>
     /// Builds every file a GitHub release of the game carries:
     ///   Ravenfall.v{version}-alpha.7z        the full Windows game, with the RavenWeave updater
-    ///   update.7z                            the Windows update (no updater, it is running while this unpacks)
+    ///   update.7z                            the Windows update, with the updater in updater\
     ///   Ravenfall.v{version}-alpha-linux.7z  the full Linux game, with update.sh and install.sh
-    ///   update-linux.7z                      the Linux update (the same files as the full Linux game)
+    ///   update-linux.7z                      the Linux update, with update.sh in its updater folder
     ///   RavenBot.7z / RavenBot-linux.7z      the local bot, self contained, for streamers that run it themselves
     ///   SHA256SUMS.txt and release-notes.md
     /// The server picks the assets by name (RavenNest.BusinessLogic/Github.cs): "update." and "update-linux" are the
@@ -25,6 +25,10 @@ namespace RavenNest.Tools.Actions
     /// The game builds are the Unity release builds (CoreCLR, not Development) made into Build-release-windows and
     /// Build-release-linux. They are named "Ravenfall Legacy" by Unity; in the packages the files are called
     /// Ravenfall.exe / Ravenfall.x86_64 / Ravenfall_Data like every earlier release, so updates land on the same files.
+    ///
+    /// The updater (RavenWeave on Windows, update.sh on Linux) is in use while an update installs, so an update never
+    /// replaces it directly: it carries the new one in updater\, which the old updater installs like any folder, and
+    /// the game moves it into place when it next starts (UpdaterSwap in the game). RavenWeave is built from its repo.
     /// </summary>
     public class ReleasePackager
     {
@@ -33,8 +37,8 @@ namespace RavenNest.Tools.Actions
 
         public static readonly string WindowsBuild = Path.Combine(GameFolder, "Build-release-windows");
         public static readonly string LinuxBuild = Path.Combine(GameFolder, "Build-release-linux");
-        // the RavenWeave updater and its libraries (binaries, not in git): shipped in the full Windows game only
-        public static readonly string WindowsExtras = Path.Combine(GameFolder, "Build-release-extras", "windows");
+        // the RavenWeave updater, built from its repo (.NET Framework 4.8, so it needs nothing installed)
+        public const string RavenWeaveProject = @"G:\Ravenfall\Projects\RavenWeave\src\RavenWeave.WPF\RavenWeave.WPF.csproj";
         // our own scripts, versioned in the game repo
         public static readonly string WindowsScripts = Path.Combine(GameFolder, "tools", "release", "windows");
         public static readonly string LinuxScripts = Path.Combine(GameFolder, "tools", "release", "linux");
@@ -75,8 +79,8 @@ namespace RavenNest.Tools.Actions
             if (windowsVersion != linuxVersion)
                 throw new InvalidOperationException($"The Windows build is {windowsVersion} but the Linux build is {linuxVersion}. Build both again.");
 
-            if (!File.Exists(Path.Combine(WindowsExtras, "RavenWeave.exe")))
-                throw new InvalidOperationException("The RavenWeave updater is missing from " + WindowsExtras + ". Copy it there from an earlier release.");
+            if (!File.Exists(RavenWeaveProject))
+                throw new InvalidOperationException("The RavenWeave updater project is missing: " + RavenWeaveProject);
 
             foreach (var script in new[] { Path.Combine(WindowsScripts, "batch-mode.bat"), Path.Combine(LinuxScripts, "update.sh"), Path.Combine(LinuxScripts, "install.sh") })
             {
@@ -192,24 +196,33 @@ namespace RavenNest.Tools.Actions
 
             status("Packaging Ravenfall " + tag);
 
+            var updater = BuildRavenWeave();
+
             var windows = GameFiles(WindowsBuild);
             Add(windows, WindowsScripts);
             var windowsFull = new Dictionary<string, string>(windows);
-            Add(windowsFull, WindowsExtras);
+            Add(windowsFull, updater);
+            var windowsUpdate = new Dictionary<string, string>(windows);
+            Add(windowsUpdate, updater, "updater");
 
             var linux = GameFiles(LinuxBuild);
-            Add(linux, LinuxScripts);
+            var linuxFull = new Dictionary<string, string>(linux);
+            Add(linuxFull, LinuxScripts);
+            // update.sh goes in updater\ in the update: the old script is running while the update installs
+            var linuxUpdate = new Dictionary<string, string>(linux);
+            foreach (var script in Directory.GetFiles(LinuxScripts))
+            {
+                var name = Path.GetFileName(script);
+                linuxUpdate[name.Equals("update.sh", StringComparison.OrdinalIgnoreCase) ? Path.Combine("updater", name) : name] = script;
+            }
 
             var fullWindows = "Ravenfall." + tag + ".7z";
             var fullLinux = "Ravenfall." + tag + "-linux.7z";
 
             Compress(fullWindows, windowsFull);
-            Compress("update.7z", windows);
-            Compress(fullLinux, linux);
-            // the Linux update is the same set of files, update.sh included: the copy that replaces the running
-            // script is identical to it, so bash reads on unharmed
-            status("update-linux.7z (a copy of " + fullLinux + ")");
-            File.Copy(Path.Combine(OutputFolder, fullLinux), Path.Combine(OutputFolder, "update-linux.7z"), true);
+            Compress("update.7z", windowsUpdate);
+            Compress(fullLinux, linuxFull);
+            Compress("update-linux.7z", linuxUpdate);
 
             if (includeBot)
             {
@@ -266,10 +279,44 @@ namespace RavenNest.Tools.Actions
             return true;
         }
 
-        private static void Add(Dictionary<string, string> files, string folder)
+        private static void Add(Dictionary<string, string> files, string folder, string under = null)
         {
             foreach (var file in Directory.GetFiles(folder, "*", SearchOption.AllDirectories))
-                files[Path.GetRelativePath(folder, file)] = file;
+            {
+                var name = Path.GetRelativePath(folder, file);
+                files[under != null ? Path.Combine(under, name) : name] = file;
+            }
+        }
+
+        /// <summary>Builds RavenWeave and returns a folder with its files (no debug symbols).</summary>
+        private string BuildRavenWeave()
+        {
+            status("Building the RavenWeave updater");
+            var output = Path.Combine(Path.GetTempPath(), "ravenfall-release-ravenweave");
+            if (Directory.Exists(output)) Directory.Delete(output, true);
+
+            var startInfo = new ProcessStartInfo("dotnet", $"build \"{RavenWeaveProject}\" -c Release -o \"{output}\" -nologo -v q")
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            };
+
+            using (var process = Process.Start(startInfo))
+            {
+                var stdout = process.StandardOutput.ReadToEndAsync();
+                var stderr = process.StandardError.ReadToEndAsync();
+                process.WaitForExit();
+                if (process.ExitCode != 0 || !File.Exists(Path.Combine(output, "RavenWeave.exe")))
+                {
+                    Log(stdout.Result + stderr.Result);
+                    throw new InvalidOperationException("Building RavenWeave failed, see package-log.txt");
+                }
+            }
+
+            foreach (var pdb in Directory.GetFiles(output, "*.pdb")) File.Delete(pdb);
+            Log("RavenWeave: " + string.Join(", ", Directory.GetFiles(output).Select(Path.GetFileName)));
+            return output;
         }
 
         private void Compress(string archive, Dictionary<string, string> files)

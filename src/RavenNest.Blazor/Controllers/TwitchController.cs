@@ -163,6 +163,8 @@ namespace RavenNest.Controllers
                 }
 
                 //return Redirect(unknownClanLogoUrl);
+                // the game tries a placeholder again later, as the real logo may be there by then
+                Response.Headers["X-Logo-Fallback"] = "true";
                 return File(unknownClanLogoBytes, "image/png");
             }
             catch { }
