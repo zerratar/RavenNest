@@ -106,6 +106,7 @@
                                 <span class="rf-stream__meta">
                                     <span class="rf-badge rf-badge--good">Live</span>
                                     <span>@stream.PlayerCount @(stream.PlayerCount == 1 ? "player" : "players")</span>
+                                    <ClientVersionBadge Version="@stream.ClientVersion" IsLatest="@stream.IsLatestVersion" Latest="@stream.LatestVersion" />
                                 </span>
                             </div>
                         </div>

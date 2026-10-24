@@ -99,6 +99,7 @@
                                            target="_blank" rel="noopener">
                                             <i class="fab fa-twitch" aria-hidden="true"></i> @town.Owner.UserName
                                         </a>
+                                        <ClientVersionBadge Version="@town.ClientVersion" IsLatest="@town.IsLatestVersion" Latest="@town.LatestVersion" />
                                     </td>
                                     <td><b class="rf-loyalty__points">@Percent(town.GetActiveBonus(selectedType))</b></td>
                                     <td class="rf-table__quiet">@town.Level</td>

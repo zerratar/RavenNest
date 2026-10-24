@@ -50,6 +50,8 @@ namespace RavenNest.Blazor.Services
                     town.Level = village.Level;
                     town.Experience = village.Experience;
                     town.Name = village.Name;
+                    (town.ClientVersion, town.IsLatestVersion) = ClientVersionInfo.Of(gameData, sess);
+                    town.LatestVersion = ClientVersionInfo.Latest(gameData);
 
                     var owner = this.gameData.GetUser(village.UserId);
                     town.Owner = new TownOwnerData();
@@ -720,6 +722,11 @@ namespace RavenNest.Blazor.Services
         public int TotalSlotCount { get; set; }
         public int UsedSlotCount { get; set; }
         public int ActiveSlotCount { get; set; }
+
+        /// <summary>The game version the town's stream runs (ClientVersionInfo).</summary>
+        public string ClientVersion { get; set; }
+        public bool IsLatestVersion { get; set; }
+        public string LatestVersion { get; set; }
 
         public float GetActiveBonus(TownHouseSlotType type)
         {

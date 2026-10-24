@@ -1,0 +1,18 @@
+@*
+    The game version a stream runs, on the stream cards and the towns list, so viewers can find a
+    stream on the newest release to try what is new. Green and marked newest when it is the newest
+    release or newer; plain otherwise.
+*@
+@if (!string.IsNullOrEmpty(Version))
+{
+    <span class="rf-badge @(IsLatest ? "rf-badge--good" : "rf-badge--quiet")"
+          title="@(IsLatest ? "Runs the newest game version" : "An older game version" + (string.IsNullOrEmpty(Latest) ? "" : "; the newest is " + Latest))">
+        @Version@(IsLatest ? ", newest" : "")
+    </span>
+}
+
+@code {
+    [Parameter] public string Version { get; set; }
+    [Parameter] public bool IsLatest { get; set; }
+    [Parameter] public string Latest { get; set; }
+}
