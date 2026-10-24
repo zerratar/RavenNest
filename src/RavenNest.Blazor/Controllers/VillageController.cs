@@ -15,6 +15,7 @@ namespace RavenNest.Controllers
     {
         private readonly VillageManager villageManager;
         private readonly VillageRoadManager roadManager;
+        private readonly VillageDecorManager decorManager;
 
         public VillageController(
             ILogger<VillageController> logger,
@@ -24,11 +25,60 @@ namespace RavenNest.Controllers
             SessionManager sessionManager,
             VillageManager villageManager,
             VillageRoadManager roadManager,
+            VillageDecorManager decorManager,
             ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
             this.villageManager = villageManager;
             this.roadManager = roadManager;
+            this.decorManager = decorManager;
+        }
+
+        // ---- Decor, placed in build mode. See VillageDecorManager. ----
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("decor/pieces")]
+        public VillageDecorPiece[] GetDecorPieces()
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return decorManager.GetPieces(sessionToken.SessionId);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("decor")]
+        public VillageDecorInfo[] GetDecor()
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return decorManager.GetDecor(sessionToken.SessionId);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("decor/place")]
+        public VillageDecorResult PlaceDecor([FromBody] VillageDecorRequest request)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return decorManager.Place(sessionToken.SessionId, request);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("decor/move")]
+        public VillageDecorResult MoveDecor([FromBody] VillageDecorRequest request)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return decorManager.Move(sessionToken.SessionId, request);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("decor/remove")]
+        public VillageDecorResult RemoveDecor([FromBody] VillageDecorRequest request)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return decorManager.Remove(sessionToken.SessionId, request);
         }
 
         // ---- Roads, drawn in build mode. See VillageRoadManager. ----

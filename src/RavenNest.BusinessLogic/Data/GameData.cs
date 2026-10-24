@@ -70,6 +70,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<UserProperty> userProperties;
         private readonly EntitySet<ClientDevice> clientDevices;
         private readonly EntitySet<VillageRoad> villageRoads;
+        private readonly EntitySet<VillageDecor> villageDecor;
         private readonly EntitySet<UserLoyaltyRank> loyaltyRanks;
         private readonly EntitySet<UserLoyaltyReward> loyaltyRewards;
         private readonly EntitySet<UserClaimedLoyaltyReward> claimedLoyaltyRewards;
@@ -178,6 +179,7 @@ namespace RavenNest.BusinessLogic.Data
                 typeof(UserProperty),
                 typeof(ClientDevice),
                 typeof(VillageRoad),
+                typeof(VillageDecor),
                 typeof(SyntyAppearance),
                 typeof(Character),
                 typeof(CharacterState),
@@ -322,6 +324,8 @@ namespace RavenNest.BusinessLogic.Data
 
                     villageRoads = new EntitySet<VillageRoad>(restorePoint?.Get<VillageRoad>() ?? ctx.VillageRoad.ToList());
                     villageRoads.RegisterLookupGroup(nameof(Village), x => x.VillageId);
+                    villageDecor = new EntitySet<VillageDecor>(restorePoint?.Get<VillageDecor>() ?? ctx.VillageDecor.ToList());
+                    villageDecor.RegisterLookupGroup(nameof(Village), x => x.VillageId);
 
                     loyaltyRanks = new EntitySet<UserLoyaltyRank>(ctx.UserLoyaltyRank.ToList());
 
@@ -494,6 +498,7 @@ namespace RavenNest.BusinessLogic.Data
                         redeemableItems,
                         clientDevices,
                         villageRoads,
+                        villageDecor,
                         serverSettings,
                         itemAttributes,
                         dailyAggregatedMarketplaceData,
@@ -4029,6 +4034,15 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<VillageRoad> GetVillageRoads(Guid villageId) => villageRoads[nameof(Village), villageId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<VillageDecor> GetVillageDecor(Guid villageId) => villageDecor[nameof(Village), villageId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(VillageDecor item) => Update(() => villageDecor.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RemoveEntityResult Remove(VillageDecor item) => Update(() => villageDecor.Remove(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public VillageRoad GetVillageRoad(Guid id) => villageRoads.TryGet(id, out var road) ? road : null;
