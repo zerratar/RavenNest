@@ -497,6 +497,7 @@ namespace RavenNest.Blazor
             services.AddHostedService<RavenNest.BusinessLogic.Game.PlatformNameWatcher>();
             services.AddHostedService<RavenNest.BusinessLogic.Game.MarketplaceExpiryWatcher>();
             services.AddHostedService<RavenNest.BusinessLogic.Game.StreamerShop.StreamerShopExpiryWatcher>();
+            services.AddHostedService<RavenNest.BusinessLogic.Game.GameReleaseWatcher>();
 
             // Server settings and the AI service on top of them. Both are singletons and both read
             // their values fresh on every call, so changing a key in the admin panel takes effect on
