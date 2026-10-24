@@ -2,6 +2,7 @@
 @page "/clan"
 @page "/clan/ranks"
 @page "/clan/stash"
+@page "/clan/look"
 @using RavenNest.Blazor.Components
 @using RavenNest.Blazor.Services
 @using RavenNest.BusinessLogic
@@ -112,7 +113,11 @@ else if (clan == null || creating)
 else
 {
     <div class="rf-clan">
-        @if (!string.IsNullOrEmpty(clan.Logo))
+        @if (clan.LogoImageId != null)
+        {
+            <img src="/api/clan/image/@clan.LogoImageId" class="rf-clan__logo" alt="@clan.Name" />
+        }
+        else if (!string.IsNullOrEmpty(clan.Logo))
         {
             <img src="@clan.Logo" class="rf-clan__logo" alt="@clan.Name" />
         }
@@ -247,9 +252,18 @@ else
             {
                 <button type="button" role="tab" aria-selected="@(section == Section.Stash)" class="rf-tab @(section == Section.Stash ? "is-active" : "")" @onclick="() => ShowSection(Section.Stash)">Stash</button>
             }
+            @if (Selected?.IsOwner == true)
+            {
+                <button type="button" role="tab" aria-selected="@(section == Section.Look)" class="rf-tab @(section == Section.Look ? "is-active" : "")" @onclick="() => ShowSection(Section.Look)">Look</button>
+            }
         </div>
 
-        @if (section == Section.Ranks)
+        @if (section == Section.Look && Selected?.IsOwner == true)
+        {
+            @* the logo, the cape image and the cape shapes: the owner's alone *@
+            <ClanLookEditor @key="clan.Id"></ClanLookEditor>
+        }
+        else if (section == Section.Ranks)
         {
             <ClanRoleList ClanId="@clan.Id" ActingCharacterId="@ActingCharacterId" CanManage="@canEditRanks"></ClanRoleList>
         }
@@ -318,7 +332,7 @@ else
     private bool canRenameClan;
     private RavenNest.BusinessLogic.Game.TypedClanRolePermissions myPermissions;
     private bool editingClanName;
-    private enum Section { Members, Ranks, Stash }
+    private enum Section { Members, Ranks, Stash, Look }
 
     private Section section = Section.Members;
 
@@ -492,6 +506,7 @@ else
 
         if (uri.IndexOf("/clan/ranks", StringComparison.OrdinalIgnoreCase) >= 0) section = Section.Ranks;
         else if (uri.IndexOf("/clan/stash", StringComparison.OrdinalIgnoreCase) >= 0) section = Section.Stash;
+        else if (uri.IndexOf("/clan/look", StringComparison.OrdinalIgnoreCase) >= 0) section = Section.Look;
         else section = Section.Members;
     }
 

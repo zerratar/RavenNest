@@ -4215,3 +4215,286 @@ a.rf-badge:hover {
 .rf-clanimg__history > td {
     padding-left: var(--rf-space-5);
 }
+
+/* The clan image editor (js/rf-clan-image-editor.js): the image in its frame, the controls, and for a
+   cape the 3D preview. Built by the script, so these classes are its whole layout. */
+.rf-imged {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--rf-space-4);
+    background: var(--rf-scrim);
+}
+
+.rf-imged__box {
+    width: 52rem;
+    max-width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
+    padding: var(--rf-space-5);
+    background: var(--rf-surface-1);
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius-lg);
+    box-shadow: var(--rf-shadow-lg), var(--rf-bevel);
+}
+
+.rf-imged__box--cape {
+    width: 64rem;
+}
+
+.rf-imged__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-imged__title {
+    margin: 0;
+    font-size: var(--rf-size-title);
+}
+
+.rf-imged__body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-5);
+    align-items: flex-start;
+}
+
+.rf-imged__stage {
+    position: relative;
+    flex-shrink: 0;
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius-sm);
+    overflow: hidden;
+    /* the checks show through a transparent logo */
+    background: repeating-conic-gradient(rgba(128, 128, 128, 0.22) 0% 25%, transparent 0% 50%) 50% / 16px 16px;
+}
+
+.rf-imged__stage.is-over {
+    outline: 2px dashed var(--rf-gold);
+    outline-offset: 2px;
+}
+
+.rf-imged__view,
+.rf-imged__overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.rf-imged__overlay {
+    cursor: grab;
+    touch-action: none;
+}
+
+.rf-imged__overlay:active {
+    cursor: grabbing;
+}
+
+.rf-imged__empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--rf-space-4);
+    text-align: center;
+    color: var(--rf-ink-muted);
+    pointer-events: none;
+}
+
+.rf-imged__hint {
+    margin: var(--rf-space-2) 0 0;
+}
+
+.rf-imged__controls {
+    flex: 1 1 16rem;
+    min-width: 15rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--rf-space-3);
+}
+
+.rf-imged__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-2);
+}
+
+.rf-imged__slider {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr 3.5rem;
+    align-items: center;
+    gap: var(--rf-space-2);
+}
+
+.rf-imged__slider input {
+    width: 100%;
+    accent-color: var(--rf-gold);
+}
+
+.rf-imged__value {
+    text-align: right;
+}
+
+.rf-imged__colour,
+.rf-imged__check {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-2);
+}
+
+.rf-imged__colour input[type=color] {
+    width: 3rem;
+    height: 2rem;
+    padding: 0;
+    border: 1px solid var(--rf-line-strong);
+    border-radius: var(--rf-radius-sm);
+    background: none;
+}
+
+.rf-imged__round {
+    display: flex;
+    align-items: center;
+    gap: var(--rf-space-3);
+}
+
+.rf-imged__round canvas {
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    border: 1px solid var(--rf-line-strong);
+    background: repeating-conic-gradient(rgba(128, 128, 128, 0.22) 0% 25%, transparent 0% 50%) 50% / 12px 12px;
+}
+
+.rf-imged__previewcol {
+    flex: 0 0 300px;
+    max-width: 100%;
+}
+
+.rf-imged__preview {
+    width: 300px;
+    height: 420px;
+    max-width: 100%;
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+    background: radial-gradient(ellipse at 50% 35%, var(--rf-surface-3), var(--rf-surface-1));
+}
+
+.rf-imged__preview canvas {
+    display: block;
+    cursor: grab;
+    touch-action: none;
+}
+
+.rf-imged__styles {
+    margin-top: var(--rf-space-3);
+}
+
+.rf-imged__styles .rf-btn.is-active {
+    border-color: var(--rf-gold);
+    color: var(--rf-gold-bright);
+    background: var(--rf-gold-wash);
+}
+
+.rf-imged__foot {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--rf-space-2);
+    margin-top: var(--rf-space-5);
+}
+
+.rf-imged__status {
+    flex: 1;
+    margin: 0;
+    color: var(--rf-ink-muted);
+}
+
+.rf-imged__status.is-bad {
+    color: var(--rf-bad);
+}
+
+/* The clan page's Look tab: the logo and cape cards side by side, the shapes under them. */
+.rf-clanlook {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: var(--rf-space-4);
+    margin-bottom: var(--rf-space-4);
+}
+
+.rf-clanlook__card {
+    padding: var(--rf-space-4);
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius);
+    background: var(--rf-surface-2);
+}
+
+.rf-clanlook__title {
+    margin: 0 0 var(--rf-space-2);
+    font-size: var(--rf-size-heading);
+}
+
+.rf-clanlook__images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-4);
+    margin: var(--rf-space-3) 0;
+}
+
+.rf-clanlook__figure {
+    margin: 0;
+    text-align: center;
+}
+
+.rf-clanlook__figure figcaption {
+    margin-top: var(--rf-space-1);
+}
+
+.rf-clanlook__logo {
+    width: 112px;
+    height: 112px;
+    object-fit: cover;
+    border-radius: var(--rf-radius);
+    border: 1px solid var(--rf-line-strong);
+    background: repeating-conic-gradient(rgba(128, 128, 128, 0.22) 0% 25%, transparent 0% 50%) 50% / 12px 12px;
+}
+
+.rf-clanlook__cape {
+    display: block;
+    width: 72px;
+    height: 144px;
+    object-fit: cover;
+    border-radius: var(--rf-radius-sm);
+    border: 1px solid var(--rf-line-strong);
+}
+
+/* the game's default cape: the logo on the upper back of dark cloth */
+.rf-clanlook__cape--default {
+    position: relative;
+    background: #2b2a33;
+}
+
+.rf-clanlook__cape--default img {
+    position: absolute;
+    left: 13%;
+    top: 10.5%;
+    width: 75%;
+    height: auto;
+}
+
+.rf-clanlook__shapes .rf-btn.is-active {
+    border-color: var(--rf-gold);
+    color: var(--rf-gold-bright);
+    background: var(--rf-gold-wash);
+}
+
+.rf-clanlook__roles {
+    margin-top: var(--rf-space-4);
+    max-width: 32rem;
+}

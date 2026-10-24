@@ -30,7 +30,11 @@ else if (clan == null)
 else
 {
 	<div class="rf-clan">
-		@if (!string.IsNullOrEmpty(clan.Logo))
+		@if (clan.LogoImageId != null)
+		{
+			<img src="/api/clan/image/@clan.LogoImageId" class="rf-clan__logo" alt="@clan.Name" />
+		}
+		else if (!string.IsNullOrEmpty(clan.Logo))
 		{
 			<img src="@clan.Logo" class="rf-clan__logo" alt="@clan.Name" />
 		}

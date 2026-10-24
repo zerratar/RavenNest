@@ -1,0 +1,246 @@
+@using RavenNest.Blazor.Services
+@using RavenNest.Models
+@inject ClanImageService ClanImages
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+@*
+    The clan page's Look tab, for the clan owner: the clan logo, the cape image and the cape shapes.
+
+    The editor is a script (js/rf-clan-image-editor.js) because the cropping and the 3D preview run in
+    the browser; it uploads the finished image itself and calls EditorDone here when it closes, so this
+    only has to show the state again.
+*@
+
+@if (state == null)
+{
+    <p class="rf-meta">Only the clan's owner can change how it looks.</p>
+}
+else
+{
+    @if (message != null)
+    {
+        <div class="rf-banner @(messageIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status">
+            <p>@message</p>
+        </div>
+    }
+
+    @if (!state.CanCustomize)
+    {
+        <div class="rf-banner rf-banner--warn">
+            <p class="rf-banner__title">Your own clan images are a patron feature</p>
+            <p>
+                Support Ravenfall on <a href="https://www.patreon.com/ravenfall" target="_blank" rel="noopener">Patreon</a>
+                to upload a clan logo and cape. Images you already have stay as they are.
+            </p>
+        </div>
+    }
+    else if (state.RequireReview)
+    {
+        <p class="rf-meta">New images are checked by the Ravenfall team before they are used. It can take up to 24 hours.</p>
+    }
+
+    <div class="rf-clanlook">
+        <section class="rf-clanlook__card">
+            <h4 class="rf-clanlook__title">Clan logo</h4>
+            <p class="rf-meta">Shown on the website and in the game. Without your own it is your Twitch picture.</p>
+            <div class="rf-clanlook__images">
+                <figure class="rf-clanlook__figure">
+                    <img class="rf-clanlook__logo" src="@LogoSrc" alt="Current clan logo" />
+                    <figcaption class="rf-meta">@(state.Logo != null ? "Your own" : "Twitch picture")</figcaption>
+                </figure>
+                @if (state.LogoWaiting != null)
+                {
+                    <figure class="rf-clanlook__figure">
+                        <img class="rf-clanlook__logo" src="/api/clan/image/@state.LogoWaiting.Id" alt="Waiting for review" />
+                        <figcaption><span class="rf-badge rf-badge--warn">Waiting for review</span></figcaption>
+                    </figure>
+                }
+            </div>
+            @if (state.LogoTurnedDown && state.LogoWaiting == null)
+            {
+                <p class="rf-meta">Your last logo was not accepted.</p>
+            }
+            <div class="rf-actions">
+                <button type="button" class="rf-btn rf-btn--primary" disabled="@(!state.CanCustomize)" @onclick="() => Edit(ClanImageKind.Logo)">Upload a logo</button>
+                @if (state.Logo != null || state.LogoWaiting != null)
+                {
+                    <button type="button" class="rf-btn" @onclick="() => UseDefault(ClanImageKind.Logo)">Use my Twitch picture</button>
+                }
+            </div>
+        </section>
+
+        <section class="rf-clanlook__card">
+            <h4 class="rf-clanlook__title">Cape</h4>
+            <p class="rf-meta">The back of your members' capes in the game. Without your own it is your logo on dark cloth.</p>
+            <div class="rf-clanlook__images">
+                <figure class="rf-clanlook__figure">
+                    @if (state.Cape != null)
+                    {
+                        <img class="rf-clanlook__cape" src="/api/clan/image/@state.Cape.Id" alt="Current cape image" />
+                    }
+                    else
+                    {
+                        <div class="rf-clanlook__cape rf-clanlook__cape--default">
+                            <img src="@LogoSrc" alt="" />
+                        </div>
+                    }
+                    <figcaption class="rf-meta">@(state.Cape != null ? "Your own" : "The logo")</figcaption>
+                </figure>
+                @if (state.CapeWaiting != null)
+                {
+                    <figure class="rf-clanlook__figure">
+                        <img class="rf-clanlook__cape" src="/api/clan/image/@state.CapeWaiting.Id" alt="Waiting for review" />
+                        <figcaption><span class="rf-badge rf-badge--warn">Waiting for review</span></figcaption>
+                    </figure>
+                }
+            </div>
+            @if (state.CapeTurnedDown && state.CapeWaiting == null)
+            {
+                <p class="rf-meta">Your last cape image was not accepted.</p>
+            }
+            <div class="rf-actions">
+                <button type="button" class="rf-btn rf-btn--primary" disabled="@(!state.CanCustomize)" @onclick="() => Edit(ClanImageKind.Cape)">Upload a cape image</button>
+                @if (state.Cape != null || state.CapeWaiting != null)
+                {
+                    <button type="button" class="rf-btn" @onclick="() => UseDefault(ClanImageKind.Cape)">Use the logo</button>
+                }
+            </div>
+        </section>
+    </div>
+
+    <section class="rf-clanlook__card rf-clanlook__shapes">
+        <h4 class="rf-clanlook__title">Cape shape</h4>
+        <p class="rf-meta">What your members wear. A rank can wear its own shape. Players see it with the newest game version.</p>
+        <div class="rf-actions" role="radiogroup" aria-label="Cape shape">
+            @for (var i = 0; i < StyleNames.Length; ++i)
+            {
+                var style = i;
+                <button type="button" role="radio" aria-checked="@(state.CapeStyle == style)"
+                        class="rf-btn rf-btn--small @(state.CapeStyle == style ? "is-active" : "")"
+                        @onclick="() => SetStyle(style)">@StyleNames[style]</button>
+            }
+        </div>
+
+        @if (state.Roles.Count > 0)
+        {
+            <table class="rf-table rf-clanlook__roles">
+                <thead><tr><th>Rank</th><th>Cape shape</th></tr></thead>
+                <tbody>
+                    @foreach (var role in state.Roles)
+                    {
+                        <tr>
+                            <td>@role.Name</td>
+                            <td>
+                                <select class="rf-input" value="@(role.CapeStyle?.ToString() ?? "")" @onchange="e => SetRoleStyle(role, e)">
+                                    <option value="">The clan's (@StyleNames[state.CapeStyle])</option>
+                                    @for (var i = 0; i < StyleNames.Length; ++i)
+                                    {
+                                        <option value="@i">@StyleNames[i]</option>
+                                    }
+                                </select>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+}
+
+@code {
+    private static readonly string[] StyleNames = { "Long", "Pointed", "Short", "Tattered" };
+
+    private ClanLookState state;
+    private string message;
+    private bool messageIsBad;
+    private IJSObjectReference module;
+    private DotNetObjectReference<ClanLookEditor> self;
+
+    // the logo the clan has now, as the game gets it: the owner's upload or their Twitch picture
+    private string LogoSrc => state.Logo != null
+        ? "/api/clan/image/" + state.Logo.Id
+        : "/api/clan/logo/" + state.OwnerTwitchId;
+
+    protected override void OnInitialized()
+    {
+        state = ClanImages.GetState();
+    }
+
+    private async Task Edit(ClanImageKind kind)
+    {
+        module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/rf-clan-image-editor.js");
+        self ??= DotNetObjectReference.Create(this);
+        message = null;
+        await module.InvokeVoidAsync("openEditor", new
+        {
+            kind = kind == ClanImageKind.Cape ? "cape" : "logo",
+            capeStyle = state.CapeStyle,
+            logoUrl = LogoSrc,
+            requireReview = state.RequireReview,
+        }, self);
+    }
+
+    [JSInvokable]
+    public Task EditorDone(EditorResult result)
+    {
+        if (result == null || result.Cancelled) return Task.CompletedTask;
+        state = ClanImages.GetState();
+        if (result.Ok)
+            Say(result.Waiting ? "Sent for review. It can take up to 24 hours; your current image stays until then." : "Updated. Games running now show it within a minute.", false);
+        else
+            Say(result.Error ?? "The upload did not go through.", true);
+        return InvokeAsync(StateHasChanged);
+    }
+
+    private void UseDefault(ClanImageKind kind)
+    {
+        var result = ClanImages.UseDefault(kind);
+        state = ClanImages.GetState();
+        if (result.Ok) Say(kind == ClanImageKind.Logo ? "Back to your Twitch picture." : "Back to the logo on the cape.", false);
+        else Say(result.Error, true);
+    }
+
+    private void SetStyle(int style)
+    {
+        Save(style, null);
+    }
+
+    private void SetRoleStyle(ClanLookRole role, ChangeEventArgs e)
+    {
+        int? style = int.TryParse(e.Value?.ToString(), out var s) ? s : null;
+        Save(state.CapeStyle, new Dictionary<Guid, int?> { [role.Id] = style });
+    }
+
+    private void Save(int style, Dictionary<Guid, int?> roles)
+    {
+        var result = ClanImages.SetCapeStyle(style, roles);
+        state = ClanImages.GetState();
+        if (result.Ok) Say("Cape shape saved.", false);
+        else Say(result.Error, true);
+    }
+
+    private void Say(string text, bool bad)
+    {
+        message = text;
+        messageIsBad = bad;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        self?.Dispose();
+        if (module != null)
+        {
+            try { await module.DisposeAsync(); }
+            catch (JSDisconnectedException) { }
+        }
+    }
+
+    public class EditorResult
+    {
+        public bool Ok { get; set; }
+        public bool Waiting { get; set; }
+        public bool Cancelled { get; set; }
+        public string Error { get; set; }
+    }
+}
