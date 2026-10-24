@@ -145,6 +145,11 @@ namespace RavenNest.BusinessLogic.Game
             return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags);
         }
 
+        public static StackKey Key(this DataModels.StreamerShopListing item)
+        {
+            return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags);
+        }
+
         public static StackKey Key(this RavenNest.Models.InventoryItem item)
         {
             return new StackKey(item.ItemId, item.Tag, item.Enchantment, item.TransmogrificationId, item.Name, item.Flags);

@@ -38,6 +38,9 @@ namespace RavenNest.Protocol
         /// <summary>(Guid characterId, Guid itemId) -> RedeemItemResult</summary>
         public const string Redeem = "items.redeem";
 
+        /// <summary>(Guid characterId, Guid listingId) -> StreamerShopBuyResult: buys one from a tavern shelf.</summary>
+        public const string ShopBuy = "shop.buy";
+
         /// <summary>(Guid characterId, Guid inventoryItemId, string argument or null) -> ItemUseResult</summary>
         public const string UseItem = "items.use";
 

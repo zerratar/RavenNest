@@ -496,6 +496,7 @@ namespace RavenNest.Blazor
             // case where someone renames first and then launches the game.
             services.AddHostedService<RavenNest.BusinessLogic.Game.PlatformNameWatcher>();
             services.AddHostedService<RavenNest.BusinessLogic.Game.MarketplaceExpiryWatcher>();
+            services.AddHostedService<RavenNest.BusinessLogic.Game.StreamerShop.StreamerShopExpiryWatcher>();
 
             // Server settings and the AI service on top of them. Both are singletons and both read
             // their values fresh on every call, so changing a key in the admin panel takes effect on
@@ -572,6 +573,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<IPatreonManager, PatreonManager>();
             services.AddSingleton<IClanManager, ClanManager>();
             services.AddSingleton<RavenNest.BusinessLogic.Game.ClanBank.ClanBankManager>();
+            services.AddSingleton<RavenNest.BusinessLogic.Game.StreamerShop.StreamerShopManager>();
             services.AddSingleton<INotificationManager, NotificationManager>();
 
             services.AddSingleton<IQueryBuilder, QueryBuilder>();

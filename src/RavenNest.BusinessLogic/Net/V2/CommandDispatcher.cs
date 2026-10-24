@@ -75,7 +75,7 @@ namespace RavenNest.BusinessLogic.Net.V2
         private readonly Dictionary<string, Handler> handlers = new Dictionary<string, Handler>(StringComparer.Ordinal);
         private readonly PlayerInventoryProvider inventories;
 
-        public CommandDispatcher(PlayerManager players, PlayerInventoryProvider inventories)
+        public CommandDispatcher(PlayerManager players, PlayerInventoryProvider inventories, Game.StreamerShop.StreamerShopManager shop)
         {
             this.inventories = inventories;
             var p = players;
@@ -92,6 +92,7 @@ namespace RavenNest.BusinessLogic.Net.V2
             Add(Commands.Produce, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid recipe, out long amount); c.Watch(ch); return p.ProduceItems(c.SessionToken, ch, recipe, (int)Math.Clamp(amount, 0, int.MaxValue)); });
             Add(Commands.Craft, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid item, out int amount); c.Watch(ch); return p.CraftItems(c.SessionToken, ch, item, amount); });
             Add(Commands.Redeem, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid item); c.Watch(ch); return p.RedeemItem(c.SessionToken, ch, item); });
+            Add(Commands.ShopBuy, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid listing); c.Watch(ch); return shop.Buy(c.SessionToken, ch, listing); });
             Add(Commands.UseItem, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv, out string arg); c.Watch(ch); return p.UseItem(c.SessionToken, ch, inv, arg); });
             Add(Commands.Vendor, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid inv, out long amount); c.Watch(ch); return p.SellItemInstanceToVendor(c.SessionToken, ch, inv, amount); });
             Add(Commands.Gift, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out Guid receiver, out Guid inv, out long amount); c.Watch(ch); return p.GiftInventoryItem(c.SessionToken, ch, receiver, inv, amount); });

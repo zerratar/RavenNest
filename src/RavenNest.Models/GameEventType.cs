@@ -69,5 +69,11 @@
         ///     Server requesting the current player state to be sent from the client.  
         /// </summary>
         GameStateRequest = 46,
+
+        /// <summary>
+        ///     The stream's tavern shelves changed (a listing made, edited, bought from, taken down or
+        ///     expired). Carries a <see cref="StreamerShopInfo"/>.
+        /// </summary>
+        StreamerShopUpdated = 47,
     }
 }

@@ -16,7 +16,10 @@ namespace RavenNest.BusinessLogic.Game.Trading
         StashWithdraw,
         ClanBankDeposit,
         ClanBankWithdraw,
-        AdminAdjustment
+        AdminAdjustment,
+        StreamerShopListing,
+        StreamerShopPurchase,
+        StreamerShopReturn
     }
 
     /// <summary>
