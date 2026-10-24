@@ -75,5 +75,11 @@
         ///     expired). Carries a <see cref="StreamerShopInfo"/>.
         /// </summary>
         StreamerShopUpdated = 47,
+
+        /// <summary>
+        ///     A clan's logo, cape image or cape shapes changed. Carries a <see cref="ClanLook"/>; sent to
+        ///     every game with a member of the clan in it.
+        /// </summary>
+        ClanLookChanged = 48,
     }
 }

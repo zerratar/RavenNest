@@ -18,5 +18,8 @@ namespace RavenNest.DataModels
         [PersistentData] private Guid? resources;
         [PersistentData] private DateTime? lastReward;
         [PersistentData] private DateTime created;
+
+        // Set when an admin blocks one of this user's clan images: their uploads wait for review from then on.
+        [PersistentData] private bool? clanImagesNeedReview;
     }
 }

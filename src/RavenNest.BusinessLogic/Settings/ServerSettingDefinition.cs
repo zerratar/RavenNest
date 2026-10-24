@@ -144,6 +144,8 @@ namespace RavenNest.BusinessLogic.Settings
 
         public const string AssistantDailyLimit = "Assistant:DailyQuestionsPerPlayer";
 
+        public const string ClanImagesRequireReview = "ClanImages:RequireReview";
+
         public static readonly IReadOnlyList<ServerSettingDefinition> All = new List<ServerSettingDefinition>
         {
             new ServerSettingDefinition(
@@ -188,6 +190,15 @@ namespace RavenNest.BusinessLogic.Settings
                 "How many questions one player can ask in a day. Administrators are not limited, since they are the ones paying for the key. Counted in memory, so a restart clears it.",
                 ServerSettingKind.Number,
                 defaultValue: "30"),
+
+            new ServerSettingDefinition(
+                ClanImagesRequireReview,
+                "Clan images",
+                "Require review",
+                "Every clan logo and cape image a clan owner uploads waits for an admin to accept it on the Clan images page, instead of being used at once. Owners are told it can take up to 24 hours. Owners who have had an image blocked always wait for review.",
+                ServerSettingKind.Toggle,
+                defaultValue: "false",
+                help: "Admin, Clan images lists everything uploaded, with Accept, Reject and Block."),
 
             new ServerSettingDefinition(
                 OpenAiModel,

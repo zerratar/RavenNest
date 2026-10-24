@@ -111,6 +111,7 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<ClanBankLog> clanBankLog;
         private readonly EntitySet<StreamerShopListing> streamerShopListings;
         private readonly EntitySet<StreamerShopTransaction> streamerShopTransactions;
+        private readonly EntitySet<ClanImage> clanImages;
         private readonly EntitySet<ClanBankWithdrawalLimit> clanBankLimits;
         private readonly EntitySet<InventoryItem> inventoryItems;
         private readonly EntitySet<ResourceItemDrop> resourceItemDrops;
@@ -211,6 +212,7 @@ namespace RavenNest.BusinessLogic.Data
                 typeof(ClanBankWithdrawalLimit),
                 typeof(StreamerShopListing),
                 typeof(StreamerShopTransaction),
+                typeof(ClanImage),
                 typeof(ExpMultiplierEvent),
                 typeof(ItemRecipe),
                 typeof(ItemRecipeIngredient),
@@ -394,6 +396,9 @@ namespace RavenNest.BusinessLogic.Data
                     streamerShopTransactions = new EntitySet<StreamerShopTransaction>(restorePoint?.Get<StreamerShopTransaction>() ?? ctx.StreamerShopTransaction.ToList());
                     streamerShopTransactions.RegisterLookupGroup(nameof(User), x => x.StreamerUserId);
                     streamerShopTransactions.RegisterLookupGroup(nameof(StreamerShopListing), x => x.ListingId);
+                    clanImages = new EntitySet<ClanImage>(restorePoint?.Get<ClanImage>() ?? ctx.ClanImage.ToList());
+                    clanImages.RegisterLookupGroup(nameof(User), x => x.UserId);
+                    clanImages.RegisterLookupGroup(nameof(Clan), x => x.ClanId);
 
                     vendorItems = new EntitySet<VendorItem>(restorePoint?.Get<VendorItem>() ?? ctx.VendorItem.ToList());
                     vendorItems.RegisterLookupGroup(nameof(Item), x => x.ItemId);
@@ -501,6 +506,7 @@ namespace RavenNest.BusinessLogic.Data
                         userBankItems,
                         clanBankItems, clanBankLog, clanBankLimits,
                         streamerShopListings, streamerShopTransactions,
+                        clanImages,
                         characterSkillRecords,
                         clanRolePermissions,
                         characterClanSkillCooldown,
@@ -3085,6 +3091,9 @@ namespace RavenNest.BusinessLogic.Data
         public AddEntityResult Add(StreamerShopTransaction item) => Update(() => streamerShopTransactions.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(ClanImage item) => Update(() => clanImages.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(ClanBankWithdrawalLimit item) => Update(() => clanBankLimits.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3611,6 +3620,18 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public IReadOnlyList<StreamerShopTransaction> GetStreamerShopTransactionsByListing(Guid listingId)
             => streamerShopTransactions[nameof(StreamerShopListing), listingId].ToList();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ClanImage GetClanImage(Guid id) => clanImages[id];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<ClanImage> GetClanImagesByUser(Guid userId) => clanImages[nameof(User), userId].ToList();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<ClanImage> GetClanImagesByClan(Guid clanId) => clanImages[nameof(Clan), clanId].ToList();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<ClanImage> GetAllClanImages() => clanImages.Entities.ToList();
 
         #endregion
 

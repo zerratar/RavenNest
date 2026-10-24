@@ -69,6 +69,7 @@ namespace RavenNest.BusinessLogic.Data
         public virtual DbSet<ClanBankLog> ClanBankLog { get; set; }
         public virtual DbSet<StreamerShopListing> StreamerShopListing { get; set; }
         public virtual DbSet<StreamerShopTransaction> StreamerShopTransaction { get; set; }
+        public virtual DbSet<ClanImage> ClanImage { get; set; }
         public virtual DbSet<ClanBankWithdrawalLimit> ClanBankWithdrawalLimit { get; set; }
         public virtual DbSet<ItemAttribute> ItemAttribute { get; set; }
         //public virtual DbSet<MagicItemAttribute> InventoryItemAttribute { get; set; }
@@ -211,6 +212,7 @@ namespace RavenNest.BusinessLogic.Data
             modelBuilder.Entity<ClanBankLog>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<StreamerShopListing>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<StreamerShopTransaction>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
+            modelBuilder.Entity<ClanImage>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
             modelBuilder.Entity<ClanBankWithdrawalLimit>(entity => entity.Property(e => e.Id).ValueGeneratedNever());
 
             //modelBuilder.Entity<MagicItemAttribute>(entity => entity.Property(e => e.Id).ValueGeneratedNever());

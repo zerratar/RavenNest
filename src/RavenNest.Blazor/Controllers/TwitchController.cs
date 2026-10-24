@@ -32,6 +32,7 @@ namespace RavenNest.Controllers
         private readonly SessionManager sessionManager;
         private readonly IAuthManager authManager;
         private readonly LogoService logoService;
+        private readonly RavenNest.BusinessLogic.Game.ClanImages.ClanImageManager clanImages;
         private readonly AppSettings settings;
 
         private readonly byte[] unknownProfilePictureBytes;
@@ -46,7 +47,8 @@ namespace RavenNest.Controllers
             SessionInfoProvider sessionInfoProvider,
             SessionManager sessionManager,
             IAuthManager authManager,
-            LogoService logoService)
+            LogoService logoService,
+            RavenNest.BusinessLogic.Game.ClanImages.ClanImageManager clanImages)
         {
             this.playerManager = playerManager;
             this.gameData = gameData;
@@ -54,6 +56,7 @@ namespace RavenNest.Controllers
             this.sessionManager = sessionManager;
             this.authManager = authManager;
             this.logoService = logoService;
+            this.clanImages = clanImages;
             this.settings = settings.Value;
 
             var a = unknownProfilePictureUrl = "imgs/ravenfall_logo_tiny.png";
@@ -151,7 +154,8 @@ namespace RavenNest.Controllers
         {
             try
             {
-                var imageData = await logoService.GetClanLogoAsync(userId);
+                // the clan's own logo when the owner uploaded one, otherwise their Twitch picture
+                var imageData = clanImages.GetLiveLogoByOwnerTwitchId(userId) ?? await logoService.GetClanLogoAsync(userId);
                 if (imageData != null)
                 {
                     return File(imageData, "image/png");

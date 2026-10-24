@@ -4154,3 +4154,64 @@ a.rf-badge:hover {
     gap: var(--rf-space-2);
     text-decoration: none;
 }
+
+/* Admin, Clan images: the review switch and search share one bar; thumbnails are small enough
+   for a table row but open full size in a new tab. Capes are 1:2, logos square. */
+.rf-clanimg__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--rf-space-3);
+}
+
+.rf-clanimg__bar .rf-meta {
+    flex: 1 1 16rem;
+    margin: 0;
+}
+
+.rf-clanimg__search {
+    flex: 0 1 16rem;
+}
+
+.rf-clanimg__cell {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--rf-space-2);
+}
+
+.rf-clanimg__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--rf-space-1);
+    margin-top: var(--rf-space-1);
+}
+
+.rf-clanimg__thumb {
+    display: block;
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border: 1px solid var(--rf-line);
+    border-radius: var(--rf-radius-sm);
+    background: repeating-conic-gradient(rgba(128, 128, 128, 0.25) 0% 25%, transparent 0% 50%) 50% / 12px 12px;
+}
+
+.rf-clanimg__thumb--cape {
+    width: 40px;
+    height: 80px;
+}
+
+.rf-clanimg__thumb--gone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.6;
+}
+
+.rf-clanimg__row--waiting > td {
+    background: var(--rf-warn-wash);
+}
+
+.rf-clanimg__history > td {
+    padding-left: var(--rf-space-5);
+}

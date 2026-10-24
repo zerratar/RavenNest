@@ -574,6 +574,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<IClanManager, ClanManager>();
             services.AddSingleton<RavenNest.BusinessLogic.Game.ClanBank.ClanBankManager>();
             services.AddSingleton<RavenNest.BusinessLogic.Game.StreamerShop.StreamerShopManager>();
+            services.AddSingleton<RavenNest.BusinessLogic.Game.ClanImages.ClanImageManager>();
             services.AddSingleton<INotificationManager, NotificationManager>();
 
             services.AddSingleton<IQueryBuilder, QueryBuilder>();

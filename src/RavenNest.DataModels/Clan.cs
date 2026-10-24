@@ -14,6 +14,12 @@ namespace RavenNest.DataModels
         [PersistentData] private bool canChangeName;
         [PersistentData] private DateTime created;
         [PersistentData] private bool isPublic;
+
+        // The clan's own images (ClanImage ids), empty for the defaults: the owner's Twitch picture, and that
+        // logo on a cloth colour for the cape. The shape of the cape: 0 long, 1 pointed, 2 short, 3 tattered.
+        [PersistentData] private Guid? logoImageId;
+        [PersistentData] private Guid? capeImageId;
+        [PersistentData] private int capeStyle;
     }
 
     public partial class ClanRolePermissions : Entity<ClanRolePermissions>

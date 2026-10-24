@@ -227,7 +227,10 @@ namespace RavenNest.BusinessLogic.Extensions
                 OwnerUserId = user.Id,
                 Experience = clan.Experience,
                 Level = clan.Level,
-                ClanSkills = skills
+                ClanSkills = skills,
+                LogoImageId = clan.LogoImageId,
+                CapeImageId = clan.CapeImageId,
+                CapeStyle = clan.CapeStyle
             };
         }
 
@@ -239,6 +242,7 @@ namespace RavenNest.BusinessLogic.Extensions
                 Id = data.Id,
                 Level = data.Level,
                 Name = data.Name,
+                CapeStyle = data.CapeStyle,
                 Joined = membership?.Joined
             };
         }

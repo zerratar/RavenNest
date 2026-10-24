@@ -1,0 +1,316 @@
+@layout AdminLayout
+@page "/admin/clan-images"
+@using RavenNest.BusinessLogic.Settings
+@using RavenNest.BusinessLogic.Game.ClanImages
+@using RavenNest.Models
+@inject RavenNest.Blazor.Services.AuthService AuthService
+@inject IServerSettingsProvider Settings
+@inject ClanImageManager Images
+
+@*
+    Every clan logo and cape image clan owners have uploaded, one row per owner.
+
+    Uploads are used at once unless Require review is on (here or under Server settings), or the
+    owner has had an image blocked. Block deletes the image for good, puts the clan back on its
+    default for that kind and makes the owner's later uploads wait for review. Reject only turns
+    down one waiting upload.
+*@
+
+@if (isAdmin)
+{
+    <header class="rf-page-head">
+        <h1 class="rf-page-title">Clan images</h1>
+        <p class="rf-page-subtitle">
+            Logos and cape images clan owners have uploaded. Waiting uploads are listed first.
+        </p>
+    </header>
+
+    @if (message != null)
+    {
+        <div class="rf-banner @(messageIsBad ? "rf-banner--bad" : "rf-banner--good")" role="status">
+            <p>@message</p>
+        </div>
+    }
+
+    <div class="rf-panel rf-clanimg__bar">
+        <label class="rf-switch">
+            <input type="checkbox" checked="@Images.RequireReview" @onchange="ToggleReview" />
+            <span class="rf-switch__track" aria-hidden="true"></span>
+            <span class="rf-switch__state">Require review: @(Images.RequireReview ? "On" : "Off")</span>
+        </label>
+        <p class="rf-meta">
+            @if (Images.RequireReview)
+            {
+                <span>Every upload waits for you here. Owners are told it can take up to 24 hours.</span>
+            }
+            else
+            {
+                <span>Uploads are used at once. Owners with an image blocked still wait for review.</span>
+            }
+        </p>
+        <span class="rf-badge @(waiting > 0 ? "rf-badge--warn" : "rf-badge--quiet")">@waiting waiting</span>
+        <input class="rf-input rf-clanimg__search" type="search" placeholder="Search by name or clan"
+               value="@search" @oninput="e => { search = e.Value?.ToString(); page = 0; Load(); }" />
+    </div>
+
+    <section class="rf-panel">
+        @if (uploaders == null || uploaders.Items.Count == 0)
+        {
+            <p class="rf-meta">Nobody has uploaded a clan image yet.</p>
+        }
+        else
+        {
+            <table class="rf-table rf-clanimg__table">
+                <thead>
+                    <tr>
+                        <th>Owner</th>
+                        <th>Clan</th>
+                        <th>Logo</th>
+                        <th>Cape</th>
+                        <th>Last upload</th>
+                        <th>Needs review</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in uploaders.Items)
+                    {
+                        <tr class="@(row.WaitingCount > 0 ? "rf-clanimg__row--waiting" : "")">
+                            <td>
+                                <button type="button" class="rf-btn rf-btn--small" title="Show the history"
+                                        @onclick="() => ToggleHistory(row.UserId)">
+                                    <i class="fas @(expanded == row.UserId ? "fa-chevron-down" : "fa-chevron-right")" aria-hidden="true"></i>
+                                </button>
+                                @row.UserName
+                                <div class="rf-meta">@row.Uploads upload@(row.Uploads == 1 ? "" : "s")</div>
+                            </td>
+                            <td>@(row.ClanName ?? "No clan")</td>
+                            <td>@Image(row.Logo)</td>
+                            <td>@Image(row.Cape)</td>
+                            <td><span title="@row.LastUpload.ToString("u")">@Ago(row.LastUpload)</span></td>
+                            <td>
+                                <label class="rf-switch">
+                                    <input type="checkbox" checked="@row.NeedsReview" @onchange="e => SetNeedsReview(row, e)" />
+                                    <span class="rf-switch__track" aria-hidden="true"></span>
+                                    <span class="rf-switch__state">@(row.NeedsReview ? "Yes" : "No")</span>
+                                </label>
+                            </td>
+                            <td></td>
+                        </tr>
+
+                        @if (expanded == row.UserId && history != null)
+                        {
+                            <tr class="rf-clanimg__history">
+                                <td colspan="7">
+                                    <table class="rf-table">
+                                        <thead>
+                                            <tr><th>Image</th><th>Kind</th><th>State</th><th>Uploaded</th><th>Reviewed</th><th></th></tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var item in history.Items)
+                                            {
+                                                <tr>
+                                                    <td>@Thumb(item)</td>
+                                                    <td>@item.Kind</td>
+                                                    <td>@StateBadge(item.State)</td>
+                                                    <td><span title="@item.Created.ToString("u")">@Ago(item.Created)</span></td>
+                                                    <td>@(item.Reviewed != null ? (item.ReviewedBy ?? "an admin") + ", " + Ago(item.Reviewed.Value) : "")</td>
+                                                    <td>@Actions(item)</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                    @if (history.Total > history.PageSize)
+                                    {
+                                        <nav class="rf-pager" aria-label="History pages">
+                                            <button type="button" class="rf-btn rf-btn--small" disabled="@(historyPage == 0)" @onclick="() => { historyPage--; LoadHistory(); }">Previous</button>
+                                            <span class="rf-meta">Page @(historyPage + 1) of @PageCount(history)</span>
+                                            <button type="button" class="rf-btn rf-btn--small" disabled="@(historyPage + 1 >= PageCount(history))" @onclick="() => { historyPage++; LoadHistory(); }">Next</button>
+                                        </nav>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+
+            @if (uploaders.Total > uploaders.PageSize)
+            {
+                <nav class="rf-pager" aria-label="Owner pages">
+                    <button type="button" class="rf-btn rf-btn--small" disabled="@(page == 0)" @onclick="() => { page--; Load(); }">Previous</button>
+                    <span class="rf-meta">Page @(page + 1) of @PageCount(uploaders)</span>
+                    <button type="button" class="rf-btn rf-btn--small" disabled="@(page + 1 >= PageCount(uploaders))" @onclick="() => { page++; Load(); }">Next</button>
+                </nav>
+            }
+        }
+    </section>
+}
+
+@code {
+    private const int PageSize = 25;
+    private const int HistoryPageSize = 10;
+
+    private bool isAdmin;
+    private Guid adminUserId;
+    private string userName;
+    private string message;
+    private bool messageIsBad;
+    private string search;
+    private int page;
+    private int waiting;
+    private ClanImagePage<ClanImageUploader> uploaders;
+
+    private Guid? expanded;
+    private int historyPage;
+    private ClanImagePage<ClanImageInfo> history;
+
+    // the image a Block button was pressed for once, waiting for the second press
+    private Guid? confirmBlock;
+
+    protected override void OnInitialized()
+    {
+        var session = AuthService.GetSession();
+        isAdmin = session != null && session.Administrator;
+        if (!isAdmin) return;
+
+        adminUserId = session.UserId;
+        userName = session.UserName;
+        Load();
+    }
+
+    private void Load()
+    {
+        uploaders = Images.GetUploaders(page, PageSize, search);
+        waiting = Images.GetWaitingCount();
+        if (expanded != null) LoadHistory();
+    }
+
+    private void LoadHistory()
+    {
+        history = expanded != null ? Images.GetHistory(expanded.Value, historyPage, HistoryPageSize) : null;
+    }
+
+    private void ToggleHistory(Guid userId)
+    {
+        expanded = expanded == userId ? null : userId;
+        historyPage = 0;
+        LoadHistory();
+    }
+
+    private void ToggleReview(ChangeEventArgs e)
+    {
+        var on = e.Value is bool value && value;
+        Settings.Set(ServerSettingsRegistry.ClanImagesRequireReview, on ? "true" : "false", userName);
+        Say(on ? "Every upload now waits for review." : "Uploads are used at once again.", false);
+    }
+
+    private void SetNeedsReview(ClanImageUploader row, ChangeEventArgs e)
+    {
+        var on = e.Value is bool value && value;
+        Images.SetNeedsReview(row.UserId, on);
+        Say(row.UserName + (on ? "'s uploads now wait for review." : "'s uploads follow the global switch again."), false);
+        Load();
+    }
+
+    private void Accept(ClanImageInfo image) => Done(Images.Accept(image.Id, adminUserId), "Accepted. It is in use now.");
+
+    private void Reject(ClanImageInfo image) => Done(Images.Reject(image.Id, adminUserId), "Rejected. The owner can upload another.");
+
+    private void Block(ClanImageInfo image)
+    {
+        if (confirmBlock != image.Id)
+        {
+            confirmBlock = image.Id;
+            return;
+        }
+
+        confirmBlock = null;
+        Done(Images.Block(image.Id, adminUserId), "Blocked. The image is deleted, the clan is back on its default, and this owner's uploads wait for review.");
+    }
+
+    private void Done(RavenNest.Models.ClanImageResult result, string ok)
+    {
+        if (result.Ok) Say(ok, false);
+        else Say(result.Error, true);
+        Load();
+    }
+
+    private void Say(string text, bool bad)
+    {
+        message = text;
+        messageIsBad = bad;
+    }
+
+    private RenderFragment Image(ClanImageInfo image) => __builder =>
+    {
+        if (image == null)
+        {
+            <span class="rf-meta">Default</span>
+            return;
+        }
+
+        <div class="rf-clanimg__cell">
+            @Thumb(image)
+            <div>
+                @StateBadge(image.State)
+                <div class="rf-clanimg__actions">@Actions(image)</div>
+            </div>
+        </div>
+    };
+
+    private RenderFragment Thumb(ClanImageInfo image) => __builder =>
+    {
+        var css = "rf-clanimg__thumb" + (image.Kind == ClanImageKind.Cape ? " rf-clanimg__thumb--cape" : "");
+        if (image.State == ClanImageState.Blocked)
+        {
+            <div class="@css rf-clanimg__thumb--gone" title="Deleted when it was blocked"><i class="fas fa-ban" aria-hidden="true"></i></div>
+        }
+        else
+        {
+            <a href="/api/clan/image/@image.Id" target="_blank" rel="noopener">
+                <img class="@css" src="/api/clan/image/@image.Id" alt="@image.Kind" loading="lazy" />
+            </a>
+        }
+    };
+
+    private RenderFragment Actions(ClanImageInfo image) => __builder =>
+    {
+        if (image.State == ClanImageState.Waiting)
+        {
+            <button type="button" class="rf-btn rf-btn--small rf-btn--primary" @onclick="() => Accept(image)">Accept</button>
+            <button type="button" class="rf-btn rf-btn--small" @onclick="() => Reject(image)">Reject</button>
+        }
+
+        if (image.State != ClanImageState.Blocked)
+        {
+            <button type="button" class="rf-btn rf-btn--small rf-btn--danger" @onclick="() => Block(image)">
+                @(confirmBlock == image.Id ? "Yes, block" : "Block")
+            </button>
+        }
+    };
+
+    private RenderFragment StateBadge(ClanImageState state) => __builder =>
+    {
+        var css = state switch
+        {
+            ClanImageState.Live => "rf-badge--good",
+            ClanImageState.Waiting => "rf-badge--warn",
+            ClanImageState.Blocked => "rf-badge--bad",
+            _ => "rf-badge--quiet",
+        };
+        <span class="rf-badge @css">@state</span>
+    };
+
+    private static int PageCount<T>(ClanImagePage<T> p) => Math.Max(1, (p.Total + p.PageSize - 1) / p.PageSize);
+
+    private static string Ago(DateTime time)
+    {
+        var span = DateTime.UtcNow - time;
+        if (span.TotalMinutes < 1) return "just now";
+        if (span.TotalHours < 1) return (int)span.TotalMinutes + " min ago";
+        if (span.TotalDays < 1) return (int)span.TotalHours + " h ago";
+        if (span.TotalDays < 60) return (int)span.TotalDays + " days ago";
+        return time.ToString("yyyy-MM-dd");
+    }
+}
