@@ -29,6 +29,7 @@ namespace RavenNest.BusinessLogic.Game
         public const string Levels = "levels";
         public const string Raid = QuestManager.Raid;
         public const string Dungeon = QuestManager.Dungeon;
+        public const string HeroWave = QuestManager.HeroWave;
 
         public const int Offered = 0, Running = 1, Done = 2, OutOfTime = 3, Stopped = 4;
         private const int Offers = 3;
@@ -52,6 +53,9 @@ namespace RavenNest.BusinessLogic.Game
             public long VillageCoins;
             public long VillageCoinsPerPlayer;
             public long HelperCoinsPerPlayer;
+
+            /// <summary>Offered only to streamers with this unlock (hero mode's waves need Ravebridge).</summary>
+            public string Requires;
         }
 
         // First numbers, set 2026-10-25, to be balanced. A gathering round comes every 10 seconds per player.
@@ -64,6 +68,7 @@ namespace RavenNest.BusinessLogic.Game
             new Template { Key = "stream_levels", Objective = Levels, PerPlayer = 1, Min = 10, Minutes = 120, VillageCoins = 2000, VillageCoinsPerPlayer = 60, HelperCoinsPerPlayer = 500 },
             new Template { Key = "stream_raid", Objective = Raid, PerPlayer = 0, Min = 3, Minutes = 120, VillageCoins = 2500, VillageCoinsPerPlayer = 60, HelperCoinsPerPlayer = 500 },
             new Template { Key = "stream_dungeon", Objective = Dungeon, PerPlayer = 0, Min = 2, Minutes = 120, VillageCoins = 2500, VillageCoinsPerPlayer = 60, HelperCoinsPerPlayer = 500 },
+            new Template { Key = "stream_hero", Objective = HeroWave, PerPlayer = 0, Min = 10, Minutes = 120, VillageCoins = 2500, VillageCoinsPerPlayer = 60, HelperCoinsPerPlayer = 500, Requires = "island_ravebridge" },
         };
 
         private static Template Gathering(string key, Skill skill, int resource) => new Template
@@ -297,14 +302,15 @@ namespace RavenNest.BusinessLogic.Game
 
         // ---- Helpers ---------------------------------------------------------------------------------------
 
-        /// <summary>Today's three offers for a streamer: the same all day.</summary>
-        private static List<Template> OffersFor(Guid streamerUserId)
+        /// <summary>Today's three offers for a streamer: the same all day (those needing an unlock only with it).</summary>
+        private List<Template> OffersFor(Guid streamerUserId)
         {
+            var unlocks = gameData.GetStreamerUnlocks(streamerUserId);
             var day = DateTime.UtcNow.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
             var seed = streamerUserId.GetHashCode();
             foreach (var c in day) seed = seed * 31 + c;
             var random = new Random(seed);
-            return Catalog.OrderBy(_ => random.Next()).Take(Offers).ToList();
+            return Catalog.Where(t => t.Requires == null || unlocks.Any(u => u.Key == t.Requires)).OrderBy(_ => random.Next()).Take(Offers).ToList();
         }
 
         private static long TargetFor(Template t, int players) => Math.Max(t.Min, t.PerPlayer * players) / 10 * 10 + (t.PerPlayer == 0 ? t.Min % 10 : 0);

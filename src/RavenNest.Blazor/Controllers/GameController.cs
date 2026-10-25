@@ -409,6 +409,24 @@ namespace RavenNest.Controllers
             }
         }
 
+        /// <summary>Hero mode's reward chest after a wave run: the hero first, then the top helpers.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{waves}/hero-chest")]
+        public EventItemReward[] GetHeroChest(int waves, Many<Guid> characterIds)
+        {
+            try
+            {
+                var session = GetSessionToken();
+                AssertSessionTokenValidity(session);
+                return gameManager.GetHeroChest(session, waves, characterIds.Values);
+            }
+            catch (Exception exc)
+            {
+                logger.LogError(exc.ToString());
+                return null;
+            }
+        }
+
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpPost("{tier}/dungeon-reward")]
         public EventItemReward[] GetDungeonRewardsAsync(int tier, Many<Guid> characterIds)

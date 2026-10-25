@@ -46,13 +46,13 @@ namespace RavenNest.Controllers
 
         /// <summary>A world event: every running stream is pulled to Ravebridge, unlocked or not (docs/ravebridge-design.md).</summary>
         [HttpGet("ravebridge-force")]
-        public async Task<int> ForceRavebridge(string reason = null)
+        public async Task<int> ForceRavebridge(string reason = null, bool storm = false)
         {
             await AssertAdminAccessAsync();
             var count = 0;
             foreach (var session in gameData.GetActiveSessions())
             {
-                gameData.EnqueueGameEvent(gameData.CreateSessionEvent(RavenNest.Models.GameEventType.RavebridgeForced, session, new RavenNest.Models.RavebridgeForced { Reason = reason }));
+                gameData.EnqueueGameEvent(gameData.CreateSessionEvent(RavenNest.Models.GameEventType.RavebridgeForced, session, new RavenNest.Models.RavebridgeForced { Reason = reason, Storm = storm }));
                 count++;
             }
             return count;

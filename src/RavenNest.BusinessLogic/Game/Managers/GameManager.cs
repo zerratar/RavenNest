@@ -448,6 +448,47 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        private ConcurrentDictionary<Guid, DateTime> lastHeroChest = new ConcurrentDictionary<Guid, DateTime>();
+
+        /// <summary>
+        /// Hero mode's reward chest (the game's WaveRun, docs/hero-mode-design.md 7d): after a run of at least five
+        /// waves, items from the dungeon drop table, its tier from the waves (5 common, 10 uncommon, 15 rare, 25 epic,
+        /// 40 legendary). The first character is the hero, who gets one item plus one for every ten waves (five at
+        /// most); the others (the top helpers) one each. Not a dungeon: no dungeon quest progress. Once a minute per
+        /// session.
+        /// </summary>
+        public EventItemReward[] GetHeroChest(SessionToken session, int waves, Guid[] characters)
+        {
+            if (waves < 5 || characters == null || characters.Length == 0) return new EventItemReward[0];
+            if (lastHeroChest.TryGetValue(session.SessionId, out var last) && DateTime.UtcNow - last <= TimeSpan.FromSeconds(60)) return new EventItemReward[0];
+            var gameSession = gameData.GetSession(session.SessionId);
+            if (gameSession == null) return null;
+            lastHeroChest[session.SessionId] = DateTime.UtcNow;
+
+            var tier = waves >= 40 ? 4 : waves >= 25 ? 3 : waves >= 15 ? 2 : waves >= 10 ? 1 : 0;
+            var rewards = new List<EventItemReward>();
+            var sessionCharacters = gameData.GetActiveSessionCharacters(gameSession);
+            var rng = Random.Shared;
+            var dropList = GetDungeonDropList(tier);
+            for (var i = 0; i < characters.Length && i < 4; ++i)
+            {
+                var character = sessionCharacters.FirstOrDefault(x => x.Id == characters[i]);
+                if (character == null) continue;
+                var skills = gameData.GetCharacterSkills(character.SkillsId);
+                var dl = dropList.Where(x => x != null && x.SlayerLevelRequirement <= skills.SlayerLevel).ToList();
+                if (dl.Count == 0) continue;
+                var rolls = i == 0 ? Math.Min(5, 1 + waves / 10) : 1;
+                for (var r = 0; r < rolls; ++r)
+                {
+                    var dropRates = dl.Select((x, index) => new { DropRate = GetDropRate(x, index, dropList.Count, 0, skills), ItemId = x.ItemId }).ToArray();
+                    var item = dropRates.Weighted(x => x.DropRate, rng);
+                    var stack = inventoryProvider.Get(character.Id).AddItem(item.ItemId, 1).FirstOrDefault();
+                    rewards.Add(new EventItemReward { Amount = 1, CharacterId = character.Id, ItemId = item.ItemId, InventoryItemId = stack.Id });
+                }
+            }
+            return rewards.ToArray();
+        }
+
         public EventItemReward[] GetRaidRewardsAsync(SessionToken session, Guid[] characters)
         {
             try

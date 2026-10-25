@@ -19,6 +19,7 @@ namespace RavenNest.Controllers
         private readonly AchievementManager achievementManager;
         private readonly StreamerQuestManager streamerQuestManager;
         private readonly VillageStoryManager storyManager;
+        private readonly HeroModeManager heroManager;
 
         public QuestsController(
             ILogger<QuestsController> logger,
@@ -31,6 +32,7 @@ namespace RavenNest.Controllers
             AchievementManager achievementManager,
             StreamerQuestManager streamerQuestManager,
             VillageStoryManager storyManager,
+            HeroModeManager heroManager,
             ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
@@ -39,6 +41,7 @@ namespace RavenNest.Controllers
             this.achievementManager = achievementManager;
             this.streamerQuestManager = streamerQuestManager;
             this.storyManager = storyManager;
+            this.heroManager = heroManager;
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -213,6 +216,24 @@ namespace RavenNest.Controllers
             var sessionToken = GetSessionToken();
             AssertSessionTokenValidity(sessionToken);
             return storyManager.RavebridgeQuestsDone(sessionToken);
+        }
+
+        /// <summary>A hero mode wave run ended: the streamer's best and the titles of waves 10, 25 and 50.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("hero/run/{waves}/{kills}/{seconds}")]
+        public HeroRunResult HeroRun(int waves, int kills, int seconds)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return heroManager.Record(sessionToken, waves, kills, seconds);
+        }
+
+        /// <summary>Every streamer's best hero mode run, the best first.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("hero/leaderboard")]
+        public HeroLeaderboard HeroLeaderboard()
+        {
+            return heroManager.Leaderboard(10);
         }
 
         /// <summary>The titles worn in this stream, for the name tags.</summary>

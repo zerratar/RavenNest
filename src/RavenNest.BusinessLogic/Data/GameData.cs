@@ -4216,6 +4216,10 @@ namespace RavenNest.BusinessLogic.Data
         public void Touch() => ScheduleNextSave();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        /// <summary>Every user's property of a key (hero mode's leaderboard reads the streamers' best runs).</summary>
+        public IEnumerable<UserProperty> GetUserPropertiesWithKey(string propertyKey)
+            => userProperties.Entities.Where(x => x.PropertyKey != null && x.PropertyKey.Equals(propertyKey, StringComparison.InvariantCultureIgnoreCase));
+
         public IReadOnlyList<UserProperty> GetUserProperties(Guid userId)
         {
             return this.userProperties[nameof(User), userId];

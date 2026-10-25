@@ -383,6 +383,8 @@ namespace RavenNest.Models
     {
         /// <summary>What the stream is told, for example "The goblins of Ravebridge are rising".</summary>
         public string Reason { get; set; }
+        /// <summary>The goblins storm Ravebridge: the streamer's character goes straight into hero mode and a wave run.</summary>
+        public bool Storm { get; set; }
     }
 
     public class VillageStoryProgress

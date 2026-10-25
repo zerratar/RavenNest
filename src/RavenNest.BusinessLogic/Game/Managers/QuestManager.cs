@@ -64,6 +64,12 @@ namespace RavenNest.BusinessLogic.Game
         public static void RaidWon(Character character) => Report(character, QuestManager.Raid, -1, 1);
         public static void DungeonCleared(Character character) => Report(character, QuestManager.Dungeon, -1, 1);
 
+        /// <summary>A hero mode wave run held this many waves (the streamer's character in the session reports it).</summary>
+        public static void HeroWaves(Character character, int waves)
+        {
+            if (waves > 0) Report(character, QuestManager.HeroWave, -1, waves);
+        }
+
         public static void Kills(Character character, long count)
         {
             if (count > 0) Report(character, QuestManager.Kill, -1, count);
@@ -104,6 +110,8 @@ namespace RavenNest.BusinessLogic.Game
         public const string Kill = "kill";
         public const string Raid = "raid";
         public const string Dungeon = "dungeon";
+        /// <summary>Waves held in hero mode's wave runs (the game's WaveRun, reported with the run).</summary>
+        public const string HeroWave = "hero_wave";
         public const string Deliver = "deliver";
         public const string Visit = "visit";
         public const string Answer = "answer";
