@@ -44,6 +44,20 @@ namespace RavenNest.Controllers
             this.authManager = authManager;
         }
 
+        /// <summary>A world event: every running stream is pulled to Ravebridge, unlocked or not (docs/ravebridge-design.md).</summary>
+        [HttpGet("ravebridge-force")]
+        public async Task<int> ForceRavebridge(string reason = null)
+        {
+            await AssertAdminAccessAsync();
+            var count = 0;
+            foreach (var session in gameData.GetActiveSessions())
+            {
+                gameData.EnqueueGameEvent(gameData.CreateSessionEvent(RavenNest.Models.GameEventType.RavebridgeForced, session, new RavenNest.Models.RavebridgeForced { Reason = reason }));
+                count++;
+            }
+            return count;
+        }
+
         [HttpGet("refresh-permissions")]
         public async Task<bool> RefreshPermissions()
         {

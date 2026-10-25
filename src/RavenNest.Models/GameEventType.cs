@@ -102,5 +102,8 @@
 
         /// <summary>A streamer's story line was finished, with its unlocks and the helpers' shares (VillageStoryCompleted).</summary>
         VillageStoryCompleted = 55,
+
+        /// <summary>A world event pulls the stream to Ravebridge, unlocked or not (RavebridgeForced).</summary>
+        RavebridgeForced = 56,
     }
 }

@@ -378,6 +378,13 @@ namespace RavenNest.Models
     }
 
     /// <summary>A step of a story line moved (VillageStoryProgress): something found (Finder), or a step done (StepDone).</summary>
+    /// <summary>A world event pulls a stream to Ravebridge (GameEventType.RavebridgeForced).</summary>
+    public class RavebridgeForced
+    {
+        /// <summary>What the stream is told, for example "The goblins of Ravebridge are rising".</summary>
+        public string Reason { get; set; }
+    }
+
     public class VillageStoryProgress
     {
         public VillageStoryInfo Story { get; set; }
