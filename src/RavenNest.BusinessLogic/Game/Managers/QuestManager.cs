@@ -26,12 +26,14 @@ namespace RavenNest.BusinessLogic.Game
         internal static StreamQuestManager StreamListener;
         internal static AchievementManager Achievements;
         internal static StreamerQuestManager StreamerListener;
+        internal static VillageStoryManager Stories;
 
         private static void Report(Character character, string objective, int skill, long amount)
         {
             Listener?.Progress(character, objective, skill, amount);
             StreamListener?.Progress(character, objective, skill, amount);
             StreamerListener?.Progress(character, objective, skill, amount);
+            Stories?.Activity(character, objective, skill, amount);
             Achievements?.Activity(character, objective, skill, amount);
         }
 
@@ -66,6 +68,12 @@ namespace RavenNest.BusinessLogic.Game
         {
             if (count > 0) Report(character, QuestManager.Kill, -1, count);
         }
+
+        /// <summary>
+        /// An item gathering dropped for a character: true when the stream's story wants it delivered and took it
+        /// (it goes to the village instead of the inventory).
+        /// </summary>
+        public static bool ItemFound(Character character, Guid itemId) => Stories?.ItemFound(character, itemId) ?? false;
 
         /// <summary>A viewer gave the streamer's village a decor piece (!decor gift).</summary>
         public static void DecorGifted(Character character) => Achievements?.Add(character, "generous", 1);

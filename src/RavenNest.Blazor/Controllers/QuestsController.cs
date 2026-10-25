@@ -18,6 +18,7 @@ namespace RavenNest.Controllers
         private readonly StreamQuestManager streamQuestManager;
         private readonly AchievementManager achievementManager;
         private readonly StreamerQuestManager streamerQuestManager;
+        private readonly VillageStoryManager storyManager;
 
         public QuestsController(
             ILogger<QuestsController> logger,
@@ -29,6 +30,7 @@ namespace RavenNest.Controllers
             StreamQuestManager streamQuestManager,
             AchievementManager achievementManager,
             StreamerQuestManager streamerQuestManager,
+            VillageStoryManager storyManager,
             ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
@@ -36,6 +38,7 @@ namespace RavenNest.Controllers
             this.streamQuestManager = streamQuestManager;
             this.achievementManager = achievementManager;
             this.streamerQuestManager = streamerQuestManager;
+            this.storyManager = storyManager;
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -144,6 +147,62 @@ namespace RavenNest.Controllers
             var sessionToken = GetSessionToken();
             AssertSessionTokenValidity(sessionToken);
             return streamerQuestManager.Stop(sessionToken, questId);
+        }
+
+        /// <summary>The streamer's story lines and unlocks. See VillageStoryManager.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("village")]
+        public VillageLog GetVillageLog()
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return storyManager.GetLog(sessionToken);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("village/begin/{key}")]
+        public VillageStoryResult BeginStory(string key)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return storyManager.Begin(sessionToken, key);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("village/talk/{key}")]
+        public VillageStoryResult TalkStory(string key)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return storyManager.Talk(sessionToken, key);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("village/choose/{key}/{option}")]
+        public VillageStoryResult ChooseStory(string key, int option)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return storyManager.Choose(sessionToken, key, option);
+        }
+
+        /// <summary>A viewer brings the story's delivery item from their inventory (!quest give).</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("village/give/{characterId}")]
+        public VillageStoryResult GiveStory(Guid characterId)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return storyManager.Give(sessionToken, characterId);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("village/abandon/{key}")]
+        public VillageStoryResult AbandonStory(string key)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return storyManager.Abandon(sessionToken, key);
         }
 
         /// <summary>The titles worn in this stream, for the name tags.</summary>

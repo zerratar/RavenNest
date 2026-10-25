@@ -125,6 +125,10 @@ namespace RavenNest.BusinessLogic.Game
             Piece("statue_founder_01", "Founder's statue", "Quest", ore: 300, coins: 50, quest: "founder"),
             Piece("boat_build_01", "Boat in the making", "Quest", wood: 200, ore: 40, quest: "shipwright"),
             Piece("jack_o_lantern_01", "Jack-o'-lantern", "Quest", wheat: 25, quest: "pumpkin"),
+
+            // and phase 5: the streamer's story lines (the quest key is the story's)
+            Piece("rune_pillar_01", "Awakened runestone", "Quest", ore: 250, coins: 50, quest: "runestone"),
+            Piece("monkey_chief_01", "The monkey chief", "Quest", wheat: 60, wood: 20, quest: "bananas"),
         };
 
         /// <summary>

@@ -203,7 +203,14 @@ namespace RavenNest.BusinessLogic.Game
                 // Really stupid naming right now.
                 enchantedItem.Name = GetEnchantedName(itemName, enchantmentAttributes);
 
-                var gainedExp = Math.Truncate(GameMath.GetEnchantingExperience(clanSkill.Level, targetAttributeCount, itemLvReq));
+                var gainedExp = GameMath.GetEnchantingExperience(clanSkill.Level, targetAttributeCount, itemLvReq);
+
+                // the runestone's Craft blessing (a streamer's story line, VillageStoryManager) in the stream this happens in
+                if (character.UserIdLock is Guid streamer && gameData.GetStreamerUnlocks(streamer).Any(u => u.Key == "perk_runestone_2"))
+                {
+                    gainedExp *= 1.05;
+                }
+                gainedExp = Math.Truncate(gainedExp);
                 var nextLevelReq = GameMath.ExperienceForLevel(clanSkill.Level + 1);
 
                 // 1. Add exp whenever user successefully enchants an item

@@ -290,6 +290,9 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     if (canDrop == null || canDrop(targetDrop))
                     {
                         dropTimes[cooldownKey] = now;
+
+                        // the stream's story may want it delivered: then it goes to the village instead
+                        if (QuestTracker.ItemFound(character, targetDrop.ItemId)) return true;
                         resProcessor.IncrementItemStack(gameData, inventory, session, character, targetDrop.ItemId);
                         return true;
                     }

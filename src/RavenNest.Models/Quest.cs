@@ -327,6 +327,76 @@ namespace RavenNest.Models
         public long Loyalty { get; set; }
     }
 
+    /// <summary>One of the streamer's story lines (phase 5) as the game shows it, with its current step.</summary>
+    public class VillageStoryInfo
+    {
+        public string Key { get; set; }
+
+        /// <summary>0 not begun, 1 under way, 2 finished, 4 given up.</summary>
+        public int State { get; set; }
+        public int Step { get; set; }
+        public int Steps { get; set; }
+
+        /// <summary>The step's kind: talk, deliver, gather, kill, raid, dungeon, find, viewers or choice.</summary>
+        public string Kind { get; set; }
+
+        /// <summary>A delivery's item ("Iron Ore").</summary>
+        public string Target { get; set; }
+        public int Skill { get; set; }
+        public long Amount { get; set; }
+        public long Progress { get; set; }
+
+        /// <summary>A choice step's number of options.</summary>
+        public int Options { get; set; }
+
+        /// <summary>The choices made, by step: "6=2", comma separated.</summary>
+        public string Choices { get; set; }
+
+        /// <summary>Who helped most with this step, and for a find step who found each.</summary>
+        public StreamQuestHelper[] Helpers { get; set; }
+    }
+
+    /// <summary>The streamer's story lines and what they have earned.</summary>
+    public class VillageLog
+    {
+        public VillageStoryInfo[] Stories { get; set; }
+
+        /// <summary>island_mangrove, perk_runestone_nature, title_runebreaker, ...</summary>
+        public string[] Unlocks { get; set; }
+    }
+
+    public class VillageStoryResult
+    {
+        public bool Ok { get; set; }
+
+        /// <summary>busy, done, unknown, notstep, nothing, notinsession.</summary>
+        public string Error { get; set; }
+        public VillageStoryInfo Story { get; set; }
+
+        /// <summary>How many items !quest give handed in.</summary>
+        public long Given { get; set; }
+    }
+
+    /// <summary>A step of a story line moved (VillageStoryProgress): something found (Finder), or a step done (StepDone).</summary>
+    public class VillageStoryProgress
+    {
+        public VillageStoryInfo Story { get; set; }
+
+        /// <summary>The step that was just finished, or -1.</summary>
+        public int StepDone { get; set; }
+        public Guid FinderId { get; set; }
+        public string FinderName { get; set; }
+    }
+
+    /// <summary>A story line was finished (VillageStoryCompleted).</summary>
+    public class VillageStoryCompleted
+    {
+        public VillageStoryInfo Story { get; set; }
+        public string[] Unlocks { get; set; }
+        public string DecorUnlocked { get; set; }
+        public StreamQuestHelper[] Helpers { get; set; }
+    }
+
     /// <summary>A character reached an achievement's tier (AchievementReached): the title that came with it.</summary>
     public class AchievementReached
     {

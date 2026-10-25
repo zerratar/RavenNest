@@ -460,6 +460,7 @@ namespace RavenNest.Blazor
             app.ApplicationServices.GetService<StreamQuestManager>();
             app.ApplicationServices.GetService<AchievementManager>();
             app.ApplicationServices.GetService<StreamerQuestManager>();
+            app.ApplicationServices.GetService<VillageStoryManager>();
 
             // Start Generating Ravenfall Tv Episodes
             app.ApplicationServices.GetService<RavenfallTvManager>();
@@ -583,6 +584,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<StreamQuestManager>();
             services.AddSingleton<AchievementManager>();
             services.AddSingleton<StreamerQuestManager>();
+            services.AddSingleton<VillageStoryManager>();
             services.AddSingleton<IPatreonManager, PatreonManager>();
             services.AddSingleton<IClanManager, ClanManager>();
             services.AddSingleton<RavenNest.BusinessLogic.Game.ClanBank.ClanBankManager>();

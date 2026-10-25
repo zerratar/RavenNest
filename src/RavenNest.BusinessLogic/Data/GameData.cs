@@ -81,6 +81,9 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<StreamerQuest> streamerQuests;
         private readonly EntitySet<StreamerQuestEntry> streamerQuestEntries;
         private readonly EntitySet<StreamerQuestBudget> streamerQuestBudgets;
+        private readonly EntitySet<VillageStory> villageStories;
+        private readonly EntitySet<VillageStoryHelper> villageStoryHelpers;
+        private readonly EntitySet<StreamerUnlock> streamerUnlocks;
         private readonly EntitySet<UserLoyaltyRank> loyaltyRanks;
         private readonly EntitySet<UserLoyaltyReward> loyaltyRewards;
         private readonly EntitySet<UserClaimedLoyaltyReward> claimedLoyaltyRewards;
@@ -201,6 +204,9 @@ namespace RavenNest.BusinessLogic.Data
                 typeof(StreamerQuest),
                 typeof(StreamerQuestEntry),
                 typeof(StreamerQuestBudget),
+                typeof(VillageStory),
+                typeof(VillageStoryHelper),
+                typeof(StreamerUnlock),
                 typeof(SyntyAppearance),
                 typeof(Character),
                 typeof(CharacterState),
@@ -368,6 +374,12 @@ namespace RavenNest.BusinessLogic.Data
                     streamerQuestEntries.RegisterLookupGroup(nameof(StreamerQuest), x => x.StreamerQuestId);
                     streamerQuestBudgets = new EntitySet<StreamerQuestBudget>(restorePoint?.Get<StreamerQuestBudget>() ?? ctx.StreamerQuestBudget.ToList());
                     streamerQuestBudgets.RegisterLookupGroup(nameof(User), x => x.StreamerUserId);
+                    villageStories = new EntitySet<VillageStory>(restorePoint?.Get<VillageStory>() ?? ctx.VillageStory.ToList());
+                    villageStories.RegisterLookupGroup(nameof(User), x => x.StreamerUserId);
+                    villageStoryHelpers = new EntitySet<VillageStoryHelper>(restorePoint?.Get<VillageStoryHelper>() ?? ctx.VillageStoryHelper.ToList());
+                    villageStoryHelpers.RegisterLookupGroup(nameof(VillageStory), x => x.VillageStoryId);
+                    streamerUnlocks = new EntitySet<StreamerUnlock>(restorePoint?.Get<StreamerUnlock>() ?? ctx.StreamerUnlock.ToList());
+                    streamerUnlocks.RegisterLookupGroup(nameof(User), x => x.StreamerUserId);
 
                     loyaltyRanks = new EntitySet<UserLoyaltyRank>(ctx.UserLoyaltyRank.ToList());
 
@@ -553,6 +565,9 @@ namespace RavenNest.BusinessLogic.Data
                         streamerQuests,
                         streamerQuestEntries,
                         streamerQuestBudgets,
+                        villageStories,
+                        villageStoryHelpers,
+                        streamerUnlocks,
                         serverSettings,
                         itemAttributes,
                         dailyAggregatedMarketplaceData,
@@ -4169,6 +4184,27 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(StreamerQuestBudget item) => Update(() => streamerQuestBudgets.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<VillageStory> GetVillageStories(Guid streamerUserId) => villageStories[nameof(User), streamerUserId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<VillageStory> GetAllVillageStories() => villageStories.Entities;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(VillageStory item) => Update(() => villageStories.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<VillageStoryHelper> GetVillageStoryHelpers(Guid villageStoryId) => villageStoryHelpers[nameof(VillageStory), villageStoryId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(VillageStoryHelper item) => Update(() => villageStoryHelpers.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<StreamerUnlock> GetStreamerUnlocks(Guid streamerUserId) => streamerUnlocks[nameof(User), streamerUserId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(StreamerUnlock item) => Update(() => streamerUnlocks.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public VillageRoad GetVillageRoad(Guid id) => villageRoads.TryGet(id, out var road) ? road : null;

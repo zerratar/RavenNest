@@ -226,6 +226,12 @@ namespace RavenNest.BusinessLogic.Game
             {
                 if (q.Kind == QuestManager.Chain && q.State == QuestManager.Done) yield return q.Key;
             }
+
+            // the streamer's own characters wear the titles their story lines earned
+            foreach (var unlock in gameData.GetStreamerUnlocks(character.UserId))
+            {
+                if (unlock.Key.StartsWith("title_", StringComparison.Ordinal)) yield return unlock.Key.Substring("title_".Length);
+            }
         }
 
         private static string TitleOf(string key, int tier) => key + "_" + tier;

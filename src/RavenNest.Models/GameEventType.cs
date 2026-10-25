@@ -96,5 +96,11 @@
 
         /// <summary>A streamer's quest ended: a goal done (with what each helper got), out of time, stopped, or every bounty claimed (StreamerQuestEnded).</summary>
         StreamerQuestEnded = 53,
+
+        /// <summary>A step of the streamer's story line moved: something found, or a step done (VillageStoryProgress).</summary>
+        VillageStoryProgress = 54,
+
+        /// <summary>A streamer's story line was finished, with its unlocks and the helpers' shares (VillageStoryCompleted).</summary>
+        VillageStoryCompleted = 55,
     }
 }
