@@ -46,6 +46,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     ++villageResources.Wood;
                 }
 
+                QuestTracker.Gathered(character, RavenNest.Models.Skill.Woodcutting);
                 Drops.TryDropItem(this, logger, gameData, inventory, session, character, level, state.TaskArgument);
             });
         }

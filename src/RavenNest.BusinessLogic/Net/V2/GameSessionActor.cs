@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using RavenNest.BusinessLogic.Game;
 using RavenNest.BusinessLogic.Net.DeltaTcpLib;
 using RavenNest.Models;
 using RavenNest.Models.TcpApi;
@@ -87,6 +88,9 @@ namespace RavenNest.BusinessLogic.Net.V2
             public long Accepted;
             public DateTime AcceptedAt;
             public long Stored;
+
+            /// <summary>The game's running count of enemies this character helped defeat, as last seen (quests).</summary>
+            public long EnemiesDefeated = -1;
 
             /// <summary>Versions accepted and not stored yet, oldest first, with when: a database save stores those accepted before it began.</summary>
             public readonly List<(long Version, DateTime At)> Unstored = new List<(long, DateTime)>(4);
@@ -407,6 +411,15 @@ namespace RavenNest.BusinessLogic.Net.V2
                     if (save.Skills != null && save.Skills.Length > 0)
                     {
                         status = hub.Players.ApplyExperience(context, save.CharacterId, save.Skills);
+                    }
+
+                    if (status == SaveStatus.Ok && save.State != null && save.State.Has(PlayerStateFields.EnemiesDefeated))
+                    {
+                        // a running count: what it grew by counts; less than before means the game started over
+                        var total = save.State.EnemiesDefeated;
+                        var gained = state.EnemiesDefeated < 0 ? 0 : total >= state.EnemiesDefeated ? total - state.EnemiesDefeated : total;
+                        state.EnemiesDefeated = total;
+                        if (gained > 0) QuestTracker.Kills(hub.Data.GetCharacter(save.CharacterId), gained);
                     }
 
                     if (status == SaveStatus.Ok && save.State != null && save.State.Changed != PlayerStateFields.None)

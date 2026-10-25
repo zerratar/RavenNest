@@ -44,6 +44,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 }
 
                 session.Updated = DateTime.UtcNow;
+                QuestTracker.Gathered(character, RavenNest.Models.Skill.Gathering);
                 Drops.TryDropItem(this, logger, gameData, inventory, session, character, level, state.TaskArgument);
             });
         }

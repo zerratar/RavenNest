@@ -379,6 +379,7 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     var character = sessionCharacters.FirstOrDefault(x => x.Id == c);
                     if (character == null) continue;
+                    QuestTracker.DungeonCleared(character); // everyone the server rewards for it finished it
 
                     var value = rng.NextDouble();
                     var dropChance = value >= 0.5 ? 1f : 0.80f;
@@ -476,6 +477,7 @@ namespace RavenNest.BusinessLogic.Game
                 {
                     var character = sessionCharacters.FirstOrDefault(x => x.Id == c);
                     if (character == null) continue;
+                    QuestTracker.RaidWon(character); // everyone the server rewards for it finished it
 
                     var skills = gameData.GetCharacterSkills(character.SkillsId);
 

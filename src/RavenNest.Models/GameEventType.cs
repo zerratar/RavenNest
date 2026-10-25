@@ -81,5 +81,8 @@
         ///     every game with a member of the clan in it.
         /// </summary>
         ClanLookChanged = 48,
+
+        /// <summary>A character finished a quest: what it was and what it gave (QuestCompleted).</summary>
+        QuestCompleted = 49,
     }
 }

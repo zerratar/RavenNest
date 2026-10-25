@@ -49,6 +49,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     ++villageResources.Ore;
                 }
 
+                QuestTracker.Gathered(character, RavenNest.Models.Skill.Mining);
                 Drops.TryDropItem(this, logger, gameData, inventory, session, character, level, state.TaskArgument);
             });
         }

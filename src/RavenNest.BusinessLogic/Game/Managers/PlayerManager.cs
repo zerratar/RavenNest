@@ -1666,6 +1666,7 @@ namespace RavenNest.BusinessLogic.Game
                 });
             }
 
+            QuestTracker.Made(character, requiredSkill, tmpList.Where(x => x.Success).Sum(x => (long)x.Amount));
             return result;
         }
 
@@ -1856,6 +1857,7 @@ namespace RavenNest.BusinessLogic.Game
                 AddItem(token, character.Id, itemId, out itemStack);
             }
             result.Value = craftableAmount;
+            QuestTracker.Made(character, RavenNest.Models.Skill.Crafting, craftableAmount);
             result.Status = craftableAmount == amount ? CraftItemResultStatus.Success : CraftItemResultStatus.PartialSuccess;
             result.InventoryItemId = itemStack.Id;
             result.ItemId = itemId;
@@ -3682,6 +3684,19 @@ namespace RavenNest.BusinessLogic.Game
         }
 
         /// <summary>Applies one player's skill levels and experience (the total within each level).</summary>
+        /// <summary>
+        /// The experience between two points of a skill (level and the experience within it), for quests. A jump of
+        /// more than 50 levels is a restore or a fix rather than training, and counts nothing.
+        /// </summary>
+        private static double ExperienceGained(int fromLevel, double fromExperience, int toLevel, double toExperience)
+        {
+            if (toLevel < fromLevel || toLevel - fromLevel > 50) return 0;
+            if (toLevel == fromLevel) return Math.Max(0, toExperience - fromExperience);
+            var gained = Math.Max(0, GameMath.ExperienceForLevel(fromLevel + 1) - fromExperience);
+            for (var level = fromLevel + 1; level < toLevel; ++level) gained += GameMath.ExperienceForLevel(level + 1);
+            return gained + toExperience;
+        }
+
         public Protocol.SaveStatus ApplyExperience(SaveContext context, Guid characterId, IReadOnlyList<Protocol.SkillSave> changes)
         {
             var sessionToken = context.SessionToken;
@@ -3747,12 +3762,15 @@ namespace RavenNest.BusinessLogic.Game
                     }
                 }
 
+                var existingExperience = skill.Experience;
                 if (skills.Set(skill.Index, level, experience))
                 {
                     if (existingLevel != level)
                     {
                         UpdateCharacterSkillRecord(character.Id, skill.Index, level, experience);
                     }
+
+                    QuestTracker.Experience(character, skill.Index, ExperienceGained(existingLevel, existingExperience, level, experience));
 
                     characterSessionState.LastExpUpdate = DateTime.UtcNow;
 

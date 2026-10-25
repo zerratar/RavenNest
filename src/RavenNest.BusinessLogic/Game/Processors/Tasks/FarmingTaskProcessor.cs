@@ -47,6 +47,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     ++villageResources.Wheat;
                 }
 
+                QuestTracker.Gathered(character, RavenNest.Models.Skill.Farming);
                 Drops.TryDropItem(this, logger, gameData, inventory, session, character, level, state.TaskArgument);
             });
         }
