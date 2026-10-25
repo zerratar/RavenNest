@@ -36,6 +36,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 }
 
                 var level = skills.FishingLevel + inventory.GetFishingBonus();
+                if (!IslandOpen(gameData, session, island)) return; // the mangrove island, where it is not unlocked
                 if (islandLevelRequirements[island][RavenNest.Models.Skill.Fishing] > level)
                     return;
 

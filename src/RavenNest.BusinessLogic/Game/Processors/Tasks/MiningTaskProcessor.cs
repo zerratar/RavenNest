@@ -36,6 +36,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                     return;
                 }
 
+                if (!IslandOpen(gameData, session, island)) return; // the mangrove island, where it is not unlocked
                 if (islandLevelRequirements[island][RavenNest.Models.Skill.Mining] > level)
                 {
                     // mining level requirement not met for gaining resources.

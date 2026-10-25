@@ -11,6 +11,9 @@
         Atria = 6,
         Eldara = 7,
 
+        /// <summary>The mangrove island: opened per stream by the streamer's story "Insufficient bananas" (island_mangrove).</summary>
+        Mangrove = 8,
+
         None = 254,
         Any = 255
     }

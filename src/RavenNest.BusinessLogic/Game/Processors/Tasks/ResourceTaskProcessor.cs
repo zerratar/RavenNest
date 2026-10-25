@@ -1,6 +1,8 @@
 ﻿using RavenNest.BusinessLogic.Data;
 using RavenNest.Models;
 using System;
+using System.Linq;
+using RavenNest.BusinessLogic.Data;
 using System.Collections.Concurrent;
 
 namespace RavenNest.BusinessLogic.Game.Processors.Tasks
@@ -83,6 +85,26 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 [Skill.Farming] = 700,
                 [Skill.Mining] = 700,
             };
+
+            // open to every level: the reward of a streamer's story (decided 2026-10-25), with an experience bonus in the game
+            islandLevelRequirements[Island.Mangrove] = new ConcurrentDictionary<Skill, int>
+            {
+                [Skill.Woodcutting] = 1,
+                [Skill.Gathering] = 1,
+                [Skill.Fishing] = 1,
+                [Skill.Farming] = 1,
+                [Skill.Mining] = 1,
+            };
+        }
+
+        /// <summary>
+        /// Whether a stream may use an island. The mangrove island only where the streamer has finished its story
+        /// (VillageStoryManager, island_mangrove); a modified game cannot gather there anywhere else.
+        /// </summary>
+        public static bool IslandOpen(GameData gameData, DataModels.GameSession session, Island island)
+        {
+            if (island != Island.Mangrove) return true;
+            return session != null && gameData.GetStreamerUnlocks(session.UserId).Any(u => u.Key == "island_mangrove");
         }
 
         public bool TryGetIsland(string islandName, out Island island)
