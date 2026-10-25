@@ -205,6 +205,16 @@ namespace RavenNest.Controllers
             return storyManager.Abandon(sessionToken, key);
         }
 
+        /// <summary>The streamer's character finished the Ravebridge island quests: the title "of Ravebridge".</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("village/ravebridge-done")]
+        public VillageStoryResult RavebridgeQuestsDone()
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return storyManager.RavebridgeQuestsDone(sessionToken);
+        }
+
         /// <summary>The titles worn in this stream, for the name tags.</summary>
         [ApiExplorerSettings(IgnoreApi = true)]
         [HttpGet("titles")]

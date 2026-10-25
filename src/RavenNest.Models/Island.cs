@@ -14,6 +14,9 @@
         /// <summary>The mangrove island: opened per stream by the streamer's story "Insufficient bananas" (island_mangrove).</summary>
         Mangrove = 8,
 
+        /// <summary>Ravebridge, far to the west: an event island the streamer opens with the story "the road west".</summary>
+        Ravebridge = 9,
+
         // none usually is 0, but we have already used it for ferry as it is a list of locations the player is located at. Not available places
         None = 254,
         Any = 255

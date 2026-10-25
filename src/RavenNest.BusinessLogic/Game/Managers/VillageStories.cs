@@ -49,6 +49,9 @@ namespace RavenNest.BusinessLogic.Game
 
             /// <summary>Coins the helpers share, per helper, by how much each did.</summary>
             public long HelperCoinsPerHelper = 500;
+
+            /// <summary>A story the streamer must have finished before this one can begin.</summary>
+            public string Requires;
         }
 
         // Written 2026-10-25. Numbers to be balanced: a gathering round comes every 10 seconds per player, and a
@@ -91,6 +94,25 @@ namespace RavenNest.BusinessLogic.Game
                 },
                 Unlocks = new[] { "island_mangrove", "title_monkey_friend" },
                 Perk = "perk_bananas",
+            },
+
+            // The awakened runestone hums toward the west, where Ravebridge lies (phase 6, 2026-10-25): it opens the
+            // Ravebridge event for the stream. Torn pieces of an old map turn up while gathering; the crossing needs
+            // planks, and tin for the nails.
+            new Story
+            {
+                Key = "roadwest",
+                Requires = "runestone",
+                Steps = new[]
+                {
+                    new Step { Kind = Talk },
+                    new Step { Kind = Find, Skill = (int)Skill.Woodcutting, Amount = 4, Chance = 1.0 / 150 },
+                    new Step { Kind = QuestManager.Dungeon, Amount = 2 },
+                    new Step { Kind = Deliver, Target = "Wood Plank", Amount = 150 },
+                    new Step { Kind = Deliver, Target = "Tin Ore", Amount = 80 },
+                    new Step { Kind = Talk },
+                },
+                Unlocks = new[] { "island_ravebridge" },
             },
         };
 

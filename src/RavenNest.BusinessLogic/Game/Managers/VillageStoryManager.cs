@@ -77,6 +77,7 @@ namespace RavenNest.BusinessLogic.Game
                 var active = rows.FirstOrDefault(r => r.State == Active);
                 if (active != null) return new VillageStoryResult { Error = active.Key == key ? "taken" : "busy", Story = Info(active) };
                 if (rows.Any(r => r.Key == key && r.State == Done)) return Fail("done");
+                if (story.Requires != null && !rows.Any(r => r.Key == story.Requires && r.State == Done)) return Fail("requires");
 
                 var row = new VillageStory { Id = Guid.NewGuid(), StreamerUserId = session.UserId, Key = key, State = Active, Started = DateTime.UtcNow };
                 gameData.Add(row);
@@ -154,6 +155,28 @@ namespace RavenNest.BusinessLogic.Game
             row.Completed = DateTime.UtcNow;
             return new VillageStoryResult { Ok = true, Story = Info(row) };
         }
+
+        /// <summary>
+        /// The streamer's character finished every Ravebridge island quest: the title "of Ravebridge" for the
+        /// streamer's own characters. The island quests run in the game (docs/ravebridge-design.md); only the title
+        /// lives here.
+        /// </summary>
+        public VillageStoryResult RavebridgeQuestsDone(SessionToken token)
+        {
+            var session = token != null ? gameData.GetSession(token.SessionId) : null;
+            if (session == null) return Fail("notinsession");
+            lock (mutex)
+            {
+                if (!HasUnlock(session.UserId, "island_ravebridge")) return Fail("locked");
+                if (!HasUnlock(session.UserId, RavebridgeTitle))
+                {
+                    gameData.Add(new StreamerUnlock { Id = Guid.NewGuid(), StreamerUserId = session.UserId, Key = RavebridgeTitle, Source = "ravebridge", Created = DateTime.UtcNow });
+                }
+                return new VillageStoryResult { Ok = true };
+            }
+        }
+
+        public const string RavebridgeTitle = "title_of_ravebridge";
 
         /// <summary>The unlocks of a streamer, for others to look at (titles, islands).</summary>
         public bool HasUnlock(Guid streamerUserId, string key) => gameData.GetStreamerUnlocks(streamerUserId).Any(u => u.Key == key);

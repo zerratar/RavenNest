@@ -14,6 +14,9 @@
         /// <summary>The mangrove island: opened per stream by the streamer's story "Insufficient bananas" (island_mangrove).</summary>
         Mangrove = 8,
 
+        /// <summary>Ravebridge, far to the west: an event island the streamer opens with the story "the road west".</summary>
+        Ravebridge = 9,
+
         None = 254,
         Any = 255
     }

@@ -95,6 +95,16 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 [Skill.Farming] = 1,
                 [Skill.Mining] = 1,
             };
+
+            // the Ravebridge event island, open to every level; only the event takes anyone there
+            islandLevelRequirements[Island.Ravebridge] = new ConcurrentDictionary<Skill, int>
+            {
+                [Skill.Woodcutting] = 1,
+                [Skill.Gathering] = 1,
+                [Skill.Fishing] = 1,
+                [Skill.Farming] = 1,
+                [Skill.Mining] = 1,
+            };
         }
 
         /// <summary>

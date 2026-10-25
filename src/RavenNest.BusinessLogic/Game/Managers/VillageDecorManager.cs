@@ -129,6 +129,7 @@ namespace RavenNest.BusinessLogic.Game
             // and phase 5: the streamer's story lines (the quest key is the story's)
             Piece("rune_pillar_01", "Awakened runestone", "Quest", ore: 250, coins: 50, quest: "runestone"),
             Piece("monkey_chief_01", "The monkey chief", "Quest", wheat: 60, wood: 20, quest: "bananas"),
+            Piece("signpost_ravebridge_01", "The road west", "Quest", wood: 40, quest: "roadwest"),
         };
 
         /// <summary>
