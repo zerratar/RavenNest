@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Channels;
@@ -196,7 +197,8 @@ namespace RavenNest.BusinessLogic.Net.V2
                 ServerTimeUtc = DateTime.UtcNow,
                 Resumed = resumed && !restarted,
                 ResyncRequired = !resumed || restarted,
-                EventSequence = events.LastSequence
+                EventSequence = events.LastSequence,
+                InventoryFeed = true
             });
         });
 
@@ -434,7 +436,9 @@ namespace RavenNest.BusinessLogic.Net.V2
                 }
             }
 
-            connection?.Send(new SaveAcks { Stage = SaveStage.Accepted, ThroughSequence = batch.Sequence, Acks = refused.Count > 0 ? refused.ToArray() : null });
+            // now and then the inventories' checksums, so a game that missed a change finds out without one
+            var checks = hub.Inventory.ChecksFor(batch.Players.Where(x => x != null).Select(x => x.CharacterId), now);
+            connection?.Send(new SaveAcks { Stage = SaveStage.Accepted, ThroughSequence = batch.Sequence, Acks = refused.Count > 0 ? refused.ToArray() : null, Inventory = checks });
             if (stored != null)
             {
                 connection?.Send(new SaveAcks { Stage = SaveStage.Stored, Acks = stored.ToArray() });
@@ -649,7 +653,8 @@ namespace RavenNest.BusinessLogic.Net.V2
             await commandSlots.WaitAsync();
             try
             {
-                return await hub.Commands.RunAsync(token, request, hub.NextInventoryRevision);
+                // no revisions: the inventory feed sends every change, in order with the other events
+                return await hub.Commands.RunAsync(token, request, _ => 0);
             }
             catch (CommandFailedException exc)
             {

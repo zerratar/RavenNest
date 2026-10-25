@@ -409,6 +409,7 @@ namespace RavenNest.BusinessLogic.Data
 
                     inventoryItems = new EntitySet<InventoryItem>(restorePoint?.Get<InventoryItem>() ?? ctx.InventoryItem.ToList());
                     inventoryItems.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
+                    inventoryItems.EntityChanged += (item, _) => InventoryItemChanged?.Invoke(item);
 
                     itemAttributes = new EntitySet<ItemAttribute>(restorePoint?.Get<ItemAttribute>() ?? ctx.ItemAttribute.ToList());
 
@@ -4885,6 +4886,12 @@ namespace RavenNest.BusinessLogic.Data
         /// stored, so the game can forget them.
         /// </summary>
         public event Action<DateTime, bool> SaveCompleted;
+
+        /// <summary>
+        /// A stack was added, removed or changed, by any code: what the v2 connection's inventory feed follows, so
+        /// the games hear of every inventory change and not only those of some commands. On the changing thread.
+        /// </summary>
+        public event Action<InventoryItem> InventoryItemChanged;
 
         private void RaiseSaveCompleted(DateTime started, bool clean)
         {

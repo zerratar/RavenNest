@@ -111,5 +111,13 @@
 
         /// <summary>(LoyaltyUpdate) -> bool</summary>
         public const string LoyaltyUpdate = "loyalty.update";
+
+        // Inventory
+
+        /// <summary>
+        /// (Guid characterId) -> nothing; the result's Inventory holds the character's whole inventory (Full), at the
+        /// revision the server has reached. For a game whose copy no longer adds up to the server's checksum.
+        /// </summary>
+        public const string InventoryGet = "inventory.get";
     }
 }

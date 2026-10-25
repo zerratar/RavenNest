@@ -24,7 +24,6 @@ namespace RavenNest.BusinessLogic.Net.V2
         private static readonly TimeSpan HelloTimeout = TimeSpan.FromSeconds(10);
 
         private readonly ConcurrentDictionary<Guid, GameSessionActor> sessionsByUser = new ConcurrentDictionary<Guid, GameSessionActor>();
-        private readonly ConcurrentDictionary<Guid, long> inventoryRevisions = new ConcurrentDictionary<Guid, long>();
         private readonly SemaphoreSlim sessionChanges = new SemaphoreSlim(1, 1);
         private readonly PlayerInventoryProvider inventories;
         private readonly GameConnectionTokens tokens;
@@ -52,7 +51,8 @@ namespace RavenNest.BusinessLogic.Net.V2
             Data = gameData;
             Players = playerManager;
             GameProcessors = gameProcessors;
-            Commands = new CommandDispatcher(playerManager, inventories, shop);
+            Inventory = new InventoryFeed(gameData, userId => sessionsByUser.TryGetValue(userId, out var s) ? s : null, logger);
+            Commands = new CommandDispatcher(playerManager, inventories, shop, Inventory);
             this.inventories = inventories;
             this.tokens = tokens;
             this.sessionManager = sessionManager;
@@ -71,24 +71,13 @@ namespace RavenNest.BusinessLogic.Net.V2
         internal IGameProcessorManager GameProcessors { get; }
         internal CommandDispatcher Commands { get; }
 
+        /// <summary>Every inventory change, to the game of the character's session.</summary>
+        internal InventoryFeed Inventory { get; }
+
         public int SessionCount => sessionsByUser.Count;
 
         /// <summary>v2 is on unless AppSettings:DisableGameConnectionV2 is set; old clients never see the difference.</summary>
         public bool Enabled => !settings.DisableGameConnectionV2;
-
-        /// <summary>The next revision of a character's inventory, for changes a command or event carries.</summary>
-        /// <summary>
-        /// Where this server run starts numbering inventory revisions: from the clock, so a run always numbers above the
-        /// last one. Events kept on disk from before a restart carry the old run's numbers; starting each run at 1
-        /// made those look newer than the new run's, so the game skipped real changes. The game takes a jump of more
-        /// than a million as a new server run rather than as missed changes.
-        /// </summary>
-        private static readonly long revisionBase = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() * 1000;
-
-        internal long NextInventoryRevision(Guid characterId)
-        {
-            return inventoryRevisions.AddOrUpdate(characterId, revisionBase + 1, (_, r) => r + 1);
-        }
 
         public async Task HandleAsync(HttpContext context)
         {
@@ -261,71 +250,24 @@ namespace RavenNest.BusinessLogic.Net.V2
                 return false;
             }
 
-            var characterId = Guid.Empty;
-            InventoryUpdate inventory = null;
-            if (gameEvent.Type == (int)RavenNest.Models.GameEventType.ItemAdd)
-            {
-                inventory = DescribeItemAdd(gameEvent.Data, out characterId);
-            }
-
-            session.AddEvent(gameEvent.Type, gameEvent.Data, characterId, inventory);
+            // the stack itself follows from the inventory feed, with every other change
+            var characterId = gameEvent.Type == (int)RavenNest.Models.GameEventType.ItemAdd ? CharacterOfItemAdd(gameEvent.Data) : Guid.Empty;
+            session.AddEvent(gameEvent.Type, gameEvent.Data, characterId);
             return true;
         }
 
-        /// <summary>
-        /// An item added outside a command (a resource drop, loot): the stack as it is now, with the character's next
-        /// inventory revision, so the game can tell when it missed one. Null when the event cannot be read.
-        /// </summary>
-        private InventoryUpdate DescribeItemAdd(byte[] data, out Guid characterId)
+        /// <summary>The character an ItemAdd event is for, so the event waits while that player is still joining.</summary>
+        private Guid CharacterOfItemAdd(byte[] data)
         {
-            characterId = Guid.Empty;
             try
             {
                 var add = MessagePack.MessagePackSerializer.Deserialize<RavenNest.Models.ItemAdd>(data, MessagePack.Resolvers.ContractlessStandardResolver.Options);
-                if (add == null || add.PlayerId == Guid.Empty)
-                {
-                    return null;
-                }
-
-                characterId = add.PlayerId;
-                var inventory = inventories.Get(add.PlayerId);
-                if (inventory == null)
-                {
-                    return null;
-                }
-
-                var stack = inventory.Get(add.InventoryItemId);
-                if (stack.Id == Guid.Empty)
-                {
-                    return null; // already gone again (sold, used) by the time the event is routed
-                }
-
-                return new InventoryUpdate
-                {
-                    CharacterId = add.PlayerId,
-                    Revision = NextInventoryRevision(add.PlayerId),
-                    Stacks = new[]
-                    {
-                        new InventoryStack
-                        {
-                            Id = stack.Id,
-                            ItemId = stack.ItemId,
-                            Amount = stack.Amount,
-                            Equipped = stack.Equipped,
-                            Soulbound = stack.Soulbound,
-                            Name = stack.Name,
-                            Enchantment = stack.Enchantment,
-                            Tag = stack.Tag,
-                            TransmogrificationId = stack.TransmogrificationId,
-                            Flags = stack.Flags
-                        }
-                    }
-                };
+                return add?.PlayerId ?? Guid.Empty;
             }
             catch (Exception exc)
             {
-                logger.LogWarning("Could not describe an ItemAdd event for v2: " + exc.Message);
-                return null;
+                logger.LogWarning("Could not read an ItemAdd event for v2: " + exc.Message);
+                return Guid.Empty;
             }
         }
 
@@ -366,6 +308,7 @@ namespace RavenNest.BusinessLogic.Net.V2
         public void Dispose()
         {
             timer.Dispose();
+            Inventory.Dispose();
             Data.SaveCompleted -= OnSaveCompleted;
         }
     }

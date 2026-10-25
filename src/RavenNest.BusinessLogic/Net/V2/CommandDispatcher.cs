@@ -75,7 +75,7 @@ namespace RavenNest.BusinessLogic.Net.V2
         private readonly Dictionary<string, Handler> handlers = new Dictionary<string, Handler>(StringComparer.Ordinal);
         private readonly PlayerInventoryProvider inventories;
 
-        public CommandDispatcher(PlayerManager players, PlayerInventoryProvider inventories, Game.StreamerShop.StreamerShopManager shop)
+        public CommandDispatcher(PlayerManager players, PlayerInventoryProvider inventories, Game.StreamerShop.StreamerShopManager shop, InventoryFeed feed)
         {
             this.inventories = inventories;
             var p = players;
@@ -122,6 +122,13 @@ namespace RavenNest.BusinessLogic.Net.V2
             // other
             Add(Commands.Highscore, (c, a) => { CommandArgs.Unpack(a, out Guid ch, out string skill); return p.GetHighscore(c.SessionToken, ch, skill); });
             Add(Commands.LoyaltyUpdate, (c, a) => { CommandArgs.Unpack(a, out LoyaltyUpdate d); return p.AddLoyaltyData(c.SessionToken, d); });
+
+            // inventory: the whole of it, for a game whose copy stopped adding up (the result's Inventory, see RunAsync)
+            Add(Commands.InventoryGet, (c, a) =>
+            {
+                CommandArgs.Unpack(a, out Guid ch);
+                return feed.SnapshotFor(c.SessionToken, ch);
+            });
         }
 
         public bool Knows(string command) => command != null && handlers.ContainsKey(command);
@@ -173,6 +180,12 @@ namespace RavenNest.BusinessLogic.Net.V2
             }
 
             result.Status = CommandStatus.Ok;
+            if (value is InventoryUpdate snapshot)
+            {
+                result.Inventory = new[] { snapshot };
+                return result;
+            }
+
             if (value != null)
             {
                 result.Value = MessagePack.MessagePackSerializer.Serialize(value.GetType(), value, ProtocolSerializer.Values);

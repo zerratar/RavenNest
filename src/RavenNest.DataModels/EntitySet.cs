@@ -24,6 +24,12 @@ namespace RavenNest.DataModels
         public IReadOnlyList<EntityChangeSet> Removed => removedEntities.Values.AsReadOnlyList();
 
         public DateTime LastModified { get; private set; }
+
+        /// <summary>
+        /// An entity was added, removed or changed, on the thread that did it, whether or not changes are tracked
+        /// for saving. For listeners that must see every change, whichever code made it.
+        /// </summary>
+        public event Action<TModel, EntityState> EntityChanged;
         public readonly string FullName;
         public readonly string Name;
 
@@ -192,6 +198,7 @@ namespace RavenNest.DataModels
                 }
             }
 
+            EntityChanged?.Invoke(model, EntityState.Added);
             return AddEntityResult.Success;
         }
 
@@ -212,21 +219,20 @@ namespace RavenNest.DataModels
                 {
                     lock (changeLock)
                     {
-                        if (addedEntities.TryRemove(key, out _))
+                        if (!addedEntities.TryRemove(key, out _))
                         {
-                            return RemoveEntityResult.Success;
+                            updatedEntities.TryRemove(key, out _);
+                            removedEntities[key] = new EntityChangeSet
+                            {
+                                LastModified = DateTime.UtcNow,
+                                State = EntityState.Deleted,
+                                Entity = model
+                            };
                         }
-
-                        updatedEntities.TryRemove(key, out _);
-                        removedEntities[key] = new EntityChangeSet
-                        {
-                            LastModified = DateTime.UtcNow,
-                            State = EntityState.Deleted,
-                            Entity = model
-                        };
                     }
                 }
 
+                EntityChanged?.Invoke(model, EntityState.Deleted);
                 return RemoveEntityResult.Success;
             }
 
@@ -265,6 +271,8 @@ namespace RavenNest.DataModels
             {
                 group.Value.Update(entity);
             }
+
+            EntityChanged?.Invoke(entity, EntityState.Modified);
 
             if (trackChanges)
             {
