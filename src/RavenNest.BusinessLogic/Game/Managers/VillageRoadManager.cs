@@ -38,13 +38,16 @@ namespace RavenNest.BusinessLogic.Game
         public const double MaxWidth = 2.0;
 
         // The price list, per metre of road. Tiers count from 0 like the town hall tiers
-        // (TownHallTiers), shown in game as one higher: gravel at the second hall, cobbles the third.
+        // (TownHallTiers), shown in game as one higher. A road unlocks with the town hall whose ground is made of it
+        // (decided 2026-10-25): dirt like the first halls' yards, paving like the third hall's forecourt and the
+        // fourth's plaza, cobbles like the fifth's plaza. Gravel, which no hall has, comes with the second.
         // First numbers, set 2026-10-14, to be balanced.
         public static readonly VillageRoadType[] Types =
         {
             new VillageRoadType { Id = 0, Name = "Dirt", Width = 2.5, Tier = 0, Wood = 2 },
             new VillageRoadType { Id = 1, Name = "Gravel", Width = 3.0, Tier = 1, Ore = 4 },
-            new VillageRoadType { Id = 2, Name = "Cobbles", Width = 3.5, Tier = 2, Ore = 8, Coins = 2 },
+            new VillageRoadType { Id = 3, Name = "Paving", Width = 3.5, Tier = 2, Ore = 6, Coins = 1 },
+            new VillageRoadType { Id = 2, Name = "Cobbles", Width = 3.5, Tier = 4, Ore = 8, Coins = 2 },
         };
 
         private readonly GameData gameData;
