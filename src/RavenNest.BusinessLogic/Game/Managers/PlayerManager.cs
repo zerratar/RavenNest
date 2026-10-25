@@ -3771,6 +3771,7 @@ namespace RavenNest.BusinessLogic.Game
                     }
 
                     QuestTracker.Experience(character, skill.Index, ExperienceGained(existingLevel, existingExperience, level, experience));
+                    if (level > existingLevel) QuestTracker.LevelsGained(character, skill.Index, level - existingLevel);
 
                     characterSessionState.LastExpUpdate = DateTime.UtcNow;
 

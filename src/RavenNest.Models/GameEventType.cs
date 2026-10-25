@@ -84,5 +84,8 @@
 
         /// <summary>A character finished a quest: what it was and what it gave (QuestCompleted).</summary>
         QuestCompleted = 49,
+
+        /// <summary>The stream's quest ended: done (with its rewards), out of time or stopped (StreamQuestEnded).</summary>
+        StreamQuestEnded = 50,
     }
 }

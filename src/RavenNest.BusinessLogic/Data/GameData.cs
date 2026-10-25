@@ -76,6 +76,8 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<VillageDecorGiftLog> villageDecorGiftLogs;
         private readonly EntitySet<CharacterQuest> characterQuests;
         private readonly EntitySet<CharacterQuestStats> characterQuestStats;
+        private readonly EntitySet<StreamQuest> streamQuests;
+        private readonly EntitySet<StreamQuestContribution> streamQuestContributions;
         private readonly EntitySet<UserLoyaltyRank> loyaltyRanks;
         private readonly EntitySet<UserLoyaltyReward> loyaltyRewards;
         private readonly EntitySet<UserClaimedLoyaltyReward> claimedLoyaltyRewards;
@@ -190,6 +192,8 @@ namespace RavenNest.BusinessLogic.Data
                 typeof(VillageDecorGiftLog),
                 typeof(CharacterQuest),
                 typeof(CharacterQuestStats),
+                typeof(StreamQuest),
+                typeof(StreamQuestContribution),
                 typeof(SyntyAppearance),
                 typeof(Character),
                 typeof(CharacterState),
@@ -345,6 +349,10 @@ namespace RavenNest.BusinessLogic.Data
                     characterQuests.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
                     characterQuestStats = new EntitySet<CharacterQuestStats>(restorePoint?.Get<CharacterQuestStats>() ?? ctx.CharacterQuestStats.ToList());
                     characterQuestStats.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
+                    streamQuests = new EntitySet<StreamQuest>(restorePoint?.Get<StreamQuest>() ?? ctx.StreamQuest.ToList());
+                    streamQuests.RegisterLookupGroup(nameof(User), x => x.StreamerUserId);
+                    streamQuestContributions = new EntitySet<StreamQuestContribution>(restorePoint?.Get<StreamQuestContribution>() ?? ctx.StreamQuestContribution.ToList());
+                    streamQuestContributions.RegisterLookupGroup(nameof(StreamQuest), x => x.StreamQuestId);
 
                     loyaltyRanks = new EntitySet<UserLoyaltyRank>(ctx.UserLoyaltyRank.ToList());
 
@@ -524,6 +532,8 @@ namespace RavenNest.BusinessLogic.Data
                         villageDecorGiftLogs,
                         characterQuests,
                         characterQuestStats,
+                        streamQuests,
+                        streamQuestContributions,
                         serverSettings,
                         itemAttributes,
                         dailyAggregatedMarketplaceData,
@@ -4098,6 +4108,21 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(CharacterQuestStats item) => Update(() => characterQuestStats.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<StreamQuest> GetStreamQuests(Guid streamerUserId) => streamQuests[nameof(User), streamerUserId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<StreamQuest> GetAllStreamQuests() => streamQuests.Entities;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(StreamQuest item) => Update(() => streamQuests.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<StreamQuestContribution> GetStreamQuestContributions(Guid streamQuestId) => streamQuestContributions[nameof(StreamQuest), streamQuestId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(StreamQuestContribution item) => Update(() => streamQuestContributions.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public VillageRoad GetVillageRoad(Guid id) => villageRoads.TryGet(id, out var road) ? road : null;

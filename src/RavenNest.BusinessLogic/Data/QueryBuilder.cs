@@ -82,7 +82,7 @@ namespace RavenNest.BusinessLogic.Data
                         for (var i = 0; i < sets.Length; ++i)
                         {
                             if (i > 0) sb.Append(',');
-                            sb.Append(sets[i].Name).Append(" = ").Append(Add(parameters, sets[i].PropertyType, sets[i].GetValue(entity)));
+                            sb.Append('[').Append(sets[i].Name).Append("] = ").Append(Add(parameters, sets[i].PropertyType, sets[i].GetValue(entity)));
                         }
                         sb.Append(" WHERE Id = ").Append(Add(parameters, idProperty.PropertyType, idProperty.GetValue(entity))).Append(";\n");
                     }
@@ -116,7 +116,7 @@ namespace RavenNest.BusinessLogic.Data
             {
                 var type = group.Key;
                 var properties = GetProperties(type);
-                var propertyNames = string.Join(", ", properties.Select(x => x.Name));
+                var propertyNames = string.Join(", ", properties.Select(x => "[" + x.Name + "]"));
                 var rowsPerCommand = Math.Clamp(MaxParameters / Math.Max(1, properties.Length), 1, MaxRowsPerCommand);
                 foreach (var chunk in group.Chunk(rowsPerCommand))
                 {
@@ -260,7 +260,7 @@ namespace RavenNest.BusinessLogic.Data
                     type = type.BaseType;
 
                 var properties = GetProperties(type);
-                var propertyNames = string.Join(", ", properties.Select(x => x.Name));
+                var propertyNames = string.Join(", ", properties.Select(x => "[" + x.Name + "]"));
                 sb.AppendLine($"INSERT INTO [{type.Name}] ({propertyNames}) VALUES ");
 
                 var rows = group.Select(x => "(" + string.Join(",", GetSqlReadyPropertyValues(x, properties)) + ")");
@@ -281,7 +281,7 @@ namespace RavenNest.BusinessLogic.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private IEnumerable<string> GetSqlReadyPropertySet(IEntity entity, PropertyInfo[] properties)
         {
-            return properties.Select(x => x.Name + " = " + GetSqlReadyPropertyValue(x.PropertyType, x.GetValue(entity)));
+            return properties.Select(x => "[" + x.Name + "] = " + GetSqlReadyPropertyValue(x.PropertyType, x.GetValue(entity)));
         }
 
         private string GetSqlReadyPropertyValue(Type type, object value)

@@ -15,6 +15,7 @@ namespace RavenNest.Controllers
     public class QuestsController : GameApiController
     {
         private readonly QuestManager questManager;
+        private readonly StreamQuestManager streamQuestManager;
 
         public QuestsController(
             ILogger<QuestsController> logger,
@@ -23,10 +24,12 @@ namespace RavenNest.Controllers
             SessionInfoProvider sessionInfoProvider,
             SessionManager sessionManager,
             QuestManager questManager,
+            StreamQuestManager streamQuestManager,
             ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
             this.questManager = questManager;
+            this.streamQuestManager = streamQuestManager;
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -55,6 +58,34 @@ namespace RavenNest.Controllers
             var sessionToken = GetSessionToken();
             AssertSessionTokenValidity(sessionToken);
             return questManager.Abandon(sessionToken, characterId, questId);
+        }
+
+        /// <summary>The stream's quest: the running one and today's three offers. See StreamQuestManager.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("stream")]
+        public StreamQuestState GetStreamQuest()
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return streamQuestManager.GetState(sessionToken);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("stream/start/{slot}")]
+        public StreamQuestResult StartStreamQuest(int slot)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return streamQuestManager.Start(sessionToken, slot);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("stream/stop")]
+        public StreamQuestResult StopStreamQuest()
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return streamQuestManager.Stop(sessionToken);
         }
     }
 }

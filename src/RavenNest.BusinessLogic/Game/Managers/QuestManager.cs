@@ -22,28 +22,41 @@ namespace RavenNest.BusinessLogic.Game
     public static class QuestTracker
     {
         internal static QuestManager Listener;
+        internal static StreamQuestManager StreamListener;
+
+        private static void Report(Character character, string objective, int skill, long amount)
+        {
+            Listener?.Progress(character, objective, skill, amount);
+            StreamListener?.Progress(character, objective, skill, amount);
+        }
 
         /// <summary>One gathering round (a resource for the village) of a skill.</summary>
-        public static void Gathered(Character character, Skill skill) => Listener?.Progress(character, QuestManager.Gather, (int)skill, 1);
+        public static void Gathered(Character character, Skill skill) => Report(character, QuestManager.Gather, (int)skill, 1);
 
         public static void Experience(Character character, int skillIndex, double gained)
         {
             if (gained > 0) Listener?.Progress(character, QuestManager.Exp, skillIndex, (long)Math.Floor(gained));
         }
 
+        /// <summary>Levels gained in any skill (stream quests count them).</summary>
+        public static void LevelsGained(Character character, int skillIndex, int levels)
+        {
+            if (levels > 0) StreamListener?.Progress(character, StreamQuestManager.Levels, -1, levels);
+        }
+
         /// <summary>Items made: crafted (Crafting), cooked (Cooking) or brewed (Alchemy).</summary>
         public static void Made(Character character, Skill skill, long amount)
         {
             var objective = skill == Skill.Cooking ? QuestManager.Cook : skill == Skill.Alchemy ? QuestManager.Brew : QuestManager.Craft;
-            if (amount > 0) Listener?.Progress(character, objective, -1, amount);
+            if (amount > 0) Report(character, objective, -1, amount);
         }
 
-        public static void RaidWon(Character character) => Listener?.Progress(character, QuestManager.Raid, -1, 1);
-        public static void DungeonCleared(Character character) => Listener?.Progress(character, QuestManager.Dungeon, -1, 1);
+        public static void RaidWon(Character character) => Report(character, QuestManager.Raid, -1, 1);
+        public static void DungeonCleared(Character character) => Report(character, QuestManager.Dungeon, -1, 1);
 
         public static void Kills(Character character, long count)
         {
-            if (count > 0) Listener?.Progress(character, QuestManager.Kill, -1, count);
+            if (count > 0) Report(character, QuestManager.Kill, -1, count);
         }
     }
 
