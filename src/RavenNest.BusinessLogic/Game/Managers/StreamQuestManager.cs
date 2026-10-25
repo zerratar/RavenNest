@@ -285,6 +285,7 @@ namespace RavenNest.BusinessLogic.Game
                     gameData.Add(loyalty);
                 }
                 loyalty.Points += HelperLoyaltyPoints;
+                QuestTracker.StreamQuestHelped(character);
             }
         }
 

@@ -16,6 +16,7 @@ namespace RavenNest.Controllers
     {
         private readonly QuestManager questManager;
         private readonly StreamQuestManager streamQuestManager;
+        private readonly AchievementManager achievementManager;
 
         public QuestsController(
             ILogger<QuestsController> logger,
@@ -25,11 +26,13 @@ namespace RavenNest.Controllers
             SessionManager sessionManager,
             QuestManager questManager,
             StreamQuestManager streamQuestManager,
+            AchievementManager achievementManager,
             ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
             this.questManager = questManager;
             this.streamQuestManager = streamQuestManager;
+            this.achievementManager = achievementManager;
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -49,6 +52,66 @@ namespace RavenNest.Controllers
             var sessionToken = GetSessionToken();
             AssertSessionTokenValidity(sessionToken);
             return questManager.Accept(sessionToken, characterId, slot);
+        }
+
+        /// <summary>Begins a quest chain ("cat", "fish", ...).</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{characterId}/chain/{key}")]
+        public QuestActionResult BeginChain(Guid characterId, string key)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return questManager.BeginChain(sessionToken, characterId, key);
+        }
+
+        /// <summary>Hands in the items the chain's delivery step asks for.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{characterId}/deliver")]
+        public QuestActionResult Deliver(Guid characterId)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return questManager.DeliverItems(sessionToken, characterId);
+        }
+
+        /// <summary>Answers the chain's riddle or choice (from 1).</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{characterId}/answer/{answer}")]
+        public QuestActionResult Answer(Guid characterId, int answer)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return questManager.AnswerStep(sessionToken, characterId, answer);
+        }
+
+        /// <summary>The character's achievements, the titles earned and the one worn. See AchievementManager.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("{characterId}/achievements")]
+        public AchievementList GetAchievements(Guid characterId)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return achievementManager.GetAchievements(sessionToken, characterId);
+        }
+
+        /// <summary>Wears an earned title ("none" for none).</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("{characterId}/title/{title}")]
+        public TitleResult SetTitle(Guid characterId, string title)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return achievementManager.SetTitle(sessionToken, characterId, title);
+        }
+
+        /// <summary>The titles worn in this stream, for the name tags.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("titles")]
+        public SessionTitles GetTitles()
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return achievementManager.GetSessionTitles(sessionToken);
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]

@@ -24,6 +24,9 @@ namespace RavenNest.Models
         /// <summary>The coins it takes from the village treasury, once, to unlock it (the Special pieces); 0 for none.</summary>
         public double UnlockCoins { get; set; }
 
+        /// <summary>The quest chain that unlocks it for the village where someone finishes it ("cat"), or null.</summary>
+        public string Quest { get; set; }
+
         /// <summary>What a viewer pays in loyalty points to give the village one (!decor gift).</summary>
         public long Points { get; set; }
 

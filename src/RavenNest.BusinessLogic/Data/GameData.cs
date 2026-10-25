@@ -194,6 +194,7 @@ namespace RavenNest.BusinessLogic.Data
                 typeof(CharacterQuestStats),
                 typeof(StreamQuest),
                 typeof(StreamQuestContribution),
+                typeof(CharacterAchievement),
                 typeof(SyntyAppearance),
                 typeof(Character),
                 typeof(CharacterState),
@@ -353,6 +354,8 @@ namespace RavenNest.BusinessLogic.Data
                     streamQuests.RegisterLookupGroup(nameof(User), x => x.StreamerUserId);
                     streamQuestContributions = new EntitySet<StreamQuestContribution>(restorePoint?.Get<StreamQuestContribution>() ?? ctx.StreamQuestContribution.ToList());
                     streamQuestContributions.RegisterLookupGroup(nameof(StreamQuest), x => x.StreamQuestId);
+                    characterAchievements = new EntitySet<CharacterAchievement>(restorePoint?.Get<CharacterAchievement>() ?? ctx.CharacterAchievement.ToList());
+                    characterAchievements.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
 
                     loyaltyRanks = new EntitySet<UserLoyaltyRank>(ctx.UserLoyaltyRank.ToList());
 
@@ -534,6 +537,7 @@ namespace RavenNest.BusinessLogic.Data
                         characterQuestStats,
                         streamQuests,
                         streamQuestContributions,
+                        characterAchievements,
                         serverSettings,
                         itemAttributes,
                         dailyAggregatedMarketplaceData,
@@ -4123,6 +4127,12 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(StreamQuestContribution item) => Update(() => streamQuestContributions.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<CharacterAchievement> GetCharacterAchievements(Guid characterId) => characterAchievements[nameof(Character), characterId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(CharacterAchievement item) => Update(() => characterAchievements.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public VillageRoad GetVillageRoad(Guid id) => villageRoads.TryGet(id, out var road) ? road : null;

@@ -458,6 +458,7 @@ namespace RavenNest.Blazor
             // made now, so quest progress is counted from the start (the task processors report to it)
             app.ApplicationServices.GetService<QuestManager>();
             app.ApplicationServices.GetService<StreamQuestManager>();
+            app.ApplicationServices.GetService<AchievementManager>();
 
             // Start Generating Ravenfall Tv Episodes
             app.ApplicationServices.GetService<RavenfallTvManager>();
@@ -579,6 +580,7 @@ namespace RavenNest.Blazor
             services.AddSingleton<VillageDecorManager>();
             services.AddSingleton<QuestManager>();
             services.AddSingleton<StreamQuestManager>();
+            services.AddSingleton<AchievementManager>();
             services.AddSingleton<IPatreonManager, PatreonManager>();
             services.AddSingleton<IClanManager, ClanManager>();
             services.AddSingleton<RavenNest.BusinessLogic.Game.ClanBank.ClanBankManager>();

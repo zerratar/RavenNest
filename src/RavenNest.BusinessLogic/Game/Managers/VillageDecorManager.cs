@@ -118,6 +118,13 @@ namespace RavenNest.BusinessLogic.Game
             Piece("obelisk_01", "Obelisk", "Special", ore: 250, coins: 50, tier: 2, unlock: 1500),
             Piece("obelisk_02", "Floating obelisk", "Special", ore: 500, coins: 200, tier: 4, unlock: 4000),
             Piece("pillar_monument_01", "Great pillar", "Special", ore: 400, coins: 150, tier: 3, unlock: 3000),
+
+            // quests, phase 3 (2026-10-25): a village gets the piece when one of its viewers finishes the chain there
+            Piece("cat_01", "Sir Whiskers", "Quest", wheat: 20, quest: "cat"),
+            Piece("fish_trophy_01", "The one that got away", "Quest", ore: 60, wood: 20, quest: "fish"),
+            Piece("statue_founder_01", "Founder's statue", "Quest", ore: 300, coins: 50, quest: "founder"),
+            Piece("boat_build_01", "Boat in the making", "Quest", wood: 200, ore: 40, quest: "shipwright"),
+            Piece("jack_o_lantern_01", "Jack-o'-lantern", "Quest", wheat: 25, quest: "pumpkin"),
         };
 
         /// <summary>
@@ -153,8 +160,8 @@ namespace RavenNest.BusinessLogic.Game
             return Math.Max(50, (long)Math.Round(worth / 2 / 5) * 5);
         }
 
-        private static VillageDecorPiece Piece(string key, string name, string group, double wood = 0, double ore = 0, double wheat = 0, double coins = 0, int tier = 0, int level = 0, string ev = null, double unlock = 0, bool small = false) =>
-            new VillageDecorPiece { Key = key, Name = name, Group = group, Tier = tier, Level = level, Event = ev, UnlockCoins = unlock, Small = small, Wood = wood, Ore = ore, Wheat = wheat, Coins = coins };
+        private static VillageDecorPiece Piece(string key, string name, string group, double wood = 0, double ore = 0, double wheat = 0, double coins = 0, int tier = 0, int level = 0, string ev = null, double unlock = 0, bool small = false, string quest = null) =>
+            new VillageDecorPiece { Key = key, Name = name, Group = group, Tier = tier, Level = level, Event = ev, UnlockCoins = unlock, Small = small, Quest = quest, Wood = wood, Ore = ore, Wheat = wheat, Coins = coins };
 
         private static VillageDecorPiece Tree(string key, string name, double wood, int tier = 0) =>
             new VillageDecorPiece { Key = key, Name = name, Group = "Trees", Tier = tier, Wood = wood };
@@ -185,7 +192,7 @@ namespace RavenNest.BusinessLogic.Game
                 return new VillageDecorPiece
                 {
                     Key = p.Key, Name = p.Name, Group = p.Group, Small = p.Small, Tier = p.Tier, Level = p.Level,
-                    Event = p.Event, UnlockCoins = p.UnlockCoins, Points = GiftPoints(p),
+                    Event = p.Event, UnlockCoins = p.UnlockCoins, Quest = p.Quest, Points = GiftPoints(p),
                     Gifts = gift?.Amount ?? 0, GiftedBy = gift?.Givers,
                     Unlocked = village != null && IsUnlocked(village, p, unlocks),
                     Wood = p.Wood, Ore = p.Ore, Fish = p.Fish, Wheat = p.Wheat, Coins = p.Coins,
@@ -360,6 +367,23 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        /// <summary>
+        /// A viewer finished a quest chain in this stream: the chain's piece is the village's for good. Returns the
+        /// piece's key, or null when the chain has none or the village had it already.
+        /// </summary>
+        public string UnlockForQuest(Guid sessionId, string chain)
+        {
+            var village = VillageOf(sessionId);
+            var piece = Pieces.FirstOrDefault(p => p.Quest == chain);
+            if (village == null || piece == null) return null;
+            lock (mutex)
+            {
+                if (UnlocksOf(village).Contains(piece.Key)) return null;
+                gameData.Add(new VillageDecorUnlock { Id = Guid.NewGuid(), VillageId = village.Id, Key = piece.Key, Source = "quest", Created = DateTime.UtcNow });
+                return piece.Key;
+            }
+        }
+
         /// <summary>A Special piece unlocked for good with the village treasury's coins.</summary>
         public VillageDecorResult Unlock(Guid sessionId, VillageDecorRequest request)
         {
@@ -433,6 +457,9 @@ namespace RavenNest.BusinessLogic.Game
                     Created = DateTime.UtcNow,
                 });
                 result.Ok = true;
+
+                // the giver's character in this stream counts it (the Generous achievement)
+                QuestTracker.DecorGifted(gameData.GetActiveSessionCharacters(session).FirstOrDefault(c => c.UserId == user.Id));
                 return result;
             }
         }
@@ -473,6 +500,7 @@ namespace RavenNest.BusinessLogic.Game
             if (TierOf(village) < piece.Tier || village.Level < piece.Level) return false;
             if (!string.IsNullOrEmpty(piece.Event) && !unlocks.Contains(piece.Event)) return false;
             if (piece.UnlockCoins > 0 && !unlocks.Contains(piece.Key)) return false;
+            if (!string.IsNullOrEmpty(piece.Quest) && !unlocks.Contains(piece.Key)) return false;
             return true;
         }
 

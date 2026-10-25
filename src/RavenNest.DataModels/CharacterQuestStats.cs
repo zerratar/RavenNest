@@ -3,7 +3,7 @@ using System;
 
 namespace RavenNest.DataModels
 {
-    /// <summary>A character's quest record: the daily streak and how many quests it has finished.</summary>
+    /// <summary>A character's quest record: the daily streak, how many quests it has finished, and the title it wears.</summary>
     public partial class CharacterQuestStats : Entity<CharacterQuestStats>
     {
         [PersistentData] private Guid characterId;
@@ -15,5 +15,7 @@ namespace RavenNest.DataModels
         [PersistentData] private string lastDailyDay;
         [PersistentData] private long dailiesCompleted;
         [PersistentData] private long weekliesCompleted;
+        /// <summary>The title shown on the name tag ("woodcutter_2", "cat"), or empty.</summary>
+        [PersistentData] private string title;
     }
 }

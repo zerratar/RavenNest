@@ -87,5 +87,8 @@
 
         /// <summary>The stream's quest ended: done (with its rewards), out of time or stopped (StreamQuestEnded).</summary>
         StreamQuestEnded = 50,
+
+        /// <summary>A character reached an achievement's tier and earned a title (AchievementReached).</summary>
+        AchievementReached = 51,
     }
 }
