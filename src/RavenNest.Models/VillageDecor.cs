@@ -14,6 +14,9 @@ namespace RavenNest.Models
 
         /// <summary>The town hall tier it unlocks at, 0 to 4 (shown in game as 1 to 5).</summary>
         public int Tier { get; set; }
+
+        /// <summary>The village level it needs as well, 0 for none.</summary>
+        public int Level { get; set; }
         public bool Unlocked { get; set; }
         public double Wood { get; set; }
         public double Ore { get; set; }

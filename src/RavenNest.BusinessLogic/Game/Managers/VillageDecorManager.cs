@@ -46,7 +46,47 @@ namespace RavenNest.BusinessLogic.Game
             Flowers("flowers_04", "Flower bed", 10), Flowers("flowers_07", "Blossoms", 10),
             Flowers("grass_01", "Grass", 5), Flowers("grass_02", "Tall grass", 5), Flowers("grass_03", "Fern grass", 5),
             Rock("rock_01", "Boulder", 40), Rock("rock_02", "Rock", 50), Rock("rock_03", "Stones", 15, small: true),
+
+            // phase 2 (2026-10-25): props for a lived-in village. The finest also need the village's level.
+            Piece("fence_01", "Wooden fence", "Fences", wood: 12), Piece("fence_02", "Plank fence", "Fences", wood: 12),
+            Piece("fence_03", "Rail fence", "Fences", wood: 12), Piece("fence_04", "Post fence", "Fences", wood: 12),
+            Piece("fence_gate_01", "Gate", "Fences", wood: 20),
+            Piece("archway_01", "Gateway", "Fences", wood: 30),
+            Piece("archway_02", "Wide gateway", "Fences", wood: 50, tier: 1),
+
+            Piece("torch_01", "Torch", "Lights", wood: 10), Piece("brazier_01", "Brazier", "Lights", ore: 25),
+            Piece("brazier_02", "Large brazier", "Lights", ore: 70, tier: 1),
+            Piece("street_lamp_01", "Street lamp", "Lights", ore: 40, coins: 10, tier: 1),
+            Piece("street_lamp_02", "Double lamp", "Lights", ore: 50, coins: 15, tier: 2),
+
+            Piece("market_stall_01", "Market stall", "Market", wood: 60, coins: 20, tier: 1),
+            Piece("market_stall_07", "Small stall", "Market", wood: 60, coins: 20, tier: 1),
+            Piece("market_stall_03", "Awning stall", "Market", wood: 80, coins: 30, tier: 1),
+            Piece("market_stall_05", "Large stall", "Market", wood: 100, coins: 40, tier: 2),
+            Piece("barrel_01", "Barrel", "Market", wood: 10), Piece("barrel_stack_01", "Barrel rack", "Market", wood: 30),
+            Piece("crate_wood_01", "Crate", "Market", wood: 10), Piece("crate_stack_01", "Crates", "Market", wood: 30),
+            Piece("sack_stack_01", "Sacks", "Market", wheat: 15), Piece("table_barrel_01", "Barrel table", "Market", wood: 15),
+
+            Piece("hay_bale_01", "Hay bale", "Farm", wheat: 10), Piece("hay_pile_01", "Haystack", "Farm", wheat: 25),
+            Piece("hay_cart_01", "Hay cart", "Farm", wood: 40, wheat: 20, tier: 1),
+            Piece("log_01", "Log", "Farm", wood: 10), Piece("ground_logs_01", "Log pile", "Farm", wood: 30),
+            Piece("planterbox_preset_01", "Planter", "Farm", wood: 15, wheat: 10),
+            Piece("planterbox_small_preset_01", "Small planter", "Farm", wood: 10, wheat: 5),
+
+            Piece("well_01", "Well", "Village", ore: 80, tier: 1), Piece("direction_sign_01", "Signpost", "Village", wood: 15),
+            Piece("grinding_wheel_01", "Grinding wheel", "Village", ore: 30), Piece("anvil_01", "Anvil", "Village", ore: 40),
+            Piece("bench_seat_01", "Long bench", "Village", wood: 25), Piece("bench_seat_02", "Bench", "Village", wood: 20),
+
+            Piece("flag_pole_01", "Flagpole", "Banners", wood: 30, coins: 10, tier: 1),
+            Piece("battle_banner_01", "Banner", "Banners", wood: 20, coins: 10),
+
+            Piece("statue_knight_01", "Knight statue", "Statues", ore: 300, coins: 100, tier: 2, level: 50),
+            Piece("statue_hero_01", "Hero statue", "Statues", ore: 500, coins: 250, tier: 3, level: 100),
+            Piece("statue_angel_01", "Angel statue", "Statues", ore: 800, coins: 500, tier: 4, level: 200),
         };
+
+        private static VillageDecorPiece Piece(string key, string name, string group, double wood = 0, double ore = 0, double wheat = 0, double coins = 0, int tier = 0, int level = 0) =>
+            new VillageDecorPiece { Key = key, Name = name, Group = group, Tier = tier, Level = level, Wood = wood, Ore = ore, Wheat = wheat, Coins = coins };
 
         private static VillageDecorPiece Tree(string key, string name, double wood, int tier = 0) =>
             new VillageDecorPiece { Key = key, Name = name, Group = "Trees", Tier = tier, Wood = wood };
@@ -69,9 +109,11 @@ namespace RavenNest.BusinessLogic.Game
         {
             var village = VillageOf(sessionId);
             var tier = village != null ? TierOf(village) : 0;
+            var level = village?.Level ?? 0;
             return Pieces.Select(p => new VillageDecorPiece
             {
-                Key = p.Key, Name = p.Name, Group = p.Group, Small = p.Small, Tier = p.Tier, Unlocked = tier >= p.Tier,
+                Key = p.Key, Name = p.Name, Group = p.Group, Small = p.Small, Tier = p.Tier, Level = p.Level,
+                Unlocked = tier >= p.Tier && level >= p.Level,
                 Wood = p.Wood, Ore = p.Ore, Fish = p.Fish, Wheat = p.Wheat, Coins = p.Coins,
             }).ToArray();
         }
@@ -90,7 +132,7 @@ namespace RavenNest.BusinessLogic.Game
 
             var piece = Pieces.FirstOrDefault(p => p.Key == request?.Piece);
             if (piece == null || !ValidPlace(request)) return Fail("invalid");
-            if (TierOf(village) < piece.Tier) return Fail("locked");
+            if (TierOf(village) < piece.Tier || village.Level < piece.Level) return Fail("locked");
 
             var resources = gameData.GetResources(village.ResourcesId);
             if (resources == null) return Fail("unknown");
