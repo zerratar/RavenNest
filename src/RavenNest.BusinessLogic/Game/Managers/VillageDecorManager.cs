@@ -25,6 +25,12 @@ namespace RavenNest.BusinessLogic.Game
     /// piece can only be removed once: only keys in <see cref="VillageDecorDefaults"/> count, so nothing can be
     /// removed that is not there. No limit on how much decor a village has: the price is the only brake.
     /// </para>
+    /// <para>
+    /// Phase 3 (decided 2026-10-25): seasonal pieces unlock for good for a village that streams during their event
+    /// (<see cref="Events"/>); the Special pieces are unlocked once with the treasury's coins; viewers give pieces
+    /// with their loyalty points with the streamer (<see cref="Gift"/>), priced by the piece's worth. A gift waits
+    /// to be placed, is placed for free, and goes back to the gifts when removed instead of paying out.
+    /// </para>
     /// </remarks>
     public class VillageDecorManager
     {
@@ -83,10 +89,72 @@ namespace RavenNest.BusinessLogic.Game
             Piece("statue_knight_01", "Knight statue", "Statues", ore: 300, coins: 100, tier: 2, level: 50),
             Piece("statue_hero_01", "Hero statue", "Statues", ore: 500, coins: 250, tier: 3, level: 100),
             Piece("statue_angel_01", "Angel statue", "Statues", ore: 800, coins: 500, tier: 4, level: 200),
+
+            // phase 3 (2026-10-25): seasonal pieces, unlocked for good by streaming during their event
+            Piece("xmas_tree_01", "Christmas tree", "Christmas", wood: 80, coins: 10, ev: "christmas"),
+            Piece("snowman_01", "Snowman", "Christmas", wood: 10, wheat: 10, ev: "christmas"),
+            Piece("snowman_02", "Tall snowman", "Christmas", wood: 10, wheat: 15, ev: "christmas"),
+            Piece("sleigh_01", "Santa's sleigh", "Christmas", wood: 150, coins: 50, ev: "christmas"),
+            Piece("gift_pile_01", "Gift pile", "Christmas", wheat: 10, coins: 20, ev: "christmas"),
+            Piece("nutcracker_01", "Nutcracker", "Christmas", wood: 40, coins: 10, ev: "christmas"),
+            Piece("candy_cane_01", "Giant candy cane", "Christmas", wheat: 30, ev: "christmas"),
+            Piece("gingerbread_hut_01", "Gingerbread hut", "Christmas", wheat: 60, ev: "christmas"),
+            Piece("snow_globe_01", "Giant snow globe", "Christmas", ore: 40, coins: 20, ev: "christmas"),
+
+            Piece("pumpkin_01", "Pumpkin", "Halloween", wheat: 10, ev: "halloween"),
+            Piece("pumpkin_02", "Big pumpkin", "Halloween", wheat: 25, ev: "halloween"),
+            Piece("gravestone_01", "Gravestone", "Halloween", ore: 20, ev: "halloween"),
+            Piece("gravestone_03", "Tall gravestone", "Halloween", ore: 30, ev: "halloween"),
+            Piece("grave_01", "Grave", "Halloween", wood: 10, ore: 15, ev: "halloween"),
+            Piece("scarecrow_01", "Scarecrow", "Halloween", wood: 20, wheat: 10, ev: "halloween"),
+            Piece("cauldron_01", "Cauldron", "Halloween", ore: 40, ev: "halloween"),
+            Piece("coffin_01", "Coffin", "Halloween", wood: 40, ev: "halloween"),
+            Piece("bones_01", "Bones", "Halloween", ore: 5, ev: "halloween", small: true),
+
+            // and the Special pieces, unlocked once with the village treasury's coins (what the tavern shelves earn)
+            Piece("fountain_01", "Grand fountain", "Special", ore: 300, coins: 100, tier: 2, unlock: 2500),
+            Piece("fountain_02", "Wall fountain", "Special", ore: 200, coins: 50, tier: 1, unlock: 1500),
+            Piece("garden_fountain_01", "Garden fountain", "Special", ore: 150, coins: 30, tier: 1, unlock: 1200),
+            Piece("obelisk_01", "Obelisk", "Special", ore: 250, coins: 50, tier: 2, unlock: 1500),
+            Piece("obelisk_02", "Floating obelisk", "Special", ore: 500, coins: 200, tier: 4, unlock: 4000),
+            Piece("pillar_monument_01", "Great pillar", "Special", ore: 400, coins: 150, tier: 3, unlock: 3000),
         };
 
-        private static VillageDecorPiece Piece(string key, string name, string group, double wood = 0, double ore = 0, double wheat = 0, double coins = 0, int tier = 0, int level = 0) =>
-            new VillageDecorPiece { Key = key, Name = name, Group = group, Tier = tier, Level = level, Wood = wood, Ore = ore, Wheat = wheat, Coins = coins };
+        /// <summary>
+        /// The seasonal events and when they run (day of the year, from and to, both included). A village whose decor
+        /// loads while one runs, which the game does at every start, unlocks its pieces for good.
+        /// </summary>
+        public static readonly (string Key, int FromMonth, int FromDay, int ToMonth, int ToDay)[] Events =
+        {
+            ("halloween", 10, 15, 11, 5),
+            ("christmas", 12, 1, 1, 6),
+        };
+
+        public static bool IsRunning(string ev, DateTime now)
+        {
+            foreach (var e in Events)
+            {
+                if (e.Key != ev) continue;
+                var day = now.Month * 100 + now.Day;
+                var from = e.FromMonth * 100 + e.FromDay;
+                var to = e.ToMonth * 100 + e.ToDay;
+                return from <= to ? day >= from && day <= to : day >= from || day <= to; // christmas runs over new year
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// What a viewer pays in loyalty points to give a piece: about one point per two resources it costs, coins
+        /// counting double, in steps of five, at least 50 (decided 2026-10-25).
+        /// </summary>
+        public static long GiftPoints(VillageDecorPiece p)
+        {
+            var worth = p.Wood + p.Ore + p.Fish + p.Wheat + p.Coins * 2;
+            return Math.Max(50, (long)Math.Round(worth / 2 / 5) * 5);
+        }
+
+        private static VillageDecorPiece Piece(string key, string name, string group, double wood = 0, double ore = 0, double wheat = 0, double coins = 0, int tier = 0, int level = 0, string ev = null, double unlock = 0, bool small = false) =>
+            new VillageDecorPiece { Key = key, Name = name, Group = group, Tier = tier, Level = level, Event = ev, UnlockCoins = unlock, Small = small, Wood = wood, Ore = ore, Wheat = wheat, Coins = coins };
 
         private static VillageDecorPiece Tree(string key, string name, double wood, int tier = 0) =>
             new VillageDecorPiece { Key = key, Name = name, Group = "Trees", Tier = tier, Wood = wood };
@@ -108,13 +176,20 @@ namespace RavenNest.BusinessLogic.Game
         public VillageDecorPiece[] GetPieces(Guid sessionId)
         {
             var village = VillageOf(sessionId);
-            var tier = village != null ? TierOf(village) : 0;
-            var level = village?.Level ?? 0;
-            return Pieces.Select(p => new VillageDecorPiece
+            if (village != null) UnlockRunningEvents(village);
+            var unlocks = village != null ? UnlocksOf(village) : new HashSet<string>();
+            var gifts = village != null ? gameData.GetVillageDecorGifts(village.Id) : Array.Empty<VillageDecorGift>();
+            return Pieces.Select(p =>
             {
-                Key = p.Key, Name = p.Name, Group = p.Group, Small = p.Small, Tier = p.Tier, Level = p.Level,
-                Unlocked = tier >= p.Tier && level >= p.Level,
-                Wood = p.Wood, Ore = p.Ore, Fish = p.Fish, Wheat = p.Wheat, Coins = p.Coins,
+                var gift = gifts.FirstOrDefault(g => g.Piece == p.Key);
+                return new VillageDecorPiece
+                {
+                    Key = p.Key, Name = p.Name, Group = p.Group, Small = p.Small, Tier = p.Tier, Level = p.Level,
+                    Event = p.Event, UnlockCoins = p.UnlockCoins, Points = GiftPoints(p),
+                    Gifts = gift?.Amount ?? 0, GiftedBy = gift?.Givers,
+                    Unlocked = village != null && IsUnlocked(village, p, unlocks),
+                    Wood = p.Wood, Ore = p.Ore, Fish = p.Fish, Wheat = p.Wheat, Coins = p.Coins,
+                };
             }).ToArray();
         }
 
@@ -132,15 +207,29 @@ namespace RavenNest.BusinessLogic.Game
 
             var piece = Pieces.FirstOrDefault(p => p.Key == request?.Piece);
             if (piece == null || !ValidPlace(request)) return Fail("invalid");
-            if (TierOf(village) < piece.Tier || village.Level < piece.Level) return Fail("locked");
 
             var resources = gameData.GetResources(village.ResourcesId);
             if (resources == null) return Fail("unknown");
 
             lock (mutex)
             {
-                if (!CanPay(resources, piece)) return Fail("resources", resources);
-                Pay(resources, piece);
+                // a gift is the viewer's: free, and placeable whatever the village has unlocked since
+                VillageDecorGift gift = null;
+                if (request.Gift)
+                {
+                    gift = gameData.GetVillageDecorGifts(village.Id).FirstOrDefault(g => g.Piece == piece.Key);
+                    if (gift == null || gift.Amount <= 0) return Fail("nogift", resources);
+                    gift.Amount--;
+                    gift.Updated = DateTime.UtcNow;
+                }
+                else
+                {
+                    if (!IsUnlocked(village, piece, UnlocksOf(village))) return Fail("locked", resources);
+                    if (!CanPay(resources, piece)) return Fail("resources", resources);
+                    Pay(resources, piece);
+                }
+
+                var paid = gift == null;
                 var decor = new VillageDecor
                 {
                     Id = Guid.NewGuid(),
@@ -151,10 +240,13 @@ namespace RavenNest.BusinessLogic.Game
                     Z = Math.Round(request.Z, 2),
                     Rotation = Angle(request.Rotation),
                     Scale = Scale(request.Scale),
-                    PaidWood = piece.Wood, PaidOre = piece.Ore, PaidFish = piece.Fish, PaidWheat = piece.Wheat, PaidCoins = piece.Coins,
+                    Gift = !paid,
+                    PaidWood = paid ? piece.Wood : 0, PaidOre = paid ? piece.Ore : 0, PaidFish = paid ? piece.Fish : 0,
+                    PaidWheat = paid ? piece.Wheat : 0, PaidCoins = paid ? piece.Coins : 0,
                     Created = DateTime.UtcNow,
                 };
                 gameData.Add(decor);
+                if (gift != null) gameData.Touch();
                 return Done(decor, resources);
             }
         }
@@ -214,7 +306,14 @@ namespace RavenNest.BusinessLogic.Game
                 if (decor != null && decor.Removed) return Fail("removed");
 
                 double wood, ore, fish, wheat, coins;
-                if (decor != null && string.IsNullOrEmpty(decor.DefaultKey))
+                if (decor != null && decor.Gift)
+                {
+                    // a gift goes back with the gifts, to be placed again; nothing was paid, nothing comes back
+                    wood = ore = fish = wheat = coins = 0;
+                    AddGift(village, decor.Piece, null);
+                    gameData.Remove(decor);
+                }
+                else if (decor != null && string.IsNullOrEmpty(decor.DefaultKey))
                 {
                     wood = decor.PaidWood; ore = decor.PaidOre; fish = decor.PaidFish; wheat = decor.PaidWheat; coins = decor.PaidCoins;
                     gameData.Remove(decor);
@@ -261,7 +360,139 @@ namespace RavenNest.BusinessLogic.Game
             }
         }
 
+        /// <summary>A Special piece unlocked for good with the village treasury's coins.</summary>
+        public VillageDecorResult Unlock(Guid sessionId, VillageDecorRequest request)
+        {
+            var village = VillageOf(sessionId);
+            if (village == null) return Fail("unknown");
+            var piece = Pieces.FirstOrDefault(p => p.Key == request?.Piece);
+            if (piece == null || piece.UnlockCoins <= 0) return Fail("invalid");
+            var resources = gameData.GetResources(village.ResourcesId);
+            if (resources == null) return Fail("unknown");
+
+            lock (mutex)
+            {
+                var unlocks = UnlocksOf(village);
+                if (unlocks.Contains(piece.Key)) return Fail("unlocked", resources);
+                if (TierOf(village) < piece.Tier || village.Level < piece.Level) return Fail("locked", resources);
+                if (resources.Coins < piece.UnlockCoins) return Fail("resources", resources);
+
+                resources.Coins -= piece.UnlockCoins;
+                gameData.Add(new VillageDecorUnlock
+                {
+                    Id = Guid.NewGuid(),
+                    VillageId = village.Id,
+                    Key = piece.Key,
+                    Source = "treasury",
+                    PaidCoins = piece.UnlockCoins,
+                    Created = DateTime.UtcNow,
+                });
+                var result = new VillageDecorResult { Ok = true };
+                Fill(result, resources);
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// A viewer gives the streamer's village a piece with their loyalty points with that streamer. Any piece the
+        /// village has unlocked can be given; it waits with the gifts until the streamer places it.
+        /// </summary>
+        public VillageDecorGiftResult Gift(Guid sessionId, VillageDecorGiftRequest request)
+        {
+            var session = gameData.GetSession(sessionId);
+            var village = VillageOf(sessionId);
+            if (session == null || village == null || request == null) return new VillageDecorGiftResult { Error = "invalid" };
+
+            var piece = Pieces.FirstOrDefault(p => p.Key == request.Piece);
+            if (piece == null) return new VillageDecorGiftResult { Error = "unknown" };
+            var result = new VillageDecorGiftResult { Piece = piece.Key, PieceName = piece.Name, Points = GiftPoints(piece) };
+            if (!IsUnlocked(village, piece, UnlocksOf(village))) { result.Error = "locked"; return result; }
+
+            var user = !string.IsNullOrEmpty(request.PlatformId) ? gameData.GetUser(request.PlatformId, request.Platform) : null;
+            if (user == null) { result.Error = "nouser"; return result; }
+
+            lock (mutex)
+            {
+                var loyalty = gameData.GetUserLoyalty(user.Id, session.UserId);
+                var points = loyalty?.Points ?? 0;
+                result.PointsLeft = points;
+                if (loyalty == null || points < result.Points) { result.Error = "points"; return result; }
+
+                loyalty.Points -= result.Points;
+                result.PointsLeft = loyalty.Points;
+                var name = !string.IsNullOrEmpty(request.UserName) ? request.UserName : user.UserName;
+                result.Gifts = AddGift(village, piece.Key, name);
+                gameData.Add(new VillageDecorGiftLog
+                {
+                    Id = Guid.NewGuid(),
+                    VillageId = village.Id,
+                    Piece = piece.Key,
+                    UserId = user.Id,
+                    UserName = name,
+                    Points = result.Points,
+                    Created = DateTime.UtcNow,
+                });
+                result.Ok = true;
+                return result;
+            }
+        }
+
         // ---- Helpers -------------------------------------------------------------------------------
+
+        /// <summary>One more of a piece with the gifts; the giver's name goes first in the list. How many there are now.</summary>
+        private long AddGift(Village village, string piece, string giver)
+        {
+            var gift = gameData.GetVillageDecorGifts(village.Id).FirstOrDefault(g => g.Piece == piece);
+            if (gift == null)
+            {
+                gift = new VillageDecorGift { Id = Guid.NewGuid(), VillageId = village.Id, Piece = piece, Created = DateTime.UtcNow };
+                gameData.Add(gift);
+            }
+
+            gift.Amount++;
+            if (!string.IsNullOrEmpty(giver))
+            {
+                var names = new List<string> { giver };
+                if (!string.IsNullOrEmpty(gift.Givers))
+                {
+                    names.AddRange(gift.Givers.Split(',').Where(n => !string.IsNullOrEmpty(n) && !n.Equals(giver, StringComparison.OrdinalIgnoreCase)));
+                }
+                gift.Givers = string.Join(",", names.Take(5));
+            }
+            gift.Updated = DateTime.UtcNow;
+            gameData.Touch();
+            return gift.Amount;
+        }
+
+        /// <summary>The events and treasury pieces the village has unlocked.</summary>
+        private HashSet<string> UnlocksOf(Village village) =>
+            new HashSet<string>(gameData.GetVillageDecorUnlocks(village.Id).Select(u => u.Key), StringComparer.Ordinal);
+
+        private bool IsUnlocked(Village village, VillageDecorPiece piece, HashSet<string> unlocks)
+        {
+            if (TierOf(village) < piece.Tier || village.Level < piece.Level) return false;
+            if (!string.IsNullOrEmpty(piece.Event) && !unlocks.Contains(piece.Event)) return false;
+            if (piece.UnlockCoins > 0 && !unlocks.Contains(piece.Key)) return false;
+            return true;
+        }
+
+        /// <summary>The village streams during an event: its pieces are the village's for good.</summary>
+        private void UnlockRunningEvents(Village village)
+        {
+            var now = DateTime.UtcNow;
+            HashSet<string> unlocks = null;
+            foreach (var e in Events)
+            {
+                if (!IsRunning(e.Key, now)) continue;
+                unlocks ??= UnlocksOf(village);
+                if (unlocks.Contains(e.Key)) continue;
+                lock (mutex)
+                {
+                    if (UnlocksOf(village).Contains(e.Key)) continue;
+                    gameData.Add(new VillageDecorUnlock { Id = Guid.NewGuid(), VillageId = village.Id, Key = e.Key, Source = "event", Created = now });
+                }
+            }
+        }
 
         /// <summary>
         /// The row the request means: a placed piece by id, or an island piece's row by key. For an island piece
@@ -332,6 +563,7 @@ namespace RavenNest.BusinessLogic.Game
             Rotation = decor.Rotation,
             Scale = decor.Scale,
             Removed = decor.Removed,
+            Gift = decor.Gift,
         };
 
         private static VillageDecorResult Fail(string error, Resources resources = null)

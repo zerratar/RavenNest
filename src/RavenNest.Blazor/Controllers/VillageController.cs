@@ -81,6 +81,25 @@ namespace RavenNest.Controllers
             return decorManager.Remove(sessionToken.SessionId, request);
         }
 
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("decor/unlock")]
+        public VillageDecorResult UnlockDecor([FromBody] VillageDecorRequest request)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return decorManager.Unlock(sessionToken.SessionId, request);
+        }
+
+        /// <summary>A viewer's !decor gift, from the streamer's game: paid with the viewer's loyalty points.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("decor/gift")]
+        public VillageDecorGiftResult GiftDecor([FromBody] VillageDecorGiftRequest request)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return decorManager.Gift(sessionToken.SessionId, request);
+        }
+
         // ---- Roads, drawn in build mode. See VillageRoadManager. ----
 
         [ApiExplorerSettings(IgnoreApi = true)]

@@ -71,6 +71,9 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<ClientDevice> clientDevices;
         private readonly EntitySet<VillageRoad> villageRoads;
         private readonly EntitySet<VillageDecor> villageDecor;
+        private readonly EntitySet<VillageDecorUnlock> villageDecorUnlocks;
+        private readonly EntitySet<VillageDecorGift> villageDecorGifts;
+        private readonly EntitySet<VillageDecorGiftLog> villageDecorGiftLogs;
         private readonly EntitySet<UserLoyaltyRank> loyaltyRanks;
         private readonly EntitySet<UserLoyaltyReward> loyaltyRewards;
         private readonly EntitySet<UserClaimedLoyaltyReward> claimedLoyaltyRewards;
@@ -180,6 +183,9 @@ namespace RavenNest.BusinessLogic.Data
                 typeof(ClientDevice),
                 typeof(VillageRoad),
                 typeof(VillageDecor),
+                typeof(VillageDecorUnlock),
+                typeof(VillageDecorGift),
+                typeof(VillageDecorGiftLog),
                 typeof(SyntyAppearance),
                 typeof(Character),
                 typeof(CharacterState),
@@ -326,6 +332,11 @@ namespace RavenNest.BusinessLogic.Data
                     villageRoads.RegisterLookupGroup(nameof(Village), x => x.VillageId);
                     villageDecor = new EntitySet<VillageDecor>(restorePoint?.Get<VillageDecor>() ?? ctx.VillageDecor.ToList());
                     villageDecor.RegisterLookupGroup(nameof(Village), x => x.VillageId);
+                    villageDecorUnlocks = new EntitySet<VillageDecorUnlock>(restorePoint?.Get<VillageDecorUnlock>() ?? ctx.VillageDecorUnlock.ToList());
+                    villageDecorUnlocks.RegisterLookupGroup(nameof(Village), x => x.VillageId);
+                    villageDecorGifts = new EntitySet<VillageDecorGift>(restorePoint?.Get<VillageDecorGift>() ?? ctx.VillageDecorGift.ToList());
+                    villageDecorGifts.RegisterLookupGroup(nameof(Village), x => x.VillageId);
+                    villageDecorGiftLogs = new EntitySet<VillageDecorGiftLog>(restorePoint?.Get<VillageDecorGiftLog>() ?? ctx.VillageDecorGiftLog.ToList());
 
                     loyaltyRanks = new EntitySet<UserLoyaltyRank>(ctx.UserLoyaltyRank.ToList());
 
@@ -500,6 +511,9 @@ namespace RavenNest.BusinessLogic.Data
                         clientDevices,
                         villageRoads,
                         villageDecor,
+                        villageDecorUnlocks,
+                        villageDecorGifts,
+                        villageDecorGiftLogs,
                         serverSettings,
                         itemAttributes,
                         dailyAggregatedMarketplaceData,
@@ -4044,6 +4058,21 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RemoveEntityResult Remove(VillageDecor item) => Update(() => villageDecor.Remove(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<VillageDecorUnlock> GetVillageDecorUnlocks(Guid villageId) => villageDecorUnlocks[nameof(Village), villageId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(VillageDecorUnlock item) => Update(() => villageDecorUnlocks.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<VillageDecorGift> GetVillageDecorGifts(Guid villageId) => villageDecorGifts[nameof(Village), villageId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(VillageDecorGift item) => Update(() => villageDecorGifts.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(VillageDecorGiftLog item) => Update(() => villageDecorGiftLogs.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public VillageRoad GetVillageRoad(Guid id) => villageRoads.TryGet(id, out var road) ? road : null;

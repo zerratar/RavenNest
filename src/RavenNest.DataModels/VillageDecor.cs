@@ -27,6 +27,9 @@ namespace RavenNest.DataModels
         /// <summary>An island piece that was taken away (and paid back for, once).</summary>
         [PersistentData] private bool removed;
 
+        /// <summary>A viewer's gift, placed: free, and removing it puts it back with the gifts instead of paying out.</summary>
+        [PersistentData] private bool gift;
+
         [PersistentData] private double paidWood;
         [PersistentData] private double paidOre;
         [PersistentData] private double paidFish;
