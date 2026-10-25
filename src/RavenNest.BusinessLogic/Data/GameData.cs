@@ -78,6 +78,9 @@ namespace RavenNest.BusinessLogic.Data
         private readonly EntitySet<CharacterQuestStats> characterQuestStats;
         private readonly EntitySet<StreamQuest> streamQuests;
         private readonly EntitySet<StreamQuestContribution> streamQuestContributions;
+        private readonly EntitySet<StreamerQuest> streamerQuests;
+        private readonly EntitySet<StreamerQuestEntry> streamerQuestEntries;
+        private readonly EntitySet<StreamerQuestBudget> streamerQuestBudgets;
         private readonly EntitySet<UserLoyaltyRank> loyaltyRanks;
         private readonly EntitySet<UserLoyaltyReward> loyaltyRewards;
         private readonly EntitySet<UserClaimedLoyaltyReward> claimedLoyaltyRewards;
@@ -195,6 +198,9 @@ namespace RavenNest.BusinessLogic.Data
                 typeof(StreamQuest),
                 typeof(StreamQuestContribution),
                 typeof(CharacterAchievement),
+                typeof(StreamerQuest),
+                typeof(StreamerQuestEntry),
+                typeof(StreamerQuestBudget),
                 typeof(SyntyAppearance),
                 typeof(Character),
                 typeof(CharacterState),
@@ -356,6 +362,12 @@ namespace RavenNest.BusinessLogic.Data
                     streamQuestContributions.RegisterLookupGroup(nameof(StreamQuest), x => x.StreamQuestId);
                     characterAchievements = new EntitySet<CharacterAchievement>(restorePoint?.Get<CharacterAchievement>() ?? ctx.CharacterAchievement.ToList());
                     characterAchievements.RegisterLookupGroup(nameof(Character), x => x.CharacterId);
+                    streamerQuests = new EntitySet<StreamerQuest>(restorePoint?.Get<StreamerQuest>() ?? ctx.StreamerQuest.ToList());
+                    streamerQuests.RegisterLookupGroup(nameof(User), x => x.StreamerUserId);
+                    streamerQuestEntries = new EntitySet<StreamerQuestEntry>(restorePoint?.Get<StreamerQuestEntry>() ?? ctx.StreamerQuestEntry.ToList());
+                    streamerQuestEntries.RegisterLookupGroup(nameof(StreamerQuest), x => x.StreamerQuestId);
+                    streamerQuestBudgets = new EntitySet<StreamerQuestBudget>(restorePoint?.Get<StreamerQuestBudget>() ?? ctx.StreamerQuestBudget.ToList());
+                    streamerQuestBudgets.RegisterLookupGroup(nameof(User), x => x.StreamerUserId);
 
                     loyaltyRanks = new EntitySet<UserLoyaltyRank>(ctx.UserLoyaltyRank.ToList());
 
@@ -538,6 +550,9 @@ namespace RavenNest.BusinessLogic.Data
                         streamQuests,
                         streamQuestContributions,
                         characterAchievements,
+                        streamerQuests,
+                        streamerQuestEntries,
+                        streamerQuestBudgets,
                         serverSettings,
                         itemAttributes,
                         dailyAggregatedMarketplaceData,
@@ -4133,6 +4148,27 @@ namespace RavenNest.BusinessLogic.Data
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public AddEntityResult Add(CharacterAchievement item) => Update(() => characterAchievements.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<StreamerQuest> GetStreamerQuests(Guid streamerUserId) => streamerQuests[nameof(User), streamerUserId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<StreamerQuest> GetAllStreamerQuests() => streamerQuests.Entities;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(StreamerQuest item) => Update(() => streamerQuests.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<StreamerQuestEntry> GetStreamerQuestEntries(Guid streamerQuestId) => streamerQuestEntries[nameof(StreamerQuest), streamerQuestId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(StreamerQuestEntry item) => Update(() => streamerQuestEntries.Add(item));
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public IReadOnlyList<StreamerQuestBudget> GetStreamerQuestBudgets(Guid streamerUserId) => streamerQuestBudgets[nameof(User), streamerUserId];
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public AddEntityResult Add(StreamerQuestBudget item) => Update(() => streamerQuestBudgets.Add(item));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public VillageRoad GetVillageRoad(Guid id) => villageRoads.TryGet(id, out var road) ? road : null;

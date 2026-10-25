@@ -204,6 +204,129 @@ namespace RavenNest.Models
         public string[] Titles { get; set; }
     }
 
+    /// <summary>A streamer's quest as the game shows it (phase 4): a bounty or a stream goal with its reward set aside.</summary>
+    public class StreamerQuestInfo
+    {
+        public Guid Id { get; set; }
+
+        /// <summary>1 bounty, 2 stream goal.</summary>
+        public int Kind { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+
+        /// <summary>gather, kill, craft, cook, brew, levels, raid or dungeon.</summary>
+        public string Objective { get; set; }
+        public int Skill { get; set; }
+
+        /// <summary>Per viewer for a bounty, for the whole stream for a goal.</summary>
+        public long Amount { get; set; }
+        public long Progress { get; set; }
+        public int Winners { get; set; }
+        public int Claimed { get; set; }
+
+        /// <summary>1 running, 2 done, 3 out of time, 4 stopped, 5 every reward claimed.</summary>
+        public int State { get; set; }
+        public DateTime Ends { get; set; }
+        public int Minutes { get; set; }
+        public long RewardCoins { get; set; }
+        public Guid? RewardItemId { get; set; }
+        public string RewardItemName { get; set; }
+        public long RewardItemAmount { get; set; }
+        public long RewardLoyalty { get; set; }
+        public int Helpers { get; set; }
+        public StreamQuestHelper[] TopHelpers { get; set; }
+
+        /// <summary>When asked for one character (!quest): its progress, and whether it has claimed the bounty.</summary>
+        public long YourProgress { get; set; }
+        public bool YouClaimed { get; set; }
+    }
+
+    /// <summary>What a streamer posts from the quest window.</summary>
+    public class StreamerQuestRequest
+    {
+        public int Kind { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public string Objective { get; set; }
+        public int Skill { get; set; }
+        public long Amount { get; set; }
+        public int Minutes { get; set; }
+        public int Winners { get; set; }
+        public long RewardCoins { get; set; }
+
+        /// <summary>1 the village treasury, 2 the streamer's character (CoinCharacterId).</summary>
+        public int CoinSource { get; set; }
+        public Guid? CoinCharacterId { get; set; }
+
+        /// <summary>The item, as the tavern shelves name a stack, and where it is taken from.</summary>
+        public Guid? ItemId { get; set; }
+        public string ItemTag { get; set; }
+        public string ItemEnchantment { get; set; }
+        public Guid? ItemTransmogrificationId { get; set; }
+        public string ItemName { get; set; }
+        public int ItemFlags { get; set; }
+        public long ItemAmount { get; set; }
+        public StreamerShopSourceKind ItemSourceKind { get; set; }
+        public Guid? ItemSourceCharacterId { get; set; }
+        public long RewardLoyalty { get; set; }
+    }
+
+    /// <summary>The stream's streamer quests and what the streamer can set aside for a new one.</summary>
+    public class StreamerQuestList
+    {
+        public StreamerQuestInfo[] Quests { get; set; }
+        public int MaxBounties { get; set; }
+        public long LoyaltyBudgetLeft { get; set; }
+        public long LoyaltyBudgetWeekly { get; set; }
+        public long TreasuryCoins { get; set; }
+
+        /// <summary>The streamer's characters in the stream, and their coins.</summary>
+        public StreamerQuestCoinSource[] Characters { get; set; }
+    }
+
+    public class StreamerQuestCoinSource
+    {
+        public Guid CharacterId { get; set; }
+        public string Name { get; set; }
+        public long Coins { get; set; }
+    }
+
+    public class StreamerQuestResult
+    {
+        public bool Ok { get; set; }
+
+        /// <summary>A sentence for the streamer when it did not go.</summary>
+        public string Error { get; set; }
+        public StreamerQuestInfo Quest { get; set; }
+    }
+
+    /// <summary>A viewer finished a bounty (StreamerQuestClaimed): what they got, and how many rewards are left.</summary>
+    public class StreamerQuestClaimed
+    {
+        public StreamerQuestInfo Quest { get; set; }
+        public Guid CharacterId { get; set; }
+        public long Coins { get; set; }
+        public long Items { get; set; }
+        public long Loyalty { get; set; }
+    }
+
+    /// <summary>A streamer quest ended (StreamerQuestEnded); for a goal that was done, what each helper got.</summary>
+    public class StreamerQuestEnded
+    {
+        public StreamerQuestInfo Quest { get; set; }
+        public StreamerQuestReward[] Rewards { get; set; }
+    }
+
+    public class StreamerQuestReward
+    {
+        public Guid CharacterId { get; set; }
+        public string Name { get; set; }
+        public long Amount { get; set; }
+        public long Coins { get; set; }
+        public long Items { get; set; }
+        public long Loyalty { get; set; }
+    }
+
     /// <summary>A character reached an achievement's tier (AchievementReached): the title that came with it.</summary>
     public class AchievementReached
     {

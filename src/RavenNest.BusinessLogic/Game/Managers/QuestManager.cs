@@ -25,11 +25,13 @@ namespace RavenNest.BusinessLogic.Game
         internal static QuestManager Listener;
         internal static StreamQuestManager StreamListener;
         internal static AchievementManager Achievements;
+        internal static StreamerQuestManager StreamerListener;
 
         private static void Report(Character character, string objective, int skill, long amount)
         {
             Listener?.Progress(character, objective, skill, amount);
             StreamListener?.Progress(character, objective, skill, amount);
+            StreamerListener?.Progress(character, objective, skill, amount);
             Achievements?.Activity(character, objective, skill, amount);
         }
 
@@ -46,6 +48,7 @@ namespace RavenNest.BusinessLogic.Game
         {
             if (levels <= 0) return;
             StreamListener?.Progress(character, StreamQuestManager.Levels, -1, levels);
+            StreamerListener?.Progress(character, StreamQuestManager.Levels, -1, levels);
             Achievements?.LevelsChanged(character);
         }
 

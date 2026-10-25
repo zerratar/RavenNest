@@ -19,7 +19,10 @@ namespace RavenNest.BusinessLogic.Game.Trading
         AdminAdjustment,
         StreamerShopListing,
         StreamerShopPurchase,
-        StreamerShopReturn
+        StreamerShopReturn,
+        StreamerQuestEscrow,
+        StreamerQuestReward,
+        StreamerQuestReturn
     }
 
     /// <summary>

@@ -90,5 +90,11 @@
 
         /// <summary>A character reached an achievement's tier and earned a title (AchievementReached).</summary>
         AchievementReached = 51,
+
+        /// <summary>A viewer finished a streamer's bounty and got its reward (StreamerQuestClaimed).</summary>
+        StreamerQuestClaimed = 52,
+
+        /// <summary>A streamer's quest ended: a goal done (with what each helper got), out of time, stopped, or every bounty claimed (StreamerQuestEnded).</summary>
+        StreamerQuestEnded = 53,
     }
 }

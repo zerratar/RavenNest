@@ -17,6 +17,7 @@ namespace RavenNest.Controllers
         private readonly QuestManager questManager;
         private readonly StreamQuestManager streamQuestManager;
         private readonly AchievementManager achievementManager;
+        private readonly StreamerQuestManager streamerQuestManager;
 
         public QuestsController(
             ILogger<QuestsController> logger,
@@ -27,12 +28,14 @@ namespace RavenNest.Controllers
             QuestManager questManager,
             StreamQuestManager streamQuestManager,
             AchievementManager achievementManager,
+            StreamerQuestManager streamerQuestManager,
             ISecureHasher secureHasher)
             : base(logger, gameData, authManager, sessionInfoProvider, sessionManager, secureHasher)
         {
             this.questManager = questManager;
             this.streamQuestManager = streamQuestManager;
             this.achievementManager = achievementManager;
+            this.streamerQuestManager = streamerQuestManager;
         }
 
         [ApiExplorerSettings(IgnoreApi = true)]
@@ -102,6 +105,45 @@ namespace RavenNest.Controllers
             var sessionToken = GetSessionToken();
             AssertSessionTokenValidity(sessionToken);
             return achievementManager.SetTitle(sessionToken, characterId, title);
+        }
+
+        /// <summary>The stream's streamer quests, and what the streamer can set aside. See StreamerQuestManager.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("streamer")]
+        public StreamerQuestList GetStreamerQuests()
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return streamerQuestManager.GetList(sessionToken);
+        }
+
+        /// <summary>The running streamer quests with one character's progress (!quest).</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpGet("streamer/{characterId}")]
+        public StreamerQuestInfo[] GetStreamerQuestsFor(Guid characterId)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return streamerQuestManager.GetFor(sessionToken, characterId);
+        }
+
+        /// <summary>Posts a streamer quest, setting its reward aside.</summary>
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("streamer/post")]
+        public StreamerQuestResult PostStreamerQuest([FromBody] StreamerQuestRequest request)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return streamerQuestManager.Post(sessionToken, request);
+        }
+
+        [ApiExplorerSettings(IgnoreApi = true)]
+        [HttpPost("streamer/stop/{questId}")]
+        public StreamerQuestResult StopStreamerQuest(Guid questId)
+        {
+            var sessionToken = GetSessionToken();
+            AssertSessionTokenValidity(sessionToken);
+            return streamerQuestManager.Stop(sessionToken, questId);
         }
 
         /// <summary>The titles worn in this stream, for the name tags.</summary>

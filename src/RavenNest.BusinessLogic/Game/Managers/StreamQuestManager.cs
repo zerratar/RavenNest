@@ -101,6 +101,11 @@ namespace RavenNest.BusinessLogic.Game
             timer = new Timer(_ => EndOverdue(), null, 15_000, 15_000);
         }
 
+        /// <summary>Whether the streamer's own stream goal runs (StreamerQuestManager): a stream has one goal at a time.</summary>
+        public Func<Guid, bool> GoalRunning { get; set; }
+
+        public bool IsRunning(Guid streamerUserId) => running.ContainsKey(streamerUserId);
+
         // ---- What the game asks ----------------------------------------------------------------------
 
         /// <summary>The stream's running quest, and today's offers scaled to the players in the stream now.</summary>
@@ -127,6 +132,7 @@ namespace RavenNest.BusinessLogic.Game
             lock (running)
             {
                 if (running.TryGetValue(token.UserId, out var current)) return new StreamQuestResult { Error = "running", Quest = Info(current) };
+                if (GoalRunning?.Invoke(token.UserId) == true) return new StreamQuestResult { Error = "goal" };
 
                 var template = offers[slot];
                 var players = PlayersIn(session);
