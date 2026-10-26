@@ -16,6 +16,8 @@
 
         /// <summary>Ravebridge, far to the west: an event island the streamer opens with the story "the road west".</summary>
         Ravebridge = 9,
+        /// <summary>Out at sea on an own boat at anchor, fishing over the side (docs/own-boats.md in the game).</summary>
+        Sea = 10,
 
         // none usually is 0, but we have already used it for ferry as it is a list of locations the player is located at. Not available places
         None = 254,

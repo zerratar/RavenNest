@@ -426,6 +426,15 @@ namespace RavenNest.BusinessLogic.Data
                     RawMantaRay = GetOrCreateItem(i, "Raw Manta Ray", "Graceful glider of the ocean. Beware its tail.", ItemCategory.Resource, ItemType.Fishing),
                     RawKraken = GetOrCreateItem(i, "Raw Kraken", "Mythical sea monster known to pull ships under.", ItemCategory.Resource, ItemType.Fishing),
                     RawLeviathan = GetOrCreateItem(i, "Raw Leviathan", "A gargantuan sea creature spoken of in legends.", ItemCategory.Resource, ItemType.Fishing),
+                    // fish only caught at sea, from an own boat (docs/own-boats.md in the game, phase 3)
+                    RawMackerel = GetOrCreateItem(i, "Raw Mackerel", "A striped, restless fish of the open sea. Never found near the shore.", ItemCategory.Resource, ItemType.Fishing),
+                    RawTuna = GetOrCreateItem(i, "Raw Tuna", "A fast fish that roams the deep water between the islands.", ItemCategory.Resource, ItemType.Fishing),
+                    RawMarlin = GetOrCreateItem(i, "Raw Marlin", "A proud spear-nosed fish that fights the line for hours.", ItemCategory.Resource, ItemType.Fishing),
+                    RawAnglerfish = GetOrCreateItem(i, "Raw Anglerfish", "It carries its own lantern down in the dark. Do not follow the light.", ItemCategory.Resource, ItemType.Fishing),
+                    RawGiantSquid = GetOrCreateItem(i, "Raw Giant Squid", "Tentacles longer than the boat that caught it.", ItemCategory.Resource, ItemType.Fishing),
+                    RawSeaSerpent = GetOrCreateItem(i, "Raw Sea Serpent", "The thing sailors swear they saw. Now you have seen it too.", ItemCategory.Resource, ItemType.Fishing),
+                    MessageInABottle = GetOrCreateItem(i, "Message in a Bottle", "A rolled up note inside reads: \"If found, please return to zerratar. Or keep it, I have more bottles.\"", ItemCategory.Resource, ItemType.Fishing),
+
                     RawPoseidonsGuardian = GetOrCreateItem(i, "Raw Poseidons Guardian", "Said to be the protector of Poseidon's realm. A rare and majestic catch.", ItemCategory.Resource, ItemType.Fishing),
 
                     // Cooking - Resource Creation
@@ -476,6 +485,12 @@ namespace RavenNest.BusinessLogic.Data
                     Octopus = GetOrCreateItem(i, "Octopus", "Tenderized to perfection, a dish of exquisite taste.", ItemCategory.Food, ItemType.Food).GenericPrefab(null),
                     MantaRay = GetOrCreateItem(i, "Manta Ray", "Unique and flavorful, a treat from the deep.", ItemCategory.Food, ItemType.Food),
                     Kraken = GetOrCreateItem(i, "Kraken", "Legends speak of its taste, as vast as its tales.", ItemCategory.Food, ItemType.Food),
+                    Mackerel = GetOrCreateItem(i, "Mackerel", "Oily, smoky and very good for you.", ItemCategory.Food, ItemType.Food),
+                    Tuna = GetOrCreateItem(i, "Tuna", "Seared on the outside, pink in the middle. A sailor's favourite.", ItemCategory.Food, ItemType.Food),
+                    Marlin = GetOrCreateItem(i, "Marlin", "Grilled steaks from a fish that did not give up easily.", ItemCategory.Food, ItemType.Food),
+                    Anglerfish = GetOrCreateItem(i, "Anglerfish", "Ugly to look at, wonderful to eat.", ItemCategory.Food, ItemType.Food),
+                    GiantSquid = GetOrCreateItem(i, "Giant Squid", "Rings of tender squid, enough for the whole crew.", ItemCategory.Food, ItemType.Food),
+                    SeaSerpent = GetOrCreateItem(i, "Sea Serpent", "Proof, served on a plate, that the stories were true.", ItemCategory.Food, ItemType.Food),
 
                     LeviathansRoyalStew = GetOrCreateItem(i, "Leviathans Royal Stew", "This is a hearty stew that combines the tender meat of the Leviathan with a variety of other ingredients to create a flavorful dish worthy of its namesake.", ItemCategory.Food, ItemType.Food),
                     PoseidonsGuardianFeast = GetOrCreateItem(i, "Poseidons Guardian Feast", "A luxurious dish that showcases the divine nature of Poseidon's Guardian. It involves a series of preparations that results in a meal fit for a deity.", ItemCategory.Food, ItemType.Food),
@@ -510,6 +525,12 @@ namespace RavenNest.BusinessLogic.Data
                     BurnedOctopus = GetOrCreateItem(i, "Burned Octopus", "Its tentacles crisped up, a far cry from its potential tenderness.", ItemCategory.Food, ItemType.Food),
                     BurnedMantaRay = GetOrCreateItem(i, "Burned Manta Ray", "From the grace of the oceans to the tragedy of the grill.", ItemCategory.Food, ItemType.Food),
                     BurnedKraken = GetOrCreateItem(i, "Burned Kraken", "Such a legendary creature deserved a better culinary fate.", ItemCategory.Food, ItemType.Food),
+                    BurnedMackerel = GetOrCreateItem(i, "Burned Mackerel", "It was a mackerel once.", ItemCategory.Food, ItemType.Food),
+                    BurnedTuna = GetOrCreateItem(i, "Burned Tuna", "Tuna jerky, but not on purpose.", ItemCategory.Food, ItemType.Food),
+                    BurnedMarlin = GetOrCreateItem(i, "Burned Marlin", "All that fighting, for this.", ItemCategory.Food, ItemType.Food),
+                    BurnedAnglerfish = GetOrCreateItem(i, "Burned Anglerfish", "Now it is ugly and burned.", ItemCategory.Food, ItemType.Food),
+                    BurnedGiantSquid = GetOrCreateItem(i, "Burned Giant Squid", "Rubbery rings of regret.", ItemCategory.Food, ItemType.Food),
+                    BurnedSeaSerpent = GetOrCreateItem(i, "Burned Sea Serpent", "The stories never said it burns this easily.", ItemCategory.Food, ItemType.Food),
 
                     // Mining
                     Emerald = GetOrCreateItem(i, "Emerald", "A captivating green gemstone known for its vibrant hue and clarity.", ItemCategory.Resource, ItemType.Mining),
@@ -1181,6 +1202,14 @@ namespace RavenNest.BusinessLogic.Data
             EnsureDropRate(700, items.RawKraken, 7200, 0.09, fishing);
             EnsureDropRate(900, items.RawLeviathan, 14400, 0.07, fishing);
             EnsureDropRate(999, items.RawPoseidonsGuardian, 21600, 0.02, fishing);
+            // the sea's own, only from an own boat at anchor (FishingTaskProcessor.SeaOnly)
+            EnsureDropRate(15, items.RawMackerel, 40, 0.19, fishing);
+            EnsureDropRate(60, items.RawTuna, 150, 0.18, fishing);
+            EnsureDropRate(150, items.RawMarlin, 650, 0.15, fishing);
+            EnsureDropRate(260, items.RawAnglerfish, 1600, 0.13, fishing);
+            EnsureDropRate(450, items.RawGiantSquid, 4000, 0.1, fishing);
+            EnsureDropRate(800, items.RawSeaSerpent, 10000, 0.08, fishing);
+            EnsureDropRate(1, items.MessageInABottle, 3600, 0.02, fishing);
             #endregion
 
             RemoveMissingItemDrops();
@@ -1364,6 +1393,12 @@ namespace RavenNest.BusinessLogic.Data
             EnsureCookingRecipe(420, items.Octopus, items.BurnedOctopus, 0.2, 1, items.RawOctopus);
             EnsureCookingRecipe(500, items.MantaRay, items.BurnedMantaRay, 0.2, 1, items.RawMantaRay);
             EnsureCookingRecipe(700, items.Kraken, items.BurnedKraken, 0.2, 1, items.RawKraken);
+            EnsureCookingRecipe(15, items.Mackerel, items.BurnedMackerel, 0.2, 1, items.RawMackerel);
+            EnsureCookingRecipe(60, items.Tuna, items.BurnedTuna, 0.2, 1, items.RawTuna);
+            EnsureCookingRecipe(150, items.Marlin, items.BurnedMarlin, 0.2, 1, items.RawMarlin);
+            EnsureCookingRecipe(260, items.Anglerfish, items.BurnedAnglerfish, 0.2, 1, items.RawAnglerfish);
+            EnsureCookingRecipe(450, items.GiantSquid, items.BurnedGiantSquid, 0.2, 1, items.RawGiantSquid);
+            EnsureCookingRecipe(800, items.SeaSerpent, items.BurnedSeaSerpent, 0.2, 1, items.RawSeaSerpent);
 
             // cooking various meats and stuff
             EnsureCookingRecipeGuaranteed(10, items.Flour, Ingredient(items.Wheat));
@@ -1460,6 +1495,13 @@ namespace RavenNest.BusinessLogic.Data
             EnsureItemStatusEffects(typedItems.MantaRay, Effect(StatusEffectType.Heal, 0.40f, 50), Effect(StatusEffectType.IncreasedMovementSpeed, 240, 0.10f, 0));
             EnsureItemStatusEffects(typedItems.Kraken, Effect(StatusEffectType.Heal, 0.45f, 60), Effect(StatusEffectType.IncreasedExperienceGain, 300, 0.12f, 0));
             //EnsureItemStatusEffects(typedItems.Kraken, Effect(StatusEffectType.Heal, 0.45f, 60), Effect(StatusEffectType.IncreasedAttackPower, 150, 0.12f, 0), Effect(StatusEffectType.IncreasedMovementSpeed, 150, 0.12f, 0));
+            // the sea's own fish
+            EnsureItemStatusEffects(typedItems.Mackerel, Effect(StatusEffectType.Heal, 0.07f, 12), Effect(StatusEffectType.IncreasedMovementSpeed, 90, 0.05f, 0));
+            EnsureItemStatusEffects(typedItems.Tuna, Effect(StatusEffectType.Heal, 0.11f, 18), Effect(StatusEffectType.IncreasedStrength, 120, 0.06f, 2));
+            EnsureItemStatusEffects(typedItems.Marlin, Effect(StatusEffectType.Heal, 0.20f, 28), Effect(StatusEffectType.IncreasedAttackSpeed, 150, 0.08f, 3));
+            EnsureItemStatusEffects(typedItems.Anglerfish, Effect(StatusEffectType.Heal, 0.28f, 34), Effect(StatusEffectType.IncreasedMagicPower, 200, 0.10f, 4));
+            EnsureItemStatusEffects(typedItems.GiantSquid, Effect(StatusEffectType.Heal, 0.38f, 45), Effect(StatusEffectType.IncreasedDodge, 200, 0.12f, 0));
+            EnsureItemStatusEffects(typedItems.SeaSerpent, Effect(StatusEffectType.Heal, 0.48f, 65), Effect(StatusEffectType.IncreasedExperienceGain, 300, 0.14f, 0));
 
             // other dishes
             EnsureItemStatusEffects(typedItems.RedWine, Effect(StatusEffectType.Heal, 0.05f, 5), Effect(StatusEffectType.ReducedHitChance, 180, 0.05f, 0), Effect(StatusEffectType.IncreasedStrength, 180, 0.05f, 2));
@@ -1506,6 +1548,12 @@ namespace RavenNest.BusinessLogic.Data
             EnsureItemStatusEffects(typedItems.BurnedOctopus, Effect(StatusEffectType.Heal, 0.070f, 8));
             EnsureItemStatusEffects(typedItems.BurnedMantaRay, Effect(StatusEffectType.Heal, 0.080f, 10));
             EnsureItemStatusEffects(typedItems.BurnedKraken, Effect(StatusEffectType.Heal, 0.090f, 12));
+            EnsureItemStatusEffects(typedItems.BurnedMackerel, Effect(StatusEffectType.Heal, 0.014f, 2));
+            EnsureItemStatusEffects(typedItems.BurnedTuna, Effect(StatusEffectType.Heal, 0.022f, 3));
+            EnsureItemStatusEffects(typedItems.BurnedMarlin, Effect(StatusEffectType.Heal, 0.040f, 5));
+            EnsureItemStatusEffects(typedItems.BurnedAnglerfish, Effect(StatusEffectType.Heal, 0.056f, 6));
+            EnsureItemStatusEffects(typedItems.BurnedGiantSquid, Effect(StatusEffectType.Heal, 0.076f, 9));
+            EnsureItemStatusEffects(typedItems.BurnedSeaSerpent, Effect(StatusEffectType.Heal, 0.096f, 13));
 
             // Failed special dishes
             // I'm basing these values on the CookedKraken for now, but these dishes may be considered special enough to have a bit more.

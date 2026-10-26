@@ -9,6 +9,15 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
     {
         public static readonly SimpleDropHandler Drops = new SimpleDropHandler(nameof(Skills.Fishing));
 
+        /// <summary>The island a player at anchor on their own boat is on, as far as the server knows (Island.Sea).</summary>
+        public const string AtSea = "Sea";
+
+        /// <summary>Fish only caught at sea (decided 2026-10-26); never from an island's fishing spots.</summary>
+        public static readonly System.Collections.Generic.HashSet<string> SeaOnly = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Raw Mackerel", "Raw Tuna", "Raw Marlin", "Raw Anglerfish", "Raw Giant Squid", "Raw Sea Serpent", "Message in a Bottle",
+        };
+
         public override void Process(
             ILogger logger,
             GameData gameData,
@@ -26,6 +35,18 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
                 var skills = gameData.GetCharacterSkills(character.SkillsId);
                 if (skills == null)
                     return;
+
+                // out at sea on their own boat: no island to open or require a level, and the sea's own fish bite
+                if (string.Equals(state.Island, AtSea, StringComparison.OrdinalIgnoreCase))
+                {
+                    var seaLevel = skills.FishingLevel + inventory.GetFishingBonus();
+                    var village = GetVillageResources(gameData, session);
+                    if (village != null) ++village.Fish;
+                    session.Updated = DateTime.UtcNow;
+                    QuestTracker.Gathered(character, RavenNest.Models.Skill.Fishing);
+                    Drops.TryDropItem(this, logger, gameData, inventory, session, character, seaLevel, state.TaskArgument);
+                    return;
+                }
 
                 if (!TryGetIsland(state.Island, out var island))
                 {
@@ -50,7 +71,7 @@ namespace RavenNest.BusinessLogic.Game.Processors.Tasks
 
 
                 QuestTracker.Gathered(character, RavenNest.Models.Skill.Fishing);
-                Drops.TryDropItem(this, logger, gameData, inventory, session, character, level, state.TaskArgument);
+                Drops.TryDropItem(this, logger, gameData, inventory, session, character, level, state.TaskArgument, d => !SeaOnly.Contains(d.Name ?? ""));
             });
         }
     }

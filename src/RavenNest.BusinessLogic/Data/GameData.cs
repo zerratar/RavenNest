@@ -5673,6 +5673,26 @@ namespace RavenNest.BusinessLogic.Data
         public Item RawKraken;
         public Item RawLeviathan;
         public Item RawPoseidonsGuardian;
+        // the sea's own fish (own boats, phase 3)
+        public Item RawMackerel;
+        public Item Mackerel;
+        public Item BurnedMackerel;
+        public Item RawTuna;
+        public Item Tuna;
+        public Item BurnedTuna;
+        public Item RawMarlin;
+        public Item Marlin;
+        public Item BurnedMarlin;
+        public Item RawAnglerfish;
+        public Item Anglerfish;
+        public Item BurnedAnglerfish;
+        public Item RawGiantSquid;
+        public Item GiantSquid;
+        public Item BurnedGiantSquid;
+        public Item RawSeaSerpent;
+        public Item SeaSerpent;
+        public Item BurnedSeaSerpent;
+        public Item MessageInABottle;
 
         // Cooking
         public Item Flour;
